@@ -1,0 +1,121 @@
+// Breakthrough (Concept in RG, 0.0.2)
+
+#domains(
+  players = {white, black};
+  scores = {0, 100};
+  pieces = {e, b, w};
+  squares = {
+    v00, v10, v20, v30, v40, v50, v60, v70,
+    v01, v11, v21, v31, v41, v51, v61, v71,
+    v02, v12, v22, v32, v42, v52, v62, v72,
+    v03, v13, v23, v33, v43, v53, v63, v73,
+    v04, v14, v24, v34, v44, v54, v64, v74,
+    v05, v15, v25, v35, v45, v55, v65, v75,
+    v06, v16, v26, v36, v46, v56, v66, v76,
+    v07, v17, v27, v37, v47, v57, v67, v77
+  }
+)
+
+#constants(
+  left(v00) = !; left(v10) = v00; left(v20) = v10; left(v30) = v20; left(v40) = v30; left(v50) = v40; left(v60) = v50; left(v70) = v60;
+  left(v01) = !; left(v11) = v01; left(v21) = v11; left(v31) = v21; left(v41) = v31; left(v51) = v41; left(v61) = v51; left(v71) = v61;
+  left(v02) = !; left(v12) = v02; left(v22) = v12; left(v32) = v22; left(v42) = v32; left(v52) = v42; left(v62) = v52; left(v72) = v62;
+  left(v03) = !; left(v13) = v03; left(v23) = v13; left(v33) = v23; left(v43) = v33; left(v53) = v43; left(v63) = v53; left(v73) = v63;
+  left(v04) = !; left(v14) = v04; left(v24) = v14; left(v34) = v24; left(v44) = v34; left(v54) = v44; left(v64) = v54; left(v74) = v64;
+  left(v05) = !; left(v15) = v05; left(v25) = v15; left(v35) = v25; left(v45) = v35; left(v55) = v45; left(v65) = v55; left(v75) = v65;
+  left(v06) = !; left(v16) = v06; left(v26) = v16; left(v36) = v26; left(v46) = v36; left(v56) = v46; left(v66) = v56; left(v76) = v66;
+  left(v07) = !; left(v17) = v07; left(v27) = v17; left(v37) = v27; left(v47) = v37; left(v57) = v47; left(v67) = v57; left(v77) = v67;
+
+  right(v00) = v10; right(v10) = v20; right(v20) = v30; right(v30) = v40; right(v40) = v50; right(v50) = v60; right(v60) = v70; right(v70) = !;
+  right(v01) = v11; right(v11) = v21; right(v21) = v31; right(v31) = v41; right(v41) = v51; right(v51) = v61; right(v61) = v71; right(v71) = !;
+  right(v02) = v12; right(v12) = v22; right(v22) = v32; right(v32) = v42; right(v42) = v52; right(v52) = v62; right(v62) = v72; right(v72) = !;
+  right(v03) = v13; right(v13) = v23; right(v23) = v33; right(v33) = v43; right(v43) = v53; right(v53) = v63; right(v63) = v73; right(v73) = !;
+  right(v04) = v14; right(v14) = v24; right(v24) = v34; right(v34) = v44; right(v44) = v54; right(v54) = v64; right(v64) = v74; right(v74) = !;
+  right(v05) = v15; right(v15) = v25; right(v25) = v35; right(v35) = v45; right(v45) = v55; right(v55) = v65; right(v65) = v75; right(v75) = !;
+  right(v06) = v16; right(v16) = v26; right(v26) = v36; right(v36) = v46; right(v46) = v56; right(v56) = v66; right(v66) = v76; right(v76) = !;
+  right(v07) = v17; right(v17) = v27; right(v27) = v37; right(v37) = v47; right(v47) = v57; right(v57) = v67; right(v67) = v77; right(v77) = !;
+
+  up(v00) = !;   up(v10) = !;   up(v20) = !;   up(v30) = !;   up(v40) = !;   up(v50) = !;   up(v60) = !;   up(v70) = !;
+  up(v01) = v00; up(v11) = v10; up(v21) = v20; up(v31) = v30; up(v41) = v40; up(v51) = v50; up(v61) = v60; up(v71) = v70;
+  up(v02) = v01; up(v12) = v11; up(v22) = v21; up(v32) = v31; up(v42) = v41; up(v52) = v51; up(v62) = v61; up(v72) = v71;
+  up(v03) = v02; up(v13) = v12; up(v23) = v22; up(v33) = v32; up(v43) = v42; up(v53) = v52; up(v63) = v62; up(v73) = v72;
+  up(v04) = v03; up(v14) = v13; up(v24) = v23; up(v34) = v33; up(v44) = v43; up(v54) = v53; up(v64) = v63; up(v74) = v73;
+  up(v05) = v04; up(v15) = v14; up(v25) = v24; up(v35) = v34; up(v45) = v44; up(v55) = v54; up(v65) = v64; up(v75) = v74;
+  up(v06) = v05; up(v16) = v15; up(v26) = v25; up(v36) = v35; up(v46) = v45; up(v56) = v55; up(v66) = v65; up(v76) = v75;
+  up(v07) = v06; up(v17) = v16; up(v27) = v26; up(v37) = v36; up(v47) = v46; up(v57) = v56; up(v67) = v66; up(v77) = v76;
+
+  down(v00) = v01; down(v10) = v11; down(v20) = v21; down(v30) = v31; down(v40) = v41; down(v50) = v51; down(v60) = v61; down(v70) = v71;
+  down(v01) = v02; down(v11) = v12; down(v21) = v22; down(v31) = v32; down(v41) = v42; down(v51) = v52; down(v61) = v62; down(v71) = v72;
+  down(v02) = v03; down(v12) = v13; down(v22) = v23; down(v32) = v33; down(v42) = v43; down(v52) = v53; down(v62) = v63; down(v72) = v73;
+  down(v03) = v04; down(v13) = v14; down(v23) = v24; down(v33) = v34; down(v43) = v44; down(v53) = v54; down(v63) = v64; down(v73) = v74;
+  down(v04) = v05; down(v14) = v15; down(v24) = v25; down(v34) = v35; down(v44) = v45; down(v54) = v55; down(v64) = v65; down(v74) = v75;
+  down(v05) = v06; down(v15) = v16; down(v25) = v26; down(v35) = v36; down(v45) = v46; down(v55) = v56; down(v65) = v66; down(v75) = v76;
+  down(v06) = v07; down(v16) = v17; down(v26) = v27; down(v36) = v37; down(v46) = v47; down(v56) = v57; down(v66) = v67; down(v76) = v77;
+  down(v07) = !;   down(v17) = !;   down(v27) = !;   down(v37) = !;   down(v47) = !;   down(v57) = !;   down(v67) = !;   down(v77) = !
+)
+
+#variables(
+  white: scores; black: scores;
+  v00: pieces; v10: pieces; v20: pieces; v30: pieces; v40: pieces; v50: pieces; v60: pieces; v70: pieces;
+  v01: pieces; v11: pieces; v21: pieces; v31: pieces; v41: pieces; v51: pieces; v61: pieces; v71: pieces;
+  v02: pieces; v12: pieces; v22: pieces; v32: pieces; v42: pieces; v52: pieces; v62: pieces; v72: pieces;
+  v03: pieces; v13: pieces; v23: pieces; v33: pieces; v43: pieces; v53: pieces; v63: pieces; v73: pieces;
+  v04: pieces; v14: pieces; v24: pieces; v34: pieces; v44: pieces; v54: pieces; v64: pieces; v74: pieces;
+  v05: pieces; v15: pieces; v25: pieces; v35: pieces; v45: pieces; v55: pieces; v65: pieces; v75: pieces;
+  v06: pieces; v16: pieces; v26: pieces; v36: pieces; v46: pieces; v56: pieces; v66: pieces; v76: pieces;
+  v07: pieces; v17: pieces; v27: pieces; v37: pieces; v47: pieces; v57: pieces; v67: pieces; v77: pieces
+)
+
+#views(pos: squares)
+
+#init(
+  white = 0; black = 0;
+  v00 = b; v10 = b; v20 = b; v30 = b; v40 = b; v50 = b; v60 = b; v70 = b;
+  v01 = b; v11 = b; v21 = b; v31 = b; v41 = b; v51 = b; v61 = b; v71 = b;
+  v02 = e; v12 = e; v22 = e; v32 = e; v42 = e; v52 = e; v62 = e; v72 = e;
+  v03 = e; v13 = e; v23 = e; v33 = e; v43 = e; v53 = e; v63 = e; v73 = e;
+  v04 = e; v14 = e; v24 = e; v34 = e; v44 = e; v54 = e; v64 = e; v74 = e;
+  v05 = e; v15 = e; v25 = e; v35 = e; v45 = e; v55 = e; v65 = e; v75 = e;
+  v06 = w; v16 = w; v26 = w; v36 = w; v46 = w; v56 = w; v66 = w; v76 = w;
+  v07 = w; v17 = w; v27 = w; v37 = w; v47 = w; v57 = w; v67 = w; v77 = w
+)
+
+#rules(
+  // White player
+  (n0,n1,->white)
+
+  // (up* + down*)(left* + right*)
+  // (n1,n2) (n2,n2,[pos=up(*pos)]) (n2,n4)
+  // (n1,n3) (n3,n3,[pos=down(*pos)]) (n3,n4)
+  // (n4,n5) (n5,n5,[pos=left(*pos)]) (n5,n7)
+  // (n4,n6) (n6,n6,[pos=right(*pos)]) (n6,n7)
+
+  // (n7,n8,{*pos=="w"})
+  // (n8,n9,[*pos="e"])
+  // (n9,n10,[pos=up(*pos)])
+
+  // ({e} + (left+right) {e,b})
+  // (n10,n13,{*pos="e"})
+  (n10,n11)
+  // (n11,n12,[pos=left(*pos)])
+  // (n11,n12,[pos=right(*pos)])
+  // (n12,n13,{*pos=="e"})
+  // (n12,n13,{*pos=="b"})
+
+  (n13,n14,->keeper)
+  // (n14,n15,[white=100])
+  // (n15,n16,[black=0])
+
+  // ({? up} [w] + {! up} ->> {})
+  // (n16,n18,{? 50->51}) // Valid if 51 reachable from 50
+  // (n18,n19,[*pos="w"])
+  (n19,n100)
+  // (n16,n17,{? not (50->51)})
+  // (n17,n20,->keeper) // 20 is a dead state
+
+  // (n50,n51,{up(*pos)}) // Conditional without comparison
+
+  // Black player
+  (n100,n101,->black)
+  // ...
+)
