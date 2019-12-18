@@ -1,0 +1,10 @@
+(library
+ (name syntax)
+ (libraries ast))
+
+(menhir
+ (modules Grammar)
+ (flags (--explain --strict)))
+
+(ocamllex
+ (modules Lexer))
