@@ -213,7 +213,8 @@ export function setVariable(
       if (game.variables[path.name].type.kind === 'arrow') {
         assert(value.kind === 'map', 'Map required.');
         const initialValue = createInitialValue(game, path.name);
-        assert(initialValue?.kind === 'map', 'Map required.');
+        assert(initialValue, 'Map required.');
+        assert(initialValue.kind === 'map', 'Map required.');
         state.variables[path.name] = {
           kind: 'map',
           values: { ...initialValue.values, ...value.values },
