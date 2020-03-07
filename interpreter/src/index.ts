@@ -82,6 +82,8 @@ function run(path: string, debug = false) {
     console.log(`  avg. times: ${average(times).toFixed(2)}`);
     console.log(`  avg. turns: ${average(turns).toFixed(2)}`);
   }
+
+  console.log('Done.');
 }
 
 run(join(__dirname, '../../examples/breakthrough.rg'));

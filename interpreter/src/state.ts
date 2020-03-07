@@ -10,16 +10,16 @@ export function applyLabelBackward(
   switch (label.kind) {
     case 'assignment':
       setVariable(game, state, label.lhs, echo as Value);
-      return;
+      break;
     case 'condition':
-      return;
+      break;
     case 'empty':
-      return;
+      break;
     case 'reachability':
-      return;
+      break;
     case 'switch':
       state.player = echo as null | string;
-      return;
+      break;
   }
 }
 
@@ -27,32 +27,34 @@ export function* applyLabelForward(game: Game, state: State, label: EdgeLabel) {
   switch (label.kind) {
     case 'assignment': {
       const value = evaluateExpression(game, state, label.rhs);
-      let values: Value[];
       if (value.kind === 'wildcard') {
         assert(label.lhs.kind === 'variable', 'Only variable can be *.');
-        values = resolveDomainValues(game, game.variables[label.lhs.name].type);
-      } else values = [value];
-
-      for (const value of values) {
+        const { type } = game.variables[label.lhs.name];
+        for (const value of resolveDomainValues(game, type)) {
+          const previousValue = setVariable(game, state, label.lhs, value);
+          yield previousValue;
+        }
+      } else {
         const previousValue = setVariable(game, state, label.lhs, value);
         yield previousValue;
       }
-      return;
+
+      break;
     }
     case 'condition':
       if (evaluateCondition(game, state, label)) yield;
-      return;
+      break;
     case 'empty':
       yield;
-      return;
+      break;
     case 'reachability':
       if (evaluateReachability(game, state, label)) yield;
-      return;
+      break;
     case 'switch': {
       const previousPlayer = state.player;
       state.player = label.player;
       yield previousPlayer;
-      return;
+      break;
     }
   }
 }
@@ -86,6 +88,7 @@ export function createInitialValue(
       return defaultValue;
     case 'domain-inline':
       assert(false, '"domain-inline" is not implemented yet.');
+      break;
   }
 }
 
