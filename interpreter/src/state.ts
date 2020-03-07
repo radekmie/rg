@@ -76,10 +76,7 @@ export function createInitialValue(
       assert(defaultValue, 'Maps require default value.');
       const values: Record<string, Value> = Object.create(null);
       for (const value of resolveDomainValues(game, type.from)) {
-        assert(
-          value.kind === 'symbol',
-          'Maps of non-symbols is not implemented yet.',
-        );
+        assert(value.kind === 'symbol', 'Only "symbol" maps are implemented.');
         values[value.value] = defaultValue;
       }
       return { kind: 'map', values };
