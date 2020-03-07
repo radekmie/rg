@@ -125,7 +125,10 @@ export function evaluateExpression(
       assert(constant, 'Accessed not existing variable.');
       const argument = evaluateExpression(game, state, expression.argument);
       assert(argument.kind === 'symbol', 'Only "symbol" can access.');
-      return constant.values[argument.value] ?? constant.defaultValue;
+      if (argument.value in constant.values)
+        return constant.values[argument.value];
+      assert(constant.defaultValue, 'No default value provided.');
+      return constant.defaultValue;
     }
     case 'value':
       return expression.value;
