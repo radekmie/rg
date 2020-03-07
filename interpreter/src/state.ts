@@ -31,9 +31,8 @@ export function* applyLabelForward(game: Game, state: State, label: EdgeLabel) {
       if (value.kind === 'wildcard') {
         assert(label.lhs.kind === 'variable', 'Only variable can be *.');
         values = resolveDomainValues(game, game.variables[label.lhs.name].type);
-      } else {
-        values = [value];
-      }
+      } else values = [value];
+
       for (const value of values) {
         const previousValue = setVariable(game, state, label.lhs, value);
         yield previousValue;
@@ -59,7 +58,7 @@ export function* applyLabelForward(game: Game, state: State, label: EdgeLabel) {
 }
 
 export function createInitialState(game: Game): State {
-  const variables: Record<string, null | Value> = {};
+  const variables: Record<string, null | Value> = Object.create(null);
   for (const name in game.variables)
     variables[name] = createInitialValue(game, name);
   return { player: null, position: 0, variables };
@@ -73,7 +72,7 @@ export function createInitialValue(
   switch (type.kind) {
     case 'arrow': {
       assert(defaultValue, 'Maps require default value.');
-      const values: Record<string, Value> = {};
+      const values: Record<string, Value> = Object.create(null);
       for (const value of resolveDomainValues(game, type.from)) {
         assert(
           value.kind === 'symbol',
@@ -219,9 +218,7 @@ export function setVariable(
           kind: 'map',
           values: { ...initialValue.values, ...value.values },
         };
-      } else {
-        state.variables[path.name] = value;
-      }
+      } else state.variables[path.name] = value;
 
       return previousValue;
     }

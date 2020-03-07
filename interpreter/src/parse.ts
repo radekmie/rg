@@ -1,24 +1,21 @@
-import {
-  Constant,
-  Domain,
-  Edge,
-  EdgeLabel,
-  Expression,
-  Game,
-  Type,
-  Value,
-  Variable,
-} from './types';
+import { EdgeLabel, Expression, Game, Type, Value } from './types';
 import { readFileSync } from 'fs';
 
-export function parse(path: string): Game {
+export function parse(path: string) {
   const source = readFileSync(path, { encoding: 'utf-8' });
+  const game: Game = {
+    constants: Object.create(null),
+    domains: Object.create(null),
+    edges: Object.create(null),
+    variables: Object.create(null),
+  };
 
-  const constants = parseConstants(source);
-  const domains = parseDomains(source);
-  const variables = parseVariables(source);
-  const edges = parseEdges(source, variables);
-  return { constants, domains, edges, variables };
+  parseConstants(game, source);
+  parseDomains(game, source);
+  parseVariables(game, source);
+  parseEdges(game, source);
+
+  return game;
 }
 
 export function parseConstantMapping(source: string) {
@@ -29,72 +26,72 @@ export function parseConstantMapping(source: string) {
   return values;
 }
 
-export function parseConstants(source: string) {
+export function parseConstants(game: Game, source: string) {
   const constantPattern = /constant\s+(.+?)\s*:(.+?),\s*default\s*=\s*(.+?)\s*,\s*(.+?);/gs;
-  const constants: Record<string, Constant> = Object.create(null);
   for (const [, name, type, defaultValue, values] of source.matchAll(
     constantPattern,
-  ))
-    constants[name] = {
+  )) {
+    game.constants[name] = {
       defaultValue: defaultValue ? parseValue(defaultValue) : null,
       type: parseType(type),
       values: parseConstantMapping(values + ','),
     };
-  return constants;
+  }
 }
 
 export function parseDomainValues(source: string): Value[] {
   const setPattern = /^\s*\{(.+?)\}\s*$/s;
   const setMatch = setPattern.exec(source);
-  if (setMatch) return setMatch[1].split(/\s*,\s*/).map(parseValue);
+  if (setMatch) {
+    const [, values] = setMatch;
+    return values.split(/\s*,\s*/).map(parseValue);
+  }
 
   throw new Error(`Invalid domain values: "${source}"`);
 }
 
-export function parseDomains(source: string) {
+export function parseDomains(game: Game, source: string) {
   const domainPattern = /domain\s+(.+?)\s*=(.+?);/gs;
-  const domains: Record<string, Domain> = Object.create(null);
   for (const [, name, values] of source.matchAll(domainPattern))
-    domains[name] = { values: parseDomainValues(values) };
-  return domains;
+    game.domains[name] = { values: parseDomainValues(values) };
 }
 
-export function parseEdgeLabel(
-  source: string,
-  variables: Record<string, Variable>,
-): EdgeLabel {
+export function parseEdgeLabel(game: Game, source: string): EdgeLabel {
   const emptyPattern = /^$/;
   const emptyMatch = emptyPattern.exec(source);
   if (emptyMatch) return { kind: 'empty' };
 
   const assignmentPattern = /^\[(.+?)\s*=\s*(.+?)\]$/s;
   const assignmentMatch = assignmentPattern.exec(source);
-  if (assignmentMatch)
+  if (assignmentMatch) {
     return {
       kind: 'assignment',
-      lhs: parseExpression(assignmentMatch[1], variables),
-      rhs: parseExpression(assignmentMatch[2], variables),
+      lhs: parseExpression(game, assignmentMatch[1]),
+      rhs: parseExpression(game, assignmentMatch[2]),
     };
+  }
 
   const conditionPattern = /^\{([!?])\s*(.+?)\s*==\s*(.+?)\}$/s;
   const conditionMatch = conditionPattern.exec(source);
-  if (conditionMatch)
+  if (conditionMatch) {
     return {
       kind: 'condition',
       inverted: conditionMatch[1] === '!',
-      lhs: parseExpression(conditionMatch[2], variables),
-      rhs: parseExpression(conditionMatch[3], variables),
+      lhs: parseExpression(game, conditionMatch[2]),
+      rhs: parseExpression(game, conditionMatch[3]),
     };
+  }
 
   const reachabilityPattern = /^\{([!?])\s*(.+?)\s*->\s*(.+?)\}$/s;
   const reachabilityMatch = reachabilityPattern.exec(source);
-  if (reachabilityMatch)
+  if (reachabilityMatch) {
     return {
       kind: 'reachability',
       inverted: reachabilityMatch[1] === '!',
       lhs: +reachabilityMatch[2],
       rhs: +reachabilityMatch[3],
     };
+  }
 
   const switchPattern = /^->(.*?)$/s;
   const switchMatch = switchPattern.exec(source);
@@ -108,23 +105,15 @@ export function parseEdgeLabel(
   throw new Error(`Invalid edge: "${source}"`);
 }
 
-export function parseEdges(
-  source: string,
-  variables: Record<string, Variable>,
-) {
+export function parseEdges(game: Game, source: string) {
   const edgePattern = /(\d+)\s*,(\d+)\s*:\s*(.*?);/gs;
-  const edges: Record<number, Edge[]> = Object.create(null);
   for (const [, a, b, label] of source.matchAll(edgePattern)) {
-    if (!(a in edges)) edges[+a] = [];
-    edges[+a].push({ a: +a, b: +b, label: parseEdgeLabel(label, variables) });
+    if (!(+a in game.edges)) game.edges[+a] = [];
+    game.edges[+a].push({ a: +a, b: +b, label: parseEdgeLabel(game, label) });
   }
-  return edges;
 }
 
-export function parseExpression(
-  source: string,
-  variables: Record<string, Variable>,
-): Expression {
+export function parseExpression(game: Game, source: string): Expression {
   const accessPattern = /^(.+?)\[(.+?)\]$/s;
   const accessMatch = accessPattern.exec(source);
   if (accessMatch) {
@@ -132,7 +121,7 @@ export function parseExpression(
     return {
       kind: 'variable-access',
       name,
-      key: parseExpression(key, variables),
+      key: parseExpression(game, key),
     };
   }
 
@@ -143,13 +132,11 @@ export function parseExpression(
     return {
       kind: 'constant-call',
       name,
-      argument: parseExpression(argument, variables),
+      argument: parseExpression(game, argument),
     };
   }
 
-  if (source in variables) {
-    return { kind: 'variable', name: source };
-  }
+  if (source in game.variables) return { kind: 'variable', name: source };
 
   return { kind: 'value', value: parseValue(source) };
 }
@@ -157,12 +144,13 @@ export function parseExpression(
 export function parseType(source: string): Type {
   const arrowPattern = /^\s*(.+?)\s*->\s*(.+?)\s*$/s;
   const arrowMatch = arrowPattern.exec(source);
-  if (arrowMatch)
+  if (arrowMatch) {
     return {
       kind: 'arrow',
       from: parseType(arrowMatch[1]),
       to: parseType(arrowMatch[1]),
     };
+  }
 
   const setPattern = /^\s*\{(.+?)\}\s*$/s;
   const setMatch = setPattern.exec(source);
@@ -191,16 +179,15 @@ export function parseValueMapEntries(source: string) {
   return entries;
 }
 
-export function parseVariables(source: string) {
+export function parseVariables(game: Game, source: string) {
   const variablePattern = /var\s+(.+?)\s*:(.+?),\s*(?:default\s*=\s*(.*?)\s*,\s*)?visible\s*=\s*(.+?);/gs;
-  const variables: Record<string, Variable> = Object.create(null);
   for (const [, name, type, defaultValue, visibility] of source.matchAll(
     variablePattern,
-  ))
-    variables[name] = {
+  )) {
+    game.variables[name] = {
       defaultValue: defaultValue ? parseValue(defaultValue) : null,
       type: parseType(type),
       visibility: parseDomainValues(visibility),
     };
-  return variables;
+  }
 }
