@@ -15,11 +15,17 @@ export type Edge = {
 };
 
 export type EdgeLabel =
-  | { kind: 'assignment'; lhs: string; rhs: string }
-  | { kind: 'condition'; inverted: boolean; lhs: string; rhs: string }
+  | { kind: 'assignment'; lhs: Expression; rhs: Expression }
+  | { kind: 'condition'; inverted: boolean; lhs: Expression; rhs: Expression }
   | { kind: 'empty' }
   | { kind: 'reachability'; inverted: boolean; lhs: number; rhs: number }
   | { kind: 'switch'; player: null | string };
+
+export type Expression =
+  | { kind: 'constant-call'; name: string; argument: Expression }
+  | { kind: 'value'; value: Value }
+  | { kind: 'variable'; name: string }
+  | { kind: 'variable-access'; name: string; key: Expression };
 
 export type Game = {
   constants: Record<string, Constant>;

@@ -3,6 +3,7 @@ import {
   Domain,
   Edge,
   EdgeLabel,
+  Expression,
   Game,
   Type,
   Value,
@@ -12,12 +13,12 @@ import { readFileSync } from 'fs';
 
 export function parse(path: string): Game {
   const source = readFileSync(path, { encoding: 'utf-8' });
-  return {
-    constants: parseConstants(source),
-    domains: parseDomains(source),
-    edges: parseEdges(source),
-    variables: parseVariables(source),
-  };
+
+  const constants = parseConstants(source);
+  const domains = parseDomains(source);
+  const variables = parseVariables(source);
+  const edges = parseEdges(source, variables);
+  return { constants, domains, edges, variables };
 }
 
 export function parseConstantMapping(source: string) {
@@ -58,7 +59,10 @@ export function parseDomains(source: string) {
   return domains;
 }
 
-export function parseEdgeLabel(source: string): EdgeLabel {
+export function parseEdgeLabel(
+  source: string,
+  variables: Record<string, Variable>,
+): EdgeLabel {
   const emptyPattern = /^$/;
   const emptyMatch = emptyPattern.exec(source);
   if (emptyMatch) return { kind: 'empty' };
@@ -68,8 +72,8 @@ export function parseEdgeLabel(source: string): EdgeLabel {
   if (assignmentMatch)
     return {
       kind: 'assignment',
-      lhs: assignmentMatch[1],
-      rhs: assignmentMatch[2],
+      lhs: parseExpression(assignmentMatch[1], variables),
+      rhs: parseExpression(assignmentMatch[2], variables),
     };
 
   const conditionPattern = /^\{([!?])\s*(.+?)\s*==\s*(.+?)\}$/s;
@@ -78,8 +82,8 @@ export function parseEdgeLabel(source: string): EdgeLabel {
     return {
       kind: 'condition',
       inverted: conditionMatch[1] === '!',
-      lhs: conditionMatch[2],
-      rhs: conditionMatch[3],
+      lhs: parseExpression(conditionMatch[2], variables),
+      rhs: parseExpression(conditionMatch[3], variables),
     };
 
   const reachabilityPattern = /^\{([!?])\s*(.+?)\s*->\s*(.+?)\}$/s;
@@ -104,14 +108,50 @@ export function parseEdgeLabel(source: string): EdgeLabel {
   throw new Error(`Invalid edge: "${source}"`);
 }
 
-export function parseEdges(source: string) {
+export function parseEdges(
+  source: string,
+  variables: Record<string, Variable>,
+) {
   const edgePattern = /(\d+)\s*,(\d+)\s*:\s*(.*?);/gs;
   const edges: Record<number, Edge[]> = {};
   for (const [, a, b, label] of source.matchAll(edgePattern)) {
     if (!(a in edges)) edges[+a] = [];
-    edges[+a].push({ a: +a, b: +b, label: parseEdgeLabel(label) });
+    edges[+a].push({ a: +a, b: +b, label: parseEdgeLabel(label, variables) });
   }
   return edges;
+}
+
+export function parseExpression(
+  source: string,
+  variables: Record<string, Variable>,
+): Expression {
+  const accessPattern = /^(.+?)\[(.+?)\]$/s;
+  const accessMatch = accessPattern.exec(source);
+  if (accessMatch) {
+    const [, name, key] = accessMatch;
+    return {
+      kind: 'variable-access',
+      name,
+      key: parseExpression(key, variables),
+    };
+  }
+
+  const constantCallPattern = /^(.+?)\((.+?)\)$/s;
+  const constantCallMatch = constantCallPattern.exec(source);
+  if (constantCallMatch) {
+    const [, name, argument] = constantCallMatch;
+    return {
+      kind: 'constant-call',
+      name,
+      argument: parseExpression(argument, variables),
+    };
+  }
+
+  if (source in variables) {
+    return { kind: 'variable', name: source };
+  }
+
+  return { kind: 'value', value: parseValue(source) };
 }
 
 export function parseType(source: string): Type {

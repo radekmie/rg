@@ -1,6 +1,5 @@
-import { EdgeLabel, Game, State, Type, Value } from './types';
+import { EdgeLabel, Expression, Game, State, Type, Value } from './types';
 import { assert } from './utils';
-import { parseValue } from './parse';
 
 export function applyLabelBackward(
   game: Game,
@@ -28,10 +27,13 @@ export function* applyLabelForward(game: Game, state: State, label: EdgeLabel) {
   switch (label.kind) {
     case 'assignment': {
       const value = evaluateExpression(game, state, label.rhs);
-      const values =
-        value.kind === 'wildcard'
-          ? resolveDomainValues(game, game.variables[label.lhs].type)
-          : [value];
+      let values: Value[];
+      if (value.kind === 'wildcard') {
+        assert(label.lhs.kind === 'variable', 'Only variable can be *.');
+        values = resolveDomainValues(game, game.variables[label.lhs.name].type);
+      } else {
+        values = [value];
+      }
       for (const value of values) {
         const previousValue = setVariable(game, state, label.lhs, value);
         yield previousValue;
@@ -115,40 +117,34 @@ export function evaluateEquality(lhs: Value, rhs: Value) {
 export function evaluateExpression(
   game: Game,
   state: State,
-  expression: string,
+  expression: Expression,
 ): Value {
-  const accessPattern = /^(.+?)\[(.+?)\]$/s;
-  const accessMatch = accessPattern.exec(expression);
-  if (accessMatch) {
-    const [, variable, keyExpression] = accessMatch;
-    const value = state.variables[variable];
-    assert(value, 'Only existing "map" can be accessed.');
-    assert(value.kind === 'map', 'Only "map" can be accessed.');
-    const key = evaluateExpression(game, state, keyExpression);
-    assert(key.kind === 'symbol', 'Only "symbol" can be used for an access.');
-    return value.values[key.value];
+  switch (expression.kind) {
+    case 'constant-call': {
+      const constant = game.constants[expression.name];
+      assert(constant, 'Accessed not existing variable.');
+      const argument = evaluateExpression(game, state, expression.argument);
+      assert(argument.kind === 'symbol', 'Only "symbol" can access.');
+      return constant.values[argument.value] ?? constant.defaultValue;
+    }
+    case 'value':
+      return expression.value;
+    case 'variable': {
+      const value = state.variables[expression.name];
+      assert(value, 'Accessed not existing variable.');
+      return value;
+    }
+    case 'variable-access': {
+      const value = state.variables[expression.name];
+      assert(value, 'Accessed not existing variable.');
+      assert(value.kind === 'map', 'Accessed not map.');
+      const key = evaluateExpression(game, state, expression.key);
+      assert(key.kind === 'symbol', 'Only "symbol" can access.');
+      const valueAtKey = value.values[key.value];
+      assert(valueAtKey, 'Accessed not existing key.');
+      return valueAtKey;
+    }
   }
-
-  const constantCallPattern = /^(.+?)\((.+?)\)$/s;
-  const constantCallMatch = constantCallPattern.exec(expression);
-  if (constantCallMatch) {
-    const [, constantName, argumentExpression] = constantCallMatch;
-    const constant = game.constants[constantName];
-    const argument = evaluateExpression(game, state, argumentExpression);
-    assert(
-      argument.kind === 'symbol',
-      'Only "symbol" can be used as an argument.',
-    );
-    return constant.values[argument.value] ?? constant.defaultValue;
-  }
-
-  if (expression in state.variables) {
-    const value = state.variables[expression];
-    assert(value, `"${expression}" accessed while not being set.`);
-    return value;
-  }
-
-  return parseValue(expression);
 }
 
 export function evaluateReachability(
@@ -199,36 +195,41 @@ export function resolveDomainValues(game: Game, type: Type): Value[] {
 export function setVariable(
   game: Game,
   state: State,
-  path: string,
+  path: Expression,
   value: Value,
 ) {
-  const accessPattern = /^(.+?)(?:\[(.+?)\])?$/s;
-  const accessMatch = accessPattern.exec(path);
-  assert(accessMatch, 'Invalid path.');
-  const [, variable, keyExpression] = accessMatch;
+  switch (path.kind) {
+    case 'constant-call':
+      assert(false, 'Cannot assign to a call.');
+      break;
+    case 'value':
+      assert(false, 'Cannot assign to a value.');
+      break;
+    case 'variable': {
+      const previousValue = state.variables[path.name];
+      if (game.variables[path.name].type.kind === 'arrow') {
+        assert(value.kind === 'map', 'Map required.');
+        const initialValue = createInitialValue(game, path.name);
+        assert(initialValue?.kind === 'map', 'Map required.');
+        state.variables[path.name] = {
+          kind: 'map',
+          values: { ...initialValue.values, ...value.values },
+        };
+      } else {
+        state.variables[path.name] = value;
+      }
 
-  const previousValue = state.variables[variable];
-  if (keyExpression === undefined) {
-    if (game.variables[variable].type.kind === 'arrow') {
-      assert(value.kind === 'map', 'Map required.');
-      const initialValue = createInitialValue(game, variable);
-      assert(initialValue?.kind === 'map', 'Map required.');
-      state.variables[variable] = {
-        kind: 'map',
-        values: { ...initialValue.values, ...value.values },
-      };
-    } else {
-      state.variables[variable] = value;
+      return previousValue;
     }
-
-    return previousValue;
+    case 'variable-access': {
+      const previousValue = state.variables[path.name];
+      assert(previousValue, 'Only existing "map" can be accessed.');
+      assert(previousValue.kind === 'map', 'Only "map" can be accessed.');
+      const key = evaluateExpression(game, state, path.key);
+      assert(key.kind === 'symbol', 'Only "symbol" can access.');
+      const previousKeyValue = previousValue.values[key.value];
+      previousValue.values[key.value] = value;
+      return previousKeyValue;
+    }
   }
-
-  assert(previousValue, 'Only existing "map" can be accessed.');
-  assert(previousValue.kind === 'map', 'Only "map" can be accessed.');
-  const key = evaluateExpression(game, state, keyExpression);
-  assert(key.kind === 'symbol', 'Only "symbol" can be used for an access.');
-  const previousKeyValue = previousValue.values[key.value];
-  previousValue.values[key.value] = value;
-  return previousKeyValue;
 }
