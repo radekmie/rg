@@ -60,7 +60,7 @@ export function* applyLabelForward(game: Game, state: State, label: EdgeLabel) {
 
 export function createInitialState(game: Game): State {
   const variables: Record<string, null | Value> = {};
-  for (const name of Object.keys(game.variables))
+  for (const name in game.variables)
     variables[name] = createInitialValue(game, name);
   return { player: null, position: 0, variables };
 }
@@ -102,7 +102,7 @@ export function evaluateEquality(lhs: Value, rhs: Value) {
   switch (lhs.kind) {
     case 'map':
       if (lhs.kind !== rhs.kind) return false;
-      for (const key of Object.keys(lhs.values))
+      for (const key in lhs.values)
         if (!evaluateEquality(lhs.values[key], rhs.values[key])) return false;
       return true;
     case 'symbol':

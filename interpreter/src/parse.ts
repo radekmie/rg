@@ -23,7 +23,7 @@ export function parse(path: string): Game {
 
 export function parseConstantMapping(source: string) {
   const valuePattern = /.+?\((.+?)\)\s*=\s*(.*?)\s*,/gs;
-  const values: Record<string, Value> = {};
+  const values: Record<string, Value> = Object.create(null);
   for (const [, argument, value] of source.matchAll(valuePattern))
     values[argument] = parseValue(value);
   return values;
@@ -31,7 +31,7 @@ export function parseConstantMapping(source: string) {
 
 export function parseConstants(source: string) {
   const constantPattern = /constant\s+(.+?)\s*:(.+?),\s*default\s*=\s*(.+?)\s*,\s*(.+?);/gs;
-  const constants: Record<string, Constant> = {};
+  const constants: Record<string, Constant> = Object.create(null);
   for (const [, name, type, defaultValue, values] of source.matchAll(
     constantPattern,
   ))
@@ -53,7 +53,7 @@ export function parseDomainValues(source: string): Value[] {
 
 export function parseDomains(source: string) {
   const domainPattern = /domain\s+(.+?)\s*=(.+?);/gs;
-  const domains: Record<string, Domain> = {};
+  const domains: Record<string, Domain> = Object.create(null);
   for (const [, name, values] of source.matchAll(domainPattern))
     domains[name] = { values: parseDomainValues(values) };
   return domains;
@@ -113,7 +113,7 @@ export function parseEdges(
   variables: Record<string, Variable>,
 ) {
   const edgePattern = /(\d+)\s*,(\d+)\s*:\s*(.*?);/gs;
-  const edges: Record<number, Edge[]> = {};
+  const edges: Record<number, Edge[]> = Object.create(null);
   for (const [, a, b, label] of source.matchAll(edgePattern)) {
     if (!(a in edges)) edges[+a] = [];
     edges[+a].push({ a: +a, b: +b, label: parseEdgeLabel(label, variables) });
@@ -185,7 +185,7 @@ export function parseValue(source: string): Value {
 
 export function parseValueMapEntries(source: string) {
   const entryPattern = /\s*(.+?)\s*=\s*(.+?),/gs;
-  const entries: Record<string, Value> = {};
+  const entries: Record<string, Value> = Object.create(null);
   for (const [, name, value] of source.matchAll(entryPattern))
     entries[name] = parseValue(value);
   return entries;
@@ -193,7 +193,7 @@ export function parseValueMapEntries(source: string) {
 
 export function parseVariables(source: string) {
   const variablePattern = /var\s+(.+?)\s*:(.+?),\s*(?:default\s*=\s*(.*?)\s*,\s*)?visible\s*=\s*(.+?);/gs;
-  const variables: Record<string, Variable> = {};
+  const variables: Record<string, Variable> = Object.create(null);
   for (const [, name, type, defaultValue, visibility] of source.matchAll(
     variablePattern,
   ))
