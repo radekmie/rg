@@ -1,64 +1,6 @@
 import { EdgeLabel, Expression, Game, State, Type, Value } from './types';
 import { assert } from './utils';
 
-export function applyLabelBackward(
-  game: Game,
-  state: State,
-  label: EdgeLabel,
-  echo: unknown,
-) {
-  switch (label.kind) {
-    case 'assignment':
-      setVariable(game, state, label.lhs, echo as Value);
-      break;
-    case 'condition':
-      break;
-    case 'empty':
-      break;
-    case 'reachability':
-      break;
-    case 'switch':
-      state.player = echo as null | string;
-      break;
-  }
-}
-
-export function* applyLabelForward(game: Game, state: State, label: EdgeLabel) {
-  switch (label.kind) {
-    case 'assignment': {
-      const value = evaluateExpression(game, state, label.rhs);
-      if (value.kind === 'wildcard') {
-        assert(label.lhs.kind === 'variable', 'Only variable can be *.');
-        const { type } = game.variables[label.lhs.name];
-        for (const value of resolveDomainValues(game, type)) {
-          const previousValue = setVariable(game, state, label.lhs, value);
-          yield previousValue;
-        }
-      } else {
-        const previousValue = setVariable(game, state, label.lhs, value);
-        yield previousValue;
-      }
-
-      break;
-    }
-    case 'condition':
-      if (evaluateCondition(game, state, label)) yield;
-      break;
-    case 'empty':
-      yield;
-      break;
-    case 'reachability':
-      if (evaluateReachability(game, state, label)) yield;
-      break;
-    case 'switch': {
-      const previousPlayer = state.player;
-      state.player = label.player;
-      yield previousPlayer;
-      break;
-    }
-  }
-}
-
 export function createInitialState(game: Game): State {
   const variables: Record<string, null | Value> = Object.create(null);
   for (const name in game.variables)
@@ -167,19 +109,55 @@ export function evaluateReachability(
 export function* nextStates(
   game: Game,
   state: State,
-): Generator<State, void, unknown> {
+): Generator<State, void, undefined> {
   if (!(state.position in game.edges)) return;
-  for (const edge of game.edges[state.position]) {
-    for (const echo of applyLabelForward(game, state, edge.label)) {
-      state.position = edge.b;
-
-      if (edge.label.kind === 'switch') yield state;
-      else yield* nextStates(game, state);
-
-      state.position = edge.a;
-      applyLabelBackward(game, state, edge.label, echo);
+  for (const { a, b, label } of game.edges[state.position]) {
+    state.position = b;
+    switch (label.kind) {
+      case 'assignment': {
+        for (const value of resolveAssignedValues(game, state, label)) {
+          const previousValue = setVariable(game, state, label.lhs, value);
+          yield* nextStates(game, state);
+          setVariable(game, state, label.lhs, previousValue);
+        }
+        break;
+      }
+      case 'condition':
+        if (evaluateCondition(game, state, label))
+          yield* nextStates(game, state);
+        break;
+      case 'empty':
+        yield* nextStates(game, state);
+        break;
+      case 'reachability':
+        if (evaluateReachability(game, state, label))
+          yield* nextStates(game, state);
+        break;
+      case 'switch': {
+        const previousPlayer = state.player;
+        state.player = label.player;
+        yield state;
+        state.player = previousPlayer;
+        break;
+      }
     }
+    state.position = a;
   }
+}
+
+export function resolveAssignedValues(
+  game: Game,
+  state: State,
+  label: EdgeLabel,
+) {
+  assert(label.kind === 'assignment', 'Expected "assignment".');
+  const value = evaluateExpression(game, state, label.rhs);
+  if (value.kind === 'wildcard') {
+    assert(label.lhs.kind === 'variable', 'Only variable can be *.');
+    return resolveDomainValues(game, game.variables[label.lhs.name].type);
+  }
+
+  return [value];
 }
 
 export function resolveDomainValues(game: Game, type: Type): Value[] {
@@ -198,8 +176,8 @@ export function setVariable(
   game: Game,
   state: State,
   path: Expression,
-  value: Value,
-) {
+  value: null | Value,
+): null | Value {
   switch (path.kind) {
     case 'constant-call':
       assert(false, 'Cannot assign to a call.');
@@ -210,6 +188,7 @@ export function setVariable(
     case 'variable': {
       const previousValue = state.variables[path.name];
       if (game.variables[path.name].type.kind === 'arrow') {
+        assert(value, 'Map required.');
         assert(value.kind === 'map', 'Map required.');
         const initialValue = createInitialValue(game, path.name);
         assert(initialValue, 'Map required.');
@@ -223,6 +202,7 @@ export function setVariable(
       return previousValue;
     }
     case 'variable-access': {
+      assert(value, 'Only existing value can be set.');
       const previousValue = state.variables[path.name];
       assert(previousValue, 'Only existing "map" can be accessed.');
       assert(previousValue.kind === 'map', 'Only "map" can be accessed.');
