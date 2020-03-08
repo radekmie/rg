@@ -14,15 +14,8 @@ export function createInitialValue(
 ): null | Value {
   const { defaultValue, type } = game.variables[variableName];
   switch (type.kind) {
-    case 'arrow': {
-      assert(defaultValue, 'Maps require default value.');
-      const values: Record<string, Value> = Object.create(null);
-      for (const value of resolveDomainValues(game, type.from)) {
-        assert(value.kind === 'symbol', 'Only "symbol" maps are implemented.');
-        values[value.value] = defaultValue;
-      }
-      return { kind: 'map', values };
-    }
+    case 'arrow':
+      return { kind: 'map', values: Object.create(null) };
     case 'domain':
       return defaultValue;
     case 'domain-inline':
@@ -85,9 +78,10 @@ export function evaluateExpression(
       assert(value.kind === 'map', 'Accessed not map.');
       const key = evaluateExpression(game, state, expression.key);
       assert(key.kind === 'symbol', 'Only "symbol" can access.');
-      const valueAtKey = value.values[key.value];
-      assert(valueAtKey, 'Accessed not existing key.');
-      return valueAtKey;
+      if (key.value in value.values) return value.values[key.value];
+      const variable = game.variables[expression.name];
+      assert(variable.defaultValue, 'No default value provided.');
+      return variable.defaultValue;
     }
   }
 }
@@ -194,23 +188,29 @@ export function setVariable(
         const initialValue = createInitialValue(game, path.name);
         assert(initialValue, 'Map required.');
         assert(initialValue.kind === 'map', 'Map required.');
-        state.variables[path.name] = {
-          kind: 'map',
-          values: { ...initialValue.values, ...value.values },
-        };
+        state.variables[path.name] = { kind: 'map', values: value.values };
       } else state.variables[path.name] = value;
 
       return previousValue;
     }
     case 'variable-access': {
-      assert(value, 'Only existing value can be set.');
       const previousValue = state.variables[path.name];
       assert(previousValue, 'Only existing "map" can be accessed.');
       assert(previousValue.kind === 'map', 'Only "map" can be accessed.');
       const key = evaluateExpression(game, state, path.key);
       assert(key.kind === 'symbol', 'Only "symbol" can access.');
-      const previousKeyValue = previousValue.values[key.value];
-      previousValue.values[key.value] = value;
+      const previousKeyValue =
+        key.value in previousValue.values
+          ? previousValue.values[key.value]
+          : null;
+      if (value === null) delete previousValue.values[key.value];
+      else {
+        const variable = game.variables[path.name];
+        assert(variable.defaultValue, 'No default value provided.');
+        if (evaluateEquality(value, variable.defaultValue))
+          delete previousValue.values[key.value];
+        else previousValue.values[key.value] = value;
+      }
       return previousKeyValue;
     }
   }
