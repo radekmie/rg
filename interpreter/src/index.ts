@@ -4,6 +4,30 @@ import { createInitialState, nextStates } from './state';
 import { join } from 'path';
 import { parse } from './parse';
 
+function cloneState(state: State): State {
+  const variables: Record<string, null | Value> = Object.create(null);
+  for (const variable in state.variables) {
+    const value = state.variables[variable];
+    variables[variable] = value === null ? null : cloneValue(value);
+  }
+  return { player: state.player, position: state.position, variables };
+}
+
+function cloneValue(value: Value): Value {
+  switch (value.kind) {
+    case 'map': {
+      const values: Record<string, Value> = Object.create(null);
+      for (const key in value.values)
+        values[key] = cloneValue(value.values[key]);
+      return { kind: 'map', values };
+    }
+    case 'symbol':
+      return value;
+    case 'wildcard':
+      return value;
+  }
+}
+
 function displayState(state: State) {
   const variables = displayVariables(state.variables, '    ');
   return `${state.player ?? '(keeper)'} at ${state.position} vars ${variables}`;
@@ -58,12 +82,12 @@ function run(path: string, debug = false) {
     let turn = 0;
     for (;;) {
       if (debug) console.log(displayState(state));
-      const states: string[] = [];
+      const states: State[] = [];
       for (const nextState of nextStates(game, state))
-        states.push(JSON.stringify(nextState));
+        states.push(cloneState(nextState));
       if (states.length === 0) break;
       moves.push(states.length);
-      state = JSON.parse(states[Math.floor(states.length * Math.random())]);
+      state = states[Math.floor(states.length * Math.random())];
       ++turn;
     }
 

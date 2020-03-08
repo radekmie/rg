@@ -40,6 +40,7 @@ export function evaluateCondition(game: Game, state: State, label: EdgeLabel) {
 }
 
 export function evaluateEquality(lhs: Value, rhs: Value) {
+  if (lhs === rhs) return true;
   switch (lhs.kind) {
     case 'map':
       if (lhs.kind !== rhs.kind) return false;

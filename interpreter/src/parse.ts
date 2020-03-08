@@ -39,12 +39,17 @@ export function parseConstants(game: Game, source: string) {
   }
 }
 
+const domainsCache: Record<string, Value[]> = Object.create(null);
 export function parseDomainValues(source: string): Value[] {
+  source = source.replace(/\s+/g, '');
+
+  if (source in domainsCache) return domainsCache[source];
+
   const setPattern = /^\s*\{(.+?)\}\s*$/s;
   const setMatch = setPattern.exec(source);
   if (setMatch) {
     const [, values] = setMatch;
-    return values.split(/\s*,\s*/).map(parseValue);
+    return (domainsCache[source] = values.split(/\s*,\s*/).map(parseValue));
   }
 
   throw new Error(`Invalid domain values: "${source}"`);
@@ -141,34 +146,51 @@ export function parseExpression(game: Game, source: string): Expression {
   return { kind: 'value', value: parseValue(source) };
 }
 
+const typesCache: Record<string, Type> = Object.create(null);
 export function parseType(source: string): Type {
-  const arrowPattern = /^\s*(.+?)\s*->\s*(.+?)\s*$/s;
+  source = source.replace(/\s+/g, '');
+
+  if (source in typesCache) return typesCache[source];
+
+  const arrowPattern = /^(.+?)->(.+?)$/s;
   const arrowMatch = arrowPattern.exec(source);
   if (arrowMatch) {
-    return {
+    return (typesCache[source] = {
       kind: 'arrow',
       from: parseType(arrowMatch[1]),
       to: parseType(arrowMatch[1]),
-    };
+    });
   }
 
-  const setPattern = /^\s*\{(.+?)\}\s*$/s;
+  const setPattern = /^\{(.+?)\}$/s;
   const setMatch = setPattern.exec(source);
-  if (setMatch)
-    return { kind: 'domain-inline', values: parseDomainValues(source) };
+  if (setMatch) {
+    return (typesCache[source] = {
+      kind: 'domain-inline',
+      values: parseDomainValues(source),
+    });
+  }
 
-  return { kind: 'domain', name: source.trim() };
+  return (typesCache[source] = { kind: 'domain', name: source });
 }
 
+const symbolsCache: Record<string, Value> = Object.create(null);
 export function parseValue(source: string): Value {
-  if (source === '*') return { kind: 'wildcard' };
+  source = source.replace(/\s+/g, '');
 
-  const mapPattern = /^\s*\{(.+?)\}\s*$/s;
+  if (source in symbolsCache) return symbolsCache[source];
+  if (source === '*') return (symbolsCache[source] = { kind: 'wildcard' });
+
+  const mapPattern = /^\{(.+?)\}$/s;
   const mapMatch = mapPattern.exec(source);
-  if (mapMatch)
-    return { kind: 'map', values: parseValueMapEntries(mapMatch[1] + ',') };
+  if (mapMatch) {
+    return (symbolsCache[source] = {
+      kind: 'map',
+      values: parseValueMapEntries(mapMatch[1] + ','),
+    });
+  }
 
-  return { kind: 'symbol', value: source.trim() };
+  return (symbolsCache[source] = { kind: 'symbol', value: source });
 }
 
 export function parseValueMapEntries(source: string) {
