@@ -1,4 +1,4 @@
-import { State, Value } from './types';
+import { Game, State, Value } from './types';
 import { average } from './utils';
 import { createInitialState, nextStates } from './state';
 import { join } from 'path';
@@ -68,15 +68,31 @@ function displayVariables(
   return `{\n${indent}${lines.join(`\n${indent}`)} }`;
 }
 
-function run(path: string, debug = false) {
-  const game = parse(path);
+function* nextStatesN(
+  game: Game,
+  state: State,
+  depth: number,
+): Generator<State, void, undefined> {
+  if (depth === 0) yield state;
+  else {
+    for (const _ of nextStates(game, state))
+      yield* nextStatesN(game, state, depth - 1);
+  }
+}
 
+function perf(game: Game, depth: number) {
+  let count = 0;
+  for (const _ of nextStatesN(game, createInitialState(game), depth)) ++count;
+  console.log(`perf(depth: ${depth}) = ${count}`);
+}
+
+function run(game: Game, plays = 1, debug = false) {
   const moves: number[] = [];
   const stats: number[] = [];
   const times: number[] = [];
   const turns: number[] = [];
 
-  for (let play = 1; play <= 100; ++play) {
+  for (let play = 1; play <= plays; ++play) {
     const now = process.hrtime();
     let state = createInitialState(game);
     let turn = 0;
@@ -86,9 +102,9 @@ function run(path: string, debug = false) {
       for (const nextState of nextStates(game, state))
         states.push(cloneState(nextState));
       if (states.length === 0) break;
-      moves.push(states.length);
+      if (state.player !== null) moves.push(states.length);
       state = states[Math.floor(states.length * Math.random())];
-      ++turn;
+      if (state.player !== null) ++turn;
     }
 
     const [s, ns] = process.hrtime(now);
@@ -106,8 +122,8 @@ function run(path: string, debug = false) {
     console.log(`  avg. times: ${average(times).toFixed(2)}`);
     console.log(`  avg. turns: ${average(turns).toFixed(2)}`);
   }
-
-  console.log('Done.');
 }
 
-run(join(__dirname, '../../examples/breakthrough.rg'));
+const game = parse(join(__dirname, '../../examples/breakthrough.rg'));
+run(game, 100);
+perf(game, 2);
