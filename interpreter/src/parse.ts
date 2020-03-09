@@ -20,10 +20,10 @@ export function parse(path: string) {
 
 export function parseConstantMapping(source: string) {
   const valuePattern = /.+?\((.+?)\)\s*=\s*(.*?)\s*,/gs;
-  const values: Record<string, Value> = Object.create(null);
+  const mapping: [Value, Value][] = [];
   for (const [, argument, value] of source.matchAll(valuePattern))
-    values[argument] = parseValue(value);
-  return values;
+    mapping.push([parseValue(argument), parseValue(value)]);
+  return mapping;
 }
 
 export function parseConstants(game: Game, source: string) {
@@ -33,8 +33,8 @@ export function parseConstants(game: Game, source: string) {
   )) {
     game.constants[name] = {
       defaultValue: defaultValue ? parseValue(defaultValue) : null,
+      mapping: parseConstantMapping(values + ','),
       type: parseType(type),
-      values: parseConstantMapping(values + ','),
     };
   }
 }

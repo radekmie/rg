@@ -60,8 +60,8 @@ export function evaluateExpression(
       assert(constant, 'Accessed not existing variable.');
       const argument = evaluateExpression(game, state, expression.argument);
       assert(argument.kind === 'symbol', 'Only "symbol" can access.');
-      if (argument.value in constant.values)
-        return constant.values[argument.value];
+      for (const [mapArgument, mapResult] of constant.mapping)
+        if (evaluateEquality(argument, mapArgument)) return mapResult;
       assert(constant.defaultValue, 'No default value provided.');
       return constant.defaultValue;
     }

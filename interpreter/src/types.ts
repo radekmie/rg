@@ -1,7 +1,7 @@
 export type Constant = {
   defaultValue: null | Value;
+  mapping: [Value, Value][];
   type: Type;
-  values: Record<string, Value>;
 };
 
 export type Domain = {
