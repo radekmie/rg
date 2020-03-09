@@ -158,7 +158,7 @@ export function parseType(source: string): Type {
     return (typesCache[source] = {
       kind: 'arrow',
       from: parseType(arrowMatch[1]),
-      to: parseType(arrowMatch[1]),
+      to: parseType(arrowMatch[2]),
     });
   }
 
