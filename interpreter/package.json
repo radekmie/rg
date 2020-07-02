@@ -3,8 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "build": "tsc -w",
     "lint": "eslint --ext ts src",
-    "start": "tsc -w"
+    "start": "node lib/index.js"
   },
   "devDependencies": {
     "@types/node": "13.7.7",
