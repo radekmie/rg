@@ -3,8 +3,8 @@
 $ npm ci
 
 # Start compilation watcher.
-$ npm start
+$ npm run build
 
 # Run an example.
-$ node ./lib
+$ node start
 ```
