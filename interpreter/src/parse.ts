@@ -76,24 +76,24 @@ export function parseEdgeLabel(game: Game, source: string): EdgeLabel {
     };
   }
 
-  const conditionPattern = /^\{([!?])\s*(.+?)\s*==\s*(.+?)\}$/s;
+  const conditionPattern = /^\{\?\s*(.+?)\s*(==|!=)\s*(.+?)\}$/s;
   const conditionMatch = conditionPattern.exec(source);
   if (conditionMatch !== null) {
     return {
       kind: 'condition',
-      inverted: conditionMatch[1] === '!',
-      lhs: parseExpression(game, conditionMatch[2]),
+      inverted: conditionMatch[2] === '!=',
+      lhs: parseExpression(game, conditionMatch[1]),
       rhs: parseExpression(game, conditionMatch[3]),
     };
   }
 
-  const reachabilityPattern = /^\{([!?])\s*(.+?)\s*->\s*(.+?)\}$/s;
+  const reachabilityPattern = /^\{~\s*(.+?)\s*(\?>|!>)\s*(.+?)\}$/s;
   const reachabilityMatch = reachabilityPattern.exec(source);
   if (reachabilityMatch !== null) {
     return {
       kind: 'reachability',
-      inverted: reachabilityMatch[1] === '!',
-      lhs: +reachabilityMatch[2],
+      inverted: reachabilityMatch[2] === '!>',
+      lhs: +reachabilityMatch[1],
       rhs: +reachabilityMatch[3],
     };
   }

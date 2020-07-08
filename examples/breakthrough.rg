@@ -80,13 +80,13 @@ var pos: squares, visible={white,black};
 10,11: [pos=*];
 11,12: {? board[pos]==w};
 12,13: [board[pos]=e];
-13,14: {! up(pos)==null};
+13,14: {? up(pos)!=null};
 14,15: [pos=up(pos)];
 // Branch left
-15,16: {! left(pos)==null};
+15,16: {? left(pos)!=null};
 16,18: [pos=left(pos)];
 // Branch right
-15,17: {! right(pos)==null};
+15,17: {? right(pos)!=null};
 17,18: [pos=right(pos)];
 // Branch up
 15,18: {? board[pos]==e};
@@ -96,26 +96,26 @@ var pos: squares, visible={white,black};
 20,21: ->>; // Keeper switch
 
 21,22: {? up(pos)==null}; // Reach line win
-21,23: {! 40->51}; // Opponent has no legal move
+21,23: {~ 40!>51}; // Opponent has no legal move
 22,24: ; // Empty transition
 23,24: ;
 24,25: [white=100];
 25,26: [black=0];
 26,27: ->>; // Keeper ending with no move
-21,28: {! up(pos)==null};
-28,29: {? 40->51};
+21,28: {? up(pos)!=null};
+28,29: {~ 40?>51};
 29,40: ->black;
 
 40,41: [pos=*];
 41,42: {? board[pos]==b};
 42,43: [board[pos]=e];
-43,44: {! down(pos)==null};
+43,44: {? down(pos)!=null};
 44,45: [pos=down(pos)];
 // Branch left
-45,46: {! left(pos)==null};
+45,46: {? left(pos)!=null};
 46,48: [pos=left(pos)];
 // Branch right
-45,47: {! right(pos)==null};
+45,47: {? right(pos)!=null};
 47,48: [pos=right(pos)];
 // Branch up
 45,48: {? board[pos]==e};
@@ -125,12 +125,12 @@ var pos: squares, visible={white,black};
 50,51: ->>; // Keeper switch
 
 51,52: {? down(pos)==null}; // Reach line win
-51,53: {! 10->21}; // Opponent has no legal move
+51,53: {~ 10!>21}; // Opponent has no legal move
 52,54: ;
 53,54: ;
 54,55: [white=0];
 55,56: [black=100];
 56,57: ->>; // Keeper ending with no move
-51,58: {! down(pos)==null};
-58,59: {? 10->21};
+51,58: {? down(pos)!=null};
+58,59: {~ 10?>21};
 59,10: ->white;
