@@ -200,7 +200,7 @@ export function setVariable(
         }
         case 'domain':
         case 'domain-inline':
-          if (value) {
+          if (value !== null) {
             const domainVs = resolveDomainValues(game, type);
             if (!domainVs.some(domainV => evaluateEquality(domainV, value)))
               assert(false, 'Invalid assignment.');
