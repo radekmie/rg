@@ -96,14 +96,14 @@ var pos: squares, visible={white,black};
 20,21: ->>; // Keeper switch
 
 21,22: {? up(pos)==null}; // Reach line win
-21,23: {~ 40!>51}; // Opponent has no legal move
+21,23: {> 40 !-> 51}; // Opponent has no legal move
 22,24: ; // Empty transition
 23,24: ;
 24,25: [white=100];
 25,26: [black=0];
 26,27: ->>; // Keeper ending with no move
 21,28: {? up(pos)!=null};
-28,29: {~ 40?>51};
+28,29: {> 40 ?-> 51};
 29,40: ->black;
 
 40,41: [pos=*];
@@ -125,12 +125,12 @@ var pos: squares, visible={white,black};
 50,51: ->>; // Keeper switch
 
 51,52: {? down(pos)==null}; // Reach line win
-51,53: {~ 10!>21}; // Opponent has no legal move
+51,53: {> 10 !-> 21}; // Opponent has no legal move
 52,54: ;
 53,54: ;
 54,55: [white=0];
 55,56: [black=100];
 56,57: ->>; // Keeper ending with no move
 51,58: {? down(pos)!=null};
-58,59: {~ 10?>21};
+58,59: {> 10 ?-> 21};
 59,10: ->white;

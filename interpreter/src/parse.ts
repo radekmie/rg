@@ -87,12 +87,12 @@ export function parseEdgeLabel(game: Game, source: string): EdgeLabel {
     };
   }
 
-  const reachabilityPattern = /^\{~\s*(.+?)\s*(\?>|!>)\s*(.+?)\}$/s;
+  const reachabilityPattern = /^\{>\s*(.+?)\s*(\?->|!->)\s*(.+?)\}$/s;
   const reachabilityMatch = reachabilityPattern.exec(source);
   if (reachabilityMatch !== null) {
     return {
       kind: 'reachability',
-      inverted: reachabilityMatch[2] === '!>',
+      inverted: reachabilityMatch[2] === '!->',
       lhs: +reachabilityMatch[1],
       rhs: +reachabilityMatch[3],
     };
