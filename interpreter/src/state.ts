@@ -60,7 +60,6 @@ export function evaluateExpression(
       assert(argument.kind === 'symbol', 'Only "symbol" can access.');
       for (const [mapArgument, mapResult] of constant.mapping)
         if (evaluateEquality(argument, mapArgument)) return mapResult;
-      assert(constant.type.defaultValue, 'No default value provided.');
       return constant.type.defaultValue;
     }
     case 'value':
