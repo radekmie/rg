@@ -19,7 +19,7 @@ export function parse(path: string) {
 }
 
 export function parseConstantMapping(source: string) {
-  const valuePattern = /.+?\((.+?)\)\s*=\s*(.*?)\s*,/gs;
+  const valuePattern = /\s*(\w+?)\s*=\s*(\w+?)\s*,/gs;
   const mapping: [Value, Value][] = [];
   for (const [, argument, value] of source.matchAll(valuePattern))
     mapping.push([parseValue(argument), parseValue(value)]);
@@ -27,12 +27,9 @@ export function parseConstantMapping(source: string) {
 }
 
 export function parseConstants(game: Game, source: string) {
-  const constantPattern = /constant\s+(.+?)\s*:(.+?),\s*default\s*=\s*(.+?)\s*,\s*(.+?);/gs;
-  for (const [, name, type, defaultValue, values] of source.matchAll(
-    constantPattern,
-  )) {
+  const constantPattern = /constant\s+(.+?)\s*:(.+?)=\s*\{\s*(.+?)\s*\}\s*;/gs;
+  for (const [, name, type, values] of source.matchAll(constantPattern)) {
     game.constants[name] = {
-      defaultValue: defaultValue === '' ? null : parseValue(defaultValue),
       mapping: parseConstantMapping(values + ','),
       type: parseType(type),
     };
@@ -56,7 +53,7 @@ export function parseDomainValues(source: string): Value[] {
 }
 
 export function parseDomains(game: Game, source: string) {
-  const domainPattern = /domain\s+(.+?)\s*=(.+?);/gs;
+  const domainPattern = /type\s+(.+?)\s*=(.+?);/gs;
   for (const [, name, values] of source.matchAll(domainPattern))
     game.domains[name] = { values: parseDomainValues(values) };
 }
@@ -87,12 +84,12 @@ export function parseEdgeLabel(game: Game, source: string): EdgeLabel {
     };
   }
 
-  const reachabilityPattern = /^\{>\s*(.+?)\s*(\?->|!->)\s*(.+?)\}$/s;
+  const reachabilityPattern = /^\{>\s*(.+?)\s*(->|!>)\s*(.+?)\}$/s;
   const reachabilityMatch = reachabilityPattern.exec(source);
   if (reachabilityMatch !== null) {
     return {
       kind: 'reachability',
-      inverted: reachabilityMatch[2] === '!->',
+      inverted: reachabilityMatch[2] === '!>',
       lhs: +reachabilityMatch[1],
       rhs: +reachabilityMatch[3],
     };
@@ -152,13 +149,14 @@ export function parseType(source: string): Type {
 
   if (source in typesCache) return typesCache[source];
 
-  const arrowPattern = /^(.+?)->(.+?)$/s;
+  const arrowPattern = /^(.+?)->(.+?)\[(.+?)\]$/s;
   const arrowMatch = arrowPattern.exec(source);
   if (arrowMatch !== null) {
     return (typesCache[source] = {
       kind: 'arrow',
       from: parseType(arrowMatch[1]),
       to: parseType(arrowMatch[2]),
+      defaultValue: parseValue(arrowMatch[3]),
     });
   }
 
@@ -202,12 +200,9 @@ export function parseValueMapEntries(source: string) {
 }
 
 export function parseVariables(game: Game, source: string) {
-  const variablePattern = /var\s+(.+?)\s*:(.+?),\s*(?:default\s*=\s*(.*?)\s*,\s*)?visible\s*=\s*(.+?);/gs;
-  for (const [, name, type, defaultValue = '', visibility] of source.matchAll(
-    variablePattern,
-  )) {
+  const variablePattern = /var\s+(.+?)\s*:(.+?),\s*visible\s*=\s*(.+?);/gs;
+  for (const [, name, type, visibility] of source.matchAll(variablePattern)) {
     game.variables[name] = {
-      defaultValue: defaultValue === '' ? null : parseValue(defaultValue),
       type: parseType(type),
       visibility: parseDomainValues(visibility),
     };

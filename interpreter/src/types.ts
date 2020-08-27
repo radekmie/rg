@@ -1,5 +1,4 @@
 export type Constant = {
-  defaultValue: null | Value;
   mapping: [Value, Value][];
   type: Type;
 };
@@ -41,7 +40,7 @@ export type State = {
 };
 
 export type Type =
-  | { kind: 'arrow'; from: Type; to: Type }
+  | { kind: 'arrow'; from: Type; to: Type; defaultValue: Value }
   | { kind: 'domain'; name: string }
   | { kind: 'domain-inline'; values: Value[] };
 
@@ -51,7 +50,6 @@ export type Value =
   | { kind: 'wildcard' };
 
 export type Variable = {
-  defaultValue: null | Value;
   type: Type;
   visibility: Value[];
 };

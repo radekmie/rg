@@ -12,12 +12,12 @@ export function createInitialValue(
   game: Game,
   variableName: string,
 ): null | Value {
-  const { defaultValue, type } = game.variables[variableName];
+  const { type } = game.variables[variableName];
   switch (type.kind) {
     case 'arrow':
       return { kind: 'map', values: Object.create(null) };
     case 'domain':
-      return defaultValue;
+      return null;
     case 'domain-inline':
       assert(false, '"domain-inline" is not implemented yet.');
       break;
@@ -33,20 +33,17 @@ export function evaluateCondition(game: Game, state: State, label: EdgeLabel) {
 }
 
 export function evaluateEquality(lhs: Value, rhs: Value) {
+  // Both symbols and wildcard are cached, so === is enough.
   if (lhs === rhs) return true;
-  switch (lhs.kind) {
-    case 'map':
-      if (lhs.kind !== rhs.kind) return false;
-      for (const key in lhs.values)
-        if (!evaluateEquality(lhs.values[key], rhs.values[key])) return false;
-      return true;
-    case 'symbol':
-      if (lhs.kind !== rhs.kind) return false;
-      return lhs.value === rhs.value;
-    case 'wildcard':
-      if (lhs.kind !== rhs.kind) return false;
-      return true;
+
+  // Maps are compared key-wise.
+  if (lhs.kind === 'map' && rhs.kind === 'map') {
+    for (const key in lhs.values)
+      if (!evaluateEquality(lhs.values[key], rhs.values[key])) return false;
+    return true;
   }
+
+  return false;
 }
 
 export function evaluateExpression(
@@ -58,12 +55,13 @@ export function evaluateExpression(
     case 'constant-call': {
       const constant = game.constants[expression.name];
       assert(constant, 'Accessed not existing variable.');
+      assert(constant.type.kind === 'arrow', 'Accessed not existing variable.');
       const argument = evaluateExpression(game, state, expression.argument);
       assert(argument.kind === 'symbol', 'Only "symbol" can access.');
       for (const [mapArgument, mapResult] of constant.mapping)
         if (evaluateEquality(argument, mapArgument)) return mapResult;
-      assert(constant.defaultValue, 'No default value provided.');
-      return constant.defaultValue;
+      assert(constant.type.defaultValue, 'No default value provided.');
+      return constant.type.defaultValue;
     }
     case 'value':
       return expression.value;
@@ -80,8 +78,8 @@ export function evaluateExpression(
       assert(key.kind === 'symbol', 'Only "symbol" can access.');
       if (key.value in value.values) return value.values[key.value];
       const variable = game.variables[expression.name];
-      assert(variable.defaultValue, 'No default value provided.');
-      return variable.defaultValue;
+      assert(variable.type.kind === 'arrow', 'Must be an "arrow" type.');
+      return variable.type.defaultValue;
     }
   }
 }
@@ -167,6 +165,35 @@ export function resolveDomainValues(game: Game, type: Type): Value[] {
   }
 }
 
+const assertSetCache = new Map<Type, Set<null | Value>>();
+export function assertSet(game: Game, type: Type, value: null | Value) {
+  const typeCache = assertSetCache.get(type);
+  if (typeCache === undefined) assertSetCache.set(type, new Set([value]));
+  else if (typeCache.has(value)) return;
+  else typeCache.add(value);
+
+  switch (type.kind) {
+    case 'arrow': {
+      assert(value, 'Map required.');
+      assert(value.kind === 'map', 'Map required.');
+      const domainVs = resolveDomainValues(game, type.to);
+      for (const valueV of Object.values(value.values)) {
+        if (!domainVs.some(domainV => evaluateEquality(domainV, valueV)))
+          assert(false, 'Invalid assignment.');
+      }
+      break;
+    }
+    case 'domain':
+    case 'domain-inline':
+      if (value !== null) {
+        const domainVs = resolveDomainValues(game, type);
+        if (!domainVs.some(domainV => evaluateEquality(domainV, value)))
+          assert(false, 'Invalid assignment.');
+      }
+      break;
+  }
+}
+
 export function setVariable(
   game: Game,
   state: State,
@@ -182,29 +209,17 @@ export function setVariable(
       break;
     case 'variable': {
       const previousValue = state.variables[path.name];
-      const { type } = game.variables[path.name];
-      switch (type.kind) {
+      const variable = game.variables[path.name];
+      assertSet(game, variable.type, value);
+      switch (variable.type.kind) {
         case 'arrow': {
           assert(value, 'Map required.');
           assert(value.kind === 'map', 'Map required.');
-          const initialValue = createInitialValue(game, path.name);
-          assert(initialValue, 'Map required.');
-          assert(initialValue.kind === 'map', 'Map required.');
-          const domainVs = resolveDomainValues(game, type.to);
-          for (const valueV of Object.values(value.values)) {
-            if (!domainVs.some(domainV => evaluateEquality(domainV, valueV)))
-              assert(false, 'Invalid assignment.');
-          }
           state.variables[path.name] = { kind: 'map', values: value.values };
           break;
         }
         case 'domain':
         case 'domain-inline':
-          if (value !== null) {
-            const domainVs = resolveDomainValues(game, type);
-            if (!domainVs.some(domainV => evaluateEquality(domainV, value)))
-              assert(false, 'Invalid assignment.');
-          }
           state.variables[path.name] = value;
           break;
       }
@@ -224,17 +239,11 @@ export function setVariable(
       if (value === null) delete previousValue.values[key.value];
       else {
         const variable = game.variables[path.name];
-        assert(variable.defaultValue, 'No default value provided.');
-        if (evaluateEquality(value, variable.defaultValue))
+        assert(variable.type.kind === 'arrow', 'Must be an "arrow" type.');
+        assertSet(game, variable.type.to, value);
+        if (evaluateEquality(value, variable.type.defaultValue))
           delete previousValue.values[key.value];
-        else {
-          const { type } = game.variables[path.name];
-          assert(type.kind === 'arrow', 'Must be an "arrow" type.');
-          const domainVs = resolveDomainValues(game, type.to);
-          if (!domainVs.some(domainV => evaluateEquality(domainV, value)))
-            assert(false, 'Invalid assignment.');
-          previousValue.values[key.value] = value;
-        }
+        else previousValue.values[key.value] = value;
       }
       return previousKeyValue;
     }
