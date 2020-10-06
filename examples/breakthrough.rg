@@ -1,14 +1,20 @@
-// Breakthrough
+// Breakthrough (direct LL example)
 
-type Players = {white, black};
-type PlayersWithKeeper = {keeper, white, black};
-type Scores = {0, 100};
+type Player = {white, black};
+type PlayerOrKeeper = {keeper, white, black};
+type Score = {0, 100};
 type Goals = Players -> Scores;
-type Pieces = {e, b, w};
+type Piece = {e, b, w};
 type Bool = {0,1};
 type Board = Squares -> Pieces;
+type Visibility = Player -> Bool;
+type PieceOfPlayer = Player -> Piece;
+type PieceToBool = Piece -> Bool;
+type PlayerToPieceToBool = Player -> PieceToBool;
+type Direction = Square -> SquareOrNull;
+type PlayerToDirection = Player -> Direction;
 
-type Squares = {
+type Square = {
     v00, v10, v20, v30, v40, v50, v60, v70,
     v01, v11, v21, v31, v41, v51, v61, v71,
     v02, v12, v22, v32, v42, v52, v62, v72,
@@ -19,7 +25,7 @@ type Squares = {
     v07, v17, v27, v37, v47, v57, v67, v77
 };
 
-type SquaresWithNull = {
+type SquareOrNull = {
     null,
     v00, v10, v20, v30, v40, v50, v60, v70,
     v01, v11, v21, v31, v41, v51, v61, v71,
@@ -31,7 +37,7 @@ type SquaresWithNull = {
     v07, v17, v27, v37, v47, v57, v67, v77
 };
 
-const left: Squares -> SquaresWithNull = {:null,
+const left: Direction = {:null,
     v10:v00, v20:v10, v30:v20, v40:v30, v50:v40, v60:v50, v70:v60,
     v11:v01, v21:v11, v31:v21, v41:v31, v51:v41, v61:v51, v71:v61,
     v12:v02, v22:v12, v32:v22, v42:v32, v52:v42, v62:v52, v72:v62,
@@ -41,7 +47,7 @@ const left: Squares -> SquaresWithNull = {:null,
     v16:v06, v26:v16, v36:v26, v46:v36, v56:v46, v66:v56, v76:v66,
     v17:v07, v27:v17, v37:v27, v47:v37, v57:v47, v67:v57, v77:v67
 };
-constant right: Squares -> SquaresWithNull = {:null,
+constant right: Direction = {:null,
     v00:v10, v10:v20, v20:v30, v30:v40, v40:v50, v50:v60, v60:v70,
     v01:v11, v11:v21, v21:v31, v31:v41, v41:v51, v51:v61, v61:v71,
     v02:v12, v12:v22, v22:v32, v32:v42, v42:v52, v52:v62, v62:v72,
@@ -51,7 +57,7 @@ constant right: Squares -> SquaresWithNull = {:null,
     v06:v16, v16:v26, v26:v36, v36:v46, v46:v56, v56:v66, v66:v76,
     v07:v17, v17:v27, v27:v37, v37:v47, v47:v57, v57:v67, v67:v77
 };
-const up: Squares -> SquaresWithNull = {:null,
+const up: Direction = {:null,
     v01:v00, v02:v01, v03:v02, v04:v03, v05:v04, v06:v05, v07:v06,
     v11:v10, v12:v11, v13:v12, v14:v13, v15:v14, v16:v15, v17:v16,
     v21:v20, v22:v21, v23:v22, v24:v23, v25:v24, v26:v25, v27:v26,
@@ -61,7 +67,7 @@ const up: Squares -> SquaresWithNull = {:null,
     v61:v60, v62:v61, v63:v62, v64:v63, v65:v64, v66:v65, v67:v66,
     v71:v70, v72:v71, v73:v72, v74:v73, v75:v74, v76:v75, v77:v76
 };
-const down: Squares -> SquaresWithNull {:null,
+const down: Direction = {:null,
     v00:v01, v01:v02, v02:v03, v03:v04, v04:v05, v05:v06, v06:v07,
     v10:v11, v11:v12, v12:v13, v13:v14, v14:v15, v15:v16, v16:v17,
     v20:v21, v21:v22, v22:v23, v23:v24, v24:v25, v25:v26, v26:v27,
@@ -72,10 +78,16 @@ const down: Squares -> SquaresWithNull {:null,
     v70:v71, v71:v72, v72:v73, v73:v74, v74:v75, v75:v76, v76:v77
 };
 
-const whiteOrEmpty: Pieces -> Bool = {w:1, e:1, :0};
-const blackOrEmpty: pieces -> Bool = {b:1, e:1, :0};
+const whiteOrEmpty: PieceToBool = {w:1, e:1, :0};
+const blackOrEmpty: pieceToBool = {b:1, e:1, :0};
+const opponentOrEmpty: PlayerToPieceToBool = {white:blackOrEmpty; :whiteOrEmpty};
 
-var player: PlayersWithKeeper;
+const pieceOfPlayer: PieceOfPlayer = {white:w, :b};
+const directionOfPlayer: PlayerToDirection = {white:up; :down};
+const opponent: PlayerToPlayer = {white:black, :white};
+
+var turnPlayer: Player;
+var player: PlayerOrKeeper;
 var goals: Goals = {:0};
 var board: Board = {
     v00:b, v10:b, v20:b, v30:b, v40:b, v50:b, v60:b, v70:b,
@@ -84,67 +96,38 @@ var board: Board = {
     v06:w, v16:w, v26:w, v36:w, v46:w, v56:w, v66:w, v76:w,
     v07:w, v17:w, v27:w, v37:w, v47:w, v57:w, v67:w, v77:w
 };
-var pos: Squares;
+var pos: Square;
 var visible: Visibility = {:1};
 
-(begin,10,player=white);
 
+begin,turnbegin: turnPlayer=white;
 
+turnbegin,move: rev 10->16;
+turnbegin,lose: not 10->16;
 
-10,11: [pos = *];
-11,12: {? board[pos] == w};
-12,13: [board[pos] = e];
-13,14: {? up(pos) != null};
-14,15: [pos = up(pos)];
-// Branch left
-15,16: {? left(pos) != null};
-16,18: [pos = left(pos)];
-// Branch right
-15,17: {? right(pos) != null};
-17,18: [pos = right(pos)];
-// Branch up
-15,18: {? board[pos] == e};
-// Join
-18,19: {? black_or_empty(board[pos]) == T};
-19,20: [board[pos] = w];
-20,21: ->>; // Keeper switch
+move,10, player=Player(turnPlayer);
+10,10#Square: pos=#Square;
+10#Square,11: ;
+11,12: board[pos]==pieceOfPlayer[turnPlayer];
+12,13: board[pos]=e;
+13,14: directionOfPlayer[turnPlayer][pos]!=null;
+14,15: pos=Square(up[pos]);
 
-21,22: {? up(pos) == null}; // Reach line win
-21,23: {> 40 !> 51}; // Opponent has no legal move
-22,24: ; // Empty transition
-23,24: ;
-24,25: [white = 100];
-25,26: [black = 0];
-26,27: ->>; // Keeper ending with no move
-21,28: {? up(pos) != null};
-28,29: {> 40 -> 51};
-29,40: ->black;
+15,16: board[pos]==Square(e);
+15,15left: left[pos]!=null;
+15left,15test: pos=Square(left[pos]);
+15,15right: right[pos]!=null;
+15right,15test: pos=Square(right[pos]);
+15test,16: opponentOrEmpty[turnPlayer][board[pos]]==1;
 
-40,41: [pos = *];
-41,42: {? board[pos] == b};
-42,43: [board[pos] = e];
-43,44: {? down(pos) != null};
-44,45: [pos = down(pos)];
-// Branch left
-45,46: {? left(pos) != null};
-46,48: [pos = left(pos)];
-// Branch right
-45,47: {? right(pos) != null};
-47,48: [pos = right(pos)];
-// Branch up
-45,48: {? board[pos] == e};
-// Join
-48,49: {? white_or_empty(board[pos]) == T};
-49,50: [board[pos] = b];
-50,51: ->>; // Keeper switch
+16,17: board[pos]=pieceofPlayer[turnPlayer];
+17,wincheck: player=keeper;
 
-51,52: {? down(pos) == null}; // Reach line win
-51,53: {> 10 !> 21}; // Opponent has no legal move
-52,54: ;
-53,54: ;
-54,55: [white = 0];
-55,56: [black = 100];
-56,57: ->>; // Keeper ending with no move
-51,58: {? down(pos) != null};
-58,59: {> 10 -> 21};
-59,10: ->white;
+wincheck,win: directionOfPlayer[turnPlayer][pos]==null;
+wincheck,continue: directionOfPlayer[turnPlayer][pos]!=null;
+continue,turnbegin: turnPlayer=opponent[turnPlayer];
+
+lose,win: turnPlayer=turnPlayer[opponent];
+win,win1: goals[turnPlayer]=Score(100);
+win1,end: goals[opponent[turnPlayer]]=Score(0);
+end,end: player=keeper;
