@@ -79,11 +79,11 @@ const down: Direction = {:null,
 };
 
 const whiteOrEmpty: PieceToBool = {w:1, e:1, :0};
-const blackOrEmpty: pieceToBool = {b:1, e:1, :0};
-const opponentOrEmpty: PlayerToPieceToBool = {white:blackOrEmpty; :whiteOrEmpty};
+const blackOrEmpty: PieceToBool = {b:1, e:1, :0};
+const opponentOrEmpty: PlayerToPieceToBool = {white:blackOrEmpty, :whiteOrEmpty};
 
 const pieceOfPlayer: PieceOfPlayer = {white:w, :b};
-const directionOfPlayer: PlayerToDirection = {white:up; :down};
+const directionOfPlayer: PlayerToDirection = {white:up, :down};
 const opponent: PlayerToPlayer = {white:black, :white};
 
 var turnPlayer: Player;
@@ -100,34 +100,33 @@ var pos: Square;
 var visible: Visibility = {:1};
 
 
-begin,turnbegin: turnPlayer=white;
+begin, turn: turnPlayer=white;
 
-turnbegin,move: rev 10->16;
-turnbegin,lose: not 10->16;
+turn, move: rev 10->16;
+turn, lose: not 10->16;
 
-move,10, player=Player(turnPlayer);
-10,10#Square: pos=#Square;
-10#Square,11: ;
-11,12: board[pos]==pieceOfPlayer[turnPlayer];
-12,13: board[pos]=e;
-13,14: directionOfPlayer[turnPlayer][pos]!=null;
-14,15: pos=Square(up[pos]);
+move, setIn: player = Player(turnPlayer);
+setIn, set#Square: pos = #Square;
+set#Square, setOut: ;
+setOut, checkOwn: board[pos] == pieceOfPlayer[turnPlayer];
+checkOwn, take: board[pos] = e;
+take, checkEmpty: directionOfPlayer[turnPlayer][pos] != null;
+checkEmpty, direction: pos = Square(directionOfPlayer[turnPlayer][pos]);
 
-15,16: board[pos]==Square(e);
-15,15left: left[pos]!=null;
-15left,15test: pos=Square(left[pos]);
-15,15right: right[pos]!=null;
-15right,15test: pos=Square(right[pos]);
-15test,16: opponentOrEmpty[turnPlayer][board[pos]]==1;
+direction, moved: board[pos] == Square(e);
+direction, directionLeft: left[pos] != null;
+directionLeft, directionOK: pos = Square(left[pos]);
+direction, directionRight: right[pos] != null;
+directionRight, directionOK: pos = Square(right[pos]);
+directionOK, moved: opponentOrEmpty[turnPlayer][board[pos]] == 1;
 
-16,17: board[pos]=pieceofPlayer[turnPlayer];
-17,wincheck: player=keeper;
+moved, done: board[pos] = pieceofPlayer[turnPlayer];
+done, wincheck: player = keeper;
 
-wincheck,win: directionOfPlayer[turnPlayer][pos]==null;
-wincheck,continue: directionOfPlayer[turnPlayer][pos]!=null;
-continue,turnbegin: turnPlayer=opponent[turnPlayer];
+wincheck, win: directionOfPlayer[turnPlayer][pos] == null;
+wincheck, continue: directionOfPlayer[turnPlayer][pos] != null;
+continue, turn: turnPlayer = opponent[turnPlayer];
 
-lose,win: turnPlayer=turnPlayer[opponent];
-win,win1: goals[turnPlayer]=Score(100);
-win1,end: goals[opponent[turnPlayer]]=Score(0);
-end,end: player=keeper;
+lose, win: turnPlayer = turnPlayer[opponent];
+win, score: goals[turnPlayer] = Score(100);
+score, end: goals[opponent[turnPlayer]] = Score(0);
