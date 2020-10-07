@@ -85,8 +85,8 @@ const pieceOfPlayer: PieceOfPlayer = {white:w, :b};
 const directionOfPlayer: PlayerToDirection = {white:up, :down};
 const opponent: PlayerToPlayer = {white:black, :white};
 
-var turnPlayer: Player;
-var player: PlayerOrKeeper;
+var player: PlayerOrKeeper = keeper;
+var turnPlayer: Player = white;
 var goals: Goals = {:0};
 var board: Board = {
     v00:b, v10:b, v20:b, v30:b, v40:b, v50:b, v60:b, v70:b,
@@ -95,7 +95,7 @@ var board: Board = {
     v06:w, v16:w, v26:w, v36:w, v46:w, v56:w, v66:w, v76:w,
     v07:w, v17:w, v27:w, v37:w, v47:w, v57:w, v67:w, v77:w
 };
-var pos: Square;
+var pos: Square = v00;
 var visible: Visibility = {:1};
 
 
