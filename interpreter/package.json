@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc -w",
     "lint": "eslint --ext ts src",
-    "start": "node lib/index.js"
+    "parse": "node lib/ast ../examples/breakthrough.rg"
   },
   "devDependencies": {
     "@types/node": "13.7.7",
@@ -23,6 +23,7 @@
     "typescript": "3.8.3"
   },
   "dependencies": {
+    "chevrotain": "7.0.2",
     "tslib": "1.11.1"
   }
 }

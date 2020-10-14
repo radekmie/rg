@@ -47,7 +47,7 @@ const left: Direction = {:null,
     v16:v06, v26:v16, v36:v26, v46:v36, v56:v46, v66:v56, v76:v66,
     v17:v07, v27:v17, v37:v27, v47:v37, v57:v47, v67:v57, v77:v67
 };
-constant right: Direction = {:null,
+const right: Direction = {:null,
     v00:v10, v10:v20, v20:v30, v30:v40, v40:v50, v50:v60, v60:v70,
     v01:v11, v11:v21, v21:v31, v31:v41, v41:v51, v51:v61, v61:v71,
     v02:v12, v12:v22, v22:v32, v32:v42, v42:v52, v52:v62, v62:v72,
@@ -105,8 +105,8 @@ turn, move: move rev-> moved;
 turn, lose: move not->moved;
 
 move, setIn: player = PlayerOrKeeper(turnPlayer);
-setIn, set#Square: pos = Square(#Square);
-set#Square, setOut: ;
+// setIn, set#Square: pos = Square(#Square);
+// set#Square, setOut: ;
 setOut, checkOwn: board[pos] == pieceOfPlayer[turnPlayer];
 checkOwn, forward: board[pos] = Piece(e);
 forward, direction: pos = Square(directionOfPlayer[turnPlayer][pos]);
