@@ -3,60 +3,85 @@ import { CstParser } from 'chevrotain';
 import * as lexer from './lexer';
 
 class RGParserClass extends CstParser {
-  constDeclaration = this.RULE('constDeclaration', () => {
+  ConstantDeclaration = this.RULE('ConstantDeclaration', () => {
     this.CONSUME(lexer.KeywordConst);
-    this.SUBRULE(this.identifier);
+    this.CONSUME(lexer.Identifier);
     this.CONSUME(lexer.Colon);
-    this.SUBRULE(this.type);
+    this.SUBRULE(this.Type);
     this.CONSUME(lexer.Equal);
-    this.SUBRULE(this.value);
+    this.SUBRULE(this.Value);
     this.CONSUME(lexer.Semicolon);
   });
 
-  edgeDeclaration = this.RULE('edgeDeclaration', () => {
-    this.SUBRULE(this.identifier);
+  EdgeDeclaration = this.RULE('EdgeDeclaration', () => {
+    this.SUBRULE(this.EdgeName);
     this.CONSUME(lexer.Comma);
-    this.SUBRULE2(this.identifier);
+    this.SUBRULE2(this.EdgeName);
     this.CONSUME(lexer.Colon);
-    this.SUBRULE(this.edgeLabel);
+    this.SUBRULE(this.EdgeLabel);
     this.CONSUME(lexer.Semicolon);
   });
 
-  edgeLabel = this.RULE('edgeLabel', () => {
+  EdgeLabel = this.RULE('EdgeLabel', () => {
     this.OPTION(() => {
       this.OR([
         {
           ALT: () => {
-            this.SUBRULE3(this.expression);
+            this.SUBRULE3(this.Expression);
             this.OR2([
               { ALT: () => this.CONSUME(lexer.BangEqual) },
               { ALT: () => this.CONSUME(lexer.Equal) },
               { ALT: () => this.CONSUME(lexer.EqualEqual) },
             ]);
-            this.SUBRULE4(this.expression);
+            this.SUBRULE4(this.Expression);
           },
         },
         {
           ALT: () => {
-            this.SUBRULE(this.identifier);
+            this.CONSUME(lexer.Identifier);
             this.CONSUME(lexer.KeywordMode);
             this.CONSUME(lexer.Arrow);
-            this.SUBRULE2(this.identifier);
+            this.CONSUME2(lexer.Identifier);
           },
         },
       ]);
     });
   });
 
-  expression = this.RULE('expression', () => {
-    this.SUBRULE(this.identifier);
+  EdgeName = this.RULE('EdgeName', () => {
+    this.AT_LEAST_ONE(() => {
+      this.SUBRULE(this.EdgeNamePart);
+    });
+  });
+
+  EdgeNamePart = this.RULE('EdgeNamePart', () => {
+    this.OR([
+      {
+        ALT: () => {
+          this.CONSUME(lexer.Identifier);
+        },
+      },
+      {
+        ALT: () => {
+          this.CONSUME(lexer.ParenthesisLeft);
+          this.CONSUME2(lexer.Identifier);
+          this.CONSUME(lexer.Colon);
+          this.SUBRULE(this.Type);
+          this.CONSUME(lexer.ParenthesisRight);
+        },
+      },
+    ]);
+  });
+
+  Expression = this.RULE('Expression', () => {
+    this.CONSUME(lexer.Identifier);
     this.OPTION(() => {
       this.OR([
         {
           ALT: () => {
             this.AT_LEAST_ONE(() => {
               this.CONSUME(lexer.BracketLeft);
-              this.SUBRULE(this.expression);
+              this.SUBRULE(this.Expression);
               this.CONSUME(lexer.BracketRight);
             });
           },
@@ -64,7 +89,7 @@ class RGParserClass extends CstParser {
         {
           ALT: () => {
             this.CONSUME(lexer.ParenthesisLeft);
-            this.SUBRULE2(this.expression);
+            this.SUBRULE2(this.Expression);
             this.CONSUME(lexer.ParenthesisRight);
           },
         },
@@ -72,29 +97,25 @@ class RGParserClass extends CstParser {
     });
   });
 
-  game = this.RULE('game', () => {
+  GameDeclaration = this.RULE('GameDeclaration', () => {
     this.MANY(() => {
       this.OR([
-        { ALT: () => this.SUBRULE(this.constDeclaration) },
-        { ALT: () => this.SUBRULE(this.edgeDeclaration) },
-        { ALT: () => this.SUBRULE(this.typeDeclaration) },
-        { ALT: () => this.SUBRULE(this.varDeclaration) },
+        { ALT: () => this.SUBRULE(this.ConstantDeclaration) },
+        { ALT: () => this.SUBRULE(this.EdgeDeclaration) },
+        { ALT: () => this.SUBRULE(this.TypeDeclaration) },
+        { ALT: () => this.SUBRULE(this.VariableDeclaration) },
       ]);
     });
   });
 
-  identifier = this.RULE('identifier', () => {
-    this.CONSUME(lexer.Identifier);
-  });
-
-  type = this.RULE('type', () => {
+  Type = this.RULE('Type', () => {
     this.OR([
       {
         ALT: () => {
-          this.SUBRULE(this.identifier);
+          this.CONSUME(lexer.Identifier);
           this.OPTION(() => {
             this.CONSUME(lexer.Arrow);
-            this.SUBRULE(this.type);
+            this.SUBRULE(this.Type);
           });
         },
       },
@@ -104,7 +125,7 @@ class RGParserClass extends CstParser {
           this.MANY_SEP({
             SEP: lexer.Comma,
             DEF: () => {
-              this.SUBRULE2(this.identifier);
+              this.CONSUME2(lexer.Identifier);
             },
           });
           this.CONSUME(lexer.BraceRight);
@@ -113,19 +134,19 @@ class RGParserClass extends CstParser {
     ]);
   });
 
-  typeDeclaration = this.RULE('typeDeclaration', () => {
+  TypeDeclaration = this.RULE('TypeDeclaration', () => {
     this.CONSUME(lexer.KeywordType);
-    this.SUBRULE(this.identifier);
+    this.CONSUME(lexer.Identifier);
     this.CONSUME(lexer.Equal);
-    this.SUBRULE(this.type);
+    this.SUBRULE(this.Type);
     this.CONSUME(lexer.Semicolon);
   });
 
-  value = this.RULE('value', () => {
+  Value = this.RULE('Value', () => {
     this.OR([
       {
         ALT: () => {
-          this.SUBRULE(this.identifier);
+          this.CONSUME(lexer.Identifier);
         },
       },
       {
@@ -134,7 +155,7 @@ class RGParserClass extends CstParser {
           this.MANY_SEP({
             SEP: lexer.Comma,
             DEF: () => {
-              this.SUBRULE(this.valueEntry);
+              this.SUBRULE(this.ValueEntry);
             },
           });
           this.CONSUME(lexer.BraceRight);
@@ -143,21 +164,21 @@ class RGParserClass extends CstParser {
     ]);
   });
 
-  valueEntry = this.RULE('valueEntry', () => {
+  ValueEntry = this.RULE('ValueEntry', () => {
     this.OPTION(() => {
-      this.SUBRULE(this.identifier);
+      this.CONSUME(lexer.Identifier);
     });
     this.CONSUME(lexer.Colon);
-    this.SUBRULE(this.value);
+    this.SUBRULE(this.Value);
   });
 
-  varDeclaration = this.RULE('varDeclaration', () => {
+  VariableDeclaration = this.RULE('VariableDeclaration', () => {
     this.CONSUME(lexer.KeywordVar);
-    this.SUBRULE(this.identifier);
+    this.CONSUME(lexer.Identifier);
     this.CONSUME(lexer.Colon);
-    this.SUBRULE(this.type);
+    this.SUBRULE(this.Type);
     this.CONSUME(lexer.Equal);
-    this.SUBRULE(this.value);
+    this.SUBRULE(this.Value);
     this.CONSUME(lexer.Semicolon);
   });
 

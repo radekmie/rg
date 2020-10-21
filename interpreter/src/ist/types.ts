@@ -1,0 +1,55 @@
+import { creator } from '../utils';
+
+/* eslint-disable prettier/prettier */
+export const Access = creator<Access>('Access');
+export type Access = { kind: 'Access'; lhs: Expression; rhs: Expression };
+
+export const Arrow = creator<Arrow>('Arrow');
+export type Arrow = { kind: 'Arrow'; lhs: Type; rhs: Type };
+
+export const Assignment = creator<Assignment>('Assignment');
+export type Assignment = { kind: 'Assignment'; lhs: Expression; rhs: Expression };
+
+export const Cast = creator<Cast>('Cast');
+export type Cast = { kind: 'Cast'; lhs: Type; rhs: Expression };
+
+export const Comparison = creator<Comparison>('Comparison');
+export type Comparison = { kind: 'Comparison'; lhs: Expression; rhs: Expression; negated: boolean };
+
+export const Edge = creator<Edge>('Edge');
+export type Edge = { kind: 'Edge'; lhs: EdgeName; rhs: EdgeName; label: EdgeLabel };
+
+export const EdgeName = creator<EdgeName>('EdgeName');
+export type EdgeName = { kind: 'EdgeName'; label: string; types: Record<string, Type>; values: Record<string, Value | null> };
+
+export const Element = creator<Element>('Element');
+export type Element = { kind: 'Element'; value: string };
+
+export const Game = creator<Game>('Game');
+export type Game = { kind: 'Game'; constants: Record<string, Value>; edges: Edge[]; types: Record<string, Type>; variables: Record<string, Variable> };
+
+export const Map = creator<Map>('Map');
+export type Map = { kind: 'Map'; defaultValue: Value; values: Record<string, Value> };
+
+export const Reachability = creator<Reachability>('Reachability');
+export type Reachability = { kind: 'Reachability'; lhs: EdgeName; rhs: EdgeName; mode: 'not' | 'rev' };
+
+export const Reference = creator<Reference>('Reference');
+export type Reference = { kind: 'Reference'; identifier: string };
+
+export const Set = creator<Set>('Set');
+export type Set = { kind: 'Set'; identifiers: string[] };
+
+export const Skip = creator<Skip>('Skip');
+export type Skip = { kind: 'Skip' };
+
+export const State = creator<State>('State');
+export type State = { kind: 'State'; position: EdgeName; values: Record<string, Value> };
+
+export const Variable = creator<Variable>('Variable');
+export type Variable = { kind: 'Variable'; type: Type; defaultValue: Value };
+
+export type EdgeLabel = Assignment | Comparison | Reachability | Skip;
+export type Expression = Access | Cast | Reference;
+export type Type = Arrow | Set;
+export type Value = Map | Element;

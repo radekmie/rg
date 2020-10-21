@@ -12,6 +12,7 @@ type PieceOfPlayer = Player -> Piece;
 type PieceToBool = Piece -> Bool;
 type PlayerToPieceToBool = Player -> PieceToBool;
 type Direction = Square -> SquareOrNull;
+type PlayerToPlayer = Player -> Player;
 type PlayerToDirection = Player -> Direction;
 
 type Square = {
@@ -99,26 +100,26 @@ var pos: Square = v00;
 var visible: Visibility = {:1};
 
 
-begin, turn: turnPlayer=Player(white);
+begin, turn: ;
 
 turn, move: move rev-> moved;
 turn, lose: move not->moved;
 
 move, setIn: player = PlayerOrKeeper(turnPlayer);
-// setIn, set#Square: pos = Square(#Square);
-// set#Square, setOut: ;
+setIn, set(square:Square): pos = Square(square);
+set(square:Square), setOut: ;
 setOut, checkOwn: board[pos] == pieceOfPlayer[turnPlayer];
 checkOwn, forward: board[pos] = Piece(e);
 forward, direction: pos = Square(directionOfPlayer[turnPlayer][pos]);
 
-direction, moved: board[pos] == Square(e);
+direction, directionOK: board[pos] == Square(e);
 direction, directionLeft: left[pos] != SquareOrNull(null);
 directionLeft, directionOK: pos = Square(left[pos]);
 direction, directionRight: right[pos] != SquareOrNull(null);
 directionRight, directionOK: pos = Square(right[pos]);
 directionOK, moved: opponentOrEmpty[turnPlayer][board[pos]] == Bool(1);
 
-moved, done: board[pos] = pieceofPlayer[turnPlayer];
+moved, done: board[pos] = pieceOfPlayer[turnPlayer];
 done, wincheck: player = PlayerOrKeeper(keeper);
 
 wincheck, win: directionOfPlayer[turnPlayer][pos] == SquareOrNull(null);
@@ -128,4 +129,4 @@ continue, turn: turnPlayer = opponent[turnPlayer];
 lose, win: turnPlayer = opponent[turnPlayer];
 win, score: goals[turnPlayer] = Score(100);
 score, end: goals[opponent[turnPlayer]] = Score(0);
-end, end: player = PlayerOrKeeper(keeper);
+// end, end: player = PlayerOrKeeper(keeper);

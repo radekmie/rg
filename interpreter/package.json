@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc -w",
-    "lint": "eslint --ext ts src",
-    "parse": "node lib/ast ../examples/breakthrough.rg"
+    "lint": "eslint --ext ts src"
   },
   "devDependencies": {
     "@types/node": "13.7.7",

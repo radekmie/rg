@@ -1,94 +1,38 @@
-import { Game, State, Value } from './types';
-import { average } from './utils';
-import { createInitialState, nextStates } from './state';
-import { join } from 'path';
-import { parse } from './parse';
+import fs from 'fs';
 
-function cloneState(state: State): State {
-  const variables: Record<string, null | Value> = Object.create(null);
-  for (const variable in state.variables) {
-    const value = state.variables[variable];
-    variables[variable] = value === null ? null : cloneValue(value);
-  }
-  return { player: state.player, position: state.position, variables };
-}
+import { parse } from './ast';
+import { build } from './ist';
+import * as types from './ist/types';
+import * as utils from './utils';
+import { cloneState, createInitialState, nextStates } from './state';
 
-function cloneValue(value: Value): Value {
-  switch (value.kind) {
-    case 'map': {
-      const values: Record<string, Value> = Object.create(null);
-      for (const key in value.values)
-        values[key] = cloneValue(value.values[key]);
-      return { kind: 'map', values };
-    }
-    case 'symbol':
-      return value;
-    case 'wildcard':
-      return value;
-  }
-}
-
-function displayState(state: State) {
-  const variables = displayVariables(state.variables, '    ');
-  return `${state.player ?? '(keeper)'} at ${state.position} vars ${variables}`;
-}
-
-function displayValue(value: null | Value, indent = '') {
-  if (value === null) return '(none)';
-  switch (value.kind) {
-    case 'map':
-      return displayVariables(value.values, indent);
-    case 'symbol':
-      return value.value;
-    case 'wildcard':
-      return '*';
-  }
-}
-
-function displayVariables(
-  variables: Record<string, null | Value>,
-  indent = '',
-): string {
-  const entries = Object.entries(variables)
-    .map(([name, value]) => `${name} = ${displayValue(value, indent + '  ')}`)
-    .sort();
-
-  type StringsPair = [string[], string[]];
-  const lines =
-    entries.length % 8 === 0
-      ? entries.reduce<StringsPair>(
-          ([lines, line], entry) =>
-            line.length === 7
-              ? ([[...lines, [...line, entry].join(' ')], []] as StringsPair)
-              : ([lines, [...line, entry]] as StringsPair),
-          [[], []],
-        )[0]
-      : entries;
-
-  return `{\n${indent}${lines.join(`\n${indent}`)} }`;
+function average(xs: number[]) {
+  return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
 
 function* nextStatesN(
-  game: Game,
-  state: State,
+  game: types.Game,
+  state: types.State,
   depth: number,
-): Generator<State, void, undefined> {
+): Generator<types.State, void, undefined> {
   if (depth === 0) yield state;
   else {
-    for (const _ of nextStates(game, state))
-      yield* nextStatesN(game, state, depth - 1);
+    for (const nextState of nextStatesUnique(game, state))
+      yield* nextStatesN(game, nextState, depth - 1);
   }
 }
 
-function perf(game: Game, depth: number) {
-  let count = 0;
-  for (const _ of nextStatesN(game, createInitialState(game), depth)) ++count;
-  console.log(`perf(depth: ${depth}) = ${count}`);
+function nextStatesUnique(game: types.Game, state: types.State) {
+  const states: Record<string, types.State> = Object.create(null);
+  for (const nextState of nextStates(game, state, true)) {
+    const key = JSON.stringify(nextState);
+    if (!(key in states)) states[key] = cloneState(nextState);
+  }
+  return Object.values(states);
 }
 
-function run(game: Game, plays = 1, debug = false) {
+function run(game: types.Game, plays = 1, debug = false) {
   const moves: number[] = [];
-  const stats: number[] = [];
   const times: number[] = [];
   const turns: number[] = [];
 
@@ -97,33 +41,38 @@ function run(game: Game, plays = 1, debug = false) {
     let state = createInitialState(game);
     let turn = 0;
     for (;;) {
-      if (debug) console.log(displayState(state));
-      const states: State[] = [];
-      for (const nextState of nextStates(game, state))
-        states.push(cloneState(nextState));
+      if (debug) console.log(utils.pretty(state));
+      const states = nextStatesUnique(game, state);
       if (states.length === 0) break;
-      if (state.player !== null) moves.push(states.length);
+      if (state.position.label !== 'end') moves.push(states.length);
       state = states[Math.floor(states.length * Math.random())];
-      if (state.player !== null) ++turn;
+      if (state.position.label !== 'end') ++turn;
     }
 
     const [s, ns] = process.hrtime(now);
     times.push(Math.round(s * 1e3 + ns / 1e6));
     turns.push(turn);
 
-    const score = state.variables.white;
-    if (score?.kind === 'symbol') stats.push(score.value === '100' ? 1 : 0);
-    else stats.push(Infinity);
-
     console.clear();
     console.log(`after ${play} plays:`);
     console.log(`  avg. moves: ${average(moves).toFixed(2)}`);
-    console.log(`  avg. stats: ${average(stats).toFixed(2)}`);
-    console.log(`  avg. times: ${average(times).toFixed(2)}`);
+    console.log(`  avg. times: ${average(times).toFixed(2)}ms`);
     console.log(`  avg. turns: ${average(turns).toFixed(2)}`);
   }
 }
 
-const game = parse(join(__dirname, '../../examples/breakthrough.rg'));
+function runPerf(game: types.Game, depth: number) {
+  let count = 0;
+  const initialState = createInitialState(game);
+  console.time(`runPerf(depth: ${depth})`);
+  for (const _ of nextStatesN(game, initialState, depth)) ++count;
+  console.timeEnd(`runPerf(depth: ${depth})`);
+  console.log(`runPerf(depth: ${depth}) = ${count}`);
+}
+
+const source = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
+const gameDefinition = parse(source);
+const game = build(gameDefinition);
+
+for (let depth = 1; depth <= 5; ++depth) runPerf(game, depth);
 run(game, 100);
-perf(game, 2);

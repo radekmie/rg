@@ -1,4 +1,4 @@
-import { CstChildrenDictionary, CstElement } from 'chevrotain';
+import { CstChildrenDictionary as Context, CstElement } from 'chevrotain';
 
 import parser from './parser';
 import * as types from './types';
@@ -9,149 +9,161 @@ class RGVisitor extends parser.getBaseCstVisitorConstructor() {
     this.validateVisitor();
   }
 
-  constDeclaration(context: CstChildrenDictionary): types.ConstDeclaration {
-    return {
-      kind: 'ConstDeclaration',
-      identifier: this.visitNode(context.identifier[0]),
-      type: this.visitNode(context.type[0]),
-      value: this.visitNode(context.value[0]),
-    };
+  ConstantDeclaration(context: Context): types.ConstantDeclaration {
+    return types.ConstantDeclaration({
+      identifier: this.visitToken(context.Identifier[0]),
+      type: this.visitNode(context.Type[0]),
+      value: this.visitNode(context.Value[0]),
+    });
   }
 
-  edgeDeclaration(context: CstChildrenDictionary): types.EdgeDeclaration {
-    return {
-      kind: 'EdgeDeclaration',
-      lhs: this.visitNode(context.identifier[0]),
-      rhs: this.visitNode(context.identifier[1]),
-      label: this.visitNode(context.edgeLabel[0]),
-    };
+  EdgeDeclaration(context: Context): types.EdgeDeclaration {
+    return types.EdgeDeclaration({
+      lhs: this.visitNode(context.EdgeName[0]),
+      rhs: this.visitNode(context.EdgeName[1]),
+      label: this.visitNode(context.EdgeLabel[0]),
+    });
   }
 
-  edgeLabel(context: CstChildrenDictionary): types.EdgeLabel {
+  EdgeLabel(context: Context): types.EdgeLabel {
     if ('Equal' in context) {
-      return {
-        kind: 'Assignment',
-        lhs: this.visitNode(context.expression[0]),
-        rhs: this.visitNode(context.expression[1]),
-      };
+      return types.Assignment({
+        lhs: this.visitNode(context.Expression[0]),
+        rhs: this.visitNode(context.Expression[1]),
+      });
     }
 
     if ('BangEqual' in context || 'EqualEqual' in context) {
-      return {
-        kind: 'Comparison',
-        lhs: this.visitNode(context.expression[0]),
-        rhs: this.visitNode(context.expression[1]),
+      return types.Comparison({
+        lhs: this.visitNode(context.Expression[0]),
+        rhs: this.visitNode(context.Expression[1]),
         negated: 'BangEqual' in context,
-      };
+      });
     }
 
     if ('KeywordMode' in context) {
-      return {
-        kind: 'Reachability',
-        lhs: this.visitNode(context.identifier[0]),
-        rhs: this.visitNode(context.identifier[1]),
+      return types.Reachability({
+        lhs: types.EdgeName({
+          parts: [
+            types.Literal({
+              identifier: this.visitToken(context.Identifier[0]),
+            }),
+          ],
+        }),
+        rhs: types.EdgeName({
+          parts: [
+            types.Literal({
+              identifier: this.visitToken(context.Identifier[1]),
+            }),
+          ],
+        }),
         mode: this.visitToken(context.KeywordMode[0]) as 'not' | 'rev',
-      };
+      });
     }
 
-    return { kind: 'Skip' };
+    return types.Skip({});
   }
 
-  expression(context: CstChildrenDictionary): types.Expression {
+  EdgeName(context: Context): types.EdgeName {
+    return types.EdgeName({ parts: this.visitNodes(context.EdgeNamePart) });
+  }
+
+  EdgeNamePart(context: Context): types.EdgeNamePart {
+    if ('ParenthesisLeft' in context) {
+      return types.Binding({
+        identifier: this.visitToken(context.Identifier[0]),
+        type: this.visitNode(context.Type[0]),
+      });
+    }
+
+    return types.Literal({
+      identifier: this.visitToken(context.Identifier[0]),
+    });
+  }
+
+  Expression(context: Context): types.Expression {
     if ('BracketLeft' in context) {
-      return {
-        kind: 'Access',
-        lhs: this.visitNode(context.identifier[0]),
-        rhs: this.visitNode(context.expression[0]),
-      };
+      return context.Expression.reduce(
+        (expression, cstNode) =>
+          types.Access({ lhs: expression, rhs: this.visitNode(cstNode) }),
+        types.Reference({
+          identifier: this.visitToken(context.Identifier[0]),
+        }) as types.Expression,
+      );
     }
 
     if ('ParenthesisLeft' in context) {
-      return {
-        kind: 'Cast',
-        lhs: this.visitNode(context.identifier[0]),
-        rhs: this.visitNode(context.expression[0]),
-      };
+      return types.Cast({
+        lhs: types.TypeReference({
+          identifier: this.visitToken(context.Identifier[0]),
+        }),
+        rhs: this.visitNode(context.Expression[0]),
+      });
     }
 
-    return {
-      kind: 'VarReference',
-      identifier: this.visitNode(context.identifier[0]),
-    };
-  }
-
-  game(context: CstChildrenDictionary): types.Game {
-    return {
-      kind: 'Game',
-      consts: this.visitNodes(context.constDeclaration),
-      edges: this.visitNodes(context.edgeDeclaration),
-      types: this.visitNodes(context.typeDeclaration),
-      vars: this.visitNodes(context.varDeclaration),
-    };
-  }
-
-  identifier(context: CstChildrenDictionary): types.Identifier {
-    return {
-      kind: 'Identifier',
+    return types.Reference({
       identifier: this.visitToken(context.Identifier[0]),
-    };
+    });
   }
 
-  type(context: CstChildrenDictionary): types.Type {
+  GameDeclaration(context: Context): types.GameDeclaration {
+    return types.GameDeclaration({
+      constants: this.visitNodes(context.ConstantDeclaration),
+      edges: this.visitNodes(context.EdgeDeclaration),
+      types: this.visitNodes(context.TypeDeclaration),
+      variables: this.visitNodes(context.VariableDeclaration),
+    });
+  }
+
+  Type(context: Context): types.Type {
     if ('Arrow' in context) {
-      return {
-        kind: 'Arrow',
-        lhs: this.visitNode(context.identifier[0]),
-        rhs: this.visitNode(context.type[0]),
-      };
+      return types.Arrow({
+        lhs: this.visitToken(context.Identifier[0]),
+        rhs: this.visitNode(context.Type[0]),
+      });
     }
 
     if ('BraceLeft' in context)
-      return { kind: 'Set', identifiers: this.visitNodes(context.identifier) };
+      return types.Set({ identifiers: this.visitTokens(context.Identifier) });
 
-    return {
-      kind: 'TypeReference',
-      identifier: this.visitNode(context.identifier[0]),
-    };
+    return types.TypeReference({
+      identifier: this.visitToken(context.Identifier[0]),
+    });
   }
 
-  typeDeclaration(context: CstChildrenDictionary): types.TypeDeclaration {
-    return {
-      kind: 'TypeDeclaration',
-      identifier: this.visitNode(context.identifier[0]),
-      type: this.visitNode(context.type[0]),
-    };
+  TypeDeclaration(context: Context): types.TypeDeclaration {
+    return types.TypeDeclaration({
+      identifier: this.visitToken(context.Identifier[0]),
+      type: this.visitNode(context.Type[0]),
+    });
   }
 
-  value(context: CstChildrenDictionary): types.Value {
+  Value(context: Context): types.Value {
     if ('BraceLeft' in context)
-      return { kind: 'Map', entries: this.visitNodes(context.valueEntry) };
+      return types.Map({ entries: this.visitNodes(context.ValueEntry) });
 
-    return {
-      kind: 'Reference',
-      identifier: this.visitNode(context.identifier[0]),
-    };
+    return types.Element({
+      identifier: this.visitToken(context.Identifier[0]),
+    });
   }
 
-  valueEntry(context: CstChildrenDictionary): types.ValueEntry {
-    if ('identifier' in context) {
-      return {
-        kind: 'NamedEntry',
-        identifier: this.visitNode(context.identifier[0]),
-        value: this.visitNode(context.value[0]),
-      };
+  ValueEntry(context: Context): types.ValueEntry {
+    if ('Identifier' in context) {
+      return types.NamedEntry({
+        identifier: this.visitToken(context.Identifier[0]),
+        value: this.visitNode(context.Value[0]),
+      });
     }
 
-    return { kind: 'DefaultEntry', value: this.visitNode(context.value[0]) };
+    return types.DefaultEntry({ value: this.visitNode(context.Value[0]) });
   }
 
-  varDeclaration(context: CstChildrenDictionary): types.VarDeclaration {
-    return {
-      kind: 'VarDeclaration',
-      identifier: this.visitNode(context.identifier[0]),
-      type: this.visitNode(context.type[0]),
-      initialValue: this.visitNode(context.value[0]),
-    };
+  VariableDeclaration(context: Context): types.VariableDeclaration {
+    return types.VariableDeclaration({
+      identifier: this.visitToken(context.Identifier[0]),
+      type: this.visitNode(context.Type[0]),
+      defaultValue: this.visitNode(context.Value[0]),
+    });
   }
 
   visitNode(cstElement: CstElement) {
@@ -159,7 +171,7 @@ class RGVisitor extends parser.getBaseCstVisitorConstructor() {
     return this.visit(cstElement);
   }
 
-  visitNodes(cstElements: CstElement[]) {
+  visitNodes(cstElements: CstElement[] = []) {
     // eslint-disable-next-line @typescript-eslint/unbound-method
     return cstElements.map(this.visitNode, this);
   }
@@ -167,6 +179,11 @@ class RGVisitor extends parser.getBaseCstVisitorConstructor() {
   visitToken(cstElement: CstElement) {
     if (!('tokenType' in cstElement)) throw new Error('Token expected');
     return cstElement.image;
+  }
+
+  visitTokens(cstElements: CstElement[] = []) {
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    return cstElements.map(this.visitToken, this);
   }
 }
 

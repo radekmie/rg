@@ -1,68 +1,75 @@
-export type ConstDeclaration = {
-  kind: 'ConstDeclaration';
-  identifier: Identifier;
-  type: Type;
-  value: Value;
-};
+import { creator } from '../utils';
 
-export type EdgeDeclaration = {
-  kind: 'EdgeDeclaration';
-  lhs: Identifier;
-  rhs: Identifier;
-  label: EdgeLabel;
-};
+/* eslint-disable prettier/prettier */
+export const Access = creator<Access>('Access');
+export type Access = { kind: 'Access'; lhs: Expression; rhs: Expression };
 
-export type EdgeLabel =
-  | { kind: 'Assignment'; lhs: Expression; rhs: Expression }
-  | { kind: 'Comparison'; lhs: Expression; rhs: Expression; negated: boolean }
-  | {
-      kind: 'Reachability';
-      lhs: Identifier;
-      rhs: Identifier;
-      mode: 'not' | 'rev';
-    }
-  | { kind: 'Skip' };
+export const Arrow = creator<Arrow>('Arrow');
+export type Arrow = { kind: 'Arrow'; lhs: string; rhs: Type };
 
-export type Expression =
-  | { kind: 'Access'; lhs: Identifier; rhs: Expression }
-  | { kind: 'Cast'; lhs: Identifier; rhs: Expression }
-  | { kind: 'VarReference'; identifier: Identifier };
+export const Assignment = creator<Assignment>('Assignment');
+export type Assignment = { kind: 'Assignment'; lhs: Expression; rhs: Expression };
 
-export type Game = {
-  kind: 'Game';
-  consts: ConstDeclaration[];
-  edges: EdgeDeclaration[];
-  types: TypeDeclaration[];
-  vars: VarDeclaration[];
-};
+export const Binding = creator<Binding>('Binding');
+export type Binding = { kind: 'Binding'; identifier: string; type: Type };
 
-export type Identifier = {
-  kind: 'Identifier';
-  identifier: string;
-};
+export const Cast = creator<Cast>('Cast');
+export type Cast = { kind: 'Cast'; lhs: Type; rhs: Expression };
 
-export type Type =
-  | { kind: 'Arrow'; lhs: Identifier; rhs: Type }
-  | { kind: 'Set'; identifiers: Identifier[] }
-  | { kind: 'TypeReference'; identifier: Identifier };
+export const Comparison = creator<Comparison>('Comparison');
+export type Comparison = { kind: 'Comparison'; lhs: Expression; rhs: Expression; negated: boolean };
 
-export type TypeDeclaration = {
-  kind: 'TypeDeclaration';
-  identifier: Identifier;
-  type: Type;
-};
+export const ConstantDeclaration = creator<ConstantDeclaration>('ConstantDeclaration');
+export type ConstantDeclaration = { kind: 'ConstantDeclaration'; identifier: string; type: Type; value: Value };
 
-export type Value =
-  | { kind: 'Map'; entries: ValueEntry[] }
-  | { kind: 'Reference'; identifier: Identifier };
+export const DefaultEntry = creator<DefaultEntry>('DefaultEntry');
+export type DefaultEntry = { kind: 'DefaultEntry'; value: Value };
 
-export type ValueEntry =
-  | { kind: 'DefaultEntry'; value: Value }
-  | { kind: 'NamedEntry'; identifier: Identifier; value: Value };
+export const EdgeDeclaration = creator<EdgeDeclaration>('EdgeDeclaration');
+export type EdgeDeclaration = { kind: 'EdgeDeclaration'; lhs: EdgeName; rhs: EdgeName; label: EdgeLabel };
 
-export type VarDeclaration = {
-  kind: 'VarDeclaration';
-  identifier: Identifier;
-  type: Type;
-  initialValue: Value;
-};
+export const EdgeName = creator<EdgeName>('EdgeName');
+export type EdgeName = { kind: 'EdgeName'; parts: EdgeNamePart[] };
+
+export const Element = creator<Element>('Element');
+export type Element = { kind: 'Element'; identifier: string };
+
+export const GameDeclaration = creator<GameDeclaration>('GameDeclaration');
+export type GameDeclaration = { kind: 'GameDeclaration'; constants: ConstantDeclaration[]; edges: EdgeDeclaration[]; types: TypeDeclaration[]; variables: VariableDeclaration[] };
+
+export const Literal = creator<Literal>('Literal');
+export type Literal = { kind: 'Literal'; identifier: string };
+
+export const Map = creator<Map>('Map');
+export type Map = { kind: 'Map'; entries: ValueEntry[] };
+
+export const NamedEntry = creator<NamedEntry>('NamedEntry');
+export type NamedEntry = { kind: 'NamedEntry'; identifier: string; value: Value };
+
+export const Reachability = creator<Reachability>('Reachability');
+export type Reachability = { kind: 'Reachability'; lhs: EdgeName; rhs: EdgeName; mode: 'not' | 'rev' };
+
+export const Reference = creator<Reference>('Reference');
+export type Reference = { kind: 'Reference'; identifier: string };
+
+export const Set = creator<Set>('Set');
+export type Set = { kind: 'Set'; identifiers: string[] };
+
+export const Skip = creator<Skip>('Skip');
+export type Skip = { kind: 'Skip' };
+
+export const TypeDeclaration = creator<TypeDeclaration>('TypeDeclaration');
+export type TypeDeclaration = { kind: 'TypeDeclaration'; identifier: string; type: Type };
+
+export const TypeReference = creator<TypeReference>('TypeReference');
+export type TypeReference = { kind: 'TypeReference'; identifier: string };
+
+export const VariableDeclaration = creator<VariableDeclaration>('VariableDeclaration');
+export type VariableDeclaration = { kind: 'VariableDeclaration'; identifier: string; type: Type; defaultValue: Value };
+
+export type EdgeLabel = Assignment | Comparison | Reachability | Skip;
+export type EdgeNamePart = Binding | Literal;
+export type Expression = Access | Cast | Reference;
+export type Type = Arrow | Set | TypeReference;
+export type Value = Map | Element;
+export type ValueEntry = DefaultEntry | NamedEntry;

@@ -6,5 +6,5 @@ $ npm ci
 $ npm run build
 
 # Run an example.
-$ node start
+$ node lib ../examples/ticTacToe.rg
 ```

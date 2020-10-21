@@ -17,8 +17,9 @@ const opponent: PlayerToPlayer = {X:O, :X};
 var player: PlayerOrKeeper = keeper;
 var playerTurn: Player = X;
 var goals: Goals = {:50};
-var posX: CoordX = 0;
-var posY: CoordY = 0;
+var posX: Coord = 0;
+var posY: Coord = 0;
+var board: Board = {:{:e}};
 var visibility: Visibility = {:1};
 
 const otherInLine1: Coord -> Coord = {0:1, :0};
@@ -33,16 +34,16 @@ turn,move: move rev-> set;
 turn,end: move not-> set;
 
 move,chooseX: player = PlayerOrKeeper(playerTurn);
-// chooseX,chooseX#Coord: posX = Coord(#Coord);
-// chooseX#Coord,chooseY: ;
-// chooseY,chooseY#Coord: posY = Coord(#Coord);
-// chooseY#Coord,check: ;
+chooseX,chooseX(coord:Coord): posX = Coord(coord);
+chooseX(coord:Coord),chooseY: ;
+chooseY,chooseY(coord:Coord): posY = Coord(coord);
+chooseY(coord:Coord),check: ;
 check,set: board[posX][posY] == Piece(e);
 set,endmove: board[posX][posY] = Piece(playerTurn);
 
 endmove,checkwin: player = PlayerOrKeeper(keeper);
 checkwin,win: checkline rev-> endcheckline;
-chechwin,nextturn: checkline not-> endcheckline;
+checkwin,nextturn: checkline not-> endcheckline;
 nextturn,turn: playerTurn = opponent[playerTurn];
 
 checkline,checklineH1:;
@@ -60,4 +61,4 @@ checklineRL2,endcheckline: board[otherInLine2[posX]][otherInLine1[posY]] == Piec
 
 win,win1: goals[playerTurn] = Score(100);
 win1,end: goals[opponent[playerTurn]] = Score(0);
-end,end: player = PlayerOrKeeper(keeper);
+// end,end: player = PlayerOrKeeper(keeper);
