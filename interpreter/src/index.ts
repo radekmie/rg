@@ -17,18 +17,9 @@ function* nextStatesN(
 ): Generator<types.State, void, undefined> {
   if (depth === 0) yield state;
   else {
-    for (const nextState of nextStatesUnique(game, state))
+    for (const nextState of nextStates(game, state, true))
       yield* nextStatesN(game, nextState, depth - 1);
   }
-}
-
-function nextStatesUnique(game: types.Game, state: types.State) {
-  const states: Record<string, types.State> = Object.create(null);
-  for (const nextState of nextStates(game, state, true)) {
-    const key = JSON.stringify(nextState);
-    if (!(key in states)) states[key] = cloneState(nextState);
-  }
-  return Object.values(states);
 }
 
 function run(game: types.Game, plays = 1, debug = false) {
@@ -42,7 +33,7 @@ function run(game: types.Game, plays = 1, debug = false) {
     let turn = 0;
     for (;;) {
       if (debug) console.log(utils.pretty(state));
-      const states = nextStatesUnique(game, state);
+      const states = Array.from(nextStates(game, state, true), cloneState);
       if (states.length === 0) break;
       if (state.position.label !== 'end') moves.push(states.length);
       state = states[Math.floor(states.length * Math.random())];
@@ -74,5 +65,5 @@ const source = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
 const gameDefinition = parse(source);
 const game = build(gameDefinition);
 
-for (let depth = 1; depth <= 5; ++depth) runPerf(game, depth);
 run(game, 100);
+for (let depth = 1; depth <= 5; ++depth) runPerf(game, depth);

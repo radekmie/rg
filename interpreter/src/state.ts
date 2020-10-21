@@ -176,7 +176,10 @@ export function* reifyNodes(
 ) {
   // Fast path: nothing to substitute.
   const binds = Object.keys(rhsGenerator.types);
-  if (binds.length === 0) yield rhsGenerator;
+  if (binds.length === 0) {
+    yield rhsGenerator;
+    return;
+  }
 
   // Slow path: substitute all binds.
   const rhs = types.EdgeName({
