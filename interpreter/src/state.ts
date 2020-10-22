@@ -1,6 +1,3 @@
-// import { EdgeLabel, Expression, Game, State, Type, Value } from './types';
-// import { assert } from './utils';
-
 import * as types from './ist/types';
 import * as utils from './utils';
 

@@ -128,5 +128,5 @@ continue, turn: turnPlayer = opponent[turnPlayer];
 
 lose, win: turnPlayer = opponent[turnPlayer];
 win, score: goals[turnPlayer] = Score(100);
-score, end: goals[opponent[turnPlayer]] = Score(0);
-// end, end: player = PlayerOrKeeper(keeper);
+score, finish: goals[opponent[turnPlayer]] = Score(0);
+finish, end: player = PlayerOrKeeper(keeper);

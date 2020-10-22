@@ -60,5 +60,5 @@ checklineRL1,checklineRL2: board[otherInLine1[posX]][otherInLine2[posY]] == Piec
 checklineRL2,endcheckline: board[otherInLine2[posX]][otherInLine1[posY]] == Piece(playerTurn);
 
 win,win1: goals[playerTurn] = Score(100);
-win1,end: goals[opponent[playerTurn]] = Score(0);
-// end,end: player = PlayerOrKeeper(keeper);
+win1,win2: goals[opponent[playerTurn]] = Score(0);
+win2,end: player = PlayerOrKeeper(keeper);

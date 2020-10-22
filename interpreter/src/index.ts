@@ -66,4 +66,4 @@ const gameDefinition = parse(source);
 const game = build(gameDefinition);
 
 run(game, 100);
-for (let depth = 1; depth <= 5; ++depth) runPerf(game, depth);
+for (let depth = 1; depth <= 21; ++depth) runPerf(game, depth);
