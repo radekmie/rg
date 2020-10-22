@@ -37,8 +37,8 @@ export function evaluateComparison(
   label: types.EdgeLabel,
 ) {
   utils.assert(label.kind === 'Comparison', 'Expected Comparison.');
-  const lhs = evaluateExpression(game, state, label.lhs);
-  const rhs = evaluateExpression(game, state, label.rhs);
+  const lhs = evaluateExpression(game, state, label.lhs, true);
+  const rhs = evaluateExpression(game, state, label.rhs, true);
   const equal = evaluateEquality(lhs, rhs);
   return label.negated ? !equal : equal;
 }
@@ -67,21 +67,28 @@ export function evaluateExpression(
   game: types.Game,
   state: types.State,
   expression: types.Expression,
+  readOnly: boolean,
 ): types.Value {
   switch (expression.kind) {
     case 'Access': {
-      const map = evaluateExpression(game, state, expression.lhs);
+      const map = evaluateExpression(game, state, expression.lhs, readOnly);
       utils.assert(map.kind === 'Map', 'Only Map can be accessed.');
-      const key = evaluateExpression(game, state, expression.rhs);
+      const key = evaluateExpression(game, state, expression.rhs, readOnly);
       utils.assert(key.kind === 'Element', 'Only Element can be key.');
       // TODO: Type check.
+      if (readOnly) {
+        return key.value in map.values
+          ? map.values[key.value]
+          : map.defaultValue;
+      }
+
       if (!(key.value in map.values))
         map.values[key.value] = cloneValue(map.defaultValue);
       return map.values[key.value];
     }
     case 'Cast':
       // TODO: Type check.
-      return evaluateExpression(game, state, expression.rhs);
+      return evaluateExpression(game, state, expression.rhs, readOnly);
     case 'Reference': {
       if (expression.identifier in game.constants)
         return game.constants[expression.identifier];
@@ -127,7 +134,7 @@ export function* nextStates(
       state.position = rhs;
       switch (label.kind) {
         case 'Assignment': {
-          const value = evaluateExpression(game, state, label.rhs);
+          const value = evaluateExpression(game, state, label.rhs, true);
           const previousValue = setValue(game, state, label.lhs, value);
 
           const yieldAndStop =
@@ -231,14 +238,16 @@ export function setValue(
 ): types.Value {
   switch (expression.kind) {
     case 'Access': {
-      const map = evaluateExpression(game, state, expression.lhs);
+      const map = evaluateExpression(game, state, expression.lhs, false);
       utils.assert(map.kind === 'Map', 'Only Map can be accessed.');
-      const key = evaluateExpression(game, state, expression.rhs);
+      const key = evaluateExpression(game, state, expression.rhs, true);
       utils.assert(key.kind === 'Element', 'Only Element can be key.');
       // TODO: Type check.
-      const previousValue = map.values[key.value];
-      map.values[key.value] = value;
-      for (const value of Object.values(state.values)) compact(value);
+      const previousValue =
+        key.value in map.values ? map.values[key.value] : map.defaultValue;
+      if (evaluateEquality(previousValue, value)) delete map.values[key.value];
+      else map.values[key.value] = value;
+      compact(map);
       return previousValue;
     }
     case 'Cast':
@@ -264,9 +273,6 @@ export function setValue(
 export function compact(value: types.Value) {
   switch (value.kind) {
     case 'Map':
-      // FIXME: Why is it happening?
-      for (const key in value.values)
-        if (value.values[key] === undefined) delete value.values[key];
       compact(value.defaultValue);
       for (const key of Object.keys(value.values)) {
         compact(value.values[key]);
