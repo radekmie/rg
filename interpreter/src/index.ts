@@ -1,28 +1,9 @@
-import fs from 'fs';
-
-import { parse } from './ast';
-import { build } from './ist';
-import * as types from './ist/types';
+import openGame from './io';
+import { cloneState, createInitialState, nextStates } from './ist/state';
+import * as ist from './ist/types';
 import * as utils from './utils';
-import { cloneState, createInitialState, nextStates } from './state';
 
-function average(xs: number[]) {
-  return xs.reduce((a, b) => a + b, 0) / xs.length;
-}
-
-function* nextStatesN(
-  game: types.Game,
-  state: types.State,
-  depth: number,
-): Generator<types.State, void, undefined> {
-  if (depth === 0) yield state;
-  else {
-    for (const nextState of nextStates(game, state, true))
-      yield* nextStatesN(game, nextState, depth - 1);
-  }
-}
-
-function run(game: types.Game, plays = 1, debug = false) {
+function run(game: ist.Game, plays = 1, debug = false) {
   const moves: number[] = [];
   const times: number[] = [];
   const turns: number[] = [];
@@ -46,24 +27,34 @@ function run(game: types.Game, plays = 1, debug = false) {
 
     console.clear();
     console.log(`after ${play} plays:`);
-    console.log(`  avg. moves: ${average(moves).toFixed(2)}`);
-    console.log(`  avg. times: ${average(times).toFixed(2)}ms`);
-    console.log(`  avg. turns: ${average(turns).toFixed(2)}`);
+    console.log(`  avg. moves: ${utils.average(moves).toFixed(2)}`);
+    console.log(`  avg. times: ${utils.average(times).toFixed(2)}ms`);
+    console.log(`  avg. turns: ${utils.average(turns).toFixed(2)}`);
   }
 }
 
-function runPerf(game: types.Game, depth: number) {
+function runPerf(game: ist.Game, depth: number) {
   let count = 0;
   const initialState = createInitialState(game);
   console.time(`runPerf(depth: ${depth})`);
   for (const _ of nextStatesN(game, initialState, depth)) ++count;
   console.timeEnd(`runPerf(depth: ${depth})`);
   console.log(`runPerf(depth: ${depth}) = ${count}`);
+
+  function* nextStatesN(
+    game: ist.Game,
+    state: ist.State,
+    depth: number,
+  ): Generator<ist.State, void, undefined> {
+    if (depth === 0) yield state;
+    else {
+      for (const nextState of nextStates(game, state, true))
+        yield* nextStatesN(game, nextState, depth - 1);
+    }
+  }
 }
 
-const source = fs.readFileSync(process.argv[2], { encoding: 'utf8' });
-const gameDefinition = parse(source);
-const game = build(gameDefinition);
+const game = openGame(process.argv[2]);
 
-run(game, 100);
-for (let depth = 1; depth <= 21; ++depth) runPerf(game, depth);
+run(game, 1000);
+for (let depth = 1; depth <= 10; ++depth) runPerf(game, depth);

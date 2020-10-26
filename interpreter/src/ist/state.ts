@@ -1,28 +1,28 @@
-import * as types from './ist/types';
-import * as utils from './utils';
+import * as ist from '../ist/types';
+import * as utils from '../utils';
 
-export function cloneState(state: types.State) {
-  return types.State({
+export function cloneState(state: ist.State) {
+  return ist.State({
     position: state.position,
     values: utils.mapValues(state.values, cloneValue),
   });
 }
 
-export function cloneValue(value: types.Value): types.Value {
+export function cloneValue(value: ist.Value): ist.Value {
   switch (value.kind) {
     case 'Element':
-      return types.Element({ value: value.value });
+      return ist.Element({ value: value.value });
     case 'Map':
-      return types.Map({
+      return ist.Map({
         defaultValue: cloneValue(value.defaultValue),
         values: utils.mapValues(value.values, cloneValue),
       });
   }
 }
 
-export function createInitialState(game: types.Game) {
-  return types.State({
-    position: types.EdgeName({
+export function createInitialState(game: ist.Game) {
+  return ist.State({
+    position: ist.EdgeName({
       label: 'begin',
       types: Object.create(null),
       values: Object.create(null),
@@ -32,9 +32,9 @@ export function createInitialState(game: types.Game) {
 }
 
 export function evaluateComparison(
-  game: types.Game,
-  state: types.State,
-  label: types.EdgeLabel,
+  game: ist.Game,
+  state: ist.State,
+  label: ist.EdgeLabel,
 ) {
   utils.assert(label.kind === 'Comparison', 'Expected Comparison.');
   const lhs = evaluateExpression(game, state, label.lhs, true);
@@ -43,12 +43,13 @@ export function evaluateComparison(
   return label.negated ? !equal : equal;
 }
 
-export function evaluateEquality(lhs: types.Value, rhs: types.Value): boolean {
+export function evaluateEquality(lhs: ist.Value, rhs: ist.Value): boolean {
   switch (lhs.kind) {
     case 'Element':
-      return rhs.kind === 'Element' && lhs.value === rhs.value;
+      utils.assert(rhs.kind === 'Element', 'Equality for different kinds.');
+      return lhs.value === rhs.value;
     case 'Map':
-      if (rhs.kind !== 'Map') return false;
+      utils.assert(rhs.kind === 'Map', 'Equality for different kinds.');
       // TODO: Type check.
       // TODO: It should iterate over type values.
       for (const [key, lhsValue] of Object.entries(lhs.values)) {
@@ -64,11 +65,11 @@ export function evaluateEquality(lhs: types.Value, rhs: types.Value): boolean {
 }
 
 export function evaluateExpression(
-  game: types.Game,
-  state: types.State,
-  expression: types.Expression,
+  game: ist.Game,
+  state: ist.State,
+  expression: ist.Expression,
   readOnly: boolean,
-): types.Value {
+): ist.Value {
   switch (expression.kind) {
     case 'Access': {
       const map = evaluateExpression(game, state, expression.lhs, readOnly);
@@ -86,28 +87,27 @@ export function evaluateExpression(
         map.values[key.value] = cloneValue(map.defaultValue);
       return map.values[key.value];
     }
+    case 'BindReference': {
+      const value = state.position.values[expression.identifier];
+      utils.assert(value !== null, `Unbound bind: ${expression.identifier}.`);
+      return value;
+    }
     case 'Cast':
       // TODO: Type check.
       return evaluateExpression(game, state, expression.rhs, readOnly);
-    case 'Reference': {
-      if (expression.identifier in game.constants)
-        return game.constants[expression.identifier];
-      if (expression.identifier in game.variables)
-        return state.values[expression.identifier];
-      if (expression.identifier in state.position.types) {
-        const value = state.position.values[expression.identifier];
-        utils.assert(value !== null, `Unbound bind: ${expression.identifier}.`);
-        return value;
-      }
-      return types.Element({ value: expression.identifier });
-    }
+    case 'ConstantReference':
+      return game.constants[expression.identifier];
+    case 'ElementReference':
+      return ist.Element({ value: expression.identifier });
+    case 'VariableReference':
+      return state.values[expression.identifier];
   }
 }
 
 export function evaluateReachability(
-  game: types.Game,
-  state: types.State,
-  label: types.EdgeLabel,
+  game: ist.Game,
+  state: ist.State,
+  label: ist.EdgeLabel,
 ) {
   utils.assert(label.kind === 'Reachability', 'Expected Reachability.');
 
@@ -121,10 +121,10 @@ export function evaluateReachability(
 }
 
 export function* nextStates(
-  game: types.Game,
-  state: types.State,
+  game: ist.Game,
+  state: ist.State,
   yieldOnPlayer: boolean,
-): Generator<types.State, void, undefined> {
+): Generator<ist.State, void, undefined> {
   if (!yieldOnPlayer) yield state;
 
   for (const { label, lhs, rhs: rhsGenerator } of game.edges) {
@@ -139,7 +139,7 @@ export function* nextStates(
 
           const yieldAndStop =
             yieldOnPlayer &&
-            label.lhs.kind === 'Reference' &&
+            label.lhs.kind === 'VariableReference' &&
             label.lhs.identifier === 'player';
 
           if (yieldAndStop) yield state;
@@ -174,9 +174,9 @@ export function* nextStates(
 }
 
 export function* reifyNodes(
-  game: types.Game,
-  lhs: types.EdgeName,
-  rhsGenerator: types.EdgeName,
+  game: ist.Game,
+  lhs: ist.EdgeName,
+  rhsGenerator: ist.EdgeName,
 ) {
   // Fast path: nothing to substitute.
   const binds = Object.keys(rhsGenerator.types);
@@ -186,7 +186,7 @@ export function* reifyNodes(
   }
 
   // Slow path: substitute all binds.
-  const rhs = types.EdgeName({
+  const rhs = ist.EdgeName({
     label: rhsGenerator.label,
     types: rhsGenerator.types,
     values: utils.mapValues(rhsGenerator.values, value => value),
@@ -202,7 +202,7 @@ export function* reifyNodes(
 
   function* iterateNth(
     index: number,
-  ): Generator<types.EdgeName, void, undefined> {
+  ): Generator<ist.EdgeName, void, undefined> {
     // All binds are substituted.
     if (binds.length === index) {
       yield rhs;
@@ -220,7 +220,7 @@ export function* reifyNodes(
     }
 
     for (const value of bindType.identifiers) {
-      rhs.values[bind] = types.Element({ value });
+      rhs.values[bind] = ist.Element({ value });
       yield* iterateNth(index + 1);
     }
 
@@ -231,11 +231,11 @@ export function* reifyNodes(
 }
 
 export function setValue(
-  game: types.Game,
-  state: types.State,
-  expression: types.Expression,
-  value: types.Value,
-): types.Value {
+  game: ist.Game,
+  state: ist.State,
+  expression: ist.Expression,
+  value: ist.Value,
+): ist.Value {
   switch (expression.kind) {
     case 'Access': {
       const map = evaluateExpression(game, state, expression.lhs, false);
@@ -250,18 +250,19 @@ export function setValue(
       compact(map);
       return previousValue;
     }
+    case 'BindReference':
+      utils.assert(false, 'Cannot assign to a BindReference.');
+      break;
     case 'Cast':
       utils.assert(false, 'Cannot assign to a Cast.');
       break;
-    case 'Reference': {
-      utils.assert(
-        !(expression.identifier in game.constants),
-        'Cannot assign to a Constant.',
-      );
-      utils.assert(
-        expression.identifier in game.variables,
-        'Cannot assign to an Element.',
-      );
+    case 'ConstantReference':
+      utils.assert(false, 'Cannot assign to a ConstantReference.');
+      break;
+    case 'ElementReference':
+      utils.assert(false, 'Cannot assign to a ElementReference.');
+      break;
+    case 'VariableReference': {
       // TODO: Type check.
       const previousValue = state.values[expression.identifier];
       state.values[expression.identifier] = value;
@@ -270,7 +271,7 @@ export function setValue(
   }
 }
 
-export function compact(value: types.Value) {
+export function compact(value: ist.Value) {
   switch (value.kind) {
     case 'Map':
       compact(value.defaultValue);

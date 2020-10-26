@@ -1,9 +1,9 @@
-import * as astTypes from '../ast/types';
+import * as ast from '../ast/types';
 import * as utils from '../utils';
-import * as istTypes from './types';
+import * as ist from './types';
 
-export function build(gameDeclaration: astTypes.GameDeclaration) {
-  const game = istTypes.Game({
+export default function build(gameDeclaration: ast.GameDeclaration) {
+  const game = ist.Game({
     constants: Object.create(null),
     edges: [],
     types: Object.create(null),
@@ -21,8 +21,8 @@ export function build(gameDeclaration: astTypes.GameDeclaration) {
 }
 
 function buildConstants(
-  game: istTypes.Game,
-  constantDeclarations: astTypes.ConstantDeclaration[],
+  game: ist.Game,
+  constantDeclarations: ast.ConstantDeclaration[],
 ) {
   for (const constantDeclaration of constantDeclarations) {
     game.constants[constantDeclaration.identifier] = buildValue(
@@ -33,8 +33,8 @@ function buildConstants(
   }
 }
 
-function buildEdgeName(game: istTypes.Game, edgeName: astTypes.EdgeName) {
-  return istTypes.EdgeName({
+function buildEdgeName(game: ist.Game, edgeName: ast.EdgeName) {
+  return ist.EdgeName({
     label: edgeName.parts
       .map(edgeNamePart => {
         switch (edgeNamePart.kind) {
@@ -74,100 +74,106 @@ function buildEdgeName(game: istTypes.Game, edgeName: astTypes.EdgeName) {
   });
 }
 
-function buildEdgeLabel(game: istTypes.Game, edgeLabel: astTypes.EdgeLabel) {
+function buildEdgeLabel(
+  game: ist.Game,
+  edgeLabel: ast.EdgeLabel,
+  binds: Set<string>,
+) {
   switch (edgeLabel.kind) {
     case 'Assignment':
-      return istTypes.Assignment({
-        lhs: buildExpression(game, edgeLabel.lhs),
-        rhs: buildExpression(game, edgeLabel.rhs),
+      return ist.Assignment({
+        lhs: buildExpression(game, edgeLabel.lhs, binds),
+        rhs: buildExpression(game, edgeLabel.rhs, binds),
       });
     case 'Comparison':
-      return istTypes.Comparison({
-        lhs: buildExpression(game, edgeLabel.lhs),
-        rhs: buildExpression(game, edgeLabel.rhs),
+      return ist.Comparison({
+        lhs: buildExpression(game, edgeLabel.lhs, binds),
+        rhs: buildExpression(game, edgeLabel.rhs, binds),
         negated: edgeLabel.negated,
       });
     case 'Reachability':
-      return istTypes.Reachability({
+      return ist.Reachability({
         lhs: buildEdgeName(game, edgeLabel.lhs),
         rhs: buildEdgeName(game, edgeLabel.rhs),
         mode: edgeLabel.mode,
       });
     case 'Skip':
-      return istTypes.Skip({});
+      return ist.Skip({});
   }
 }
 
-function buildEdges(
-  game: istTypes.Game,
-  edgeDeclarations: astTypes.EdgeDeclaration[],
-) {
+function buildEdges(game: ist.Game, edgeDeclarations: ast.EdgeDeclaration[]) {
   for (const edgeDeclaration of edgeDeclarations) {
+    // TODO: Type check binds.
+    const lhs = buildEdgeName(game, edgeDeclaration.lhs);
+    const rhs = buildEdgeName(game, edgeDeclaration.rhs);
+    const binds = new Set([
+      ...Object.keys(lhs.types),
+      ...Object.keys(rhs.types),
+    ]);
+
     game.edges.push(
-      istTypes.Edge({
-        // TODO: Type check.
-        lhs: buildEdgeName(game, edgeDeclaration.lhs),
-        rhs: buildEdgeName(game, edgeDeclaration.rhs),
-        label: buildEdgeLabel(game, edgeDeclaration.label),
+      ist.Edge({
+        lhs,
+        rhs,
+        label: buildEdgeLabel(game, edgeDeclaration.label, binds),
       }),
     );
   }
 }
 
 function buildExpression(
-  game: istTypes.Game,
-  expression: astTypes.Expression,
-): istTypes.Expression {
+  game: ist.Game,
+  expression: ast.Expression,
+  binds: Set<string>,
+): ist.Expression {
   switch (expression.kind) {
     case 'Access':
-      return istTypes.Access({
-        lhs: buildExpression(game, expression.lhs),
-        rhs: buildExpression(game, expression.rhs),
+      return ist.Access({
+        lhs: buildExpression(game, expression.lhs, binds),
+        rhs: buildExpression(game, expression.rhs, binds),
       });
     case 'Cast':
-      return istTypes.Cast({
+      return ist.Cast({
         lhs: buildTypeOrFail(game, expression.lhs),
-        rhs: buildExpression(game, expression.rhs),
+        rhs: buildExpression(game, expression.rhs, binds),
       });
     case 'Reference':
-      return istTypes.Reference({ identifier: expression.identifier });
+      if (binds.has(expression.identifier))
+        return ist.BindReference({ identifier: expression.identifier });
+      if (expression.identifier in game.constants)
+        return ist.ConstantReference({ identifier: expression.identifier });
+      if (expression.identifier in game.variables)
+        return ist.VariableReference({ identifier: expression.identifier });
+      return ist.ElementReference({ identifier: expression.identifier });
   }
 }
 
-function buildType(
-  game: istTypes.Game,
-  type: astTypes.Type,
-): istTypes.Type | null {
+function buildType(game: ist.Game, type: ast.Type): ist.Type | null {
   switch (type.kind) {
     case 'Arrow': {
       if (!(type.lhs in game.types)) return null;
       const lhs = game.types[type.lhs];
       const rhs = buildType(game, type.rhs);
       if (rhs === null) return null;
-      return istTypes.Arrow({ lhs, rhs });
+      return ist.Arrow({ lhs, rhs });
     }
     case 'Set':
-      return istTypes.Set({ identifiers: type.identifiers });
+      return ist.Set({ identifiers: type.identifiers });
     case 'TypeReference':
       if (type.identifier in game.types) return game.types[type.identifier];
       return null;
   }
 }
 
-function buildTypeOrFail(
-  game: istTypes.Game,
-  type: astTypes.Type,
-): istTypes.Type {
+function buildTypeOrFail(game: ist.Game, type: ast.Type): ist.Type {
   const builtType = buildType(game, type);
   utils.assert(builtType !== null, 'Unresolved type.');
   return builtType;
 }
 
-function buildTypes(
-  game: istTypes.Game,
-  typeDeclarations: astTypes.TypeDeclaration[],
-) {
-  const unresolvedTypeDeclarations: astTypes.TypeDeclaration[] = [];
+function buildTypes(game: ist.Game, typeDeclarations: ast.TypeDeclaration[]) {
+  const unresolvedTypeDeclarations: ast.TypeDeclaration[] = [];
   for (const typeDeclaration of typeDeclarations) {
     const resolved = buildType(game, typeDeclaration.type);
     if (resolved === null) unresolvedTypeDeclarations.push(typeDeclaration);
@@ -185,15 +191,15 @@ function buildTypes(
 }
 
 function buildValue(
-  game: istTypes.Game,
-  type: istTypes.Type,
-  value: astTypes.Value,
-): istTypes.Value {
+  game: ist.Game,
+  type: ist.Type,
+  value: ast.Value,
+): ist.Value {
   switch (value.kind) {
     case 'Element':
       if (value.identifier in game.constants)
         return game.constants[value.identifier];
-      return istTypes.Element({ value: value.identifier });
+      return ist.Element({ value: value.identifier });
     case 'Map': {
       utils.assert(type.kind === 'Arrow', 'Incorrect Map type found.');
 
@@ -211,7 +217,7 @@ function buildValue(
         'Exactly one default entry required.',
       );
 
-      return istTypes.Map({
+      return ist.Map({
         defaultValue: buildValue(game, type.rhs, defaultEntries[0].value),
         values: value.entries
           .flatMap(entry => {
@@ -244,8 +250,8 @@ function buildValue(
 }
 
 function buildVariables(
-  game: istTypes.Game,
-  variableDeclarations: astTypes.VariableDeclaration[],
+  game: ist.Game,
+  variableDeclarations: ast.VariableDeclaration[],
 ) {
   for (const variableDeclaration of variableDeclarations) {
     utils.assert(
@@ -257,7 +263,7 @@ function buildVariables(
       `Duplicated variable ${variableDeclaration.identifier}.`,
     );
 
-    game.variables[variableDeclaration.identifier] = istTypes.Variable({
+    game.variables[variableDeclaration.identifier] = ist.Variable({
       type: buildTypeOrFail(game, variableDeclaration.type),
       defaultValue: buildValue(
         game,
