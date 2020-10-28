@@ -55,6 +55,20 @@ function runPerf(game: ist.Game, depth: number) {
 }
 
 const game = openGame(process.argv[2]);
-
-run(game, 1000);
-for (let depth = 1; depth <= 10; ++depth) runPerf(game, depth);
+switch (process.argv[3]) {
+  case 'perf':
+    for (let depth = 1; depth <= 10; ++depth) runPerf(game.ist, depth);
+    break;
+  case 'print-ast':
+    console.log(JSON.stringify(game.ast));
+    break;
+  case 'print-cst':
+    console.log(JSON.stringify(game.cst));
+    break;
+  case 'print-ist':
+    console.log(JSON.stringify(game.ist));
+    break;
+  case 'run':
+    run(game.ist, 1000);
+    break;
+}
