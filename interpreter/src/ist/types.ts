@@ -31,11 +31,11 @@ export type EdgeName = { kind: 'EdgeName'; label: string; types: Record<string, 
 export const Element = creator<Element>('Element');
 export type Element = { kind: 'Element'; value: string };
 
-export const ElementReference = creator<ElementReference>('ElementReference');
-export type ElementReference = { kind: 'ElementReference'; identifier: string };
-
 export const Game = creator<Game>('Game');
 export type Game = { kind: 'Game'; constants: Record<string, Value>; edges: Edge[]; types: Record<string, Type>; variables: Record<string, Variable> };
+
+export const Literal = creator<Literal>('Literal');
+export type Literal = { kind: 'Literal'; value: Value };
 
 export const Map = creator<Map>('Map');
 export type Map = { kind: 'Map'; defaultValue: Value; values: Record<string, Value> };
@@ -44,7 +44,7 @@ export const Reachability = creator<Reachability>('Reachability');
 export type Reachability = { kind: 'Reachability'; lhs: EdgeName; rhs: EdgeName; mode: 'not' | 'rev' };
 
 export const Set = creator<Set>('Set');
-export type Set = { kind: 'Set'; identifiers: string[] };
+export type Set = { kind: 'Set'; values: Value[] };
 
 export const Skip = creator<Skip>('Skip');
 export type Skip = { kind: 'Skip' };
@@ -59,6 +59,6 @@ export const VariableReference = creator<VariableReference>('VariableReference')
 export type VariableReference = { kind: 'VariableReference'; identifier: string };
 
 export type EdgeLabel = Assignment | Comparison | Reachability | Skip;
-export type Expression = Access | Cast | BindReference | ConstantReference | ElementReference | VariableReference;
+export type Expression = Access | Cast | BindReference | ConstantReference | Literal | VariableReference;
 export type Type = Arrow | Set;
 export type Value = Map | Element;

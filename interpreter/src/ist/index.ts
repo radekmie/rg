@@ -58,19 +58,7 @@ function buildEdgeName(game: ist.Game, edgeName: ast.EdgeName) {
         types[binding.identifier] = buildTypeOrFail(game, binding.type);
         return types;
       }, Object.create(null)),
-    values: edgeName.parts
-      .flatMap(edgeNamePart => {
-        switch (edgeNamePart.kind) {
-          case 'Binding':
-            return [edgeNamePart];
-          case 'Literal':
-            return [];
-        }
-      })
-      .reduce((values, binding) => {
-        values[binding.identifier] = null;
-        return values;
-      }, Object.create(null)),
+    values: Object.create(null),
   });
 }
 
@@ -145,7 +133,9 @@ function buildExpression(
         return ist.ConstantReference({ identifier: expression.identifier });
       if (expression.identifier in game.variables)
         return ist.VariableReference({ identifier: expression.identifier });
-      return ist.ElementReference({ identifier: expression.identifier });
+      return ist.Literal({
+        value: ist.Element({ value: expression.identifier }),
+      });
   }
 }
 
@@ -159,7 +149,9 @@ function buildType(game: ist.Game, type: ast.Type): ist.Type | null {
       return ist.Arrow({ lhs, rhs });
     }
     case 'Set':
-      return ist.Set({ identifiers: type.identifiers });
+      return ist.Set({
+        values: type.identifiers.map(value => ist.Element({ value })),
+      });
     case 'TypeReference':
       if (type.identifier in game.types) return game.types[type.identifier];
       return null;

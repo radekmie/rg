@@ -97,8 +97,8 @@ export function evaluateExpression(
       return evaluateExpression(game, state, expression.rhs, readOnly);
     case 'ConstantReference':
       return game.constants[expression.identifier];
-    case 'ElementReference':
-      return ist.Element({ value: expression.identifier });
+    case 'Literal':
+      return expression.value;
     case 'VariableReference':
       return state.values[expression.identifier];
   }
@@ -194,8 +194,8 @@ export function* reifyNodes(
 
   // Copy existing lhs binds to rhs.
   for (const bind of binds) {
-    if (bind in lhs.types && lhs.values[bind] !== null) {
-      utils.assert(rhs.values[bind] === null, 'Double bind.');
+    if (bind in lhs.types && lhs.values[bind] !== undefined) {
+      utils.assert(rhs.values[bind] === undefined, 'Double bind.');
       rhs.values[bind] = lhs.values[bind];
     }
   }
@@ -214,17 +214,17 @@ export function* reifyNodes(
     utils.assert(bindType.kind === 'Set', 'Can iterate only over Set.');
 
     // This bind was substituted by lhs.
-    if (rhs.values[bind] !== null) {
+    if (rhs.values[bind] !== undefined) {
       yield* iterateNth(index + 1);
       return;
     }
 
-    for (const value of bindType.identifiers) {
-      rhs.values[bind] = ist.Element({ value });
+    for (const value of bindType.values) {
+      rhs.values[bind] = value;
       yield* iterateNth(index + 1);
     }
 
-    rhs.values[bind] = null;
+    delete rhs.values[bind];
   }
 
   yield* iterateNth(0);
@@ -259,8 +259,8 @@ export function setValue(
     case 'ConstantReference':
       utils.assert(false, 'Cannot assign to a ConstantReference.');
       break;
-    case 'ElementReference':
-      utils.assert(false, 'Cannot assign to a ElementReference.');
+    case 'Literal':
+      utils.assert(false, 'Cannot assign to a Literal.');
       break;
     case 'VariableReference': {
       // TODO: Type check.
