@@ -247,7 +247,6 @@ impl State {
                         .map(move |values| (edge, values))
                 })
                 .collect(),
-            spent: vec![],
             state: self,
         }
     }
@@ -263,7 +262,6 @@ impl State {
 pub struct StateNext<'a> {
     game: &'a Game,
     queue: Vec<(&'a Edge, RcStrHashMap<Value>)>,
-    spent: Vec<State>,
     state: &'a State,
 }
 
@@ -271,63 +269,56 @@ impl Iterator for StateNext<'_> {
     type Item = State;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.spent.pop().or_else(|| {
-            self.queue.pop().and_then(|(edge, values)| {
-                let mut state = State {
-                    position: EdgeName {
-                        label: edge.rhs.label.clone(),
-                        types: edge.rhs.types.clone(),
-                        values,
-                    },
-                    values: self.state.values.clone(),
-                };
+        while let Some((edge, values)) = self.queue.pop() {
+            let mut state = State {
+                position: EdgeName {
+                    label: edge.rhs.label.clone(),
+                    types: edge.rhs.types.clone(),
+                    values,
+                },
+                values: self.state.values.clone(),
+            };
 
-                let spent = match &edge.label {
-                    EdgeLabel::Assignment { lhs, rhs } => {
-                        state.eval_set(self.game, lhs, state.eval(self.game, rhs));
-                        vec![state]
+            match &edge.label {
+                EdgeLabel::Assignment { lhs, rhs } => {
+                    state.eval_set(self.game, lhs, state.eval(self.game, rhs));
+                    return Some(state);
+                }
+                EdgeLabel::Comparison { lhs, rhs, negated } => {
+                    let lhs_value = state.eval(self.game, lhs);
+                    let rhs_value = state.eval(self.game, rhs);
+                    let equal = lhs_value == rhs_value;
+                    if equal != *negated {
+                        return Some(state);
                     }
-                    EdgeLabel::Comparison { lhs, rhs, negated } => {
-                        let lhs_value = state.eval(self.game, lhs);
-                        let rhs_value = state.eval(self.game, rhs);
-                        let equal = lhs_value == rhs_value;
-                        if equal == *negated {
-                            vec![]
-                        } else {
-                            vec![state]
-                        }
-                    }
-                    EdgeLabel::Reachability { lhs, rhs, mode } => {
-                        let position = state.position;
+                }
+                EdgeLabel::Reachability { lhs, rhs, mode } => {
+                    let position = state.position;
 
-                        state.position = lhs.clone();
-                        let is_reachable = state.is_reachable(self.game, rhs);
-                        state.position = position;
+                    state.position = lhs.clone();
+                    let is_reachable = state.is_reachable(self.game, rhs);
+                    state.position = position;
 
-                        match mode {
-                            ReachabilityMode::Not => {
-                                if !is_reachable {
-                                    vec![state]
-                                } else {
-                                    vec![]
-                                }
+                    match mode {
+                        ReachabilityMode::Not => {
+                            if !is_reachable {
+                                return Some(state);
                             }
-                            ReachabilityMode::Rev => {
-                                if is_reachable {
-                                    vec![state]
-                                } else {
-                                    vec![]
-                                }
+                        }
+                        ReachabilityMode::Rev => {
+                            if is_reachable {
+                                return Some(state);
                             }
                         }
                     }
-                    EdgeLabel::Skip => vec![state],
-                };
+                }
+                EdgeLabel::Skip => {
+                    return Some(state);
+                }
+            }
+        }
 
-                self.spent = spent;
-                self.next()
-            })
-        })
+        None
     }
 }
 
@@ -340,24 +331,25 @@ impl Iterator for StateNextN<'_> {
     type Item = State;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.queue.pop().and_then(|(state, n)| {
+        while let Some((state, n)) = self.queue.pop() {
             if n == 0 {
-                Some(state)
-            } else {
-                let prev = state.values.get("player").unwrap();
-                for state in state.next_states(self.game) {
-                    let next = state.values.get("player").unwrap();
-                    let depth = if prev == next || next.is_element_of("keeper") {
-                        n
-                    } else {
-                        n - 1
-                    };
-
-                    self.queue.push((state, depth));
-                }
-                self.next()
+                return Some(state);
             }
-        })
+
+            let prev = state.values.get("player").unwrap();
+            for state in state.next_states(self.game) {
+                let next = state.values.get("player").unwrap();
+                let depth = if prev == next || next.is_element_of("keeper") {
+                    n
+                } else {
+                    n - 1
+                };
+
+                self.queue.push((state, depth));
+            }
+        }
+
+        None
     }
 }
 
