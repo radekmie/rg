@@ -45,7 +45,7 @@ fn run(game: &Game, rng: &mut ThreadRng, plays: usize) {
 fn run_perf(game: &Game, depth: usize) {
     let state = State::initial(game);
     let start = Instant::now();
-    let count = state.next_states_n(game, depth).count();
+    let count = state.next_states_n(game, depth + 1).count();
     println!(
         "runPerf(depth: {}): {:.2}ms",
         depth,
@@ -65,7 +65,7 @@ fn main() {
                 .get(3)
                 .map_or(10, |depth| depth.parse::<usize>().unwrap());
 
-            for depth in 1..=depth {
+            for depth in 0..=depth {
                 run_perf(&game, depth);
             }
         }
