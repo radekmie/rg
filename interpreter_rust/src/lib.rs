@@ -12,20 +12,17 @@ pub struct Edge {
 }
 
 impl Edge {
-    pub fn generate(&self) -> Vec<RcStrHashMap<Value>> {
-        self.rhs
-            .types
-            .iter()
-            .fold(vec![HashMap::new()], |mut sources, (bind, type_)| {
-                if let Some(value) = self
-                    .rhs
-                    .values
-                    .get(bind)
-                    .or_else(|| self.lhs.values.get(bind))
-                {
+    pub fn generate(&self) -> Vec<Rc<RcStrHashMap<Value>>> {
+        self.rhs.types.iter().fold(
+            vec![self.rhs.values.clone()],
+            |mut sources, (bind, type_)| {
+                if self.rhs.values.contains_key(bind) {
+                    sources
+                } else if let Some(value) = self.lhs.values.get(bind) {
                     for source in sources.iter_mut() {
-                        source.insert(bind.clone(), Rc::clone(value));
+                        Rc::make_mut(source).insert(bind.clone(), value.clone());
                     }
+
                     sources
                 } else {
                     match type_.deref() {
@@ -35,14 +32,15 @@ impl Edge {
                             .flat_map(|value| {
                                 sources.iter().map(move |source| {
                                     let mut source = source.clone();
-                                    source.insert(bind.clone(), Rc::clone(value));
+                                    Rc::make_mut(&mut source).insert(bind.clone(), value.clone());
                                     source
                                 })
                             })
                             .collect(),
                     }
                 }
-            })
+            },
+        )
     }
 }
 
@@ -69,8 +67,20 @@ pub enum EdgeLabel {
 #[derive(Clone, Deserialize)]
 pub struct EdgeName {
     label: RcStr,
-    types: RcStrHashMap<Type>,
-    values: RcStrHashMap<Value>,
+    types: Rc<RcStrHashMap<Type>>,
+    values: Rc<RcStrHashMap<Value>>,
+}
+
+impl EdgeName {
+    fn is(&self, label: &str) -> bool {
+        self.label.deref() == label
+    }
+}
+
+impl PartialEq for EdgeName {
+    fn eq(&self, other: &Self) -> bool {
+        self.label == other.label
+    }
 }
 
 #[derive(Clone, Deserialize)]
@@ -128,7 +138,7 @@ pub enum ReachabilityMode {
 #[derive(Clone)]
 pub struct State {
     position: EdgeName,
-    values: RcStrHashMap<Value>,
+    values: Rc<RcStrHashMap<Value>>,
 }
 
 impl State {
@@ -136,27 +146,24 @@ impl State {
         match expression {
             Expression::Access { lhs, rhs } => match self.eval(game, rhs).deref() {
                 Value::Element { value } => match self.eval(game, lhs).deref() {
-                    Value::Map {
-                        default_value,
-                        values,
-                    } => Rc::clone(values.get(value).unwrap_or(default_value)),
+                    Value::Map { default, values } => values.get(value).unwrap_or(default).clone(),
                     _ => panic!("Only Map can be accessed."),
                 },
                 _ => panic!("Only Element can be key."),
             },
             Expression::BindReference { identifier } => {
-                Rc::clone(self.position.values.get(identifier).unwrap())
+                self.position.values.get(identifier).unwrap().clone()
             }
             Expression::Cast { rhs, .. } => {
                 // TODO: Type check.
                 self.eval(game, rhs)
             }
             Expression::ConstantReference { identifier } => {
-                Rc::clone(game.constants.get(identifier).unwrap())
+                game.constants.get(identifier).unwrap().clone()
             }
-            Expression::Literal { value } => Rc::clone(value),
+            Expression::Literal { value } => value.clone(),
             Expression::VariableReference { identifier } => {
-                Rc::clone(self.values.get(identifier).unwrap())
+                self.values.get(identifier).unwrap().clone()
             }
         }
     }
@@ -164,28 +171,20 @@ impl State {
     pub fn eval_set(&mut self, game: &Game, expression: &Expression, set: Rc<Value>) {
         match expression {
             Expression::Access { lhs, rhs } => match self.eval(game, rhs).deref() {
-                Value::Element { value } => match self.eval(game, lhs).deref() {
-                    Value::Map {
-                        default_value,
-                        values,
-                    } => self.eval_set(
-                        game,
-                        lhs,
-                        Rc::from(Value::Map {
-                            default_value: Rc::clone(default_value),
-                            values: {
-                                let mut values = values.clone();
-                                if &set == default_value {
-                                    values.remove(value);
-                                } else {
-                                    values.insert(value.clone(), set);
-                                }
-                                values
-                            },
-                        }),
-                    ),
-                    _ => panic!("Only Map can be accessed."),
-                },
+                Value::Element { value } => {
+                    let mut map = self.eval(game, lhs);
+                    if let Value::Map { default, values } = Rc::make_mut(&mut map) {
+                        if &set == default {
+                            values.remove(value);
+                        } else {
+                            values.insert(value.clone(), set);
+                        }
+                    } else {
+                        panic!("Only Map can be accessed.");
+                    }
+
+                    self.eval_set(game, lhs, map);
+                }
                 _ => panic!("Only Element can be key."),
             },
             Expression::BindReference { .. } => panic!("BindReference is immutable."),
@@ -193,7 +192,7 @@ impl State {
             Expression::ConstantReference { .. } => panic!("ConstantReference is immutable."),
             Expression::Literal { .. } => panic!("Literal is immutable."),
             Expression::VariableReference { identifier } => {
-                *self.values.get_mut(identifier).unwrap() = set;
+                *Rc::make_mut(&mut self.values).get_mut(identifier).unwrap() = set;
             }
         }
     }
@@ -204,29 +203,28 @@ impl State {
                 .edges
                 .iter()
                 .find_map(|edge| {
-                    // TODO: Check binds.
-                    if edge.lhs.label.deref() == "begin" {
+                    if edge.lhs.is("begin") {
                         Some(edge.lhs.clone())
                     } else {
                         None
                     }
                 })
                 .expect("No begin node found."),
-            values: game
-                .variables
-                .iter()
-                .map(|(name, variable)| (name.clone(), Rc::clone(&variable.default_value)))
-                .collect(),
+            values: Rc::new(
+                game.variables
+                    .iter()
+                    .map(|(name, variable)| (name.clone(), variable.default.clone()))
+                    .collect(),
+            ),
         }
     }
 
     pub fn is_final(&self) -> bool {
-        self.position.label.deref() == "end"
+        self.position.is("end")
     }
 
     pub fn is_reachable(&self, game: &Game, position: &EdgeName) -> bool {
-        // TODO: Check binds.
-        if self.position.label == position.label {
+        if self.position == *position {
             true
         } else {
             self.next_states(game)
@@ -240,64 +238,78 @@ impl State {
             queue: game
                 .edges
                 .iter()
-                .filter(|edge| edge.lhs.label == self.position.label)
+                .filter(|edge| edge.lhs == self.position)
                 .flat_map(|edge| {
                     edge.generate()
                         .into_iter()
                         .map(move |values| (edge, values))
                 })
                 .collect(),
-            state: self,
+            reachables: HashMap::new(),
+            values: self.values.clone(),
         }
     }
 
-    pub fn next_states_n<'a>(&'a self, game: &'a Game, n: usize) -> StateNextN<'a> {
+    pub fn next_states_n<'a>(&'a self, game: &'a Game, n: usize, skip: bool) -> StateNextN<'a> {
         StateNextN {
             game,
             queue: vec![(self.clone(), n)],
+            skip,
         }
     }
 }
 
 pub struct StateNext<'a> {
     game: &'a Game,
-    queue: Vec<(&'a Edge, RcStrHashMap<Value>)>,
-    state: &'a State,
+    queue: Vec<(&'a Edge, Rc<RcStrHashMap<Value>>)>,
+    reachables: HashMap<(RcStr, RcStr), bool>,
+    values: Rc<RcStrHashMap<Value>>,
 }
 
 impl Iterator for StateNext<'_> {
     type Item = State;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some((edge, values)) = self.queue.pop() {
+        let StateNext {
+            game,
+            queue,
+            reachables,
+            values,
+        } = self;
+
+        while let Some((edge, binds)) = queue.pop() {
             let mut state = State {
                 position: EdgeName {
                     label: edge.rhs.label.clone(),
                     types: edge.rhs.types.clone(),
-                    values,
+                    values: binds,
                 },
-                values: self.state.values.clone(),
+                values: values.clone(),
             };
 
             match &edge.label {
                 EdgeLabel::Assignment { lhs, rhs } => {
-                    state.eval_set(self.game, lhs, state.eval(self.game, rhs));
+                    state.eval_set(game, lhs, state.eval(game, rhs));
                     return Some(state);
                 }
                 EdgeLabel::Comparison { lhs, rhs, negated } => {
-                    let lhs_value = state.eval(self.game, lhs);
-                    let rhs_value = state.eval(self.game, rhs);
+                    let lhs_value = state.eval(game, lhs);
+                    let rhs_value = state.eval(game, rhs);
                     let equal = lhs_value == rhs_value;
                     if equal != *negated {
                         return Some(state);
                     }
                 }
                 EdgeLabel::Reachability { lhs, rhs, mode } => {
-                    let position = state.position;
-
-                    state.position = lhs.clone();
-                    let is_reachable = state.is_reachable(self.game, rhs);
-                    state.position = position;
+                    let is_reachable = *reachables
+                        .entry((lhs.label.clone(), rhs.label.clone()))
+                        .or_insert_with(|| {
+                            let position = state.position.clone();
+                            state.position = lhs.clone();
+                            let is_reachable = state.is_reachable(game, rhs);
+                            state.position = position;
+                            is_reachable
+                        });
 
                     match mode {
                         ReachabilityMode::Not => {
@@ -320,11 +332,16 @@ impl Iterator for StateNext<'_> {
 
         None
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.queue.len(), Some(self.queue.len()))
+    }
 }
 
 pub struct StateNextN<'a> {
     game: &'a Game,
     queue: Vec<(State, usize)>,
+    skip: bool,
 }
 
 impl Iterator for StateNextN<'_> {
@@ -332,11 +349,11 @@ impl Iterator for StateNextN<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some((state, n)) = self.queue.pop() {
-            if n == 0 {
+            let prev = state.values.get("player").unwrap();
+            if n == 0 || self.skip && n == 1 && prev.is_element_of("keeper") {
                 return Some(state);
             }
 
-            let prev = state.values.get("player").unwrap();
             for state in state.next_states(self.game) {
                 let next = state.values.get("player").unwrap();
                 let depth = if prev == next || next.is_element_of("keeper") {
@@ -365,7 +382,7 @@ pub enum Type {
 pub enum Value {
     Map {
         #[serde(rename = "defaultValue")]
-        default_value: Rc<Value>,
+        default: Rc<Value>,
         values: RcStrHashMap<Value>,
     },
     Element {
@@ -388,14 +405,14 @@ impl PartialEq for Value {
             (Value::Element { value: a }, Value::Element { value: b }) => a == b,
             (
                 Value::Map {
-                    default_value: a_default_value,
+                    default: a_default,
                     values: a_values,
                 },
                 Value::Map {
-                    default_value: b_default_value,
+                    default: b_default,
                     values: b_values,
                 },
-            ) if a_default_value == b_default_value => a_values == b_values,
+            ) if a_default == b_default => a_values == b_values,
             _ => unimplemented!(),
         }
     }
@@ -404,7 +421,7 @@ impl PartialEq for Value {
 #[derive(Clone, Deserialize)]
 pub struct Variable {
     #[serde(rename = "defaultValue")]
-    default_value: Rc<Value>,
+    default: Rc<Value>,
     #[serde(rename = "type")]
     type_: Type,
 }

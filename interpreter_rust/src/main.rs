@@ -16,7 +16,7 @@ fn run(game: &Game, rng: &mut ThreadRng, plays: usize) {
         let mut state = State::initial(game);
         let mut turn = 0;
         loop {
-            let states = state.next_states_n(game, 1).collect::<Vec<_>>();
+            let states = state.next_states_n(game, 1, false).collect::<Vec<_>>();
             if states.is_empty() {
                 break;
             }
@@ -45,7 +45,7 @@ fn run(game: &Game, rng: &mut ThreadRng, plays: usize) {
 fn run_perf(game: &Game, depth: usize) {
     let state = State::initial(game);
     let start = Instant::now();
-    let count = state.next_states_n(game, depth + 1).count();
+    let count = state.next_states_n(game, depth + 1, true).count();
     println!(
         "runPerf(depth: {}): {:.2}ms",
         depth,
