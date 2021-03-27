@@ -10,5 +10,10 @@ $ node lib ../examples/ticTacToe.rg perf
 $ node lib ../examples/ticTacToe.rg print-ast
 $ node lib ../examples/ticTacToe.rg print-cst
 $ node lib ../examples/ticTacToe.rg print-ist
+$ node lib ../examples/ticTacToe.rg print-source-ll
 $ node lib ../examples/ticTacToe.rg run
+
+# Built-in high-level interoperability.
+# All above operations work as well.
+$ node lib ../examples/breakthrough.hrg print-source-hl
 ```

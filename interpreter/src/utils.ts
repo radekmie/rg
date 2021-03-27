@@ -8,8 +8,17 @@ export function average(xs: number[]) {
   return xs.reduce((a, b) => a + b, 0) / xs.length;
 }
 
+export function cartesian<T>(xss: T[][], ys: T[]): T[][] {
+  return xss.flatMap(xs => ys.map(y => xs.concat(y)));
+}
+
 export function creator<Type extends { kind: string }>(kind: Type['kind']) {
   return (data: Omit<Type, 'kind'>) => ({ kind, ...data });
+}
+
+export function find<T extends {}>(xs: T[], needle: Partial<T>) {
+  const keys = Object.keys(needle) as (keyof T)[];
+  return xs.find(x => keys.every(key => x[key] === needle[key]));
 }
 
 export function mapValues<T, U>(

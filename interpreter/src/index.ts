@@ -68,6 +68,12 @@ switch (process.argv[3]) {
   case 'print-ist':
     console.log(JSON.stringify(game.ist));
     break;
+  case 'print-source-hl':
+    console.log(game.source.hl);
+    break;
+  case 'print-source-ll':
+    console.log(game.source.ll);
+    break;
   case 'run':
     run(game.ist, 1000);
     break;
