@@ -127,14 +127,6 @@ impl Game {
     }
 }
 
-#[derive(Clone, Deserialize)]
-pub enum ReachabilityMode {
-    #[serde(rename = "not")]
-    Not,
-    #[serde(rename = "rev")]
-    Rev,
-}
-
 #[derive(Clone)]
 pub struct State {
     position: EdgeName,
