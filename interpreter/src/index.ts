@@ -1,5 +1,11 @@
 import openGame from './io';
-import { cloneState, createInitialState, nextStates } from './ist/state';
+import {
+  cloneState,
+  cloneValue,
+  createInitialState,
+  evaluateEquality,
+  nextStates,
+} from './ist/state';
 import * as ist from './ist/types';
 import * as utils from './utils';
 
@@ -33,6 +39,11 @@ function run(game: ist.Game, plays = 1, debug = false) {
   }
 }
 
+const keeper = ist.Element({ value: 'keeper' });
+function isSameOrKeeper(prev: ist.Value, next: ist.Value) {
+  return evaluateEquality(prev, next) || evaluateEquality(prev, keeper);
+}
+
 function runPerf(game: ist.Game, depth: number) {
   let count = 0;
   const initialState = createInitialState(game);
@@ -48,17 +59,23 @@ function runPerf(game: ist.Game, depth: number) {
   ): Generator<ist.State, void, undefined> {
     if (depth === 0) yield state;
     else {
-      for (const nextState of nextStates(game, state, true))
-        yield* nextStatesN(game, nextState, depth - 1);
+      const player = cloneValue(state.values.player);
+      for (const nextState of nextStates(game, state, true)) {
+        const step = isSameOrKeeper(player, state.values.player);
+        yield* nextStatesN(game, nextState, depth - (step ? 0 : 1));
+      }
     }
   }
 }
 
 const game = openGame(process.argv[2]);
 switch (process.argv[3]) {
-  case 'perf':
-    for (let depth = 1; depth <= 10; ++depth) runPerf(game.ist, depth);
+  case 'perf': {
+    const maxDepth = +process.argv[4];
+    utils.assert(isFinite(maxDepth) && maxDepth > 0, 'depth must be positive');
+    for (let depth = 0; depth <= maxDepth; ++depth) runPerf(game.ist, depth);
     break;
+  }
   case 'print-ast':
     console.log(JSON.stringify(game.ast));
     break;
@@ -74,7 +91,10 @@ switch (process.argv[3]) {
   case 'print-source-ll':
     console.log(game.source.ll);
     break;
-  case 'run':
-    run(game.ist, 1000);
+  case 'run': {
+    const plays = +process.argv[4];
+    utils.assert(isFinite(plays) && plays > 0, 'plays must be positive');
+    run(game.ist, plays);
     break;
+  }
 }
