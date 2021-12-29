@@ -41,7 +41,7 @@ export const Map = creator<Map>('Map');
 export type Map = { kind: 'Map'; defaultValue: Value; values: Record<string, Value> };
 
 export const Reachability = creator<Reachability>('Reachability');
-export type Reachability = { kind: 'Reachability'; lhs: EdgeName; rhs: EdgeName; mode: 'not' | 'rev' };
+export type Reachability = { kind: 'Reachability'; lhs: EdgeName; rhs: EdgeName; negated: boolean };
 
 export const Set = creator<Set>('Set');
 export type Set = { kind: 'Set'; values: Value[] };

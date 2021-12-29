@@ -102,8 +102,8 @@ var visible: Visibility = {:1};
 
 begin, turn: ;
 
-turn, move: move rev-> moved;
-turn, lose: move not->moved;
+turn, move: ? move -> moved;
+turn, lose: ! move -> moved;
 
 move, setIn: player = PlayerOrKeeper(turnPlayer);
 setIn, set(square:Square): pos = Square(square);

@@ -59,7 +59,7 @@ pub enum EdgeLabel {
     Reachability {
         lhs: EdgeName,
         rhs: EdgeName,
-        mode: ReachabilityMode,
+        negated: bool,
     },
     Skip,
 }
@@ -295,12 +295,12 @@ impl Iterator for StateNext<'_> {
                 EdgeLabel::Comparison { lhs, rhs, negated } => {
                     let lhs_value = state.eval(game, lhs);
                     let rhs_value = state.eval(game, rhs);
-                    let equal = lhs_value == rhs_value;
-                    if equal != *negated {
+                    let is_equal = lhs_value == rhs_value;
+                    if is_equal != *negated {
                         return Some(state);
                     }
                 }
-                EdgeLabel::Reachability { lhs, rhs, mode } => {
+                EdgeLabel::Reachability { lhs, rhs, negated } => {
                     let is_reachable = *reachables
                         .entry((lhs.label.clone(), rhs.label.clone()))
                         .or_insert_with(|| {
@@ -310,18 +310,8 @@ impl Iterator for StateNext<'_> {
                             state.position = position;
                             is_reachable
                         });
-
-                    match mode {
-                        ReachabilityMode::Not => {
-                            if !is_reachable {
-                                return Some(state);
-                            }
-                        }
-                        ReachabilityMode::Rev => {
-                            if is_reachable {
-                                return Some(state);
-                            }
-                        }
+                    if is_reachable != *negated {
+                        return Some(state);
                     }
                 }
                 EdgeLabel::Skip => {

@@ -47,7 +47,7 @@ export const NamedEntry = creator<NamedEntry>('NamedEntry');
 export type NamedEntry = { kind: 'NamedEntry'; identifier: string; value: Value };
 
 export const Reachability = creator<Reachability>('Reachability');
-export type Reachability = { kind: 'Reachability'; lhs: EdgeName; rhs: EdgeName; mode: 'not' | 'rev' };
+export type Reachability = { kind: 'Reachability'; lhs: EdgeName; rhs: EdgeName; negated: boolean };
 
 export const Reference = creator<Reference>('Reference');
 export type Reference = { kind: 'Reference'; identifier: string };

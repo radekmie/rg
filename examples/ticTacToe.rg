@@ -30,8 +30,8 @@ const onRLDiagonal: Coord -> Coord -> Bool = {2:{0:1,:0}, 1:{1:1,:0}, 0:{2:1,:0}
 
 begin,turn: playerTurn = Player(X);
 
-turn,move: move rev-> set;
-turn,end: move not-> set;
+turn,move: ? move -> set;
+turn,end: ! move -> set;
 
 move,chooseX: player = PlayerOrKeeper(playerTurn);
 chooseX,chooseX(coord:Coord): posX = Coord(coord);
@@ -42,8 +42,8 @@ check,set: board[posX][posY] == Piece(e);
 set,endmove: board[posX][posY] = Piece(playerTurn);
 
 endmove,checkwin: player = PlayerOrKeeper(keeper);
-checkwin,win: checkline rev-> endcheckline;
-checkwin,nextturn: checkline not-> endcheckline;
+checkwin,win: ? checkline -> endcheckline;
+checkwin,nextturn: ! checkline -> endcheckline;
 nextturn,turn: playerTurn = opponent[playerTurn];
 
 checkline,checklineH1:;

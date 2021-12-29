@@ -18,12 +18,12 @@ export const Identifier = token('Identifier', /[_a-zA-Z0-9]+/);
 
 // Keywords.
 export const KeywordConst = token('KeywordConst', /const/, Identifier);
-export const KeywordMode = token('KeywordMode', /not|rev/, Identifier);
 export const KeywordType = token('KeywordType', /type/, Identifier);
 export const KeywordVar = token('KeywordVar', /var/, Identifier);
 
 // Symbols.
 export const Arrow = token('Arrow', /->/);
+export const Bang = token('Bang', /!/);
 export const BangEqual = token('BangEqual', /!=/);
 export const BraceLeft = token('BraceLeft', /{/);
 export const BraceRight = token('BraceRight', /}/);
@@ -36,6 +36,7 @@ export const EqualEqual = token('EqualEqual', /==/);
 export const Hash = token('Hash', /#/);
 export const ParenthesisLeft = token('ParenthesisLeft', /\(/);
 export const ParenthesisRight = token('ParenthesisRight', /\)/);
+export const Question = token('Question', /\?/);
 export const Semicolon = token('Semicolon', /;/);
 
 // Removables.

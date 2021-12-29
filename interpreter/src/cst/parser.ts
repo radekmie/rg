@@ -38,8 +38,11 @@ class RGParserClass extends CstParser {
         },
         {
           ALT: () => {
+            this.OR3([
+              { ALT: () => this.CONSUME(lexer.Bang) },
+              { ALT: () => this.CONSUME(lexer.Question) },
+            ]);
             this.CONSUME(lexer.Identifier);
-            this.CONSUME(lexer.KeywordMode);
             this.CONSUME(lexer.Arrow);
             this.CONSUME2(lexer.Identifier);
           },

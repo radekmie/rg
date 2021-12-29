@@ -41,7 +41,7 @@ class RGVisitor extends parser.getBaseCstVisitorConstructor() {
       });
     }
 
-    if ('KeywordMode' in context) {
+    if ('Bang' in context || 'Question' in context) {
       return ast.Reachability({
         lhs: ast.EdgeName({
           parts: [
@@ -57,7 +57,7 @@ class RGVisitor extends parser.getBaseCstVisitorConstructor() {
             }),
           ],
         }),
-        mode: this.visitToken(context.KeywordMode[0]) as 'not' | 'rev',
+        negated: 'Bang' in context,
       });
     }
 

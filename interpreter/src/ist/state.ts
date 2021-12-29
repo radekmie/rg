@@ -39,8 +39,8 @@ export function evaluateComparison(
   utils.assert(label.kind === 'Comparison', 'Expected Comparison.');
   const lhs = evaluateExpression(game, state, label.lhs, true);
   const rhs = evaluateExpression(game, state, label.rhs, true);
-  const equal = evaluateEquality(lhs, rhs);
-  return label.negated ? !equal : equal;
+  const isEqual = evaluateEquality(lhs, rhs);
+  return isEqual !== label.negated;
 }
 
 export function evaluateEquality(lhs: ist.Value, rhs: ist.Value): boolean {
@@ -153,16 +153,8 @@ export function* nextStates(
             yield* nextStates(game, state, yieldOnPlayer);
           break;
         case 'Reachability':
-          switch (label.mode) {
-            case 'not':
-              if (!evaluateReachability(game, state, label))
-                yield* nextStates(game, state, yieldOnPlayer);
-              break;
-            case 'rev':
-              if (evaluateReachability(game, state, label))
-                yield* nextStates(game, state, yieldOnPlayer);
-              break;
-          }
+          if (evaluateReachability(game, state, label) !== label.negated)
+            yield* nextStates(game, state, yieldOnPlayer);
           break;
         case 'Skip':
           yield* nextStates(game, state, yieldOnPlayer);

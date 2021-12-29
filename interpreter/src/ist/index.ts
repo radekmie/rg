@@ -83,7 +83,7 @@ function buildEdgeLabel(
       return ist.Reachability({
         lhs: buildEdgeName(game, edgeLabel.lhs),
         rhs: buildEdgeName(game, edgeLabel.rhs),
-        mode: edgeLabel.mode,
+        negated: edgeLabel.negated,
       });
     case 'Skip':
       return ist.Skip({});
