@@ -380,18 +380,18 @@ pub struct State {
 }
 
 impl State {
-    pub fn eval(&self, game: &Game, expression: &Expression) -> Rc<Value> {
+    pub fn eval<'a>(&'a self, game: &'a Game, expression: &'a Expression) -> &'a Rc<Value> {
         match expression {
             Expression::Access { lhs, rhs } => match self.eval(game, rhs).deref() {
                 Value::Element { value } => match self.eval(game, lhs).deref() {
-                    Value::Map { default, values } => values.get(value).unwrap_or(default).clone(),
+                    Value::Map { default, values } => values.get(value).unwrap_or(default),
                     _ => panic!("Only Map can be accessed."),
                 },
                 _ => panic!("Only Element can be key."),
             },
             Expression::BindReference { identifier } => {
                 // TODO: Check for unknown bound variables.
-                self.position.values.get(identifier).unwrap().clone()
+                self.position.values.get(identifier).unwrap()
             }
             Expression::Cast { rhs, .. } => {
                 // TODO: Type check.
@@ -399,12 +399,12 @@ impl State {
             }
             Expression::ConstantReference { identifier } => {
                 // TODO: Check for unknown constants.
-                game.constants.get(identifier).unwrap().clone()
+                game.constants.get(identifier).unwrap()
             }
-            Expression::Literal { value } => value.clone(),
+            Expression::Literal { value } => value,
             Expression::VariableReference { identifier } => {
                 // TODO: Check for unknown variables.
-                self.values.get(identifier).unwrap().clone()
+                self.values.get(identifier).unwrap()
             }
         }
     }
@@ -413,12 +413,12 @@ impl State {
         match expression {
             Expression::Access { lhs, rhs } => match self.eval(game, rhs).deref() {
                 Value::Element { value } => {
-                    let mut map = self.eval(game, lhs);
+                    let mut map = self.eval(game, lhs).clone();
                     if let Value::Map { default, values } = Rc::make_mut(&mut map) {
                         if &set == default {
                             values.remove(value);
                         } else {
-                            values.insert(value.clone(), set);
+                            values.insert(value.clone(), set.clone());
                         }
                     } else {
                         panic!("Only Map can be accessed.");
@@ -433,6 +433,7 @@ impl State {
             Expression::ConstantReference { .. } => panic!("ConstantReference is immutable."),
             Expression::Literal { .. } => panic!("Literal is immutable."),
             Expression::VariableReference { identifier } => {
+                // TODO: Check for unknown variables.
                 *Rc::make_mut(&mut self.values).get_mut(identifier).unwrap() = set;
             }
         }
@@ -530,7 +531,7 @@ impl Iterator for StateNext<'_> {
 
             match &edge.label {
                 EdgeLabel::Assignment { lhs, rhs } => {
-                    state.eval_set(game, lhs, state.eval(game, rhs));
+                    state.eval_set(game, lhs, state.eval(game, rhs).clone());
                     return Some(state);
                 }
                 EdgeLabel::Comparison { lhs, rhs, negated } => {
