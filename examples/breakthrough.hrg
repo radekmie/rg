@@ -6,33 +6,33 @@ domain Square = V(x, y) where x in 0..7, y in { 0, 1, 2, 3, 4, 5, 6, 7 }
 domain SquareOrNull = Square | Null
 
 
-// // Helpers
-// left : Square -> SquareOrNull
-// left(V(x, y)) = if x == 0 then Null else V(x - 1, y)
+// Helpers
+left : Square -> SquareOrNull
+left(V(x, y)) = if x == 0 then Null else V(x - 1, y)
 
-// right : Square -> SquareOrNull
-// right(V(x, y)) = if x == 7 then Null else V(x + 1, y)
+right : Square -> SquareOrNull
+right(V(x, y)) = if x == 7 then Null else V(x + 1, y)
 
-// up : Square -> SquareOrNull
-// up(V(0, y)) = Null
-// up(V(x, y)) = V(x, y - 1)
+up : Square -> SquareOrNull
+up(V(_, 0)) = Null
+up(V(x, y)) = V(x, y - 1)
 
-// down : Square -> SquareOrNull
-// down(V(7, y)) = Null
-// down(V(x, y)) = V(x, y + 1)
+down : Square -> SquareOrNull
+down(V(_, 7)) = Null
+down(V(x, y)) = V(x, y + 1)
 
 // direction : Player -> Square -> SquareOrNull
 // direction(Black) = down
 // direction(_) = up
 
-// piece : Player -> Player
-// piece(Black) = Black
-// piece(White) = White
-// piece(_) = Empty
+piece : Player -> Player
+piece(Black) = Black
+piece(White) = White
+piece(_) = Empty
 
-// opponent : Player -> Player
-// opponent(Black) = White
-// opponent(_) = Black
+opponent : Player -> Player
+opponent(Black) = White
+opponent(_) = Black
 
 
 // // Variables

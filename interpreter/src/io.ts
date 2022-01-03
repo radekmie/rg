@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import buildAST from './ast';
+import { buildAST, serializeAST } from './ast';
 import parse from './cst';
 import translate from './down-level';
 import buildIST from './ist';
@@ -15,12 +15,13 @@ function analyze(file: string) {
   switch (extension) {
     case '.hrg': {
       const hl = read(file);
-      const ll = translate(hl);
+      const ll = serializeAST(translate(hl));
       return { hl, ll };
     }
     case '.rg': {
+      const hl = null;
       const ll = read(file);
-      return { hl: null, ll };
+      return { hl, ll };
     }
     default:
       throw new Error(`Unknown extension "${extension}".`);
