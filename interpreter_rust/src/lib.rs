@@ -465,6 +465,10 @@ impl State {
         self.position.is(LABEL_END)
     }
 
+    pub fn is_keeper(&self) -> bool {
+        self.values.get(&LABEL_PLAYER).unwrap().is_element_of(LABEL_KEEPER)
+    }
+
     pub fn is_reachable(&self, game: &Game, position: &EdgeName) -> bool {
         if self.position == *position {
             true
@@ -492,11 +496,11 @@ impl State {
         }
     }
 
-    pub fn next_states_n<'a>(&'a self, game: &'a Game, n: usize, skip: bool) -> StateNextN<'a> {
+    pub fn next_states_n<'a>(&'a self, game: &'a Game, n: usize, ignore_keeper: bool) -> StateNextN<'a> {
         StateNextN {
             game,
+            ignore_keeper,
             queue: vec![(self.clone(), n)],
-            skip,
         }
     }
 }
@@ -572,8 +576,8 @@ impl Iterator for StateNext<'_> {
 
 pub struct StateNextN<'a> {
     game: &'a Game,
+    ignore_keeper: bool,
     queue: Vec<(State, usize)>,
-    skip: bool,
 }
 
 impl Iterator for StateNextN<'_> {
@@ -581,14 +585,15 @@ impl Iterator for StateNextN<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some((state, n)) = self.queue.pop() {
-            let prev = state.values.get(&LABEL_PLAYER).unwrap();
-            if n == 0 || self.skip && n == 1 && prev.is_element_of(LABEL_KEEPER) {
+            if n == 0 {
                 return Some(state);
             }
 
+            let prev = state.values.get(&LABEL_PLAYER).unwrap();
+            let skip = self.ignore_keeper && prev.is_element_of(LABEL_KEEPER);
             for state in state.next_states(self.game) {
                 let next = state.values.get(&LABEL_PLAYER).unwrap();
-                let depth = if prev == next || next.is_element_of(LABEL_KEEPER) {
+                let depth = if skip || prev == next {
                     n
                 } else {
                     n - 1

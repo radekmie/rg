@@ -21,15 +21,12 @@ fn run(game: &Game, rng: &mut ThreadRng, plays: usize) {
                 break;
             }
 
-            if !state.is_final() {
-                moves.push(states.len() as f32);
+            moves.push(states.len() as f32);
+            if !state.is_keeper() {
+                turn += 1;
             }
 
             state = states.into_iter().choose(rng).unwrap();
-
-            if !state.is_final() {
-                turn += 1;
-            }
         }
 
         times.push(start.elapsed().as_nanos() as f32 / 1e6);
@@ -45,7 +42,7 @@ fn run(game: &Game, rng: &mut ThreadRng, plays: usize) {
 fn run_perf(game: &Game, depth: usize) {
     let state = State::initial(game);
     let start = Instant::now();
-    let count = state.next_states_n(game, depth + 1, true).count();
+    let count = state.next_states_n(game, depth, true).count();
     println!(
         "runPerf(depth: {}): {:.2}ms",
         depth,

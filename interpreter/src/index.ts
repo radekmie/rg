@@ -22,9 +22,10 @@ function run(game: ist.Game, plays = 1, debug = false) {
       if (debug) console.log(utils.pretty(state));
       const states = Array.from(nextStates(game, state, true), cloneState);
       if (states.length === 0) break;
-      if (state.position.label !== 'end') moves.push(states.length);
+      moves.push(states.length);
+      utils.assert(state.values.player.kind === 'Element', 'Player is element');
+      if (state.values.player.value !== 'keeper') ++turn;
       state = states[Math.floor(states.length * Math.random())];
-      if (state.position.label !== 'end') ++turn;
     }
 
     const [s, ns] = process.hrtime(now);
