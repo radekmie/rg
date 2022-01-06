@@ -21,9 +21,9 @@ down : Square -> SquareOrNull
 down(V(_, 7)) = Null
 down(V(x, y)) = V(x, y + 1)
 
-// direction : Player -> Square -> SquareOrNull
-// direction(Black) = down
-// direction(_) = up
+direction : Player -> Square -> SquareOrNull
+direction(Black) = down
+direction(_) = up
 
 piece : Player -> Player
 piece(Black) = Black

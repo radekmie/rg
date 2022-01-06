@@ -5,26 +5,23 @@ import visitor from './visitor';
 import * as ll from '../ast/types';
 import * as utils from '../utils';
 
-// FIXME: Properly represent patterns and matches.
-type SerializedValue = string & { readonly __tag: symbol };
-
-function __serializeConstructor(identifier: string, args: SerializedValue[]): SerializedValue {
-  return `${identifier}___${args.join('_')}` as SerializedValue;
-}
-
-function __deserializeConstructor(value: SerializedValue): [string, SerializedValue[]] {
-  const parts = value.split('___', 2);
-  return [parts[0], parts.length === 1 ? [] : parts[1].split('_') as SerializedValue[]];
-}
-
-// FIXME: Here we assume the pattern is already matched.
-function __bindingsForConstructor(pattern: hl.Pattern, value: SerializedValue): Record<string, SerializedValue> {
-  const [, args] = __deserializeConstructor(value);
+function evaluateBinding(pattern: hl.Pattern, value: hl.Value): Record<string, hl.Value> | undefined {
   switch (pattern.kind) {
     case 'PatternConstructor':
-      return pattern.args.map((pattern, index) => __bindingsForConstructor(pattern, args[index])).reduce((a, b) => Object.assign(a, b));
+      return (
+        value.kind === 'ValueConstructor' &&
+        value.identifier === pattern.identifier &&
+        value.args.length === pattern.args.length
+        ? pattern.args.reduce<Record<string, hl.Value> | undefined>((binding, pattern, index) => {
+            if (binding) {
+              const subbinding = evaluateBinding(pattern, value.args[index]);
+              if (subbinding) return Object.assign(binding, subbinding);
+            }
+          }, {})
+        : undefined
+      );
     case 'PatternLiteral':
-      return {};
+      return value.kind === 'ValueElement' && value.identifier === pattern.identifier ? {} : undefined;
     case 'PatternVariable':
       return { [pattern.identifier]: value };
     case 'PatternWildcard':
@@ -32,87 +29,76 @@ function __bindingsForConstructor(pattern: hl.Pattern, value: SerializedValue): 
   }
 }
 
-function __matchConstructor(pattern: hl.Pattern, value: SerializedValue): boolean {
-  const [identifier, args] = __deserializeConstructor(value);
-  switch (pattern.kind) {
-    case 'PatternConstructor':
-      return pattern.identifier === identifier && args.length === pattern.args.length && pattern.args.every((pattern, index) => __matchConstructor(pattern, args[index]));
-    case 'PatternLiteral':
-      return pattern.identifier === identifier && args.length === 0;
-    case 'PatternVariable':
-      return true;
-    case 'PatternWildcard':
-      return true;
-  }
-}
-
-function resolveCondition(condition: hl.Condition, bindings: Record<string, SerializedValue>): boolean {
+function evaluateCondition(condition: hl.Condition, binding: Record<string, hl.Value>): boolean {
   switch (condition.kind) {
     case 'ConditionEq': {
-      const lhs = resolveExpression(condition.lhs, bindings);
-      const rhs = resolveExpression(condition.rhs, bindings);
-      console.log(`ConditionEq(${JSON.stringify(condition.lhs)}, ${JSON.stringify(condition.rhs)}) => ConditionEq(${lhs}, ${rhs}) => ${lhs === rhs}`);
-      return lhs === rhs;
+      const lhs = evaluateExpression(condition.lhs, binding);
+      const rhs = evaluateExpression(condition.rhs, binding);
+      const equal = evaluateEquality(lhs, rhs);
+      return equal;
     }
   }
 }
 
-// FIXME: This should return a value of some sort?
-function resolveExpression(expression: hl.Expression, bindings: Record<string, SerializedValue>): SerializedValue {
+function evaluateEquality(lhs: hl.Value, rhs: hl.Value): boolean {
+  switch (lhs.kind) {
+    case 'ValueConstructor':
+      utils.assert(rhs.kind === 'ValueConstructor', 'Incomparable values.');
+      return (
+        lhs.identifier === rhs.identifier &&
+        lhs.args.length === rhs.args.length &&
+        lhs.args.every((arg, index) => evaluateEquality(arg, rhs.args[index]))
+      );
+    case 'ValueElement':
+      utils.assert(rhs.kind === 'ValueElement', 'Incomparable values.');
+      return lhs.identifier === rhs.identifier;
+  }
+}
+
+function evaluateExpression(expression: hl.Expression, binding: Record<string, hl.Value>): hl.Value {
   switch (expression.kind) {
     case 'ExpressionAdd': {
-      const lhs = resolveExpression(expression.lhs, bindings);
-      const rhs = resolveExpression(expression.rhs, bindings);
-      console.log(`ExpressionAdd(${JSON.stringify(expression.lhs)}, ${JSON.stringify(expression.rhs)}) => ExpressionAdd(${lhs}, ${rhs}) => ${Number(lhs) + Number(rhs)}`);
-      return String(Number(lhs) + Number(rhs)) as SerializedValue;
+      const lhs = evaluateExpressionIdentifier(expression.lhs, binding);
+      const rhs = evaluateExpressionIdentifier(expression.rhs, binding);
+      return hl.ValueElement({ identifier: String(Number(lhs) + Number(rhs)) });
     }
     case 'ExpressionConstructor':
-      return __serializeConstructor(expression.identifier, expression.args.map(expression => resolveExpression(expression, bindings)));
+      return hl.ValueConstructor({
+        identifier: expression.identifier,
+        args: expression.args.map(expression => evaluateExpression(expression, binding)),
+      });
     case 'ExpressionIf':
-      return resolveCondition(expression.cond, bindings)
-        ? resolveExpression(expression.then, bindings)
-        : resolveExpression(expression.else, bindings);
+      return evaluateCondition(expression.cond, binding)
+        ? evaluateExpression(expression.then, binding)
+        : evaluateExpression(expression.else, binding);
     case 'ExpressionLiteral':
-      return expression.identifier in bindings
-        ? bindings[expression.identifier]
-        : expression.identifier as SerializedValue;
+      return expression.identifier in binding
+        ? binding[expression.identifier]
+        : hl.ValueElement({ identifier: expression.identifier });
     case 'ExpressionSub': {
-      const lhs = resolveExpression(expression.lhs, bindings);
-      const rhs = resolveExpression(expression.rhs, bindings);
-      console.log(`ExpressionSub(${JSON.stringify(expression.lhs)}, ${JSON.stringify(expression.rhs)}) => ExpressionSub(${lhs}, ${rhs}) => ${Number(lhs) - Number(rhs)}`);
-      return String(Number(lhs) - Number(rhs)) as SerializedValue;
+      const lhs = evaluateExpressionIdentifier(expression.lhs, binding);
+      const rhs = evaluateExpressionIdentifier(expression.rhs, binding);
+      return hl.ValueElement({ identifier: String(Number(lhs) - Number(rhs)) });
     }
   }
 }
 
-function resolveTypeSets(type: ll.Type, typeDeclarations: ll.TypeDeclaration[]): ll.Set[] {
-  switch (type.kind) {
-    case 'Arrow': {
-      const referencedType = typeDeclarations.find(typeDeclaration => typeDeclaration.identifier === type.lhs);
-      utils.assert(referencedType, `Unresolved TypeReference "${type.lhs}".`);
-      utils.assert(referencedType.type.kind === 'Set', `No left-nested Arrow types allowed.`);
-      return [referencedType.type, ...resolveTypeSets(type.rhs, typeDeclarations)];
-    }
-    case 'Set':
-      return [type];
-    case 'TypeReference': {
-      const referencedType = typeDeclarations.find(typeDeclaration => typeDeclaration.identifier === type.identifier);
-      utils.assert(referencedType, `Unresolved TypeReference "${type.identifier}".`);
-      return resolveTypeSets(referencedType.type, typeDeclarations);
-    }
+function evaluateExpressionIdentifier(expression: hl.Expression, binding: Record<string, hl.Value>): string {
+  const value = evaluateExpression(expression, binding);
+  utils.assert(value.kind === 'ValueElement', 'Expected ValueElement.');
+  return value.identifier;
+}
+
+function serializeValue(value: hl.Value): string {
+  switch (value.kind) {
+    case 'ValueConstructor':
+      return `${value.identifier}__${value.args.map(serializeValue).join('_')}`;
+    case 'ValueElement':
+      return value.identifier;
   }
 }
 
-function translateDomainDeclaration(domainDeclaration: hl.DomainDeclaration, hl: hl.GameDeclaration): ll.TypeDeclaration {
-  return ll.TypeDeclaration({
-    identifier: domainDeclaration.identifier,
-    type: ll.Set({
-      identifiers: translateDomainElements(domainDeclaration.elements, hl),
-    }),
-  });
-}
-
-function translateDomainElement(domainElement: hl.DomainElement, hl: hl.GameDeclaration): SerializedValue[] {
+function translateDomainElement(domainElement: hl.DomainElement, gameDeclaration: hl.GameDeclaration): hl.Value[] {
   switch (domainElement.kind) {
     case 'DomainGenerator':
       return domainElement.args
@@ -125,65 +111,75 @@ function translateDomainElement(domainElement: hl.DomainElement, hl: hl.GameDecl
               const min = +values.min;
               return Array.from(
                 { length: max - min + 1 },
-                (_, index) => `${index + min}` as SerializedValue,
+                (_, index) => hl.ValueElement({ identifier: `${index + min}` }),
               );
             }
             case 'DomainSet':
-              return values.elements as SerializedValue[];
+              return values.elements.map(identifier => hl.ValueElement({ identifier }));
           }
         })
-        .reduce<SerializedValue[][]>(utils.cartesian, [[]])
-        .map(args => __serializeConstructor(domainElement.identifier, args));
+        .reduce<hl.Value[][]>(utils.cartesian, [[]])
+        .map(args => hl.ValueConstructor({ identifier: domainElement.identifier, args }));
     case 'DomainLiteral': {
-      const referencedDomain = hl.domains.find(domainDeclaration => domainDeclaration.identifier === domainElement.identifier);
+      const referencedDomain = gameDeclaration.domains.find(domainDeclaration => domainDeclaration.identifier === domainElement.identifier);
       return referencedDomain
-        ? translateDomainElements(referencedDomain.elements, hl)
-        : [domainElement.identifier as SerializedValue];
+        ? translateDomainElements(referencedDomain.elements, gameDeclaration)
+        : [hl.ValueElement({ identifier: domainElement.identifier })];
     }
   }
 }
 
-function translateDomainElements(domainElements: hl.DomainElement[], hl: hl.GameDeclaration): SerializedValue[] {
-  return domainElements.flatMap(domainElement => translateDomainElement(domainElement, hl));
+function translateDomainElements(domainElements: hl.DomainElement[], gameDeclaration: hl.GameDeclaration): hl.Value[] {
+  return domainElements.flatMap(domainElement => translateDomainElement(domainElement, gameDeclaration));
 }
 
-function translateFunctionDeclaration(functionDeclaration: hl.FunctionDeclaration, typeDeclarations: ll.TypeDeclaration[]): ll.ConstantDeclaration {
+function translateFunctionDeclaration(functionDeclaration: hl.FunctionDeclaration, typeValues: Record<string, hl.Value[]>): ll.ConstantDeclaration {
+  utils.assert(functionDeclaration.cases[0].args.length === 1, 'Only simple functions are allowed.');
+  functionDeclaration.cases.forEach(functionCase => {
+    utils.assert(
+      functionDeclaration.cases[0].args.length === functionCase.args.length,
+      'All function cases should have the same number of arguments.',
+    );
+  });
+
   const type = translateType(functionDeclaration.type);
   utils.assert(type.kind === 'Arrow', 'Function is expected to have Arrow type.');
-  const typeSets = resolveTypeSets(type, typeDeclarations);
-  utils.assert(typeSets.length === 2, 'Only simple functions are allowed');
-  const reciveableIdentifiers = typeSets[0].identifiers as SerializedValue[];
-  const returnableIdentifiers = typeSets[1].identifiers as SerializedValue[];
-  utils.assert(returnableIdentifiers.length, 'Expected at least one identifier.');
+  utils.assert(type.lhs in typeValues, `Unresolved TypeReference "${type.lhs}".`);
+  const entries = typeValues[type.lhs].map(value => {
+    const arm = utils.findMap(functionDeclaration.cases, functionCase => {
+      utils.assert(functionCase.args.length === 1, 'Not implemented.');
+      const pattern = functionCase.args[0];
+      const binding = evaluateBinding(pattern, value);
+      return binding ? { binding, functionCase } : undefined;
+    });
+    utils.assert(arm, `No FunctionCase found for "${value.identifier}".`);
+    const { binding, functionCase } = arm;
+    return ll.NamedEntry({
+      identifier: serializeValue(value),
+      value: ll.Element({
+        identifier: serializeValue(evaluateExpression(functionCase.body, binding)),
+      }),
+    });
+  });
+
   return ll.ConstantDeclaration({
     identifier: functionDeclaration.identifier,
     type,
     value: ll.Map({
-      entries: [
-        ll.DefaultEntry({ value: ll.Element({ identifier: returnableIdentifiers[0] }) }),
-        ...reciveableIdentifiers.map(identifier => {
-          const functionCase = functionDeclaration.cases.find(functionCase => {
-            utils.assert(functionCase.args.length === 1, 'Not implemented.');
-            const pattern = functionCase.args[0];
-            return __matchConstructor(pattern, identifier);
-          });
-          utils.assert(functionCase, `No FunctionCase found for "${identifier}".`);
-          const bindings = __bindingsForConstructor(functionCase.args[0], identifier);
-          return ll.NamedEntry({
-            identifier,
-            value: ll.Element({
-              identifier: resolveExpression(functionCase.body, bindings),
-            }),
-          });
-        }),
-      ],
+      entries: [...entries, ll.DefaultEntry({ value: entries[0].value })],
     }),
   });
 }
 
-function translateGameDeclaration(hl: hl.GameDeclaration): ll.GameDeclaration {
-  const types = hl.domains.map(domainDeclaration => translateDomainDeclaration(domainDeclaration, hl));
-  const constants = hl.functions.map(functionDeclaration => translateFunctionDeclaration(functionDeclaration, types));
+function translateGameDeclaration(gameDeclaration: hl.GameDeclaration): ll.GameDeclaration {
+  const { types, typeValues } = gameDeclaration.domains.reduce((result, domainDeclaration) => {
+    const values = translateDomainElements(domainDeclaration.elements, gameDeclaration);
+    result.types.push(ll.TypeDeclaration({ identifier: domainDeclaration.identifier, type: ll.Set({ identifiers: values.map(serializeValue) }) }));
+    utils.assert(!(domainDeclaration.identifier in result.typeValues), `Duplicated type "${domainDeclaration.identifier}".`);
+    result.typeValues[domainDeclaration.identifier] = values;
+    return result;
+  }, { types: [] as ll.TypeDeclaration[], typeValues: {} as Record<string, hl.Value[]> });
+  const constants = gameDeclaration.functions.map(functionDeclaration => translateFunctionDeclaration(functionDeclaration, typeValues));
   return ll.GameDeclaration({
     constants,
     edges: [],

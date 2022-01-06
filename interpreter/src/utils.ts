@@ -21,6 +21,17 @@ export function find<T extends {}>(xs: T[], needle: Partial<T>) {
   return xs.find(x => keys.every(key => x[key] === needle[key]));
 }
 
+export function findMap<T, U>(xs: T[], fn: (x: T) => U | undefined) {
+  for (const x of xs) {
+    const y = fn(x);
+    if (y !== undefined) {
+      return y;
+    }
+  }
+
+  return undefined;
+}
+
 export function mapValues<T, U>(
   object: Record<string, T>,
   fn: (value: T) => U,
