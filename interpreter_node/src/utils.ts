@@ -4,10 +4,6 @@ export function assert(condition: unknown, message: string): asserts condition {
   if (!(condition as boolean)) throw new Error(message);
 }
 
-export function average(xs: number[]) {
-  return xs.reduce((a, b) => a + b, 0) / xs.length;
-}
-
 export function cartesian<T>(xss: T[][], ys: T[]): T[][] {
   return xss.flatMap(xs => ys.map(y => xs.concat(y)));
 }

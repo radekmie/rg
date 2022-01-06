@@ -9,10 +9,30 @@ import {
 import * as ist from './ist/types';
 import * as utils from './utils';
 
+function avg(counter: Record<number, number>) {
+  const [x0, n0] = Object.entries(counter).reduce(
+    ([x0, n0], [x, n]) => [x0 + n * +x, n0 + n],
+    [0, 0],
+  );
+  return x0 / n0;
+}
+
+function increase(counter: Record<number, number>, x: number) {
+  if (x in counter) {
+    counter[x]++;
+  } else {
+    counter[x] = 1;
+  }
+}
+
 function run(game: ist.Game, plays = 1, debug = false) {
-  const moves: number[] = [];
-  const times: number[] = [];
-  const turns: number[] = [];
+  // Display stats every ~1% of plays.
+  const step = Math.max(1, Math.pow(10, Math.floor(Math.log10(plays / 100))));
+
+  // Initialize counters.
+  const moves: Record<number, number> = {};
+  const times: Record<number, number> = {};
+  const turns: Record<number, number> = {};
 
   for (let play = 1; play <= plays; ++play) {
     const now = process.hrtime();
@@ -22,21 +42,27 @@ function run(game: ist.Game, plays = 1, debug = false) {
       if (debug) console.log(utils.pretty(state));
       const states = Array.from(nextStates(game, state, true), cloneState);
       if (states.length === 0) break;
-      moves.push(states.length);
+
       utils.assert(state.values.player.kind === 'Element', 'Player is element');
-      if (state.values.player.value !== 'keeper') ++turn;
+      if (state.values.player.value !== 'keeper') {
+        increase(moves, states.length);
+        ++turn;
+      }
+
       state = states[Math.floor(states.length * Math.random())];
     }
 
     const [s, ns] = process.hrtime(now);
-    times.push(Math.round(s * 1e3 + ns / 1e6));
-    turns.push(turn);
+    increase(times, s * 1e9 + ns);
+    increase(turns, turn);
 
-    console.clear();
-    console.log(`after ${play} plays:`);
-    console.log(`  avg. moves: ${utils.average(moves).toFixed(3)}`);
-    console.log(`  avg. times: ${utils.average(times).toFixed(3)}ms`);
-    console.log(`  avg. turns: ${utils.average(turns).toFixed(3)}`);
+    if (play % step === 0) {
+      console.clear();
+      console.log(`after ${play} plays:`);
+      console.log(`  avg. moves: ${avg(moves).toFixed(3)}`);
+      console.log(`  avg. times: ${(avg(times) / 1e6).toFixed(3)}ms`);
+      console.log(`  avg. turns: ${avg(turns).toFixed(3)}`);
+    }
   }
 }
 
