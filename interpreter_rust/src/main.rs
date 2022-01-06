@@ -54,7 +54,7 @@ fn run_perf(game: &Game, depth: usize) {
 fn main() {
     let args = env::args().collect::<Vec<_>>();
     let file = args.get(1).expect("Game IST file expected.");
-    let game = Game::from_ist_file(&file);
+    let game = Game::from_ist_file(file);
 
     match args.get(2).expect("Operation expected.").as_str() {
         "perf" => {

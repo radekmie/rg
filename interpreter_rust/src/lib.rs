@@ -10,6 +10,8 @@ const LABEL_END: Id = 1;
 const LABEL_KEEPER: Id = 2;
 const LABEL_PLAYER: Id = 3;
 
+type ValueMap = BTreeMap<Id, Rc<Value>>;
+
 pub struct Edge {
     lhs: EdgeName,
     rhs: EdgeName,
@@ -17,7 +19,7 @@ pub struct Edge {
 }
 
 impl Edge {
-    pub fn generate(&self) -> Vec<Rc<BTreeMap<Id, Rc<Value>>>> {
+    pub fn generate(&self) -> Vec<Rc<ValueMap>> {
         self.rhs.types.iter().fold(
             vec![self.rhs.values.clone()],
             |mut sources, (bind, type_)| {
@@ -25,7 +27,7 @@ impl Edge {
                     sources
                 } else if let Some(value) = self.lhs.values.get(bind) {
                     for source in sources.iter_mut() {
-                        Rc::make_mut(source).insert(bind.clone(), value.clone());
+                        Rc::make_mut(source).insert(*bind, value.clone());
                     }
 
                     sources
@@ -37,7 +39,7 @@ impl Edge {
                             .flat_map(|value| {
                                 sources.iter().map(move |source| {
                                     let mut source = source.clone();
-                                    Rc::make_mut(&mut source).insert(bind.clone(), value.clone());
+                                    Rc::make_mut(&mut source).insert(*bind, value.clone());
                                     source
                                 })
                             })
@@ -98,7 +100,7 @@ enum EdgeLabelSerialized {
 pub struct EdgeName {
     label: Id,
     types: Rc<BTreeMap<Id, Type>>,
-    values: Rc<BTreeMap<Id, Rc<Value>>>,
+    values: Rc<ValueMap>,
 }
 
 impl EdgeName {
@@ -169,15 +171,16 @@ enum ExpressionSerialized {
 }
 
 pub struct Game {
-    constants: BTreeMap<Id, Rc<Value>>,
+    constants: ValueMap,
     edges: Vec<Edge>,
+    #[allow(dead_code)]
     types: BTreeMap<Id, Type>,
     variables: BTreeMap<Id, Variable>,
 }
 
 impl Game {
     pub fn from_ist(source: &str) -> Self {
-        serde_json::from_str::<GameSerialized>(&source)
+        serde_json::from_str::<GameSerialized>(source)
             .unwrap()
             .into()
     }
@@ -196,26 +199,26 @@ pub struct GameSerialized {
     variables: BTreeMap<String, VariableSerialized>,
 }
 
-impl Into<Game> for GameSerialized {
-    fn into(self) -> Game {
+impl From<GameSerialized> for Game {
+    fn from(game_serialized: GameSerialized) -> Game {
         let mut state = GameSerializedState::new();
         Game {
-            constants: self
+            constants: game_serialized
                 .constants
                 .into_iter()
                 .map(|(key, value)| (state.intern_string(&key), state.intern_value(&value)))
                 .collect(),
-            edges: self
+            edges: game_serialized
                 .edges
                 .into_iter()
                 .map(|edge| state.intern_edge(edge))
                 .collect(),
-            types: self
+            types: game_serialized
                 .types
                 .into_iter()
                 .map(|(key, type_)| (state.intern_string(&key), *state.intern_type(&type_)))
                 .collect(),
-            variables: self
+            variables: game_serialized
                 .variables
                 .into_iter()
                 .map(|(key, variable)| {
@@ -286,23 +289,23 @@ impl GameSerializedState {
                 rhs: self.intern_expression(rhs),
             },
             ExpressionSerialized::BindReference { identifier } => Expression::BindReference {
-                identifier: self.intern_string(&identifier),
+                identifier: self.intern_string(identifier),
             },
             ExpressionSerialized::Cast { lhs, rhs } => Expression::Cast {
-                lhs: self.intern_type(&lhs),
+                lhs: self.intern_type(lhs),
                 rhs: self.intern_expression(rhs),
             },
             ExpressionSerialized::ConstantReference { identifier } => {
                 Expression::ConstantReference {
-                    identifier: self.intern_string(&identifier),
+                    identifier: self.intern_string(identifier),
                 }
             }
             ExpressionSerialized::Literal { value } => Expression::Literal {
-                value: self.intern_value(&value),
+                value: self.intern_value(value),
             },
             ExpressionSerialized::VariableReference { identifier } => {
                 Expression::VariableReference {
-                    identifier: self.intern_string(&identifier),
+                    identifier: self.intern_string(identifier),
                 }
             }
         };
@@ -310,12 +313,9 @@ impl GameSerializedState {
         Box::new(expression)
     }
 
-    fn intern_string(&mut self, string: &String) -> Id {
+    fn intern_string(&mut self, string: &str) -> Id {
         let next_id = (self.strings.len() + 1) as Id;
-        self.strings
-            .entry(string.clone())
-            .or_insert(next_id)
-            .clone()
+        *self.strings.entry(string.to_string()).or_insert(next_id)
     }
 
     fn intern_type(&mut self, type_: &TypeSerialized) -> Box<Type> {
@@ -326,8 +326,8 @@ impl GameSerializedState {
             },
             TypeSerialized::Set { values } => Type::Set {
                 values: values
-                    .into_iter()
-                    .map(|value| self.intern_value(&value))
+                    .iter()
+                    .map(|value| self.intern_value(value))
                     .collect(),
             },
         };
@@ -338,13 +338,13 @@ impl GameSerializedState {
     fn intern_value(&mut self, value: &ValueSerialized) -> Rc<Value> {
         let value = match value.deref() {
             ValueSerialized::Element { value } => Value::Element {
-                value: self.intern_string(&value),
+                value: self.intern_string(value),
             },
             ValueSerialized::Map { default, values } => Value::Map {
                 default: self.intern_value(default),
                 values: values
-                    .into_iter()
-                    .map(|(key, value)| (self.intern_string(&key), self.intern_value(value)))
+                    .iter()
+                    .map(|(key, value)| (self.intern_string(key), self.intern_value(value)))
                     .collect(),
             },
         };
@@ -376,7 +376,7 @@ impl GameSerializedState {
 #[derive(Clone)]
 pub struct State {
     position: EdgeName,
-    values: Rc<BTreeMap<Id, Rc<Value>>>,
+    values: Rc<ValueMap>,
 }
 
 impl State {
@@ -418,7 +418,7 @@ impl State {
                         if &set == default {
                             values.remove(value);
                         } else {
-                            values.insert(value.clone(), set.clone());
+                            values.insert(*value, set);
                         }
                     } else {
                         panic!("Only Map can be accessed.");
@@ -455,7 +455,7 @@ impl State {
             values: Rc::new(
                 game.variables
                     .iter()
-                    .map(|(name, variable)| (name.clone(), variable.default.clone()))
+                    .map(|(name, variable)| (*name, variable.default.clone()))
                     .collect(),
             ),
         }
@@ -515,9 +515,9 @@ impl State {
 
 pub struct StateNext<'a> {
     game: &'a Game,
-    queue: Vec<(&'a Edge, Rc<BTreeMap<Id, Rc<Value>>>)>,
+    queue: Vec<(&'a Edge, Rc<ValueMap>)>,
     reachables: BTreeMap<(Id, Id), bool>,
-    values: Rc<BTreeMap<Id, Rc<Value>>>,
+    values: Rc<ValueMap>,
 }
 
 impl Iterator for StateNext<'_> {
@@ -534,7 +534,7 @@ impl Iterator for StateNext<'_> {
         while let Some((edge, binds)) = queue.pop() {
             let mut state = State {
                 position: EdgeName {
-                    label: edge.rhs.label.clone(),
+                    label: edge.rhs.label,
                     types: edge.rhs.types.clone(),
                     values: binds,
                 },
@@ -555,9 +555,8 @@ impl Iterator for StateNext<'_> {
                     }
                 }
                 EdgeLabel::Reachability { lhs, rhs, negated } => {
-                    let is_reachable = *reachables
-                        .entry((lhs.label.clone(), rhs.label.clone()))
-                        .or_insert_with(|| {
+                    let is_reachable =
+                        *reachables.entry((lhs.label, rhs.label)).or_insert_with(|| {
                             let position = state.position.clone();
                             state.position = lhs.clone();
                             let is_reachable = state.is_reachable(game, rhs);
@@ -624,7 +623,7 @@ enum TypeSerialized {
         rhs: Box<TypeSerialized>,
     },
     Set {
-        values: Vec<Box<ValueSerialized>>,
+        values: Vec<ValueSerialized>,
     },
 }
 
@@ -632,7 +631,7 @@ enum TypeSerialized {
 pub enum Value {
     Map {
         default: Rc<Value>,
-        values: BTreeMap<Id, Rc<Value>>,
+        values: ValueMap,
     },
     Element {
         value: Id,
@@ -682,6 +681,7 @@ enum ValueSerialized {
 
 pub struct Variable {
     default: Rc<Value>,
+    #[allow(dead_code)]
     type_: Box<Type>,
 }
 
