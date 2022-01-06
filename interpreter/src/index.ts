@@ -34,9 +34,9 @@ function run(game: ist.Game, plays = 1, debug = false) {
 
     console.clear();
     console.log(`after ${play} plays:`);
-    console.log(`  avg. moves: ${utils.average(moves).toFixed(2)}`);
-    console.log(`  avg. times: ${utils.average(times).toFixed(2)}ms`);
-    console.log(`  avg. turns: ${utils.average(turns).toFixed(2)}`);
+    console.log(`  avg. moves: ${utils.average(moves).toFixed(3)}`);
+    console.log(`  avg. times: ${utils.average(times).toFixed(3)}ms`);
+    console.log(`  avg. turns: ${utils.average(turns).toFixed(3)}`);
   }
 }
 

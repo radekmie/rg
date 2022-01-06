@@ -33,9 +33,9 @@ fn run(game: &Game, rng: &mut ThreadRng, plays: usize) {
         turns.push(turn as f32);
 
         println!("after {} plays:", play);
-        println!("  avg. moves: {:.2}", avg(&moves));
-        println!("  avg. times: {:.2}ms", avg(&times));
-        println!("  avg. turns: {:.2}", avg(&turns));
+        println!("  avg. moves: {:.3}", avg(&moves));
+        println!("  avg. times: {:.3}ms", avg(&times));
+        println!("  avg. turns: {:.3}", avg(&turns));
     }
 }
 
@@ -44,7 +44,7 @@ fn run_perf(game: &Game, depth: usize) {
     let start = Instant::now();
     let count = state.next_states_n(game, depth, true).count();
     println!(
-        "runPerf(depth: {}): {:.2}ms",
+        "runPerf(depth: {}): {:.3}ms",
         depth,
         start.elapsed().as_nanos() as f32 / 1e6
     );
