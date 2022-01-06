@@ -466,7 +466,10 @@ impl State {
     }
 
     pub fn is_keeper(&self) -> bool {
-        self.values.get(&LABEL_PLAYER).unwrap().is_element_of(LABEL_KEEPER)
+        self.values
+            .get(&LABEL_PLAYER)
+            .unwrap()
+            .is_element_of(LABEL_KEEPER)
     }
 
     pub fn is_reachable(&self, game: &Game, position: &EdgeName) -> bool {
@@ -496,7 +499,12 @@ impl State {
         }
     }
 
-    pub fn next_states_n<'a>(&'a self, game: &'a Game, n: usize, ignore_keeper: bool) -> StateNextN<'a> {
+    pub fn next_states_n<'a>(
+        &'a self,
+        game: &'a Game,
+        n: usize,
+        ignore_keeper: bool,
+    ) -> StateNextN<'a> {
         StateNextN {
             game,
             ignore_keeper,
@@ -593,11 +601,7 @@ impl Iterator for StateNextN<'_> {
             let skip = self.ignore_keeper && prev.is_element_of(LABEL_KEEPER);
             for state in state.next_states(self.game) {
                 let next = state.values.get(&LABEL_PLAYER).unwrap();
-                let depth = if skip || prev == next {
-                    n
-                } else {
-                    n - 1
-                };
+                let depth = if skip || prev == next { n } else { n - 1 };
 
                 self.queue.push((state, depth));
             }
