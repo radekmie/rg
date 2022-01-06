@@ -225,7 +225,3 @@ class HLParserClass extends CstParser {
 }
 
 export default new HLParserClass();
-
-import { writeFileSync } from 'fs';
-import { createSyntaxDiagramsCode } from 'chevrotain';
-writeFileSync('./grammar.html', createSyntaxDiagramsCode(new HLParserClass().getSerializedGastProductions()));
