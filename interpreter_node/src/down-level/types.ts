@@ -1,14 +1,20 @@
 import { creator } from '../utils';
 
 /* eslint-disable prettier/prettier */
+export const ConditionGt = creator<ConditionGt>('ConditionGt');
+export type ConditionGt = { kind: 'ConditionGt'; lhs: Expression; rhs: Expression };
+
 export const ConditionEq = creator<ConditionEq>('ConditionEq');
 export type ConditionEq = { kind: 'ConditionEq'; lhs: Expression; rhs: Expression };
+
+export const ConditionLt = creator<ConditionLt>('ConditionLt');
+export type ConditionLt = { kind: 'ConditionLt'; lhs: Expression; rhs: Expression };
 
 export const DomainDeclaration = creator<DomainDeclaration>('DomainDeclaration');
 export type DomainDeclaration = { kind: 'DomainDeclaration'; identifier: string; elements: DomainElement[] };
 
 export const DomainGenerator = creator<DomainGenerator>('DomainGenerator');
-export type DomainGenerator = { kind: 'DomainGenerator'; identifier: string; args: string[]; values: DomainValues[] };
+export type DomainGenerator = { kind: 'DomainGenerator'; identifier: string; args: string[]; values: DomainValue[] };
 
 export const DomainLiteral = creator<DomainLiteral>('DomainLiteral');
 export type DomainLiteral = { kind: 'DomainLiteral'; identifier: string };
@@ -30,6 +36,9 @@ export type ExpressionIf = { kind: 'ExpressionIf'; cond: Condition; then: Expres
 
 export const ExpressionLiteral = creator<ExpressionLiteral>('ExpressionLiteral');
 export type ExpressionLiteral = { kind: 'ExpressionLiteral'; identifier: string };
+
+export const ExpressionMap = creator<ExpressionMap>('ExpressionMap');
+export type ExpressionMap = { kind: 'ExpressionMap'; pattern: Pattern; expression: Expression; domains: DomainValue[] };
 
 export const ExpressionSub = creator<ExpressionSub>('ExpressionSub');
 export type ExpressionSub = { kind: 'ExpressionSub'; lhs: Expression; rhs: Expression };
@@ -70,16 +79,22 @@ export type ValueConstructor = { kind: 'ValueConstructor'; identifier: string; a
 export const ValueElement = creator<ValueElement>('ValueElement');
 export type ValueElement = { kind: 'ValueElement'; identifier: string };
 
+export const ValueMap = creator<ValueMap>('ValueMap');
+export type ValueMap = { kind: 'ValueMap'; entries: ValueMapEntry[] };
+
+export const ValueMapEntry = creator<ValueMapEntry>('ValueMapEntry');
+export type ValueMapEntry = { kind: 'ValueMapEntry'; key: Value; value: Value };
+
 export const VariableAssignment = creator<VariableAssignment>('VariableAssignment');
 export type VariableAssignment = { kind: 'VariableAssignment'; identifier: string; expression: Expression };
 
 export const VariableDeclaration = creator<VariableDeclaration>('VariableDeclaration');
 export type VariableDeclaration = { kind: 'VariableDeclaration'; identifier: string; type: Type; defaultValue: null | Expression };
 
-export type Condition = ConditionEq;
+export type Condition = ConditionGt | ConditionEq | ConditionLt;
 export type DomainElement = DomainGenerator | DomainLiteral;
-export type DomainValues = DomainRange | DomainSet;
-export type Expression = ExpressionAdd | ExpressionConstructor | ExpressionIf | ExpressionLiteral | ExpressionSub;
+export type DomainValue = DomainRange | DomainSet;
+export type Expression = ExpressionAdd | ExpressionConstructor | ExpressionIf | ExpressionLiteral | ExpressionMap | ExpressionSub;
 export type Pattern = PatternConstructor | PatternLiteral | PatternVariable | PatternWildcard;
-export type Value = ValueConstructor | ValueElement;
+export type Value = ValueConstructor | ValueElement | ValueMap;
 export type Type = TypeFunction | TypeName;

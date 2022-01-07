@@ -11,10 +11,22 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
   }
 
   Condition(context: Context): ast.Condition {
-    return ast.ConditionEq({
-      lhs: this.visitNode(context.Expression2[0]),
-      rhs: this.visitNode(context.Expression2[1]),
-    });
+    const lhs = this.visitNode(context.Expression2[0]);
+    const rhs = this.visitNode(context.Expression2[1]);
+
+    if ('EqualEqual' in context) {
+      return ast.ConditionEq({ lhs, rhs });
+    }
+
+    if ('Gt' in context) {
+      return ast.ConditionGt({ lhs, rhs });
+    }
+
+    if ('Lt' in context) {
+      return ast.ConditionLt({ lhs, rhs });
+    }
+
+    throw new Error('Condition ' + JSON.stringify(context));
   }
 
   DomainDeclaration(context: Context): ast.DomainDeclaration {
@@ -42,7 +54,7 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
     throw new Error(`DomainRange ${JSON.stringify(context, null, 2)}`);
   }
 
-  DomainValues(context: Context): ast.DomainValues {
+  DomainValues(context: Context): ast.DomainValue {
     if ('DotDot' in context) {
       return ast.DomainRange({
         identifier: this.visitToken(context.Identifier[0]),
@@ -58,6 +70,14 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
   }
 
   Expression(context: Context): ast.Expression {
+    if ('BraceLeft' in context) {
+      return ast.ExpressionMap({
+        pattern: this.visitNode(context.Pattern[0]),
+        expression: this.visitNode(context.Expression[0]),
+        domains: this.visitNodes(context.DomainValues),
+      });
+    }
+
     if ('KeywordIf' in context) {
       return ast.ExpressionIf({
         cond: this.visitNode(context.Condition[0]),

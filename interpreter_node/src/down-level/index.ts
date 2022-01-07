@@ -5,6 +5,42 @@ import visitor from './visitor';
 import * as ll from '../ast/types';
 import * as utils from '../utils';
 
+enum Ord { Eq, Gt, Lt }
+function numberToOrd(number: number) {
+  return number === 0 ? Ord.Eq : number < 0 ? Ord.Lt : Ord.Gt;
+}
+
+function compareValues(lhs: hl.Value, rhs: hl.Value): Ord {
+  switch (lhs.kind) {
+    case 'ValueConstructor':
+      utils.assert(rhs.kind === 'ValueConstructor', 'Incomparable values.');
+      const ord1 = numberToOrd(lhs.identifier.localeCompare(rhs.identifier));
+      if (ord1 !== Ord.Eq) {
+        return ord1;
+      }
+
+      const ord2 = numberToOrd(lhs.args.length - rhs.args.length);
+      if (ord2 !== Ord.Eq) {
+        return ord2;
+      }
+
+      for (let index = 0; index < lhs.args.length; ++index) {
+        const ord3 = compareValues(lhs.args[index], rhs.args[index]);
+        if (ord3 !== Ord.Eq) {
+          return ord3;
+        }
+      }
+
+      return Ord.Eq;
+    case 'ValueElement': {
+      utils.assert(rhs.kind === 'ValueElement', 'Incomparable values.');
+      return numberToOrd(lhs.identifier.localeCompare(rhs.identifier));
+    }
+    case 'ValueMap':
+      throw new Error('Not implemented.');
+  }
+}
+
 function evaluateBinding(pattern: hl.Pattern, value: hl.Value): Record<string, hl.Value> | undefined {
   switch (pattern.kind) {
     case 'PatternConstructor':
@@ -30,13 +66,16 @@ function evaluateBinding(pattern: hl.Pattern, value: hl.Value): Record<string, h
 }
 
 function evaluateCondition(condition: hl.Condition, binding: Record<string, hl.Value>): boolean {
+  const lhs = evaluateExpression(condition.lhs, binding);
+  const rhs = evaluateExpression(condition.rhs, binding);
+  const ord = compareValues(lhs, rhs);
   switch (condition.kind) {
-    case 'ConditionEq': {
-      const lhs = evaluateExpression(condition.lhs, binding);
-      const rhs = evaluateExpression(condition.rhs, binding);
-      const equal = evaluateEquality(lhs, rhs);
-      return equal;
-    }
+    case 'ConditionGt':
+      return ord === Ord.Gt;
+    case 'ConditionEq':
+      return ord === Ord.Eq;
+    case 'ConditionLt':
+      return ord === Ord.Lt;
   }
 }
 
@@ -53,19 +92,28 @@ function evaluateDefaultValue(type: ll.Type, typeValues: Record<string, hl.Value
   }
 }
 
-function evaluateEquality(lhs: hl.Value, rhs: hl.Value): boolean {
-  switch (lhs.kind) {
-    case 'ValueConstructor':
-      utils.assert(rhs.kind === 'ValueConstructor', 'Incomparable values.');
-      return (
-        lhs.identifier === rhs.identifier &&
-        lhs.args.length === rhs.args.length &&
-        lhs.args.every((arg, index) => evaluateEquality(arg, rhs.args[index]))
-      );
-    case 'ValueElement':
-      utils.assert(rhs.kind === 'ValueElement', 'Incomparable values.');
-      return lhs.identifier === rhs.identifier;
-  }
+function evaluateDomainValues(domainValues: hl.DomainValue[]): Record<string, hl.Value>[] {
+  domainValues.slice(1).forEach(domainValue => {
+    utils.assert(domainValues[0].identifier !== domainValue.identifier, 'Duplicated identifier.');
+  });
+
+  return domainValues
+    .map(domainValue => {
+      switch (domainValue.kind) {
+        case 'DomainRange': {
+          const max = +domainValue.max;
+          const min = +domainValue.min;
+          return Array.from(
+            { length: max - min + 1 },
+            (_, index) => ({ [domainValue.identifier]: hl.ValueElement({ identifier: `${index + min}` }) }),
+          );
+        }
+        case 'DomainSet':
+          return domainValue.elements.map(identifier => ({ [domainValue.identifier]: hl.ValueElement({ identifier }) }));
+      }
+    })
+    .reduce<Record<string, hl.Value>[][]>(utils.cartesian, [[]])
+    .map(bindings => bindings.reduce((a, b) => Object.assign(a, b), {}));
 }
 
 function evaluateExpression(expression: hl.Expression, binding: Record<string, hl.Value>): hl.Value {
@@ -88,6 +136,15 @@ function evaluateExpression(expression: hl.Expression, binding: Record<string, h
       return expression.identifier in binding
         ? binding[expression.identifier]
         : hl.ValueElement({ identifier: expression.identifier });
+    case 'ExpressionMap':
+      return hl.ValueMap({
+        entries: evaluateDomainValues(expression.domains)
+          .map(subbinding => Object.assign({}, binding, subbinding))
+          .map(binding => hl.ValueMapEntry({
+            key: evaluatePattern(expression.pattern, binding),
+            value: evaluateExpression(expression.expression, binding),
+          })),
+      });
     case 'ExpressionSub': {
       const lhs = evaluateExpressionIdentifier(expression.lhs, binding);
       const rhs = evaluateExpressionIdentifier(expression.rhs, binding);
@@ -102,12 +159,28 @@ function evaluateExpressionIdentifier(expression: hl.Expression, binding: Record
   return value.identifier;
 }
 
+function evaluatePattern(pattern: hl.Pattern, binding: Record<string, hl.Value>): hl.Value {
+  switch (pattern.kind) {
+    case 'PatternConstructor':
+      return hl.ValueConstructor({ identifier: pattern.identifier, args: pattern.args.map(pattern => evaluatePattern(pattern, binding)) });
+    case 'PatternLiteral':
+      return hl.ValueElement({ identifier: pattern.identifier });
+    case 'PatternVariable':
+      utils.assert(pattern.identifier in binding, `Unknown variable "${pattern.identifier}".`);
+      return binding[pattern.identifier];
+    case 'PatternWildcard':
+      throw new Error('PatternWildcard is not evaluable.');
+  }
+}
+
 function serializeValue(value: hl.Value): string {
   switch (value.kind) {
     case 'ValueConstructor':
       return `${value.identifier}__${value.args.map(serializeValue).join('_')}`;
     case 'ValueElement':
       return value.identifier;
+    case 'ValueMap':
+      throw new Error('Not implemented.');
   }
 }
 
@@ -164,6 +237,7 @@ function translateFunctionDeclaration(functionDeclaration: hl.FunctionDeclaratio
   utils.assert(type.lhs in typeValues, `Unresolved TypeReference "${type.lhs}".`);
   utils.assert(typeValues[type.lhs].length, 'Expected at least one identifier.');
   const entries = typeValues[type.lhs].map(value => {
+    utils.assert(value.kind !== 'ValueMap', 'ValueMap is not allowed.');
     const arm = utils.findMap(functionDeclaration.cases, functionCase => {
       utils.assert(functionCase.args.length === 1, 'Not implemented.');
       const pattern = functionCase.args[0];
@@ -224,6 +298,19 @@ function translateValue(value: hl.Value): ll.Value {
       return ll.Element({ identifier: serializeValue(value) });
     case 'ValueElement':
       return ll.Element({ identifier: value.identifier });
+    case 'ValueMap':
+      utils.assert(value.entries.length, 'At least one entry is required.');
+      return ll.Map({
+        entries: [
+          ...value.entries.map(entry =>
+            ll.NamedEntry({
+              identifier: serializeValue(entry.key),
+              value: translateValue(entry.value),
+            }),
+          ),
+          ll.DefaultEntry({ value: translateValue(value.entries[0].value) }),
+        ],
+      });
   }
 }
 

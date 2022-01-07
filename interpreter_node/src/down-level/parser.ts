@@ -5,7 +5,13 @@ import * as lexer from './lexer';
 class HLParserClass extends CstParser {
   Condition = this.RULE('Condition', () => {
     this.SUBRULE(this.Expression2);
-    this.CONSUME(lexer.EqualEqual);
+    this.OR([
+      { ALT: () => this.CONSUME(lexer.EqualEqual) },
+      { ALT: () => this.CONSUME(lexer.Gt) },
+      { ALT: () => this.CONSUME(lexer.GtEqual) },
+      { ALT: () => this.CONSUME(lexer.Lt) },
+      { ALT: () => this.CONSUME(lexer.LtEqual) },
+    ]);
     this.SUBRULE2(this.Expression2);
   });
 
@@ -84,9 +90,25 @@ class HLParserClass extends CstParser {
           this.CONSUME(lexer.KeywordIf);
           this.SUBRULE(this.Condition);
           this.CONSUME(lexer.KeywordThen);
-          this.SUBRULE2(this.Expression);
+          this.SUBRULE(this.Expression);
           this.CONSUME(lexer.KeywordElse);
+          this.SUBRULE2(this.Expression);
+        },
+      },
+      {
+        ALT: () => {
+          this.CONSUME(lexer.BraceLeft);
+          this.SUBRULE(this.Pattern);
+          this.CONSUME(lexer.Equal);
           this.SUBRULE3(this.Expression);
+          this.CONSUME(lexer.KeywordWhere);
+          this.AT_LEAST_ONE_SEP2({
+            SEP: lexer.Comma,
+            DEF: () => {
+              this.SUBRULE(this.DomainValues);
+            },
+          });
+          this.CONSUME(lexer.BraceRight);
         },
       },
       {
