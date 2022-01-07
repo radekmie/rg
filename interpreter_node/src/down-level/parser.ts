@@ -151,41 +151,13 @@ class HLParserClass extends CstParser {
     this.SUBRULE(this.Expression);
   });
 
-  FunctionDeclaration = this.RULE('FunctionDeclaration', () => {
-    this.CONSUME(lexer.Identifier);
-    this.CONSUME(lexer.Colon);
-    this.SUBRULE(this.FunctionType);
-    this.AT_LEAST_ONE({
-      // FIXME: This prevents the loop of `FunctionCase`s but it shouldn't be needed.
-      GATE: () => this.LA(2).tokenType !== lexer.Colon,
-      DEF: () => {
-        this.SUBRULE(this.FunctionCase);
-      },
-    });
-  });
-
-  FunctionType = this.RULE('FunctionType', () => {
-    this.OR([
-      {
-        ALT: () => {
-          this.CONSUME(lexer.Identifier);
-          this.CONSUME(lexer.MinusGt);
-          this.SUBRULE(this.FunctionType);
-        },
-      },
-      {
-        ALT: () => {
-          this.CONSUME2(lexer.Identifier);
-        },
-      },
-    ]);
-  });
-
   GameDeclaration = this.RULE('GameDeclaration', () => {
     this.MANY(() => {
       this.OR([
         { ALT: () => this.SUBRULE(this.DomainDeclaration) },
-        { ALT: () => this.SUBRULE(this.FunctionDeclaration) },
+        { ALT: () => this.SUBRULE(this.FunctionCase) },
+        { ALT: () => this.SUBRULE(this.TypeDeclaration) },
+        { ALT: () => this.SUBRULE(this.VariableAssignment) },
       ]);
     });
   });
@@ -216,6 +188,35 @@ class HLParserClass extends CstParser {
         },
       },
     ]);
+  });
+
+  Type = this.RULE('Type', () => {
+    this.OR([
+      {
+        ALT: () => {
+          this.CONSUME(lexer.Identifier);
+          this.CONSUME(lexer.MinusGt);
+          this.SUBRULE(this.Type);
+        },
+      },
+      {
+        ALT: () => {
+          this.CONSUME2(lexer.Identifier);
+        },
+      },
+    ]);
+  });
+
+  TypeDeclaration = this.RULE('TypeDeclaration', () => {
+    this.CONSUME(lexer.Identifier);
+    this.CONSUME(lexer.Colon);
+    this.SUBRULE(this.Type);
+  });
+
+  VariableAssignment = this.RULE('VariableAssignment', () => {
+    this.CONSUME(lexer.Identifier);
+    this.CONSUME(lexer.Equal);
+    this.SUBRULE(this.Expression);
   });
 
   constructor() {

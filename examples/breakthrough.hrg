@@ -35,13 +35,13 @@ opponent(Black) = White
 opponent(_) = Black
 
 
-// // Variables
-// //   Special variables are defined implicitly (player, score, visibility)
+// Variables
+//   Special variables are defined implicitly (player, score, visibility)
 // board : Square -> Piece
 // board = { V(x, y) = if y < 2 then Black else if x > 5 then White else Empty where x in 0..7, y in 0..7 }
-// me : Player
-// me = White
-// position : Square
+me : Player
+me = White
+position : Square
 
 
 // // Automaton

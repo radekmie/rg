@@ -2,6 +2,7 @@ import { CstChildrenDictionary as Context, CstElement } from 'chevrotain';
 
 import parser from './parser';
 import * as ast from './types';
+import * as utils from '../utils';
 
 class HLVisitor extends parser.getBaseCstVisitorConstructor() {
   constructor() {
@@ -107,33 +108,67 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
     });
   }
 
-  FunctionDeclaration(context: Context): ast.FunctionDeclaration {
-    return ast.FunctionDeclaration({
-      identifier: this.visitToken(context.Identifier[0]),
-      type: this.visitNode(context.FunctionType[0]),
-      cases: this.visitNodes(context.FunctionCase),
-    });
-  }
+  GameDeclaration(context: Context): ast.GameDeclaration {
+    const typeDeclarations = this.visitNodes(context.TypeDeclaration);
 
-  FunctionType(context: Context): ast.Type {
-    if ('MinusGt' in context) {
-      return ast.TypeFunction({
-        lhs: ast.TypeName({
-          identifier: this.visitToken(context.Identifier[0]),
-        }),
-        rhs: this.visitNode(context.FunctionType[0]),
+    // Reify FunctionDeclaration.
+    const functionCases = this.visitNodes(context.FunctionCase);
+    const functionDeclarations = functionCases.reduce(
+      (functionDeclarations: ast.FunctionDeclaration[], functionCase) => {
+        const existingFunctionDeclaration = functionDeclarations.find(functionDeclaration => functionDeclaration.identifier === functionCase.identifier);
+        if (existingFunctionDeclaration) {
+          existingFunctionDeclaration.cases.push(functionCase);
+        } else {
+          const typeDeclaration = typeDeclarations.find(typeDeclaration => typeDeclaration.identifier === functionCase.identifier);
+          utils.assert(typeDeclaration, `Type declaration for function "${functionCase.identifier}" not found.`);
+          typeDeclarations.splice(typeDeclarations.indexOf(typeDeclaration), 1);
+          const functionDeclaration = ast.FunctionDeclaration({
+            identifier: typeDeclaration.identifier,
+            type: typeDeclaration.type,
+            cases: [functionCase],
+          });
+          functionDeclarations.push(functionDeclaration);
+        }
+
+        return functionDeclarations;
+      },
+      [],
+    );
+
+    // Reify VariableDeclaration.
+    const variableAssignments = this.visitNodes(context.VariableAssignment);
+    const variableDeclarations = variableAssignments.reduce(
+      (variableDeclarations: ast.VariableDeclaration[], variableAssignment) => {
+        const existingVariableDeclaration = variableDeclarations.find(variableDeclaration => variableDeclaration.identifier === variableAssignment.identifier);
+        utils.assert(!existingVariableDeclaration, `Duplicate VariableAssignment found for variable "${variableAssignment.identifier}".`);
+        const typeDeclaration = typeDeclarations.find(typeDeclaration => typeDeclaration.identifier === variableAssignment.identifier);
+        utils.assert(typeDeclaration, `Type declaration for function "${variableAssignment.identifier}" not found.`);
+        typeDeclarations.splice(typeDeclarations.indexOf(typeDeclaration), 1);
+        const variableDeclaration = ast.VariableDeclaration({
+          identifier: typeDeclaration.identifier,
+          type: typeDeclaration.type,
+          defaultValue: variableAssignment.expression,
+        });
+        variableDeclarations.push(variableDeclaration);
+        return variableDeclarations;
+      },
+      [],
+    );
+
+    // Reify VariableDeclaration without default values.
+    for (const typeDeclaration of typeDeclarations) {
+      const variableDeclaration = ast.VariableDeclaration({
+        identifier: typeDeclaration.identifier,
+        type: typeDeclaration.type,
+        defaultValue: null,
       });
+      variableDeclarations.push(variableDeclaration);
     }
 
-    return ast.TypeName({
-      identifier: this.visitToken(context.Identifier[0]),
-    });
-  }
-
-  GameDeclaration(context: Context): ast.GameDeclaration {
     return ast.GameDeclaration({
       domains: this.visitNodes(context.DomainDeclaration),
-      functions: this.visitNodes(context.FunctionDeclaration),
+      functions: functionDeclarations,
+      variables: variableDeclarations,
     });
   }
 
@@ -151,6 +186,35 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
     return identifier[0] === identifier[0].toUpperCase()
       ? ast.PatternLiteral({ identifier })
       : ast.PatternVariable({ identifier });
+  }
+
+  Type(context: Context): ast.Type {
+    if ('MinusGt' in context) {
+      return ast.TypeFunction({
+        lhs: ast.TypeName({
+          identifier: this.visitToken(context.Identifier[0]),
+        }),
+        rhs: this.visitNode(context.Type[0]),
+      });
+    }
+
+    return ast.TypeName({
+      identifier: this.visitToken(context.Identifier[0]),
+    });
+  }
+
+  TypeDeclaration(context: Context): ast.TypeDeclaration {
+    return ast.TypeDeclaration({
+      identifier: this.visitToken(context.Identifier[0]),
+      type: this.visitNode(context.Type[0]),
+    });
+  }
+
+  VariableAssignment(context: Context): ast.VariableAssignment {
+    return ast.VariableAssignment({
+      identifier: this.visitToken(context.Identifier[0]),
+      expression: this.visitNode(context.Expression[0]),
+    });
   }
 
   visitNode(cstElement: CstElement) {

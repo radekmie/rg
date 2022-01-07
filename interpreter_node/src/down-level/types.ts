@@ -41,7 +41,7 @@ export const FunctionDeclaration = creator<FunctionDeclaration>('FunctionDeclara
 export type FunctionDeclaration = { kind: 'FunctionDeclaration'; identifier: string; type: Type; cases: FunctionCase[] };
 
 export const GameDeclaration = creator<GameDeclaration>('GameDeclaration');
-export type GameDeclaration = { kind: 'GameDeclaration'; domains: DomainDeclaration[]; functions: FunctionDeclaration[] };
+export type GameDeclaration = { kind: 'GameDeclaration'; domains: DomainDeclaration[]; functions: FunctionDeclaration[]; variables: VariableDeclaration[] };
 
 export const PatternConstructor = creator<PatternConstructor>('PatternConstructor');
 export type PatternConstructor = { kind: 'PatternConstructor'; identifier: string; args: Pattern[] };
@@ -55,6 +55,9 @@ export type PatternVariable = { kind: 'PatternVariable'; identifier: string };
 export const PatternWildcard = creator<PatternWildcard>('PatternWildcard');
 export type PatternWildcard = { kind: 'PatternWildcard' };
 
+export const TypeDeclaration = creator<TypeDeclaration>('TypeDeclaration');
+export type TypeDeclaration = { kind: 'TypeDeclaration'; identifier: string; type: Type };
+
 export const TypeFunction = creator<TypeFunction>('TypeFunction');
 export type TypeFunction = { kind: 'TypeFunction'; lhs: Type; rhs: Type };
 
@@ -66,6 +69,12 @@ export type ValueConstructor = { kind: 'ValueConstructor'; identifier: string; a
 
 export const ValueElement = creator<ValueElement>('ValueElement');
 export type ValueElement = { kind: 'ValueElement'; identifier: string };
+
+export const VariableAssignment = creator<VariableAssignment>('VariableAssignment');
+export type VariableAssignment = { kind: 'VariableAssignment'; identifier: string; expression: Expression };
+
+export const VariableDeclaration = creator<VariableDeclaration>('VariableDeclaration');
+export type VariableDeclaration = { kind: 'VariableDeclaration'; identifier: string; type: Type; defaultValue: null | Expression };
 
 export type Condition = ConditionEq;
 export type DomainElement = DomainGenerator | DomainLiteral;

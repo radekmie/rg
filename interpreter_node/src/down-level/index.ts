@@ -40,6 +40,19 @@ function evaluateCondition(condition: hl.Condition, binding: Record<string, hl.V
   }
 }
 
+function evaluateDefaultValue(type: ll.Type, typeValues: Record<string, hl.Value[]>): hl.Value {
+  switch (type.kind) {
+    case 'Arrow':
+      throw new Error('Not implemented.');
+    case 'Set':
+      throw new Error('Not implemented.');
+    case 'TypeReference':
+      utils.assert(type.identifier in typeValues, `Unresolved TypeReference "${type.identifier}".`);
+      utils.assert(typeValues[type.identifier].length, 'Expected at least one identifier.');
+      return typeValues[type.identifier][0];
+  }
+}
+
 function evaluateEquality(lhs: hl.Value, rhs: hl.Value): boolean {
   switch (lhs.kind) {
     case 'ValueConstructor':
@@ -145,6 +158,7 @@ function translateFunctionDeclaration(functionDeclaration: hl.FunctionDeclaratio
   const type = translateType(functionDeclaration.type);
   utils.assert(type.kind === 'Arrow', 'Function is expected to have Arrow type.');
   utils.assert(type.lhs in typeValues, `Unresolved TypeReference "${type.lhs}".`);
+  utils.assert(typeValues[type.lhs].length, 'Expected at least one identifier.');
   const entries = typeValues[type.lhs].map(value => {
     const arm = utils.findMap(functionDeclaration.cases, functionCase => {
       utils.assert(functionCase.args.length === 1, 'Not implemented.');
@@ -180,11 +194,12 @@ function translateGameDeclaration(gameDeclaration: hl.GameDeclaration): ll.GameD
     return result;
   }, { types: [] as ll.TypeDeclaration[], typeValues: {} as Record<string, hl.Value[]> });
   const constants = gameDeclaration.functions.map(functionDeclaration => translateFunctionDeclaration(functionDeclaration, typeValues));
+  const variables = gameDeclaration.variables.map(variableDeclaration => translateVariableDeclaration(variableDeclaration, typeValues));
   return ll.GameDeclaration({
     constants,
     edges: [],
     types,
-    variables: [],
+    variables,
   });
 }
 
@@ -197,6 +212,28 @@ function translateType(type: hl.Type): ll.Type {
     case 'TypeName':
       return ll.TypeReference({ identifier: type.identifier });
   }
+}
+
+function translateValue(value: hl.Value): ll.Value {
+  switch (value.kind) {
+    case 'ValueConstructor':
+      return ll.Element({ identifier: serializeValue(value) });
+    case 'ValueElement':
+      return ll.Element({ identifier: value.identifier });
+  }
+}
+
+function translateVariableDeclaration(variableDeclaration: hl.VariableDeclaration, typeValues: Record<string, hl.Value[]>): ll.VariableDeclaration {
+  const type = translateType(variableDeclaration.type);
+  return ll.VariableDeclaration({
+    identifier: variableDeclaration.identifier,
+    defaultValue: translateValue(
+      variableDeclaration.defaultValue === null
+        ? evaluateDefaultValue(type, typeValues)
+        : evaluateExpression(variableDeclaration.defaultValue, {}),
+    ),
+    type,
+  });
 }
 
 export default function translate(source: string) {
