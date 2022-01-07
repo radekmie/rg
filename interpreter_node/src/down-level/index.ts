@@ -150,6 +150,10 @@ function translateFunctionDeclaration(functionDeclaration: hl.FunctionDeclaratio
   utils.assert(functionDeclaration.cases[0].args.length === 1, 'Only simple functions are allowed.');
   functionDeclaration.cases.forEach(functionCase => {
     utils.assert(
+      functionDeclaration.identifier === functionCase.identifier,
+      'All function cases should have the same identifier as function declaration.',
+    );
+    utils.assert(
       functionDeclaration.cases[0].args.length === functionCase.args.length,
       'All function cases should have the same number of arguments.',
     );

@@ -142,7 +142,7 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
         const existingVariableDeclaration = variableDeclarations.find(variableDeclaration => variableDeclaration.identifier === variableAssignment.identifier);
         utils.assert(!existingVariableDeclaration, `Duplicate VariableAssignment found for variable "${variableAssignment.identifier}".`);
         const typeDeclaration = typeDeclarations.find(typeDeclaration => typeDeclaration.identifier === variableAssignment.identifier);
-        utils.assert(typeDeclaration, `Type declaration for function "${variableAssignment.identifier}" not found.`);
+        utils.assert(typeDeclaration, `Type declaration for variable "${variableAssignment.identifier}" not found.`);
         typeDeclarations.splice(typeDeclarations.indexOf(typeDeclaration), 1);
         const variableDeclaration = ast.VariableDeclaration({
           identifier: typeDeclaration.identifier,
