@@ -1,4 +1,5 @@
-use interpreter_rust::*;
+use interpreter_rust::deserializer::GameSerialized;
+use interpreter_rust::{Game, State};
 use rand::{rngs::ThreadRng, seq::IteratorRandom};
 use std::{collections::BTreeMap, env, time::Instant};
 
@@ -68,7 +69,7 @@ fn run_perf(game: &Game, depth: usize) {
 fn main() {
     let args = env::args().collect::<Vec<_>>();
     let file = args.get(1).expect("Game IST file expected.");
-    let game = Game::from_ist_file(file);
+    let game = GameSerialized::from_ist_file(file).into();
 
     match args.get(2).expect("Operation expected.").as_str() {
         "perf" => {

@@ -5,9 +5,9 @@ authors = ["Radosław Miernik <radekmie@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-rand = "0.7.3"
-serde = { version = "1.0", features = ["derive", "rc"] }
-serde_json = "1.0"
+rand = "0.8.4"
+serde = { version = "1.0.133", features = ["derive", "rc"] }
+serde_json = "1.0.75"
 
 [profile.release]
 debug = true
