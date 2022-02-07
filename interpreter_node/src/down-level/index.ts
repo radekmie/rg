@@ -76,6 +76,8 @@ function evaluateCondition(condition: hl.Condition, binding: Record<string, hl.V
       return ord === Ord.Eq;
     case 'ConditionLt':
       return ord === Ord.Lt;
+    case 'ConditionOr':
+      throw new Error('Not implemented.');
   }
 }
 

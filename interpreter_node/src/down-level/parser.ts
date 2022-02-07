@@ -3,16 +3,118 @@ import { CstParser } from 'chevrotain';
 import * as lexer from './lexer';
 
 class HLParserClass extends CstParser {
+  AutomatonBranch = this.RULE('AutomatonBranch', () => {
+    this.MANY({
+      DEF: () => {
+        this.SUBRULE(this.AutomatonStatement);
+      },
+    });
+  });
+
+  AutomatonFunction = this.RULE('AutomatonFunction', () => {
+    this.CONSUME(lexer.KeywordGraph);
+    this.CONSUME(lexer.Identifier);
+    this.CONSUME(lexer.ParenthesisLeft);
+    this.MANY_SEP({
+      SEP: lexer.Comma,
+      DEF: () => {
+        this.CONSUME2(lexer.Identifier);
+      },
+    });
+    this.CONSUME(lexer.ParenthesisRight);
+    this.CONSUME(lexer.BraceLeft);
+    this.MANY({
+      DEF: () => {
+        this.SUBRULE(this.AutomatonStatement);
+      },
+    });
+    this.CONSUME(lexer.BraceRight);
+  });
+
+  AutomatonStatement = this.RULE('AutomatonStatement', () => {
+    this.OR([
+      {
+        ALT: () => {
+          this.CONSUME(lexer.Identifier);
+          this.CONSUME(lexer.ParenthesisLeft);
+          this.MANY_SEP({
+            SEP: lexer.Comma,
+            DEF: () => {
+              this.SUBRULE(this.Expression);
+            },
+          });
+          this.CONSUME(lexer.ParenthesisRight);
+        },
+      },
+      {
+        ALT: () => {
+          this.CONSUME2(lexer.Identifier);
+          this.MANY(() => {
+            this.CONSUME(lexer.BracketLeft);
+            this.SUBRULE2(this.Expression);
+            this.CONSUME(lexer.BracketRight);
+          });
+          this.CONSUME(lexer.Equal);
+          this.SUBRULE3(this.Expression);
+        },
+      },
+      {
+        ALT: () => {
+          this.CONSUME(lexer.KeywordBranch);
+          this.MANY_SEP2({
+            SEP: lexer.KeywordOr,
+            DEF: () => {
+              this.CONSUME(lexer.BraceLeft);
+              this.SUBRULE(this.AutomatonBranch);
+              this.CONSUME(lexer.BraceRight);
+            },
+          });
+        },
+      },
+      {
+        ALT: () => {
+          this.CONSUME(lexer.KeywordIf);
+          this.CONSUME2(lexer.ParenthesisLeft);
+          this.SUBRULE(this.Condition);
+          this.CONSUME2(lexer.ParenthesisRight);
+          this.CONSUME2(lexer.BraceLeft);
+          this.MANY2({
+            DEF: () => {
+              this.SUBRULE(this.AutomatonStatement);
+            },
+          });
+          this.CONSUME2(lexer.BraceRight);
+        },
+      },
+      {
+        ALT: () => {
+          this.CONSUME(lexer.KeywordWhile);
+          this.CONSUME3(lexer.ParenthesisLeft);
+          this.SUBRULE2(this.Condition);
+          this.CONSUME3(lexer.ParenthesisRight);
+          this.CONSUME3(lexer.BraceLeft);
+          this.MANY3({
+            DEF: () => {
+              this.SUBRULE2(this.AutomatonStatement);
+            },
+          });
+          this.CONSUME3(lexer.BraceRight);
+        },
+      },
+    ]);
+  });
+
   Condition = this.RULE('Condition', () => {
-    this.SUBRULE(this.Expression2);
+    this.SUBRULE(this.ExpressionSimple);
     this.OR([
       { ALT: () => this.CONSUME(lexer.EqualEqual) },
       { ALT: () => this.CONSUME(lexer.Gt) },
       { ALT: () => this.CONSUME(lexer.GtEqual) },
       { ALT: () => this.CONSUME(lexer.Lt) },
       { ALT: () => this.CONSUME(lexer.LtEqual) },
+      { ALT: () => this.CONSUME(lexer.OrOr) },
     ]);
-    this.SUBRULE2(this.Expression2);
+    this.SUBRULE2(this.ExpressionSimple);
   });
 
   DomainDeclaration = this.RULE('DomainDeclaration', () => {
@@ -113,7 +215,7 @@ class HLParserClass extends CstParser {
       },
       {
         ALT: () => {
-          this.SUBRULE(this.Expression2);
+          this.SUBRULE(this.ExpressionSimple);
           this.OPTION({
             DEF: () => {
               this.OR2([
@@ -121,7 +223,7 @@ class HLParserClass extends CstParser {
                 { ALT: () => this.CONSUME(lexer.Minus) },
                 { ALT: () => this.CONSUME(lexer.Plus) },
               ]);
-              this.SUBRULE2(this.Expression2);
+              this.SUBRULE2(this.ExpressionSimple);
             },
           });
         },
@@ -129,19 +231,27 @@ class HLParserClass extends CstParser {
     ]);
   });
 
-  Expression2 = this.RULE('Expression2', () => {
+  ExpressionInParenthesis = this.RULE('ExpressionInParenthesis', () => {
+    this.CONSUME(lexer.ParenthesisLeft);
+    this.MANY_SEP({
+      SEP: lexer.Comma,
+      DEF: () => {
+        this.SUBRULE(this.Expression);
+      },
+    });
+    this.CONSUME(lexer.ParenthesisRight);
+  });
+
+  ExpressionSimple = this.RULE('ExpressionSimple', () => {
     this.OR([
       {
         ALT: () => {
           this.CONSUME(lexer.Identifier);
-          this.CONSUME(lexer.ParenthesisLeft);
-          this.MANY_SEP({
-            SEP: lexer.Comma,
+          this.AT_LEAST_ONE({
             DEF: () => {
-              this.SUBRULE(this.Expression);
+              this.SUBRULE(this.ExpressionInParenthesis);
             },
           });
-          this.CONSUME(lexer.ParenthesisRight);
         },
       },
       {
@@ -151,9 +261,9 @@ class HLParserClass extends CstParser {
       },
       {
         ALT: () => {
-          this.CONSUME2(lexer.ParenthesisLeft);
-          this.SUBRULE2(this.Expression);
-          this.CONSUME2(lexer.ParenthesisRight);
+          this.CONSUME(lexer.ParenthesisLeft);
+          this.SUBRULE(this.Expression);
+          this.CONSUME(lexer.ParenthesisRight);
         },
       },
     ]);
@@ -176,6 +286,7 @@ class HLParserClass extends CstParser {
   GameDeclaration = this.RULE('GameDeclaration', () => {
     this.MANY(() => {
       this.OR([
+        { ALT: () => this.SUBRULE(this.AutomatonFunction) },
         { ALT: () => this.SUBRULE(this.DomainDeclaration) },
         { ALT: () => this.SUBRULE(this.FunctionCase) },
         { ALT: () => this.SUBRULE(this.TypeDeclaration) },

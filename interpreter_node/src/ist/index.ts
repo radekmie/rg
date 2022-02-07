@@ -160,7 +160,7 @@ function buildType(game: ist.Game, type: ast.Type): ist.Type | null {
 
 function buildTypeOrFail(game: ist.Game, type: ast.Type): ist.Type {
   const builtType = buildType(game, type);
-  utils.assert(builtType !== null, 'Unresolved type.');
+  utils.assert(builtType !== null, `Unresolved type ${JSON.stringify(type)}.`);
   return builtType;
 }
 

@@ -10,9 +10,58 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
     this.validateVisitor();
   }
 
+  AutomatonBranch(context: Context): ast.AutomatonStatement[] {
+    return this.visitNodes(context.AutomatonStatement);
+  }
+
+  AutomatonFunction(context: Context): ast.AutomatonFunction {
+    return ast.AutomatonFunction({
+      args: this.visitTokens(context.Identifier),
+      body: this.visitNodes(context.AutomatonStatement),
+    });
+  }
+
+  AutomatonStatement(context: Context): ast.AutomatonStatement {
+    if ('Equal' in context) {
+      return ast.AutomatonAssignment({
+        identifier: this.visitToken(context.Identifier[0]),
+        accessors: this.visitNodes(context.Expression.slice(0, -1)),
+        expression: this.visitNode(context.Expression[0]),
+      });
+    }
+
+    if ('Identifier' in context) {
+      return ast.AutomatonCall({
+        args: this.visitNodes(context.Expression),
+      });
+    }
+
+    if ('KeywordBranch' in context) {
+      return ast.AutomatonBranch({
+        arms: this.visitNodes(context.AutomatonBranch),
+      });
+    }
+
+    if ('KeywordIf' in context) {
+      return ast.AutomatonIf({
+        condition: this.visitNode(context.Condition[0]),
+        body: this.visitNodes(context.AutomatonStatement),
+      });
+    }
+
+    if ('KeywordWhile' in context) {
+      return ast.AutomatonWhile({
+        condition: this.visitNode(context.Condition[0]),
+        body: this.visitNodes(context.AutomatonStatement),
+      });
+    }
+
+    throw new Error(`AutomatonStatement ${JSON.stringify(context, null, 2)}`);
+  }
+
   Condition(context: Context): ast.Condition {
-    const lhs = this.visitNode(context.Expression2[0]);
-    const rhs = this.visitNode(context.Expression2[1]);
+    const lhs = this.visitNode(context.ExpressionSimple[0]);
+    const rhs = this.visitNode(context.ExpressionSimple[1]);
 
     if ('EqualEqual' in context) {
       return ast.ConditionEq({ lhs, rhs });
@@ -26,7 +75,11 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
       return ast.ConditionLt({ lhs, rhs });
     }
 
-    throw new Error('Condition ' + JSON.stringify(context));
+    if ('OrOr' in context) {
+      return ast.ConditionOr({ lhs, rhs });
+    }
+
+    throw new Error(`Condition ${JSON.stringify(context, null, 2)}`);
   }
 
   DomainDeclaration(context: Context): ast.DomainDeclaration {
@@ -88,27 +141,31 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
 
     if ('Minus' in context) {
       return ast.ExpressionSub({
-        lhs: this.visitNode(context.Expression2[0]),
-        rhs: this.visitNode(context.Expression2[1]),
+        lhs: this.visitNode(context.ExpressionSimple[0]),
+        rhs: this.visitNode(context.ExpressionSimple[1]),
       });
     }
 
     if ('Plus' in context) {
       return ast.ExpressionAdd({
-        lhs: this.visitNode(context.Expression2[0]),
-        rhs: this.visitNode(context.Expression2[1]),
+        lhs: this.visitNode(context.ExpressionSimple[0]),
+        rhs: this.visitNode(context.ExpressionSimple[1]),
       });
     }
 
-    return this.visitNode(context.Expression2[0]);
+    return this.visitNode(context.ExpressionSimple[0]);
   }
 
-  Expression2(context: Context): ast.Expression {
+  ExpressionInParenthesis(context: Context): ast.Expression {
+    return this.visitNode(context.Expression[0]);
+  }
+
+  ExpressionSimple(context: Context): ast.Expression {
     if ('Identifier' in context) {
-      if ('ParenthesisLeft' in context) {
+      if ('ExpressionInParenthesis' in context) {
         return ast.ExpressionConstructor({
           identifier: this.visitToken(context.Identifier[0]),
-          args: this.visitNodes(context.Expression),
+          args: this.visitNodes(context.ExpressionInParenthesis),
         });
       }
 
@@ -117,7 +174,7 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
       });
     }
 
-    throw new Error('Expression2 ' + JSON.stringify(context));
+    throw new Error(`ExpressionSimple ${JSON.stringify(context, null, 2)}`);
   }
 
   FunctionCase(context: Context): ast.FunctionCase {
@@ -186,6 +243,7 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
     }
 
     return ast.GameDeclaration({
+      automaton: this.visitNodes(context.AutomatonFunction),
       domains: this.visitNodes(context.DomainDeclaration),
       functions: functionDeclarations,
       variables: variableDeclarations,

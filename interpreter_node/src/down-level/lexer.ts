@@ -17,13 +17,16 @@ function token(name: string, pattern: RegExp, extra?: TokenType | null) {
 export const Identifier = token('Identifier', /[_a-zA-Z0-9]+/);
 
 // Keywords.
+export const KeywordBranch = token('KeywordBranch', /branch/, Identifier);
 export const KeywordDomain = token('KeywordDomain', /domain/, Identifier);
 export const KeywordElse = token('KeywordElse', /else/, Identifier);
+export const KeywordGraph = token('KeywordGraph', /graph/, Identifier);
 export const KeywordIf = token('KeywordIf', /if/, Identifier);
 export const KeywordIn = token('KeywordIn', /in/, Identifier);
 export const KeywordOr = token('KeywordOr', /or/, Identifier);
 export const KeywordThen = token('KeywordThen', /then/, Identifier);
 export const KeywordWhere = token('KeywordWhere', /where/, Identifier);
+export const KeywordWhile = token('KeywordWhile', /while/, Identifier);
 export const KeywordWildcard = token('KeywordWildcard', /_/, Identifier);
 
 // Symbols.

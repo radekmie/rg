@@ -1,6 +1,24 @@
 import { creator } from '../utils';
 
 /* eslint-disable prettier/prettier */
+export const AutomatonAssignment = creator<AutomatonAssignment>('AutomatonAssignment');
+export type AutomatonAssignment = { kind: 'AutomatonAssignment'; identifier: string; accessors: Expression[]; expression: Expression };
+
+export const AutomatonBranch = creator<AutomatonBranch>('AutomatonBranch');
+export type AutomatonBranch = { kind: 'AutomatonBranch'; arms: AutomatonStatement[][] };
+
+export const AutomatonCall = creator<AutomatonCall>('AutomatonCall');
+export type AutomatonCall = { kind: 'AutomatonCall'; args: Expression[] };
+
+export const AutomatonFunction = creator<AutomatonFunction>('AutomatonFunction');
+export type AutomatonFunction = { kind: 'AutomatonFunction'; args: string[]; body: AutomatonStatement[] };
+
+export const AutomatonIf = creator<AutomatonIf>('AutomatonIf');
+export type AutomatonIf = { kind: 'AutomatonIf'; condition: Condition; body: AutomatonStatement[] };
+
+export const AutomatonWhile = creator<AutomatonWhile>('AutomatonWhile');
+export type AutomatonWhile = { kind: 'AutomatonWhile'; condition: Condition; body: AutomatonStatement[] };
+
 export const ConditionGt = creator<ConditionGt>('ConditionGt');
 export type ConditionGt = { kind: 'ConditionGt'; lhs: Expression; rhs: Expression };
 
@@ -9,6 +27,9 @@ export type ConditionEq = { kind: 'ConditionEq'; lhs: Expression; rhs: Expressio
 
 export const ConditionLt = creator<ConditionLt>('ConditionLt');
 export type ConditionLt = { kind: 'ConditionLt'; lhs: Expression; rhs: Expression };
+
+export const ConditionOr = creator<ConditionOr>('ConditionOr');
+export type ConditionOr = { kind: 'ConditionOr'; lhs: Expression; rhs: Expression };
 
 export const DomainDeclaration = creator<DomainDeclaration>('DomainDeclaration');
 export type DomainDeclaration = { kind: 'DomainDeclaration'; identifier: string; elements: DomainElement[] };
@@ -50,7 +71,7 @@ export const FunctionDeclaration = creator<FunctionDeclaration>('FunctionDeclara
 export type FunctionDeclaration = { kind: 'FunctionDeclaration'; identifier: string; type: Type; cases: FunctionCase[] };
 
 export const GameDeclaration = creator<GameDeclaration>('GameDeclaration');
-export type GameDeclaration = { kind: 'GameDeclaration'; domains: DomainDeclaration[]; functions: FunctionDeclaration[]; variables: VariableDeclaration[] };
+export type GameDeclaration = { kind: 'GameDeclaration'; automaton: AutomatonFunction[]; domains: DomainDeclaration[]; functions: FunctionDeclaration[]; variables: VariableDeclaration[] };
 
 export const PatternConstructor = creator<PatternConstructor>('PatternConstructor');
 export type PatternConstructor = { kind: 'PatternConstructor'; identifier: string; args: Pattern[] };
@@ -91,10 +112,11 @@ export type VariableAssignment = { kind: 'VariableAssignment'; identifier: strin
 export const VariableDeclaration = creator<VariableDeclaration>('VariableDeclaration');
 export type VariableDeclaration = { kind: 'VariableDeclaration'; identifier: string; type: Type; defaultValue: null | Expression };
 
-export type Condition = ConditionGt | ConditionEq | ConditionLt;
+export type AutomatonStatement = AutomatonAssignment | AutomatonBranch | AutomatonCall | AutomatonIf | AutomatonWhile;
+export type Condition = ConditionGt | ConditionEq | ConditionLt | ConditionOr;
 export type DomainElement = DomainGenerator | DomainLiteral;
 export type DomainValue = DomainRange | DomainSet;
 export type Expression = ExpressionAdd | ExpressionConstructor | ExpressionIf | ExpressionLiteral | ExpressionMap | ExpressionSub;
 export type Pattern = PatternConstructor | PatternLiteral | PatternVariable | PatternWildcard;
-export type Value = ValueConstructor | ValueElement | ValueMap;
 export type Type = TypeFunction | TypeName;
+export type Value = ValueConstructor | ValueElement | ValueMap;

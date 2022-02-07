@@ -1,4 +1,5 @@
 // Domains
+domain Bool = True | False
 domain Piece = Black | Empty | White
 domain Player = Black | Keeper | White
 domain Score = Lose | Win
@@ -24,6 +25,10 @@ down(V(x, y)) = V(x, y + 1)
 direction : Player -> Square -> SquareOrNull
 direction(Black) = down
 direction(_) = up
+
+isNull : SquareOrNull -> Bool
+isNull(Null) = True
+isNull(_) = False
 
 piece : Player -> Player
 piece(Black) = Black
@@ -51,39 +56,40 @@ me = White
 position : Square
 
 
-// // Automaton
-// move(me) {
-//   forall(position)
-//   assert(board[position] == piece(me))
-//   board[position] = Empty
-//   position = direction(me)(position)
-//   branch {
-//     assert(board[position] == Empty)
-//   } or {
-//     branch {
-//       position = left(position)
-//     } or {
-//       position = right(position)
-//     }
-//     assert(board[position] in {Empty, piece(opponent(me))})
-//   }
-// }
+// Automaton
+graph move(me) {
+  forall(position)
+  // assert(board[position] == piece(me))
+  board[position] = Empty
+  position = direction(me)(position)
+  branch {
+    // assert(board[position] == Empty)
+  } or {
+    branch {
+      position = left(position)
+    } or {
+      position = right(position)
+    }
+    // assert(board[position] in {Empty, piece(opponent(me))})
+  }
+}
 
-// turn() {
-//   player = me
-//   move(me)
-//   board[position] = piece(piece)
-//   player = keeper
-//   if (!direction(me)(position) || reachable(move(opponent(me)))) {
-//     score[me] = Win
-//     score[opponent(me)] = Lose
-//     end()
-//   }
-//   me = opponent(me)
-// }
+graph turn() {
+  player = me
+  move(me)
+  board[position] = piece(piece)
+  player = keeper
+  if (isNull(direction(me)(position)) || reachable(move(opponent(me)))) {
+    score[me] = Win
+    score[opponent(me)] = Lose
+    end()
+  }
+  me = opponent(me)
+}
 
-// rules() {
-//   while (true) {
-//     turn()
-//   }
-// }
+graph rules() {
+  // FIXME: Conditions are always binary.
+  while (True == True) {
+    turn()
+  }
+}
