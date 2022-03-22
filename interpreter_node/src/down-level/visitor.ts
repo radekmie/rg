@@ -16,7 +16,8 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
 
   AutomatonFunction(context: Context): ast.AutomatonFunction {
     return ast.AutomatonFunction({
-      args: this.visitTokens(context.Identifier),
+      name: this.visitToken(context.Identifier[0]),
+      args: this.visitTokens(context.Identifier.slice(1)),
       body: this.visitNodes(context.AutomatonStatement),
     });
   }
@@ -44,19 +45,59 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
 
     if ('KeywordIf' in context) {
       return ast.AutomatonIf({
-        condition: this.visitNode(context.Condition[0]),
+        condition: this.visitNode(context.AutomatonCondition[0]),
         body: this.visitNodes(context.AutomatonStatement),
       });
     }
 
     if ('KeywordWhile' in context) {
       return ast.AutomatonWhile({
-        condition: this.visitNode(context.Condition[0]),
+        condition: this.visitNode(context.AutomatonCondition[0]),
         body: this.visitNodes(context.AutomatonStatement),
       });
     }
 
     throw new Error(`AutomatonStatement ${JSON.stringify(context, null, 2)}`);
+  }
+
+  AutomatonCondition(context: Context): ast.AutomatonCondition {
+    const lhs = this.visitNode(context.AutomatonConditionAtom[0]);
+
+    if (!('AndAnd' in context) && !('OrOr' in context)) {
+      return lhs;
+    }
+
+    const rhs = this.visitNode(context.AutomatonConditionAtom[1]);
+
+    if ('AndAnd' in context) {
+      return ast.AutomatonConditionAnd({ lhs, rhs });
+    }
+
+    if ('OrOr' in context) {
+      return ast.AutomatonConditionOr({ lhs, rhs });
+    }
+
+    throw new Error(`AutomatonCondition ${JSON.stringify(context, null, 2)}`);
+  }
+
+  AutomatonConditionAtom(context: Context): ast.AutomatonCondition {
+    if ('KeywordReachable' in context) {
+      const target = this.visitNode(context.ExpressionSimple[0]);
+      return ast.AutomatonConditionReachable({ target });
+    }
+
+    const lhs = this.visitNode(context.ExpressionSimple[0]);
+    const rhs = this.visitNode(context.ExpressionSimple[1]);
+
+    if ('EqualEqual' in context) {
+      return ast.AutomatonConditionEq({ lhs, rhs });
+    }
+
+    if ('NotEqual' in context) {
+      return ast.AutomatonConditionNe({ lhs, rhs });
+    }
+
+    throw new Error(`Condition ${JSON.stringify(context, null, 2)}`);
   }
 
   Condition(context: Context): ast.Condition {
@@ -71,12 +112,20 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
       return ast.ConditionGt({ lhs, rhs });
     }
 
+    if ('GtEqual' in context) {
+      return ast.ConditionGte({ lhs, rhs });
+    }
+
     if ('Lt' in context) {
       return ast.ConditionLt({ lhs, rhs });
     }
 
-    if ('OrOr' in context) {
-      return ast.ConditionOr({ lhs, rhs });
+    if ('LtEqual' in context) {
+      return ast.ConditionLte({ lhs, rhs });
+    }
+
+    if ('NotEqual' in context) {
+      return ast.ConditionNe({ lhs, rhs });
     }
 
     throw new Error(`Condition ${JSON.stringify(context, null, 2)}`);

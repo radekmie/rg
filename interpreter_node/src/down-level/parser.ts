@@ -11,6 +11,42 @@ class HLParserClass extends CstParser {
     });
   });
 
+  AutomatonCondition = this.RULE('AutomatonCondition', () => {
+    this.SUBRULE(this.AutomatonConditionAtom);
+    this.OPTION({
+      DEF: () => {
+        this.OR2([
+          { ALT: () => this.CONSUME(lexer.AndAnd) },
+          { ALT: () => this.CONSUME(lexer.OrOr) },
+        ]);
+        this.SUBRULE2(this.AutomatonConditionAtom);
+      },
+    });
+  });
+
+  AutomatonConditionAtom = this.RULE('AutomatonConditionAtom', () => {
+    this.OR([
+      {
+        ALT: () => {
+          this.CONSUME(lexer.KeywordReachable);
+          this.CONSUME(lexer.ParenthesisLeft);
+          this.SUBRULE(this.ExpressionSimple);
+          this.CONSUME(lexer.ParenthesisRight);
+        },
+      },
+      {
+        ALT: () => {
+          this.SUBRULE2(this.ExpressionSimple);
+          this.OR2([
+            { ALT: () => this.CONSUME(lexer.EqualEqual) },
+            { ALT: () => this.CONSUME(lexer.NotEqual) },
+          ]);
+          this.SUBRULE3(this.ExpressionSimple);
+        },
+      },
+    ]);
+  });
+
   AutomatonFunction = this.RULE('AutomatonFunction', () => {
     this.CONSUME(lexer.KeywordGraph);
     this.CONSUME(lexer.Identifier);
@@ -75,7 +111,7 @@ class HLParserClass extends CstParser {
         ALT: () => {
           this.CONSUME(lexer.KeywordIf);
           this.CONSUME2(lexer.ParenthesisLeft);
-          this.SUBRULE(this.Condition);
+          this.SUBRULE(this.AutomatonCondition);
           this.CONSUME2(lexer.ParenthesisRight);
           this.CONSUME2(lexer.BraceLeft);
           this.MANY2({
@@ -90,7 +126,7 @@ class HLParserClass extends CstParser {
         ALT: () => {
           this.CONSUME(lexer.KeywordWhile);
           this.CONSUME3(lexer.ParenthesisLeft);
-          this.SUBRULE2(this.Condition);
+          this.SUBRULE2(this.AutomatonCondition);
           this.CONSUME3(lexer.ParenthesisRight);
           this.CONSUME3(lexer.BraceLeft);
           this.MANY3({
@@ -112,7 +148,7 @@ class HLParserClass extends CstParser {
       { ALT: () => this.CONSUME(lexer.GtEqual) },
       { ALT: () => this.CONSUME(lexer.Lt) },
       { ALT: () => this.CONSUME(lexer.LtEqual) },
-      { ALT: () => this.CONSUME(lexer.OrOr) },
+      { ALT: () => this.CONSUME(lexer.NotEqual) },
     ]);
     this.SUBRULE2(this.ExpressionSimple);
   });

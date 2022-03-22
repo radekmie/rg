@@ -1,5 +1,4 @@
 // Domains
-domain Bool = True | False
 domain Piece = Black | Empty | White
 domain Player = Black | Keeper | White
 domain Score = Lose | Win
@@ -25,10 +24,6 @@ down(V(x, y)) = V(x, y + 1)
 direction : Player -> Square -> SquareOrNull
 direction(Black) = down
 direction(_) = up
-
-isNull : SquareOrNull -> Bool
-isNull(Null) = True
-isNull(_) = False
 
 piece : Player -> Player
 piece(Black) = Black
@@ -79,7 +74,7 @@ graph turn() {
   move(me)
   board[position] = piece(piece)
   player = keeper
-  if (isNull(direction(me)(position)) || reachable(move(opponent(me)))) {
+  if (direction(me)(position) == Null || reachable(move(opponent(me)))) {
     score[me] = Win
     score[opponent(me)] = Lose
     end()
@@ -89,7 +84,7 @@ graph turn() {
 
 graph rules() {
   // FIXME: Conditions are always binary.
-  while (True == True) {
+  while (Win == Win) {
     turn()
   }
 }

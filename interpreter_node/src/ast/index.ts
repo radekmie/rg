@@ -12,13 +12,13 @@ export function serializeAST(astNode: ast.GameDeclaration) {
   function serializeEdgeLabel(edgeLabel: ast.EdgeLabel): string {
     switch (edgeLabel.kind) {
       case 'Assignment':
-        return [serializeExpression(edgeLabel.lhs), '=', serializeExpression(edgeLabel.rhs)].join(' ');
+        return `${serializeExpression(edgeLabel.lhs)} = ${serializeExpression(edgeLabel.rhs)};`;
       case 'Comparison':
-        return [serializeExpression(edgeLabel.lhs), edgeLabel.negated ? '!=' : '==', serializeExpression(edgeLabel.rhs)].join(' ');
+        return `${serializeExpression(edgeLabel.lhs)} ${edgeLabel.negated ? '!=' : '=='} ${serializeExpression(edgeLabel.rhs)};`;
       case 'Reachability':
-        return [edgeLabel.negated ? '!' : '?', serializeEdgeName(edgeLabel.lhs), '->', serializeEdgeName(edgeLabel.rhs)].join(' ');
+        return `${edgeLabel.negated ? '!' : '?'} ${serializeEdgeName(edgeLabel.lhs)} -> ${serializeEdgeName(edgeLabel.rhs)};`;
       case 'Skip':
-        return '';
+        return ';';
     }
   }
 
@@ -79,6 +79,6 @@ export function serializeAST(astNode: ast.GameDeclaration) {
     ...astNode.types.map(typeDeclaration => `type ${typeDeclaration.identifier} = ${serializeType(typeDeclaration.type)};`),
     ...astNode.constants.map(constantDeclaration => `const ${constantDeclaration.identifier}: ${serializeType(constantDeclaration.type)} = ${serializeValue(constantDeclaration.value)};`),
     ...astNode.variables.map(variableDeclaration => `var ${variableDeclaration.identifier}: ${serializeType(variableDeclaration.type)} = ${serializeValue(variableDeclaration.defaultValue)};`),
-    ...astNode.edges.map(edge => [serializeEdgeName(edge.lhs), ',', serializeEdgeName(edge.rhs), ':', serializeEdgeLabel(edge.label)].join(' '))
+    ...astNode.edges.map(edge => `${serializeEdgeName(edge.lhs)}, ${serializeEdgeName(edge.rhs)}: ${serializeEdgeLabel(edge.label)}`)
   ].join('\n');
 }

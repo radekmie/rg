@@ -41,6 +41,32 @@ function compareValues(lhs: hl.Value, rhs: hl.Value): Ord {
   }
 }
 
+function evaluateAutomatonCondition(condition: hl.AutomatonCondition, binding: Record<string, hl.Value>): boolean {
+  if (condition.kind === 'AutomatonConditionReachable') {
+    throw new Error('Not implemented.');
+  }
+
+  if (condition.kind === 'AutomatonConditionAnd' || condition.kind === 'AutomatonConditionOr') {
+    const lhs = evaluateCondition(condition.lhs, binding);
+    switch (condition.kind) {
+      case 'AutomatonConditionAnd':
+        return lhs && evaluateCondition(condition.rhs, binding);
+      case 'AutomatonConditionOr':
+        return lhs || evaluateCondition(condition.rhs, binding);
+    }
+  }
+
+  const lhs = evaluateExpression(condition.lhs, binding);
+  const rhs = evaluateExpression(condition.rhs, binding);
+  const ord = compareValues(lhs, rhs);
+  switch (condition.kind) {
+    case 'AutomatonConditionEq':
+      return ord === Ord.Eq;
+    case 'AutomatonConditionNe':
+      return ord !== Ord.Eq;
+  }
+}
+
 function evaluateBinding(pattern: hl.Pattern, value: hl.Value): Record<string, hl.Value> | undefined {
   switch (pattern.kind) {
     case 'PatternConstructor':
@@ -72,12 +98,16 @@ function evaluateCondition(condition: hl.Condition, binding: Record<string, hl.V
   switch (condition.kind) {
     case 'ConditionGt':
       return ord === Ord.Gt;
+    case 'ConditionGte':
+      return ord === Ord.Gt || ord === Ord.Eq;
     case 'ConditionEq':
       return ord === Ord.Eq;
     case 'ConditionLt':
       return ord === Ord.Lt;
-    case 'ConditionOr':
-      throw new Error('Not implemented.');
+    case 'ConditionLte':
+      return ord === Ord.Lt || ord === Ord.Eq;
+    case 'ConditionNe':
+      return ord !== Ord.Eq;
   }
 }
 
@@ -186,6 +216,24 @@ function serializeValue(value: hl.Value): string {
   }
 }
 
+function translateAutomatonFunction(automatonFunction: hl.AutomatonFunction): ll.EdgeDeclaration[] {
+  // NOTES:
+  //   - The entrypoint of a function is at `automatonFunction.name`.
+  //   - A function should receive an `EdgeLabel` to where it should go once
+  //     it's finished. It's required for a situation when a function is NOT the
+  //     last statement of a block, i.e., a `while` statement.
+  //
+  // TODO:
+  //   - How to work around non-trivial arguments, e.g., `opponnent(me)`? We
+  //     don't have a concept of registers so it'd have to be calculated before
+  //     the actual call happens.
+  //   - How to work around multiple return points? We cannot store an edge
+  //     label in a variable, so we'd need multiple subgraphs of function for
+  //     each of its callsites, but that's potentially expensive. (And we have
+  //     to calculate them beforehand.)
+  return [];
+}
+
 function translateDomainElement(domainElement: hl.DomainElement, gameDeclaration: hl.GameDeclaration): hl.Value[] {
   switch (domainElement.kind) {
     case 'DomainGenerator':
@@ -275,9 +323,18 @@ function translateGameDeclaration(gameDeclaration: hl.GameDeclaration): ll.GameD
   }, { types: [] as ll.TypeDeclaration[], typeValues: {} as Record<string, hl.Value[]> });
   const constants = gameDeclaration.functions.map(functionDeclaration => translateFunctionDeclaration(functionDeclaration, typeValues));
   const variables = gameDeclaration.variables.map(variableDeclaration => translateVariableDeclaration(variableDeclaration, typeValues));
+
+  // TODO: Assert that function `main` exists.
+  const edges = gameDeclaration.automaton.flatMap(translateAutomatonFunction);
+  edges.push(ll.EdgeDeclaration({
+    label: ll.Skip({}),
+    lhs: ll.EdgeName({ parts: [ll.Literal({ identifier: 'begin' })] }),
+    rhs: ll.EdgeName({ parts: [ll.Literal({ identifier: 'main' })] }),
+  }));
+
   return ll.GameDeclaration({
     constants,
-    edges: [],
+    edges,
     types,
     variables,
   });
