@@ -1,38 +1,38 @@
 // Domains
-domain Piece = Black | Empty | White
-domain Player = Black | Keeper | White
-domain Score = Lose | Win
+domain Piece = black | empty | white
+domain Player = black | keeper | white
+domain Score = lose | win
 domain Square = V(x, y) where x in 0..7, y in { 0, 1, 2, 3, 4, 5, 6, 7 }
-domain SquareOrNull = Square | Null
+domain SquareOrNull = Square | null
 
 
 // Helpers
 left : Square -> SquareOrNull
-left(V(x, y)) = if x == 0 then Null else V(x - 1, y)
+left(V(x, y)) = if x == 0 then null else V(x - 1, y)
 
 right : Square -> SquareOrNull
-right(V(x, y)) = if x == 7 then Null else V(x + 1, y)
+right(V(x, y)) = if x == 7 then null else V(x + 1, y)
 
 up : Square -> SquareOrNull
-up(V(_, 0)) = Null
+up(V(_, 0)) = null
 up(V(x, y)) = V(x, y - 1)
 
 down : Square -> SquareOrNull
-down(V(_, 7)) = Null
+down(V(_, 7)) = null
 down(V(x, y)) = V(x, y + 1)
 
 direction : Player -> Square -> SquareOrNull
-direction(Black) = down
+direction(black) = down
 direction(_) = up
 
 piece : Player -> Player
-piece(Black) = Black
-piece(White) = White
-piece(_) = Empty
+piece(black) = black
+piece(white) = white
+piece(_) = empty
 
 opponent : Player -> Player
-opponent(Black) = White
-opponent(_) = Black
+opponent(black) = white
+opponent(_) = black
 
 
 // Variables
@@ -40,51 +40,50 @@ opponent(_) = Black
 board : Square -> Piece
 board = {
   V(x, y) = if y < 2
-    then Black
+    then black
     else if y > 5
-      then White
-      else Empty
+      then white
+      else empty
   where x in 0..7, y in 0..7
 }
 me : Player
-me = White
+me = white
 position : Square
 
 
 // Automaton
-graph move(me) {
+graph move(me: Player) {
   forall(position)
-  // assert(board[position] == piece(me))
-  board[position] = Empty
+  assert(board[position] == piece(me))
+  board[position] = empty
   position = direction(me)(position)
   branch {
-    // assert(board[position] == Empty)
+    assert(board[position] == empty)
   } or {
     branch {
       position = left(position)
     } or {
       position = right(position)
     }
-    // assert(board[position] in {Empty, piece(opponent(me))})
+    // assert(board[position] in {empty, piece(opponent(me))})
   }
 }
 
 graph turn() {
   player = me
   move(me)
-  board[position] = piece(piece)
+  board[position] = piece(me)
   player = keeper
-  if (direction(me)(position) == Null || reachable(move(opponent(me)))) {
-    score[me] = Win
-    score[opponent(me)] = Lose
-    end()
+  when direction(me)(position) == null || reachable(move(opponent(me))) {
+    score[me] = win
+    score[opponent(me)] = lose
+    return()
   }
   me = opponent(me)
 }
 
 graph rules() {
-  // FIXME: Conditions are always binary.
-  while (Win == Win) {
+  loop {
     turn()
   }
 }

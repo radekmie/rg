@@ -29,7 +29,7 @@ export function serializeAST(astNode: ast.GameDeclaration) {
   function serializeEdgeNamePart(edgeNamePart: ast.EdgeNamePart): string {
     switch (edgeNamePart.kind) {
       case 'Binding':
-        return ['(', edgeNamePart.identifier, ':', serializeType(edgeNamePart.type), ')'].join(' ');
+        return `(${edgeNamePart.identifier}: ${serializeType(edgeNamePart.type)})`;
       case 'Literal':
         return edgeNamePart.identifier;
     }
@@ -38,9 +38,9 @@ export function serializeAST(astNode: ast.GameDeclaration) {
   function serializeExpression(expression: ast.Expression): string {
     switch (expression.kind) {
       case 'Access':
-        return [serializeExpression(expression.lhs), '[', serializeExpression(expression.rhs), ']'].join(' ');
+        return `${serializeExpression(expression.lhs)}[${serializeExpression(expression.rhs)}]`;
       case 'Cast':
-        return [serializeType(expression.lhs), '(', serializeExpression(expression.rhs), ')'].join(' ');
+        return `${serializeType(expression.lhs)}(${serializeExpression(expression.rhs)})`;
       case 'Reference':
         return expression.identifier;
     }
@@ -75,10 +75,15 @@ export function serializeAST(astNode: ast.GameDeclaration) {
     }
   }
 
+  setTimeout(() => console.log('\n' + astNode.edges.map(edge => `"${serializeEdgeName(edge.lhs)}" -> "${serializeEdgeName(edge.rhs)}" [label="${serializeEdgeLabel(edge.label)}"];`).join('\n')), 10);
+
   return [
     ...astNode.types.map(typeDeclaration => `type ${typeDeclaration.identifier} = ${serializeType(typeDeclaration.type)};`),
+    '',
     ...astNode.constants.map(constantDeclaration => `const ${constantDeclaration.identifier}: ${serializeType(constantDeclaration.type)} = ${serializeValue(constantDeclaration.value)};`),
+    '',
     ...astNode.variables.map(variableDeclaration => `var ${variableDeclaration.identifier}: ${serializeType(variableDeclaration.type)} = ${serializeValue(variableDeclaration.defaultValue)};`),
-    ...astNode.edges.map(edge => `${serializeEdgeName(edge.lhs)}, ${serializeEdgeName(edge.rhs)}: ${serializeEdgeLabel(edge.label)}`)
+    '',
+    ...astNode.edges.map(edge => `${serializeEdgeName(edge.lhs)}, ${serializeEdgeName(edge.rhs)}: ${serializeEdgeLabel(edge.label)}`).reduce<string[]>((xs, x) => (xs.length && xs[xs.length - 1].split(',')[0].split('_')[0] !== x.split(',')[0].split('_')[0] && xs.push(''), xs.push(x), xs), [])
   ].join('\n');
 }

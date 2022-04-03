@@ -41,32 +41,6 @@ function compareValues(lhs: hl.Value, rhs: hl.Value): Ord {
   }
 }
 
-function evaluateAutomatonCondition(condition: hl.AutomatonCondition, binding: Record<string, hl.Value>): boolean {
-  if (condition.kind === 'AutomatonConditionReachable') {
-    throw new Error('Not implemented.');
-  }
-
-  if (condition.kind === 'AutomatonConditionAnd' || condition.kind === 'AutomatonConditionOr') {
-    const lhs = evaluateCondition(condition.lhs, binding);
-    switch (condition.kind) {
-      case 'AutomatonConditionAnd':
-        return lhs && evaluateCondition(condition.rhs, binding);
-      case 'AutomatonConditionOr':
-        return lhs || evaluateCondition(condition.rhs, binding);
-    }
-  }
-
-  const lhs = evaluateExpression(condition.lhs, binding);
-  const rhs = evaluateExpression(condition.rhs, binding);
-  const ord = compareValues(lhs, rhs);
-  switch (condition.kind) {
-    case 'AutomatonConditionEq':
-      return ord === Ord.Eq;
-    case 'AutomatonConditionNe':
-      return ord !== Ord.Eq;
-  }
-}
-
 function evaluateBinding(pattern: hl.Pattern, value: hl.Value): Record<string, hl.Value> | undefined {
   switch (pattern.kind) {
     case 'PatternConstructor':
@@ -91,22 +65,33 @@ function evaluateBinding(pattern: hl.Pattern, value: hl.Value): Record<string, h
   }
 }
 
-function evaluateCondition(condition: hl.Condition, binding: Record<string, hl.Value>): boolean {
-  const lhs = evaluateExpression(condition.lhs, binding);
-  const rhs = evaluateExpression(condition.rhs, binding);
+function evaluateCondition(expression: hl.Expression, binding: Record<string, hl.Value>): boolean {
+  if (
+    expression.kind !== 'ExpressionGt' &&
+    expression.kind !== 'ExpressionGte' &&
+    expression.kind !== 'ExpressionEq' &&
+    expression.kind !== 'ExpressionLt' &&
+    expression.kind !== 'ExpressionLte' &&
+    expression.kind !== 'ExpressionNe'
+  ) {
+    throw new Error(`Expression "${expression.kind}" is not a valid condition.`);
+  }
+
+  const lhs = evaluateExpression(expression.lhs, binding);
+  const rhs = evaluateExpression(expression.rhs, binding);
   const ord = compareValues(lhs, rhs);
-  switch (condition.kind) {
-    case 'ConditionGt':
+  switch (expression.kind) {
+    case 'ExpressionGt':
       return ord === Ord.Gt;
-    case 'ConditionGte':
+    case 'ExpressionGte':
       return ord === Ord.Gt || ord === Ord.Eq;
-    case 'ConditionEq':
+    case 'ExpressionEq':
       return ord === Ord.Eq;
-    case 'ConditionLt':
+    case 'ExpressionLt':
       return ord === Ord.Lt;
-    case 'ConditionLte':
+    case 'ExpressionLte':
       return ord === Ord.Lt || ord === Ord.Eq;
-    case 'ConditionNe':
+    case 'ExpressionNe':
       return ord !== Ord.Eq;
   }
 }
@@ -150,16 +135,28 @@ function evaluateDomainValues(domainValues: hl.DomainValue[]): Record<string, hl
 
 function evaluateExpression(expression: hl.Expression, binding: Record<string, hl.Value>): hl.Value {
   switch (expression.kind) {
+    case 'ExpressionAccess':
+      throw new Error('Not implemented (ExpressionAccess).');
     case 'ExpressionAdd': {
       const lhs = evaluateExpressionIdentifier(expression.lhs, binding);
       const rhs = evaluateExpressionIdentifier(expression.rhs, binding);
       return hl.ValueElement({ identifier: String(Number(lhs) + Number(rhs)) });
     }
+    case 'ExpressionAnd':
+      throw new Error('Not implemented (ExpressionAnd).');
+    case 'ExpressionCall':
+      throw new Error('Not implemented (ExpressionCall).');
     case 'ExpressionConstructor':
       return hl.ValueConstructor({
         identifier: expression.identifier,
         args: expression.args.map(expression => evaluateExpression(expression, binding)),
       });
+    case 'ExpressionEq':
+      throw new Error('Not implemented (ExpressionEq).');
+    case 'ExpressionGt':
+      throw new Error('Not implemented (ExpressionGt).');
+    case 'ExpressionGte':
+      throw new Error('Not implemented (ExpressionGte).');
     case 'ExpressionIf':
       return evaluateCondition(expression.cond, binding)
         ? evaluateExpression(expression.then, binding)
@@ -168,6 +165,12 @@ function evaluateExpression(expression: hl.Expression, binding: Record<string, h
       return expression.identifier in binding
         ? binding[expression.identifier]
         : hl.ValueElement({ identifier: expression.identifier });
+    case 'ExpressionLt':
+      throw new Error('Not implemented (ExpressionLt).');
+    case 'ExpressionLte':
+      throw new Error('Not implemented (ExpressionLte).');
+    case 'ExpressionOr':
+      throw new Error('Not implemented (ExpressionOr).');
     case 'ExpressionMap':
       return hl.ValueMap({
         entries: evaluateDomainValues(expression.domains)
@@ -177,6 +180,8 @@ function evaluateExpression(expression: hl.Expression, binding: Record<string, h
             value: evaluateExpression(expression.expression, binding),
           })),
       });
+    case 'ExpressionNe':
+      throw new Error('Not implemented (ExpressionNe).');
     case 'ExpressionSub': {
       const lhs = evaluateExpressionIdentifier(expression.lhs, binding);
       const rhs = evaluateExpressionIdentifier(expression.rhs, binding);
@@ -216,7 +221,13 @@ function serializeValue(value: hl.Value): string {
   }
 }
 
-function translateAutomatonFunction(automatonFunction: hl.AutomatonFunction): ll.EdgeDeclaration[] {
+function translateAutomatonFunction(
+  automatonFunction: hl.AutomatonFunction,
+  automatonFunctions: hl.AutomatonFunction[],
+  returnEdgeName: ll.EdgeName | null,
+  edges: ll.EdgeDeclaration[],
+  variableDeclarations: ll.VariableDeclaration[],
+) {
   // NOTES:
   //   - The entrypoint of a function is at `automatonFunction.name`.
   //   - A function should receive an `EdgeLabel` to where it should go once
@@ -231,7 +242,315 @@ function translateAutomatonFunction(automatonFunction: hl.AutomatonFunction): ll
   //     label in a variable, so we'd need multiple subgraphs of function for
   //     each of its callsites, but that's potentially expensive. (And we have
   //     to calculate them beforehand.)
-  return [];
+  translateAutomatonStatements(
+    automatonFunction.body,
+    automatonFunctions,
+    // TODO: Arguments!
+    ll.EdgeName({ parts: [ll.Literal({ identifier: `${automatonFunction.name}_0` })] }),
+    returnEdgeName,
+    edges,
+    variableDeclarations,
+    automatonFunction.name,
+  );
+}
+
+let globalCounter = 0;
+function RANDOM(prefix: string) {
+  return `${prefix}_${++globalCounter}`;
+}
+
+function translateAutomatonStatements(
+  automatonStatements: hl.AutomatonStatement[],
+  automatonFunctions: hl.AutomatonFunction[],
+  entryEdgeName: ll.EdgeName,
+  returnEdgeName: ll.EdgeName | null,
+  edges: ll.EdgeDeclaration[],
+  variableDeclarations: ll.VariableDeclaration[],
+  prefix: string,
+) {
+  let currentEdgeName = entryEdgeName;
+  for (const automatonStatement of automatonStatements) {
+    switch (automatonStatement.kind) {
+      case 'AutomatonAssignment': {
+        const nextEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(prefix) })] });
+        edges.push(ll.EdgeDeclaration({
+          lhs: currentEdgeName,
+          rhs: nextEdgeName,
+          label: ll.Assignment({
+            lhs: automatonStatement.accessors.reduce<ll.Expression>(
+              (expression, accessor) => ll.Access({
+                lhs: expression,
+                rhs: translateExpression(accessor),
+              }),
+              ll.Reference({ identifier: automatonStatement.identifier }),
+            ),
+            rhs: translateExpression(automatonStatement.expression),
+          }),
+        }));
+        currentEdgeName = nextEdgeName;
+        continue;
+      }
+      case 'AutomatonBranch': {
+        const nextEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(prefix) })] });
+        automatonStatement.arms.forEach(arm => {
+          translateAutomatonStatements(
+            arm,
+            automatonFunctions,
+            currentEdgeName,
+            nextEdgeName,
+            edges,
+            variableDeclarations,
+            prefix,
+          );
+        });
+        currentEdgeName = nextEdgeName;
+        continue;
+      }
+      case 'AutomatonCall':
+        switch (automatonStatement.identifier) {
+          case 'assert': {
+            utils.assert(automatonStatement.args.length === 1, 'assert expects 1 argument');
+            const nextEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(prefix) })] });
+            translateCondition(
+              automatonStatement.args[0],
+              currentEdgeName,
+              nextEdgeName,
+              null,
+              edges,
+              prefix,
+            );
+            currentEdgeName = nextEdgeName;
+            continue;
+          }
+          case 'forall': {
+            utils.assert(automatonStatement.args.length === 1, 'forall expects 1 argument');
+            const assignmentVariable = automatonStatement.args[0];
+            utils.assert(assignmentVariable.kind === 'ExpressionLiteral', 'forall expects a literal');
+            const assignmentVariableDeclaration = variableDeclarations.find(variableDeclaration => variableDeclaration.identifier === assignmentVariable.identifier);
+            utils.assert(assignmentVariableDeclaration, `Unknown variable "${assignmentVariable.identifier}" in forall.`);
+            const assignmentIterator = RANDOM(prefix);
+            const assignmentEdgeName = ll.EdgeName({
+              parts: [
+                ll.Literal({ identifier: assignmentIterator }),
+                ll.Binding({ identifier: 'x', type: assignmentVariableDeclaration.type }),
+              ],
+            });
+            edges.push(ll.EdgeDeclaration({
+              lhs: currentEdgeName,
+              rhs: assignmentEdgeName,
+              label: ll.Assignment({
+                lhs: ll.Reference({ identifier: assignmentVariable.identifier }),
+                rhs: ll.Cast({ lhs: assignmentVariableDeclaration.type, rhs: ll.Reference({ identifier: 'x' }) }),
+              }),
+            }));
+            const nextEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(prefix) })] });
+            edges.push(ll.EdgeDeclaration({
+              lhs: assignmentEdgeName,
+              rhs: nextEdgeName,
+              label: ll.Skip({}),
+            }));
+            currentEdgeName = nextEdgeName;
+            continue;
+          }
+          case 'return': {
+            utils.assert(automatonStatements.indexOf(automatonStatement) === automatonStatements.length - 1, 'Return has to be the last statement.');
+            utils.assert(returnEdgeName, 'Return requires returnEdgeName.');
+            edges.push(ll.EdgeDeclaration({
+              lhs: currentEdgeName,
+              rhs: returnEdgeName,
+              label: ll.Skip({}),
+            }));
+            return;
+          }
+          default: {
+            const automatonFunction = automatonFunctions.find(automatonFunction => automatonFunction.name === automatonStatement.identifier);
+            utils.assert(automatonFunction, `Unknown automaton function "${automatonStatement.identifier}".`);
+            edges.push(ll.EdgeDeclaration({
+              lhs: currentEdgeName,
+              rhs: ll.EdgeName({ parts: [ll.Literal({ identifier: `${automatonFunction.name}_0` })] }),
+              label: ll.Skip({}),
+            }));
+            const nextEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(prefix) })] });
+            translateAutomatonFunction(
+              automatonFunction,
+              automatonFunctions,
+              nextEdgeName,
+              edges,
+              variableDeclarations,
+            );
+            currentEdgeName = nextEdgeName;
+            continue;
+          }
+        }
+      case 'AutomatonLoop':
+        utils.assert(automatonStatements.indexOf(automatonStatement) === automatonStatements.length - 1, 'Loop has to be the last statement.');
+        translateAutomatonStatements(
+          automatonStatement.body,
+          automatonFunctions,
+          entryEdgeName,
+          currentEdgeName,
+          edges,
+          variableDeclarations,
+          prefix,
+        );
+        return;
+      case 'AutomatonWhen':
+        const thenEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(prefix) })] });
+        const elseEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(prefix) })] });
+        translateCondition(
+          automatonStatement.expression,
+          currentEdgeName,
+          thenEdgeName,
+          elseEdgeName,
+          edges,
+          prefix,
+        );
+        translateAutomatonStatements(
+          automatonStatement.body,
+          automatonFunctions,
+          thenEdgeName,
+          elseEdgeName,
+          edges,
+          variableDeclarations,
+          prefix,
+        );
+        edges.push(ll.EdgeDeclaration({
+          lhs: thenEdgeName,
+          rhs: elseEdgeName,
+          label: ll.Skip({}),
+        }));
+        currentEdgeName = elseEdgeName;
+        continue;
+      case 'AutomatonWhile':
+        throw new Error('Not implemented (AutomatonWhile).');
+    }
+  }
+
+  if (returnEdgeName) {
+    edges.push(ll.EdgeDeclaration({
+      lhs: currentEdgeName,
+      rhs: returnEdgeName,
+      label: ll.Skip({}),
+    }));
+  }
+}
+
+function translateCondition(
+  expression: hl.Expression,
+  entryEdgeName: ll.EdgeName,
+  thenEdgeName: ll.EdgeName | null,
+  elseEdgeName: ll.EdgeName | null,
+  edges: ll.EdgeDeclaration[],
+  prefix: string,
+) {
+  switch (expression.kind) {
+    case 'ExpressionAccess':
+      throw new Error('Not implemented (ExpressionAccess).');
+    case 'ExpressionAdd':
+      throw new Error('Not implemented (ExpressionAdd).');
+    case 'ExpressionAnd':
+      throw new Error('Not implemented (ExpressionAnd).');
+    case 'ExpressionCall':
+      utils.assert(expression.expression.kind === 'ExpressionLiteral', 'Call expects a literal');
+      utils.assert(expression.expression.identifier === 'reachable', `Unknown condition ${expression.expression.identifier}`);
+      utils.assert(expression.args.length === 1, 'reachable expects 1 argument');
+      // if (thenEdgeName) {
+      //   edges.push(ll.EdgeDeclaration({
+      //     lhs: entryEdgeName,
+      //     rhs: thenEdgeName,
+      //     label: ll.Reachability({
+      //       lhs:
+      //     }),
+      //   }));
+      // }
+      throw new Error('Not implemented (ExpressionCall: reachable).');
+    case 'ExpressionConstructor':
+      throw new Error('Not implemented (ExpressionConstructor).');
+    case 'ExpressionEq':
+      if (thenEdgeName) {
+        edges.push(ll.EdgeDeclaration({
+          lhs: entryEdgeName,
+          rhs: thenEdgeName,
+          label: ll.Comparison({
+            lhs: translateExpression(expression.lhs),
+            rhs: translateExpression(expression.rhs),
+            negated: false,
+          }),
+        }));
+      }
+      if (elseEdgeName) {
+        edges.push(ll.EdgeDeclaration({
+          lhs: entryEdgeName,
+          rhs: elseEdgeName,
+          label: ll.Comparison({
+            lhs: translateExpression(expression.lhs),
+            rhs: translateExpression(expression.rhs),
+            negated: true,
+          }),
+        }));
+      }
+      return;
+    case 'ExpressionGt':
+      throw new Error('Not implemented (ExpressionGt).');
+    case 'ExpressionGte':
+      throw new Error('Not implemented (ExpressionGte).');
+    case 'ExpressionIf':
+      throw new Error('Not implemented (ExpressionIf).');
+    case 'ExpressionLiteral':
+      throw new Error('Not implemented (ExpressionLiteral).');
+    case 'ExpressionLt':
+      throw new Error('Not implemented (ExpressionLt).');
+    case 'ExpressionLte':
+      throw new Error('Not implemented (ExpressionLte).');
+    case 'ExpressionMap':
+      throw new Error('Not implemented (ExpressionMap).');
+    case 'ExpressionNe':
+      if (thenEdgeName) {
+        edges.push(ll.EdgeDeclaration({
+          lhs: entryEdgeName,
+          rhs: thenEdgeName,
+          label: ll.Comparison({
+            lhs: translateExpression(expression.lhs),
+            rhs: translateExpression(expression.rhs),
+            negated: true,
+          }),
+        }));
+      }
+      if (elseEdgeName) {
+        edges.push(ll.EdgeDeclaration({
+          lhs: entryEdgeName,
+          rhs: elseEdgeName,
+          label: ll.Comparison({
+            lhs: translateExpression(expression.lhs),
+            rhs: translateExpression(expression.rhs),
+            negated: false,
+          }),
+        }));
+      }
+      return;
+    case 'ExpressionOr': {
+      const falseEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(prefix) })] });
+      translateCondition(
+        expression.lhs,
+        entryEdgeName,
+        thenEdgeName,
+        falseEdgeName,
+        edges,
+        prefix,
+      );
+      translateCondition(
+        expression.rhs,
+        falseEdgeName,
+        thenEdgeName,
+        elseEdgeName,
+        edges,
+        prefix,
+      );
+      return;
+    }
+    case 'ExpressionSub':
+      throw new Error('Not implemented (ExpressionSub).');
+  }
 }
 
 function translateDomainElement(domainElement: hl.DomainElement, gameDeclaration: hl.GameDeclaration): hl.Value[] {
@@ -267,6 +586,49 @@ function translateDomainElement(domainElement: hl.DomainElement, gameDeclaration
 
 function translateDomainElements(domainElements: hl.DomainElement[], gameDeclaration: hl.GameDeclaration): hl.Value[] {
   return domainElements.flatMap(domainElement => translateDomainElement(domainElement, gameDeclaration));
+}
+
+function translateExpression(expression: hl.Expression): ll.Expression {
+  switch (expression.kind) {
+    case 'ExpressionAccess':
+      return ll.Access({
+        lhs: translateExpression(expression.lhs),
+        rhs: translateExpression(expression.rhs),
+      });
+    case 'ExpressionAdd':
+      throw new Error('Not implemented (ExpressionAdd).');
+    case 'ExpressionAnd':
+      throw new Error('Not implemented (ExpressionAnd).');
+    case 'ExpressionCall':
+      return expression.args.reduce<ll.Expression>(
+        (expression, arg) => ll.Access({ lhs: expression, rhs: translateExpression(arg) }),
+        translateExpression(expression.expression),
+      );
+    case 'ExpressionConstructor':
+      throw new Error('Not implemented (ExpressionConstructor).');
+    case 'ExpressionEq':
+      throw new Error('Not implemented (ExpressionEq).');
+    case 'ExpressionGt':
+      throw new Error('Not implemented (ExpressionGt).');
+    case 'ExpressionGte':
+      throw new Error('Not implemented (ExpressionGte).');
+    case 'ExpressionIf':
+      throw new Error('Not implemented (ExpressionIf).');
+    case 'ExpressionLiteral':
+      return ll.Reference({ identifier: expression.identifier });
+    case 'ExpressionLt':
+      throw new Error('Not implemented (ExpressionLt).');
+    case 'ExpressionLte':
+      throw new Error('Not implemented (ExpressionLte).');
+    case 'ExpressionMap':
+      throw new Error('Not implemented (ExpressionMap).');
+    case 'ExpressionNe':
+      throw new Error('Not implemented (ExpressionNe).');
+    case 'ExpressionOr':
+      throw new Error('Not implemented (ExpressionOr).');
+    case 'ExpressionSub':
+      throw new Error('Not implemented (ExpressionSub).');
+  }
 }
 
 function translateFunctionDeclaration(functionDeclaration: hl.FunctionDeclaration, typeValues: Record<string, hl.Value[]>): ll.ConstantDeclaration {
@@ -324,13 +686,22 @@ function translateGameDeclaration(gameDeclaration: hl.GameDeclaration): ll.GameD
   const constants = gameDeclaration.functions.map(functionDeclaration => translateFunctionDeclaration(functionDeclaration, typeValues));
   const variables = gameDeclaration.variables.map(variableDeclaration => translateVariableDeclaration(variableDeclaration, typeValues));
 
-  // TODO: Assert that function `main` exists.
-  const edges = gameDeclaration.automaton.flatMap(translateAutomatonFunction);
-  edges.push(ll.EdgeDeclaration({
-    label: ll.Skip({}),
-    lhs: ll.EdgeName({ parts: [ll.Literal({ identifier: 'begin' })] }),
-    rhs: ll.EdgeName({ parts: [ll.Literal({ identifier: 'main' })] }),
-  }));
+  const edges = [
+    ll.EdgeDeclaration({
+      label: ll.Skip({}),
+      lhs: ll.EdgeName({ parts: [ll.Literal({ identifier: 'begin' })] }),
+      rhs: ll.EdgeName({ parts: [ll.Literal({ identifier: 'rules_0' })] }),
+    }),
+  ];
+
+  translateAutomatonFunction(
+    // TODO: Assert that it exists.
+    gameDeclaration.automaton.find(automatonFunction => automatonFunction.name === 'rules')!,
+    gameDeclaration.automaton,
+    ll.EdgeName({ parts: [ll.Literal({ identifier: 'end' })] }),
+    edges,
+    variables,
+  );
 
   return ll.GameDeclaration({
     constants,

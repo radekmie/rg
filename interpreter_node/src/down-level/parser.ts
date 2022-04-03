@@ -11,42 +11,6 @@ class HLParserClass extends CstParser {
     });
   });
 
-  AutomatonCondition = this.RULE('AutomatonCondition', () => {
-    this.SUBRULE(this.AutomatonConditionAtom);
-    this.OPTION({
-      DEF: () => {
-        this.OR2([
-          { ALT: () => this.CONSUME(lexer.AndAnd) },
-          { ALT: () => this.CONSUME(lexer.OrOr) },
-        ]);
-        this.SUBRULE2(this.AutomatonConditionAtom);
-      },
-    });
-  });
-
-  AutomatonConditionAtom = this.RULE('AutomatonConditionAtom', () => {
-    this.OR([
-      {
-        ALT: () => {
-          this.CONSUME(lexer.KeywordReachable);
-          this.CONSUME(lexer.ParenthesisLeft);
-          this.SUBRULE(this.ExpressionSimple);
-          this.CONSUME(lexer.ParenthesisRight);
-        },
-      },
-      {
-        ALT: () => {
-          this.SUBRULE2(this.ExpressionSimple);
-          this.OR2([
-            { ALT: () => this.CONSUME(lexer.EqualEqual) },
-            { ALT: () => this.CONSUME(lexer.NotEqual) },
-          ]);
-          this.SUBRULE3(this.ExpressionSimple);
-        },
-      },
-    ]);
-  });
-
   AutomatonFunction = this.RULE('AutomatonFunction', () => {
     this.CONSUME(lexer.KeywordGraph);
     this.CONSUME(lexer.Identifier);
@@ -54,7 +18,7 @@ class HLParserClass extends CstParser {
     this.MANY_SEP({
       SEP: lexer.Comma,
       DEF: () => {
-        this.CONSUME2(lexer.Identifier);
+        this.SUBRULE(this.AutomatonFunctionArgument);
       },
     });
     this.CONSUME(lexer.ParenthesisRight);
@@ -65,6 +29,12 @@ class HLParserClass extends CstParser {
       },
     });
     this.CONSUME(lexer.BraceRight);
+  });
+
+  AutomatonFunctionArgument = this.RULE('AutomatonFunctionArgument', () => {
+    this.CONSUME(lexer.Identifier);
+    this.CONSUME(lexer.Colon);
+    this.SUBRULE(this.Type);
   });
 
   AutomatonStatement = this.RULE('AutomatonStatement', () => {
@@ -109,10 +79,8 @@ class HLParserClass extends CstParser {
       },
       {
         ALT: () => {
-          this.CONSUME(lexer.KeywordIf);
-          this.CONSUME2(lexer.ParenthesisLeft);
-          this.SUBRULE(this.AutomatonCondition);
-          this.CONSUME2(lexer.ParenthesisRight);
+          this.CONSUME(lexer.KeywordWhen);
+          this.SUBRULE4(this.Expression);
           this.CONSUME2(lexer.BraceLeft);
           this.MANY2({
             DEF: () => {
@@ -124,10 +92,7 @@ class HLParserClass extends CstParser {
       },
       {
         ALT: () => {
-          this.CONSUME(lexer.KeywordWhile);
-          this.CONSUME3(lexer.ParenthesisLeft);
-          this.SUBRULE2(this.AutomatonCondition);
-          this.CONSUME3(lexer.ParenthesisRight);
+          this.CONSUME(lexer.KeywordLoop);
           this.CONSUME3(lexer.BraceLeft);
           this.MANY3({
             DEF: () => {
@@ -137,20 +102,22 @@ class HLParserClass extends CstParser {
           this.CONSUME3(lexer.BraceRight);
         },
       },
+      {
+        ALT: () => {
+          this.CONSUME(lexer.KeywordWhile);
+          this.CONSUME3(lexer.ParenthesisLeft);
+          this.SUBRULE5(this.Expression);
+          this.CONSUME3(lexer.ParenthesisRight);
+          this.CONSUME4(lexer.BraceLeft);
+          this.MANY4({
+            DEF: () => {
+              this.SUBRULE3(this.AutomatonStatement);
+            },
+          });
+          this.CONSUME4(lexer.BraceRight);
+        },
+      },
     ]);
-  });
-
-  Condition = this.RULE('Condition', () => {
-    this.SUBRULE(this.ExpressionSimple);
-    this.OR([
-      { ALT: () => this.CONSUME(lexer.EqualEqual) },
-      { ALT: () => this.CONSUME(lexer.Gt) },
-      { ALT: () => this.CONSUME(lexer.GtEqual) },
-      { ALT: () => this.CONSUME(lexer.Lt) },
-      { ALT: () => this.CONSUME(lexer.LtEqual) },
-      { ALT: () => this.CONSUME(lexer.NotEqual) },
-    ]);
-    this.SUBRULE2(this.ExpressionSimple);
   });
 
   DomainDeclaration = this.RULE('DomainDeclaration', () => {
@@ -226,11 +193,11 @@ class HLParserClass extends CstParser {
       {
         ALT: () => {
           this.CONSUME(lexer.KeywordIf);
-          this.SUBRULE(this.Condition);
-          this.CONSUME(lexer.KeywordThen);
           this.SUBRULE(this.Expression);
-          this.CONSUME(lexer.KeywordElse);
+          this.CONSUME(lexer.KeywordThen);
           this.SUBRULE2(this.Expression);
+          this.CONSUME(lexer.KeywordElse);
+          this.SUBRULE3(this.Expression);
         },
       },
       {
@@ -238,7 +205,7 @@ class HLParserClass extends CstParser {
           this.CONSUME(lexer.BraceLeft);
           this.SUBRULE(this.Pattern);
           this.CONSUME(lexer.Equal);
-          this.SUBRULE3(this.Expression);
+          this.SUBRULE4(this.Expression);
           this.CONSUME(lexer.KeywordWhere);
           this.AT_LEAST_ONE_SEP2({
             SEP: lexer.Comma,
@@ -251,15 +218,11 @@ class HLParserClass extends CstParser {
       },
       {
         ALT: () => {
-          this.SUBRULE(this.ExpressionSimple);
+          this.SUBRULE(this.Expression2);
           this.OPTION({
             DEF: () => {
-              this.OR2([
-                { ALT: () => this.CONSUME(lexer.EqualEqual) },
-                { ALT: () => this.CONSUME(lexer.Minus) },
-                { ALT: () => this.CONSUME(lexer.Plus) },
-              ]);
-              this.SUBRULE2(this.ExpressionSimple);
+              this.CONSUME(lexer.OrOr);
+              this.SUBRULE5(this.Expression);
             },
           });
         },
@@ -267,38 +230,86 @@ class HLParserClass extends CstParser {
     ]);
   });
 
-  ExpressionInParenthesis = this.RULE('ExpressionInParenthesis', () => {
-    this.CONSUME(lexer.ParenthesisLeft);
-    this.MANY_SEP({
-      SEP: lexer.Comma,
+  Expression2 = this.RULE('Expression2', () => {
+    this.SUBRULE(this.Expression3);
+    this.OPTION({
       DEF: () => {
-        this.SUBRULE(this.Expression);
+        this.CONSUME(lexer.AndAnd);
+        this.SUBRULE2(this.Expression2);
       },
     });
-    this.CONSUME(lexer.ParenthesisRight);
   });
 
-  ExpressionSimple = this.RULE('ExpressionSimple', () => {
+  Expression3 = this.RULE('Expression3', () => {
+    this.SUBRULE(this.Expression4);
+    this.OPTION({
+      DEF: () => {
+        this.OR2([
+          { ALT: () => this.CONSUME(lexer.EqualEqual) },
+          { ALT: () => this.CONSUME(lexer.Gt) },
+          { ALT: () => this.CONSUME(lexer.GtEqual) },
+          { ALT: () => this.CONSUME(lexer.Lt) },
+          { ALT: () => this.CONSUME(lexer.LtEqual) },
+          { ALT: () => this.CONSUME(lexer.NotEqual) },
+        ]);
+        this.SUBRULE2(this.Expression3);
+      },
+    });
+  });
+
+  Expression4 = this.RULE('Expression4', () => {
+    this.SUBRULE(this.Expression5);
+    this.OPTION({
+      DEF: () => {
+        this.OR([
+          { ALT: () => this.CONSUME(lexer.Minus) },
+          { ALT: () => this.CONSUME(lexer.Plus) },
+        ]);
+        this.SUBRULE2(this.Expression4);
+      },
+    });
+  });
+
+  Expression5 = this.RULE('Expression5', () => {
     this.OR([
       {
         ALT: () => {
           this.CONSUME(lexer.Identifier);
-          this.AT_LEAST_ONE({
+          this.MANY({
             DEF: () => {
-              this.SUBRULE(this.ExpressionInParenthesis);
+              this.SUBRULE(this.ExpressionSuffix);
             },
           });
         },
       },
       {
         ALT: () => {
-          this.CONSUME2(lexer.Identifier);
+          this.CONSUME(lexer.ParenthesisLeft);
+          this.SUBRULE(this.Expression);
+          this.CONSUME(lexer.ParenthesisRight);
+        },
+      },
+    ]);
+  });
+
+  ExpressionSuffix = this.RULE('ExpressionSuffix', () => {
+    this.OR([
+      {
+        ALT: () => {
+          this.CONSUME(lexer.BracketLeft);
+          this.SUBRULE(this.Expression);
+          this.CONSUME(lexer.BracketRight);
         },
       },
       {
         ALT: () => {
           this.CONSUME(lexer.ParenthesisLeft);
-          this.SUBRULE(this.Expression);
+          this.MANY_SEP({
+            SEP: lexer.Comma,
+            DEF: () => {
+              this.SUBRULE2(this.Expression);
+            },
+          });
           this.CONSUME(lexer.ParenthesisRight);
         },
       },

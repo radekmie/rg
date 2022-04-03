@@ -8,49 +8,22 @@ export const AutomatonBranch = creator<AutomatonBranch>('AutomatonBranch');
 export type AutomatonBranch = { kind: 'AutomatonBranch'; arms: AutomatonStatement[][] };
 
 export const AutomatonCall = creator<AutomatonCall>('AutomatonCall');
-export type AutomatonCall = { kind: 'AutomatonCall'; args: Expression[] };
-
-export const AutomatonConditionAnd = creator<AutomatonConditionAnd>('AutomatonConditionAnd');
-export type AutomatonConditionAnd = { kind: 'AutomatonConditionAnd'; lhs: Condition; rhs: Condition };
-
-export const AutomatonConditionEq = creator<AutomatonConditionEq>('AutomatonConditionEq');
-export type AutomatonConditionEq = { kind: 'AutomatonConditionEq'; lhs: Expression; rhs: Expression };
-
-export const AutomatonConditionNe = creator<AutomatonConditionNe>('AutomatonConditionNe');
-export type AutomatonConditionNe = { kind: 'AutomatonConditionNe'; lhs: Expression; rhs: Expression };
-
-export const AutomatonConditionOr = creator<AutomatonConditionOr>('AutomatonConditionOr');
-export type AutomatonConditionOr = { kind: 'AutomatonConditionOr'; lhs: Condition; rhs: Condition };
-
-export const AutomatonConditionReachable = creator<AutomatonConditionReachable>('AutomatonConditionReachable');
-export type AutomatonConditionReachable = { kind: 'AutomatonConditionReachable'; target: Expression };
+export type AutomatonCall = { kind: 'AutomatonCall'; identifier: string; args: Expression[] };
 
 export const AutomatonFunction = creator<AutomatonFunction>('AutomatonFunction');
-export type AutomatonFunction = { kind: 'AutomatonFunction'; name: string; args: string[]; body: AutomatonStatement[] };
+export type AutomatonFunction = { kind: 'AutomatonFunction'; name: string; args: AutomatonFunctionArgument[]; body: AutomatonStatement[] };
 
-export const AutomatonIf = creator<AutomatonIf>('AutomatonIf');
-export type AutomatonIf = { kind: 'AutomatonIf'; condition: Condition; body: AutomatonStatement[] };
+export const AutomatonFunctionArgument = creator<AutomatonFunctionArgument>('AutomatonFunctionArgument');
+export type AutomatonFunctionArgument = { kind: 'AutomatonFunctionArgument'; identifier: string; type: Type };
+
+export const AutomatonLoop = creator<AutomatonLoop>('AutomatonLoop');
+export type AutomatonLoop = { kind: 'AutomatonLoop'; body: AutomatonStatement[] };
+
+export const AutomatonWhen = creator<AutomatonWhen>('AutomatonWhen');
+export type AutomatonWhen = { kind: 'AutomatonWhen'; expression: Expression; body: AutomatonStatement[] };
 
 export const AutomatonWhile = creator<AutomatonWhile>('AutomatonWhile');
-export type AutomatonWhile = { kind: 'AutomatonWhile'; condition: Condition; body: AutomatonStatement[] };
-
-export const ConditionEq = creator<ConditionEq>('ConditionEq');
-export type ConditionEq = { kind: 'ConditionEq'; lhs: Expression; rhs: Expression };
-
-export const ConditionGt = creator<ConditionGt>('ConditionGt');
-export type ConditionGt = { kind: 'ConditionGt'; lhs: Expression; rhs: Expression };
-
-export const ConditionGte = creator<ConditionGte>('ConditionGte');
-export type ConditionGte = { kind: 'ConditionGte'; lhs: Expression; rhs: Expression };
-
-export const ConditionLt = creator<ConditionLt>('ConditionLt');
-export type ConditionLt = { kind: 'ConditionLt'; lhs: Expression; rhs: Expression };
-
-export const ConditionLte = creator<ConditionLte>('ConditionLte');
-export type ConditionLte = { kind: 'ConditionLte'; lhs: Expression; rhs: Expression };
-
-export const ConditionNe = creator<ConditionNe>('ConditionNe');
-export type ConditionNe = { kind: 'ConditionNe'; lhs: Expression; rhs: Expression };
+export type AutomatonWhile = { kind: 'AutomatonWhile'; expression: Expression; body: AutomatonStatement[] };
 
 export const DomainDeclaration = creator<DomainDeclaration>('DomainDeclaration');
 export type DomainDeclaration = { kind: 'DomainDeclaration'; identifier: string; elements: DomainElement[] };
@@ -67,20 +40,50 @@ export type DomainRange = { kind: 'DomainRange'; identifier: string; min: string
 export const DomainSet = creator<DomainSet>('DomainSet');
 export type DomainSet = { kind: 'DomainSet'; identifier: string; elements: string[] };
 
+export const ExpressionAccess = creator<ExpressionAccess>('ExpressionAccess');
+export type ExpressionAccess = { kind: 'ExpressionAccess'; lhs: Expression; rhs: Expression };
+
 export const ExpressionAdd = creator<ExpressionAdd>('ExpressionAdd');
 export type ExpressionAdd = { kind: 'ExpressionAdd'; lhs: Expression; rhs: Expression };
+
+export const ExpressionAnd = creator<ExpressionAnd>('ExpressionAnd');
+export type ExpressionAnd = { kind: 'ExpressionAnd'; lhs: Expression; rhs: Expression };
+
+export const ExpressionCall = creator<ExpressionCall>('ExpressionCall');
+export type ExpressionCall = { kind: 'ExpressionCall'; expression: Expression; args: Expression[] };
 
 export const ExpressionConstructor = creator<ExpressionConstructor>('ExpressionConstructor');
 export type ExpressionConstructor = { kind: 'ExpressionConstructor'; identifier: string; args: Expression[] };
 
+export const ExpressionEq = creator<ExpressionEq>('ExpressionEq');
+export type ExpressionEq = { kind: 'ExpressionEq'; lhs: Expression; rhs: Expression };
+
+export const ExpressionGt = creator<ExpressionGt>('ExpressionGt');
+export type ExpressionGt = { kind: 'ExpressionGt'; lhs: Expression; rhs: Expression };
+
+export const ExpressionGte = creator<ExpressionGte>('ExpressionGte');
+export type ExpressionGte = { kind: 'ExpressionGte'; lhs: Expression; rhs: Expression };
+
 export const ExpressionIf = creator<ExpressionIf>('ExpressionIf');
-export type ExpressionIf = { kind: 'ExpressionIf'; cond: Condition; then: Expression; else: Expression };
+export type ExpressionIf = { kind: 'ExpressionIf'; cond: Expression; then: Expression; else: Expression };
 
 export const ExpressionLiteral = creator<ExpressionLiteral>('ExpressionLiteral');
 export type ExpressionLiteral = { kind: 'ExpressionLiteral'; identifier: string };
 
+export const ExpressionLt = creator<ExpressionLt>('ExpressionLt');
+export type ExpressionLt = { kind: 'ExpressionLt'; lhs: Expression; rhs: Expression };
+
+export const ExpressionLte = creator<ExpressionLte>('ExpressionLte');
+export type ExpressionLte = { kind: 'ExpressionLte'; lhs: Expression; rhs: Expression };
+
 export const ExpressionMap = creator<ExpressionMap>('ExpressionMap');
 export type ExpressionMap = { kind: 'ExpressionMap'; pattern: Pattern; expression: Expression; domains: DomainValue[] };
+
+export const ExpressionNe = creator<ExpressionNe>('ExpressionNe');
+export type ExpressionNe = { kind: 'ExpressionNe'; lhs: Expression; rhs: Expression };
+
+export const ExpressionOr = creator<ExpressionOr>('ExpressionOr');
+export type ExpressionOr = { kind: 'ExpressionOr'; lhs: Expression; rhs: Expression };
 
 export const ExpressionSub = creator<ExpressionSub>('ExpressionSub');
 export type ExpressionSub = { kind: 'ExpressionSub'; lhs: Expression; rhs: Expression };
@@ -133,12 +136,10 @@ export type VariableAssignment = { kind: 'VariableAssignment'; identifier: strin
 export const VariableDeclaration = creator<VariableDeclaration>('VariableDeclaration');
 export type VariableDeclaration = { kind: 'VariableDeclaration'; identifier: string; type: Type; defaultValue: null | Expression };
 
-export type AutomatonStatement = AutomatonAssignment | AutomatonBranch | AutomatonCall | AutomatonIf | AutomatonWhile;
-export type AutomatonCondition = AutomatonConditionAnd | AutomatonConditionEq | AutomatonConditionNe | AutomatonConditionOr | AutomatonConditionReachable;
-export type Condition = ConditionEq | ConditionGt | ConditionGte | ConditionLt | ConditionLte | ConditionNe;
+export type AutomatonStatement = AutomatonAssignment | AutomatonBranch | AutomatonCall | AutomatonWhen | AutomatonLoop | AutomatonWhile;
 export type DomainElement = DomainGenerator | DomainLiteral;
 export type DomainValue = DomainRange | DomainSet;
-export type Expression = ExpressionAdd | ExpressionConstructor | ExpressionIf | ExpressionLiteral | ExpressionMap | ExpressionSub;
+export type Expression = ExpressionAccess | ExpressionAdd | ExpressionAnd | ExpressionCall | ExpressionConstructor | ExpressionEq | ExpressionGt | ExpressionGte | ExpressionIf | ExpressionLiteral | ExpressionLt | ExpressionLte | ExpressionMap | ExpressionNe | ExpressionOr | ExpressionSub;
 export type Pattern = PatternConstructor | PatternLiteral | PatternVariable | PatternWildcard;
 export type Type = TypeFunction | TypeName;
 export type Value = ValueConstructor | ValueElement | ValueMap;
