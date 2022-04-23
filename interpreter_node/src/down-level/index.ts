@@ -99,9 +99,20 @@ function evaluateCondition(expression: hl.Expression, binding: Record<string, hl
 function evaluateDefaultValue(type: ll.Type, typeValues: Record<string, hl.Value[]>): hl.Value {
   switch (type.kind) {
     case 'Arrow':
-      throw new Error('Not implemented.');
+      utils.assert(type.lhs in typeValues, `Unresolved TypeReference "${type.lhs}".`);
+      utils.assert(typeValues[type.lhs].length, 'Expected at least one identifier.');
+      // NOTE: Is this even correct?
+      return hl.ValueMap({
+        entries: typeValues[type.lhs].map(value =>
+          hl.ValueMapEntry({
+            key: value,
+            value: evaluateDefaultValue(type.rhs, typeValues),
+          }),
+        ),
+      });
+      throw new Error('Not implemented (Arrow).');
     case 'Set':
-      throw new Error('Not implemented.');
+      throw new Error('Not implemented (Set).');
     case 'TypeReference':
       utils.assert(type.identifier in typeValues, `Unresolved TypeReference "${type.identifier}".`);
       utils.assert(typeValues[type.identifier].length, 'Expected at least one identifier.');
@@ -224,9 +235,11 @@ function serializeValue(value: hl.Value): string {
 function translateAutomatonFunction(
   automatonFunction: hl.AutomatonFunction,
   automatonFunctions: hl.AutomatonFunction[],
+  exitEdgeName: ll.EdgeName | null,
   returnEdgeName: ll.EdgeName | null,
   edges: ll.EdgeDeclaration[],
   variableDeclarations: ll.VariableDeclaration[],
+  prefix: string,
 ) {
   // NOTES:
   //   - The entrypoint of a function is at `automatonFunction.name`.
@@ -246,23 +259,29 @@ function translateAutomatonFunction(
     automatonFunction.body,
     automatonFunctions,
     // TODO: Arguments!
-    ll.EdgeName({ parts: [ll.Literal({ identifier: `${automatonFunction.name}_0` })] }),
+    ll.EdgeName({ parts: [ll.Literal({ identifier: `${prefix}${automatonFunction.name}_0` })] }),
+    exitEdgeName,
     returnEdgeName,
     edges,
     variableDeclarations,
-    automatonFunction.name,
+    `${prefix}${automatonFunction.name}`,
   );
 }
 
-let globalCounter = 0;
+const globalCounters: Record<string, number> = Object.create(null);
 function RANDOM(prefix: string) {
-  return `${prefix}_${++globalCounter}`;
+  if (!(prefix in globalCounters)) {
+    globalCounters[prefix] = 0;
+  }
+
+  return `${prefix}_${++globalCounters[prefix]}`;
 }
 
 function translateAutomatonStatements(
   automatonStatements: hl.AutomatonStatement[],
   automatonFunctions: hl.AutomatonFunction[],
   entryEdgeName: ll.EdgeName,
+  exitEdgeName: ll.EdgeName | null,
   returnEdgeName: ll.EdgeName | null,
   edges: ll.EdgeDeclaration[],
   variableDeclarations: ll.VariableDeclaration[],
@@ -297,6 +316,7 @@ function translateAutomatonStatements(
             arm,
             automatonFunctions,
             currentEdgeName,
+            exitEdgeName,
             nextEdgeName,
             edges,
             variableDeclarations,
@@ -318,6 +338,8 @@ function translateAutomatonStatements(
               null,
               edges,
               prefix,
+              automatonFunctions,
+              variableDeclarations,
             );
             currentEdgeName = nextEdgeName;
             continue;
@@ -354,10 +376,10 @@ function translateAutomatonStatements(
           }
           case 'return': {
             utils.assert(automatonStatements.indexOf(automatonStatement) === automatonStatements.length - 1, 'Return has to be the last statement.');
-            utils.assert(returnEdgeName, 'Return requires returnEdgeName.');
+            utils.assert(exitEdgeName, 'Return requires exitEdgeName.');
             edges.push(ll.EdgeDeclaration({
               lhs: currentEdgeName,
-              rhs: returnEdgeName,
+              rhs: exitEdgeName,
               label: ll.Skip({}),
             }));
             return;
@@ -374,9 +396,11 @@ function translateAutomatonStatements(
             translateAutomatonFunction(
               automatonFunction,
               automatonFunctions,
+              exitEdgeName,
               nextEdgeName,
               edges,
               variableDeclarations,
+              '',
             );
             currentEdgeName = nextEdgeName;
             continue;
@@ -388,6 +412,7 @@ function translateAutomatonStatements(
           automatonStatement.body,
           automatonFunctions,
           entryEdgeName,
+          exitEdgeName,
           currentEdgeName,
           edges,
           variableDeclarations,
@@ -404,21 +429,19 @@ function translateAutomatonStatements(
           elseEdgeName,
           edges,
           prefix,
+          automatonFunctions,
+          variableDeclarations,
         );
         translateAutomatonStatements(
           automatonStatement.body,
           automatonFunctions,
           thenEdgeName,
+          exitEdgeName,
           elseEdgeName,
           edges,
           variableDeclarations,
           prefix,
         );
-        edges.push(ll.EdgeDeclaration({
-          lhs: thenEdgeName,
-          rhs: elseEdgeName,
-          label: ll.Skip({}),
-        }));
         currentEdgeName = elseEdgeName;
         continue;
       case 'AutomatonWhile':
@@ -442,6 +465,8 @@ function translateCondition(
   elseEdgeName: ll.EdgeName | null,
   edges: ll.EdgeDeclaration[],
   prefix: string,
+  automatonFunctions: hl.AutomatonFunction[],
+  variableDeclarations: ll.VariableDeclaration[],
 ) {
   switch (expression.kind) {
     case 'ExpressionAccess':
@@ -450,20 +475,93 @@ function translateCondition(
       throw new Error('Not implemented (ExpressionAdd).');
     case 'ExpressionAnd':
       throw new Error('Not implemented (ExpressionAnd).');
-    case 'ExpressionCall':
+    case 'ExpressionCall': {
       utils.assert(expression.expression.kind === 'ExpressionLiteral', 'Call expects a literal');
-      utils.assert(expression.expression.identifier === 'reachable', `Unknown condition ${expression.expression.identifier}`);
-      utils.assert(expression.args.length === 1, 'reachable expects 1 argument');
-      // if (thenEdgeName) {
-      //   edges.push(ll.EdgeDeclaration({
-      //     lhs: entryEdgeName,
-      //     rhs: thenEdgeName,
-      //     label: ll.Reachability({
-      //       lhs:
-      //     }),
-      //   }));
-      // }
-      throw new Error('Not implemented (ExpressionCall: reachable).');
+      switch (expression.expression.identifier) {
+        case 'not':
+          utils.assert(expression.args.length === 1, 'reachable expects 1 argument');
+          translateCondition(
+            expression.args[0],
+            entryEdgeName,
+            elseEdgeName,
+            thenEdgeName,
+            edges,
+            prefix,
+            automatonFunctions,
+            variableDeclarations,
+          );
+          return;
+        case 'reachable': {
+          utils.assert(expression.args.length === 1, 'reachable expects 1 argument');
+
+          const call = expression.args[0];
+          utils.assert(call.kind === 'ExpressionCall', 'reachable expects an automaton call');
+          utils.assert(call.expression.kind === 'ExpressionLiteral', 'reachable expects an automaton call');
+
+          const automatonName = call.expression.identifier;
+          const automatonPrefix = RANDOM(prefix);
+          const automatonFunction = automatonFunctions.find(automatonFunction => automatonFunction.name === automatonName);
+          utils.assert(automatonFunction, `Unknown automaton function "${call.expression.identifier}".`);
+
+          const automatonStartEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(automatonPrefix) })] });
+          let automatonCurrentEdgeName = automatonStartEdgeName;
+          for (const arg of call.args) {
+            const argEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(automatonPrefix) })] });
+            edges.push(ll.EdgeDeclaration({
+              lhs: automatonCurrentEdgeName,
+              rhs: argEdgeName,
+              label: ll.Assignment({
+                lhs: ll.Reference({ identifier: automatonFunction.args[call.args.indexOf(arg)].identifier }),
+                rhs: translateExpression(arg),
+              }),
+            }));
+            automatonCurrentEdgeName = argEdgeName;
+          }
+
+          edges.push(ll.EdgeDeclaration({
+            lhs: automatonCurrentEdgeName,
+            rhs: ll.EdgeName({ parts: [ll.Literal({ identifier: `${automatonPrefix}_${automatonName}_0` })] }),
+            label: ll.Skip({}),
+          }));
+          const automatonEndEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(automatonPrefix) })] });
+          translateAutomatonFunction(
+            automatonFunction,
+            automatonFunctions,
+            automatonEndEdgeName,
+            automatonEndEdgeName,
+            edges,
+            variableDeclarations,
+            `${automatonPrefix}_`,
+          );
+
+          if (thenEdgeName) {
+            edges.push(ll.EdgeDeclaration({
+              lhs: entryEdgeName,
+              rhs: thenEdgeName,
+              label: ll.Reachability({
+                lhs: automatonStartEdgeName,
+                rhs: automatonEndEdgeName,
+                negated: false,
+              }),
+            }));
+          }
+          if (elseEdgeName) {
+            edges.push(ll.EdgeDeclaration({
+              lhs: entryEdgeName,
+              rhs: elseEdgeName,
+              label: ll.Reachability({
+                lhs: automatonStartEdgeName,
+                rhs: automatonEndEdgeName,
+                negated: true,
+              }),
+            }));
+          }
+          return;
+        }
+        default:
+          utils.assert(false, `Unknown condition function ${expression.expression.identifier}`);
+      }
+    }
     case 'ExpressionConstructor':
       throw new Error('Not implemented (ExpressionConstructor).');
     case 'ExpressionEq':
@@ -537,6 +635,8 @@ function translateCondition(
         falseEdgeName,
         edges,
         prefix,
+        automatonFunctions,
+        variableDeclarations,
       );
       translateCondition(
         expression.rhs,
@@ -545,6 +645,8 @@ function translateCondition(
         elseEdgeName,
         edges,
         prefix,
+        automatonFunctions,
+        variableDeclarations,
       );
       return;
     }
@@ -686,6 +788,9 @@ function translateGameDeclaration(gameDeclaration: hl.GameDeclaration): ll.GameD
   const constants = gameDeclaration.functions.map(functionDeclaration => translateFunctionDeclaration(functionDeclaration, typeValues));
   const variables = gameDeclaration.variables.map(variableDeclaration => translateVariableDeclaration(variableDeclaration, typeValues));
 
+  variables.push(translateVariableDeclaration(hl.VariableDeclaration({ identifier: 'player', type: hl.TypeName({ identifier: 'Player' }), defaultValue: null }), typeValues));
+  variables.push(translateVariableDeclaration(hl.VariableDeclaration({ identifier: 'score', type: hl.TypeFunction({ lhs: hl.TypeName({ identifier: 'Player' }), rhs: hl.TypeName({ identifier: 'Score' }) }), defaultValue: null }), typeValues));
+
   const edges = [
     ll.EdgeDeclaration({
       label: ll.Skip({}),
@@ -699,8 +804,10 @@ function translateGameDeclaration(gameDeclaration: hl.GameDeclaration): ll.GameD
     gameDeclaration.automaton.find(automatonFunction => automatonFunction.name === 'rules')!,
     gameDeclaration.automaton,
     ll.EdgeName({ parts: [ll.Literal({ identifier: 'end' })] }),
+    ll.EdgeName({ parts: [ll.Literal({ identifier: 'end' })] }),
     edges,
     variables,
+    '',
   );
 
   return ll.GameDeclaration({

@@ -2,24 +2,24 @@
 domain Piece = black | empty | white
 domain Player = black | keeper | white
 domain Score = lose | win
-domain Square = V(x, y) where x in 0..7, y in { 0, 1, 2, 3, 4, 5, 6, 7 }
+domain Square = V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
 domain SquareOrNull = Square | null
 
 
 // Helpers
 left : Square -> SquareOrNull
-left(V(x, y)) = if x == 0 then null else V(x - 1, y)
+left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
 
 right : Square -> SquareOrNull
-right(V(x, y)) = if x == 7 then null else V(x + 1, y)
+right(V(X, Y)) = if X == 7 then null else V(X + 1, Y)
 
 up : Square -> SquareOrNull
 up(V(_, 0)) = null
-up(V(x, y)) = V(x, y - 1)
+up(V(X, Y)) = V(X, Y - 1)
 
 down : Square -> SquareOrNull
 down(V(_, 7)) = null
-down(V(x, y)) = V(x, y + 1)
+down(V(X, Y)) = V(X, Y + 1)
 
 direction : Player -> Square -> SquareOrNull
 direction(black) = down
@@ -39,12 +39,12 @@ opponent(_) = black
 //   Special variables are defined implicitly (player, score, visibility)
 board : Square -> Piece
 board = {
-  V(x, y) = if y < 2
+  V(X, Y) = if Y < 2
     then black
-    else if y > 5
+    else if Y > 5
       then white
       else empty
-  where x in 0..7, y in 0..7
+  where X in 0..7, Y in 0..7
 }
 me : Player
 me = white
@@ -66,6 +66,11 @@ graph move(me: Player) {
       position = right(position)
     }
     // assert(board[position] in {empty, piece(opponent(me))})
+    branch {
+      assert(board[position] == empty)
+    } or {
+      assert(board[position] == piece(opponent(me)))
+    }
   }
 }
 

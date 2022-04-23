@@ -341,9 +341,9 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
     }
 
     const identifier = this.visitToken(context.Identifier[0]);
-    return identifier[0] === identifier[0].toUpperCase()
-      ? ast.PatternLiteral({ identifier })
-      : ast.PatternVariable({ identifier });
+    return identifier[0] === identifier[0].toUpperCase() && !isFinite(parseInt(identifier))
+      ? ast.PatternVariable({ identifier })
+      : ast.PatternLiteral({ identifier });
   }
 
   Type(context: Context): ast.Type {

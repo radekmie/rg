@@ -84,6 +84,6 @@ export function serializeAST(astNode: ast.GameDeclaration) {
     '',
     ...astNode.variables.map(variableDeclaration => `var ${variableDeclaration.identifier}: ${serializeType(variableDeclaration.type)} = ${serializeValue(variableDeclaration.defaultValue)};`),
     '',
-    ...astNode.edges.map(edge => `${serializeEdgeName(edge.lhs)}, ${serializeEdgeName(edge.rhs)}: ${serializeEdgeLabel(edge.label)}`).reduce<string[]>((xs, x) => (xs.length && xs[xs.length - 1].split(',')[0].split('_')[0] !== x.split(',')[0].split('_')[0] && xs.push(''), xs.push(x), xs), [])
+    ...astNode.edges.map(edge => `${serializeEdgeName(edge.lhs)}, ${serializeEdgeName(edge.rhs)}: ${serializeEdgeLabel(edge.label)}`).reduce<string[]>((xs, x) => (xs.length && xs[xs.length - 1].split(',')[0].split('_').slice(0, -1).join('_') !== x.split(',')[0].split('_').slice(0, -1).join('_') && xs.push(''), xs.push(x), xs), [])
   ].join('\n');
 }
