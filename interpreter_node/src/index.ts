@@ -110,7 +110,7 @@ switch (process.argv[3]) {
     console.log(JSON.stringify(game.cst));
     break;
   case 'print-graphviz':
-    console.log(JSON.stringify(game.graphviz));
+    console.log(game.graphviz);
     break;
   case 'print-ist':
     console.log(JSON.stringify(game.ist));
