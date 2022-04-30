@@ -10,6 +10,30 @@ function numberToOrd(number: number) {
   return number === 0 ? Ord.Eq : number < 0 ? Ord.Lt : Ord.Gt;
 }
 
+function compactAutomaton(edges: ll.EdgeDeclaration[]) {
+  while (true) {
+    const edgesLength = edges.length;
+    for (const edgeA of edges) {
+      if (edgeA.label.kind === 'Skip') {
+        if (edgeA.lhs.parts.length === 1 && edgeA.lhs.parts[0].kind === 'Literal') {
+          for (const edgeB of edges) {
+            if (JSON.stringify(edgeA.lhs) === JSON.stringify(edgeB.rhs)) {
+              edgeB.rhs = edgeA.rhs;
+              if (edges.includes(edgeA)) {
+                edges.splice(edges.indexOf(edgeA), 1);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (edgesLength === edges.length) {
+      break;
+    }
+  }
+}
+
 function compareValues(lhs: hl.Value, rhs: hl.Value): Ord {
   switch (lhs.kind) {
     case 'ValueConstructor':
@@ -375,10 +399,9 @@ function translateAutomatonStatements(
             utils.assert(assignmentVariable.kind === 'ExpressionLiteral', 'forall expects a literal');
             const assignmentVariableDeclaration = variableDeclarations.find(variableDeclaration => variableDeclaration.identifier === assignmentVariable.identifier);
             utils.assert(assignmentVariableDeclaration, `Unknown variable "${assignmentVariable.identifier}" in forall.`);
-            const assignmentIterator = RANDOM(prefix);
             const assignmentEdgeName = ll.EdgeName({
               parts: [
-                ll.Literal({ identifier: assignmentIterator }),
+                ll.Literal({ identifier: RANDOM(prefix) }),
                 ll.Binding({ identifier: 'x', type: assignmentVariableDeclaration.type }),
               ],
             });
@@ -390,13 +413,7 @@ function translateAutomatonStatements(
                 rhs: ll.Cast({ lhs: assignmentVariableDeclaration.type, rhs: ll.Reference({ identifier: 'x' }) }),
               }),
             }));
-            const nextEdgeName = ll.EdgeName({ parts: [ll.Literal({ identifier: RANDOM(prefix) })] });
-            edges.push(ll.EdgeDeclaration({
-              lhs: assignmentEdgeName,
-              rhs: nextEdgeName,
-              label: ll.Skip({}),
-            }));
-            currentEdgeName = nextEdgeName;
+            currentEdgeName = assignmentEdgeName;
             continue;
           }
           case 'return': {
@@ -833,12 +850,9 @@ function translateGameDeclaration(gameDeclaration: hl.GameDeclaration): ll.GameD
     '',
   );
 
-  return ll.GameDeclaration({
-    constants,
-    edges,
-    types,
-    variables,
-  });
+  compactAutomaton(edges);
+
+  return ll.GameDeclaration({ constants, edges, types, variables });
 }
 
 function translateType(type: hl.Type): ll.Type {

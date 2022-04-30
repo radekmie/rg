@@ -33,13 +33,12 @@ export default function openGame(file: string) {
   const cst = parse(source.ll);
   const ast = buildAST(cst);
   const ist = buildIST(ast);
-  const graphviz = ast.edges
-    .map(edge => {
-      const lhs = serializeEdgeName(edge.lhs);
-      const rhs = serializeEdgeName(edge.rhs);
-      const label = serializeEdgeLabel(edge.label);
-      return `"${lhs}" -> "${rhs}" [label="${label}"];`
-    })
-    .join('\n');
+  const graphvizEdges = ast.edges.map(edge => {
+    const lhs = serializeEdgeName(edge.lhs);
+    const rhs = serializeEdgeName(edge.rhs);
+    const label = serializeEdgeLabel(edge.label);
+    return `  "${lhs}" -> "${rhs}" [label="${label}"];`
+  });
+  const graphviz = `digraph "${file}" {\n${graphvizEdges.join('\n')}\n}`;
   return { ast, cst, ist, graphviz, source };
 }
