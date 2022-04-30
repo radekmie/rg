@@ -22,17 +22,16 @@ down(V(_, 7)) = null
 down(V(X, Y)) = V(X, Y + 1)
 
 direction : Player -> Square -> SquareOrNull
-direction(black) = down
-direction(_) = up
+direction(white) = up
+direction(_) = down
 
-piece : Player -> Player
-piece(black) = black
+piece : Player -> Piece
 piece(white) = white
-piece(_) = empty
+piece(_) = black
 
 opponent : Player -> Player
-opponent(black) = white
-opponent(_) = black
+opponent(white) = black
+opponent(_) = white
 
 
 // Variables
@@ -65,7 +64,7 @@ graph move(me: Player) {
     } or {
       position = right(position)
     }
-    // assert(board[position] in {empty, piece(opponent(me))})
+    assert(position != null)
     branch {
       assert(board[position] == empty)
     } or {
@@ -79,7 +78,7 @@ graph turn() {
   move(me)
   board[position] = piece(me)
   player = keeper
-  when direction(me)(position) == null || reachable(move(opponent(me))) {
+  when direction(me)(position) == null || not(reachable(move(opponent(me)))) {
     score[me] = win
     score[opponent(me)] = lose
     return()

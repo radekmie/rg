@@ -41,6 +41,37 @@ function compareValues(lhs: hl.Value, rhs: hl.Value): Ord {
   }
 }
 
+function constructMap(entries: ll.NamedEntry[]) {
+  utils.assert(entries.length > 0, 'At least one entry is required.');
+
+  type Count = { count: number, value: ll.Value };
+  const valueCounts = entries.reduce<Record<string, Count>>(
+    (counts, entry) => {
+      const hash = JSON.stringify(entry.value);
+      if (hash in counts) {
+        counts[hash].count++;
+      } else {
+        counts[hash] = { count: 1, value: entry.value };
+      }
+
+      return counts;
+    },
+    Object.create(null),
+  );
+
+  const defaultValue = Object
+    .values(valueCounts)
+    .sort((a, b) => b.count - a.count)[0]
+    .value;
+
+  return ll.Map({
+    entries: [
+      ll.DefaultEntry({ value: defaultValue }),
+      ...entries.filter(entry => !evaluateEquality(entry.value, defaultValue)),
+    ],
+  });
+}
+
 function evaluateBinding(pattern: hl.Pattern, value: hl.Value): Record<string, hl.Value> | undefined {
   switch (pattern.kind) {
     case 'PatternConstructor':
@@ -110,7 +141,6 @@ function evaluateDefaultValue(type: ll.Type, typeValues: Record<string, hl.Value
           }),
         ),
       });
-      throw new Error('Not implemented (Arrow).');
     case 'Set':
       throw new Error('Not implemented (Set).');
     case 'TypeReference':
@@ -142,6 +172,16 @@ function evaluateDomainValues(domainValues: hl.DomainValue[]): Record<string, hl
     })
     .reduce<Record<string, hl.Value>[][]>(utils.cartesian, [[]])
     .map(bindings => bindings.reduce((a, b) => Object.assign(a, b), {}));
+}
+
+function evaluateEquality(lhs: ll.Value, rhs: ll.Value): boolean {
+  switch (lhs.kind) {
+    case 'Element':
+      utils.assert(rhs.kind === 'Element', 'Equality for different kinds.');
+      return lhs.identifier === rhs.identifier;
+    case 'Map':
+      throw new Error('Not implemented (Map).');
+  }
 }
 
 function evaluateExpression(expression: hl.Expression, binding: Record<string, hl.Value>): hl.Value {
@@ -241,24 +281,9 @@ function translateAutomatonFunction(
   variableDeclarations: ll.VariableDeclaration[],
   prefix: string,
 ) {
-  // NOTES:
-  //   - The entrypoint of a function is at `automatonFunction.name`.
-  //   - A function should receive an `EdgeLabel` to where it should go once
-  //     it's finished. It's required for a situation when a function is NOT the
-  //     last statement of a block, i.e., a `while` statement.
-  //
-  // TODO:
-  //   - How to work around non-trivial arguments, e.g., `opponnent(me)`? We
-  //     don't have a concept of registers so it'd have to be calculated before
-  //     the actual call happens.
-  //   - How to work around multiple return points? We cannot store an edge
-  //     label in a variable, so we'd need multiple subgraphs of function for
-  //     each of its callsites, but that's potentially expensive. (And we have
-  //     to calculate them beforehand.)
   translateAutomatonStatements(
     automatonFunction.body,
     automatonFunctions,
-    // TODO: Arguments!
     ll.EdgeName({ parts: [ll.Literal({ identifier: `${prefix}${automatonFunction.name}_0` })] }),
     exitEdgeName,
     returnEdgeName,
@@ -771,9 +796,7 @@ function translateFunctionDeclaration(functionDeclaration: hl.FunctionDeclaratio
   return ll.ConstantDeclaration({
     identifier: functionDeclaration.identifier,
     type,
-    value: ll.Map({
-      entries: [...entries, ll.DefaultEntry({ value: entries[0].value })],
-    }),
+    value: constructMap(entries),
   });
 }
 
@@ -788,7 +811,7 @@ function translateGameDeclaration(gameDeclaration: hl.GameDeclaration): ll.GameD
   const constants = gameDeclaration.functions.map(functionDeclaration => translateFunctionDeclaration(functionDeclaration, typeValues));
   const variables = gameDeclaration.variables.map(variableDeclaration => translateVariableDeclaration(variableDeclaration, typeValues));
 
-  variables.push(translateVariableDeclaration(hl.VariableDeclaration({ identifier: 'player', type: hl.TypeName({ identifier: 'Player' }), defaultValue: null }), typeValues));
+  variables.push(translateVariableDeclaration(hl.VariableDeclaration({ identifier: 'player', type: hl.TypeName({ identifier: 'Player' }), defaultValue: hl.ExpressionLiteral({ identifier: 'keeper' }) }), typeValues));
   variables.push(translateVariableDeclaration(hl.VariableDeclaration({ identifier: 'score', type: hl.TypeFunction({ lhs: hl.TypeName({ identifier: 'Player' }), rhs: hl.TypeName({ identifier: 'Score' }) }), defaultValue: null }), typeValues));
 
   const edges = [
@@ -837,17 +860,12 @@ function translateValue(value: hl.Value): ll.Value {
       return ll.Element({ identifier: value.identifier });
     case 'ValueMap':
       utils.assert(value.entries.length, 'At least one entry is required.');
-      return ll.Map({
-        entries: [
-          ...value.entries.map(entry =>
-            ll.NamedEntry({
-              identifier: serializeValue(entry.key),
-              value: translateValue(entry.value),
-            }),
-          ),
-          ll.DefaultEntry({ value: translateValue(value.entries[0].value) }),
-        ],
-      });
+      return constructMap(value.entries.map(entry =>
+        ll.NamedEntry({
+          identifier: serializeValue(entry.key),
+          value: translateValue(entry.value),
+        }),
+      ));
   }
 }
 

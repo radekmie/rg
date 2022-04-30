@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { buildAST, serializeAST } from './ast';
+import { buildAST, serializeAST, serializeEdgeName, serializeEdgeLabel } from './ast';
 import parse from './cst';
 import translate from './down-level';
 import buildIST from './ist';
@@ -33,5 +33,13 @@ export default function openGame(file: string) {
   const cst = parse(source.ll);
   const ast = buildAST(cst);
   const ist = buildIST(ast);
-  return { ast, cst, ist, source };
+  const graphviz = ast.edges
+    .map(edge => {
+      const lhs = serializeEdgeName(edge.lhs);
+      const rhs = serializeEdgeName(edge.rhs);
+      const label = serializeEdgeLabel(edge.label);
+      return `"${lhs}" -> "${rhs}" [label="${label}"];`
+    })
+    .join('\n');
+  return { ast, cst, ist, graphviz, source };
 }

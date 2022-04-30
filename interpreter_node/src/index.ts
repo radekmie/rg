@@ -109,6 +109,9 @@ switch (process.argv[3]) {
   case 'print-cst':
     console.log(JSON.stringify(game.cst));
     break;
+  case 'print-graphviz':
+    console.log(JSON.stringify(game.graphviz));
+    break;
   case 'print-ist':
     console.log(JSON.stringify(game.ist));
     break;
