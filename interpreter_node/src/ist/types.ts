@@ -1,6 +1,5 @@
 import { creator } from '../utils';
 
-/* eslint-disable prettier/prettier */
 export const Access = creator<Access>('Access');
 export type Access = { kind: 'Access'; lhs: Expression; rhs: Expression };
 
@@ -8,7 +7,11 @@ export const Arrow = creator<Arrow>('Arrow');
 export type Arrow = { kind: 'Arrow'; lhs: Type; rhs: Type };
 
 export const Assignment = creator<Assignment>('Assignment');
-export type Assignment = { kind: 'Assignment'; lhs: Expression; rhs: Expression };
+export type Assignment = {
+  kind: 'Assignment';
+  lhs: Expression;
+  rhs: Expression;
+};
 
 export const BindReference = creator<BindReference>('BindReference');
 export type BindReference = { kind: 'BindReference'; identifier: string };
@@ -17,31 +20,65 @@ export const Cast = creator<Cast>('Cast');
 export type Cast = { kind: 'Cast'; lhs: Type; rhs: Expression };
 
 export const Comparison = creator<Comparison>('Comparison');
-export type Comparison = { kind: 'Comparison'; lhs: Expression; rhs: Expression; negated: boolean };
+export type Comparison = {
+  kind: 'Comparison';
+  lhs: Expression;
+  rhs: Expression;
+  negated: boolean;
+};
 
-export const ConstantReference = creator<ConstantReference>('ConstantReference');
-export type ConstantReference = { kind: 'ConstantReference'; identifier: string };
+export const ConstantReference =
+  creator<ConstantReference>('ConstantReference');
+export type ConstantReference = {
+  kind: 'ConstantReference';
+  identifier: string;
+};
 
 export const Edge = creator<Edge>('Edge');
-export type Edge = { kind: 'Edge'; lhs: EdgeName; rhs: EdgeName; label: EdgeLabel };
+export type Edge = {
+  kind: 'Edge';
+  lhs: EdgeName;
+  rhs: EdgeName;
+  label: EdgeLabel;
+};
 
 export const EdgeName = creator<EdgeName>('EdgeName');
-export type EdgeName = { kind: 'EdgeName'; label: string; types: Record<string, Type>; values: Record<string, Value | null> };
+export type EdgeName = {
+  kind: 'EdgeName';
+  label: string;
+  types: Record<string, Type>;
+  values: Record<string, Value | null>;
+};
 
 export const Element = creator<Element>('Element');
 export type Element = { kind: 'Element'; value: string };
 
 export const Game = creator<Game>('Game');
-export type Game = { kind: 'Game'; constants: Record<string, Value>; edges: Edge[]; types: Record<string, Type>; variables: Record<string, Variable> };
+export type Game = {
+  kind: 'Game';
+  constants: Record<string, Value>;
+  edges: Edge[];
+  types: Record<string, Type>;
+  variables: Record<string, Variable>;
+};
 
 export const Literal = creator<Literal>('Literal');
 export type Literal = { kind: 'Literal'; value: Value };
 
 export const Map = creator<Map>('Map');
-export type Map = { kind: 'Map'; defaultValue: Value; values: Record<string, Value> };
+export type Map = {
+  kind: 'Map';
+  defaultValue: Value;
+  values: Record<string, Value>;
+};
 
 export const Reachability = creator<Reachability>('Reachability');
-export type Reachability = { kind: 'Reachability'; lhs: EdgeName; rhs: EdgeName; negated: boolean };
+export type Reachability = {
+  kind: 'Reachability';
+  lhs: EdgeName;
+  rhs: EdgeName;
+  negated: boolean;
+};
 
 export const Set = creator<Set>('Set');
 export type Set = { kind: 'Set'; values: Value[] };
@@ -50,15 +87,29 @@ export const Skip = creator<Skip>('Skip');
 export type Skip = { kind: 'Skip' };
 
 export const State = creator<State>('State');
-export type State = { kind: 'State'; position: EdgeName; values: Record<string, Value> };
+export type State = {
+  kind: 'State';
+  position: EdgeName;
+  values: Record<string, Value>;
+};
 
 export const Variable = creator<Variable>('Variable');
 export type Variable = { kind: 'Variable'; type: Type; defaultValue: Value };
 
-export const VariableReference = creator<VariableReference>('VariableReference');
-export type VariableReference = { kind: 'VariableReference'; identifier: string };
+export const VariableReference =
+  creator<VariableReference>('VariableReference');
+export type VariableReference = {
+  kind: 'VariableReference';
+  identifier: string;
+};
 
 export type EdgeLabel = Assignment | Comparison | Reachability | Skip;
-export type Expression = Access | Cast | BindReference | ConstantReference | Literal | VariableReference;
+export type Expression =
+  | Access
+  | Cast
+  | BindReference
+  | ConstantReference
+  | Literal
+  | VariableReference;
 export type Type = Arrow | Set;
 export type Value = Map | Element;

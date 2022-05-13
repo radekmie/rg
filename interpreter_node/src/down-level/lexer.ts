@@ -4,9 +4,13 @@ export const tokens: TokenType[] = [];
 
 function token(name: string, pattern: RegExp, extra?: TokenType | null) {
   const config: ITokenConfig = { name, pattern };
-  if (extra === null) config.group = Lexer.SKIPPED;
-  // eslint-disable-next-line @typescript-eslint/camelcase
-  if (extra !== null && extra !== undefined) config.longer_alt = extra;
+  if (extra === null) {
+    config.group = Lexer.SKIPPED;
+  }
+
+  if (extra !== null && extra !== undefined) {
+    config.longer_alt = extra;
+  }
 
   const token = createToken(config);
   tokens.unshift(token);

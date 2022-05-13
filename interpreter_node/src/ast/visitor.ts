@@ -123,8 +123,9 @@ class RGVisitor extends parser.getBaseCstVisitorConstructor() {
       });
     }
 
-    if ('BraceLeft' in context)
+    if ('BraceLeft' in context) {
       return ast.Set({ identifiers: this.visitTokens(context.Identifier) });
+    }
 
     return ast.TypeReference({
       identifier: this.visitToken(context.Identifier[0]),
@@ -139,8 +140,9 @@ class RGVisitor extends parser.getBaseCstVisitorConstructor() {
   }
 
   Value(context: Context): ast.Value {
-    if ('BraceLeft' in context)
+    if ('BraceLeft' in context) {
       return ast.Map({ entries: this.visitNodes(context.ValueEntry) });
+    }
 
     return ast.Element({
       identifier: this.visitToken(context.Identifier[0]),
@@ -167,22 +169,26 @@ class RGVisitor extends parser.getBaseCstVisitorConstructor() {
   }
 
   visitNode(cstElement: CstElement) {
-    if (!('name' in cstElement)) throw new Error('CstNode expected');
+    if (!('name' in cstElement)) {
+      throw new Error('CstNode expected');
+    }
     return this.visit(cstElement);
   }
 
   visitNodes(cstElements: CstElement[] = []) {
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- We provide `this` explicitly.
     return cstElements.map(this.visitNode, this);
   }
 
   visitToken(cstElement: CstElement) {
-    if (!('tokenType' in cstElement)) throw new Error('Token expected');
+    if (!('tokenType' in cstElement)) {
+      throw new Error('Token expected');
+    }
     return cstElement.image;
   }
 
   visitTokens(cstElements: CstElement[] = []) {
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- We provide `this` explicitly.
     return cstElements.map(this.visitToken, this);
   }
 }

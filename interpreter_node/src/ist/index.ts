@@ -54,7 +54,7 @@ function buildEdgeName(game: ist.Game, edgeName: ast.EdgeName) {
             return [];
         }
       })
-      .reduce((types, binding) => {
+      .reduce<Record<string, ist.Type>>((types, binding) => {
         types[binding.identifier] = buildTypeOrFail(game, binding.type);
         return types;
       }, Object.create(null)),
@@ -127,12 +127,15 @@ function buildExpression(
         rhs: buildExpression(game, expression.rhs, binds),
       });
     case 'Reference':
-      if (binds.has(expression.identifier))
+      if (binds.has(expression.identifier)) {
         return ist.BindReference({ identifier: expression.identifier });
-      if (expression.identifier in game.constants)
+      }
+      if (expression.identifier in game.constants) {
         return ist.ConstantReference({ identifier: expression.identifier });
-      if (expression.identifier in game.variables)
+      }
+      if (expression.identifier in game.variables) {
         return ist.VariableReference({ identifier: expression.identifier });
+      }
       return ist.Literal({
         value: ist.Element({ value: expression.identifier }),
       });
@@ -142,10 +145,14 @@ function buildExpression(
 function buildType(game: ist.Game, type: ast.Type): ist.Type | null {
   switch (type.kind) {
     case 'Arrow': {
-      if (!(type.lhs in game.types)) return null;
+      if (!(type.lhs in game.types)) {
+        return null;
+      }
       const lhs = game.types[type.lhs];
       const rhs = buildType(game, type.rhs);
-      if (rhs === null) return null;
+      if (rhs === null) {
+        return null;
+      }
       return ist.Arrow({ lhs, rhs });
     }
     case 'Set':
@@ -153,7 +160,9 @@ function buildType(game: ist.Game, type: ast.Type): ist.Type | null {
         values: type.identifiers.map(value => ist.Element({ value })),
       });
     case 'TypeReference':
-      if (type.identifier in game.types) return game.types[type.identifier];
+      if (type.identifier in game.types) {
+        return game.types[type.identifier];
+      }
       return null;
   }
 }
@@ -168,8 +177,11 @@ function buildTypes(game: ist.Game, typeDeclarations: ast.TypeDeclaration[]) {
   const unresolvedTypeDeclarations: ast.TypeDeclaration[] = [];
   for (const typeDeclaration of typeDeclarations) {
     const resolved = buildType(game, typeDeclaration.type);
-    if (resolved === null) unresolvedTypeDeclarations.push(typeDeclaration);
-    else game.types[typeDeclaration.identifier] = resolved;
+    if (resolved === null) {
+      unresolvedTypeDeclarations.push(typeDeclaration);
+    } else {
+      game.types[typeDeclaration.identifier] = resolved;
+    }
   }
 
   if (unresolvedTypeDeclarations.length > 0) {
@@ -189,8 +201,9 @@ function buildValue(
 ): ist.Value {
   switch (value.kind) {
     case 'Element':
-      if (value.identifier in game.constants)
+      if (value.identifier in game.constants) {
         return game.constants[value.identifier];
+      }
       return ist.Element({ value: value.identifier });
     case 'Map': {
       utils.assert(type.kind === 'Arrow', 'Incorrect Map type found.');
@@ -220,7 +233,7 @@ function buildValue(
                 return [entry];
             }
           })
-          .reduce((values, namedEntry) => {
+          .reduce<Record<string, ist.Value>>((values, namedEntry) => {
             utils.assert(
               !(namedEntry.identifier in values),
               'Duplicated named entry.',

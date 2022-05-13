@@ -3,6 +3,7 @@
     "baseUrl": "src",
     "esModuleInterop": true,
     "importHelpers": true,
+    "incremental": true,
     "lib": ["ES2020"],
     "module": "CommonJS",
     "moduleResolution": "node",
@@ -10,7 +11,8 @@
     "rootDir": "src",
     "sourceMap": true,
     "strict": true,
-    "target": "ES2019"
+    "target": "ES2019",
+    "tsBuildInfoFile": "./node_modules/.cache/interpreter_node.tsbuildinfo"
   },
   "include": ["src"]
 }

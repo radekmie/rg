@@ -1,8 +1,8 @@
 import { CstChildrenDictionary as Context, CstElement } from 'chevrotain';
 
+import * as utils from '../utils';
 import parser from './parser';
 import * as ast from './types';
-import * as utils from '../utils';
 
 class HLVisitor extends parser.getBaseCstVisitorConstructor() {
   constructor() {
@@ -221,9 +221,12 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
       return (context.ExpressionSuffix ?? []).reduce<ast.Expression>(
         (expression, suffix) => {
           utils.assert('children' in suffix, 'ExpressionSuffix expected.');
-          const expressions = this.visitNode(suffix);
+          const expressions: ast.Expression[] = this.visitNode(suffix);
           if ('BracketLeft' in suffix.children) {
-            utils.assert(expressions.length === 1, 'Access require exactly one expression.');
+            utils.assert(
+              expressions.length === 1,
+              'Access require exactly one expression.',
+            );
             return ast.ExpressionAccess({
               lhs: expression,
               rhs: expressions[0],
@@ -232,7 +235,11 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
 
           if ('ParenthesisLeft' in suffix.children) {
             // That's how we differentiate calls from constructors.
-            if (expression.kind === 'ExpressionLiteral' && expression.identifier[0] === expression.identifier[0].toUpperCase()) {
+            if (
+              expression.kind === 'ExpressionLiteral' &&
+              expression.identifier[0] ===
+                expression.identifier[0].toUpperCase()
+            ) {
               return ast.ExpressionConstructor({
                 identifier: expression.identifier,
                 args: expressions,
@@ -242,7 +249,9 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
             return ast.ExpressionCall({ expression, args: expressions });
           }
 
-          throw new Error(`ExpressionSuffix ${JSON.stringify(context, null, 2)}`);
+          throw new Error(
+            `ExpressionSuffix ${JSON.stringify(context, null, 2)}`,
+          );
         },
         ast.ExpressionLiteral({
           identifier: this.visitToken(context.Identifier[0]),
@@ -266,18 +275,31 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
   }
 
   GameDeclaration(context: Context): ast.GameDeclaration {
-    const typeDeclarations = this.visitNodes(context.TypeDeclaration);
+    const typeDeclarations: ast.TypeDeclaration[] = this.visitNodes(
+      context.TypeDeclaration,
+    );
 
     // Reify FunctionDeclaration.
-    const functionCases = this.visitNodes(context.FunctionCase);
+    const functionCases: ast.FunctionCase[] = this.visitNodes(
+      context.FunctionCase,
+    );
     const functionDeclarations = functionCases.reduce(
       (functionDeclarations: ast.FunctionDeclaration[], functionCase) => {
-        const existingFunctionDeclaration = functionDeclarations.find(functionDeclaration => functionDeclaration.identifier === functionCase.identifier);
+        const existingFunctionDeclaration = functionDeclarations.find(
+          functionDeclaration =>
+            functionDeclaration.identifier === functionCase.identifier,
+        );
         if (existingFunctionDeclaration) {
           existingFunctionDeclaration.cases.push(functionCase);
         } else {
-          const typeDeclaration = typeDeclarations.find(typeDeclaration => typeDeclaration.identifier === functionCase.identifier);
-          utils.assert(typeDeclaration, `Type declaration for function "${functionCase.identifier}" not found.`);
+          const typeDeclaration = typeDeclarations.find(
+            typeDeclaration =>
+              typeDeclaration.identifier === functionCase.identifier,
+          );
+          utils.assert(
+            typeDeclaration,
+            `Type declaration for function "${functionCase.identifier}" not found.`,
+          );
           typeDeclarations.splice(typeDeclarations.indexOf(typeDeclaration), 1);
           const functionDeclaration = ast.FunctionDeclaration({
             identifier: typeDeclaration.identifier,
@@ -293,13 +315,27 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
     );
 
     // Reify VariableDeclaration.
-    const variableAssignments = this.visitNodes(context.VariableAssignment);
+    const variableAssignments: ast.VariableAssignment[] = this.visitNodes(
+      context.VariableAssignment,
+    );
     const variableDeclarations = variableAssignments.reduce(
       (variableDeclarations: ast.VariableDeclaration[], variableAssignment) => {
-        const existingVariableDeclaration = variableDeclarations.find(variableDeclaration => variableDeclaration.identifier === variableAssignment.identifier);
-        utils.assert(!existingVariableDeclaration, `Duplicate VariableAssignment found for variable "${variableAssignment.identifier}".`);
-        const typeDeclaration = typeDeclarations.find(typeDeclaration => typeDeclaration.identifier === variableAssignment.identifier);
-        utils.assert(typeDeclaration, `Type declaration for variable "${variableAssignment.identifier}" not found.`);
+        const existingVariableDeclaration = variableDeclarations.find(
+          variableDeclaration =>
+            variableDeclaration.identifier === variableAssignment.identifier,
+        );
+        utils.assert(
+          !existingVariableDeclaration,
+          `Duplicate VariableAssignment found for variable "${variableAssignment.identifier}".`,
+        );
+        const typeDeclaration = typeDeclarations.find(
+          typeDeclaration =>
+            typeDeclaration.identifier === variableAssignment.identifier,
+        );
+        utils.assert(
+          typeDeclaration,
+          `Type declaration for variable "${variableAssignment.identifier}" not found.`,
+        );
         typeDeclarations.splice(typeDeclarations.indexOf(typeDeclaration), 1);
         const variableDeclaration = ast.VariableDeclaration({
           identifier: typeDeclaration.identifier,
@@ -331,7 +367,9 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
   }
 
   Pattern(context: Context): ast.Pattern {
-    if ('KeywordWildcard' in context) return ast.PatternWildcard({});
+    if ('KeywordWildcard' in context) {
+      return ast.PatternWildcard({});
+    }
 
     if ('ParenthesisLeft' in context) {
       return ast.PatternConstructor({
@@ -341,7 +379,8 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
     }
 
     const identifier = this.visitToken(context.Identifier[0]);
-    return identifier[0] === identifier[0].toUpperCase() && !isFinite(parseInt(identifier))
+    return identifier[0] === identifier[0].toUpperCase() &&
+      !isFinite(parseInt(identifier))
       ? ast.PatternVariable({ identifier })
       : ast.PatternLiteral({ identifier });
   }
@@ -376,22 +415,26 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
   }
 
   visitNode(cstElement: CstElement) {
-    if (!('name' in cstElement)) throw new Error('CstNode expected');
+    if (!('name' in cstElement)) {
+      throw new Error('CstNode expected');
+    }
     return this.visit(cstElement);
   }
 
   visitNodes(cstElements: CstElement[] = []) {
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- We provide `this` explicitly.
     return cstElements.map(this.visitNode, this);
   }
 
   visitToken(cstElement: CstElement) {
-    if (!('tokenType' in cstElement)) throw new Error('Token expected');
+    if (!('tokenType' in cstElement)) {
+      throw new Error('Token expected');
+    }
     return cstElement.image;
   }
 
   visitTokens(cstElements: CstElement[] = []) {
-    // eslint-disable-next-line @typescript-eslint/unbound-method
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- We provide `this` explicitly.
     return cstElements.map(this.visitToken, this);
   }
 }

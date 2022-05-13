@@ -1,7 +1,9 @@
 import util from 'util';
 
 export function assert(condition: unknown, message: string): asserts condition {
-  if (!(condition as boolean)) throw new Error(message);
+  if (!(condition as boolean)) {
+    throw new Error(message);
+  }
 }
 
 export function cartesian<T>(xss: T[][], ys: T[]): T[][] {
@@ -12,7 +14,7 @@ export function creator<Type extends { kind: string }>(kind: Type['kind']) {
   return (data: Omit<Type, 'kind'>) => ({ kind, ...data });
 }
 
-export function find<T extends {}>(xs: T[], needle: Partial<T>) {
+export function find<T>(xs: T[], needle: Partial<T>) {
   const keys = Object.keys(needle) as (keyof T)[];
   return xs.find(x => keys.every(key => x[key] === needle[key]));
 }
@@ -32,10 +34,13 @@ export function mapValues<T, U>(
   object: Record<string, T>,
   fn: (value: T) => U,
 ): Record<string, U> {
-  return Object.entries(object).reduce((object, [key, value]) => {
-    object[key] = fn(value);
-    return object;
-  }, Object.create(null));
+  return Object.entries(object).reduce<Record<string, U>>(
+    (object, [key, value]) => {
+      object[key] = fn(value);
+      return object;
+    },
+    Object.create(null),
+  );
 }
 
 export function pretty(object: unknown) {

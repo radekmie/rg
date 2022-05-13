@@ -39,9 +39,13 @@ function run(game: ist.Game, plays = 1, debug = false) {
     let state = createInitialState(game);
     let turn = 0;
     for (;;) {
-      if (debug) console.log(utils.pretty(state));
+      if (debug) {
+        console.log(utils.pretty(state));
+      }
       const states = Array.from(nextStates(game, state, true), cloneState);
-      if (states.length === 0) break;
+      if (states.length === 0) {
+        break;
+      }
 
       utils.assert(state.values.player.kind === 'Element', 'Player is element');
       if (state.values.player.value !== 'keeper') {
@@ -75,7 +79,10 @@ function runPerf(game: ist.Game, depth: number) {
   let count = 0;
   const initialState = createInitialState(game);
   console.time(`runPerf(depth: ${depth})`);
-  for (const _ of nextStatesN(game, initialState, depth)) ++count;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- It's not needed.
+  for (const _ of nextStatesN(game, initialState, depth)) {
+    ++count;
+  }
   console.timeEnd(`runPerf(depth: ${depth})`);
   console.log(`runPerf(depth: ${depth}) = ${count}`);
 
@@ -84,8 +91,9 @@ function runPerf(game: ist.Game, depth: number) {
     state: ist.State,
     depth: number,
   ): Generator<ist.State, void, undefined> {
-    if (depth === 0) yield state;
-    else {
+    if (depth === 0) {
+      yield state;
+    } else {
       const player = cloneValue(state.values.player);
       for (const nextState of nextStates(game, state, true)) {
         const step = isSameOrKeeper(player, state.values.player);
@@ -100,7 +108,9 @@ switch (process.argv[3]) {
   case 'perf': {
     const maxDepth = +process.argv[4];
     utils.assert(isFinite(maxDepth) && maxDepth > 0, 'depth must be positive');
-    for (let depth = 0; depth <= maxDepth; ++depth) runPerf(game.ist, depth);
+    for (let depth = 0; depth <= maxDepth; ++depth) {
+      runPerf(game.ist, depth);
+    }
     break;
   }
   case 'print-ast':

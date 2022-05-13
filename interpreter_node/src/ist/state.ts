@@ -54,11 +54,15 @@ export function evaluateEquality(lhs: ist.Value, rhs: ist.Value): boolean {
       // TODO: It should iterate over type values.
       for (const [key, lhsValue] of Object.entries(lhs.values)) {
         const rhsValue = key in rhs.values ? rhs.values[key] : rhs.defaultValue;
-        if (!evaluateEquality(lhsValue, rhsValue)) return false;
+        if (!evaluateEquality(lhsValue, rhsValue)) {
+          return false;
+        }
       }
       for (const [key, rhsValue] of Object.entries(rhs.values)) {
         const lhsValue = key in lhs.values ? lhs.values[key] : lhs.defaultValue;
-        if (!evaluateEquality(rhsValue, lhsValue)) return false;
+        if (!evaluateEquality(rhsValue, lhsValue)) {
+          return false;
+        }
       }
       return true;
   }
@@ -83,8 +87,9 @@ export function evaluateExpression(
           : map.defaultValue;
       }
 
-      if (!(key.value in map.values))
+      if (!(key.value in map.values)) {
         map.values[key.value] = cloneValue(map.defaultValue);
+      }
       return map.values[key.value];
     }
     case 'BindReference': {
@@ -115,21 +120,29 @@ export function evaluateReachability(
   clone.position = label.lhs;
 
   // TODO: Check binds.
-  for (const reachedState of nextStates(game, clone, false))
-    if (reachedState.position.label === label.rhs.label) return true;
+  for (const reachedState of nextStates(game, clone, false)) {
+    if (reachedState.position.label === label.rhs.label) {
+      return true;
+    }
+  }
   return false;
 }
 
+// eslint-disable-next-line complexity -- This function could be improved.
 export function* nextStates(
   game: ist.Game,
   state: ist.State,
   yieldOnPlayer: boolean,
 ): Generator<ist.State, void, undefined> {
-  if (!yieldOnPlayer) yield state;
+  if (!yieldOnPlayer) {
+    yield state;
+  }
 
   for (const { label, lhs, rhs: rhsGenerator } of game.edges) {
     // TODO: Check binds.
-    if (state.position.label !== lhs.label) continue;
+    if (state.position.label !== lhs.label) {
+      continue;
+    }
     for (const rhs of reifyNodes(game, lhs, rhsGenerator)) {
       state.position = rhs;
       switch (label.kind) {
@@ -142,19 +155,24 @@ export function* nextStates(
             label.lhs.kind === 'VariableReference' &&
             label.lhs.identifier === 'player';
 
-          if (yieldAndStop) yield state;
-          else yield* nextStates(game, state, yieldOnPlayer);
+          if (yieldAndStop) {
+            yield state;
+          } else {
+            yield* nextStates(game, state, yieldOnPlayer);
+          }
 
           setValue(game, state, label.lhs, previousValue);
           break;
         }
         case 'Comparison':
-          if (evaluateComparison(game, state, label))
+          if (evaluateComparison(game, state, label)) {
             yield* nextStates(game, state, yieldOnPlayer);
+          }
           break;
         case 'Reachability':
-          if (evaluateReachability(game, state, label) !== label.negated)
+          if (evaluateReachability(game, state, label) !== label.negated) {
             yield* nextStates(game, state, yieldOnPlayer);
+          }
           break;
         case 'Skip':
           yield* nextStates(game, state, yieldOnPlayer);
@@ -237,8 +255,11 @@ export function setValue(
       // TODO: Type check.
       const previousValue =
         key.value in map.values ? map.values[key.value] : map.defaultValue;
-      if (evaluateEquality(previousValue, value)) delete map.values[key.value];
-      else map.values[key.value] = value;
+      if (evaluateEquality(previousValue, value)) {
+        delete map.values[key.value];
+      } else {
+        map.values[key.value] = value;
+      }
       compact(map);
       return previousValue;
     }
@@ -269,8 +290,9 @@ export function compact(value: ist.Value) {
       compact(value.defaultValue);
       for (const key of Object.keys(value.values)) {
         compact(value.values[key]);
-        if (evaluateEquality(value.defaultValue, value.values[key]))
+        if (evaluateEquality(value.defaultValue, value.values[key])) {
           delete value.values[key];
+        }
       }
       break;
     case 'Element':

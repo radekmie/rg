@@ -1,7 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 
-import { buildAST, serializeAST, serializeEdgeName, serializeEdgeLabel } from './ast';
+import {
+  buildAST,
+  serializeAST,
+  serializeEdgeName,
+  serializeEdgeLabel,
+} from './ast';
 import parse from './cst';
 import translate from './down-level';
 import buildIST from './ist';
@@ -37,7 +42,7 @@ export default function openGame(file: string) {
     const lhs = serializeEdgeName(edge.lhs);
     const rhs = serializeEdgeName(edge.rhs);
     const label = serializeEdgeLabel(edge.label);
-    return `  "${lhs}" -> "${rhs}" [label="${label}"];`
+    return `  "${lhs}" -> "${rhs}" [label="${label}"];`;
   });
   const graphviz = `digraph "${file}" {\n${graphvizEdges.join('\n')}\n}`;
   return { ast, cst, ist, graphviz, source };
