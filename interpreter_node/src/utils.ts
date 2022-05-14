@@ -1,5 +1,9 @@
 import util from 'util';
 
+export type Result<T, E = unknown> =
+  | { ok: true; value: T }
+  | { ok: false; error: E };
+
 export function assert(condition: unknown, message: string): asserts condition {
   if (!(condition as boolean)) {
     throw new Error(message);
@@ -52,4 +56,12 @@ export function pretty(object: unknown) {
       sorted: true,
     })
     .replace(/\[Object: null prototype\] /g, '');
+}
+
+export function safe<T>(fn: () => T): Result<T> {
+  try {
+    return { ok: true, value: fn() };
+  } catch (error) {
+    return { ok: false, error };
+  }
 }

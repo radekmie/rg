@@ -1,0 +1,12 @@
+.spinner {
+  margin-top: 1rem;
+}
+
+.wrap {
+  height: 100%;
+  overflow: auto;
+}
+
+.wrap polygon[fill=white] {
+  fill: transparent;
+}

@@ -15,34 +15,6 @@ function numberToOrd(number: number) {
   return number === 0 ? Ord.Eq : number < 0 ? Ord.Lt : Ord.Gt;
 }
 
-function compactAutomaton(edges: ll.EdgeDeclaration[]) {
-  // eslint-disable-next-line no-constant-condition -- Fixpoint approach is easier.
-  while (true) {
-    const edgesLength = edges.length;
-    for (const edgeA of edges) {
-      if (edgeA.label.kind === 'Skip') {
-        if (
-          edgeA.lhs.parts.length === 1 &&
-          edgeA.lhs.parts[0].kind === 'Literal'
-        ) {
-          for (const edgeB of edges) {
-            if (JSON.stringify(edgeA.lhs) === JSON.stringify(edgeB.rhs)) {
-              edgeB.rhs = edgeA.rhs;
-              if (edges.includes(edgeA)) {
-                edges.splice(edges.indexOf(edgeA), 1);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (edgesLength === edges.length) {
-      break;
-    }
-  }
-}
-
 function compareValues(lhs: hl.Value, rhs: hl.Value): Ord {
   switch (lhs.kind) {
     case 'ValueConstructor': {
@@ -393,6 +365,12 @@ function RANDOM(prefix: string) {
   return `${prefix}_${++globalCounters[prefix]}`;
 }
 
+function RANDOM_RESET() {
+  for (const key of Object.keys(globalCounters)) {
+    delete globalCounters[key];
+  }
+}
+
 function translateAutomatonStatements(
   automatonStatements: hl.AutomatonStatement[],
   automatonFunctions: hl.AutomatonFunction[],
@@ -491,11 +469,12 @@ function translateAutomatonStatements(
               assignmentVariableDeclaration,
               `Unknown variable "${assignmentVariable.identifier}" in forall.`,
             );
+            const identifier = RANDOM('x');
             const assignmentEdgeName = ll.EdgeName({
               parts: [
                 ll.Literal({ identifier: RANDOM(prefix) }),
                 ll.Binding({
-                  identifier: 'x',
+                  identifier,
                   type: assignmentVariableDeclaration.type,
                 }),
               ],
@@ -510,7 +489,7 @@ function translateAutomatonStatements(
                   }),
                   rhs: ll.Cast({
                     lhs: assignmentVariableDeclaration.type,
-                    rhs: ll.Reference({ identifier: 'x' }),
+                    rhs: ll.Reference({ identifier }),
                   }),
                 }),
               }),
@@ -1122,8 +1101,6 @@ function translateGameDeclaration(
     '',
   );
 
-  compactAutomaton(edges);
-
   return ll.GameDeclaration({ constants, edges, types, variables });
 }
 
@@ -1180,6 +1157,8 @@ function translateVariableDeclaration(
 }
 
 export default function translate(source: string) {
+  RANDOM_RESET();
+
   const result = lexer.tokenize(source);
   if (result.errors.length > 0) {
     throw Object.assign(new Error('Lexer error'), { errors: result.errors });

@@ -1,0 +1,6 @@
+.pre {
+  height: 100%;
+  margin: 0;
+  overflow: auto;
+  user-select: all;
+}

@@ -1,4 +1,7 @@
-import openGame from './io';
+import fs from 'fs';
+import path from 'path';
+
+import { openGame } from './io';
 import {
   cloneState,
   cloneValue,
@@ -7,6 +10,7 @@ import {
   nextStates,
 } from './ist/state';
 import * as ist from './ist/types';
+import { Extension, Optimize } from './types';
 import * as utils from './utils';
 
 function avg(counter: Record<number, number>) {
@@ -103,7 +107,16 @@ function runPerf(game: ist.Game, depth: number) {
   }
 }
 
-const game = openGame(process.argv[2]);
+function read(file: string) {
+  return fs.readFileSync(file, { encoding: 'utf8' });
+}
+
+const file = process.argv[2];
+const game = openGame(read(file), {
+  extension: path.extname(file) as Extension,
+  optimize: Optimize.yes,
+});
+
 switch (process.argv[3]) {
   case 'perf': {
     const maxDepth = +process.argv[4];

@@ -1,6 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-
 import {
   buildAST,
   serializeAST,
@@ -10,31 +7,35 @@ import {
 import parse from './cst';
 import translate from './down-level';
 import buildIST from './ist';
+import { optimize } from './optimizer';
+import { Optimize, Settings } from './types';
 
-function read(file: string) {
-  return fs.readFileSync(file, { encoding: 'utf8' });
-}
-
-function analyze(file: string) {
-  const extension = path.extname(file);
-  switch (extension) {
+function analyze(content: string, settings: Settings) {
+  switch (settings.extension) {
     case '.hrg': {
-      const hl = read(file);
+      const hl = content;
       const ll = serializeAST(translate(hl));
       return { hl, ll };
     }
     case '.rg': {
       const hl = null;
-      const ll = read(file);
+      const ll = content;
       return { hl, ll };
     }
     default:
-      throw new Error(`Unknown extension "${extension}".`);
+      throw new Error(`Unknown extension "${settings.extension}".`);
   }
 }
 
-export default function openGame(file: string) {
-  const source = analyze(file);
+export function openGame(content: string, settings: Settings) {
+  const source = analyze(content, settings);
+  if (settings.optimize === Optimize.yes) {
+    const cst = parse(source.ll);
+    const ast = buildAST(cst);
+    optimize(ast);
+    source.ll = serializeAST(ast);
+  }
+
   const cst = parse(source.ll);
   const ast = buildAST(cst);
   const ist = buildIST(ast);
@@ -44,6 +45,7 @@ export default function openGame(file: string) {
     const label = serializeEdgeLabel(edge.label);
     return `  "${lhs}" -> "${rhs}" [label="${label}"];`;
   });
-  const graphviz = `digraph "${file}" {\n${graphvizEdges.join('\n')}\n}`;
+
+  const graphviz = `digraph {\n${graphvizEdges.join('\n')}\n}`;
   return { ast, cst, ist, graphviz, source };
 }
