@@ -1,6 +1,7 @@
 import { Spinner } from '@blueprintjs/core';
 import type { graphviz as GraphvizWASM } from '@hpcc-js/wasm';
 import { SVGProps, useEffect, useState } from 'react';
+import { TOOL_PAN, UncontrolledReactSVGPanZoom } from 'react-svg-pan-zoom';
 
 import { Result } from '../../utils';
 import { Autosize } from './Autosize';
@@ -31,6 +32,8 @@ export function Graphviz({ source }: GraphvizProps) {
           ok: true,
           value: {
             dangerouslySetInnerHTML: { __html: svg.innerHTML },
+            height,
+            width,
             viewBox: `0 0 ${width} ${height}`,
           },
         });
@@ -49,7 +52,15 @@ export function Graphviz({ source }: GraphvizProps) {
     <Autosize>
       {({ height, width }) => (
         <section className={styles.wrap}>
-          <svg height={height - 1} width={width - 1} {...svg.value} />
+          <UncontrolledReactSVGPanZoom
+            defaultTool={TOOL_PAN}
+            height={height}
+            width={width}
+          >
+            <svg {...svg.value}>
+              <g dangerouslySetInnerHTML={svg.value.dangerouslySetInnerHTML} />
+            </svg>
+          </UncontrolledReactSVGPanZoom>
         </section>
       )}
     </Autosize>
