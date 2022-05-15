@@ -13,6 +13,7 @@ jobs:
         uses: actions/setup-node@v3.1.1
         with:
           cache: npm
+          cache-dependency-path: interpreter_node/package-lock.json
           node-version: '16.15.0'
       - name: Install
         run: npm --prefix interpreter_node ci
