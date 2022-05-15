@@ -1,0 +1,27 @@
+name: docs
+on:
+  push:
+    branches:
+      - master
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.0.2
+      - name: Use Node.js
+        uses: actions/setup-node@v3.1.1
+        with:
+          cache: npm
+          node-version: '16.15.0'
+      - name: Install
+        run: npm --prefix interpreter_node ci
+      - name: Build docs
+        run: npm --prefix interpreter_node run ui:build
+      - name: Deploy docs
+        uses: peaceiris/actions-gh-pages@v3.8.0
+        with:
+          allow_empty_commit: true
+          force_orphan: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./interpreter_node/lib/ui
