@@ -1,3 +1,5 @@
+[![docs](https://github.com/radekmie/rbg-2.0/actions/workflows/docs.yml/badge.svg)](https://github.com/radekmie/rbg-2.0/actions/workflows/docs.yml)
+
 ```sh
 # Install dependencies.
 $ npm ci
