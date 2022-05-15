@@ -6,7 +6,7 @@
     "build": "tsc --build",
     "clean": "tsc --build --clean",
     "lint": "eslint --ext ts src",
-    "ui:build": "parcel build --cache-dir node_modules/.cache/parcel --dist-dir lib/ui src/ui/index.html --no-source-maps",
+    "ui:build": "parcel build --cache-dir node_modules/.cache/parcel --dist-dir lib/ui src/ui/index.html --no-source-maps --public-url .",
     "ui:start": "parcel serve --cache-dir node_modules/.cache/parcel --dist-dir lib/ui src/ui/index.html"
   },
   "dependencies": {
