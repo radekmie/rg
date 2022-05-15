@@ -1,15 +1,16 @@
-import { Card, Radio, RadioGroup } from '@blueprintjs/core';
+import { Callout, Intent, Radio, RadioGroup } from '@blueprintjs/core';
 import { FormEvent, useCallback } from 'react';
 
 import { Extension, Optimize, Settings } from '../../types';
 import * as styles from './Settings.module.css';
 
 export type SettingsProps = {
+  intent: Intent;
   onChange: (fn: (value: Settings) => Settings) => void;
   value: Settings;
 };
 
-export function Settings({ onChange, value }: SettingsProps) {
+export function Settings({ intent, onChange, value }: SettingsProps) {
   const onExtension = useCallback(
     (event: FormEvent<HTMLInputElement>) => {
       const extension = event.currentTarget.value as Extension;
@@ -27,7 +28,7 @@ export function Settings({ onChange, value }: SettingsProps) {
   );
 
   return (
-    <Card>
+    <Callout intent={intent}>
       <RadioGroup
         className={styles.options}
         label="Extension"
@@ -46,6 +47,6 @@ export function Settings({ onChange, value }: SettingsProps) {
         <Radio label="Yes" value={Optimize.yes} />
         <Radio label="No" value={Optimize.no} />
       </RadioGroup>
-    </Card>
+    </Callout>
   );
 }

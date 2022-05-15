@@ -47,13 +47,15 @@ export function mapValues<T, U>(
   );
 }
 
-export function pretty(object: unknown) {
+type Options = Partial<Parameters<typeof util.inspect>[1]>;
+export function pretty(object: unknown, options?: Options) {
   return util
     .inspect(object, {
       colors: true,
       compact: Infinity,
       depth: Infinity,
       sorted: true,
+      ...options,
     })
     .replace(/\[Object: null prototype\] /g, '');
 }

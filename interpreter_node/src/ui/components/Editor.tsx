@@ -1,24 +1,31 @@
-import { ChangeEvent, useCallback } from 'react';
+import { javascript } from '@codemirror/lang-javascript';
+import { json } from '@codemirror/lang-json';
+import CodeMirror, { ReactCodeMirrorProps } from '@uiw/react-codemirror';
 
-import * as styles from './Editor.module.css';
+import { Autosize } from './Autosize';
 
-export type EditorProps = {
-  onChange: (value: string) => void;
-  value: string;
+const modeToConfig = {
+  javascript: { extensions: [javascript()] },
+  json: { extensions: [json()] },
+  text: { extensions: [] },
 };
 
-export function Editor({ onChange, value }: EditorProps) {
-  const onChangeHandler = useCallback(
-    (event: ChangeEvent<HTMLTextAreaElement>) => onChange(event.target.value),
-    [onChange],
-  );
+export type EditorProps = ReactCodeMirrorProps & {
+  mode: keyof typeof modeToConfig;
+};
 
+export function Editor({ className, mode, ...props }: EditorProps) {
   return (
-    <textarea
-      className={styles.editor}
-      data-gramm={false}
-      onChange={onChangeHandler}
-      value={value}
-    />
+    <Autosize>
+      {({ height }) => (
+        <section className={className}>
+          <CodeMirror
+            height={`${height}px`}
+            {...modeToConfig[mode]}
+            {...props}
+          />
+        </section>
+      )}
+    </Autosize>
   );
 }

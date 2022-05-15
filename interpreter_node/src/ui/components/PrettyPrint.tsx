@@ -1,29 +1,33 @@
-import { Intent } from '@blueprintjs/core';
-import Convert from 'ansi-to-html';
-import classNames from 'classnames';
 import { useMemo } from 'react';
 
 import { pretty } from '../../utils';
+import { Editor } from './Editor';
 import * as styles from './PrettyPrint.module.css';
 
-const convert = new Convert({ bg: '#fff', fg: '#000' });
+export type PrettyPrintProps = { value: unknown };
 
-export type PrettyPrintProps = { intent?: Intent; value: unknown };
+export function PrettyPrint({ value }: PrettyPrintProps) {
+  const [mode, text] = useMemo(() => {
+    // Forward string as-is. At some point we'll differentiate between HL and LL.
+    if (typeof value === 'string') {
+      return ['text', value] as const;
+    }
 
-export function PrettyPrint({ intent, value }: PrettyPrintProps) {
-  const html = useMemo(
-    () => (typeof value === 'string' ? value : convert.toHtml(pretty(value))),
-    [value],
-  );
+    // Errors usually aren't JSON-serializable.
+    if (value instanceof Error) {
+      return ['javascript', pretty(value, { colors: false })] as const;
+    }
+
+    return ['json', JSON.stringify(value, null, 2)] as const;
+  }, [value]);
 
   return (
-    <pre
-      className={classNames(
-        `bp4-callout bp4-elevation-0 bp4-intent-${intent ?? ''}`,
-        styles.pre,
-      )}
-    >
-      <code dangerouslySetInnerHTML={{ __html: html }} />
-    </pre>
+    <Editor
+      className={styles.wrap}
+      editable={false}
+      mode={mode}
+      readOnly
+      value={text}
+    />
   );
 }

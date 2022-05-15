@@ -1,12 +1,13 @@
 import { Spinner } from '@blueprintjs/core';
 import type { graphviz as GraphvizWASM } from '@hpcc-js/wasm';
-import classNames from 'classnames';
 import { SVGProps, useEffect, useState } from 'react';
 
 import { Result } from '../../utils';
+import { Autosize } from './Autosize';
 import * as styles from './Graphviz.module.css';
 import { PrettyPrint } from './PrettyPrint';
 
+// @ts-expect-error: Loaded in HTML.
 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Loaded in HTML.
 const graphviz = window['@hpcc-js/wasm'].graphviz as typeof GraphvizWASM;
 
@@ -30,8 +31,6 @@ export function Graphviz({ source }: GraphvizProps) {
           ok: true,
           value: {
             dangerouslySetInnerHTML: { __html: svg.innerHTML },
-            height,
-            width,
             viewBox: `0 0 ${width} ${height}`,
           },
         });
@@ -43,13 +42,17 @@ export function Graphviz({ source }: GraphvizProps) {
   }, [source]);
 
   return svg === null ? (
-    <section className={classNames('bp4-callout bp4-elevation-0', styles.wrap)}>
+    <section className={styles.wrap}>
       <Spinner className={styles.spinner} />
     </section>
   ) : svg.ok ? (
-    <section className={classNames('bp4-callout bp4-elevation-0', styles.wrap)}>
-      <svg {...svg.value} />
-    </section>
+    <Autosize>
+      {({ height, width }) => (
+        <section className={styles.wrap}>
+          <svg height={height - 1} width={width - 1} {...svg.value} />
+        </section>
+      )}
+    </Autosize>
   ) : (
     <PrettyPrint value={svg.error} />
   );

@@ -16,9 +16,9 @@ export function Application() {
 
   return (
     <>
-      <Editor onChange={setSource} value={source} />
+      <Editor onChange={setSource} mode="text" value={source} />
       <section className={styles.panel}>
-        <Navbar>
+        <Navbar className={styles.clear}>
           <Navbar.Group className={styles.wide}>
             <Tabs
               className={styles.wide}
@@ -37,7 +37,11 @@ export function Application() {
             </Tabs>
           </Navbar.Group>
         </Navbar>
-        <Settings onChange={setSettings} value={settings} />
+        <Settings
+          intent={game.ok ? Intent.SUCCESS : Intent.DANGER}
+          onChange={setSettings}
+          value={settings}
+        />
         {game.ok ? (
           (() => {
             switch (activeView) {
@@ -58,7 +62,7 @@ export function Application() {
             }
           })()
         ) : (
-          <PrettyPrint intent={Intent.DANGER} value={game.error} />
+          <PrettyPrint value={game.error} />
         )}
       </section>
     </>

@@ -4,7 +4,8 @@
 
 .wrap {
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
+  width: 100%;
 }
 
 .wrap polygon[fill=white] {
