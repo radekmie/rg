@@ -4,6 +4,7 @@ import { View, useActiveView } from '../hooks/useActiveView';
 import { useGame } from '../hooks/useGame';
 import { useSettings } from '../hooks/useSettings';
 import * as styles from './Application.module.css';
+import { Bench } from './Bench';
 import { Editor } from './Editor';
 import { Graphviz } from './Graphviz';
 import { PrettyPrint } from './PrettyPrint';
@@ -27,12 +28,13 @@ export function Application() {
               renderActiveTabPanelOnly
               selectedTabId={activeView}
             >
+              <Tab disabled={!game.ok} id={View.Bench} title="Bench" />
               <Tab disabled={!game.ok} id={View.Automaton} title="Automaton" />
               <Tab disabled={!game.ok} id={View.Graphviz} title="Graphviz" />
               <Tab disabled={!game.ok} id={View.HighLevel} title="HL" />
               <Tab disabled={!game.ok} id={View.LowLevel} title="LL" />
-              <Tab disabled={!game.ok} id={View.AST} title="AST" />
               <Tab disabled={!game.ok} id={View.CST} title="CST" />
+              <Tab disabled={!game.ok} id={View.AST} title="AST" />
               <Tab disabled={!game.ok} id={View.IST} title="IST" />
             </Tabs>
           </Navbar.Group>
@@ -49,6 +51,8 @@ export function Application() {
                 return <PrettyPrint value={game.value.ast} />;
               case View.Automaton:
                 return <Graphviz source={game.value.graphviz} />;
+              case View.Bench:
+                return <Bench game={game.value.ist} />;
               case View.CST:
                 return <PrettyPrint value={game.value.cst} />;
               case View.Graphviz:

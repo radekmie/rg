@@ -3,6 +3,7 @@ import { useReducer } from 'react';
 export enum View {
   AST,
   Automaton,
+  Bench,
   CST,
   Graphviz,
   HighLevel,
