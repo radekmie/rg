@@ -1,8 +1,15 @@
-import { Intent, Navbar, Tab, Tabs } from '@blueprintjs/core';
+import {
+  Alignment,
+  HTMLSelect,
+  Intent,
+  Navbar,
+  Tab,
+  Tabs,
+} from '@blueprintjs/core';
+import { ChangeEvent, useCallback, useMemo } from 'react';
 
-import { View, useActiveView } from '../hooks/useActiveView';
-import { useGame } from '../hooks/useGame';
-import { useSettings } from '../hooks/useSettings';
+import { presets } from '../const/presets';
+import { View, useApplicationState } from '../hooks/useApplicationState';
 import * as styles from './Application.module.css';
 import { Bench } from './Bench';
 import { Editor } from './Editor';
@@ -11,22 +18,38 @@ import { PrettyPrint } from './PrettyPrint';
 import { Settings } from './Settings';
 
 export function Application() {
-  const { settings, setSettings } = useSettings();
-  const { game, source, setSource } = useGame(settings);
-  const { activeView, setActiveView } = useActiveView();
+  const {
+    actions: { setPreset, setSettings, setSource, setView },
+    game,
+    state: { settings, source, view },
+  } = useApplicationState();
+
+  const options = useMemo(() => presets.map(game => game.name), []);
+  const onPreset = useCallback(
+    (event: ChangeEvent<HTMLSelectElement>) => {
+      setPreset(event.currentTarget.value);
+    },
+    [setPreset],
+  );
 
   return (
     <>
-      <Editor onChange={setSource} mode="text" value={source} />
       <section className={styles.panel}>
         <Navbar className={styles.clear}>
-          <Navbar.Group className={styles.wide}>
+          <Navbar.Group>
+            <HTMLSelect onChange={onPreset} options={options} />
+          </Navbar.Group>
+        </Navbar>
+        <Editor onChange={setSource} mode="text" value={source} />
+      </section>
+      <section className={styles.panel}>
+        <Navbar className={styles.clear}>
+          <Navbar.Group align={Alignment.RIGHT}>
             <Tabs
-              className={styles.wide}
               id="view"
-              onChange={setActiveView}
+              onChange={setView}
               renderActiveTabPanelOnly
-              selectedTabId={activeView}
+              selectedTabId={view}
             >
               <Tab disabled={!game.ok} id={View.Bench} title="Bench" />
               <Tab disabled={!game.ok} id={View.Automaton} title="Automaton" />
@@ -46,7 +69,7 @@ export function Application() {
         />
         {game.ok ? (
           (() => {
-            switch (activeView) {
+            switch (view) {
               case View.AST:
                 return <PrettyPrint value={game.value.ast} />;
               case View.Automaton:

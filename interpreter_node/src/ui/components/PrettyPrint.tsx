@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 
 import { pretty } from '../../utils';
 import { Editor } from './Editor';
-import * as styles from './PrettyPrint.module.css';
 
 export type PrettyPrintProps = { value: unknown };
 
@@ -21,13 +20,5 @@ export function PrettyPrint({ value }: PrettyPrintProps) {
     return ['json', JSON.stringify(value, null, 2)] as const;
   }, [value]);
 
-  return (
-    <Editor
-      className={styles.wrap}
-      editable={false}
-      mode={mode}
-      readOnly
-      value={text}
-    />
-  );
+  return <Editor editable={false} mode={mode} readOnly value={text} />;
 }

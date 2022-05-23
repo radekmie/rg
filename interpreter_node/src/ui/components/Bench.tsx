@@ -56,8 +56,12 @@ function BenchBlock({
     setLogs([]);
     setResult(Intent.PRIMARY);
     action(game, inputState.valueAsNumber, logger).then(
-      () => setResult(Intent.SUCCESS),
-      () => setResult(Intent.DANGER),
+      () => {
+        setResult(Intent.SUCCESS);
+      },
+      () => {
+        setResult(Intent.DANGER);
+      },
     );
   }, [action, game, inputState.valueAsNumber, logger]);
 
@@ -65,6 +69,7 @@ function BenchBlock({
     <Card className={styles.block} elevation={Elevation.TWO}>
       <FormGroup label={label} labelFor={id} labelInfo={labelInfo}>
         <NumericInput
+          disabled={result === Intent.PRIMARY}
           id={id}
           max={max}
           min={min}
