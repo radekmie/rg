@@ -4,6 +4,7 @@ import { SVGProps, useEffect, useState } from 'react';
 import { TOOL_PAN, UncontrolledReactSVGPanZoom } from 'react-svg-pan-zoom';
 
 import { Result } from '../../utils';
+import * as stylesApplication from './Application.module.css';
 import { Autosize } from './Autosize';
 import * as styles from './Graphviz.module.css';
 import { PrettyPrint } from './PrettyPrint';
@@ -45,13 +46,13 @@ export function Graphviz({ source }: GraphvizProps) {
   }, [source]);
 
   return svg === null ? (
-    <section className={styles.wrap}>
+    <section className={stylesApplication.wrapHidden}>
       <Spinner className={styles.spinner} />
     </section>
   ) : svg.ok ? (
     <Autosize>
       {({ height, width }) => (
-        <section className={styles.wrap}>
+        <section className={stylesApplication.wrapHidden}>
           <UncontrolledReactSVGPanZoom
             defaultTool={TOOL_PAN}
             height={height}

@@ -11,6 +11,7 @@ import { useCallback, useMemo, useState } from 'react';
 import * as ist from '../../ist/types';
 import { Logger, perf, run } from '../../run';
 import { useNumericState } from '../hooks/useNumericState';
+import * as stylesApplication from './Application.module.css';
 import * as styles from './Bench.module.css';
 
 type BenchBlockProps = {
@@ -86,11 +87,7 @@ function BenchBlock({
         {actionText}
       </Button>
 
-      <pre>
-        {logs.map(log => (
-          <div key={log}>{log}</div>
-        ))}
-      </pre>
+      <pre>{logs.join('\n')}</pre>
     </Card>
   );
 }
@@ -99,7 +96,7 @@ export type BenchProps = { game: ist.Game };
 
 export function Bench({ game }: BenchProps) {
   return (
-    <>
+    <section className={stylesApplication.wrapScroll}>
       <BenchBlock
         action={run}
         actionText="Run"
@@ -124,6 +121,6 @@ export function Bench({ game }: BenchProps) {
         max={10}
         min={0}
       />
-    </>
+    </section>
   );
 }

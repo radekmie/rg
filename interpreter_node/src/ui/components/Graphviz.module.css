@@ -2,12 +2,6 @@
   margin-top: 1rem;
 }
 
-.wrap {
-  height: 100%;
-  overflow: hidden;
-  width: 100%;
-}
-
 .wrap polygon[fill=white] {
   fill: transparent;
 }

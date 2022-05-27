@@ -20,3 +20,17 @@
   flex: 1;
   height: 0;
 }
+
+.wrapHidden,
+.wrapScroll {
+  height: 100%;
+  width: 100%;
+}
+
+.wrapHidden {
+  overflow: hidden;
+}
+
+.wrapScroll {
+  overflow: auto;
+}
