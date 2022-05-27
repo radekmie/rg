@@ -322,10 +322,12 @@ function evaluatePattern(
 
 function serializeValue(value: hl.Value): string {
   switch (value.kind) {
-    case 'ValueConstructor':
-      return `${value.identifier}__${value.args.map(serializeValue).join('_')}`;
+    case 'ValueConstructor': {
+      const args = value.args.map(serializeValue);
+      return `${value.identifier.toLowerCase()}__${args.join('_')}`;
+    }
     case 'ValueElement':
-      return value.identifier;
+      return value.identifier.toLowerCase();
     case 'ValueMap':
       throw new Error('Not implemented.');
   }

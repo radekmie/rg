@@ -8,6 +8,7 @@ import {
 } from '@blueprintjs/core';
 import { ChangeEvent, useCallback, useMemo } from 'react';
 
+import { Extension } from '../../types';
 import { presets } from '../const/presets';
 import { View, useApplicationState } from '../hooks/useApplicationState';
 import * as styles from './Application.module.css';
@@ -16,6 +17,11 @@ import { Editor } from './Editor';
 import { Graphviz } from './Graphviz';
 import { PrettyPrint } from './PrettyPrint';
 import { Settings } from './Settings';
+
+const extensionToMode = {
+  [Extension.hrg]: 'hrg',
+  [Extension.rg]: 'rg',
+} as const;
 
 export function Application() {
   const {
@@ -40,7 +46,11 @@ export function Application() {
             <HTMLSelect onChange={onPreset} options={options} />
           </Navbar.Group>
         </Navbar>
-        <Editor onChange={setSource} mode="text" value={source} />
+        <Editor
+          onChange={setSource}
+          mode={extensionToMode[settings.extension]}
+          value={source}
+        />
       </section>
       <section className={styles.panel}>
         <Navbar className={styles.clear}>
@@ -81,11 +91,11 @@ export function Application() {
               case View.Graphviz:
                 return <PrettyPrint value={game.value.graphviz} />;
               case View.HighLevel:
-                return <PrettyPrint value={game.value.source.hl} />;
+                return <Editor mode="hrg" value={game.value.source.hl ?? ''} />;
               case View.IST:
                 return <PrettyPrint value={game.value.ist} />;
               case View.LowLevel:
-                return <PrettyPrint value={game.value.source.ll} />;
+                return <Editor mode="rg" value={game.value.source.ll} />;
             }
           })()
         ) : (
