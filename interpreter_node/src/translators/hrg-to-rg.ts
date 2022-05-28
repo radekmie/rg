@@ -1,9 +1,6 @@
-import * as ll from '../ast/types';
+import { ast as hrg } from '../hrg';
+import { ast as rg } from '../rg';
 import * as utils from '../utils';
-import lexer from './lexer';
-import parser from './parser';
-import * as hl from './types';
-import visitor from './visitor';
 
 enum Ord {
   Eq,
@@ -15,7 +12,7 @@ function numberToOrd(number: number) {
   return number === 0 ? Ord.Eq : number < 0 ? Ord.Lt : Ord.Gt;
 }
 
-function compareValues(lhs: hl.Value, rhs: hl.Value): Ord {
+function compareValues(lhs: hrg.Value, rhs: hrg.Value): Ord {
   switch (lhs.kind) {
     case 'ValueConstructor': {
       utils.assert(rhs.kind === 'ValueConstructor', 'Incomparable values.');
@@ -46,10 +43,10 @@ function compareValues(lhs: hl.Value, rhs: hl.Value): Ord {
   }
 }
 
-function constructMap(entries: ll.NamedEntry[]) {
+function constructMap(entries: rg.NamedEntry[]) {
   utils.assert(entries.length > 0, 'At least one entry is required.');
 
-  type Count = { count: number; value: ll.Value };
+  type Count = { count: number; value: rg.Value };
   const valueCounts = entries.reduce<Record<string, Count>>((counts, entry) => {
     const hash = JSON.stringify(entry.value);
     if (hash in counts) {
@@ -65,24 +62,24 @@ function constructMap(entries: ll.NamedEntry[]) {
     (a, b) => b.count - a.count,
   )[0].value;
 
-  return ll.Map({
+  return rg.Map({
     entries: [
-      ll.DefaultEntry({ value: defaultValue }),
+      rg.DefaultEntry({ value: defaultValue }),
       ...entries.filter(entry => !evaluateEquality(entry.value, defaultValue)),
     ],
   });
 }
 
 function evaluateBinding(
-  pattern: hl.Pattern,
-  value: hl.Value,
-): Record<string, hl.Value> | undefined {
+  pattern: hrg.Pattern,
+  value: hrg.Value,
+): Record<string, hrg.Value> | undefined {
   switch (pattern.kind) {
     case 'PatternConstructor':
       return value.kind === 'ValueConstructor' &&
         value.identifier === pattern.identifier &&
         value.args.length === pattern.args.length
-        ? pattern.args.reduce<Record<string, hl.Value> | undefined>(
+        ? pattern.args.reduce<Record<string, hrg.Value> | undefined>(
             (binding, pattern, index) => {
               if (binding) {
                 const subbinding = evaluateBinding(pattern, value.args[index]);
@@ -108,8 +105,8 @@ function evaluateBinding(
 
 // eslint-disable-next-line complexity -- This function could be improved.
 function evaluateCondition(
-  expression: hl.Expression,
-  binding: Record<string, hl.Value>,
+  expression: hrg.Expression,
+  binding: Record<string, hrg.Value>,
 ): boolean {
   if (
     expression.kind !== 'ExpressionGt' &&
@@ -144,9 +141,9 @@ function evaluateCondition(
 }
 
 function evaluateDefaultValue(
-  type: ll.Type,
-  typeValues: Record<string, hl.Value[]>,
-): hl.Value {
+  type: rg.Type,
+  typeValues: Record<string, hrg.Value[]>,
+): hrg.Value {
   switch (type.kind) {
     case 'Arrow':
       utils.assert(
@@ -158,9 +155,9 @@ function evaluateDefaultValue(
         'Expected at least one identifier.',
       );
       // NOTE: Is this even correct?
-      return hl.ValueMap({
+      return hrg.ValueMap({
         entries: typeValues[type.lhs].map(value =>
-          hl.ValueMapEntry({
+          hrg.ValueMapEntry({
             key: value,
             value: evaluateDefaultValue(type.rhs, typeValues),
           }),
@@ -182,8 +179,8 @@ function evaluateDefaultValue(
 }
 
 function evaluateDomainValues(
-  domainValues: hl.DomainValue[],
-): Record<string, hl.Value>[] {
+  domainValues: hrg.DomainValue[],
+): Record<string, hrg.Value>[] {
   domainValues.slice(1).forEach(domainValue => {
     utils.assert(
       domainValues[0].identifier !== domainValue.identifier,
@@ -198,22 +195,22 @@ function evaluateDomainValues(
           const max = +domainValue.max;
           const min = +domainValue.min;
           return Array.from({ length: max - min + 1 }, (_, index) => ({
-            [domainValue.identifier]: hl.ValueElement({
+            [domainValue.identifier]: hrg.ValueElement({
               identifier: `${index + min}`,
             }),
           }));
         }
         case 'DomainSet':
           return domainValue.elements.map(identifier => ({
-            [domainValue.identifier]: hl.ValueElement({ identifier }),
+            [domainValue.identifier]: hrg.ValueElement({ identifier }),
           }));
       }
     })
-    .reduce<Record<string, hl.Value>[][]>(utils.cartesian, [[]])
+    .reduce<Record<string, hrg.Value>[][]>(utils.cartesian, [[]])
     .map(bindings => bindings.reduce((a, b) => Object.assign(a, b), {}));
 }
 
-function evaluateEquality(lhs: ll.Value, rhs: ll.Value): boolean {
+function evaluateEquality(lhs: rg.Value, rhs: rg.Value): boolean {
   switch (lhs.kind) {
     case 'Element':
       utils.assert(rhs.kind === 'Element', 'Equality for different kinds.');
@@ -225,23 +222,23 @@ function evaluateEquality(lhs: ll.Value, rhs: ll.Value): boolean {
 
 // eslint-disable-next-line complexity -- This function could be improved.
 function evaluateExpression(
-  expression: hl.Expression,
-  binding: Record<string, hl.Value>,
-): hl.Value {
+  expression: hrg.Expression,
+  binding: Record<string, hrg.Value>,
+): hrg.Value {
   switch (expression.kind) {
     case 'ExpressionAccess':
       throw new Error('Not implemented (ExpressionAccess).');
     case 'ExpressionAdd': {
       const lhs = evaluateExpressionIdentifier(expression.lhs, binding);
       const rhs = evaluateExpressionIdentifier(expression.rhs, binding);
-      return hl.ValueElement({ identifier: String(Number(lhs) + Number(rhs)) });
+      return hrg.ValueElement({ identifier: String(Number(lhs) + Number(rhs)) });
     }
     case 'ExpressionAnd':
       throw new Error('Not implemented (ExpressionAnd).');
     case 'ExpressionCall':
       throw new Error('Not implemented (ExpressionCall).');
     case 'ExpressionConstructor':
-      return hl.ValueConstructor({
+      return hrg.ValueConstructor({
         identifier: expression.identifier,
         args: expression.args.map(expression =>
           evaluateExpression(expression, binding),
@@ -260,7 +257,7 @@ function evaluateExpression(
     case 'ExpressionLiteral':
       return expression.identifier in binding
         ? binding[expression.identifier]
-        : hl.ValueElement({ identifier: expression.identifier });
+        : hrg.ValueElement({ identifier: expression.identifier });
     case 'ExpressionLt':
       throw new Error('Not implemented (ExpressionLt).');
     case 'ExpressionLte':
@@ -268,11 +265,11 @@ function evaluateExpression(
     case 'ExpressionOr':
       throw new Error('Not implemented (ExpressionOr).');
     case 'ExpressionMap':
-      return hl.ValueMap({
+      return hrg.ValueMap({
         entries: evaluateDomainValues(expression.domains)
           .map(subbinding => Object.assign({}, binding, subbinding))
           .map(binding =>
-            hl.ValueMapEntry({
+            hrg.ValueMapEntry({
               key: evaluatePattern(expression.pattern, binding),
               value: evaluateExpression(expression.expression, binding),
             }),
@@ -283,14 +280,14 @@ function evaluateExpression(
     case 'ExpressionSub': {
       const lhs = evaluateExpressionIdentifier(expression.lhs, binding);
       const rhs = evaluateExpressionIdentifier(expression.rhs, binding);
-      return hl.ValueElement({ identifier: String(Number(lhs) - Number(rhs)) });
+      return hrg.ValueElement({ identifier: String(Number(lhs) - Number(rhs)) });
     }
   }
 }
 
 function evaluateExpressionIdentifier(
-  expression: hl.Expression,
-  binding: Record<string, hl.Value>,
+  expression: hrg.Expression,
+  binding: Record<string, hrg.Value>,
 ): string {
   const value = evaluateExpression(expression, binding);
   utils.assert(value.kind === 'ValueElement', 'Expected ValueElement.');
@@ -298,17 +295,17 @@ function evaluateExpressionIdentifier(
 }
 
 function evaluatePattern(
-  pattern: hl.Pattern,
-  binding: Record<string, hl.Value>,
-): hl.Value {
+  pattern: hrg.Pattern,
+  binding: Record<string, hrg.Value>,
+): hrg.Value {
   switch (pattern.kind) {
     case 'PatternConstructor':
-      return hl.ValueConstructor({
+      return hrg.ValueConstructor({
         identifier: pattern.identifier,
         args: pattern.args.map(pattern => evaluatePattern(pattern, binding)),
       });
     case 'PatternLiteral':
-      return hl.ValueElement({ identifier: pattern.identifier });
+      return hrg.ValueElement({ identifier: pattern.identifier });
     case 'PatternVariable':
       utils.assert(
         pattern.identifier in binding,
@@ -320,7 +317,7 @@ function evaluatePattern(
   }
 }
 
-function serializeValue(value: hl.Value): string {
+function serializeValue(value: hrg.Value): string {
   switch (value.kind) {
     case 'ValueConstructor': {
       const args = value.args.map(serializeValue);
@@ -334,20 +331,20 @@ function serializeValue(value: hl.Value): string {
 }
 
 function translateAutomatonFunction(
-  automatonFunction: hl.AutomatonFunction,
-  automatonFunctions: hl.AutomatonFunction[],
-  exitEdgeName: ll.EdgeName | null,
-  returnEdgeName: ll.EdgeName | null,
-  edges: ll.EdgeDeclaration[],
-  variableDeclarations: ll.VariableDeclaration[],
+  automatonFunction: hrg.AutomatonFunction,
+  automatonFunctions: hrg.AutomatonFunction[],
+  exitEdgeName: rg.EdgeName | null,
+  returnEdgeName: rg.EdgeName | null,
+  edges: rg.EdgeDeclaration[],
+  variableDeclarations: rg.VariableDeclaration[],
   prefix: string,
 ) {
   translateAutomatonStatements(
     automatonFunction.body,
     automatonFunctions,
-    ll.EdgeName({
+    rg.EdgeName({
       parts: [
-        ll.Literal({ identifier: `${prefix}${automatonFunction.name}_0` }),
+        rg.Literal({ identifier: `${prefix}${automatonFunction.name}_0` }),
       ],
     }),
     exitEdgeName,
@@ -374,34 +371,34 @@ function RANDOM_RESET() {
 }
 
 function translateAutomatonStatements(
-  automatonStatements: hl.AutomatonStatement[],
-  automatonFunctions: hl.AutomatonFunction[],
-  entryEdgeName: ll.EdgeName,
-  exitEdgeName: ll.EdgeName | null,
-  returnEdgeName: ll.EdgeName | null,
-  edges: ll.EdgeDeclaration[],
-  variableDeclarations: ll.VariableDeclaration[],
+  automatonStatements: hrg.AutomatonStatement[],
+  automatonFunctions: hrg.AutomatonFunction[],
+  entryEdgeName: rg.EdgeName,
+  exitEdgeName: rg.EdgeName | null,
+  returnEdgeName: rg.EdgeName | null,
+  edges: rg.EdgeDeclaration[],
+  variableDeclarations: rg.VariableDeclaration[],
   prefix: string,
 ) {
   let currentEdgeName = entryEdgeName;
   for (const automatonStatement of automatonStatements) {
     switch (automatonStatement.kind) {
       case 'AutomatonAssignment': {
-        const nextEdgeName = ll.EdgeName({
-          parts: [ll.Literal({ identifier: RANDOM(prefix) })],
+        const nextEdgeName = rg.EdgeName({
+          parts: [rg.Literal({ identifier: RANDOM(prefix) })],
         });
         edges.push(
-          ll.EdgeDeclaration({
+          rg.EdgeDeclaration({
             lhs: currentEdgeName,
             rhs: nextEdgeName,
-            label: ll.Assignment({
-              lhs: automatonStatement.accessors.reduce<ll.Expression>(
+            label: rg.Assignment({
+              lhs: automatonStatement.accessors.reduce<rg.Expression>(
                 (expression, accessor) =>
-                  ll.Access({
+                  rg.Access({
                     lhs: expression,
                     rhs: translateExpression(accessor),
                   }),
-                ll.Reference({ identifier: automatonStatement.identifier }),
+                rg.Reference({ identifier: automatonStatement.identifier }),
               ),
               rhs: translateExpression(automatonStatement.expression),
             }),
@@ -411,8 +408,8 @@ function translateAutomatonStatements(
         continue;
       }
       case 'AutomatonBranch': {
-        const nextEdgeName = ll.EdgeName({
-          parts: [ll.Literal({ identifier: RANDOM(prefix) })],
+        const nextEdgeName = rg.EdgeName({
+          parts: [rg.Literal({ identifier: RANDOM(prefix) })],
         });
         automatonStatement.arms.forEach(arm => {
           translateAutomatonStatements(
@@ -436,8 +433,8 @@ function translateAutomatonStatements(
               automatonStatement.args.length === 1,
               'assert expects 1 argument',
             );
-            const nextEdgeName = ll.EdgeName({
-              parts: [ll.Literal({ identifier: RANDOM(prefix) })],
+            const nextEdgeName = rg.EdgeName({
+              parts: [rg.Literal({ identifier: RANDOM(prefix) })],
             });
             translateCondition(
               automatonStatement.args[0],
@@ -472,26 +469,26 @@ function translateAutomatonStatements(
               `Unknown variable "${assignmentVariable.identifier}" in forall.`,
             );
             const identifier = RANDOM('x');
-            const assignmentEdgeName = ll.EdgeName({
+            const assignmentEdgeName = rg.EdgeName({
               parts: [
-                ll.Literal({ identifier: RANDOM(prefix) }),
-                ll.Binding({
+                rg.Literal({ identifier: RANDOM(prefix) }),
+                rg.Binding({
                   identifier,
                   type: assignmentVariableDeclaration.type,
                 }),
               ],
             });
             edges.push(
-              ll.EdgeDeclaration({
+              rg.EdgeDeclaration({
                 lhs: currentEdgeName,
                 rhs: assignmentEdgeName,
-                label: ll.Assignment({
-                  lhs: ll.Reference({
+                label: rg.Assignment({
+                  lhs: rg.Reference({
                     identifier: assignmentVariable.identifier,
                   }),
-                  rhs: ll.Cast({
+                  rhs: rg.Cast({
                     lhs: assignmentVariableDeclaration.type,
-                    rhs: ll.Reference({ identifier }),
+                    rhs: rg.Reference({ identifier }),
                   }),
                 }),
               }),
@@ -507,10 +504,10 @@ function translateAutomatonStatements(
             );
             utils.assert(exitEdgeName, 'Return requires exitEdgeName.');
             edges.push(
-              ll.EdgeDeclaration({
+              rg.EdgeDeclaration({
                 lhs: currentEdgeName,
                 rhs: exitEdgeName,
-                label: ll.Skip({}),
+                label: rg.Skip({}),
               }),
             );
             return;
@@ -525,18 +522,18 @@ function translateAutomatonStatements(
               `Unknown automaton function "${automatonStatement.identifier}".`,
             );
             edges.push(
-              ll.EdgeDeclaration({
+              rg.EdgeDeclaration({
                 lhs: currentEdgeName,
-                rhs: ll.EdgeName({
+                rhs: rg.EdgeName({
                   parts: [
-                    ll.Literal({ identifier: `${automatonFunction.name}_0` }),
+                    rg.Literal({ identifier: `${automatonFunction.name}_0` }),
                   ],
                 }),
-                label: ll.Skip({}),
+                label: rg.Skip({}),
               }),
             );
-            const nextEdgeName = ll.EdgeName({
-              parts: [ll.Literal({ identifier: RANDOM(prefix) })],
+            const nextEdgeName = rg.EdgeName({
+              parts: [rg.Literal({ identifier: RANDOM(prefix) })],
             });
             translateAutomatonFunction(
               automatonFunction,
@@ -569,11 +566,11 @@ function translateAutomatonStatements(
         );
         return;
       case 'AutomatonWhen': {
-        const thenEdgeName = ll.EdgeName({
-          parts: [ll.Literal({ identifier: RANDOM(prefix) })],
+        const thenEdgeName = rg.EdgeName({
+          parts: [rg.Literal({ identifier: RANDOM(prefix) })],
         });
-        const elseEdgeName = ll.EdgeName({
-          parts: [ll.Literal({ identifier: RANDOM(prefix) })],
+        const elseEdgeName = rg.EdgeName({
+          parts: [rg.Literal({ identifier: RANDOM(prefix) })],
         });
         translateCondition(
           automatonStatement.expression,
@@ -605,10 +602,10 @@ function translateAutomatonStatements(
 
   if (returnEdgeName) {
     edges.push(
-      ll.EdgeDeclaration({
+      rg.EdgeDeclaration({
         lhs: currentEdgeName,
         rhs: returnEdgeName,
-        label: ll.Skip({}),
+        label: rg.Skip({}),
       }),
     );
   }
@@ -616,14 +613,14 @@ function translateAutomatonStatements(
 
 // eslint-disable-next-line complexity -- This function could be improved.
 function translateCondition(
-  expression: hl.Expression,
-  entryEdgeName: ll.EdgeName,
-  thenEdgeName: ll.EdgeName | null,
-  elseEdgeName: ll.EdgeName | null,
-  edges: ll.EdgeDeclaration[],
+  expression: hrg.Expression,
+  entryEdgeName: rg.EdgeName,
+  thenEdgeName: rg.EdgeName | null,
+  elseEdgeName: rg.EdgeName | null,
+  edges: rg.EdgeDeclaration[],
   prefix: string,
-  automatonFunctions: hl.AutomatonFunction[],
-  variableDeclarations: ll.VariableDeclaration[],
+  automatonFunctions: hrg.AutomatonFunction[],
+  variableDeclarations: rg.VariableDeclaration[],
 ) {
   switch (expression.kind) {
     case 'ExpressionAccess':
@@ -680,20 +677,20 @@ function translateCondition(
             `Unknown automaton function "${call.expression.identifier}".`,
           );
 
-          const automatonStartEdgeName = ll.EdgeName({
-            parts: [ll.Literal({ identifier: RANDOM(automatonPrefix) })],
+          const automatonStartEdgeName = rg.EdgeName({
+            parts: [rg.Literal({ identifier: RANDOM(automatonPrefix) })],
           });
           let automatonCurrentEdgeName = automatonStartEdgeName;
           for (const arg of call.args) {
-            const argEdgeName = ll.EdgeName({
-              parts: [ll.Literal({ identifier: RANDOM(automatonPrefix) })],
+            const argEdgeName = rg.EdgeName({
+              parts: [rg.Literal({ identifier: RANDOM(automatonPrefix) })],
             });
             edges.push(
-              ll.EdgeDeclaration({
+              rg.EdgeDeclaration({
                 lhs: automatonCurrentEdgeName,
                 rhs: argEdgeName,
-                label: ll.Assignment({
-                  lhs: ll.Reference({
+                label: rg.Assignment({
+                  lhs: rg.Reference({
                     identifier:
                       automatonFunction.args[call.args.indexOf(arg)].identifier,
                   }),
@@ -705,20 +702,20 @@ function translateCondition(
           }
 
           edges.push(
-            ll.EdgeDeclaration({
+            rg.EdgeDeclaration({
               lhs: automatonCurrentEdgeName,
-              rhs: ll.EdgeName({
+              rhs: rg.EdgeName({
                 parts: [
-                  ll.Literal({
+                  rg.Literal({
                     identifier: `${automatonPrefix}_${automatonName}_0`,
                   }),
                 ],
               }),
-              label: ll.Skip({}),
+              label: rg.Skip({}),
             }),
           );
-          const automatonEndEdgeName = ll.EdgeName({
-            parts: [ll.Literal({ identifier: RANDOM(automatonPrefix) })],
+          const automatonEndEdgeName = rg.EdgeName({
+            parts: [rg.Literal({ identifier: RANDOM(automatonPrefix) })],
           });
           translateAutomatonFunction(
             automatonFunction,
@@ -732,10 +729,10 @@ function translateCondition(
 
           if (thenEdgeName) {
             edges.push(
-              ll.EdgeDeclaration({
+              rg.EdgeDeclaration({
                 lhs: entryEdgeName,
                 rhs: thenEdgeName,
-                label: ll.Reachability({
+                label: rg.Reachability({
                   lhs: automatonStartEdgeName,
                   rhs: automatonEndEdgeName,
                   negated: false,
@@ -745,10 +742,10 @@ function translateCondition(
           }
           if (elseEdgeName) {
             edges.push(
-              ll.EdgeDeclaration({
+              rg.EdgeDeclaration({
                 lhs: entryEdgeName,
                 rhs: elseEdgeName,
-                label: ll.Reachability({
+                label: rg.Reachability({
                   lhs: automatonStartEdgeName,
                   rhs: automatonEndEdgeName,
                   negated: true,
@@ -771,10 +768,10 @@ function translateCondition(
     case 'ExpressionEq':
       if (thenEdgeName) {
         edges.push(
-          ll.EdgeDeclaration({
+          rg.EdgeDeclaration({
             lhs: entryEdgeName,
             rhs: thenEdgeName,
-            label: ll.Comparison({
+            label: rg.Comparison({
               lhs: translateExpression(expression.lhs),
               rhs: translateExpression(expression.rhs),
               negated: false,
@@ -784,10 +781,10 @@ function translateCondition(
       }
       if (elseEdgeName) {
         edges.push(
-          ll.EdgeDeclaration({
+          rg.EdgeDeclaration({
             lhs: entryEdgeName,
             rhs: elseEdgeName,
-            label: ll.Comparison({
+            label: rg.Comparison({
               lhs: translateExpression(expression.lhs),
               rhs: translateExpression(expression.rhs),
               negated: true,
@@ -813,10 +810,10 @@ function translateCondition(
     case 'ExpressionNe':
       if (thenEdgeName) {
         edges.push(
-          ll.EdgeDeclaration({
+          rg.EdgeDeclaration({
             lhs: entryEdgeName,
             rhs: thenEdgeName,
-            label: ll.Comparison({
+            label: rg.Comparison({
               lhs: translateExpression(expression.lhs),
               rhs: translateExpression(expression.rhs),
               negated: true,
@@ -826,10 +823,10 @@ function translateCondition(
       }
       if (elseEdgeName) {
         edges.push(
-          ll.EdgeDeclaration({
+          rg.EdgeDeclaration({
             lhs: entryEdgeName,
             rhs: elseEdgeName,
-            label: ll.Comparison({
+            label: rg.Comparison({
               lhs: translateExpression(expression.lhs),
               rhs: translateExpression(expression.rhs),
               negated: false,
@@ -839,8 +836,8 @@ function translateCondition(
       }
       return;
     case 'ExpressionOr': {
-      const falseEdgeName = ll.EdgeName({
-        parts: [ll.Literal({ identifier: RANDOM(prefix) })],
+      const falseEdgeName = rg.EdgeName({
+        parts: [rg.Literal({ identifier: RANDOM(prefix) })],
       });
       translateCondition(
         expression.lhs,
@@ -870,9 +867,9 @@ function translateCondition(
 }
 
 function translateDomainElement(
-  domainElement: hl.DomainElement,
-  gameDeclaration: hl.GameDeclaration,
-): hl.Value[] {
+  domainElement: hrg.DomainElement,
+  gameDeclaration: hrg.GameDeclaration,
+): hrg.Value[] {
   switch (domainElement.kind) {
     case 'DomainGenerator':
       return domainElement.args
@@ -884,18 +881,18 @@ function translateDomainElement(
               const max = +values.max;
               const min = +values.min;
               return Array.from({ length: max - min + 1 }, (_, index) =>
-                hl.ValueElement({ identifier: `${index + min}` }),
+                hrg.ValueElement({ identifier: `${index + min}` }),
               );
             }
             case 'DomainSet':
               return values.elements.map(identifier =>
-                hl.ValueElement({ identifier }),
+                hrg.ValueElement({ identifier }),
               );
           }
         })
-        .reduce<hl.Value[][]>(utils.cartesian, [[]])
+        .reduce<hrg.Value[][]>(utils.cartesian, [[]])
         .map(args =>
-          hl.ValueConstructor({ identifier: domainElement.identifier, args }),
+          hrg.ValueConstructor({ identifier: domainElement.identifier, args }),
         );
     case 'DomainLiteral': {
       const referencedDomain = gameDeclaration.domains.find(
@@ -904,25 +901,25 @@ function translateDomainElement(
       );
       return referencedDomain
         ? translateDomainElements(referencedDomain.elements, gameDeclaration)
-        : [hl.ValueElement({ identifier: domainElement.identifier })];
+        : [hrg.ValueElement({ identifier: domainElement.identifier })];
     }
   }
 }
 
 function translateDomainElements(
-  domainElements: hl.DomainElement[],
-  gameDeclaration: hl.GameDeclaration,
-): hl.Value[] {
+  domainElements: hrg.DomainElement[],
+  gameDeclaration: hrg.GameDeclaration,
+): hrg.Value[] {
   return domainElements.flatMap(domainElement =>
     translateDomainElement(domainElement, gameDeclaration),
   );
 }
 
 // eslint-disable-next-line complexity -- This function could be improved.
-function translateExpression(expression: hl.Expression): ll.Expression {
+function translateExpression(expression: hrg.Expression): rg.Expression {
   switch (expression.kind) {
     case 'ExpressionAccess':
-      return ll.Access({
+      return rg.Access({
         lhs: translateExpression(expression.lhs),
         rhs: translateExpression(expression.rhs),
       });
@@ -931,9 +928,9 @@ function translateExpression(expression: hl.Expression): ll.Expression {
     case 'ExpressionAnd':
       throw new Error('Not implemented (ExpressionAnd).');
     case 'ExpressionCall':
-      return expression.args.reduce<ll.Expression>(
+      return expression.args.reduce<rg.Expression>(
         (expression, arg) =>
-          ll.Access({ lhs: expression, rhs: translateExpression(arg) }),
+          rg.Access({ lhs: expression, rhs: translateExpression(arg) }),
         translateExpression(expression.expression),
       );
     case 'ExpressionConstructor':
@@ -947,7 +944,7 @@ function translateExpression(expression: hl.Expression): ll.Expression {
     case 'ExpressionIf':
       throw new Error('Not implemented (ExpressionIf).');
     case 'ExpressionLiteral':
-      return ll.Reference({ identifier: expression.identifier });
+      return rg.Reference({ identifier: expression.identifier });
     case 'ExpressionLt':
       throw new Error('Not implemented (ExpressionLt).');
     case 'ExpressionLte':
@@ -964,9 +961,9 @@ function translateExpression(expression: hl.Expression): ll.Expression {
 }
 
 function translateFunctionDeclaration(
-  functionDeclaration: hl.FunctionDeclaration,
-  typeValues: Record<string, hl.Value[]>,
-): ll.ConstantDeclaration {
+  functionDeclaration: hrg.FunctionDeclaration,
+  typeValues: Record<string, hrg.Value[]>,
+): rg.ConstantDeclaration {
   utils.assert(
     functionDeclaration.cases[0].args.length === 1,
     'Only simple functions are allowed.',
@@ -1005,9 +1002,9 @@ function translateFunctionDeclaration(
     });
     utils.assert(arm, `No FunctionCase found for "${value.identifier}".`);
     const { binding, functionCase } = arm;
-    return ll.NamedEntry({
+    return rg.NamedEntry({
       identifier: serializeValue(value),
-      value: ll.Element({
+      value: rg.Element({
         identifier: serializeValue(
           evaluateExpression(functionCase.body, binding),
         ),
@@ -1015,7 +1012,7 @@ function translateFunctionDeclaration(
     });
   });
 
-  return ll.ConstantDeclaration({
+  return rg.ConstantDeclaration({
     identifier: functionDeclaration.identifier,
     type,
     value: constructMap(entries),
@@ -1023,8 +1020,8 @@ function translateFunctionDeclaration(
 }
 
 function translateGameDeclaration(
-  gameDeclaration: hl.GameDeclaration,
-): ll.GameDeclaration {
+  gameDeclaration: hrg.GameDeclaration,
+): rg.GameDeclaration {
   const { types, typeValues } = gameDeclaration.domains.reduce(
     (result, domainDeclaration) => {
       const values = translateDomainElements(
@@ -1032,9 +1029,9 @@ function translateGameDeclaration(
         gameDeclaration,
       );
       result.types.push(
-        ll.TypeDeclaration({
+        rg.TypeDeclaration({
           identifier: domainDeclaration.identifier,
-          type: ll.Set({ identifiers: values.map(serializeValue) }),
+          type: rg.Set({ identifiers: values.map(serializeValue) }),
         }),
       );
       utils.assert(
@@ -1045,8 +1042,8 @@ function translateGameDeclaration(
       return result;
     },
     {
-      types: [] as ll.TypeDeclaration[],
-      typeValues: {} as Record<string, hl.Value[]>,
+      types: [] as rg.TypeDeclaration[],
+      typeValues: {} as Record<string, hrg.Value[]>,
     },
   );
   const constants = gameDeclaration.functions.map(functionDeclaration =>
@@ -1058,21 +1055,21 @@ function translateGameDeclaration(
 
   variables.push(
     translateVariableDeclaration(
-      hl.VariableDeclaration({
+      hrg.VariableDeclaration({
         identifier: 'player',
-        type: hl.TypeName({ identifier: 'Player' }),
-        defaultValue: hl.ExpressionLiteral({ identifier: 'keeper' }),
+        type: hrg.TypeName({ identifier: 'Player' }),
+        defaultValue: hrg.ExpressionLiteral({ identifier: 'keeper' }),
       }),
       typeValues,
     ),
   );
   variables.push(
     translateVariableDeclaration(
-      hl.VariableDeclaration({
+      hrg.VariableDeclaration({
         identifier: 'score',
-        type: hl.TypeFunction({
-          lhs: hl.TypeName({ identifier: 'Player' }),
-          rhs: hl.TypeName({ identifier: 'Score' }),
+        type: hrg.TypeFunction({
+          lhs: hrg.TypeName({ identifier: 'Player' }),
+          rhs: hrg.TypeName({ identifier: 'Score' }),
         }),
         defaultValue: null,
       }),
@@ -1081,10 +1078,10 @@ function translateGameDeclaration(
   );
 
   const edges = [
-    ll.EdgeDeclaration({
-      label: ll.Skip({}),
-      lhs: ll.EdgeName({ parts: [ll.Literal({ identifier: 'begin' })] }),
-      rhs: ll.EdgeName({ parts: [ll.Literal({ identifier: 'rules_0' })] }),
+    rg.EdgeDeclaration({
+      label: rg.Skip({}),
+      lhs: rg.EdgeName({ parts: [rg.Literal({ identifier: 'begin' })] }),
+      rhs: rg.EdgeName({ parts: [rg.Literal({ identifier: 'rules_0' })] }),
     }),
   ];
 
@@ -1096,44 +1093,44 @@ function translateGameDeclaration(
   translateAutomatonFunction(
     rules,
     gameDeclaration.automaton,
-    ll.EdgeName({ parts: [ll.Literal({ identifier: 'end' })] }),
-    ll.EdgeName({ parts: [ll.Literal({ identifier: 'end' })] }),
+    rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
+    rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
     edges,
     variables,
     '',
   );
 
-  return ll.GameDeclaration({ constants, edges, types, variables });
+  return rg.GameDeclaration({ constants, edges, types, variables });
 }
 
-function translateType(type: hl.Type): ll.Type {
+function translateType(type: hrg.Type): rg.Type {
   switch (type.kind) {
     case 'TypeFunction': {
       utils.assert(
         type.lhs.kind === 'TypeName',
         'Arrow lhs must be TypeReference.',
       );
-      return ll.Arrow({
+      return rg.Arrow({
         lhs: type.lhs.identifier,
         rhs: translateType(type.rhs),
       });
     }
     case 'TypeName':
-      return ll.TypeReference({ identifier: type.identifier });
+      return rg.TypeReference({ identifier: type.identifier });
   }
 }
 
-function translateValue(value: hl.Value): ll.Value {
+function translateValue(value: hrg.Value): rg.Value {
   switch (value.kind) {
     case 'ValueConstructor':
-      return ll.Element({ identifier: serializeValue(value) });
+      return rg.Element({ identifier: serializeValue(value) });
     case 'ValueElement':
-      return ll.Element({ identifier: value.identifier });
+      return rg.Element({ identifier: value.identifier });
     case 'ValueMap':
       utils.assert(value.entries.length, 'At least one entry is required.');
       return constructMap(
         value.entries.map(entry =>
-          ll.NamedEntry({
+          rg.NamedEntry({
             identifier: serializeValue(entry.key),
             value: translateValue(entry.value),
           }),
@@ -1143,11 +1140,11 @@ function translateValue(value: hl.Value): ll.Value {
 }
 
 function translateVariableDeclaration(
-  variableDeclaration: hl.VariableDeclaration,
-  typeValues: Record<string, hl.Value[]>,
-): ll.VariableDeclaration {
+  variableDeclaration: hrg.VariableDeclaration,
+  typeValues: Record<string, hrg.Value[]>,
+): rg.VariableDeclaration {
   const type = translateType(variableDeclaration.type);
-  return ll.VariableDeclaration({
+  return rg.VariableDeclaration({
     identifier: variableDeclaration.identifier,
     defaultValue: translateValue(
       variableDeclaration.defaultValue === null
@@ -1158,22 +1155,7 @@ function translateVariableDeclaration(
   });
 }
 
-export default function translate(source: string) {
+export default function translate(gameDeclaration: hrg.GameDeclaration) {
   RANDOM_RESET();
-
-  const result = lexer.tokenize(source);
-  if (result.errors.length > 0) {
-    throw Object.assign(new Error('Lexer error'), { errors: result.errors });
-  }
-
-  parser.input = result.tokens;
-  const cstNode = parser.GameDeclaration();
-
-  if (parser.errors.length > 0) {
-    throw Object.assign(new Error('Parser error'), { errors: parser.errors });
-  }
-
-  const hl: hl.GameDeclaration = visitor.visitNode(cstNode);
-  const ll = translateGameDeclaration(hl);
-  return ll;
+  return translateGameDeclaration(gameDeclaration);
 }

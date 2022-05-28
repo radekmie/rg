@@ -9,10 +9,10 @@ import {
   ViewUpdate,
 } from '@codemirror/view';
 import CodeMirror, { ReactCodeMirrorProps } from '@uiw/react-codemirror';
-import { Lexer } from 'chevrotain';
+import { BaseParser, Lexer } from 'chevrotain';
 
-import lexerLL from '../../cst/lexer';
-import lexerHL from '../../down-level/lexer';
+import * as hrg from '../../hrg';
+import * as rg from '../../rg';
 import * as styles from './Application.module.css';
 import { Autosize } from './Autosize';
 
@@ -25,7 +25,7 @@ function mark(tag: string) {
   return marks[tag];
 }
 
-function createChevrotainHighlighter(lexer: Lexer) {
+function createChevrotainHighlighter(lexer: Lexer, parse: BaseParser) {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
@@ -55,8 +55,8 @@ function createChevrotainHighlighter(lexer: Lexer) {
           }
         }
 
-        // Tokens.
-        const { tokens } = lexer.tokenize(source);
+        // Lexing.
+        const { errors, tokens } = lexer.tokenize(source);
         for (const {
           image,
           startOffset: start,
@@ -74,6 +74,12 @@ function createChevrotainHighlighter(lexer: Lexer) {
           }
         }
 
+        // Parsing.
+        // if (errors.length === 0) {
+        //   parser.input = tokens;
+        //   const cstNode = parser.GameDeclaration();
+        // }
+
         // Build decorations.
         marks.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
 
@@ -90,10 +96,10 @@ function createChevrotainHighlighter(lexer: Lexer) {
 }
 
 const modeToExtensions = {
-  hrg: [createChevrotainHighlighter(lexerHL)],
+  hrg: [createChevrotainHighlighter(hrg.cst.lexer, hrg.cst.parser)],
   javascript: [javascript()],
   json: [json()],
-  rg: [createChevrotainHighlighter(lexerLL)],
+  rg: [createChevrotainHighlighter(rg.cst.lexer, rg.cst.parser)],
   text: [],
 };
 

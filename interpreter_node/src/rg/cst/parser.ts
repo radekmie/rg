@@ -1,25 +1,25 @@
 import { CstParser } from 'chevrotain';
 
-import * as lexer from './lexer';
+import * as tokens from './tokens';
 
-class RGParserClass extends CstParser {
+class ParserClass extends CstParser {
   ConstantDeclaration = this.RULE('ConstantDeclaration', () => {
-    this.CONSUME(lexer.KeywordConst);
-    this.CONSUME(lexer.Identifier);
-    this.CONSUME(lexer.Colon);
+    this.CONSUME(tokens.KeywordConst);
+    this.CONSUME(tokens.Identifier);
+    this.CONSUME(tokens.Colon);
     this.SUBRULE(this.Type);
-    this.CONSUME(lexer.Equal);
+    this.CONSUME(tokens.Equal);
     this.SUBRULE(this.Value);
-    this.CONSUME(lexer.Semicolon);
+    this.CONSUME(tokens.Semicolon);
   });
 
   EdgeDeclaration = this.RULE('EdgeDeclaration', () => {
     this.SUBRULE(this.EdgeName);
-    this.CONSUME(lexer.Comma);
+    this.CONSUME(tokens.Comma);
     this.SUBRULE2(this.EdgeName);
-    this.CONSUME(lexer.Colon);
+    this.CONSUME(tokens.Colon);
     this.SUBRULE(this.EdgeLabel);
-    this.CONSUME(lexer.Semicolon);
+    this.CONSUME(tokens.Semicolon);
   });
 
   EdgeLabel = this.RULE('EdgeLabel', () => {
@@ -29,9 +29,9 @@ class RGParserClass extends CstParser {
           ALT: () => {
             this.SUBRULE3(this.Expression);
             this.OR2([
-              { ALT: () => this.CONSUME(lexer.BangEqual) },
-              { ALT: () => this.CONSUME(lexer.Equal) },
-              { ALT: () => this.CONSUME(lexer.EqualEqual) },
+              { ALT: () => this.CONSUME(tokens.BangEqual) },
+              { ALT: () => this.CONSUME(tokens.Equal) },
+              { ALT: () => this.CONSUME(tokens.EqualEqual) },
             ]);
             this.SUBRULE4(this.Expression);
           },
@@ -39,12 +39,12 @@ class RGParserClass extends CstParser {
         {
           ALT: () => {
             this.OR3([
-              { ALT: () => this.CONSUME(lexer.Bang) },
-              { ALT: () => this.CONSUME(lexer.Question) },
+              { ALT: () => this.CONSUME(tokens.Bang) },
+              { ALT: () => this.CONSUME(tokens.Question) },
             ]);
-            this.CONSUME(lexer.Identifier);
-            this.CONSUME(lexer.Arrow);
-            this.CONSUME2(lexer.Identifier);
+            this.CONSUME(tokens.Identifier);
+            this.CONSUME(tokens.Arrow);
+            this.CONSUME2(tokens.Identifier);
           },
         },
       ]);
@@ -61,39 +61,39 @@ class RGParserClass extends CstParser {
     this.OR([
       {
         ALT: () => {
-          this.CONSUME(lexer.Identifier);
+          this.CONSUME(tokens.Identifier);
         },
       },
       {
         ALT: () => {
-          this.CONSUME(lexer.ParenthesisLeft);
-          this.CONSUME2(lexer.Identifier);
-          this.CONSUME(lexer.Colon);
+          this.CONSUME(tokens.ParenthesisLeft);
+          this.CONSUME2(tokens.Identifier);
+          this.CONSUME(tokens.Colon);
           this.SUBRULE(this.Type);
-          this.CONSUME(lexer.ParenthesisRight);
+          this.CONSUME(tokens.ParenthesisRight);
         },
       },
     ]);
   });
 
   Expression = this.RULE('Expression', () => {
-    this.CONSUME(lexer.Identifier);
+    this.CONSUME(tokens.Identifier);
     this.OPTION(() => {
       this.OR([
         {
           ALT: () => {
             this.AT_LEAST_ONE(() => {
-              this.CONSUME(lexer.BracketLeft);
+              this.CONSUME(tokens.BracketLeft);
               this.SUBRULE(this.Expression);
-              this.CONSUME(lexer.BracketRight);
+              this.CONSUME(tokens.BracketRight);
             });
           },
         },
         {
           ALT: () => {
-            this.CONSUME(lexer.ParenthesisLeft);
+            this.CONSUME(tokens.ParenthesisLeft);
             this.SUBRULE2(this.Expression);
-            this.CONSUME(lexer.ParenthesisRight);
+            this.CONSUME(tokens.ParenthesisRight);
           },
         },
       ]);
@@ -115,53 +115,53 @@ class RGParserClass extends CstParser {
     this.OR([
       {
         ALT: () => {
-          this.CONSUME(lexer.Identifier);
+          this.CONSUME(tokens.Identifier);
           this.OPTION(() => {
-            this.CONSUME(lexer.Arrow);
+            this.CONSUME(tokens.Arrow);
             this.SUBRULE(this.Type);
           });
         },
       },
       {
         ALT: () => {
-          this.CONSUME(lexer.BraceLeft);
+          this.CONSUME(tokens.BraceLeft);
           this.MANY_SEP({
-            SEP: lexer.Comma,
+            SEP: tokens.Comma,
             DEF: () => {
-              this.CONSUME2(lexer.Identifier);
+              this.CONSUME2(tokens.Identifier);
             },
           });
-          this.CONSUME(lexer.BraceRight);
+          this.CONSUME(tokens.BraceRight);
         },
       },
     ]);
   });
 
   TypeDeclaration = this.RULE('TypeDeclaration', () => {
-    this.CONSUME(lexer.KeywordType);
-    this.CONSUME(lexer.Identifier);
-    this.CONSUME(lexer.Equal);
+    this.CONSUME(tokens.KeywordType);
+    this.CONSUME(tokens.Identifier);
+    this.CONSUME(tokens.Equal);
     this.SUBRULE(this.Type);
-    this.CONSUME(lexer.Semicolon);
+    this.CONSUME(tokens.Semicolon);
   });
 
   Value = this.RULE('Value', () => {
     this.OR([
       {
         ALT: () => {
-          this.CONSUME(lexer.Identifier);
+          this.CONSUME(tokens.Identifier);
         },
       },
       {
         ALT: () => {
-          this.CONSUME(lexer.BraceLeft);
+          this.CONSUME(tokens.BraceLeft);
           this.MANY_SEP({
-            SEP: lexer.Comma,
+            SEP: tokens.Comma,
             DEF: () => {
               this.SUBRULE(this.ValueEntry);
             },
           });
-          this.CONSUME(lexer.BraceRight);
+          this.CONSUME(tokens.BraceRight);
         },
       },
     ]);
@@ -169,26 +169,26 @@ class RGParserClass extends CstParser {
 
   ValueEntry = this.RULE('ValueEntry', () => {
     this.OPTION(() => {
-      this.CONSUME(lexer.Identifier);
+      this.CONSUME(tokens.Identifier);
     });
-    this.CONSUME(lexer.Colon);
+    this.CONSUME(tokens.Colon);
     this.SUBRULE(this.Value);
   });
 
   VariableDeclaration = this.RULE('VariableDeclaration', () => {
-    this.CONSUME(lexer.KeywordVar);
-    this.CONSUME(lexer.Identifier);
-    this.CONSUME(lexer.Colon);
+    this.CONSUME(tokens.KeywordVar);
+    this.CONSUME(tokens.Identifier);
+    this.CONSUME(tokens.Colon);
     this.SUBRULE(this.Type);
-    this.CONSUME(lexer.Equal);
+    this.CONSUME(tokens.Equal);
     this.SUBRULE(this.Value);
-    this.CONSUME(lexer.Semicolon);
+    this.CONSUME(tokens.Semicolon);
   });
 
   constructor() {
-    super(lexer.tokens, { maxLookahead: 2 });
+    super(tokens.tokens, { maxLookahead: 2 });
     this.performSelfAnalysis();
   }
 }
 
-export default new RGParserClass();
+export const parser = new ParserClass();

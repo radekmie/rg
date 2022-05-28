@@ -1,5 +1,5 @@
-import * as ist from '../ist/types';
-import * as utils from '../utils';
+import * as utils from '../../utils';
+import * as ist from './types';
 
 export function cloneState(state: ist.State) {
   return ist.State({

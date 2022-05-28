@@ -81,21 +81,21 @@ export function Application() {
           (() => {
             switch (view) {
               case View.AST:
-                return <PrettyPrint value={game.value.ast} />;
+                return <PrettyPrint value={game.value.astRg} />;
               case View.Automaton:
-                return <Graphviz source={game.value.graphviz} />;
+                return <Graphviz source={game.value.graphvizRg} />;
               case View.Bench:
-                return <Bench game={game.value.ist} />;
+                return <Bench game={game.value.istRg} />;
               case View.CST:
-                return <PrettyPrint value={game.value.cst} />;
+                return <PrettyPrint value={game.value.cstRg} />;
               case View.Graphviz:
-                return <PrettyPrint value={game.value.graphviz} />;
+                return <PrettyPrint value={game.value.graphvizRg} />;
               case View.HighLevel:
-                return <Editor mode="hrg" value={game.value.source.hl ?? ''} />;
+                return <Editor mode="hrg" value={game.value.sourceHrg ?? ''} />;
               case View.IST:
-                return <PrettyPrint value={game.value.ist} />;
+                return <PrettyPrint value={game.value.istRg} />;
               case View.LowLevel:
-                return <Editor mode="rg" value={game.value.source.ll} />;
+                return <Editor mode="rg" value={game.value.sourceRg} />;
             }
           })()
         ) : (

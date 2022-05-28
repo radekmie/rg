@@ -1,4 +1,4 @@
-import { creator } from '../utils';
+import { creator } from '../../utils';
 
 export const Access = creator<Access>('Access');
 export type Access = { kind: 'Access'; lhs: Expression; rhs: Expression };

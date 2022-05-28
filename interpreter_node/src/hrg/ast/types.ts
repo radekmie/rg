@@ -1,4 +1,4 @@
-import { creator } from '../utils';
+import { creator } from '../../utils';
 
 export const AutomatonAssignment = creator<AutomatonAssignment>(
   'AutomatonAssignment',

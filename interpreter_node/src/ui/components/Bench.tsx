@@ -8,16 +8,19 @@ import {
 } from '@blueprintjs/core';
 import { useCallback, useMemo, useState } from 'react';
 
-import * as ist from '../../ist/types';
-import { Logger, perf, run } from '../../run';
+import * as rg from '../../rg';
 import { useNumericState } from '../hooks/useNumericState';
 import * as stylesApplication from './Application.module.css';
 import * as styles from './Bench.module.css';
 
 type BenchBlockProps = {
-  action: (game: ist.Game, value: number, logger: Logger) => Promise<void>;
+  action: (
+    game: rg.ist.Game,
+    value: number,
+    logger: rg.ist.Logger,
+  ) => Promise<void>;
   actionText: string;
-  game: ist.Game;
+  game: rg.ist.Game;
   id?: string;
   initialValue: number;
   label: string;
@@ -92,13 +95,13 @@ function BenchBlock({
   );
 }
 
-export type BenchProps = { game: ist.Game };
+export type BenchProps = { game: rg.ist.Game };
 
 export function Bench({ game }: BenchProps) {
   return (
     <section className={stylesApplication.wrapScroll}>
       <BenchBlock
-        action={run}
+        action={rg.ist.run}
         actionText="Run"
         game={game}
         id="iterations"
@@ -110,7 +113,7 @@ export function Bench({ game }: BenchProps) {
         min={1}
       />
       <BenchBlock
-        action={perf}
+        action={rg.ist.perf}
         actionText="Bench"
         game={game}
         id="depth"

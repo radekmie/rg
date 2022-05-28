@@ -1,11 +1,10 @@
 .options label {
   display: inline-block;
   font-family: monospace;
-  margin: 0;
-  width: 9ch;
+  margin: 0 2ch 0 0;
 }
 
 .options label:first-child {
   font-weight: bold;
-  min-width: 13ch;
+  width: 9ch;
 }

@@ -1,7 +1,7 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 
-import { openGame } from '../../io';
-import { Optimize, Settings } from '../../types';
+import { parse } from '../../parse';
+import { Settings } from '../../types';
 import * as utils from '../../utils';
 import { safe } from '../../utils';
 import { presets } from '../const/presets';
@@ -27,7 +27,7 @@ const initialPreset = presets[0];
 const initialState: State = {
   settings: {
     extension: initialPreset.extension,
-    optimize: Optimize.yes,
+    flags: { compactSkipEdges: true },
   },
   source: initialPreset.source,
   view: View.Automaton,
@@ -61,7 +61,7 @@ export function useApplicationState() {
 
   // Use deferred source as `openGame` is potentially slow.
   const gameInput = useDeferredValue([state.source, state.settings] as const);
-  const game = useMemo(() => safe(() => openGame(...gameInput)), [gameInput]);
+  const game = useMemo(() => safe(() => parse(...gameInput)), [gameInput]);
 
   return { actions, game, state };
 }

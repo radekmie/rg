@@ -1,6 +1,6 @@
-import * as ast from '../ast/types';
+import * as ast from '../ast';
 
-function compactAutomaton(edges: ast.EdgeDeclaration[]) {
+export function compactSkipEdges({ edges }: ast.GameDeclaration) {
   // eslint-disable-next-line no-constant-condition -- Fixpoint approach is easier.
   while (true) {
     const edgesLength = edges.length;
@@ -26,8 +26,4 @@ function compactAutomaton(edges: ast.EdgeDeclaration[]) {
       break;
     }
   }
-}
-
-export function optimize(gameDeclaration: ast.GameDeclaration) {
-  compactAutomaton(gameDeclaration.edges);
 }

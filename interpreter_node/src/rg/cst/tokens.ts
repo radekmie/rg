@@ -46,6 +46,3 @@ export const Semicolon = token('Semicolon', /;/);
 // Removables.
 export const Comment = token('Comment', /\/\/.*?(\n|\r\n?)/, null);
 export const WhiteSpace = token('WhiteSpace', /\s+/, null);
-
-// Create shared lexer instance.
-export default new Lexer(tokens);

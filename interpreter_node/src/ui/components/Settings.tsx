@@ -1,8 +1,17 @@
-import { Callout, Intent, Radio, RadioGroup } from '@blueprintjs/core';
+import {
+  Callout,
+  Checkbox,
+  Intent,
+  Label,
+  Radio,
+  RadioGroup,
+} from '@blueprintjs/core';
 import { FormEvent, useCallback } from 'react';
 
-import { Extension, Optimize, Settings } from '../../types';
+import { Extension, Settings } from '../../types';
 import * as styles from './Settings.module.css';
+
+const configurableFlags = ['compactSkipEdges'] as const;
 
 export type SettingsProps = {
   intent: Intent;
@@ -12,17 +21,15 @@ export type SettingsProps = {
 
 export function Settings({ intent, onChange, value }: SettingsProps) {
   const onExtension = useCallback(
-    (event: FormEvent<HTMLInputElement>) => {
-      const extension = event.currentTarget.value as Extension;
-      onChange(value => ({ ...value, extension }));
+    ({ currentTarget: { value } }: FormEvent<HTMLInputElement>) => {
+      onChange(x => ({ ...x, extension: value as Extension }));
     },
     [onChange],
   );
 
-  const onOptimize = useCallback(
-    (event: FormEvent<HTMLInputElement>) => {
-      const optimize = event.currentTarget.value as Optimize;
-      onChange(value => ({ ...value, optimize }));
+  const onFlag = useCallback(
+    ({ currentTarget: { checked, name } }: FormEvent<HTMLInputElement>) => {
+      onChange(x => ({ ...x, flags: { ...x.flags, [name]: checked } }));
     },
     [onChange],
   );
@@ -38,15 +45,18 @@ export function Settings({ intent, onChange, value }: SettingsProps) {
         <Radio label="hrg" value={Extension.hrg} />
         <Radio label="rg" value={Extension.rg} />
       </RadioGroup>
-      <RadioGroup
-        className={styles.options}
-        label="Optimize"
-        onChange={onOptimize}
-        selectedValue={value.optimize}
-      >
-        <Radio label="Yes" value={Optimize.yes} />
-        <Radio label="No" value={Optimize.no} />
-      </RadioGroup>
+      <section className={styles.options}>
+        <Label>Flags</Label>
+        {configurableFlags.map(flag => (
+          <Checkbox
+            checked={value.flags[flag]}
+            key={flag}
+            label={flag}
+            name={flag}
+            onChange={onFlag}
+          />
+        ))}
+      </section>
     </Callout>
   );
 }

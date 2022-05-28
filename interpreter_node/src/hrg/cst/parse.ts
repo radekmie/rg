@@ -1,7 +1,7 @@
-import lexer from './lexer';
-import parser from './parser';
+import { lexer } from './lexer';
+import { parser } from './parser';
 
-export default function parse(source: string) {
+export function parse(source: string) {
   const result = lexer.tokenize(source);
   if (result.errors.length > 0) {
     throw Object.assign(new Error('Lexer error'), { errors: result.errors });

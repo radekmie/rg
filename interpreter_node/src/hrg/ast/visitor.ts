@@ -1,10 +1,14 @@
-import { CstChildrenDictionary as Context, CstElement } from 'chevrotain';
+import {
+  CstChildrenDictionary as Context,
+  CstElement,
+  CstNode,
+} from 'chevrotain';
 
-import * as utils from '../utils';
-import parser from './parser';
+import * as utils from '../../utils';
+import * as cst from '../cst';
 import * as ast from './types';
 
-class HLVisitor extends parser.getBaseCstVisitorConstructor() {
+class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
   constructor() {
     super();
     this.validateVisitor();
@@ -439,4 +443,7 @@ class HLVisitor extends parser.getBaseCstVisitorConstructor() {
   }
 }
 
-export default new HLVisitor();
+export const visitor = new Visitor();
+export function visit(cstNode: CstNode): ast.GameDeclaration {
+  return visitor.visitNode(cstNode);
+}

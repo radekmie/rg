@@ -1,8 +1,8 @@
-import * as ast from '../ast/types';
-import * as utils from '../utils';
+import * as utils from '../../utils';
+import * as ast from '../ast';
 import * as ist from './types';
 
-export default function build(gameDeclaration: ast.GameDeclaration) {
+export function build(gameDeclaration: ast.GameDeclaration) {
   const game = ist.Game({
     constants: Object.create(null),
     edges: [],

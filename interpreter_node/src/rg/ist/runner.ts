@@ -1,12 +1,12 @@
+import * as utils from '../../utils';
 import {
   cloneState,
   cloneValue,
   createInitialState,
   evaluateEquality,
   nextStates,
-} from './ist/state';
-import * as ist from './ist/types';
-import * as utils from './utils';
+} from './state';
+import * as ist from './types';
 
 export type Logger = { log: (message: string) => void };
 

@@ -1,9 +1,13 @@
-import { CstChildrenDictionary as Context, CstElement } from 'chevrotain';
+import {
+  CstChildrenDictionary as Context,
+  CstElement,
+  CstNode,
+} from 'chevrotain';
 
-import parser from '../cst/parser';
+import * as cst from '../cst';
 import * as ast from './types';
 
-class RGVisitor extends parser.getBaseCstVisitorConstructor() {
+class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
   constructor() {
     super();
     this.validateVisitor();
@@ -193,4 +197,7 @@ class RGVisitor extends parser.getBaseCstVisitorConstructor() {
   }
 }
 
-export default new RGVisitor();
+export const visitor = new Visitor();
+export function visit(cstNode: CstNode): ast.GameDeclaration {
+  return visitor.visitNode(cstNode);
+}

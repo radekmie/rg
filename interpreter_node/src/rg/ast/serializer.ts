@@ -1,11 +1,14 @@
-import { CstNode } from 'chevrotain';
-
 import * as ast from './types';
-import visitor from './visitor';
 
-export function buildAST(cstNode: CstNode) {
-  const astNode: ast.GameDeclaration = visitor.visitNode(cstNode);
-  return astNode;
+export function graphviz(gameDeclaration: ast.GameDeclaration) {
+  const graphvizEdges = gameDeclaration.edges.map(edge => {
+    const lhs = serializeEdgeName(edge.lhs);
+    const rhs = serializeEdgeName(edge.rhs);
+    const label = serializeEdgeLabel(edge.label);
+    return `  "${lhs}" -> "${rhs}" [label="${label}"];`;
+  });
+
+  return `digraph {\n${graphvizEdges.join('\n')}\n}`;
 }
 
 export function serializeEdgeLabel(edgeLabel: ast.EdgeLabel): string {
@@ -57,6 +60,54 @@ export function serializeExpression(expression: ast.Expression): string {
   }
 }
 
+export function serializeGameDeclaration(gameDeclaration: ast.GameDeclaration) {
+  return [
+    ...gameDeclaration.types.map(
+      typeDeclaration =>
+        `type ${typeDeclaration.identifier} = ${serializeType(
+          typeDeclaration.type,
+        )};`,
+    ),
+    '',
+    ...gameDeclaration.constants.map(
+      constantDeclaration =>
+        `const ${constantDeclaration.identifier}: ${serializeType(
+          constantDeclaration.type,
+        )} = ${serializeValue(constantDeclaration.value)};`,
+    ),
+    '',
+    ...gameDeclaration.variables.map(
+      variableDeclaration =>
+        `var ${variableDeclaration.identifier}: ${serializeType(
+          variableDeclaration.type,
+        )} = ${serializeValue(variableDeclaration.defaultValue)};`,
+    ),
+    '',
+    ...gameDeclaration.edges
+      .map(
+        edge =>
+          `${serializeEdgeName(edge.lhs)}, ${serializeEdgeName(
+            edge.rhs,
+          )}: ${serializeEdgeLabel(edge.label)}`,
+      )
+      .reduce<string[]>(
+        (xs, x) => (
+          xs.length &&
+            xs[xs.length - 1]
+              .split(',')[0]
+              .split('_')
+              .slice(0, -1)
+              .join('_') !==
+              x.split(',')[0].split('_').slice(0, -1).join('_') &&
+            xs.push(''),
+          xs.push(x),
+          xs
+        ),
+        [],
+      ),
+  ].join('\n');
+}
+
 export function serializeType(type: ast.Type): string {
   switch (type.kind) {
     case 'Arrow':
@@ -90,52 +141,4 @@ export function serializeValue(value: ast.Value): string {
         '}',
       ].join(' ');
   }
-}
-
-export function serializeAST(astNode: ast.GameDeclaration) {
-  return [
-    ...astNode.types.map(
-      typeDeclaration =>
-        `type ${typeDeclaration.identifier} = ${serializeType(
-          typeDeclaration.type,
-        )};`,
-    ),
-    '',
-    ...astNode.constants.map(
-      constantDeclaration =>
-        `const ${constantDeclaration.identifier}: ${serializeType(
-          constantDeclaration.type,
-        )} = ${serializeValue(constantDeclaration.value)};`,
-    ),
-    '',
-    ...astNode.variables.map(
-      variableDeclaration =>
-        `var ${variableDeclaration.identifier}: ${serializeType(
-          variableDeclaration.type,
-        )} = ${serializeValue(variableDeclaration.defaultValue)};`,
-    ),
-    '',
-    ...astNode.edges
-      .map(
-        edge =>
-          `${serializeEdgeName(edge.lhs)}, ${serializeEdgeName(
-            edge.rhs,
-          )}: ${serializeEdgeLabel(edge.label)}`,
-      )
-      .reduce<string[]>(
-        (xs, x) => (
-          xs.length &&
-            xs[xs.length - 1]
-              .split(',')[0]
-              .split('_')
-              .slice(0, -1)
-              .join('_') !==
-              x.split(',')[0].split('_').slice(0, -1).join('_') &&
-            xs.push(''),
-          xs.push(x),
-          xs
-        ),
-        [],
-      ),
-  ].join('\n');
 }
