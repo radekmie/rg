@@ -41,27 +41,31 @@ export function createChevrotainHighlighter(parse: ParseFunction) {
     }
 
     // Lexing.
-    const { color1, color2, color3, tokens } = parse(source);
-    for (const {
-      image,
-      startOffset: start,
-      tokenType: { name },
-    } of tokens) {
-      const tag = name.startsWith('Keyword')
-        ? 'b'
-        : name === 'Identifier'
-        ? color1?.includes(image)
-          ? 'k'
-          : color2?.includes(image)
-          ? 'l'
-          : color3?.includes(image)
-          ? 'm'
-          : null
-        : null;
+    try {
+      const { color1, color2, color3, tokens } = parse(source);
+      for (const {
+        image,
+        startOffset: start,
+        tokenType: { name },
+      } of tokens) {
+        const tag = name.startsWith('Keyword')
+          ? 'b'
+          : name === 'Identifier'
+          ? color1?.includes(image)
+            ? 'k'
+            : color2?.includes(image)
+            ? 'l'
+            : color3?.includes(image)
+            ? 'm'
+            : null
+          : null;
 
-      if (tag) {
-        marks.push([start, start + image.length, tag]);
+        if (tag) {
+          marks.push([start, start + image.length, tag]);
+        }
       }
+    } catch (error) {
+      // It's fine to ignore that.
     }
 
     // Build decorations.
