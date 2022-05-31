@@ -2,6 +2,15 @@ import { ast as hrg } from '../hrg';
 import { ast as rg } from '../rg';
 import * as utils from '../utils';
 
+type Context = {
+  $random: (prefix: string) => string;
+  $randomEdgeName: (prefix: string) => rg.EdgeName;
+  $randomLiteral: (prefix: string) => rg.Literal;
+  hrg: hrg.GameDeclaration;
+  rg: rg.GameDeclaration;
+  typeValues: Record<string, hrg.Value[]>;
+};
+
 enum Ord {
   Eq,
   Gt,
@@ -140,26 +149,23 @@ function evaluateCondition(
   }
 }
 
-function evaluateDefaultValue(
-  type: rg.Type,
-  typeValues: Record<string, hrg.Value[]>,
-): hrg.Value {
+function evaluateDefaultValue(context: Context, type: rg.Type): hrg.Value {
   switch (type.kind) {
     case 'Arrow':
       utils.assert(
-        type.lhs in typeValues,
+        type.lhs in context.typeValues,
         `Unresolved TypeReference "${type.lhs}".`,
       );
       utils.assert(
-        typeValues[type.lhs].length,
+        context.typeValues[type.lhs].length,
         'Expected at least one identifier.',
       );
       // NOTE: Is this even correct?
       return hrg.ValueMap({
-        entries: typeValues[type.lhs].map(value =>
+        entries: context.typeValues[type.lhs].map(value =>
           hrg.ValueMapEntry({
             key: value,
-            value: evaluateDefaultValue(type.rhs, typeValues),
+            value: evaluateDefaultValue(context, type.rhs),
           }),
         ),
       });
@@ -167,14 +173,14 @@ function evaluateDefaultValue(
       throw new Error('Not implemented (Set).');
     case 'TypeReference':
       utils.assert(
-        type.identifier in typeValues,
+        type.identifier in context.typeValues,
         `Unresolved TypeReference "${type.identifier}".`,
       );
       utils.assert(
-        typeValues[type.identifier].length,
+        context.typeValues[type.identifier].length,
         'Expected at least one identifier.',
       );
-      return typeValues[type.identifier][0];
+      return context.typeValues[type.identifier][0];
   }
 }
 
@@ -231,7 +237,9 @@ function evaluateExpression(
     case 'ExpressionAdd': {
       const lhs = evaluateExpressionIdentifier(expression.lhs, binding);
       const rhs = evaluateExpressionIdentifier(expression.rhs, binding);
-      return hrg.ValueElement({ identifier: String(Number(lhs) + Number(rhs)) });
+      return hrg.ValueElement({
+        identifier: String(Number(lhs) + Number(rhs)),
+      });
     }
     case 'ExpressionAnd':
       throw new Error('Not implemented (ExpressionAnd).');
@@ -280,7 +288,9 @@ function evaluateExpression(
     case 'ExpressionSub': {
       const lhs = evaluateExpressionIdentifier(expression.lhs, binding);
       const rhs = evaluateExpressionIdentifier(expression.rhs, binding);
-      return hrg.ValueElement({ identifier: String(Number(lhs) - Number(rhs)) });
+      return hrg.ValueElement({
+        identifier: String(Number(lhs) - Number(rhs)),
+      });
     }
   }
 }
@@ -331,17 +341,15 @@ function serializeValue(value: hrg.Value): string {
 }
 
 function translateAutomatonFunction(
+  context: Context,
   automatonFunction: hrg.AutomatonFunction,
-  automatonFunctions: hrg.AutomatonFunction[],
   exitEdgeName: rg.EdgeName | null,
   returnEdgeName: rg.EdgeName | null,
-  edges: rg.EdgeDeclaration[],
-  variableDeclarations: rg.VariableDeclaration[],
   prefix: string,
 ) {
   translateAutomatonStatements(
+    context,
     automatonFunction.body,
-    automatonFunctions,
     rg.EdgeName({
       parts: [
         rg.Literal({ identifier: `${prefix}${automatonFunction.name}_0` }),
@@ -349,45 +357,24 @@ function translateAutomatonFunction(
     }),
     exitEdgeName,
     returnEdgeName,
-    edges,
-    variableDeclarations,
     `${prefix}${automatonFunction.name}`,
   );
 }
 
-const globalCounters: Record<string, number> = Object.create(null);
-function RANDOM(prefix: string) {
-  if (!(prefix in globalCounters)) {
-    globalCounters[prefix] = 0;
-  }
-
-  return `${prefix}_${++globalCounters[prefix]}`;
-}
-
-function RANDOM_RESET() {
-  for (const key of Object.keys(globalCounters)) {
-    delete globalCounters[key];
-  }
-}
-
 function translateAutomatonStatements(
+  context: Context,
   automatonStatements: hrg.AutomatonStatement[],
-  automatonFunctions: hrg.AutomatonFunction[],
   entryEdgeName: rg.EdgeName,
   exitEdgeName: rg.EdgeName | null,
   returnEdgeName: rg.EdgeName | null,
-  edges: rg.EdgeDeclaration[],
-  variableDeclarations: rg.VariableDeclaration[],
   prefix: string,
 ) {
   let currentEdgeName = entryEdgeName;
   for (const automatonStatement of automatonStatements) {
     switch (automatonStatement.kind) {
       case 'AutomatonAssignment': {
-        const nextEdgeName = rg.EdgeName({
-          parts: [rg.Literal({ identifier: RANDOM(prefix) })],
-        });
-        edges.push(
+        const nextEdgeName = context.$randomEdgeName(prefix);
+        context.rg.edges.push(
           rg.EdgeDeclaration({
             lhs: currentEdgeName,
             rhs: nextEdgeName,
@@ -408,18 +395,14 @@ function translateAutomatonStatements(
         continue;
       }
       case 'AutomatonBranch': {
-        const nextEdgeName = rg.EdgeName({
-          parts: [rg.Literal({ identifier: RANDOM(prefix) })],
-        });
+        const nextEdgeName = context.$randomEdgeName(prefix);
         automatonStatement.arms.forEach(arm => {
           translateAutomatonStatements(
+            context,
             arm,
-            automatonFunctions,
             currentEdgeName,
             exitEdgeName,
             nextEdgeName,
-            edges,
-            variableDeclarations,
             prefix,
           );
         });
@@ -433,18 +416,14 @@ function translateAutomatonStatements(
               automatonStatement.args.length === 1,
               'assert expects 1 argument',
             );
-            const nextEdgeName = rg.EdgeName({
-              parts: [rg.Literal({ identifier: RANDOM(prefix) })],
-            });
+            const nextEdgeName = context.$randomEdgeName(prefix);
             translateCondition(
+              context,
               automatonStatement.args[0],
               currentEdgeName,
               nextEdgeName,
               null,
-              edges,
               prefix,
-              automatonFunctions,
-              variableDeclarations,
             );
             currentEdgeName = nextEdgeName;
             continue;
@@ -459,7 +438,7 @@ function translateAutomatonStatements(
               assignmentVariable.kind === 'ExpressionLiteral',
               'forall expects a literal',
             );
-            const assignmentVariableDeclaration = variableDeclarations.find(
+            const assignmentVariableDeclaration = context.rg.variables.find(
               variableDeclaration =>
                 variableDeclaration.identifier ===
                 assignmentVariable.identifier,
@@ -468,17 +447,17 @@ function translateAutomatonStatements(
               assignmentVariableDeclaration,
               `Unknown variable "${assignmentVariable.identifier}" in forall.`,
             );
-            const identifier = RANDOM('x');
+            const identifier = context.$random('x');
             const assignmentEdgeName = rg.EdgeName({
               parts: [
-                rg.Literal({ identifier: RANDOM(prefix) }),
+                context.$randomLiteral(prefix),
                 rg.Binding({
                   identifier,
                   type: assignmentVariableDeclaration.type,
                 }),
               ],
             });
-            edges.push(
+            context.rg.edges.push(
               rg.EdgeDeclaration({
                 lhs: currentEdgeName,
                 rhs: assignmentEdgeName,
@@ -503,7 +482,7 @@ function translateAutomatonStatements(
               'Return has to be the last statement.',
             );
             utils.assert(exitEdgeName, 'Return requires exitEdgeName.');
-            edges.push(
+            context.rg.edges.push(
               rg.EdgeDeclaration({
                 lhs: currentEdgeName,
                 rhs: exitEdgeName,
@@ -513,7 +492,7 @@ function translateAutomatonStatements(
             return;
           }
           default: {
-            const automatonFunction = automatonFunctions.find(
+            const automatonFunction = context.hrg.automaton.find(
               automatonFunction =>
                 automatonFunction.name === automatonStatement.identifier,
             );
@@ -521,7 +500,7 @@ function translateAutomatonStatements(
               automatonFunction,
               `Unknown automaton function "${automatonStatement.identifier}".`,
             );
-            edges.push(
+            context.rg.edges.push(
               rg.EdgeDeclaration({
                 lhs: currentEdgeName,
                 rhs: rg.EdgeName({
@@ -532,16 +511,12 @@ function translateAutomatonStatements(
                 label: rg.Skip({}),
               }),
             );
-            const nextEdgeName = rg.EdgeName({
-              parts: [rg.Literal({ identifier: RANDOM(prefix) })],
-            });
+            const nextEdgeName = context.$randomEdgeName(prefix);
             translateAutomatonFunction(
+              context,
               automatonFunction,
-              automatonFunctions,
               exitEdgeName,
               nextEdgeName,
-              edges,
-              variableDeclarations,
               '',
             );
             currentEdgeName = nextEdgeName;
@@ -555,41 +530,31 @@ function translateAutomatonStatements(
           'Loop has to be the last statement.',
         );
         translateAutomatonStatements(
+          context,
           automatonStatement.body,
-          automatonFunctions,
           entryEdgeName,
           exitEdgeName,
           currentEdgeName,
-          edges,
-          variableDeclarations,
           prefix,
         );
         return;
       case 'AutomatonWhen': {
-        const thenEdgeName = rg.EdgeName({
-          parts: [rg.Literal({ identifier: RANDOM(prefix) })],
-        });
-        const elseEdgeName = rg.EdgeName({
-          parts: [rg.Literal({ identifier: RANDOM(prefix) })],
-        });
+        const thenEdgeName = context.$randomEdgeName(prefix);
+        const elseEdgeName = context.$randomEdgeName(prefix);
         translateCondition(
+          context,
           automatonStatement.expression,
           currentEdgeName,
           thenEdgeName,
           elseEdgeName,
-          edges,
           prefix,
-          automatonFunctions,
-          variableDeclarations,
         );
         translateAutomatonStatements(
+          context,
           automatonStatement.body,
-          automatonFunctions,
           thenEdgeName,
           exitEdgeName,
           elseEdgeName,
-          edges,
-          variableDeclarations,
           prefix,
         );
         currentEdgeName = elseEdgeName;
@@ -601,7 +566,7 @@ function translateAutomatonStatements(
   }
 
   if (returnEdgeName) {
-    edges.push(
+    context.rg.edges.push(
       rg.EdgeDeclaration({
         lhs: currentEdgeName,
         rhs: returnEdgeName,
@@ -613,14 +578,12 @@ function translateAutomatonStatements(
 
 // eslint-disable-next-line complexity -- This function could be improved.
 function translateCondition(
+  context: Context,
   expression: hrg.Expression,
   entryEdgeName: rg.EdgeName,
   thenEdgeName: rg.EdgeName | null,
   elseEdgeName: rg.EdgeName | null,
-  edges: rg.EdgeDeclaration[],
   prefix: string,
-  automatonFunctions: hrg.AutomatonFunction[],
-  variableDeclarations: rg.VariableDeclaration[],
 ) {
   switch (expression.kind) {
     case 'ExpressionAccess':
@@ -641,14 +604,12 @@ function translateCondition(
             'reachable expects 1 argument',
           );
           translateCondition(
+            context,
             expression.args[0],
             entryEdgeName,
             elseEdgeName,
             thenEdgeName,
-            edges,
             prefix,
-            automatonFunctions,
-            variableDeclarations,
           );
           return;
         case 'reachable': {
@@ -668,8 +629,8 @@ function translateCondition(
           );
 
           const automatonName = call.expression.identifier;
-          const automatonPrefix = RANDOM(prefix);
-          const automatonFunction = automatonFunctions.find(
+          const automatonPrefix = context.$random(prefix);
+          const automatonFunction = context.hrg.automaton.find(
             automatonFunction => automatonFunction.name === automatonName,
           );
           utils.assert(
@@ -677,15 +638,12 @@ function translateCondition(
             `Unknown automaton function "${call.expression.identifier}".`,
           );
 
-          const automatonStartEdgeName = rg.EdgeName({
-            parts: [rg.Literal({ identifier: RANDOM(automatonPrefix) })],
-          });
+          const automatonStartEdgeName =
+            context.$randomEdgeName(automatonPrefix);
           let automatonCurrentEdgeName = automatonStartEdgeName;
           for (const arg of call.args) {
-            const argEdgeName = rg.EdgeName({
-              parts: [rg.Literal({ identifier: RANDOM(automatonPrefix) })],
-            });
-            edges.push(
+            const argEdgeName = context.$randomEdgeName(automatonPrefix);
+            context.rg.edges.push(
               rg.EdgeDeclaration({
                 lhs: automatonCurrentEdgeName,
                 rhs: argEdgeName,
@@ -701,7 +659,7 @@ function translateCondition(
             automatonCurrentEdgeName = argEdgeName;
           }
 
-          edges.push(
+          context.rg.edges.push(
             rg.EdgeDeclaration({
               lhs: automatonCurrentEdgeName,
               rhs: rg.EdgeName({
@@ -714,21 +672,17 @@ function translateCondition(
               label: rg.Skip({}),
             }),
           );
-          const automatonEndEdgeName = rg.EdgeName({
-            parts: [rg.Literal({ identifier: RANDOM(automatonPrefix) })],
-          });
+          const automatonEndEdgeName = context.$randomEdgeName(automatonPrefix);
           translateAutomatonFunction(
+            context,
             automatonFunction,
-            automatonFunctions,
             automatonEndEdgeName,
             automatonEndEdgeName,
-            edges,
-            variableDeclarations,
             `${automatonPrefix}_`,
           );
 
           if (thenEdgeName) {
-            edges.push(
+            context.rg.edges.push(
               rg.EdgeDeclaration({
                 lhs: entryEdgeName,
                 rhs: thenEdgeName,
@@ -741,7 +695,7 @@ function translateCondition(
             );
           }
           if (elseEdgeName) {
-            edges.push(
+            context.rg.edges.push(
               rg.EdgeDeclaration({
                 lhs: entryEdgeName,
                 rhs: elseEdgeName,
@@ -767,7 +721,7 @@ function translateCondition(
       throw new Error('Not implemented (ExpressionConstructor).');
     case 'ExpressionEq':
       if (thenEdgeName) {
-        edges.push(
+        context.rg.edges.push(
           rg.EdgeDeclaration({
             lhs: entryEdgeName,
             rhs: thenEdgeName,
@@ -780,7 +734,7 @@ function translateCondition(
         );
       }
       if (elseEdgeName) {
-        edges.push(
+        context.rg.edges.push(
           rg.EdgeDeclaration({
             lhs: entryEdgeName,
             rhs: elseEdgeName,
@@ -809,7 +763,7 @@ function translateCondition(
       throw new Error('Not implemented (ExpressionMap).');
     case 'ExpressionNe':
       if (thenEdgeName) {
-        edges.push(
+        context.rg.edges.push(
           rg.EdgeDeclaration({
             lhs: entryEdgeName,
             rhs: thenEdgeName,
@@ -822,7 +776,7 @@ function translateCondition(
         );
       }
       if (elseEdgeName) {
-        edges.push(
+        context.rg.edges.push(
           rg.EdgeDeclaration({
             lhs: entryEdgeName,
             rhs: elseEdgeName,
@@ -836,28 +790,22 @@ function translateCondition(
       }
       return;
     case 'ExpressionOr': {
-      const falseEdgeName = rg.EdgeName({
-        parts: [rg.Literal({ identifier: RANDOM(prefix) })],
-      });
+      const falseEdgeName = context.$randomEdgeName(prefix);
       translateCondition(
+        context,
         expression.lhs,
         entryEdgeName,
         thenEdgeName,
         falseEdgeName,
-        edges,
         prefix,
-        automatonFunctions,
-        variableDeclarations,
       );
       translateCondition(
+        context,
         expression.rhs,
         falseEdgeName,
         thenEdgeName,
         elseEdgeName,
-        edges,
         prefix,
-        automatonFunctions,
-        variableDeclarations,
       );
       return;
     }
@@ -867,8 +815,8 @@ function translateCondition(
 }
 
 function translateDomainElement(
+  context: Context,
   domainElement: hrg.DomainElement,
-  gameDeclaration: hrg.GameDeclaration,
 ): hrg.Value[] {
   switch (domainElement.kind) {
     case 'DomainGenerator':
@@ -895,23 +843,23 @@ function translateDomainElement(
           hrg.ValueConstructor({ identifier: domainElement.identifier, args }),
         );
     case 'DomainLiteral': {
-      const referencedDomain = gameDeclaration.domains.find(
+      const referencedDomain = context.hrg.domains.find(
         domainDeclaration =>
           domainDeclaration.identifier === domainElement.identifier,
       );
       return referencedDomain
-        ? translateDomainElements(referencedDomain.elements, gameDeclaration)
+        ? translateDomainElements(context, referencedDomain.elements)
         : [hrg.ValueElement({ identifier: domainElement.identifier })];
     }
   }
 }
 
 function translateDomainElements(
+  context: Context,
   domainElements: hrg.DomainElement[],
-  gameDeclaration: hrg.GameDeclaration,
 ): hrg.Value[] {
   return domainElements.flatMap(domainElement =>
-    translateDomainElement(domainElement, gameDeclaration),
+    translateDomainElement(context, domainElement),
   );
 }
 
@@ -961,8 +909,8 @@ function translateExpression(expression: hrg.Expression): rg.Expression {
 }
 
 function translateFunctionDeclaration(
+  context: Context,
   functionDeclaration: hrg.FunctionDeclaration,
-  typeValues: Record<string, hrg.Value[]>,
 ): rg.ConstantDeclaration {
   utils.assert(
     functionDeclaration.cases[0].args.length === 1,
@@ -985,14 +933,14 @@ function translateFunctionDeclaration(
     'Function is expected to have Arrow type.',
   );
   utils.assert(
-    type.lhs in typeValues,
+    type.lhs in context.typeValues,
     `Unresolved TypeReference "${type.lhs}".`,
   );
   utils.assert(
-    typeValues[type.lhs].length,
+    context.typeValues[type.lhs].length,
     'Expected at least one identifier.',
   );
-  const entries = typeValues[type.lhs].map(value => {
+  const entries = context.typeValues[type.lhs].map(value => {
     utils.assert(value.kind !== 'ValueMap', 'ValueMap is not allowed.');
     const arm = utils.findMap(functionDeclaration.cases, functionCase => {
       utils.assert(functionCase.args.length === 1, 'Not implemented.');
@@ -1019,43 +967,33 @@ function translateFunctionDeclaration(
   });
 }
 
-function translateGameDeclaration(
-  gameDeclaration: hrg.GameDeclaration,
-): rg.GameDeclaration {
-  const { types, typeValues } = gameDeclaration.domains.reduce(
-    (result, domainDeclaration) => {
-      const values = translateDomainElements(
-        domainDeclaration.elements,
-        gameDeclaration,
-      );
-      result.types.push(
-        rg.TypeDeclaration({
-          identifier: domainDeclaration.identifier,
-          type: rg.Set({ identifiers: values.map(serializeValue) }),
+function translateGameDeclaration(context: Context): rg.GameDeclaration {
+  for (const { elements, identifier } of context.hrg.domains) {
+    utils.assert(
+      !(identifier in context.typeValues),
+      `Duplicated type "${identifier}".`,
+    );
+
+    context.typeValues[identifier] = translateDomainElements(context, elements);
+    context.rg.types.push(
+      rg.TypeDeclaration({
+        identifier,
+        type: rg.Set({
+          identifiers: context.typeValues[identifier].map(serializeValue),
         }),
-      );
-      utils.assert(
-        !(domainDeclaration.identifier in result.typeValues),
-        `Duplicated type "${domainDeclaration.identifier}".`,
-      );
-      result.typeValues[domainDeclaration.identifier] = values;
-      return result;
-    },
-    {
-      types: [] as rg.TypeDeclaration[],
-      typeValues: {} as Record<string, hrg.Value[]>,
-    },
+      }),
+    );
+  }
+
+  context.rg.constants = context.hrg.functions.map(functionDeclaration =>
+    translateFunctionDeclaration(context, functionDeclaration),
   );
 
-  const constants = gameDeclaration.functions.map(functionDeclaration =>
-    translateFunctionDeclaration(functionDeclaration, typeValues),
+  context.rg.variables = context.hrg.variables.map(variableDeclaration =>
+    translateVariableDeclaration(context, variableDeclaration),
   );
 
-  const variables = gameDeclaration.variables.map(variableDeclaration =>
-    translateVariableDeclaration(variableDeclaration, typeValues),
-  );
-
-  const edges = [
+  context.rg.edges = [
     rg.EdgeDeclaration({
       label: rg.Skip({}),
       lhs: rg.EdgeName({ parts: [rg.Literal({ identifier: 'begin' })] }),
@@ -1063,22 +1001,20 @@ function translateGameDeclaration(
     }),
   ];
 
-  const rules = gameDeclaration.automaton.find(
+  const rules = context.hrg.automaton.find(
     automatonFunction => automatonFunction.name === 'rules',
   );
   utils.assert(rules, 'No `rules` automation function found.');
 
   translateAutomatonFunction(
+    context,
     rules,
-    gameDeclaration.automaton,
     rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
     rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
-    edges,
-    variables,
     '',
   );
 
-  return rg.GameDeclaration({ constants, edges, types, variables });
+  return context.rg;
 }
 
 function translateType(type: hrg.Type): rg.Type {
@@ -1118,22 +1054,44 @@ function translateValue(value: hrg.Value): rg.Value {
 }
 
 function translateVariableDeclaration(
+  context: Context,
   variableDeclaration: hrg.VariableDeclaration,
-  typeValues: Record<string, hrg.Value[]>,
 ): rg.VariableDeclaration {
   const type = translateType(variableDeclaration.type);
   return rg.VariableDeclaration({
     identifier: variableDeclaration.identifier,
     defaultValue: translateValue(
       variableDeclaration.defaultValue === null
-        ? evaluateDefaultValue(type, typeValues)
+        ? evaluateDefaultValue(context, type)
         : evaluateExpression(variableDeclaration.defaultValue, {}),
     ),
     type,
   });
 }
 
-export default function translate(gameDeclaration: hrg.GameDeclaration) {
-  RANDOM_RESET();
-  return translateGameDeclaration(gameDeclaration);
+export default function translate(hrg: hrg.GameDeclaration) {
+  const counters: Record<string, number> = Object.create(null);
+  return translateGameDeclaration({
+    $random(prefix: string) {
+      if (!(prefix in counters)) {
+        counters[prefix] = 0;
+      }
+
+      return `${prefix}_${++counters[prefix]}`;
+    },
+    $randomEdgeName(prefix: string) {
+      return rg.EdgeName({ parts: [this.$randomLiteral(prefix)] });
+    },
+    $randomLiteral(prefix: string) {
+      return rg.Literal({ identifier: this.$random(prefix) });
+    },
+    hrg,
+    rg: rg.GameDeclaration({
+      constants: [],
+      edges: [],
+      types: [],
+      variables: [],
+    }),
+    typeValues: Object.create(null),
+  });
 }
