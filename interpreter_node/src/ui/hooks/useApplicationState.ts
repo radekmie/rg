@@ -12,16 +12,17 @@ export type State = {
   view: View;
 };
 
-export enum View {
-  AST,
-  Automaton,
-  Bench,
-  CST,
-  Graphviz,
-  HighLevel,
-  IST,
-  LowLevel,
-}
+export type View =
+  | 'AST (HL)'
+  | 'AST (LL)'
+  | 'Automaton'
+  | 'Bench'
+  | 'CST (HL)'
+  | 'CST (LL)'
+  | 'Graphviz (LL)'
+  | 'IST (LL)'
+  | 'Source (HL)'
+  | 'Source (LL)';
 
 const initialPreset = presets[0];
 const initialState: State = {
@@ -30,7 +31,7 @@ const initialState: State = {
     flags: { compactSkipEdges: true },
   },
   source: initialPreset.source,
-  view: View.Automaton,
+  view: 'Automaton',
 };
 
 export function useApplicationState() {

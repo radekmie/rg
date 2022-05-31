@@ -10,8 +10,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import * as rg from '../../rg';
 import { useNumericState } from '../hooks/useNumericState';
-import * as stylesApplication from './Application.module.css';
-import * as styles from './Bench.module.css';
+import * as styles from '../index.module.css';
 
 type BenchBlockProps = {
   action: (
@@ -99,7 +98,7 @@ export type BenchProps = { game: rg.ist.Game };
 
 export function Bench({ game }: BenchProps) {
   return (
-    <section className={stylesApplication.wrapScroll}>
+    <section className={styles.wrapScroll}>
       <BenchBlock
         action={rg.ist.run}
         actionText="Run"

@@ -1,62 +1,122 @@
 import {
   Callout,
   Checkbox,
+  HTMLSelect,
   Intent,
   Label,
   Radio,
   RadioGroup,
 } from '@blueprintjs/core';
-import { FormEvent, useCallback } from 'react';
+import { ChangeEvent, FormEvent, useCallback, useMemo } from 'react';
 
 import { Extension, Settings } from '../../types';
-import * as styles from './Settings.module.css';
+import { presets } from '../const/presets';
+import { useApplicationState, View } from '../hooks/useApplicationState';
+import * as styles from '../index.module.css';
 
 const configurableFlags = ['compactSkipEdges'] as const;
+const availablePresets = presets.map(game => game.name);
 
 export type SettingsProps = {
   intent: Intent;
-  onChange: (fn: (value: Settings) => Settings) => void;
-  value: Settings;
-};
+  settings: Settings;
+  view: View;
+} & Pick<
+  ReturnType<typeof useApplicationState>['actions'],
+  'setPreset' | 'setSettings' | 'setView'
+>;
 
-export function Settings({ intent, onChange, value }: SettingsProps) {
+export function Settings({
+  intent,
+  setPreset,
+  setSettings,
+  setView,
+  settings,
+  view,
+}: SettingsProps) {
   const onExtension = useCallback(
     ({ currentTarget: { value } }: FormEvent<HTMLInputElement>) => {
-      onChange(x => ({ ...x, extension: value as Extension }));
+      setSettings(x => ({ ...x, extension: value as Extension }));
     },
-    [onChange],
+    [setSettings],
   );
 
   const onFlag = useCallback(
     ({ currentTarget: { checked, name } }: FormEvent<HTMLInputElement>) => {
-      onChange(x => ({ ...x, flags: { ...x.flags, [name]: checked } }));
+      setSettings(x => ({ ...x, flags: { ...x.flags, [name]: checked } }));
     },
-    [onChange],
+    [setSettings],
+  );
+
+  const onPreset = useCallback(
+    (event: ChangeEvent<HTMLSelectElement>) => {
+      setPreset(event.currentTarget.value);
+    },
+    [setPreset],
+  );
+
+  const onView = useCallback(
+    (event: ChangeEvent<HTMLSelectElement>) => {
+      setView(event.currentTarget.value as unknown as View);
+    },
+    [setView],
+  );
+
+  const availableViews = useMemo(
+    () => [
+      { value: 'Bench' },
+      { value: 'Automaton' },
+      { value: 'Graphviz (LL)' },
+      { value: 'Source (HL)', disabled: settings.extension !== Extension.hrg },
+      { value: 'CST (HL)', disabled: settings.extension !== Extension.hrg },
+      { value: 'AST (HL)', disabled: settings.extension !== Extension.hrg },
+      { value: 'Source (LL)' },
+      { value: 'CST (LL)' },
+      { value: 'AST (LL)' },
+      { value: 'IST (LL)' },
+    ],
+    [settings.extension],
   );
 
   return (
-    <Callout intent={intent}>
-      <RadioGroup
-        className={styles.options}
-        label="Extension"
-        onChange={onExtension}
-        selectedValue={value.extension}
-      >
-        <Radio label="hrg" value={Extension.hrg} />
-        <Radio label="rg" value={Extension.rg} />
-      </RadioGroup>
-      <section className={styles.options}>
-        <Label>Flags</Label>
-        {configurableFlags.map(flag => (
-          <Checkbox
-            checked={value.flags[flag]}
-            key={flag}
-            label={flag}
-            name={flag}
-            onChange={onFlag}
-          />
-        ))}
+    <>
+      <section className={styles.grid}>
+        <HTMLSelect
+          className={styles.noOutline}
+          onChange={onPreset}
+          options={availablePresets}
+        />
+        <HTMLSelect
+          className={styles.noOutline}
+          disabled={intent !== Intent.SUCCESS}
+          onChange={onView}
+          options={availableViews}
+          value={view}
+        />
       </section>
-    </Callout>
+      <Callout intent={intent}>
+        <RadioGroup
+          className={styles.options}
+          label="Extension"
+          onChange={onExtension}
+          selectedValue={settings.extension}
+        >
+          <Radio label="hrg" value={Extension.hrg} />
+          <Radio label="rg" value={Extension.rg} />
+        </RadioGroup>
+        <section className={styles.options}>
+          <Label>Flags</Label>
+          {configurableFlags.map(flag => (
+            <Checkbox
+              checked={settings.flags[flag]}
+              key={flag}
+              label={flag}
+              name={flag}
+              onChange={onFlag}
+            />
+          ))}
+        </section>
+      </Callout>
+    </>
   );
 }

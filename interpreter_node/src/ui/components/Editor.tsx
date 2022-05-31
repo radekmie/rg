@@ -1,11 +1,12 @@
 import { javascript } from '@codemirror/lang-javascript';
 import { json } from '@codemirror/lang-json';
 import CodeMirror, { ReactCodeMirrorProps } from '@uiw/react-codemirror';
+import { useCallback } from 'react';
 
 import * as hrg from '../../hrg';
 import * as rg from '../../rg';
+import * as styles from '../index.module.css';
 import { createChevrotainHighlighter } from '../lib/createChevrotainHighlighter';
-import * as styles from './Application.module.css';
 import { Autosize } from './Autosize';
 
 const modeToExtensions = {
@@ -21,6 +22,12 @@ export type EditorProps = ReactCodeMirrorProps & {
 };
 
 export function Editor({ mode, ...props }: EditorProps) {
+  const onEditor = useCallback((ref?: { editor?: HTMLDivElement }) => {
+    ref?.editor
+      ?.querySelector('.cm-content')
+      ?.setAttribute('data-enable-grammarly', 'false');
+  }, []);
+
   return (
     <Autosize>
       {({ height }) => (
@@ -28,6 +35,7 @@ export function Editor({ mode, ...props }: EditorProps) {
           <CodeMirror
             extensions={modeToExtensions[mode]}
             height={`${height}px`}
+            ref={onEditor}
             {...props}
           />
         </section>
