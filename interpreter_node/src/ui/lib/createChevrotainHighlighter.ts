@@ -6,7 +6,7 @@ import {
   ViewPlugin,
   ViewUpdate,
 } from '@codemirror/view';
-import { ILexingResult } from 'chevrotain';
+import { IToken } from 'chevrotain';
 
 const marks: Record<string, Decoration> = Object.create(null);
 function mark(tag: string) {
@@ -21,7 +21,7 @@ type ParseFunction = (source: string) => {
   color1?: string[];
   color2?: string[];
   color3?: string[];
-  lexingResult: ILexingResult;
+  tokens: IToken[];
 };
 
 export function createChevrotainHighlighter(parse: ParseFunction) {
@@ -41,13 +41,7 @@ export function createChevrotainHighlighter(parse: ParseFunction) {
     }
 
     // Lexing.
-    const {
-      color1,
-      lexingResult: { tokens },
-      color2,
-      color3,
-    } = parse(source);
-
+    const { color1, color2, color3, tokens } = parse(source);
     for (const {
       image,
       startOffset: start,
@@ -55,13 +49,16 @@ export function createChevrotainHighlighter(parse: ParseFunction) {
     } of tokens) {
       const tag = name.startsWith('Keyword')
         ? 'b'
-        : name === 'Identifier' && color1?.includes(image)
-        ? 'k'
-        : name === 'Identifier' && color2?.includes(image)
-        ? 'l'
-        : name === 'Identifier' && color3?.includes(image)
-        ? 'm'
-        : undefined;
+        : name === 'Identifier'
+        ? color1?.includes(image)
+          ? 'k'
+          : color2?.includes(image)
+          ? 'l'
+          : color3?.includes(image)
+          ? 'm'
+          : null
+        : null;
+
       if (tag) {
         marks.push([start, start + image.length, tag]);
       }

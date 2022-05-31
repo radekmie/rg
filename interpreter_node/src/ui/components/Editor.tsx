@@ -12,50 +12,28 @@ import { Autosize } from './Autosize';
 const modeToExtensions = {
   hrg: [
     createChevrotainHighlighter(source => {
-      try {
-        const { cstNode, lexingResult } = hrg.cst.parse(source);
-        const ast = hrg.ast.visit(cstNode);
-        return {
-          color1: ast.functions.map(({ identifier }) => identifier),
-          color2: ast.domains.map(({ identifier }) => identifier),
-          color3: ast.variables.map(({ identifier }) => identifier),
-          lexingResult,
-        };
-      } catch (error) {
-        if (
-          error instanceof hrg.cst.LexerError ||
-          error instanceof hrg.cst.ParserError
-        ) {
-          return { lexingResult: error.lexingResult };
-        }
-
-        throw error;
-      }
+      const { cstNode, tokens } = hrg.cst.parse(source);
+      const ast = hrg.ast.visit(cstNode);
+      return {
+        color1: ast.functions.map(({ identifier }) => identifier),
+        color2: ast.domains.map(({ identifier }) => identifier),
+        color3: ast.variables.map(({ identifier }) => identifier),
+        tokens,
+      };
     }),
   ],
   javascript: [javascript()],
   json: [json()],
   rg: [
     createChevrotainHighlighter(source => {
-      try {
-        const { cstNode, lexingResult } = rg.cst.parse(source);
-        const ast = rg.ast.visit(cstNode);
-        return {
-          color1: ast.constants.map(({ identifier }) => identifier),
-          color2: ast.types.map(({ identifier }) => identifier),
-          color3: ast.variables.map(({ identifier }) => identifier),
-          lexingResult,
-        };
-      } catch (error) {
-        if (
-          error instanceof rg.cst.LexerError ||
-          error instanceof rg.cst.ParserError
-        ) {
-          return { lexingResult: error.lexingResult };
-        }
-
-        throw error;
-      }
+      const { cstNode, tokens } = rg.cst.parse(source);
+      const ast = rg.ast.visit(cstNode);
+      return {
+        color1: ast.constants.map(({ identifier }) => identifier),
+        color2: ast.types.map(({ identifier }) => identifier),
+        color3: ast.variables.map(({ identifier }) => identifier),
+        tokens,
+      };
     }),
   ],
   text: [],
