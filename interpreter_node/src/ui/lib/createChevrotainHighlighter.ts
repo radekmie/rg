@@ -6,7 +6,7 @@ import {
   ViewPlugin,
   ViewUpdate,
 } from '@codemirror/view';
-import { Lexer } from 'chevrotain';
+import { ILexingResult } from 'chevrotain';
 
 const marks: Record<string, Decoration> = Object.create(null);
 function mark(tag: string) {
@@ -17,64 +17,79 @@ function mark(tag: string) {
   return marks[tag];
 }
 
-export function createChevrotainHighlighter(lexer: Lexer) {
+type ParseFunction = (source: string) => {
+  color1?: string[];
+  color2?: string[];
+  color3?: string[];
+  lexingResult: ILexingResult;
+};
+
+export function createChevrotainHighlighter(parse: ParseFunction) {
+  function getDecorations(view: EditorView) {
+    const marks: [number, number, string][] = [];
+    const source = view.state.doc.sliceString(0);
+
+    // Comments.
+    const lines = source.split('\n');
+    for (let index = 0; index < lines.length; ++index) {
+      const line = lines[index];
+      const position = line.indexOf('//');
+      if (position !== -1) {
+        const start = lines.slice(0, index).join('\n').length;
+        marks.push([start + position, start + line.length + 1, '5']);
+      }
+    }
+
+    // Lexing.
+    const {
+      color1,
+      lexingResult: { tokens },
+      color2,
+      color3,
+    } = parse(source);
+
+    for (const {
+      image,
+      startOffset: start,
+      tokenType: { name },
+    } of tokens) {
+      const tag = name.startsWith('Keyword')
+        ? 'b'
+        : name === 'Identifier' && color1?.includes(image)
+        ? 'k'
+        : name === 'Identifier' && color2?.includes(image)
+        ? 'l'
+        : name === 'Identifier' && color3?.includes(image)
+        ? 'm'
+        : undefined;
+      if (tag) {
+        marks.push([start, start + image.length, tag]);
+      }
+    }
+
+    // Build decorations.
+    marks.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
+
+    const builder = new RangeSetBuilder<Decoration>();
+    for (const [start, end, tag] of marks) {
+      builder.add(start, end, mark(tag));
+    }
+
+    return builder.finish();
+  }
+
   return ViewPlugin.fromClass(
-    class {
+    class ChevrotainHighlighter {
       decorations: DecorationSet;
 
       constructor(view: EditorView) {
-        this.decorations = this.getDecorations(view);
+        this.decorations = getDecorations(view);
       }
 
       update({ docChanged, view }: ViewUpdate) {
         if (docChanged) {
-          this.decorations = this.getDecorations(view);
+          this.decorations = getDecorations(view);
         }
-      }
-
-      getDecorations(view: EditorView) {
-        const marks: [number, number, string][] = [];
-        const source = view.state.doc.sliceString(0);
-
-        // Comments.
-        const lines = source.split('\n');
-        for (let index = 0; index < lines.length; ++index) {
-          const line = lines[index];
-          const position = line.indexOf('//');
-          if (position !== -1) {
-            const start = lines.slice(0, index).join('\n').length;
-            marks.push([start + position, start + line.length + 1, '5']);
-          }
-        }
-
-        // Lexing.
-        const { tokens } = lexer.tokenize(source);
-        for (const {
-          image,
-          startOffset: start,
-          tokenType: { name },
-        } of tokens) {
-          const tag = name.startsWith('Keyword')
-            ? 'b'
-            : image === String(parseFloat(image))
-            ? 'd'
-            : name === 'Identifier' && image[0] === image[0].toUpperCase()
-            ? 'l'
-            : undefined;
-          if (tag) {
-            marks.push([start, start + image.length, tag]);
-          }
-        }
-
-        // Build decorations.
-        marks.sort((x, y) => x[0] - y[0] || x[1] - y[1]);
-
-        const builder = new RangeSetBuilder<Decoration>();
-        for (const [start, end, tag] of marks) {
-          builder.add(start, end, mark(tag));
-        }
-
-        return builder.finish();
       }
     },
     { decorations: instance => instance.decorations },

@@ -66,7 +66,6 @@ export function Settings({
     () => [
       { value: 'Bench' },
       { value: 'Automaton' },
-      { value: 'Graphviz (LL)' },
       { value: 'Source (HL)', disabled: settings.extension !== Extension.hrg },
       { value: 'CST (HL)', disabled: settings.extension !== Extension.hrg },
       { value: 'AST (HL)', disabled: settings.extension !== Extension.hrg },
@@ -74,6 +73,7 @@ export function Settings({
       { value: 'CST (LL)' },
       { value: 'AST (LL)' },
       { value: 'IST (LL)' },
+      { value: 'Graphviz (LL)' },
     ],
     [settings.extension],
   );

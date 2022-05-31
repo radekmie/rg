@@ -45,9 +45,16 @@ board = {
       else empty
   where X in 0..7, Y in 0..7
 }
+
 me : Player
 me = white
+
+player : Player
+player = keeper
+
 position : Square
+
+score : Player -> Score
 
 
 // Automaton

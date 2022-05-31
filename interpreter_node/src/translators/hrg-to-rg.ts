@@ -1046,35 +1046,13 @@ function translateGameDeclaration(
       typeValues: {} as Record<string, hrg.Value[]>,
     },
   );
+
   const constants = gameDeclaration.functions.map(functionDeclaration =>
     translateFunctionDeclaration(functionDeclaration, typeValues),
   );
+
   const variables = gameDeclaration.variables.map(variableDeclaration =>
     translateVariableDeclaration(variableDeclaration, typeValues),
-  );
-
-  variables.push(
-    translateVariableDeclaration(
-      hrg.VariableDeclaration({
-        identifier: 'player',
-        type: hrg.TypeName({ identifier: 'Player' }),
-        defaultValue: hrg.ExpressionLiteral({ identifier: 'keeper' }),
-      }),
-      typeValues,
-    ),
-  );
-  variables.push(
-    translateVariableDeclaration(
-      hrg.VariableDeclaration({
-        identifier: 'score',
-        type: hrg.TypeFunction({
-          lhs: hrg.TypeName({ identifier: 'Player' }),
-          rhs: hrg.TypeName({ identifier: 'Score' }),
-        }),
-        defaultValue: null,
-      }),
-      typeValues,
-    ),
   );
 
   const edges = [

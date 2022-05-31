@@ -10,10 +10,54 @@ import { createChevrotainHighlighter } from '../lib/createChevrotainHighlighter'
 import { Autosize } from './Autosize';
 
 const modeToExtensions = {
-  hrg: [createChevrotainHighlighter(hrg.cst.lexer)],
+  hrg: [
+    createChevrotainHighlighter(source => {
+      try {
+        const { cstNode, lexingResult } = hrg.cst.parse(source);
+        const ast = hrg.ast.visit(cstNode);
+        return {
+          color1: ast.functions.map(({ identifier }) => identifier),
+          color2: ast.domains.map(({ identifier }) => identifier),
+          color3: ast.variables.map(({ identifier }) => identifier),
+          lexingResult,
+        };
+      } catch (error) {
+        if (
+          error instanceof hrg.cst.LexerError ||
+          error instanceof hrg.cst.ParserError
+        ) {
+          return { lexingResult: error.lexingResult };
+        }
+
+        throw error;
+      }
+    }),
+  ],
   javascript: [javascript()],
   json: [json()],
-  rg: [createChevrotainHighlighter(rg.cst.lexer)],
+  rg: [
+    createChevrotainHighlighter(source => {
+      try {
+        const { cstNode, lexingResult } = rg.cst.parse(source);
+        const ast = rg.ast.visit(cstNode);
+        return {
+          color1: ast.constants.map(({ identifier }) => identifier),
+          color2: ast.types.map(({ identifier }) => identifier),
+          color3: ast.variables.map(({ identifier }) => identifier),
+          lexingResult,
+        };
+      } catch (error) {
+        if (
+          error instanceof rg.cst.LexerError ||
+          error instanceof rg.cst.ParserError
+        ) {
+          return { lexingResult: error.lexingResult };
+        }
+
+        throw error;
+      }
+    }),
+  ],
   text: [],
 };
 
