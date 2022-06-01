@@ -447,7 +447,7 @@ function translateAutomatonStatements(
               assignmentVariableDeclaration,
               `Unknown variable "${assignmentVariable.identifier}" in forall.`,
             );
-            const identifier = context.$random('x');
+            const identifier = context.$random('bind');
             const assignmentEdgeName = rg.EdgeName({
               parts: [
                 context.$randomLiteral(prefix),
