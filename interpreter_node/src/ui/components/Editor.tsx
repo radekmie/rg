@@ -44,11 +44,14 @@ export type EditorProps = ReactCodeMirrorProps & {
 };
 
 export function Editor({ mode, ...props }: EditorProps) {
-  const onEditor = useCallback((ref?: { editor?: HTMLDivElement }) => {
-    ref?.editor
-      ?.querySelector('.cm-content')
-      ?.setAttribute('data-enable-grammarly', 'false');
-  }, []);
+  const onEditor = useCallback(
+    (ref: { editor?: HTMLDivElement | null } | null) => {
+      ref?.editor
+        ?.querySelector('.cm-content')
+        ?.setAttribute('data-enable-grammarly', 'false');
+    },
+    [],
+  );
 
   return (
     <Autosize>
