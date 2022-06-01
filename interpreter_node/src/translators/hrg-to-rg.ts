@@ -995,9 +995,9 @@ function translateGameDeclaration(context: Context): rg.GameDeclaration {
 
   context.rg.edges = [
     rg.EdgeDeclaration({
-      label: rg.Skip({}),
       lhs: rg.EdgeName({ parts: [rg.Literal({ identifier: 'begin' })] }),
       rhs: rg.EdgeName({ parts: [rg.Literal({ identifier: 'rules_0' })] }),
+      label: rg.Skip({}),
     }),
   ];
 

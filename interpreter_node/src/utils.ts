@@ -60,6 +60,13 @@ export function pretty(object: unknown, options?: Options) {
     .replace(/\[Object: null prototype\] /g, '');
 }
 
+export function remove<T>(array: T[], element: T) {
+  const index = array.indexOf(element);
+  if (index !== -1) {
+    array.splice(index, 1);
+  }
+}
+
 export function safe<T>(fn: () => T): Result<T> {
   try {
     return { ok: true, value: fn() };
