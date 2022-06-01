@@ -94,11 +94,12 @@ export function serializeGameDeclaration(gameDeclaration: ast.GameDeclaration) {
         (xs, x) => (
           xs.length &&
             xs[xs.length - 1]
+              .split('(')[0]
               .split(',')[0]
               .split('_')
               .slice(0, -1)
               .join('_') !==
-              x.split(',')[0].split('_').slice(0, -1).join('_') &&
+              x.split('(')[0].split(',')[0].split('_').slice(0, -1).join('_') &&
             xs.push(''),
           xs.push(x),
           xs
