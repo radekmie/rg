@@ -48,22 +48,22 @@ fn run(game: &Game, rng: &mut ThreadRng, plays: usize) {
             print!("{esc}c", esc = 27 as char);
             println!("after {} plays:", play);
             println!("  avg. moves: {:.3}", avg(&moves));
-            println!("  avg. times: {:.3}ms", avg(&times) / 1e6f32);
             println!("  avg. turns: {:.3}", avg(&turns));
+            println!("  avg. times: {:.3}ms", avg(&times) / 1e6f32);
         }
     }
 }
 
-fn run_perf(game: &Game, depth: usize) {
+fn perf(game: &Game, depth: usize) {
     let state = State::initial(game);
     let start = Instant::now();
     let count = state.next_states_n(game, depth, true).count();
     println!(
-        "runPerf(depth: {}): {:.3}ms",
+        "perf(depth: {}) = {} in {:.3}ms",
         depth,
+        count,
         start.elapsed().as_nanos() as f32 / 1e6
     );
-    println!("runPerf(depth: {}) = {}", depth, count);
 }
 
 fn main() {
@@ -78,7 +78,7 @@ fn main() {
                 .map_or(10, |depth| depth.parse::<usize>().unwrap());
 
             for depth in 0..=depth {
-                run_perf(&game, depth);
+                perf(&game, depth);
             }
         }
         "run" => {
