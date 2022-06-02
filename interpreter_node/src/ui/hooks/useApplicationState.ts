@@ -21,8 +21,10 @@ export type View =
   | 'CST (LL)'
   | 'Graphviz (LL)'
   | 'IST (LL)'
-  | 'Source (HL)'
-  | 'Source (LL)';
+  | 'Source (HL, formatted)'
+  | 'Source (HL, original)'
+  | 'Source (LL, formatted)'
+  | 'Source (LL, original)';
 
 const initialPreset = presets[0];
 const initialState: State = {

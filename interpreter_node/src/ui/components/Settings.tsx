@@ -62,20 +62,23 @@ export function Settings({
     [setView],
   );
 
+  const isHrg = settings.extension === Extension.hrg;
   const availableViews = useMemo(
     () => [
       { value: 'Bench' },
       { value: 'Automaton' },
-      { value: 'Source (HL)', disabled: settings.extension !== Extension.hrg },
-      { value: 'CST (HL)', disabled: settings.extension !== Extension.hrg },
-      { value: 'AST (HL)', disabled: settings.extension !== Extension.hrg },
-      { value: 'Source (LL)' },
+      { value: 'Source (HL, original)', disabled: !isHrg },
+      { value: 'Source (HL, formatted)', disabled: !isHrg },
+      { value: 'CST (HL)', disabled: !isHrg },
+      { value: 'AST (HL)', disabled: !isHrg },
+      { value: 'Source (LL, original)' },
+      { value: 'Source (LL, formatted)' },
       { value: 'CST (LL)' },
       { value: 'AST (LL)' },
       { value: 'IST (LL)' },
       { value: 'Graphviz (LL)' },
     ],
-    [settings.extension],
+    [isHrg],
   );
 
   return (

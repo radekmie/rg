@@ -30,11 +30,11 @@ export function serializeEdgeLabel(edgeLabel: ast.EdgeLabel): string {
   }
 }
 
-export function serializeEdgeName(edgeName: ast.EdgeName): string {
+export function serializeEdgeName(edgeName: ast.EdgeName) {
   return edgeName.parts.map(serializeEdgeNamePart).join('');
 }
 
-export function serializeEdgeNamePart(edgeNamePart: ast.EdgeNamePart): string {
+export function serializeEdgeNamePart(edgeNamePart: ast.EdgeNamePart) {
   switch (edgeNamePart.kind) {
     case 'Binding':
       return `(${edgeNamePart.identifier}: ${serializeType(
@@ -112,9 +112,9 @@ export function serializeGameDeclaration(gameDeclaration: ast.GameDeclaration) {
 export function serializeType(type: ast.Type): string {
   switch (type.kind) {
     case 'Arrow':
-      return [type.lhs, '->', serializeType(type.rhs)].join(' ');
+      return `${type.lhs} -> ${serializeType(type.rhs)}`;
     case 'Set':
-      return ['{', type.identifiers.join(', '), '}'].join(' ');
+      return `{ ${type.identifiers.join(', ')} }`;
     case 'TypeReference':
       return type.identifier;
   }
@@ -125,21 +125,15 @@ export function serializeValue(value: ast.Value): string {
     case 'Element':
       return value.identifier;
     case 'Map':
-      return [
-        '{',
-        value.entries
-          .map(valueEntry => {
-            switch (valueEntry.kind) {
-              case 'DefaultEntry':
-                return `:${serializeValue(valueEntry.value)}`;
-              case 'NamedEntry':
-                return `${valueEntry.identifier}: ${serializeValue(
-                  valueEntry.value,
-                )}`;
-            }
-          })
-          .join(', '),
-        '}',
-      ].join(' ');
+      return `{ ${value.entries.map(serializeValueEntry).join(', ')} }`;
+  }
+}
+
+export function serializeValueEntry(valueEntry: ast.ValueEntry) {
+  switch (valueEntry.kind) {
+    case 'DefaultEntry':
+      return `:${serializeValue(valueEntry.value)}`;
+    case 'NamedEntry':
+      return `${valueEntry.identifier}: ${serializeValue(valueEntry.value)}`;
   }
 }

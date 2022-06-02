@@ -46,10 +46,34 @@ export function Application() {
                 return <Graphviz source={game.value.graphvizRg} />;
               case 'Bench':
                 return <Bench game={game.value.istRg} />;
-              case 'Source (HL)':
-                return <Editor mode="hrg" value={game.value.sourceHrg ?? ''} />;
-              case 'Source (LL)':
-                return <Editor mode="rg" value={game.value.sourceRg} />;
+              case 'Source (HL, formatted)':
+              case 'Source (HL, original)':
+              case 'Source (LL, formatted)':
+              case 'Source (LL, original)':
+                return (
+                  <Editor
+                    {...(
+                      {
+                        'Source (HL, formatted)': {
+                          mode: 'hrg',
+                          value: game.value.sourceHrgFormatted ?? '',
+                        },
+                        'Source (HL, original)': {
+                          mode: 'hrg',
+                          value: game.value.sourceHrg ?? '',
+                        },
+                        'Source (LL, formatted)': {
+                          mode: 'rg',
+                          value: game.value.sourceRgFormatted,
+                        },
+                        'Source (LL, original)': {
+                          mode: 'rg',
+                          value: game.value.sourceRg,
+                        },
+                      } as const
+                    )[view]}
+                  />
+                );
               default:
                 return (
                   <PrettyPrint

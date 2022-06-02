@@ -2,19 +2,29 @@ import * as hrg from './hrg';
 import * as rg from './rg';
 import * as translators from './translators';
 import { Extension, Settings } from './types';
+import * as utils from './utils';
 
 function analyzeHrg(source: string, settings: Settings) {
   const sourceHrg = source;
   const cstHrg = hrg.cst.parse(sourceHrg).cstNode;
   const astHrg = hrg.ast.visit(cstHrg);
   const astRg = translators.hrg2rg(astHrg);
+  const sourceRg = rg.ast.serializeGameDeclaration(astRg);
+
+  const sourceHrgFormatted = hrg.ast.serializeGameDeclaration(astHrg);
+  const cstHrgFormatted = hrg.cst.parse(sourceHrgFormatted).cstNode;
+  const astHrgFormatted = hrg.ast.visit(cstHrgFormatted);
+  if (!utils.isEqual(astHrg, astHrgFormatted)) {
+    throw new Error('HrgFormattingError (AST mismatch)');
+  }
 
   return {
-    ...analyzeRgAst(astRg, settings),
+    ...analyzeRg(sourceRg, settings),
     astHrg,
     astRg,
     cstHrg,
     sourceHrg,
+    sourceHrgFormatted,
   };
 }
 
@@ -23,18 +33,19 @@ function analyzeRg(source: string, settings: Settings) {
   const cstRg = rg.cst.parse(sourceRg).cstNode;
   const astRg = rg.ast.visit(cstRg);
 
-  return analyzeRgAst(astRg, settings);
-}
-
-function analyzeRgAst(astRg: rg.ast.GameDeclaration, settings: Settings) {
   if (settings.flags.compactSkipEdges) {
     rg.optimizer.compactSkipEdges(astRg);
   }
 
-  const sourceRg = rg.ast.serializeGameDeclaration(astRg);
-  const cstRg = rg.cst.parse(sourceRg).cstNode;
   const istRg = rg.ist.build(astRg);
   const graphvizRg = rg.ast.graphviz(astRg);
+
+  const sourceRgFormatted = rg.ast.serializeGameDeclaration(astRg);
+  const cstRgFormatted = rg.cst.parse(sourceRgFormatted).cstNode;
+  const astRgFormatted = rg.ast.visit(cstRgFormatted);
+  if (!utils.isEqual(astRg, astRgFormatted)) {
+    throw new Error('RgFormattingError (AST mismatch)');
+  }
 
   return {
     astHrg: null,
@@ -44,7 +55,9 @@ function analyzeRgAst(astRg: rg.ast.GameDeclaration, settings: Settings) {
     graphvizRg,
     istRg,
     sourceHrg: null,
+    sourceHrgFormatted: null,
     sourceRg,
+    sourceRgFormatted,
   };
 }
 

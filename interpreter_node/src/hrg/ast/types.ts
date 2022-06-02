@@ -306,8 +306,8 @@ export type AutomatonStatement =
   | AutomatonAssignment
   | AutomatonBranch
   | AutomatonCall
-  | AutomatonWhen
   | AutomatonLoop
+  | AutomatonWhen
   | AutomatonWhile;
 export type DomainElement = DomainGenerator | DomainLiteral;
 export type DomainValue = DomainRange | DomainSet;

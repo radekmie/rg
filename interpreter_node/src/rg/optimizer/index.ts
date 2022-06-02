@@ -12,15 +12,11 @@ function hasBindings(edgeName: ast.EdgeName) {
 }
 
 function incoming(edges: ast.EdgeDeclaration[], edgeName: ast.EdgeName) {
-  return edges.filter(({ rhs }) => isEqual(edgeName, rhs));
-}
-
-function isEqual(a: ast.EdgeName, b: ast.EdgeName) {
-  return JSON.stringify(a) === JSON.stringify(b);
+  return edges.filter(({ rhs }) => utils.isEqual(edgeName, rhs));
 }
 
 function isFollowing(x: ast.EdgeDeclaration, y: ast.EdgeDeclaration) {
-  return isEqual(x.rhs, y.lhs);
+  return utils.isEqual(x.rhs, y.lhs);
 }
 
 function isSkip({ kind }: ast.EdgeLabel) {
@@ -71,7 +67,7 @@ function rebindExpression(
 }
 
 function outgoing(edges: ast.EdgeDeclaration[], edgeName: ast.EdgeName) {
-  return edges.filter(({ lhs }) => isEqual(edgeName, lhs));
+  return edges.filter(({ lhs }) => utils.isEqual(edgeName, lhs));
 }
 
 // eslint-disable-next-line complexity -- It's fine.

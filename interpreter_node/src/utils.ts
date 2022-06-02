@@ -34,6 +34,10 @@ export function findMap<T, U>(xs: T[], fn: (x: T) => U | undefined) {
   return undefined;
 }
 
+export function isEqual<T>(a: T, b: T) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 export function mapValues<T, U>(
   object: Record<string, T>,
   fn: (value: T) => U,
