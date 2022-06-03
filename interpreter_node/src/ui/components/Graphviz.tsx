@@ -53,6 +53,7 @@ export function Graphviz({ source }: GraphvizProps) {
       {({ height, width }) => (
         <section className={styles.wrapHidden}>
           <UncontrolledReactSVGPanZoom
+            customMiniature={Miniature}
             defaultTool={TOOL_PAN}
             height={height}
             width={width}
@@ -67,4 +68,8 @@ export function Graphviz({ source }: GraphvizProps) {
   ) : (
     <PrettyPrint value={svg.error} />
   );
+}
+
+function Miniature() {
+  return null;
 }

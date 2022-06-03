@@ -11,6 +11,7 @@ program
   .name('node lib/cli')
   .argument('<file>', 'path to game description file (.hrg or .rg)')
   .option('--compactSkipEdges', 'optimize automaton by compacting skip edges')
+  .option('--expandGeneratorNodes', 'expand generator nodes')
   .configureHelp({ sortOptions: true, sortSubcommands: true });
 
 function addCommand(
@@ -35,7 +36,10 @@ function addCommand(
 
       const game = parse(fs.readFileSync(file, { encoding: 'utf8' }), {
         extension,
-        flags: { compactSkipEdges: !!options.compactSkipEdges },
+        flags: {
+          compactSkipEdges: !!options.compactSkipEdges,
+          expandGeneratorNodes: !!options.expandGeneratorNodes,
+        },
       });
 
       operation(game, ...args);

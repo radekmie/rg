@@ -7,6 +7,86 @@ function bindings({ parts }: ast.EdgeName) {
   });
 }
 
+function expand(gameDeclaration: ast.GameDeclaration, edgeName: ast.EdgeName) {
+  const identifiers = bindings(edgeName).map(binding => binding.identifier);
+  const edgeNames = bindings(edgeName)
+    .map(binding =>
+      expandType(gameDeclaration, binding.type).map(ast.serializeValue),
+    )
+    .reduce<string[][]>(utils.cartesian, [[]])
+    .map<[Record<string, ast.Reference>, ast.EdgeName]>(values => [
+      Object.fromEntries(
+        identifiers.map((identifier, index) => [
+          identifier,
+          ast.Reference({ identifier: values[index] }),
+        ]),
+      ),
+      ast.EdgeName({
+        parts: [
+          ast.Literal({
+            identifier: edgeName.parts
+              .map(part => {
+                switch (part.kind) {
+                  case 'Binding':
+                    return values.shift()!;
+                  case 'Literal':
+                    return part.identifier;
+                }
+              })
+              .join('__bind__'),
+          }),
+        ],
+      }),
+    ]);
+
+  for (const edge of gameDeclaration.edges.slice()) {
+    if (utils.isEqual(edge.lhs, edgeName)) {
+      utils.remove(gameDeclaration.edges, edge);
+      for (const [mapping, edgeName] of edgeNames) {
+        gameDeclaration.edges.push(
+          ast.EdgeDeclaration({
+            lhs: edgeName,
+            rhs: edge.rhs,
+            label: substitute(edge.label, mapping),
+          }),
+        );
+      }
+    }
+
+    if (utils.isEqual(edge.rhs, edgeName)) {
+      utils.remove(gameDeclaration.edges, edge);
+      for (const [mapping, edgeName] of edgeNames) {
+        gameDeclaration.edges.push(
+          ast.EdgeDeclaration({
+            lhs: edge.lhs,
+            rhs: edgeName,
+            label: substitute(edge.label, mapping),
+          }),
+        );
+      }
+    }
+  }
+}
+
+function expandType(
+  gameDeclaration: ast.GameDeclaration,
+  type: ast.Type,
+): ast.Value[] {
+  switch (type.kind) {
+    case 'Arrow':
+      throw new Error('Not implemented (Arrow).');
+    case 'Set':
+      return type.identifiers.map(identifier => ast.Element({ identifier }));
+    case 'TypeReference': {
+      const referencedType = utils.find(gameDeclaration.types, {
+        identifier: type.identifier,
+      });
+      utils.assert(referencedType, `Unresolved type "${type.identifier}".`);
+      return expandType(gameDeclaration, referencedType.type);
+    }
+  }
+}
+
 function hasBindings(edgeName: ast.EdgeName) {
   return bindings(edgeName).length !== 0;
 }
@@ -63,6 +143,50 @@ function rebindExpression(
         expression.identifier = mapping[expression.identifier];
       }
       return;
+  }
+}
+
+function substitute(
+  edgeLabel: ast.EdgeLabel,
+  mapping: Record<string, ast.Reference>,
+) {
+  switch (edgeLabel.kind) {
+    case 'Assignment':
+      return ast.Assignment({
+        lhs: substituteExpression(edgeLabel.lhs, mapping),
+        rhs: substituteExpression(edgeLabel.rhs, mapping),
+      });
+    case 'Comparison':
+      return ast.Comparison({
+        lhs: substituteExpression(edgeLabel.lhs, mapping),
+        rhs: substituteExpression(edgeLabel.rhs, mapping),
+        negated: edgeLabel.negated,
+      });
+    case 'Reachability':
+    case 'Skip':
+      return edgeLabel;
+  }
+}
+
+function substituteExpression(
+  expression: ast.Expression,
+  mapping: Record<string, ast.Reference>,
+): ast.Expression {
+  switch (expression.kind) {
+    case 'Access':
+      return ast.Access({
+        lhs: substituteExpression(expression.lhs, mapping),
+        rhs: substituteExpression(expression.rhs, mapping),
+      });
+    case 'Cast':
+      return ast.Cast({
+        lhs: expression.lhs,
+        rhs: substituteExpression(expression.rhs, mapping),
+      });
+    case 'Reference':
+      return expression.identifier in mapping
+        ? mapping[expression.identifier]
+        : expression;
   }
 }
 
@@ -130,7 +254,7 @@ export function compactSkipEdges({ edges }: ast.GameDeclaration) {
   // Conditions:
   //   1. x = Skip
   //   2. b has no other incoming edges
-  //   4. b has no bindings
+  //   3. b has no bindings
   for (const x of edges.slice()) {
     if (isSkip(x.label) && !hasBindings(x.rhs)) {
       for (const y of edges.slice()) {
@@ -139,6 +263,24 @@ export function compactSkipEdges({ edges }: ast.GameDeclaration) {
           y.lhs = x.lhs;
         }
       }
+    }
+  }
+}
+
+export function expandGeneratorNodes(gameDeclaration: ast.GameDeclaration) {
+  const edgeNames = gameDeclaration.edges
+    .flatMap(edge => [edge.lhs, edge.rhs])
+    .reduce<ast.EdgeName[]>((edgeNames, edgeName) => {
+      if (!edgeNames.some(other => utils.isEqual(other, edgeName))) {
+        edgeNames.push(edgeName);
+      }
+
+      return edgeNames;
+    }, []);
+
+  for (const edgeName of edgeNames) {
+    if (hasBindings(edgeName)) {
+      expand(gameDeclaration, edgeName);
     }
   }
 }

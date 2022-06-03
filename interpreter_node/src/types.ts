@@ -7,5 +7,6 @@ export type Settings = {
   extension: Extension;
   flags: {
     compactSkipEdges: boolean;
+    expandGeneratorNodes: boolean;
   };
 };

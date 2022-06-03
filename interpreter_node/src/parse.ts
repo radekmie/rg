@@ -2,7 +2,6 @@ import * as hrg from './hrg';
 import * as rg from './rg';
 import * as translators from './translators';
 import { Extension, Settings } from './types';
-import * as utils from './utils';
 
 function analyzeHrg(source: string, settings: Settings) {
   const sourceHrg = source;
@@ -10,13 +9,7 @@ function analyzeHrg(source: string, settings: Settings) {
   const astHrg = hrg.ast.visit(cstHrg);
   const astRg = translators.hrg2rg(astHrg);
   const sourceRg = rg.ast.serializeGameDeclaration(astRg);
-
   const sourceHrgFormatted = hrg.ast.serializeGameDeclaration(astHrg);
-  const cstHrgFormatted = hrg.cst.parse(sourceHrgFormatted).cstNode;
-  const astHrgFormatted = hrg.ast.visit(cstHrgFormatted);
-  if (!utils.isEqual(astHrg, astHrgFormatted)) {
-    throw new Error('HrgFormattingError (AST mismatch)');
-  }
 
   return {
     ...analyzeRg(sourceRg, settings),
@@ -37,15 +30,13 @@ function analyzeRg(source: string, settings: Settings) {
     rg.optimizer.compactSkipEdges(astRg);
   }
 
+  if (settings.flags.expandGeneratorNodes) {
+    rg.optimizer.expandGeneratorNodes(astRg);
+  }
+
   const istRg = rg.ist.build(astRg);
   const graphvizRg = rg.ast.graphviz(astRg);
-
   const sourceRgFormatted = rg.ast.serializeGameDeclaration(astRg);
-  const cstRgFormatted = rg.cst.parse(sourceRgFormatted).cstNode;
-  const astRgFormatted = rg.ast.visit(cstRgFormatted);
-  if (!utils.isEqual(astRg, astRgFormatted)) {
-    throw new Error('RgFormattingError (AST mismatch)');
-  }
 
   return {
     astHrg: null,

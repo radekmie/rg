@@ -14,7 +14,7 @@ import { presets } from '../const/presets';
 import { useApplicationState, View } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
 
-const configurableFlags = ['compactSkipEdges'] as const;
+const configurableFlags = ['compactSkipEdges', 'expandGeneratorNodes'] as const;
 const availablePresets = presets.map(game => game.name);
 
 export type SettingsProps = {
@@ -107,18 +107,17 @@ export function Settings({
           <Radio label="hrg" value={Extension.hrg} />
           <Radio label="rg" value={Extension.rg} />
         </RadioGroup>
-        <section className={styles.options}>
-          <Label>Flags</Label>
-          {configurableFlags.map(flag => (
+        {configurableFlags.map((flag, index) => (
+          <section className={styles.options} key={flag}>
+            <Label>{index === 0 ? 'Flags' : ''}</Label>
             <Checkbox
               checked={settings.flags[flag]}
-              key={flag}
-              label={flag}
+              label={`--${flag}`}
               name={flag}
               onChange={onFlag}
             />
-          ))}
-        </section>
+          </section>
+        ))}
       </Callout>
     </>
   );
