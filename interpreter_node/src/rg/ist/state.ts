@@ -143,7 +143,7 @@ export function* nextStates(
     if (state.position.label !== lhs.label) {
       continue;
     }
-    for (const rhs of reifyNodes(game, lhs, rhsGenerator)) {
+    for (const rhs of reifyNodes(lhs, rhsGenerator)) {
       state.position = rhs;
       switch (label.kind) {
         case 'Assignment': {
@@ -183,11 +183,7 @@ export function* nextStates(
   }
 }
 
-export function* reifyNodes(
-  game: ist.Game,
-  lhs: ist.EdgeName,
-  rhsGenerator: ist.EdgeName,
-) {
+export function* reifyNodes(lhs: ist.EdgeName, rhsGenerator: ist.EdgeName) {
   // Fast path: nothing to substitute.
   const binds = Object.keys(rhsGenerator.types);
   if (binds.length === 0) {

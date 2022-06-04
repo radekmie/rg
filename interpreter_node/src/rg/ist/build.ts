@@ -250,8 +250,6 @@ function buildValue(
       });
     }
   }
-
-  throw value;
 }
 
 function buildVariables(
