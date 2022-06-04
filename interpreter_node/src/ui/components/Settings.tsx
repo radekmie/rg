@@ -18,7 +18,7 @@ const availablePresets = presets.map(game => game.name);
 const configurableFlags = [
   'compactSkipEdges',
   'expandGeneratorNodes',
-  'renameSymbols',
+  'mangleSymbols',
 ] as const;
 
 export type SettingsProps = {

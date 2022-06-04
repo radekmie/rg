@@ -38,6 +38,13 @@ export function isEqual<T>(a: T, b: T) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+export function mapToObject<T, U>(
+  array: T[],
+  fn: (element: T, index: number) => [string, U],
+) {
+  return Object.fromEntries(array.map(fn));
+}
+
 export function mapValues<T, U>(
   object: Record<string, T>,
   fn: (value: T) => U,
@@ -77,4 +84,12 @@ export function safe<T>(fn: () => T): Result<T> {
   } catch (error) {
     return { ok: false, error };
   }
+}
+
+export function unique<T>(array: T[], element: T) {
+  if (!array.some(other => isEqual(other, element))) {
+    array.push(element);
+  }
+
+  return array;
 }
