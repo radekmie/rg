@@ -8,5 +8,6 @@ export type Settings = {
   flags: {
     compactSkipEdges: boolean;
     expandGeneratorNodes: boolean;
+    mangleSymbols: boolean;
   };
 };

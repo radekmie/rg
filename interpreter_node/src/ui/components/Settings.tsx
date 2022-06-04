@@ -14,8 +14,12 @@ import { presets } from '../const/presets';
 import { useApplicationState, View } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
 
-const configurableFlags = ['compactSkipEdges', 'expandGeneratorNodes'] as const;
 const availablePresets = presets.map(game => game.name);
+const configurableFlags = [
+  'compactSkipEdges',
+  'expandGeneratorNodes',
+  'renameSymbols',
+] as const;
 
 export type SettingsProps = {
   intent: Intent;

@@ -12,6 +12,7 @@ program
   .argument('<file>', 'path to game description file (.hrg or .rg)')
   .option('--compactSkipEdges', 'optimize automaton by compacting skip edges')
   .option('--expandGeneratorNodes', 'expand generator nodes')
+  .option('--mangleSymbols', 'mangle all user-defined symbols')
   .configureHelp({ sortOptions: true, sortSubcommands: true });
 
 function addCommand(
@@ -39,6 +40,7 @@ function addCommand(
         flags: {
           compactSkipEdges: !!options.compactSkipEdges,
           expandGeneratorNodes: !!options.expandGeneratorNodes,
+          mangleSymbols: !!options.mangleSymbols,
         },
       });
 

@@ -41,6 +41,10 @@ function analyzeRg(source: string, settings: Settings) {
     rg.optimizer.expandGeneratorNodes(astRg);
   }
 
+  if (settings.flags.mangleSymbols) {
+    rg.optimizer.mangleSymbols(astRg);
+  }
+
   const istRg = rg.ist.build(astRg);
   const graphvizRg = rg.ast.graphviz(astRg);
 

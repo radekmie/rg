@@ -30,7 +30,11 @@ const initialPreset = presets[0];
 const initialState: State = {
   settings: {
     extension: initialPreset.extension,
-    flags: { compactSkipEdges: true, expandGeneratorNodes: false },
+    flags: {
+      compactSkipEdges: true,
+      expandGeneratorNodes: false,
+      mangleSymbols: false,
+    },
   },
   source: initialPreset.source,
   view: 'Automaton',
