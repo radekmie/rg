@@ -9,5 +9,6 @@ export type Settings = {
     compactSkipEdges: boolean;
     expandGeneratorNodes: boolean;
     mangleSymbols: boolean;
+    reuseFunctions: boolean;
   };
 };

@@ -1,11 +1,13 @@
 import { ast as hrg } from '../hrg';
 import { ast as rg } from '../rg';
+import { Settings } from '../types';
 import * as utils from '../utils';
 
 type Context = {
   $random: (prefix: string) => string;
   $randomEdgeName: (prefix: string) => rg.EdgeName;
   $randomLiteral: (prefix: string) => rg.Literal;
+  $settings: Settings;
   hrg: hrg.GameDeclaration;
   rg: rg.GameDeclaration;
   typeValues: Record<string, hrg.Value[]>;
@@ -347,20 +349,51 @@ function translateAutomatonFunction(
   returnEdgeName: rg.EdgeName | null,
   prefix: string,
 ) {
-  translateAutomatonStatements(
+  const returns = translateAutomatonStatements(
     context,
     automatonFunction.body,
     rg.EdgeName({
       parts: [
-        rg.Literal({ identifier: `${prefix}${automatonFunction.name}_0` }),
+        rg.Literal({
+          identifier: context.$settings.flags.reuseFunctions
+            ? `${automatonFunction.name}_begin`
+            : `${prefix}${automatonFunction.name}_begin`,
+        }),
       ],
     }),
     exitEdgeName,
-    returnEdgeName,
+    rg.EdgeName({
+      parts: [
+        rg.Literal({
+          identifier: context.$settings.flags.reuseFunctions
+            ? `${automatonFunction.name}_end`
+            : `${prefix}${automatonFunction.name}_end`,
+        }),
+      ],
+    }),
     `${prefix}${automatonFunction.name}`,
   );
+
+  if (returns && returnEdgeName) {
+    context.rg.edges.push(
+      rg.EdgeDeclaration({
+        lhs: rg.EdgeName({
+          parts: [
+            rg.Literal({
+              identifier: context.$settings.flags.reuseFunctions
+                ? `${automatonFunction.name}_end`
+                : `${prefix}${automatonFunction.name}_end`,
+            }),
+          ],
+        }),
+        rhs: returnEdgeName,
+        label: rg.Skip({}),
+      }),
+    );
+  }
 }
 
+// eslint-disable-next-line complexity -- It could use some refactor.
 function translateAutomatonStatements(
   context: Context,
   automatonStatements: hrg.AutomatonStatement[],
@@ -489,7 +522,7 @@ function translateAutomatonStatements(
                 label: rg.Skip({}),
               }),
             );
-            return;
+            return true;
           }
           default: {
             const automatonFunction = context.hrg.automaton.find(
@@ -500,18 +533,86 @@ function translateAutomatonStatements(
               automatonFunction,
               `Unknown automaton function "${automatonStatement.identifier}".`,
             );
+            const callId = context.$random(`${automatonFunction.name}_call`);
+            const variable = `${automatonFunction.name}_return`;
+            if (context.$settings.flags.reuseFunctions) {
+              if (
+                context.rg.variables.some(
+                  ({ identifier }) => identifier === variable,
+                )
+              ) {
+                const typeDeclaration = context.rg.types.find(
+                  ({ identifier }) => identifier === variable,
+                );
+                utils.assert(typeDeclaration, `Type "${variable}" not found.`);
+                utils.assert(
+                  typeDeclaration.type.kind === 'Set',
+                  `Type "${variable}" has invalid type.`,
+                );
+                typeDeclaration.type.identifiers.push(callId);
+              } else {
+                context.rg.types.push(
+                  rg.TypeDeclaration({
+                    identifier: variable,
+                    type: rg.Set({ identifiers: [callId] }),
+                  }),
+                );
+                context.rg.variables.push(
+                  rg.VariableDeclaration({
+                    identifier: variable,
+                    type: rg.TypeReference({ identifier: variable }),
+                    defaultValue: rg.Element({ identifier: callId }),
+                  }),
+                );
+              }
+
+              const callEdgeName = rg.EdgeName({
+                parts: [rg.Literal({ identifier: callId })],
+              });
+              context.rg.edges.push(
+                rg.EdgeDeclaration({
+                  lhs: currentEdgeName,
+                  rhs: callEdgeName,
+                  label: rg.Skip({}),
+                }),
+              );
+              const nextEdgeName = context.$randomEdgeName(prefix);
+              context.rg.edges.push(
+                rg.EdgeDeclaration({
+                  lhs: callEdgeName,
+                  rhs: nextEdgeName,
+                  label: rg.Assignment({
+                    lhs: rg.Reference({ identifier: variable }),
+                    rhs: rg.Reference({ identifier: callId }),
+                  }),
+                }),
+              );
+              currentEdgeName = nextEdgeName;
+            }
             context.rg.edges.push(
               rg.EdgeDeclaration({
                 lhs: currentEdgeName,
                 rhs: rg.EdgeName({
                   parts: [
-                    rg.Literal({ identifier: `${automatonFunction.name}_0` }),
+                    rg.Literal({
+                      identifier: `${automatonFunction.name}_begin`,
+                    }),
                   ],
                 }),
                 label: rg.Skip({}),
               }),
             );
-            const nextEdgeName = context.$randomEdgeName(prefix);
+            const nextEdgeName = context.$settings.flags.reuseFunctions
+              ? rg.EdgeName({
+                  parts: [
+                    rg.Literal({
+                      identifier: context.$random(
+                        `${automatonFunction.name}_return`,
+                      ),
+                    }),
+                  ],
+                })
+              : context.$randomEdgeName(prefix);
             translateAutomatonFunction(
               context,
               automatonFunction,
@@ -520,6 +621,21 @@ function translateAutomatonStatements(
               '',
             );
             currentEdgeName = nextEdgeName;
+            if (context.$settings.flags.reuseFunctions) {
+              const x = context.$randomEdgeName(prefix);
+              context.rg.edges.push(
+                rg.EdgeDeclaration({
+                  lhs: currentEdgeName,
+                  rhs: x,
+                  label: rg.Comparison({
+                    lhs: rg.Reference({ identifier: variable }),
+                    rhs: rg.Reference({ identifier: callId }),
+                    negated: false,
+                  }),
+                }),
+              );
+              currentEdgeName = x;
+            }
             continue;
           }
         }
@@ -537,7 +653,7 @@ function translateAutomatonStatements(
           currentEdgeName,
           prefix,
         );
-        return;
+        return false;
       case 'AutomatonWhen': {
         const thenEdgeName = context.$randomEdgeName(prefix);
         const elseEdgeName = context.$randomEdgeName(prefix);
@@ -574,6 +690,8 @@ function translateAutomatonStatements(
       }),
     );
   }
+
+  return true;
 }
 
 // eslint-disable-next-line complexity -- This function could be improved.
@@ -599,10 +717,7 @@ function translateCondition(
       );
       switch (expression.expression.identifier) {
         case 'not':
-          utils.assert(
-            expression.args.length === 1,
-            'reachable expects 1 argument',
-          );
+          utils.assert(expression.args.length === 1, 'not expects 1 argument');
           translateCondition(
             context,
             expression.args[0],
@@ -638,9 +753,45 @@ function translateCondition(
             `Unknown automaton function "${call.expression.identifier}".`,
           );
 
-          const automatonStartEdgeName =
-            context.$randomEdgeName(automatonPrefix);
+          const callId = context.$random(`${automatonFunction.name}_call`);
+          const automatonStartEdgeName = context.$settings.flags.reuseFunctions
+            ? rg.EdgeName({ parts: [rg.Literal({ identifier: callId })] })
+            : context.$randomEdgeName(automatonPrefix);
           let automatonCurrentEdgeName = automatonStartEdgeName;
+
+          const variable = `${automatonFunction.name}_return`;
+          if (context.$settings.flags.reuseFunctions) {
+            if (
+              context.rg.variables.some(
+                ({ identifier }) => identifier === variable,
+              )
+            ) {
+              const typeDeclaration = context.rg.types.find(
+                ({ identifier }) => identifier === variable,
+              );
+              utils.assert(typeDeclaration, `Type "${variable}" not found.`);
+              utils.assert(
+                typeDeclaration.type.kind === 'Set',
+                `Type "${variable}" has invalid type.`,
+              );
+              typeDeclaration.type.identifiers.push(callId);
+            } else {
+              context.rg.types.push(
+                rg.TypeDeclaration({
+                  identifier: variable,
+                  type: rg.Set({ identifiers: [callId] }),
+                }),
+              );
+              context.rg.variables.push(
+                rg.VariableDeclaration({
+                  identifier: variable,
+                  type: rg.TypeReference({ identifier: variable }),
+                  defaultValue: rg.Element({ identifier: callId }),
+                }),
+              );
+            }
+          }
+
           for (const arg of call.args) {
             const argEdgeName = context.$randomEdgeName(automatonPrefix);
             context.rg.edges.push(
@@ -659,27 +810,74 @@ function translateCondition(
             automatonCurrentEdgeName = argEdgeName;
           }
 
+          if (context.$settings.flags.reuseFunctions) {
+            const callEdgeName = context.$randomEdgeName(automatonPrefix);
+            context.rg.edges.push(
+              rg.EdgeDeclaration({
+                lhs: automatonCurrentEdgeName,
+                rhs: callEdgeName,
+                label: rg.Assignment({
+                  lhs: rg.Reference({ identifier: variable }),
+                  rhs: rg.Reference({ identifier: callId }),
+                }),
+              }),
+            );
+            automatonCurrentEdgeName = callEdgeName;
+          }
+
           context.rg.edges.push(
             rg.EdgeDeclaration({
               lhs: automatonCurrentEdgeName,
               rhs: rg.EdgeName({
                 parts: [
                   rg.Literal({
-                    identifier: `${automatonPrefix}_${automatonName}_0`,
+                    identifier: context.$settings.flags.reuseFunctions
+                      ? `${automatonName}_begin`
+                      : `${automatonPrefix}_${automatonName}_begin`,
                   }),
                 ],
               }),
               label: rg.Skip({}),
             }),
           );
-          const automatonEndEdgeName = context.$randomEdgeName(automatonPrefix);
-          translateAutomatonFunction(
-            context,
-            automatonFunction,
-            automatonEndEdgeName,
-            automatonEndEdgeName,
-            `${automatonPrefix}_`,
-          );
+          let automatonEndEdgeName = context.$settings.flags.reuseFunctions
+            ? rg.EdgeName({
+                parts: [rg.Literal({ identifier: `${automatonName}_end` })],
+              })
+            : context.$randomEdgeName(automatonPrefix);
+          if (!context.$settings.flags.reuseFunctions) {
+            translateAutomatonFunction(
+              context,
+              automatonFunction,
+              automatonEndEdgeName,
+              automatonEndEdgeName,
+              `${automatonPrefix}_`,
+            );
+          }
+
+          if (context.$settings.flags.reuseFunctions) {
+            const callEdgeName = rg.EdgeName({
+              parts: [
+                rg.Literal({
+                  identifier: context.$random(
+                    `${automatonFunction.name}_return`,
+                  ),
+                }),
+              ],
+            });
+            context.rg.edges.push(
+              rg.EdgeDeclaration({
+                lhs: automatonEndEdgeName,
+                rhs: callEdgeName,
+                label: rg.Comparison({
+                  lhs: rg.Reference({ identifier: variable }),
+                  rhs: rg.Reference({ identifier: callId }),
+                  negated: false
+                }),
+              }),
+            );
+            automatonEndEdgeName = callEdgeName;
+          }
 
           if (thenEdgeName) {
             context.rg.edges.push(
@@ -996,7 +1194,7 @@ function translateGameDeclaration(context: Context): rg.GameDeclaration {
   context.rg.edges = [
     rg.EdgeDeclaration({
       lhs: rg.EdgeName({ parts: [rg.Literal({ identifier: 'begin' })] }),
-      rhs: rg.EdgeName({ parts: [rg.Literal({ identifier: 'rules_0' })] }),
+      rhs: rg.EdgeName({ parts: [rg.Literal({ identifier: 'rules_begin' })] }),
       label: rg.Skip({}),
     }),
   ];
@@ -1069,7 +1267,10 @@ function translateVariableDeclaration(
   });
 }
 
-export default function translate(hrg: hrg.GameDeclaration) {
+export default function translate(
+  hrg: hrg.GameDeclaration,
+  settings: Settings,
+) {
   const counters: Record<string, number> = Object.create(null);
   return translateGameDeclaration({
     $random(prefix: string) {
@@ -1085,6 +1286,7 @@ export default function translate(hrg: hrg.GameDeclaration) {
     $randomLiteral(prefix: string) {
       return rg.Literal({ identifier: this.$random(prefix) });
     },
+    $settings: settings,
     hrg,
     rg: rg.GameDeclaration({
       constants: [],

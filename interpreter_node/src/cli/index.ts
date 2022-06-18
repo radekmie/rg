@@ -13,6 +13,10 @@ program
   .option('--compactSkipEdges', 'optimize automaton by compacting skip edges')
   .option('--expandGeneratorNodes', 'expand generator nodes')
   .option('--mangleSymbols', 'mangle all user-defined symbols')
+  .option(
+    '--reuseFunctions',
+    'reuse subautomatons when translating function calls (high-level only)',
+  )
   .configureHelp({ sortOptions: true, sortSubcommands: true });
 
 function addCommand(
@@ -41,6 +45,7 @@ function addCommand(
           compactSkipEdges: !!options.compactSkipEdges,
           expandGeneratorNodes: !!options.expandGeneratorNodes,
           mangleSymbols: !!options.mangleSymbols,
+          reuseFunctions: !!options.reuseFunctions,
         },
       });
 

@@ -19,6 +19,7 @@ const configurableFlags = [
   'compactSkipEdges',
   'expandGeneratorNodes',
   'mangleSymbols',
+  'reuseFunctions',
 ] as const;
 
 export type SettingsProps = {

@@ -8,7 +8,7 @@ function analyzeHrg(source: string, settings: Settings) {
   const sourceHrg = source;
   const cstHrg = hrg.cst.parse(sourceHrg).cstNode;
   const astHrg = hrg.ast.visit(cstHrg);
-  const astRg = translators.hrg2rg(astHrg);
+  const astRg = translators.hrg2rg(astHrg, settings);
   const sourceRg = rg.ast.serializeGameDeclaration(astRg);
 
   const sourceHrgFormatted = hrg.ast.serializeGameDeclaration(astHrg);
