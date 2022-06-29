@@ -24,10 +24,5 @@ export function Autosize({ children }: AutosizeProps) {
     [setBox],
   );
 
-  return (
-    // @ts-expect-error: This component is incorrectly typed.
-    <ResizeSensor onResize={onResize}>
-      {children(box)}
-    </ResizeSensor>
-  );
+  return <ResizeSensor onResize={onResize}>{children(box)}</ResizeSensor>;
 }

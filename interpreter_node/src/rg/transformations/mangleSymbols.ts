@@ -11,7 +11,6 @@ const reservedSymbols = [
 ];
 
 export function mangleSymbols(gameDeclaration: ast.GameDeclaration) {
-  // eslint-disable-next-line @typescript-eslint/ban-types -- It's fine.
   function memo<T extends object>(fn: (object: T) => void) {
     const seen = new WeakSet();
     return (object: T) => {

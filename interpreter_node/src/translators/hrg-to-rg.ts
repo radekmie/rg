@@ -872,7 +872,7 @@ function translateCondition(
                 label: rg.Comparison({
                   lhs: rg.Reference({ identifier: variable }),
                   rhs: rg.Reference({ identifier: callId }),
-                  negated: false
+                  negated: false,
                 }),
               }),
             );
