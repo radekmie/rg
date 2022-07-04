@@ -62,8 +62,9 @@ function BenchBlock({
       () => {
         setResult(Intent.SUCCESS);
       },
-      () => {
+      error => {
         setResult(Intent.DANGER);
+        console.error(error);
       },
     );
   }, [action, game, inputState.valueAsNumber, logger]);

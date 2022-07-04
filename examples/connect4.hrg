@@ -1,0 +1,118 @@
+// FIXME: This game is NOT correct yet!
+
+domain Piece = empty | red | yellow
+domain Player = keeper | red | yellow
+domain Position = V(X, Y) where X in 1..7, Y in 1..6
+domain PositionOrNull = Position | null
+domain Score = draw | lose | win
+
+up : PositionOrNull -> PositionOrNull
+up(null) = null
+up(V(X, Y)) = if Y == 6 then null else V(X, Y + 1)
+
+right : PositionOrNull -> PositionOrNull
+right(null) = null
+right(V(X, Y)) = if X == 7 then null else V(X + 1, Y)
+
+down : PositionOrNull -> PositionOrNull
+down(null) = null
+down(V(X, Y)) = if Y == 1 then null else V(X, Y - 1)
+
+left : PositionOrNull -> PositionOrNull
+left(null) = null
+left(V(X, Y)) = if X == 1 then null else V(X - 1, Y)
+
+///////////////////////////////////////////////////////////////////////
+// FIXME: Right now all parameters have to be defined as variables too!
+me: Player
+op: Player
+piece: Piece
+///////////////////////////////////////////////////////////////////////
+
+board : PositionOrNull -> Piece
+board = { V(X, Y) = empty where X in 1..7, Y in 1..6 }
+
+player : Player
+player = keeper
+
+position : PositionOrNull
+
+score : Player -> Score
+
+graph win(piece: Piece) {
+  branch {
+    assert(board[up(left(position))] == piece)
+    assert(board[up(left(up(left(position))))] == piece)
+    branch {
+      assert(board[up(left(up(left(up(left(position))))))] == piece)
+    } or {
+      assert(board[down(right(position))] == piece)
+    }
+  } or {
+    assert(board[left(position)] == piece)
+    assert(board[left(left(position))] == piece)
+    branch {
+      assert(board[left(left(left(position)))] == piece)
+    } or {
+      assert(board[right(position)] == piece)
+    }
+  } or {
+    assert(board[down(left(position))] == piece)
+    assert(board[down(left(down(left(position))))] == piece)
+    branch {
+      assert(board[down(left(down(left(down(left(position))))))] == piece)
+    } or {
+      assert(board[up(right(position))] == piece)
+    }
+  } or {
+    assert(board[down(position)] == piece)
+    assert(board[down(down(position))] == piece)
+    assert(board[down(down(down(position)))] == piece)
+  } or {
+    assert(board[down(right(position))] == piece)
+    assert(board[down(right(down(right(position))))] == piece)
+    branch {
+      assert(board[down(right(down(right(down(right(position))))))] == piece)
+    } or {
+      assert(board[up(left(position))] == piece)
+    }
+  } or {
+    assert(board[right(position)] == piece)
+    assert(board[right(right(position))] == piece)
+    branch {
+      assert(board[right(right(right(position)))] == piece)
+    } or {
+      assert(board[left(position)] == piece)
+    }
+  } or {
+    assert(board[up(right(position))] == piece)
+    assert(board[up(right(up(right(position))))] == piece)
+    branch {
+      assert(board[up(right(up(right(up(right(position))))))] == piece)
+    } or {
+      assert(board[down(left(position))] == piece)
+    }
+  }
+}
+
+graph turn(me: Player, op: Player, piece: Piece) {
+  player = me
+  forall(position)
+  assert(position != null && board[position] == empty)
+  assert(down(position) == null || board[down(position)] != empty)
+  when reachable(win()) {
+    score[me] = win
+    score[op] = lose
+    return()
+  }
+  board[position] = piece
+}
+
+graph rules() {
+  score[red] = draw
+  score[yellow] = draw
+  loop {
+    turn(red, yellow, red)
+    turn(yellow, red, yellow)
+  }
+}

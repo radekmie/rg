@@ -34,7 +34,7 @@ const initialState: State = {
       compactSkipEdges: true,
       expandGeneratorNodes: false,
       mangleSymbols: false,
-      reuseFunctions: false,
+      reuseFunctions: true,
     },
   },
   source: initialPreset.source,

@@ -60,6 +60,10 @@ export async function run(game: ist.Game, plays = 1, logger: Logger) {
         break;
       }
 
+      if (turn === 1000) {
+        throw new Error('timeout');
+      }
+
       utils.assert(state.values.player.kind === 'Element', 'Player is element');
       if (state.values.player.value !== 'keeper') {
         increase(moves, states.length);
