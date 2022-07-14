@@ -462,6 +462,22 @@ function translateAutomatonStatements(
             currentEdgeName = nextEdgeName;
             continue;
           }
+          case 'exit': {
+            utils.assert(
+              automatonStatements.indexOf(automatonStatement) ===
+                automatonStatements.length - 1,
+              'Exit has to be the last statement.',
+            );
+            utils.assert(exitEdgeName, 'Exit requires exitEdgeName.');
+            context.rg.edges.push(
+              rg.EdgeDeclaration({
+                lhs: currentEdgeName,
+                rhs: exitEdgeName,
+                label: rg.Skip({}),
+              }),
+            );
+            return true;
+          }
           case 'forall': {
             utils.assert(
               automatonStatement.args.length === 1,
@@ -515,11 +531,11 @@ function translateAutomatonStatements(
                 automatonStatements.length - 1,
               'Return has to be the last statement.',
             );
-            utils.assert(exitEdgeName, 'Return requires exitEdgeName.');
+            utils.assert(returnEdgeName, 'Return requires returnEdgeName.');
             context.rg.edges.push(
               rg.EdgeDeclaration({
                 lhs: currentEdgeName,
-                rhs: exitEdgeName,
+                rhs: returnEdgeName,
                 label: rg.Skip({}),
               }),
             );

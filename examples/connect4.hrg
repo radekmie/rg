@@ -1,5 +1,3 @@
-// FIXME: This game is NOT correct yet!
-
 domain Piece = empty | red | yellow
 domain Player = keeper | red | yellow
 domain Position = V(X, Y) where X in 1..7, Y in 1..6
@@ -100,12 +98,13 @@ graph turn(me: Player, op: Player, piece: Piece) {
   forall(position)
   assert(position != null && board[position] == empty)
   assert(down(position) == null || board[down(position)] != empty)
+  board[position] = piece
+  player = keeper
   when reachable(win()) {
     score[me] = win
     score[op] = lose
-    return()
+    exit()
   }
-  board[position] = piece
 }
 
 graph rules() {
