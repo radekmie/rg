@@ -950,11 +950,17 @@ function translateCondition(
               label: rg.Skip({}),
             }),
           );
-          let automatonEndEdgeName = context.$settings.flags.reuseFunctions
-            ? rg.EdgeName({
-                parts: [rg.Literal({ identifier: `${automatonName}_end` })],
-              })
-            : context.$randomEdgeName(automatonPrefix);
+
+          let automatonEndEdgeName = rg.EdgeName({
+            parts: [
+              rg.Literal({
+                identifier: context.$settings.flags.reuseFunctions
+                  ? `${automatonName}_end`
+                  : `${automatonPrefix}_${automatonName}_end`,
+              }),
+            ],
+          });
+
           if (context.$settings.flags.reuseFunctions) {
             if (!context.translatedFunctions.has(automatonFunction)) {
               context.translatedFunctions.add(automatonFunction);
