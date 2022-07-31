@@ -103,7 +103,7 @@ graph turn(me: Player, op: Player, piece: Piece) {
   when reachable(win()) {
     score[me] = win
     score[op] = lose
-    exit()
+    end()
   }
 }
 

@@ -346,7 +346,7 @@ function serializeValue(value: hrg.Value): string {
 function translateAutomatonFunction(
   context: Context,
   automatonFunction: hrg.AutomatonFunction,
-  exitEdgeName: rg.EdgeName | null,
+  endEdgeName: rg.EdgeName | null,
   returnEdgeName: rg.EdgeName | null,
   prefix: string,
 ) {
@@ -362,7 +362,7 @@ function translateAutomatonFunction(
         }),
       ],
     }),
-    exitEdgeName,
+    endEdgeName,
     rg.EdgeName({
       parts: [
         rg.Literal({
@@ -399,7 +399,7 @@ function translateAutomatonStatements(
   context: Context,
   automatonStatements: hrg.AutomatonStatement[],
   entryEdgeName: rg.EdgeName,
-  exitEdgeName: rg.EdgeName | null,
+  endEdgeName: rg.EdgeName | null,
   returnEdgeName: rg.EdgeName | null,
   prefix: string,
 ) {
@@ -435,7 +435,7 @@ function translateAutomatonStatements(
             context,
             arm,
             currentEdgeName,
-            exitEdgeName,
+            endEdgeName,
             nextEdgeName,
             prefix,
           );
@@ -448,7 +448,7 @@ function translateAutomatonStatements(
           case 'assert': {
             utils.assert(
               automatonStatement.args.length === 1,
-              'assert expects 1 argument',
+              'assert() expects 1 argument',
             );
             const nextEdgeName = context.$randomEdgeName(prefix);
             translateCondition(
@@ -462,18 +462,18 @@ function translateAutomatonStatements(
             currentEdgeName = nextEdgeName;
             continue;
           }
-          case 'exit': {
+          case 'end': {
             utils.assert(
               automatonStatements.indexOf(automatonStatement) ===
                 automatonStatements.length - 1,
-              'Exit has to be the last statement.',
+              'end() has to be the last statement.',
             );
-            utils.assert(exitEdgeName, 'Exit requires exitEdgeName.');
+            utils.assert(endEdgeName, 'end() requires endEdgeName.');
             context.rg.edges.push(
               rg.EdgeDeclaration({
                 lhs: currentEdgeName,
-                rhs: exitEdgeName,
                 label: rg.Skip({}),
+                rhs: endEdgeName,
               }),
             );
             return true;
@@ -481,12 +481,12 @@ function translateAutomatonStatements(
           case 'forall': {
             utils.assert(
               automatonStatement.args.length === 1,
-              'forall expects 1 argument',
+              'forall() expects 1 argument',
             );
             const assignmentVariable = automatonStatement.args[0];
             utils.assert(
               assignmentVariable.kind === 'ExpressionLiteral',
-              'forall expects a literal',
+              'forall() expects a literal',
             );
             const assignmentVariableDeclaration = context.rg.variables.find(
               variableDeclaration =>
@@ -495,7 +495,7 @@ function translateAutomatonStatements(
             );
             utils.assert(
               assignmentVariableDeclaration,
-              `Unknown variable "${assignmentVariable.identifier}" in forall.`,
+              `Unknown variable "${assignmentVariable.identifier}" in forall().`,
             );
             const identifier = context.$random('bind');
             const assignmentEdgeName = rg.EdgeName({
@@ -529,9 +529,9 @@ function translateAutomatonStatements(
             utils.assert(
               automatonStatements.indexOf(automatonStatement) ===
                 automatonStatements.length - 1,
-              'Return has to be the last statement.',
+              'return() has to be the last statement.',
             );
-            utils.assert(returnEdgeName, 'Return requires returnEdgeName.');
+            utils.assert(returnEdgeName, 'return() requires returnEdgeName.');
             context.rg.edges.push(
               rg.EdgeDeclaration({
                 lhs: currentEdgeName,
@@ -665,7 +665,7 @@ function translateAutomatonStatements(
                 translateAutomatonFunction(
                   context,
                   automatonFunction,
-                  exitEdgeName,
+                  endEdgeName,
                   nextEdgeName,
                   '',
                 );
@@ -722,7 +722,7 @@ function translateAutomatonStatements(
               translateAutomatonFunction(
                 context,
                 automatonFunction,
-                exitEdgeName,
+                endEdgeName,
                 nextEdgeName,
                 callId,
               );
@@ -741,7 +741,7 @@ function translateAutomatonStatements(
           context,
           automatonStatement.body,
           currentEdgeName,
-          exitEdgeName,
+          endEdgeName,
           currentEdgeName,
           prefix,
         );
@@ -761,7 +761,7 @@ function translateAutomatonStatements(
           context,
           automatonStatement.body,
           thenEdgeName,
-          exitEdgeName,
+          endEdgeName,
           elseEdgeName,
           prefix,
         );

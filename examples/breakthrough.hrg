@@ -88,7 +88,7 @@ graph turn() {
   when direction(me)(position) == null || not(reachable(move(opponent(me)))) {
     score[me] = win
     score[opponent(me)] = lose
-    exit()
+    end()
   }
   me = opponent(me)
 }
