@@ -350,6 +350,35 @@ function translateAutomatonFunction(
   returnEdgeName: rg.EdgeName | null,
   prefix: string,
 ) {
+  for (const arg of automatonFunction.args) {
+    // Function arguments are hoisted into global variables, shadowing them if
+    // needed. For the sake of easier implementation, the type of a global
+    // variable has to match the type of the argument.
+    const type = translateType(arg.type);
+    const variable = context.rg.variables.find(
+      ({ identifier }) => identifier === arg.identifier,
+    );
+
+    if (variable) {
+      utils.assert(
+        utils.isEqual(type, variable.type),
+        `Argument "${arg.identifier}" of function "${
+          automatonFunction.name
+        }" has a different type than an already existing variable (${rg.serializeType(
+          type,
+        )} != ${rg.serializeType(variable.type)})`,
+      );
+    } else {
+      context.rg.variables.push(
+        rg.VariableDeclaration({
+          identifier: arg.identifier,
+          type,
+          defaultValue: translateValue(evaluateDefaultValue(context, type)),
+        }),
+      );
+    }
+  }
+
   const returns = translateAutomatonStatements(
     context,
     automatonFunction.body,

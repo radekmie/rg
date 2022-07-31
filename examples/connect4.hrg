@@ -20,13 +20,6 @@ left : PositionOrNull -> PositionOrNull
 left(null) = null
 left(V(X, Y)) = if X == 1 then null else V(X - 1, Y)
 
-///////////////////////////////////////////////////////////////////////
-// FIXME: Right now all parameters have to be defined as variables too!
-me: Player
-op: Player
-piece: Piece
-///////////////////////////////////////////////////////////////////////
-
 board : PositionOrNull -> Piece
 board = { V(X, Y) = empty where X in 1..7, Y in 1..6 }
 
