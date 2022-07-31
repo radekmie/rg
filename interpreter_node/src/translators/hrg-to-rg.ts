@@ -472,8 +472,11 @@ function translateAutomatonStatements(
             context.rg.edges.push(
               rg.EdgeDeclaration({
                 lhs: currentEdgeName,
-                label: rg.Skip({}),
                 rhs: endEdgeName,
+                label: rg.Assignment({
+                  lhs: rg.Reference({ identifier: 'player' }),
+                  rhs: rg.Reference({ identifier: 'keeper' }),
+                }),
               }),
             );
             return true;
