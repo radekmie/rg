@@ -21,9 +21,9 @@ export type View =
   | 'CST (LL)'
   | 'Graphviz (LL)'
   | 'IST (LL)'
-  | 'Source (HL, formatted)'
+  | 'Source (HL, optimized)'
   | 'Source (HL, original)'
-  | 'Source (LL, formatted)'
+  | 'Source (LL, optimized)'
   | 'Source (LL, original)';
 
 const initialPreset = presets[0];

@@ -46,15 +46,15 @@ export function Application() {
                 return <Graphviz source={game.value.graphvizRg} />;
               case 'Bench':
                 return <Bench game={game.value.istRg} />;
-              case 'Source (HL, formatted)':
+              case 'Source (HL, optimized)':
               case 'Source (HL, original)':
-              case 'Source (LL, formatted)':
+              case 'Source (LL, optimized)':
               case 'Source (LL, original)':
                 return (
                   <Editor
                     {...(
                       {
-                        'Source (HL, formatted)': {
+                        'Source (HL, optimized)': {
                           mode: 'hrg',
                           value: game.value.sourceHrgFormatted ?? '',
                         },
@@ -62,7 +62,7 @@ export function Application() {
                           mode: 'hrg',
                           value: game.value.sourceHrg ?? '',
                         },
-                        'Source (LL, formatted)': {
+                        'Source (LL, optimized)': {
                           mode: 'rg',
                           value: game.value.sourceRgFormatted,
                         },
