@@ -198,6 +198,10 @@ impl GameSerializedState {
     }
 
     fn intern_string(&mut self, string: &str) -> Id {
+        if self.strings.len() == Id::MAX as usize {
+            panic!("Maximum number of interned strings reached! Increase Id size.")
+        }
+
         let next_id = (self.strings.len() + 1) as Id;
         *self.strings.entry(string.to_string()).or_insert(next_id)
     }

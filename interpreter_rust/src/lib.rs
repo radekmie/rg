@@ -3,7 +3,7 @@ pub mod deserializer;
 use std::{collections::BTreeMap, ops::Deref, rc::Rc};
 
 // We assume that there is not _a lot_ of unique symbols.
-type Id = u8;
+type Id = u16;
 
 // Interned strings that the interpreter relies on.
 const LABEL_BEGIN: Id = 0;
