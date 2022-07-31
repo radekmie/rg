@@ -9,7 +9,7 @@ function perf_test {
   # Arguments
   local flags="$1"
   local name=$2
-  local results=( $3 )
+  local results=( ${@:3} )
 
   # Local variables
   local game=$(realpath "examples/$name")
@@ -38,12 +38,16 @@ function combine() {
   eval echo $(printf "{,%s}_" $(echo "$@ " | tac -s ' '))
 }
 
-# FIXME: `expandGeneratorNodes` hangs HRG games.
-for flags in $(combine 'compactSkipEdges' 'mangleSymbols' 'reuseFunctions'); do
-  flags=( $(echo "${flags//_/ }" | xargs) )
-  flags=${flags[@]/#/--}
-  perf_test "$flags" 'breakthrough.rg' '1 22 484 11132' # 256036'
-  perf_test "$flags" 'breakthrough.hrg' '1 22 484 11132' # 256036'
-  perf_test "$flags" 'connect4.hrg' '1 7 49 343 2401 16807' # 117649 823536 5673234'
-  perf_test "$flags" 'ticTacToe.rg' '1 9 72 504 3024 15120 54720' # 148176 200448 127872'
+games[0]='breakthrough.rg 1 22 484 11132' # 256036'
+games[1]='breakthrough.hrg 1 22 484 11132' # 256036'
+games[2]='connect4.hrg 1 7 49 343 2401 16807' # 117649 823536 5673234'
+games[3]='ticTacToe.rg 1 9 72 504 3024 15120 54720' # 148176 200448 127872'
+
+for game in "${games[@]}"; do
+  game=( $game )
+  for flags in $(combine 'compactSkipEdges' 'expandGeneratorNodes' 'mangleSymbols' 'reuseFunctions'); do
+    flags=( $(echo "${flags//_/ }" | xargs) )
+    flags=${flags[@]/#/--}
+    perf_test "$flags" "${game[0]}" ${game[@]:1}
+  done
 done
