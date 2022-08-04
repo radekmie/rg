@@ -19,8 +19,8 @@ function perf_test {
   # Actual script
   echo -e "\033[0;33m${name}\033[0m \033[0;36m${flags}\033[0m"
   (
-    (cd interpreter_node && time -f '  analyse time=%E memory=%Mkb' timeout --foreground 30 node lib/cli $flags rg-ist "$game" > $ist)
-    (cd interpreter_rust && time -f '  perform time=%E memory=%Mkb' timeout --foreground 30 ./target/release/interpreter_rust $ist perf ${#results[@]} > $out)
+    (cd interpreter_node && time=$(date +%s%N) && timeout --foreground 30 node lib/cli $flags rg-ist "$game" > $ist && time=$((($(date +%s%N) - $time) / 1000000)) && echo "  analyse time=${time}ms")
+    (cd interpreter_rust && time=$(date +%s%N) && timeout --foreground 30 ./target/release/interpreter_rust $ist perf ${#results[@]} > $out && time=$((($(date +%s%N) - $time) / 1000000)) && echo "  perform time=${time}ms")
   )
 
   for (( depth=0; depth<${#results[@]}; ++depth )); do
