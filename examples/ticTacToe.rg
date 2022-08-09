@@ -31,7 +31,8 @@ const onRLDiagonal: Coord -> Coord -> Bool = {2:{0:1,:0}, 1:{1:1,:0}, 0:{2:1,:0}
 begin,turn: playerTurn = Player(X);
 
 turn,move: ? move -> set;
-turn,end: ! move -> set;
+turn,preend: ! move -> set;
+preend,end: player = PlayerOrKeeper(keeper);
 
 move,chooseX: player = PlayerOrKeeper(playerTurn);
 chooseX,chooseX(coord:Coord): posX = Coord(coord);
