@@ -1,0 +1,136 @@
+// Domains
+domain Piece = arrow | blackqueen | empty | whitequeen
+domain Player = black | white
+domain PlayerOrKeeper = black | keeper | white
+domain Score = lose | win
+domain Square = V(X, Y) where X in 0..9, Y in { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }
+domain SquareOrNull = Square | null
+
+left : Square -> SquareOrNull
+left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
+
+right : Square -> SquareOrNull
+right(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
+
+up : Square -> SquareOrNull
+up(V(_, 0)) = null
+up(V(X, Y)) = V(X, Y - 1)
+
+down : Square -> SquareOrNull
+down(V(_, 9)) = null
+down(V(X, Y)) = V(X, Y + 1)
+
+upleft : Square -> SquareOrNull
+upleft(V(X, Y)) = if X == 0 then null else if Y == 0 then null else V(X-1,Y-1)
+
+upright : Square -> SquareOrNull
+upright(V(X, Y)) = if X == 9 then null else if Y == 0 then null else V(X+1,Y-1)
+
+downleft : Square -> SquareOrNull
+downleft(V(X, Y)) = if X == 0 then null else if Y == 9 then null else V(X-1,Y+1)
+
+downright : Square -> SquareOrNull
+downright(V(X, Y)) = if X == 9 then null else if Y == 9 then null else V(X+1,Y+1)
+
+piece : Player -> Piece
+piece(white) = whitequeen
+piece(_) = blackqueen
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(_) = white
+
+
+// Variables
+board : Square -> Piece
+board = {
+V(X, Y) =
+  if Y == 0 then if X == 3 then blackqueen else if X == 6 then blackqueen else empty else
+  if Y == 3 then if X == 0 then blackqueen else if X == 9 then blackqueen else empty else
+  if Y == 6 then if X == 0 then whitequeen else if X == 9 then whitequeen else empty else
+  if Y == 9 then if X == 3 then whitequeen else if X == 6 then whitequeen else empty else
+  empty
+  where X in 0..9, Y in 0..9
+}
+
+me : Player
+me = white
+
+player : PlayerOrKeeper
+player = keeper
+
+position : Square
+
+goals : Player -> Score
+
+
+graph followDirection(direction: Square -> SquareOrNull) {
+  position = direction(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(position) assert(position != null) assert(board[position] == empty)
+  }}}}}}}}
+}
+
+graph queenShift() {
+  branch {
+    followDirection(upleft)
+  } or {branch {
+    followDirection(up)
+  } or {branch {
+    followDirection(upright)
+  } or {branch {
+    followDirection(left)
+  } or {branch {
+    followDirection(right)
+  } or {branch {
+    followDirection(downleft)
+  } or {branch {
+    followDirection(down)
+  } or {
+    followDirection(downright)
+  }}}}}}}
+}
+
+graph move(me: Player) {
+  forall(position)
+  assert(board[position] == piece(me))
+  board[position] = empty
+  queenShift()
+  //player = keeper // split2 option
+  board[position] = piece(me)
+  //player = me // split2 option
+  queenShift()
+  board[position] = arrow
+}
+
+graph turn() {
+  player = me
+  move(me)
+  player = keeper
+  when not(reachable(move(opponent(me)))) {
+    goals[me] = win
+    goals[opponent(me)] = lose
+    end()
+  }
+  me = opponent(me)
+}
+
+graph rules() {
+  loop {
+    turn()
+  }
+}

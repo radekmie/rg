@@ -19,8 +19,8 @@ function perf_test {
   # Actual script
   echo -e "\033[0;33m${name}\033[0m \033[0;36m${flags}\033[0m"
   (
-    (cd interpreter_node && time=$(date +%s%N) && timeout --foreground 30 node lib/cli $flags rg-ist "$game" > $ist && time=$((($(date +%s%N) - $time) / 1000000)) && echo "  analyse time=${time}ms")
-    (cd interpreter_rust && time=$(date +%s%N) && timeout --foreground 30 ./target/release/interpreter_rust $ist perf ${#results[@]} > $out && time=$((($(date +%s%N) - $time) / 1000000)) && echo "  perform time=${time}ms")
+    (cd interpreter_node && time=$(date +%s%N) && timeout --foreground 120 node lib/cli $flags rg-ist "$game" > $ist && time=$((($(date +%s%N) - $time) / 1000000)) && echo "  analyse time=${time}ms")
+    (cd interpreter_rust && time=$(date +%s%N) && timeout --foreground 120 ./target/release/interpreter_rust $ist perf ${#results[@]} > $out && time=$((($(date +%s%N) - $time) / 1000000)) && echo "  perform time=${time}ms")
   )
 
   for (( depth=0; depth<${#results[@]}; ++depth )); do
@@ -38,10 +38,13 @@ function combine() {
   eval echo $(printf "{,%s}_" $(echo "$@ " | tac -s ' '))
 }
 
-games[0]='breakthrough.rg 1 22 484 11132' # 256036'
+games[0]='amazons.hrg 1 2176'
+#games[0]='amazons.hrg 1 2176 4307152'
+#games[0]='amazons.hrg 1 80 2176' # split2 option
 games[1]='breakthrough.hrg 1 22 484 11132' # 256036'
-games[2]='connect4.hrg 1 7 49 343 2401 16807' # 117649 823536 5673234'
-games[3]='ticTacToe.rg 1 9 72 504 3024 15120 54720' # 148176 200448 127872'
+games[2]='breakthrough.rg 1 22 484 11132' # 256036'
+games[3]='connect4.hrg 1 7 49 343 2401 16807' # 117649 823536 5673234'
+games[4]='ticTacToe.rg 1 9 72 504 3024 15120 54720' # 148176 200448 127872'
 
 for game in "${games[@]}"; do
   game=( $game )
