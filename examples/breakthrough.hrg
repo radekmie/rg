@@ -1,10 +1,10 @@
 // Domains
-domain Piece = black | empty | white
-domain Player = black | keeper | white
+domain Piece = blackpawn | empty | whitepawn
+domain Player = black | white
+domain PlayerOrKeeper = black | keeper | white
 domain Score = lose | win
 domain Square = V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
 domain SquareOrNull = Square | null
-
 
 // Helpers
 left : Square -> SquareOrNull
@@ -26,8 +26,8 @@ direction(white) = up
 direction(_) = down
 
 piece : Player -> Piece
-piece(white) = white
-piece(_) = black
+piece(white) = whitepawn
+piece(_) = blackpawn
 
 opponent : Player -> Player
 opponent(white) = black
@@ -39,9 +39,9 @@ opponent(_) = white
 board : Square -> Piece
 board = {
   V(X, Y) = if Y < 2
-    then black
+    then blackpawn
     else if Y > 5
-      then white
+      then whitepawn
       else empty
   where X in 0..7, Y in 0..7
 }
@@ -54,7 +54,7 @@ player = keeper
 
 position : Square
 
-score : Player -> Score
+goals : Player -> Score
 
 
 // Automaton
@@ -86,8 +86,8 @@ graph turn() {
   board[position] = piece(me)
   player = keeper
   when direction(me)(position) == null || not(reachable(move(opponent(me)))) {
-    score[me] = win
-    score[opponent(me)] = lose
+    goals[me] = win
+    goals[opponent(me)] = lose
     end()
   }
   me = opponent(me)
