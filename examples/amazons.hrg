@@ -88,21 +88,21 @@ graph followDirection(direction: Square -> SquareOrNull) {
 graph queenShift() {
   branch {
     followDirection(upleft)
-  } or {branch {
+  } or {
     followDirection(up)
-  } or {branch {
+  } or {
     followDirection(upright)
-  } or {branch {
+  } or {
     followDirection(left)
-  } or {branch {
+  } or {
     followDirection(right)
-  } or {branch {
+  } or {
     followDirection(downleft)
-  } or {branch {
+  } or {
     followDirection(down)
   } or {
     followDirection(downright)
-  }}}}}}}
+  }
 }
 
 graph move(me: Player) {
