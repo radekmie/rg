@@ -49,7 +49,7 @@ board = {
 me : Player
 me = white
 
-player : Player
+player : PlayerOrKeeper
 player = keeper
 
 position : Square
