@@ -39,12 +39,13 @@ function combine() {
 }
 
 games[0]='amazons.hrg 1 2176'
+games[1]='amazons-opt.hrg 1 2176'
 #games[0]='amazons.hrg 1 2176 4307152'
-#games[0]='amazons.hrg 1 80 2176' # split2 option
-games[1]='breakthrough.hrg 1 22 484 11132' # 256036'
-games[2]='breakthrough.rg 1 22 484 11132' # 256036'
-games[3]='connect4.hrg 1 7 49 343 2401 16807' # 117649 823536 5673234'
-games[4]='ticTacToe.rg 1 9 72 504 3024 15120 54720' # 148176 200448 127872'
+#games[0]='amazons.hrg 1 80' # split2 option
+games[2]='breakthrough.hrg 1 22 484 11132' # 256036'
+games[3]='breakthrough.rg 1 22 484 11132' # 256036'
+games[4]='connect4.hrg 1 7 49 343 2401 16807' # 117649 823536 5673234'
+games[5]='ticTacToe.rg 1 9 72 504 3024 15120 54720' # 148176 200448 127872'
 
 for game in "${games[@]}"; do
   game=( $game )

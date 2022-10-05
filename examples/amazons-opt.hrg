@@ -1,0 +1,148 @@
+// Domains
+domain Piece = arrow | blackqueen | empty | whitequeen
+domain Player = black | white
+domain PlayerOrKeeper = black | keeper | white
+domain Score = lose | win
+domain Square = V(X, Y) where X in 0..9, Y in { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }
+domain SquareOrNull = Square | null
+
+domain DirIndex = upleft | up | upright | left | right | downleft | down | downright
+
+leftdir : Square -> SquareOrNull
+leftdir(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
+
+rightdir : Square -> SquareOrNull
+rightdir(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
+
+updir : Square -> SquareOrNull
+updir(V(_, 0)) = null
+updir(V(X, Y)) = V(X, Y - 1)
+
+downdir : Square -> SquareOrNull
+downdir(V(_, 9)) = null
+downdir(V(X, Y)) = V(X, Y + 1)
+
+upleftdir : Square -> SquareOrNull
+upleftdir(V(X, Y)) = if X == 0 then null else if Y == 0 then null else V(X-1,Y-1)
+
+uprightdir : Square -> SquareOrNull
+uprightdir(V(X, Y)) = if X == 9 then null else if Y == 0 then null else V(X+1,Y-1)
+
+downleftdir : Square -> SquareOrNull
+downleftdir(V(X, Y)) = if X == 0 then null else if Y == 9 then null else V(X-1,Y+1)
+
+downrightdir : Square -> SquareOrNull
+downrightdir(V(X, Y)) = if X == 9 then null else if Y == 9 then null else V(X+1,Y+1)
+
+direction: DirIndex -> Square -> SquareOrNull
+direction(upleft) = upleftdir
+direction(up) = updir
+direction(upright) = uprightdir
+direction(left) = leftdir
+direction(right) = rightdir
+direction(downleft) = downleftdir
+direction(down) = downdir
+direction(downright) = downrightdir
+
+piece : Player -> Piece
+piece(white) = whitequeen
+piece(_) = blackqueen
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(_) = white
+
+
+// Variables
+board : Square -> Piece
+board = {
+V(X, Y) =
+  if Y == 0 then if X == 3 then blackqueen else if X == 6 then blackqueen else empty else
+  if Y == 3 then if X == 0 then blackqueen else if X == 9 then blackqueen else empty else
+  if Y == 6 then if X == 0 then whitequeen else if X == 9 then whitequeen else empty else
+  if Y == 9 then if X == 3 then whitequeen else if X == 6 then whitequeen else empty else
+  empty
+  where X in 0..9, Y in 0..9
+}
+
+me : Player
+me = white
+
+player : PlayerOrKeeper
+player = keeper
+
+position : Square
+
+goals : Player -> Score
+
+
+graph followDirection(di: DirIndex) {
+  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  branch {} or {
+  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  }}}}}}}}
+}
+
+graph queenShift() {
+  branch {
+    followDirection(upleft)
+  } or {
+    followDirection(up)
+  } or {
+    followDirection(upright)
+  } or {
+    followDirection(left)
+  } or {
+    followDirection(right)
+  } or {
+    followDirection(downleft)
+  } or {
+    followDirection(down)
+  } or {
+    followDirection(downright)
+  }
+}
+
+graph move(me: Player) {
+  forall(position)
+  assert(board[position] == piece(me))
+  board[position] = empty
+  queenShift()
+  //player = keeper // split2 option
+  board[position] = piece(me)
+  //player = me // split2 option
+  queenShift()
+  board[position] = arrow
+}
+
+graph turn() {
+  player = me
+  move(me)
+  player = keeper
+  when not(reachable(move(opponent(me)))) {
+    goals[me] = win
+    goals[opponent(me)] = lose
+    end()
+  }
+  me = opponent(me)
+}
+
+graph rules() {
+  loop {
+    turn()
+  }
+}
