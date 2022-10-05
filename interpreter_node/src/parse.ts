@@ -21,7 +21,6 @@ function analyzeHrg(source: string, settings: Settings) {
   return {
     ...analyzeRg(sourceRg, settings),
     astHrg,
-    astRg,
     cstHrg,
     sourceHrg,
     sourceHrgFormatted,
