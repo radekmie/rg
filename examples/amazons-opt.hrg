@@ -65,6 +65,8 @@ V(X, Y) =
   where X in 0..9, Y in 0..9
 }
 
+di : DirIndex
+
 me : Player
 me = white
 
@@ -76,7 +78,8 @@ position : Square
 goals : Player -> Score
 
 
-graph followDirection(di: DirIndex) {
+graph queenShift() {
+  forall(di)
   position = direction(di)(position) assert(position != null) assert(board[position] == empty)
   branch {} or {
   position = direction(di)(position) assert(position != null) assert(board[position] == empty)
@@ -95,26 +98,6 @@ graph followDirection(di: DirIndex) {
   branch {} or {
   position = direction(di)(position) assert(position != null) assert(board[position] == empty)
   }}}}}}}}
-}
-
-graph queenShift() {
-  branch {
-    followDirection(upleft)
-  } or {
-    followDirection(up)
-  } or {
-    followDirection(upright)
-  } or {
-    followDirection(left)
-  } or {
-    followDirection(right)
-  } or {
-    followDirection(downleft)
-  } or {
-    followDirection(down)
-  } or {
-    followDirection(downright)
-  }
 }
 
 graph move(me: Player) {
