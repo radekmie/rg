@@ -221,6 +221,10 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
   }
 
   Expression5(context: Context): ast.Expression {
+    if ('Expression' in context) {
+      return this.visitNode(context.Expression[0]);
+    }
+
     if ('Identifier' in context) {
       return (context.ExpressionSuffix ?? []).reduce<ast.Expression>(
         (expression, suffix) => {

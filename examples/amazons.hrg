@@ -21,16 +21,16 @@ down(V(_, 9)) = null
 down(V(X, Y)) = V(X, Y + 1)
 
 upleft : Square -> SquareOrNull
-upleft(V(X, Y)) = if X == 0 then null else if Y == 0 then null else V(X-1,Y-1)
+upleft(V(X, Y)) = if X == 0 || Y == 0 then null else V(X-1,Y-1)
 
 upright : Square -> SquareOrNull
-upright(V(X, Y)) = if X == 9 then null else if Y == 0 then null else V(X+1,Y-1)
+upright(V(X, Y)) = if X == 9 || Y == 0 then null else V(X+1,Y-1)
 
 downleft : Square -> SquareOrNull
-downleft(V(X, Y)) = if X == 0 then null else if Y == 9 then null else V(X-1,Y+1)
+downleft(V(X, Y)) = if X == 0 || Y == 9 then null else V(X-1,Y+1)
 
 downright : Square -> SquareOrNull
-downright(V(X, Y)) = if X == 9 then null else if Y == 9 then null else V(X+1,Y+1)
+downright(V(X, Y)) = if X == 9 || Y == 9 then null else V(X+1,Y+1)
 
 piece : Player -> Piece
 piece(white) = whitequeen

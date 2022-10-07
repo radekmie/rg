@@ -23,16 +23,16 @@ downdir(V(_, 9)) = null
 downdir(V(X, Y)) = V(X, Y + 1)
 
 upleftdir : Square -> SquareOrNull
-upleftdir(V(X, Y)) = if X == 0 then null else if Y == 0 then null else V(X-1,Y-1)
+upleftdir(V(X, Y)) = if X == 0 || Y == 0 then null else V(X-1,Y-1)
 
 uprightdir : Square -> SquareOrNull
-uprightdir(V(X, Y)) = if X == 9 then null else if Y == 0 then null else V(X+1,Y-1)
+uprightdir(V(X, Y)) = if X == 9 || Y == 0 then null else V(X+1,Y-1)
 
 downleftdir : Square -> SquareOrNull
-downleftdir(V(X, Y)) = if X == 0 then null else if Y == 9 then null else V(X-1,Y+1)
+downleftdir(V(X, Y)) = if X == 0 || Y == 9 then null else V(X-1,Y+1)
 
 downrightdir : Square -> SquareOrNull
-downrightdir(V(X, Y)) = if X == 9 then null else if Y == 9 then null else V(X+1,Y+1)
+downrightdir(V(X, Y)) = if X == 9 || Y == 9 then null else V(X+1,Y+1)
 
 direction: DirIndex -> Square -> SquareOrNull
 direction(upleft) = upleftdir

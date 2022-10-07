@@ -121,16 +121,31 @@ function evaluateCondition(
   binding: Record<string, hrg.Value>,
 ): boolean {
   if (
+    expression.kind !== 'ExpressionAnd' &&
+    expression.kind !== 'ExpressionEq' &&
     expression.kind !== 'ExpressionGt' &&
     expression.kind !== 'ExpressionGte' &&
-    expression.kind !== 'ExpressionEq' &&
     expression.kind !== 'ExpressionLt' &&
     expression.kind !== 'ExpressionLte' &&
-    expression.kind !== 'ExpressionNe'
+    expression.kind !== 'ExpressionNe' &&
+    expression.kind !== 'ExpressionOr'
   ) {
     throw new Error(
       `Expression "${expression.kind}" is not a valid condition.`,
     );
+  }
+
+  switch (expression.kind) {
+    case 'ExpressionAnd':
+      return (
+        evaluateCondition(expression.lhs, binding) &&
+        evaluateCondition(expression.rhs, binding)
+      );
+    case 'ExpressionOr':
+      return (
+        evaluateCondition(expression.lhs, binding) ||
+        evaluateCondition(expression.rhs, binding)
+      );
   }
 
   const lhs = evaluateExpression(expression.lhs, binding);

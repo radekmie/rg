@@ -82,9 +82,9 @@ export function serializeExpression(expression: ast.Expression): string {
         expression.rhs,
       )}`;
     case 'ExpressionAnd':
-      return `${serializeExpression(expression.lhs)} && ${serializeExpression(
-        expression.rhs,
-      )}`;
+      return `${serializeExpressionParentheses(
+        expression.lhs,
+      )} && ${serializeExpressionParentheses(expression.rhs)}`;
     case 'ExpressionCall':
       return `${serializeExpression(expression.expression)}(${expression.args
         .map(serializeExpression)
@@ -130,14 +130,19 @@ export function serializeExpression(expression: ast.Expression): string {
         expression.rhs,
       )}`;
     case 'ExpressionOr':
-      return `${serializeExpression(expression.lhs)} || ${serializeExpression(
-        expression.rhs,
-      )}`;
+      return `${serializeExpressionParentheses(
+        expression.lhs,
+      )} || ${serializeExpressionParentheses(expression.rhs)}`;
     case 'ExpressionSub':
       return `${serializeExpression(expression.lhs)} - ${serializeExpression(
         expression.rhs,
       )}`;
   }
+}
+
+function serializeExpressionParentheses(expression: ast.Expression): string {
+  const serialized = serializeExpression(expression);
+  return expression.kind === 'ExpressionOr' ? `(${serialized})` : serialized;
 }
 
 export function serializeGameDeclaration(gameDeclaration: ast.GameDeclaration) {
