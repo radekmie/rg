@@ -33,15 +33,15 @@ function analyzeRg(source: string, settings: Settings) {
   const astRg = rg.ast.visit(cstRg);
 
   if (settings.flags.compactSkipEdges) {
-    rg.transformations.compactSkipEdges(astRg);
+    rg.transformators.compactSkipEdges(astRg);
   }
 
   if (settings.flags.expandGeneratorNodes) {
-    rg.transformations.expandGeneratorNodes(astRg);
+    rg.transformators.expandGeneratorNodes(astRg);
   }
 
   if (settings.flags.mangleSymbols) {
-    rg.transformations.mangleSymbols(astRg);
+    rg.transformators.mangleSymbols(astRg);
   }
 
   const istRg = rg.ist.build(astRg);

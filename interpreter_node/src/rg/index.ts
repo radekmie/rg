@@ -1,4 +1,4 @@
 export * as ast from './ast';
 export * as cst from './cst';
 export * as ist from './ist';
-export * as transformations from './transformations';
+export * as transformators from './transformators';
