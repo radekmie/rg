@@ -404,10 +404,12 @@ function translateAutomatonFunction(
     ],
   });
 
-  const returns = translateAutomatonStatements(
-    context,
-    automatonFunction.body,
-    rg.EdgeName({
+  const returns = translateAutomatonStatements(context, {
+    automatonStatements: automatonFunction.body,
+    breakEdgeName: null,
+    continueEdgeName: null,
+    endEdgeName,
+    entryEdgeName: rg.EdgeName({
       parts: [
         rg.Literal({
           identifier: context.$settings.flags.reuseFunctions
@@ -416,13 +418,10 @@ function translateAutomatonFunction(
         }),
       ],
     }),
-    null,
-    null,
-    endEdgeName,
     nextEdgeName,
-    nextEdgeName,
-    `${prefix}${automatonFunction.name}`,
-  );
+    prefix: `${prefix}${automatonFunction.name}`,
+    returnEdgeName: nextEdgeName,
+  });
 
   if (returns && returnEdgeName) {
     context.rg.edges.push(
@@ -438,14 +437,25 @@ function translateAutomatonFunction(
 // eslint-disable-next-line complexity -- It could use some refactor.
 function translateAutomatonStatements(
   context: Context,
-  automatonStatements: hrg.AutomatonStatement[],
-  entryEdgeName: rg.EdgeName,
-  breakEdgeName: rg.EdgeName | null,
-  continueEdgeName: rg.EdgeName | null,
-  endEdgeName: rg.EdgeName | null,
-  nextEdgeName: rg.EdgeName | null,
-  returnEdgeName: rg.EdgeName | null,
-  prefix: string,
+  {
+    automatonStatements,
+    breakEdgeName,
+    continueEdgeName,
+    endEdgeName,
+    entryEdgeName,
+    nextEdgeName,
+    prefix,
+    returnEdgeName,
+  }: {
+    automatonStatements: hrg.AutomatonStatement[];
+    breakEdgeName: rg.EdgeName | null;
+    continueEdgeName: rg.EdgeName | null;
+    endEdgeName: rg.EdgeName | null;
+    entryEdgeName: rg.EdgeName;
+    nextEdgeName: rg.EdgeName | null;
+    prefix: string;
+    returnEdgeName: rg.EdgeName | null;
+  },
 ) {
   let currentEdgeName = entryEdgeName;
   for (const automatonStatement of automatonStatements) {
@@ -475,17 +485,16 @@ function translateAutomatonStatements(
       case 'AutomatonBranch': {
         const localEdgeName = context.$randomEdgeName(prefix);
         automatonStatement.arms.forEach(arm => {
-          translateAutomatonStatements(
-            context,
-            arm,
-            currentEdgeName,
-            continueEdgeName,
+          translateAutomatonStatements(context, {
+            automatonStatements: arm,
             breakEdgeName,
+            continueEdgeName,
             endEdgeName,
-            localEdgeName,
-            returnEdgeName,
+            entryEdgeName: currentEdgeName,
+            nextEdgeName: localEdgeName,
             prefix,
-          );
+            returnEdgeName,
+          });
         });
         currentEdgeName = localEdgeName;
         continue;
@@ -818,17 +827,16 @@ function translateAutomatonStatements(
         }
       case 'AutomatonLoop': {
         const localEdgeName = context.$randomEdgeName(prefix);
-        translateAutomatonStatements(
-          context,
-          automatonStatement.body,
-          currentEdgeName,
-          currentEdgeName,
-          localEdgeName,
+        translateAutomatonStatements(context, {
+          automatonStatements: automatonStatement.body,
+          breakEdgeName: localEdgeName,
+          continueEdgeName: currentEdgeName,
           endEdgeName,
-          currentEdgeName,
-          returnEdgeName,
+          entryEdgeName: currentEdgeName,
+          nextEdgeName: currentEdgeName,
           prefix,
-        );
+          returnEdgeName,
+        });
         currentEdgeName = localEdgeName;
         continue;
       }
@@ -843,17 +851,16 @@ function translateAutomatonStatements(
           elseEdgeName,
           prefix,
         );
-        translateAutomatonStatements(
-          context,
-          automatonStatement.body,
-          thenEdgeName,
+        translateAutomatonStatements(context, {
+          automatonStatements: automatonStatement.body,
           breakEdgeName,
           continueEdgeName,
           endEdgeName,
+          entryEdgeName: thenEdgeName,
           nextEdgeName,
-          elseEdgeName,
           prefix,
-        );
+          returnEdgeName: elseEdgeName,
+        });
         currentEdgeName = elseEdgeName;
         continue;
       }
