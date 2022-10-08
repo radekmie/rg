@@ -27,6 +27,15 @@ export function outgoing(edges: ast.EdgeDeclaration[], edgeName: ast.EdgeName) {
   return edges.filter(({ lhs }) => utils.isEqual(edgeName, lhs));
 }
 
+export function renameInEdgeDeclaration(
+  edge: ast.EdgeDeclaration,
+  mapping: Record<string, string>,
+) {
+  renameInEdgeLabel(edge.label, mapping);
+  renameInEdgeName(edge.lhs, mapping);
+  renameInEdgeName(edge.rhs, mapping);
+}
+
 export function renameInEdgeLabel(
   edgeLabel: ast.EdgeLabel,
   mapping: Record<string, string>,
@@ -47,7 +56,7 @@ export function renameInEdgeLabel(
   }
 }
 
-export function renameEdgeName(
+export function renameInEdgeName(
   edgeName: ast.EdgeName,
   mapping: Record<string, string>,
 ) {

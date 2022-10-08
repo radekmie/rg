@@ -13,21 +13,22 @@ export function compactSkipEdges({ edges }: ast.GameDeclaration) {
       ]);
 
       for (const y of edges) {
-        if (ast.lib.isFollowing(x, y)) {
-          ast.lib.renameInEdgeLabel(y.label, mapping);
-          ast.lib.renameEdgeName(y.lhs, mapping);
-          continue;
-        }
+        if (x !== y) {
+          if (ast.lib.isFollowing(x, y) || utils.isEqual(x.lhs, y.lhs)) {
+            ast.lib.renameInEdgeLabel(y.label, mapping);
+            ast.lib.renameInEdgeName(y.lhs, mapping);
+          }
 
-        if (ast.lib.isFollowing(y, x)) {
-          ast.lib.renameInEdgeLabel(y.label, mapping);
-          ast.lib.renameEdgeName(y.rhs, mapping);
-          continue;
+          if (ast.lib.isFollowing(y, x) || utils.isEqual(x.rhs, y.rhs)) {
+            ast.lib.renameInEdgeLabel(y.label, mapping);
+            ast.lib.renameInEdgeName(y.rhs, mapping);
+          }
         }
       }
 
       ast.lib.renameInEdgeLabel(x.label, mapping);
-      ast.lib.renameEdgeName(x.rhs, mapping);
+      ast.lib.renameInEdgeName(x.lhs, mapping);
+      ast.lib.renameInEdgeName(x.rhs, mapping);
     }
   }
 
