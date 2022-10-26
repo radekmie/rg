@@ -1,6 +1,7 @@
 import * as utils from '../../utils';
 import * as ast from '../ast';
 
+// FIXME: It doesn't handle the case when both verticles have the same bind.
 export function expandGeneratorNodes(gameDeclaration: ast.GameDeclaration) {
   const edgeNames = gameDeclaration.edges
     .flatMap(edge => [edge.lhs, edge.rhs])

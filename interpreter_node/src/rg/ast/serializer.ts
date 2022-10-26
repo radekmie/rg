@@ -106,7 +106,10 @@ export function serializeGameDeclaration(gameDeclaration: ast.GameDeclaration) {
         ),
         [],
       ),
-  ].join('\n');
+  ]
+    .join('\n')
+    .trim()
+    .replace(/\n\n/g, '\n');
 }
 
 export function serializeType(type: ast.Type): string {

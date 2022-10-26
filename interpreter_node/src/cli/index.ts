@@ -62,7 +62,7 @@ addCommand('hrg-cst', 'print high-level Concrete Syntax Tree', game => {
 });
 
 addCommand('hrg-source', 'print high-level source', game => {
-  console.log(game.sourceHrg);
+  console.log(game.sourceHrgFormatted);
 });
 
 addCommand('rg-ast', 'print  low-level Abstract Syntax Tree', game => {
@@ -90,7 +90,7 @@ addCommand('rg-run', 'run    low-level simulations', (game, plays) => {
 }).argument('<plays>', 'number of simulated games');
 
 addCommand('rg-source', 'print  low-level source', game => {
-  console.log(game.sourceRg);
+  console.log(game.sourceRgFormatted);
 });
 
 program.parse();
