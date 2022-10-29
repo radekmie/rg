@@ -43,15 +43,12 @@ describe('expandGeneratorNodes', () => {
   });
 
   test('one lhs and one rhs bind (equal)', () => {
-    // FIXME: This one should result in only two edges, not four.
     expect(run('a(x: T1), b(x: T1): x == x;')).toMatchInlineSnapshot(`
       "type T1 = { 1, 2 };
       type T2 = { 3, 4 };
       type T3 = { 5, 6 };
 
       a__bind__1, b__bind__1: 1 == 1;
-      a__bind__1, b__bind__2: 1 == 1;
-      a__bind__2, b__bind__1: 2 == 2;
       a__bind__2, b__bind__2: 2 == 2;"
     `);
   });
@@ -96,34 +93,24 @@ describe('expandGeneratorNodes', () => {
   });
 
   test('two lhs and one rhs bind (equal)', () => {
-    // FIXME: This one should result in only four edges, not eight.
     expect(run('a(x: T1)(y: T2), b(x: T1): x == y;')).toMatchInlineSnapshot(`
       "type T1 = { 1, 2 };
       type T2 = { 3, 4 };
       type T3 = { 5, 6 };
 
       a__bind__1__bind__3, b__bind__1: 1 == 3;
-      a__bind__1__bind__3, b__bind__2: 1 == 3;
       a__bind__1__bind__4, b__bind__1: 1 == 4;
-      a__bind__1__bind__4, b__bind__2: 1 == 4;
-      a__bind__2__bind__3, b__bind__1: 2 == 3;
       a__bind__2__bind__3, b__bind__2: 2 == 3;
-      a__bind__2__bind__4, b__bind__1: 2 == 4;
       a__bind__2__bind__4, b__bind__2: 2 == 4;"
     `);
-    // FIXME: This one should result in only four edges, not eight.
     expect(run('a(x: T1)(y: T2), b(y: T2): x == y;')).toMatchInlineSnapshot(`
       "type T1 = { 1, 2 };
       type T2 = { 3, 4 };
       type T3 = { 5, 6 };
 
       a__bind__1__bind__3, b__bind__3: 1 == 3;
-      a__bind__1__bind__3, b__bind__4: 1 == 3;
-      a__bind__1__bind__4, b__bind__3: 1 == 4;
       a__bind__1__bind__4, b__bind__4: 1 == 4;
       a__bind__2__bind__3, b__bind__3: 2 == 3;
-      a__bind__2__bind__3, b__bind__4: 2 == 3;
-      a__bind__2__bind__4, b__bind__3: 2 == 4;
       a__bind__2__bind__4, b__bind__4: 2 == 4;"
     `);
   });
@@ -146,7 +133,6 @@ describe('expandGeneratorNodes', () => {
   });
 
   test('one lhs and two rhs binds (equal)', () => {
-    // FIXME: This one should result in only four edges, not eight.
     expect(run('a(x: T1), b(x: T1)(y: T2): x == y;')).toMatchInlineSnapshot(`
       "type T1 = { 1, 2 };
       type T2 = { 3, 4 };
@@ -154,26 +140,17 @@ describe('expandGeneratorNodes', () => {
 
       a__bind__1, b__bind__1__bind__3: 1 == 3;
       a__bind__1, b__bind__1__bind__4: 1 == 4;
-      a__bind__1, b__bind__2__bind__3: 1 == 3;
-      a__bind__1, b__bind__2__bind__4: 1 == 4;
-      a__bind__2, b__bind__1__bind__3: 2 == 3;
-      a__bind__2, b__bind__1__bind__4: 2 == 4;
       a__bind__2, b__bind__2__bind__3: 2 == 3;
       a__bind__2, b__bind__2__bind__4: 2 == 4;"
     `);
-    // FIXME: This one should result in only four edges, not eight.
     expect(run('a(y: T2), b(x: T1)(y: T2): x == y;')).toMatchInlineSnapshot(`
       "type T1 = { 1, 2 };
       type T2 = { 3, 4 };
       type T3 = { 5, 6 };
 
       a__bind__3, b__bind__1__bind__3: 1 == 3;
-      a__bind__3, b__bind__1__bind__4: 1 == 3;
       a__bind__3, b__bind__2__bind__3: 2 == 3;
-      a__bind__3, b__bind__2__bind__4: 2 == 3;
-      a__bind__4, b__bind__1__bind__3: 1 == 4;
       a__bind__4, b__bind__1__bind__4: 1 == 4;
-      a__bind__4, b__bind__2__bind__3: 2 == 4;
       a__bind__4, b__bind__2__bind__4: 2 == 4;"
     `);
   });
