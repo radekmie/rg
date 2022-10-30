@@ -186,7 +186,7 @@ class ParserClass extends CstParser {
   });
 
   constructor() {
-    super(tokens.tokens, { maxLookahead: 2 });
+    super(tokens.tokens);
     this.performSelfAnalysis();
   }
 }
