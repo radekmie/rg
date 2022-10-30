@@ -1,5 +1,7 @@
 import util from 'util';
 
+export type Expand<T> = T extends infer U ? { [K in keyof U]: U[K] } : never;
+
 export type Result<T, E = unknown> =
   | { ok: true; value: T }
   | { ok: false; error: E };
@@ -14,8 +16,8 @@ export function cartesian<T>(xss: T[][], ys: T[]): T[][] {
   return xss.flatMap(xs => ys.map(y => xs.concat(y)));
 }
 
-export function creator<Type extends { kind: string }>(kind: Type['kind']) {
-  return (data: Omit<Type, 'kind'>) => ({ kind, ...data });
+export function creator<T extends { kind: string }>(kind: T['kind']) {
+  return (data: Expand<Omit<T, 'kind'>>) => ({ kind, ...data } as unknown as T);
 }
 
 export function find<T>(xs: T[], needle: Partial<T>) {
