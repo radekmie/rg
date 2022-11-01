@@ -1,4 +1,5 @@
 import { Intent } from '@blueprintjs/core';
+import { AnalyzedGame } from 'parse';
 
 import { Extension } from '../../types';
 import { useApplicationState } from '../hooks/useApplicationState';
@@ -11,8 +12,35 @@ import { Settings } from './Settings';
 
 const extensionToMode = {
   [Extension.hrg]: 'hrg',
+  [Extension.rbg]: 'rbg',
   [Extension.rg]: 'rg',
 } as const;
+
+const valueForView = {
+  Automaton: (game: AnalyzedGame) => game.graphvizRg,
+  Bench: (game: AnalyzedGame) => game.istRg,
+  Graphviz: (game: AnalyzedGame) =>
+    ({ mode: 'text', value: game.graphvizRg } as const),
+  'AST.hrg': (game: AnalyzedGame) => game.astHrg,
+  'AST.rbg': (game: AnalyzedGame) => game.astRbg,
+  'AST.rg': (game: AnalyzedGame) => game.astRg,
+  'CST.hrg': (game: AnalyzedGame) => game.cstHrg,
+  'CST.rbg': (game: AnalyzedGame) => game.cstRbg,
+  'CST.rg': (game: AnalyzedGame) => game.cstRg,
+  'IST.rg': (game: AnalyzedGame) => game.istRg,
+  'Source (result).hrg': (game: AnalyzedGame) =>
+    ({ mode: 'hrg', value: game.sourceHrgFormatted ?? '' } as const),
+  'Source (source).hrg': (game: AnalyzedGame) =>
+    ({ mode: 'hrg', value: game.sourceHrg ?? '' } as const),
+  'Source (result).rbg': (game: AnalyzedGame) =>
+    ({ mode: 'rbg', value: game.sourceRbgFormatted ?? '' } as const),
+  'Source (source).rbg': (game: AnalyzedGame) =>
+    ({ mode: 'rbg', value: game.sourceRbg ?? '' } as const),
+  'Source (result).rg': (game: AnalyzedGame) =>
+    ({ mode: 'rg', value: game.sourceRgFormatted } as const),
+  'Source (source).rg': (game: AnalyzedGame) =>
+    ({ mode: 'rg', value: game.sourceRg } as const),
+};
 
 export function Application() {
   const {
@@ -43,52 +71,19 @@ export function Application() {
           (() => {
             switch (view) {
               case 'Automaton':
-                return <Graphviz source={game.value.graphvizRg} />;
+                return <Graphviz source={valueForView[view](game.value)} />;
               case 'Bench':
-                return <Bench game={game.value.istRg} />;
-              case 'Source (HL, optimized)':
-              case 'Source (HL, original)':
-              case 'Source (LL, optimized)':
-              case 'Source (LL, original)':
-                return (
-                  <Editor
-                    {...(
-                      {
-                        'Source (HL, optimized)': {
-                          mode: 'hrg',
-                          value: game.value.sourceHrgFormatted ?? '',
-                        },
-                        'Source (HL, original)': {
-                          mode: 'hrg',
-                          value: game.value.sourceHrg ?? '',
-                        },
-                        'Source (LL, optimized)': {
-                          mode: 'rg',
-                          value: game.value.sourceRgFormatted,
-                        },
-                        'Source (LL, original)': {
-                          mode: 'rg',
-                          value: game.value.sourceRg,
-                        },
-                      } as const
-                    )[view]}
-                  />
-                );
+                return <Bench game={valueForView[view](game.value)} />;
+              case 'Graphviz':
+              case 'Source (result).hrg':
+              case 'Source (result).rbg':
+              case 'Source (result).rg':
+              case 'Source (source).hrg':
+              case 'Source (source).rbg':
+              case 'Source (source).rg':
+                return <Editor {...valueForView[view](game.value)} />;
               default:
-                return (
-                  <PrettyPrint
-                    value={
-                      {
-                        'AST (HL)': game.value.astHrg,
-                        'AST (LL)': game.value.astRg,
-                        'CST (HL)': game.value.cstHrg,
-                        'CST (LL)': game.value.cstRg,
-                        'Graphviz (LL)': game.value.graphvizRg,
-                        'IST (LL)': game.value.istRg,
-                      }[view]
-                    }
-                  />
-                );
+                return <PrettyPrint value={valueForView[view](game.value)} />;
             }
           })()
         ) : (

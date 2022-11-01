@@ -1,0 +1,76 @@
+#board =
+    rx0y0[e]{down:rx0y1,right:rx1y0}
+    rx1y0[e]{down:rx1y1,left:rx0y0,right:rx2y0}
+    rx2y0[e]{down:rx2y1,left:rx1y0}
+    rx0y1[e]{down:rx0y2,right:rx1y1,up:rx0y0}
+    rx1y1[e]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+    rx2y1[e]{down:rx2y2,left:rx1y1,up:rx2y0}
+    rx0y2[e]{right:rx1y2,up:rx0y1}
+    rx1y2[e]{left:rx0y2,right:rx2y2,up:rx1y1}
+    rx2y2[e]{left:rx1y2,up:rx2y1}
+#players = xplayer(100),oplayer(100)
+#pieces = e,o,x
+#variables = 
+#rules = 
+[$ xplayer=50]
+[$ oplayer=50]
+(
+  ->xplayer
+  (up * + down *)
+  (left * + right *)
+  {e}->>[x]
+  (
+      {!
+          up left {x} (up left + down right down right) {x}
+        + down right {x} down right {x}
+        + up {x} (up + down down) {x}
+        + down {x} down {x}
+        + up right {x} (up right + down left down left) {x}
+        + down left {x} down left {x}
+        + left {x} (left + right right) {x}
+        + right {x} right {x}
+      }
+    + {?
+          up left {x} (up left + down right down right) {x}
+        + down right {x} down right {x}
+        + up {x} (up + down down) {x}
+        + down {x} down {x}
+        + up right {x} (up right + down left down left) {x}
+        + down left {x} down left {x}
+        + left {x} (left + right right) {x}
+        + right {x} right {x}
+      }
+    [$ xplayer=100]
+    [$ oplayer=0]
+    ->>{}
+  )
+  ->oplayer
+  (up * + down *)
+  (left * + right *)
+  {e}->>[o]
+  (
+      {!
+          up left {o} (up left + down right down right) {o}
+        + down right {o} down right {o}
+        + up {o} (up + down down) {o}
+        + down {o} down {o}
+        + up right {o} (up right + down left down left) {o}
+        + down left {o} down left {o}
+        + left {o} (left + right right) {o}
+        + right {o} right {o}
+      }
+    + {?
+          up left {o} (up left + down right down right) {o}
+        + down right {o} down right {o}
+        + up {o} (up + down down) {o}
+        + down {o} down {o}
+        + up right {o} (up right + down left down left) {o}
+        + down left {o} down left {o}
+        + left {o} (left + right right) {o}
+        + right {o} right {o}
+      }
+    [$ oplayer=100]
+    [$ xplayer=0]
+    ->>{}
+  )
+)*

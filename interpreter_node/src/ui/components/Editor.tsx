@@ -4,6 +4,7 @@ import CodeMirror, { ReactCodeMirrorProps } from '@uiw/react-codemirror';
 import { useCallback } from 'react';
 
 import * as hrg from '../../hrg';
+import * as rbg from '../../rbg';
 import * as rg from '../../rg';
 import * as styles from '../index.module.css';
 import { createChevrotainHighlighter } from '../lib/createChevrotainHighlighter';
@@ -24,6 +25,18 @@ const modeToExtensions = {
   ],
   javascript: [javascript()],
   json: [json()],
+  rbg: [
+    createChevrotainHighlighter(source => {
+      const { cstNode, tokens } = rbg.cst.parse(source);
+      const ast = rbg.ast.visit(cstNode);
+      return {
+        color1: ast.board.flatMap(({ edges }) => edges.map(edge => edge.label)),
+        color2: ast.pieces,
+        color3: ast.players.concat(ast.variables).map(({ name }) => name),
+        tokens,
+      };
+    }),
+  ],
   rg: [
     createChevrotainHighlighter(source => {
       const { cstNode, tokens } = rg.cst.parse(source);

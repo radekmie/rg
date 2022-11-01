@@ -50,7 +50,7 @@ export function createChevrotainHighlighter(parse: ParseFunction) {
       } of tokens) {
         const tag = name.startsWith('Keyword')
           ? 'b'
-          : name === 'Identifier'
+          : name.startsWith('Ident')
           ? color1?.includes(image)
             ? 'k'
             : color2?.includes(image)

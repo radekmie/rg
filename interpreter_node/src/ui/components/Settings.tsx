@@ -9,18 +9,12 @@ import {
 } from '@blueprintjs/core';
 import { ChangeEvent, FormEvent, useCallback, useMemo } from 'react';
 
-import { Extension, Settings } from '../../types';
+import { Extension, Flag, Settings } from '../../types';
 import { presets } from '../const/presets';
 import { useApplicationState, View } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
 
 const availablePresets = presets.map(game => game.name);
-const configurableFlags = [
-  'compactSkipEdges',
-  'expandGeneratorNodes',
-  'mangleSymbols',
-  'reuseFunctions',
-] as const;
 
 export type SettingsProps = {
   intent: Intent;
@@ -68,22 +62,38 @@ export function Settings({
   );
 
   const isHrg = settings.extension === Extension.hrg;
-  const availableViews = useMemo(
+  const isRbg = settings.extension === Extension.rbg;
+
+  const availableFlags = useMemo<{ value: Flag; disabled?: boolean }[]>(
+    () => [
+      { value: 'compactSkipEdges' },
+      { value: 'expandGeneratorNodes', disabled: isRbg },
+      { value: 'mangleSymbols' },
+      { value: 'reuseFunctions', disabled: !isHrg },
+    ],
+    [isHrg, isRbg],
+  );
+
+  const availableViews = useMemo<{ value: View; disabled?: boolean }[]>(
     () => [
       { value: 'Bench' },
       { value: 'Automaton' },
-      { value: 'Source (HL, original)', disabled: !isHrg },
-      { value: 'Source (HL, optimized)', disabled: !isHrg },
-      { value: 'CST (HL)', disabled: !isHrg },
-      { value: 'AST (HL)', disabled: !isHrg },
-      { value: 'Source (LL, original)' },
-      { value: 'Source (LL, optimized)' },
-      { value: 'CST (LL)' },
-      { value: 'AST (LL)' },
-      { value: 'IST (LL)' },
-      { value: 'Graphviz (LL)' },
+      { value: 'Graphviz' },
+      { value: 'Source (source).hrg', disabled: !isHrg },
+      { value: 'Source (result).hrg', disabled: !isHrg },
+      { value: 'Source (source).rbg', disabled: !isRbg },
+      { value: 'Source (result).rbg', disabled: !isRbg },
+      { value: 'Source (source).rg' },
+      { value: 'Source (result).rg' },
+      { value: 'CST.hrg', disabled: !isHrg },
+      { value: 'CST.rbg', disabled: !isRbg },
+      { value: 'AST.hrg', disabled: !isHrg },
+      { value: 'AST.rbg', disabled: !isRbg },
+      { value: 'CST.rg' },
+      { value: 'AST.rg' },
+      { value: 'IST.rg' },
     ],
-    [isHrg],
+    [isHrg, isRbg],
   );
 
   return (
@@ -110,15 +120,17 @@ export function Settings({
           selectedValue={settings.extension}
         >
           <Radio label="hrg" value={Extension.hrg} />
+          <Radio label="rbg (experimental)" value={Extension.rbg} />
           <Radio label="rg" value={Extension.rg} />
         </RadioGroup>
-        {configurableFlags.map((flag, index) => (
-          <section className={styles.options} key={flag}>
+        {availableFlags.map(({ disabled, value }, index) => (
+          <section className={styles.options} key={value}>
             <Label>{index === 0 ? 'Flags' : ''}</Label>
             <Checkbox
-              checked={settings.flags[flag]}
-              label={`--${flag}`}
-              name={flag}
+              checked={settings.flags[value]}
+              disabled={disabled}
+              label={`--${value}`}
+              name={value}
               onChange={onFlag}
             />
           </section>
