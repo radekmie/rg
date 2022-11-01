@@ -1,10 +1,30 @@
+import { CstNode } from 'chevrotain';
+
 import * as hrg from './hrg';
+import * as rbg from './rbg';
 import * as rg from './rg';
 import * as translators from './translators';
 import { Extension, Settings } from './types';
 import * as utils from './utils';
 
-function analyzeHrg(source: string, settings: Settings) {
+export type AnalyzedGame = {
+  astHrg: hrg.ast.GameDeclaration | null;
+  astRbg: rbg.ast.Game | null;
+  astRg: rg.ast.GameDeclaration;
+  cstHrg: CstNode | null;
+  cstRbg: CstNode | null;
+  cstRg: CstNode | null;
+  graphvizRg: string;
+  istRg: rg.ist.Game;
+  sourceHrg: string | null;
+  sourceHrgFormatted: string | null;
+  sourceRbg: string | null;
+  sourceRbgFormatted: string | null;
+  sourceRg: string;
+  sourceRgFormatted: string;
+};
+
+function analyzeHrg(source: string, settings: Settings): AnalyzedGame {
   const sourceHrg = source;
   const cstHrg = hrg.cst.parse(sourceHrg).cstNode;
   const astHrg = hrg.ast.visit(cstHrg);
@@ -27,7 +47,30 @@ function analyzeHrg(source: string, settings: Settings) {
   };
 }
 
-function analyzeRg(source: string, settings: Settings) {
+function analyzeRbg(source: string, settings: Settings): AnalyzedGame {
+  const sourceRbg = source;
+  const cstRbg = rbg.cst.parse(sourceRbg).cstNode;
+  const astRbg = rbg.ast.visit(cstRbg);
+  const astRg = translators.rbg2rg(astRbg);
+  const sourceRg = rg.ast.serializeGameDeclaration(astRg);
+
+  const sourceRbgFormatted = rbg.ast.serializeGame(astRbg);
+  const cstRbgFormatted = rbg.cst.parse(sourceRbgFormatted).cstNode;
+  const astRbgFormatted = rbg.ast.visit(cstRbgFormatted);
+  if (!utils.isEqual(astRbg, astRbgFormatted)) {
+    throw new Error('RbgFormattingError (AST mismatch)');
+  }
+
+  return {
+    ...analyzeRg(sourceRg, settings),
+    astRbg,
+    cstRbg,
+    sourceRbg,
+    sourceRbgFormatted,
+  };
+}
+
+function analyzeRg(source: string, settings: Settings): AnalyzedGame {
   const sourceRg = source;
   const cstRg = rg.cst.parse(sourceRg).cstNode;
   const astRg = rg.ast.visit(cstRg);
@@ -56,13 +99,17 @@ function analyzeRg(source: string, settings: Settings) {
 
   return {
     astHrg: null,
+    astRbg: null,
     astRg,
     cstHrg: null,
+    cstRbg: null,
     cstRg,
     graphvizRg,
     istRg,
     sourceHrg: null,
     sourceHrgFormatted: null,
+    sourceRbg: null,
+    sourceRbgFormatted: null,
     sourceRg,
     sourceRgFormatted,
   };
@@ -72,6 +119,8 @@ export function parse(source: string, settings: Settings) {
   switch (settings.extension) {
     case Extension.hrg:
       return analyzeHrg(source, settings);
+    case Extension.rbg:
+      return analyzeRbg(source, settings);
     case Extension.rg:
       return analyzeRg(source, settings);
   }

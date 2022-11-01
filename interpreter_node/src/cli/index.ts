@@ -9,15 +9,18 @@ import * as utils from '../utils';
 
 program
   .name('node lib/cli')
-  .argument('<file>', 'path to game description file (.hrg or .rg)')
+  .argument('<file>', 'path to game description file (.hrg, .rbg, or .rg)')
   .option('--compactSkipEdges', 'optimize automaton by compacting skip edges')
-  .option('--expandGeneratorNodes', 'expand generator nodes')
+  .option(
+    '--expandGeneratorNodes',
+    'expand generator nodes (.hrg and .rg only)',
+  )
   .option('--mangleSymbols', 'mangle all user-defined symbols')
   .option(
     '--reuseFunctions',
-    'reuse subautomatons when translating function calls (high-level only)',
+    'reuse subautomatons when translating function calls (.hrg only)',
   )
-  .configureHelp({ sortOptions: true, sortSubcommands: true });
+  .configureHelp({ sortSubcommands: true });
 
 function addCommand(
   name: string,
@@ -35,7 +38,11 @@ function addCommand(
 
       const options = parent?.opts() ?? {};
       const extension = path.extname(file);
-      if (extension !== Extension.hrg && extension !== Extension.rg) {
+      if (
+        extension !== Extension.hrg &&
+        extension !== Extension.rbg &&
+        extension !== Extension.rg
+      ) {
         throw new Error(`Unknown extension "${extension}".`);
       }
 
@@ -53,43 +60,55 @@ function addCommand(
     });
 }
 
-addCommand('hrg-ast', 'print high-level Abstract Syntax Tree', game => {
+addCommand('hrg-ast', 'print .hrg Abstract Syntax Tree', game => {
   console.log(JSON.stringify(game.astHrg));
 });
 
-addCommand('hrg-cst', 'print high-level Concrete Syntax Tree', game => {
+addCommand('hrg-cst', 'print .hrg Concrete Syntax Tree', game => {
   console.log(JSON.stringify(game.cstHrg));
 });
 
-addCommand('hrg-source', 'print high-level source', game => {
+addCommand('hrg-source', 'print .hrg source', game => {
   console.log(game.sourceHrgFormatted);
 });
 
-addCommand('rg-ast', 'print  low-level Abstract Syntax Tree', game => {
+addCommand('rbg-ast', 'print .rbg Abstract Syntax Tree', game => {
+  console.log(JSON.stringify(game.astRbg));
+});
+
+addCommand('rbg-cst', 'print .rbg Concrete Syntax Tree', game => {
+  console.log(JSON.stringify(game.cstRbg));
+});
+
+addCommand('rbg-source', 'print .rbg source', game => {
+  console.log(game.sourceRbgFormatted);
+});
+
+addCommand('rg-ast', 'print .rg  Abstract Syntax Tree', game => {
   console.log(JSON.stringify(game.astRg));
 });
 
-addCommand('rg-cst', 'print  low-level Concrete Syntax Tree', game => {
+addCommand('rg-cst', 'print .rg  Concrete Syntax Tree', game => {
   console.log(JSON.stringify(game.cstRg));
 });
 
-addCommand('rg-ist', 'print  low-level Interpreter State Tree', game => {
+addCommand('rg-ist', 'print .rg  Interpreter State Tree', game => {
   console.log(JSON.stringify(game.istRg));
 });
 
-addCommand('rg-perf', 'run    low-level tree depth check', (game, depth) => {
+addCommand('rg-perf', 'run   .rg  tree depth check', (game, depth) => {
   utils.assert(isFinite(+depth) && +depth > 0, 'depth must be positive');
   // eslint-disable-next-line @typescript-eslint/no-floating-promises -- Node.js will wait automatically.
   rg.ist.perf(game.istRg, +depth, console);
 }).argument('<depth>', 'maximum tree depth');
 
-addCommand('rg-run', 'run    low-level simulations', (game, plays) => {
+addCommand('rg-run', 'run   .rg  simulations', (game, plays) => {
   utils.assert(isFinite(+plays) && +plays > 0, 'plays must be positive');
   // eslint-disable-next-line @typescript-eslint/no-floating-promises -- Node.js will wait automatically.
   rg.ist.run(game.istRg, +plays, console);
 }).argument('<plays>', 'number of simulated games');
 
-addCommand('rg-source', 'print  low-level source', game => {
+addCommand('rg-source', 'print .rg  source', game => {
   console.log(game.sourceRgFormatted);
 });
 
