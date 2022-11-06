@@ -14,6 +14,7 @@ function translateAtomContent(
   content: rbg.Action | rbg.Rule,
   from: rg.EdgeName,
   to: rg.EdgeName,
+  isInReachability: boolean,
 ) {
   switch (content.kind) {
     case 'Assignment':
@@ -49,7 +50,7 @@ function translateAtomContent(
           negated: content.negated,
         }),
       );
-      translateAtomContent(context, content.rule, localFrom, localTo);
+      translateAtomContent(context, content.rule, localFrom, localTo, true);
       return;
     }
     case 'Comparison':
@@ -93,6 +94,61 @@ function translateAtomContent(
       }
       return;
     case 'Rule':
+      if (!isInReachability && isShiftPattern(content)) {
+        isInReachability = true;
+
+        const step1 = context.$randomEdgeName();
+        const step2 = context.$randomEdgeName();
+        step1.parts.push(
+          rg.Binding({
+            identifier: 'coordGenerator',
+            type: rg.TypeReference({ identifier: 'Coord' }),
+          }),
+        );
+
+        const localFrom = context.$randomEdgeName();
+        const localAfter = context.$randomEdgeName();
+        const localTo = context.$randomEdgeName();
+
+        context.$connect(
+          from,
+          step1,
+          rg.Assignment({
+            lhs: rg.Reference({ identifier: 'coordTemp' }),
+            rhs: rg.Reference({ identifier: 'coordGenerator' }),
+          }),
+        );
+        context.$connect(
+          step1,
+          step2,
+          rg.Reachability({
+            lhs: localFrom,
+            rhs: localTo,
+            negated: false,
+          }),
+        );
+        context.$connect(
+          step2,
+          to,
+          rg.Assignment({
+            lhs: rg.Reference({ identifier: 'coord' }),
+            rhs: rg.Reference({ identifier: 'coordTemp' }),
+          }),
+        );
+        context.$connect(
+          localAfter,
+          localTo,
+          rg.Comparison({
+            lhs: rg.Reference({ identifier: 'coord' }),
+            rhs: rg.Reference({ identifier: 'coordTemp' }),
+            negated: false,
+          }),
+        );
+
+        from = localFrom;
+        to = localAfter;
+      }
+
       for (const concatenation of content.elements) {
         let localFrom = from;
         for (const atom of concatenation) {
@@ -100,13 +156,25 @@ function translateAtomContent(
           if (atom.power) {
             const localPre = context.$randomEdgeName();
             const localAfter = context.$randomEdgeName();
-            translateAtomContent(context, atom.content, localPre, localAfter);
+            translateAtomContent(
+              context,
+              atom.content,
+              localPre,
+              localAfter,
+              isInReachability,
+            );
             context.$connect(localFrom, localPre, rg.Skip({}));
             context.$connect(localFrom, localTo, rg.Skip({}));
             context.$connect(localAfter, localPre, rg.Skip({}));
             context.$connect(localAfter, localTo, rg.Skip({}));
           } else {
-            translateAtomContent(context, atom.content, localFrom, localTo);
+            translateAtomContent(
+              context,
+              atom.content,
+              localFrom,
+              localTo,
+              isInReachability,
+            );
           }
           localFrom = localTo;
         }
@@ -161,6 +229,7 @@ function translateGame(context: Context) {
     context.rbg.rules,
     rg.EdgeName({ parts: [rg.Literal({ identifier: 'begin' })] }),
     rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
+    false,
   );
 
   context.rg.types.push(
@@ -308,6 +377,11 @@ function translateGame(context: Context) {
       type: rg.TypeReference({ identifier: 'Coord' }),
       defaultValue: rg.Element({ identifier: context.rbg.board[0].node }),
     }),
+    rg.VariableDeclaration({
+      identifier: 'coordTemp',
+      type: rg.TypeReference({ identifier: 'Coord' }),
+      defaultValue: rg.Element({ identifier: context.rbg.board[0].node }),
+    }),
   );
 
   return context.rg;
@@ -324,7 +398,73 @@ function translateValue(context: Context, value: rbg.Value) {
   throw new Error('Not implemented (Value).');
 }
 
-export default function translate(rbg: rbg.Game) {
+function isShiftPattern(content: rbg.Action | rbg.Rule): boolean {
+  switch (content.kind) {
+    case 'Assignment':
+      return false;
+    case 'Check':
+      return false;
+    case 'Comparison':
+      return false;
+    case 'Off':
+      return false;
+    case 'On':
+      return content.pieces.length > 0;
+    case 'Rule':
+      return content.elements.every(concatenation =>
+        concatenation.every(atom => isShiftPattern(atom.content)),
+      );
+    case 'Shift':
+      return true;
+    case 'Switch':
+      return false;
+  }
+}
+
+function groupShiftPatterns(rule: rbg.Rule) {
+  if (isShiftPattern(rule)) {
+    return rule;
+  }
+
+  return rbg.Rule({
+    elements: rule.elements.map(concatenation =>
+      concatenation.reduce<rbg.Atom[]>((concatenation, atom) => {
+        atom =
+          atom.content.kind === 'Rule'
+            ? rbg.Atom({
+                content: groupShiftPatterns(atom.content),
+                power: atom.power,
+              })
+            : atom;
+
+        if (isShiftPattern(atom.content)) {
+          const previous = concatenation[concatenation.length - 1];
+          if (
+            !previous.power &&
+            previous.content.kind === 'Rule' &&
+            previous.content.elements.length === 1 &&
+            isShiftPattern(previous.content)
+          ) {
+            previous.content.elements[0].push(atom);
+          } else {
+            concatenation.push(
+              rbg.Atom({
+                content: rbg.Rule({ elements: [[atom]] }),
+                power: false,
+              }),
+            );
+          }
+        } else {
+          concatenation.push(atom);
+        }
+
+        return concatenation;
+      }, []),
+    ),
+  });
+}
+
+export default function translate(game: rbg.Game) {
   let counter = 0;
   return translateGame({
     $connect(lhs, rhs, label) {
@@ -335,7 +475,13 @@ export default function translate(rbg: rbg.Game) {
         parts: [rg.Literal({ identifier: `${counter++}` })],
       });
     },
-    rbg,
+    rbg: rbg.Game({
+      board: game.board,
+      pieces: game.pieces,
+      variables: game.variables,
+      players: game.players,
+      rules: groupShiftPatterns(game.rules),
+    }),
     rg: rg.GameDeclaration({
       constants: [],
       edges: [],

@@ -67,11 +67,11 @@ export function Settings({
   const availableFlags = useMemo<{ value: Flag; disabled?: boolean }[]>(
     () => [
       { value: 'compactSkipEdges' },
-      { value: 'expandGeneratorNodes', disabled: isRbg },
+      { value: 'expandGeneratorNodes' },
       { value: 'mangleSymbols' },
       { value: 'reuseFunctions', disabled: !isHrg },
     ],
-    [isHrg, isRbg],
+    [isHrg],
   );
 
   const availableViews = useMemo<{ value: View; disabled?: boolean }[]>(
