@@ -1,5 +1,5 @@
 import { Spinner } from '@blueprintjs/core';
-import type { graphviz as GraphvizWASM } from '@hpcc-js/wasm';
+import { Graphviz as GraphvizWasm } from '@hpcc-js/wasm';
 import { SVGProps, useEffect, useState } from 'react';
 import { TOOL_PAN, UncontrolledReactSVGPanZoom } from 'react-svg-pan-zoom';
 
@@ -8,9 +8,7 @@ import * as styles from '../index.module.css';
 import { Autosize } from './Autosize';
 import { PrettyPrint } from './PrettyPrint';
 
-// @ts-expect-error: Loaded in HTML.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- Loaded in HTML.
-const graphviz = window['@hpcc-js/wasm'].graphviz as typeof GraphvizWASM;
+const graphvizLoader = GraphvizWasm.load();
 
 export type GraphvizProps = {
   source: string;
@@ -19,10 +17,10 @@ export type GraphvizProps = {
 export function Graphviz({ source }: GraphvizProps) {
   const [svg, setSVG] = useState<null | Result<SVGProps<SVGSVGElement>>>(null);
   useEffect(() => {
-    graphviz.dot(source, 'svg').then(
-      source => {
+    graphvizLoader.then(
+      graphviz => {
         const div = document.createElement('div');
-        div.innerHTML = source;
+        div.innerHTML = graphviz.dot(source, 'svg');
 
         const svg = div.children[0] as SVGSVGElement;
         const height = svg.height.baseVal.valueInSpecifiedUnits;
