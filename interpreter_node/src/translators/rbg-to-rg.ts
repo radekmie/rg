@@ -8,6 +8,7 @@ type Context = {
   $randomEdgeName: () => rg.EdgeName;
   rbg: rbg.Game;
   rg: rg.GameDeclaration;
+  ruleAutomatons: Record<string, [rg.EdgeName, rg.EdgeName]>;
 };
 
 function translateAtomContent(
@@ -39,8 +40,15 @@ function translateAtomContent(
       console.log(content);
       throw new Error('Not implemented (Assignment).');
     case 'Check': {
-      const localFrom = context.$randomEdgeName();
-      const localTo = context.$randomEdgeName();
+      const rule = rbg.serializeRule(content.rule);
+      if (!(rule in context.ruleAutomatons)) {
+        const localFrom = context.$randomEdgeName();
+        const localTo = context.$randomEdgeName();
+        context.ruleAutomatons[rule] = [localFrom, localTo];
+        translateAtomContent(context, content.rule, localFrom, localTo);
+      }
+
+      const [localFrom, localTo] = context.ruleAutomatons[rule];
       context.$connect(
         from,
         to,
@@ -50,7 +58,6 @@ function translateAtomContent(
           negated: content.negated,
         }),
       );
-      translateAtomContent(context, content.rule, localFrom, localTo);
       return;
     }
     case 'Comparison':
@@ -575,5 +582,6 @@ export default function translate(game: rbg.Game) {
       types: [],
       variables: [],
     }),
+    ruleAutomatons: Object.create(null),
   });
 }
