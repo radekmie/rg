@@ -4,6 +4,7 @@ import * as utils from '../utils';
 
 type Context = {
   $connect: (lhs: rg.EdgeName, rhs: rg.EdgeName, label: rg.EdgeLabel) => void;
+  $createTypeFromSet: (identifiers: string[]) => string;
   $randomEdgeName: () => rg.EdgeName;
   rbg: rbg.Game;
   rg: rg.GameDeclaration;
@@ -14,7 +15,6 @@ function translateAtomContent(
   content: rbg.Action | rbg.Rule,
   from: rg.EdgeName,
   to: rg.EdgeName,
-  isInReachability: boolean,
 ) {
   switch (content.kind) {
     case 'Assignment':
@@ -50,7 +50,7 @@ function translateAtomContent(
           negated: content.negated,
         }),
       );
-      translateAtomContent(context, content.rule, localFrom, localTo, true);
+      translateAtomContent(context, content.rule, localFrom, localTo);
       return;
     }
     case 'Comparison':
@@ -94,59 +94,107 @@ function translateAtomContent(
       }
       return;
     case 'Rule':
-      if (!isInReachability && isShiftPattern(content)) {
-        isInReachability = true;
+      if (isExpandableShiftPattern(content)) {
+        const pairs = context.rbg.board.map<[string, string[]]>(node => [
+          node.node,
+          makeShiftPattern(context.rbg, node.node, content),
+        ]);
 
-        const step1 = context.$randomEdgeName();
-        const step2 = context.$randomEdgeName();
-        step1.parts.push(
-          rg.Binding({
-            identifier: 'coordGenerator',
-            type: rg.TypeReference({ identifier: 'Coord' }),
-          }),
-        );
+        if (pairs.every(pair => pair[1].length === pairs.length)) {
+          const local = context.$randomEdgeName();
+          local.parts.push(
+            rg.Binding({
+              identifier: 'coordGenerator',
+              type: rg.TypeReference({ identifier: 'Coord' }),
+            }),
+          );
 
-        const localFrom = context.$randomEdgeName();
-        const localAfter = context.$randomEdgeName();
-        const localTo = context.$randomEdgeName();
+          context.$connect(from, local, rg.Skip({}));
+          context.$connect(
+            local,
+            to,
+            rg.Assignment({
+              lhs: rg.Reference({ identifier: 'coord' }),
+              rhs: rg.Reference({ identifier: 'coordGenerator' }),
+            }),
+          );
+          return;
+        }
 
-        context.$connect(
-          from,
-          step1,
-          rg.Assignment({
-            lhs: rg.Reference({ identifier: 'coordTemp' }),
-            rhs: rg.Reference({ identifier: 'coordGenerator' }),
-          }),
-        );
-        context.$connect(
-          step1,
-          step2,
-          rg.Reachability({
-            lhs: localFrom,
-            rhs: localTo,
-            negated: false,
-          }),
-        );
-        context.$connect(
-          step2,
-          to,
-          rg.Assignment({
-            lhs: rg.Reference({ identifier: 'coord' }),
-            rhs: rg.Reference({ identifier: 'coordTemp' }),
-          }),
-        );
-        context.$connect(
-          localAfter,
-          localTo,
-          rg.Comparison({
-            lhs: rg.Reference({ identifier: 'coord' }),
-            rhs: rg.Reference({ identifier: 'coordTemp' }),
-            negated: false,
-          }),
-        );
+        for (const [coord, reachableCoords] of pairs) {
+          if (reachableCoords.length === 0) {
+            continue;
+          }
 
-        from = localFrom;
-        to = localAfter;
+          const local = context.$randomEdgeName();
+          if (reachableCoords.length === 1) {
+            context.$connect(
+              from,
+              local,
+              rg.Comparison({
+                lhs: rg.Reference({ identifier: 'coord' }),
+                rhs: rg.Reference({ identifier: coord }),
+                negated: false,
+              }),
+            );
+            context.$connect(
+              local,
+              to,
+              rg.Assignment({
+                lhs: rg.Reference({ identifier: 'coord' }),
+                rhs: rg.Reference({ identifier: reachableCoords[0] }),
+              }),
+            );
+            continue;
+          }
+
+          const usesAllCoords = reachableCoords.length === pairs.length;
+          local.parts.push(
+            rg.Binding({
+              identifier: 'coordGenerator',
+              type: rg.TypeReference({
+                identifier: usesAllCoords
+                  ? 'Coord'
+                  : context.$createTypeFromSet(reachableCoords),
+              }),
+            }),
+          );
+
+          if (usesAllCoords) {
+            context.$connect(from, local, rg.Skip({}));
+            context.$connect(
+              local,
+              to,
+              rg.Assignment({
+                lhs: rg.Reference({ identifier: 'coord' }),
+                rhs: rg.Reference({ identifier: 'coordGenerator' }),
+              }),
+            );
+            continue;
+          }
+
+          context.$connect(
+            from,
+            local,
+            rg.Comparison({
+              lhs: rg.Reference({ identifier: 'coord' }),
+              rhs: rg.Cast({
+                lhs: rg.TypeReference({ identifier: 'Coord' }),
+                rhs: rg.Reference({ identifier: coord }),
+              }),
+              negated: false,
+            }),
+          );
+          context.$connect(
+            local,
+            to,
+            rg.Assignment({
+              lhs: rg.Reference({ identifier: 'coord' }),
+              rhs: rg.Reference({ identifier: 'coordGenerator' }),
+            }),
+          );
+        }
+        return;
       }
 
       for (const concatenation of content.elements) {
@@ -156,25 +204,13 @@ function translateAtomContent(
           if (atom.power) {
             const localPre = context.$randomEdgeName();
             const localAfter = context.$randomEdgeName();
-            translateAtomContent(
-              context,
-              atom.content,
-              localPre,
-              localAfter,
-              isInReachability,
-            );
+            translateAtomContent(context, atom.content, localPre, localAfter);
             context.$connect(localFrom, localPre, rg.Skip({}));
             context.$connect(localFrom, localTo, rg.Skip({}));
             context.$connect(localAfter, localPre, rg.Skip({}));
             context.$connect(localAfter, localTo, rg.Skip({}));
           } else {
-            translateAtomContent(
-              context,
-              atom.content,
-              localFrom,
-              localTo,
-              isInReachability,
-            );
+            translateAtomContent(context, atom.content, localFrom, localTo);
           }
           localFrom = localTo;
         }
@@ -229,7 +265,6 @@ function translateGame(context: Context) {
     context.rbg.rules,
     rg.EdgeName({ parts: [rg.Literal({ identifier: 'begin' })] }),
     rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
-    false,
   );
 
   context.rg.types.push(
@@ -377,11 +412,6 @@ function translateGame(context: Context) {
       type: rg.TypeReference({ identifier: 'Coord' }),
       defaultValue: rg.Element({ identifier: context.rbg.board[0].node }),
     }),
-    rg.VariableDeclaration({
-      identifier: 'coordTemp',
-      type: rg.TypeReference({ identifier: 'Coord' }),
-      defaultValue: rg.Element({ identifier: context.rbg.board[0].node }),
-    }),
   );
 
   return context.rg;
@@ -398,27 +428,22 @@ function translateValue(context: Context, value: rbg.Value) {
   throw new Error('Not implemented (Value).');
 }
 
+function isExpandableShiftPattern(content: rbg.Action | rbg.Rule) {
+  return (
+    content.kind === 'Rule' &&
+    content.elements.some(concatenation => concatenation.length > 1) &&
+    isShiftPattern(content)
+  );
+}
+
 function isShiftPattern(content: rbg.Action | rbg.Rule): boolean {
-  switch (content.kind) {
-    case 'Assignment':
-      return false;
-    case 'Check':
-      return false;
-    case 'Comparison':
-      return false;
-    case 'Off':
-      return false;
-    case 'On':
-      return content.pieces.length > 0;
-    case 'Rule':
-      return content.elements.every(concatenation =>
+  return (
+    content.kind === 'Shift' ||
+    (content.kind === 'Rule' &&
+      content.elements.every(concatenation =>
         concatenation.every(atom => isShiftPattern(atom.content)),
-      );
-    case 'Shift':
-      return true;
-    case 'Switch':
-      return false;
-  }
+      ))
+  );
 }
 
 function groupShiftPatterns(rule: rbg.Rule) {
@@ -429,17 +454,28 @@ function groupShiftPatterns(rule: rbg.Rule) {
   return rbg.Rule({
     elements: rule.elements.map(concatenation =>
       concatenation.reduce<rbg.Atom[]>((concatenation, atom) => {
-        atom =
-          atom.content.kind === 'Rule'
-            ? rbg.Atom({
-                content: groupShiftPatterns(atom.content),
-                power: atom.power,
-              })
-            : atom;
+        switch (atom.content.kind) {
+          case 'Check':
+            atom = rbg.Atom({
+              content: rbg.Check({
+                negated: atom.content.negated,
+                rule: groupShiftPatterns(atom.content.rule),
+              }),
+              power: atom.power,
+            });
+            break;
+          case 'Rule':
+            atom = rbg.Atom({
+              content: groupShiftPatterns(atom.content),
+              power: atom.power,
+            });
+            break;
+        }
 
         if (isShiftPattern(atom.content)) {
           const previous = concatenation[concatenation.length - 1];
           if (
+            previous &&
             !previous.power &&
             previous.content.kind === 'Rule' &&
             previous.content.elements.length === 1 &&
@@ -464,11 +500,62 @@ function groupShiftPatterns(rule: rbg.Rule) {
   });
 }
 
+function makeShiftPattern(game: rbg.Game, coord: string, rule: rbg.Rule) {
+  return rule.elements
+    .flatMap(concatenation =>
+      concatenation.reduce(
+        (coords, { content, power }) => {
+          const reachableCoords = power ? coords.slice() : [];
+          for (let coord of coords) {
+            switch (content.kind) {
+              case 'Shift': {
+                const { label } = content;
+                do {
+                  const node = game.board.find(node => node.node === coord);
+                  const edge = node?.edges.find(edge => edge.label === label);
+                  if (edge) {
+                    utils.unique(reachableCoords, edge.node);
+                    coord = edge.node;
+                  } else {
+                    break;
+                  }
+                } while (power);
+                break;
+              }
+              case 'Rule': {
+                for (const node of makeShiftPattern(game, coord, content)) {
+                  utils.unique(reachableCoords, node);
+                }
+                break;
+              }
+              default:
+                throw new Error(
+                  `Incorrect shift pattern: ${content.toString()}`,
+                );
+            }
+          }
+
+          return reachableCoords;
+        },
+        [coord],
+      ),
+    )
+    .reduce<string[]>(utils.unique, []);
+}
+
 export default function translate(game: rbg.Game) {
   let counter = 0;
   return translateGame({
     $connect(lhs, rhs, label) {
       this.rg.edges.push(rg.EdgeDeclaration({ lhs, rhs, label }));
+    },
+    $createTypeFromSet(identifiers: string[]) {
+      const identifier = `Coord${counter++}`;
+      this.rg.types.push(
+        rg.TypeDeclaration({ identifier, type: rg.Set({ identifiers }) }),
+      );
+
+      return identifier;
     },
     $randomEdgeName() {
       return rg.EdgeName({
