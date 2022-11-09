@@ -1,6 +1,41 @@
 import { parse } from '../src/parse';
 import { Extension } from '../src/types';
 
+describe('compactSkipEdges', () => {
+  function run(source: string) {
+    return parse(source, {
+      extension: Extension.rg,
+      flags: {
+        compactSkipEdges: true,
+        expandGeneratorNodes: true,
+        mangleSymbols: false,
+        reuseFunctions: false,
+      },
+    }).sourceRgFormatted;
+  }
+
+  test('prefix', () => {
+    expect(run('a, b: ; b, c: x == x; c, d: y == y;')).toMatchInlineSnapshot(`
+      "a, c: x == x;
+      c, d: y == y;"
+    `);
+  });
+
+  test('infix', () => {
+    expect(run('a, b: x == x; b, c: ; c, d: y == y;')).toMatchInlineSnapshot(`
+      "a, c: x == x;
+      c, d: y == y;"
+    `);
+  });
+
+  test('suffix', () => {
+    expect(run('a, b: x == x; b, c: y == y; c, d: ;')).toMatchInlineSnapshot(`
+      "a, b: x == x;
+      b, d: y == y;"
+    `);
+  });
+});
+
 describe('expandGeneratorNodes', () => {
   const typeDefinitions = `
     type T1 = { 1, 2 };
