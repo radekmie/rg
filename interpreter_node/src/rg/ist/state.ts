@@ -94,7 +94,7 @@ export function evaluateExpression(
     }
     case 'BindReference': {
       const value = state.position.values[expression.identifier];
-      utils.assert(value !== null, `Unbound bind: ${expression.identifier}.`);
+      utils.assert(value, `Unbound bind: ${expression.identifier}.`);
       return value;
     }
     case 'Cast':
@@ -138,11 +138,13 @@ export function* nextStates(
     yield state;
   }
 
-  for (const { label, lhs, rhs: rhsGenerator } of game.edges) {
+  for (const { label, lhs: lhsGenerator, rhs: rhsGenerator } of game.edges) {
     // TODO: Check binds.
-    if (state.position.label !== lhs.label) {
+    if (state.position.label !== lhsGenerator.label) {
       continue;
     }
+
+    const lhs = state.position;
     for (const rhs of reifyNodes(lhs, rhsGenerator)) {
       state.position = rhs;
       switch (label.kind) {
@@ -185,7 +187,8 @@ export function* nextStates(
 
 export function* reifyNodes(lhs: ist.EdgeName, rhsGenerator: ist.EdgeName) {
   // Fast path: nothing to substitute.
-  const binds = Object.keys(rhsGenerator.types);
+  const bindTypes = { ...lhs.types, ...rhsGenerator.types };
+  const binds = Object.keys(bindTypes);
   if (binds.length === 0) {
     yield rhsGenerator;
     return;
@@ -195,7 +198,7 @@ export function* reifyNodes(lhs: ist.EdgeName, rhsGenerator: ist.EdgeName) {
   const rhs = ist.EdgeName({
     label: rhsGenerator.label,
     types: rhsGenerator.types,
-    values: utils.mapValues(rhsGenerator.values, value => value),
+    values: { ...rhsGenerator.values },
   });
 
   // Copy existing lhs binds to rhs.
@@ -216,18 +219,17 @@ export function* reifyNodes(lhs: ist.EdgeName, rhsGenerator: ist.EdgeName) {
     }
 
     const bind = binds[index];
-    const bindType = rhs.types[bind];
+    const bindType = bindTypes[bind];
     utils.assert(bindType.kind === 'Set', 'Can iterate only over Set.');
 
     // This bind was substituted by lhs.
     if (rhs.values[bind] !== undefined) {
       yield* iterateNth(index + 1);
-      return;
-    }
-
-    for (const value of bindType.values) {
-      rhs.values[bind] = value;
-      yield* iterateNth(index + 1);
+    } else {
+      for (const value of bindType.values) {
+        rhs.values[bind] = value;
+        yield* iterateNth(index + 1);
+      }
     }
 
     delete rhs.values[bind];
