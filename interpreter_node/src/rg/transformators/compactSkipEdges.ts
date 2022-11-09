@@ -1,6 +1,10 @@
 import * as utils from '../../utils';
 import * as ast from '../ast';
 
+const beginEdgeName = ast.EdgeName({
+  parts: [ast.Literal({ identifier: 'begin' })],
+});
+
 // eslint-disable-next-line complexity -- It's fine.
 export function compactSkipEdges({ edges }: ast.GameDeclaration) {
   // Rename all bindings so bind names are globally unique.
@@ -81,6 +85,31 @@ export function compactSkipEdges({ edges }: ast.GameDeclaration) {
           y.lhs = x.lhs;
         }
       }
+    }
+  }
+
+  // Before:
+  //       x
+  //   a ----> b
+  //
+  // After:
+  //
+  //   b
+  //
+  // Conditions:
+  //   1. x = Skip
+  //   2. a has no other outgoing edges
+  //   3. a has no bindings
+  //   4. a is not `begin`
+  for (const x of edges.slice()) {
+    if (
+      ast.lib.isSkip(x.label) &&
+      !ast.lib.hasBindings(x.lhs) &&
+      ast.lib.outgoing(edges, x.lhs).every(y => y === x) &&
+      !utils.isEqual(x.lhs, beginEdgeName)
+    ) {
+      // console.log(x.lhs, x.rhs);
+      utils.remove(edges, x);
     }
   }
 }
