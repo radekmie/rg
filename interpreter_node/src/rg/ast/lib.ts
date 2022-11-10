@@ -11,6 +11,16 @@ export function hasBindings(edgeName: ast.EdgeName) {
   return bindings(edgeName).length !== 0;
 }
 
+export function hasConnection(
+  edges: ast.EdgeDeclaration[],
+  lhs: ast.EdgeName,
+  rhs: ast.EdgeName,
+) {
+  return edges.some(
+    edge => utils.isEqual(edge.lhs, lhs) && utils.isEqual(edge.rhs, rhs),
+  );
+}
+
 export function incoming(edges: ast.EdgeDeclaration[], edgeName: ast.EdgeName) {
   return edges.filter(({ rhs }) => utils.isEqual(edgeName, rhs));
 }
