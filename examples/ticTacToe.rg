@@ -35,10 +35,10 @@ turn,preend: ! move -> set;
 preend,end: player = PlayerOrKeeper(keeper);
 
 move,chooseX: player = PlayerOrKeeper(playerTurn);
-chooseX,chooseX(coord:Coord): posX = Coord(coord);
-chooseX(coord:Coord),chooseY: ;
-chooseY,chooseY(coord:Coord): posY = Coord(coord);
-chooseY(coord:Coord),check: ;
+chooseX,chooseX(coordX:Coord): posX = Coord(coordX);
+chooseX(coordX:Coord),chooseY: ;
+chooseY,chooseY(coordY:Coord): posY = Coord(coordY);
+chooseY(coordY:Coord),check: ;
 check,set: board[posX][posY] == Piece(e);
 set,endmove: board[posX][posY] = Piece(playerTurn);
 
