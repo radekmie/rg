@@ -86,8 +86,11 @@ function translateAtomContent(
       }
 
       for (const piece of content.pieces) {
+        // Add an empty edge to make sure we won't create multiedges.
+        const local = context.$randomEdgeName();
+        context.$connect(from, local, rg.Skip({}));
         context.$connect(
-          from,
+          local,
           to,
           rg.Comparison({
             lhs: rg.Access({
