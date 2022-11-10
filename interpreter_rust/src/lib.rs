@@ -20,18 +20,25 @@ pub struct Edge {
 }
 
 impl Edge {
-    pub fn generate(&self) -> Vec<Rc<ValueMap>> {
-        self.rhs.types.iter().fold(
-            vec![self.rhs.values.clone()],
-            |mut sources, (bind, type_)| {
-                if self.rhs.values.contains_key(bind) {
+    pub fn generate(&self, lhs: &EdgeName) -> Vec<Rc<ValueMap>> {
+        lhs.types
+            .iter()
+            .chain(
+                self.rhs
+                    .types
+                    .iter()
+                    .filter(|(bind, _)| !lhs.types.contains_key(bind)),
+            )
+            .fold(vec![self.rhs.values.clone()], |sources, (bind, type_)| {
+                if let Some(value) = lhs.values.get(bind) {
                     sources
-                } else if let Some(value) = self.lhs.values.get(bind) {
-                    for source in sources.iter_mut() {
-                        Rc::make_mut(source).insert(*bind, value.clone());
-                    }
-
-                    sources
+                        .iter()
+                        .map(move |source| {
+                            let mut source = source.clone();
+                            Rc::make_mut(&mut source).insert(*bind, value.clone());
+                            source
+                        })
+                        .collect()
                 } else {
                     match type_.deref() {
                         Type::Arrow { .. } => panic!("Arrow iteration is disallowed."),
@@ -47,8 +54,7 @@ impl Edge {
                             .collect(),
                     }
                 }
-            },
-        )
+            })
     }
 }
 
@@ -236,7 +242,7 @@ impl State {
                 .iter()
                 .filter(|edge| edge.lhs == self.position)
                 .flat_map(|edge| {
-                    edge.generate()
+                    edge.generate(&self.position)
                         .into_iter()
                         .map(move |values| (edge, values))
                 })

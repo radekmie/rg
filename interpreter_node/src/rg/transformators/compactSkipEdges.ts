@@ -45,13 +45,17 @@ export function compactSkipEdges({ edges }: ast.GameDeclaration) {
   //   a ----> c
   //
   // Conditions:
-  //   1. y = Skip
-  //   2. b has no other outgoing edges
-  //   3. b has no bindings
+  //   1. x != Assignment of `player`
+  //   2. y == Skip
+  //   3. b has no other outgoing edges
+  //   4. b has no bindings
   for (const y of edges.slice()) {
     if (ast.lib.isSkip(y.label) && !ast.lib.hasBindings(y.lhs)) {
       for (const x of edges.slice()) {
         if (
+          (x.label.kind !== 'Assignment' ||
+            x.label.lhs.kind !== 'Reference' ||
+            x.label.lhs.identifier !== 'player') &&
           ast.lib.isFollowing(x, y) &&
           ast.lib.outgoing(edges, y.lhs).every(z => z === y)
         ) {
@@ -71,7 +75,7 @@ export function compactSkipEdges({ edges }: ast.GameDeclaration) {
   //   a ----> c
   //
   // Conditions:
-  //   1. x = Skip
+  //   1. x == Skip
   //   2. b has no other incoming edges
   //   3. b has no bindings
   for (const x of edges.slice()) {
@@ -97,14 +101,16 @@ export function compactSkipEdges({ edges }: ast.GameDeclaration) {
   //   b
   //
   // Conditions:
-  //   1. x = Skip
-  //   2. a has no other outgoing edges
-  //   3. a has no bindings
-  //   4. a is not `begin`
+  //   1. x == Skip
+  //   2. a has no other incoming edges
+  //   3. a has no other outgoing edges
+  //   4. a has no bindings
+  //   5. a is not `begin`
   for (const x of edges.slice()) {
     if (
       ast.lib.isSkip(x.label) &&
       !ast.lib.hasBindings(x.lhs) &&
+      ast.lib.incoming(edges, x.lhs).length === 0 &&
       ast.lib.outgoing(edges, x.lhs).every(y => y === x) &&
       !utils.isEqual(x.lhs, beginEdgeName)
     ) {
