@@ -45,7 +45,7 @@ export function compactSkipEdges({ edges }: ast.GameDeclaration) {
   //   a ----> c
   //
   // Conditions:
-  //   1. x != Assignment of `player`
+  //   1. x != Assignment of `player` OR c has no bindings
   //   2. y == Skip
   //   3. b has no other outgoing edges
   //   4. b has no bindings
@@ -56,7 +56,8 @@ export function compactSkipEdges({ edges }: ast.GameDeclaration) {
         if (
           (x.label.kind !== 'Assignment' ||
             x.label.lhs.kind !== 'Reference' ||
-            x.label.lhs.identifier !== 'player') &&
+            x.label.lhs.identifier !== 'player' ||
+            !ast.lib.hasBindings(y.rhs)) &&
           ast.lib.isFollowing(x, y) &&
           ast.lib.outgoing(edges, y.lhs).every(z => z === y) &&
           !ast.lib.hasConnection(edges, x.lhs, y.rhs)
