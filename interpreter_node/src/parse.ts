@@ -75,17 +75,13 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
   const cstRg = rg.cst.parse(sourceRg).cstNode;
   const astRg = rg.ast.visit(cstRg);
 
-  if (settings.flags.compactSkipEdges) {
-    rg.transformators.compactSkipEdges(astRg);
-  }
-
-  if (settings.flags.expandGeneratorNodes) {
-    rg.transformators.expandGeneratorNodes(astRg);
-  }
-
-  if (settings.flags.mangleSymbols) {
-    rg.transformators.mangleSymbols(astRg);
-  }
+  utils.runTransformators(
+    astRg,
+    rg.validators.typecheck,
+    (['compactSkipEdges', 'expandGeneratorNodes', 'mangleSymbols'] as const)
+      .filter(option => settings.flags[option])
+      .map(option => rg.transformators[option]),
+  );
 
   const istRg = rg.ist.build(astRg);
   const graphvizRg = rg.ast.graphviz(astRg);

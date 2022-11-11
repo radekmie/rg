@@ -16,6 +16,10 @@ export function cartesian<T>(xss: T[][], ys: T[]): T[][] {
   return xss.flatMap(xs => ys.map(y => xs.concat(y)));
 }
 
+export function clone<T>(x: T): T {
+  return JSON.parse(JSON.stringify(x));
+}
+
 export function creator<T extends { kind: string }>(kind: T['kind']) {
   return (data: Expand<Omit<T, 'kind'>>) => ({ kind, ...data } as unknown as T);
 }
@@ -78,6 +82,30 @@ export function remove<T>(array: T[], element: T) {
   if (index !== -1) {
     array.splice(index, 1);
   }
+}
+
+export function runTransformators<T>(
+  object: T,
+  validator: (object: T) => void,
+  transformators: ((object: T) => void)[],
+) {
+  validator(object);
+
+  outer: for (let round = 0; round <= 1000; ++round) {
+    const cloned = clone(object);
+    for (const transformator of transformators) {
+      transformator(object);
+      validator(object);
+
+      if (!isEqual(object, cloned)) {
+        continue outer;
+      }
+    }
+
+    return;
+  }
+
+  throw new Error('Transformators did not converge.');
 }
 
 export function safe<T>(fn: () => T): Result<T> {

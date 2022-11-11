@@ -17,16 +17,16 @@ function perf_test {
   local out=$(mktemp /tmp/rg-test.XXXXXXXX.txt)
 
   # Actual script
-  echo -e "\033[0;33m${name}\033[0m \033[0;36m${flags}\033[0m"
+  echo "\033[0;33m${name}\033[0m\033[0;36m${flags}\033[0m\c"
   (
-    (cd interpreter_node && time=$(date +%s%N) && timeout --foreground 120 node lib/cli $flags rg-ist "$game" > $ist && time=$((($(date +%s%N) - $time) / 1000000)) && echo "  analyse time=${time}ms")
-    (cd interpreter_rust && time=$(date +%s%N) && timeout --foreground 120 ./target/release/interpreter_rust $ist perf ${#results[@]} > $out && time=$((($(date +%s%N) - $time) / 1000000)) && echo "  perform time=${time}ms")
+    (cd interpreter_node && time=$(date +%s%N) && timeout --foreground 120 node lib/cli $flags rg-ist "$game" > $ist && time=$((($(date +%s%N) - $time) / 1000000)) && echo " analyse time=${time}ms\c")
+    (cd interpreter_rust && time=$(date +%s%N) && timeout --foreground 120 ./target/release/interpreter_rust $ist perf ${#results[@]} > $out && time=$((($(date +%s%N) - $time) / 1000000)) && echo " perform time=${time}ms")
   )
 
   for (( depth=0; depth<${#results[@]}; ++depth )); do
     local nodes=$(grep "perf(depth: $depth)" "$out" | awk '{print $4}')
     if [ $nodes != ${results[depth]} ]; then
-      echo -e "  Expected \033[0;32m${results[depth]}\033[0m nodes at depth ${depth}, but got \033[0;31m${nodes}\033[0m"
+      echo "  Expected \033[0;32m${results[depth]}\033[0m nodes at depth ${depth}, but got \033[0;31m${nodes}\033[0m"
     fi
   done
 
@@ -52,6 +52,10 @@ for game in "${games[@]}"; do
   for flags in $(combine 'compactSkipEdges' 'expandGeneratorNodes' 'mangleSymbols' 'reuseFunctions'); do
     flags=( $(echo "${flags//_/ }" | xargs) )
     flags=${flags[@]/#/--}
+    if [ ! -z "$flags" ]; then
+      flags=" $flags"
+    fi
+
     perf_test "$flags" "${game[0]}" ${game[@]:1}
   done
 done

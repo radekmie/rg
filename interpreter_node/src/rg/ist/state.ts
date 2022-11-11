@@ -249,8 +249,7 @@ export function setValue(
       const map = evaluateExpression(game, state, expression.lhs, false);
       utils.assert(map.kind === 'Map', 'Only Map can be accessed.');
       const key = evaluateExpression(game, state, expression.rhs, true);
-      utils.assert(key.kind === 'Element', 'Only Element can be key.');
-      // TODO: Type check.
+      utils.assert(key.kind === 'Element', 'Only Element can be a key.');
       const previousValue =
         key.value in map.values ? map.values[key.value] : map.defaultValue;
       if (evaluateEquality(previousValue, value)) {
@@ -274,7 +273,6 @@ export function setValue(
       utils.assert(false, 'Cannot assign to a Literal.');
       break;
     case 'VariableReference': {
-      // TODO: Type check.
       const previousValue = state.values[expression.identifier];
       state.values[expression.identifier] = value;
       return previousValue;
