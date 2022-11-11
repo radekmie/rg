@@ -44,8 +44,8 @@ games[2]='breakthrough.rg 1 22 484 11132' # 256036'
 games[3]='breakthrough.hrg 1 22 484 11132' # 256036'
 games[4]='breakthrough.rbg 1 22 484 11132' # 256036'
 games[5]='connect4.hrg 1 7 49 343 2401 16807' # 117649 823536 5673234'
-games[6]='amazons-opt.hrg 1 2176' # 4307152'
-games[7]='amazons.hrg 1 2176' # 4307152'
+games[6]='amazons-smart.hrg 1 2176' # 4307152'
+games[7]='amazons-naive.hrg 1 2176' # 4307152'
 
 for game in "${games[@]}"; do
   game=( $game )

@@ -7,33 +7,9 @@ const beginEdgeName = ast.EdgeName({
 
 // eslint-disable-next-line complexity -- It's fine.
 export function compactSkipEdges({ edges }: ast.GameDeclaration) {
-  // Rename all bindings so bind names are globally unique.
-  let index = 0;
-  for (const x of edges) {
-    if (ast.lib.hasBindings(x.rhs)) {
-      const mapping = utils.mapToObject(ast.lib.bindings(x.rhs), binding => [
-        binding.identifier,
-        `bind_${++index}`,
-      ]);
-
-      for (const y of edges) {
-        if (x !== y) {
-          if (ast.lib.isFollowing(x, y) || utils.isEqual(x.lhs, y.lhs)) {
-            ast.lib.renameInEdgeLabel(y.label, mapping);
-            ast.lib.renameInEdgeName(y.lhs, mapping);
-          }
-
-          if (ast.lib.isFollowing(y, x) || utils.isEqual(x.rhs, y.rhs)) {
-            ast.lib.renameInEdgeLabel(y.label, mapping);
-            ast.lib.renameInEdgeName(y.rhs, mapping);
-          }
-        }
-      }
-
-      ast.lib.renameInEdgeLabel(x.label, mapping);
-      ast.lib.renameInEdgeName(x.lhs, mapping);
-      ast.lib.renameInEdgeName(x.rhs, mapping);
-    }
+  // Rename all bindings if their names are not globally unique.
+  if (!ast.lib.areBindingsUnique(edges)) {
+    ast.lib.makeBindingsUnique(edges);
   }
 
   // Before:

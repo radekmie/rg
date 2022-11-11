@@ -41,7 +41,40 @@ export function findMap<T, U>(xs: T[], fn: (x: T) => U | undefined) {
 }
 
 export function isEqual<T>(a: T, b: T) {
-  return JSON.stringify(a) === JSON.stringify(b);
+  if (a === b) {
+    return true;
+  }
+
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') {
+    return Number.isNaN(a) && Number.isNaN(b);
+  }
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (let index = 0; index < a.length; ++index) {
+      if (!isEqual(a[index], b[index])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  const keys = Object.keys(a) as (keyof T)[];
+  if (keys.length !== Object.keys(b).length) {
+    return false;
+  }
+
+  for (const key of keys) {
+    if (!isEqual(a[key], b[key])) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export function mapToObject<T, U>(

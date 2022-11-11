@@ -1,6 +1,25 @@
 import * as utils from '../../utils';
 import * as ast from './types';
 
+export function areBindingsUnique(edges: ast.EdgeDeclaration[]) {
+  const bindingToEdgeName = new Map<string, ast.EdgeName>();
+  for (const { lhs, rhs } of edges) {
+    for (const edgeName of [lhs, rhs]) {
+      for (const { identifier } of bindings(edgeName)) {
+        if (bindingToEdgeName.has(identifier)) {
+          if (!utils.isEqual(edgeName, bindingToEdgeName.get(identifier))) {
+            return false;
+          }
+        } else {
+          bindingToEdgeName.set(identifier, edgeName);
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
 export function bindings({ parts }: ast.EdgeName) {
   return parts.filter(function isBind(part): part is ast.Binding {
     return part.kind === 'Binding';
@@ -31,6 +50,36 @@ export function isFollowing(x: ast.EdgeDeclaration, y: ast.EdgeDeclaration) {
 
 export function isSkip(edgeLabel: ast.EdgeLabel): edgeLabel is ast.Skip {
   return edgeLabel.kind === 'Skip';
+}
+
+export function makeBindingsUnique(edges: ast.EdgeDeclaration[]) {
+  let index = 0;
+  for (const x of edges) {
+    if (hasBindings(x.rhs)) {
+      const mapping = utils.mapToObject(bindings(x.rhs), binding => [
+        binding.identifier,
+        `bind_${++index}`,
+      ]);
+
+      for (const y of edges) {
+        if (x !== y) {
+          if (isFollowing(x, y) || utils.isEqual(x.lhs, y.lhs)) {
+            renameInEdgeLabel(y.label, mapping);
+            renameInEdgeName(y.lhs, mapping);
+          }
+
+          if (isFollowing(y, x) || utils.isEqual(x.rhs, y.rhs)) {
+            renameInEdgeLabel(y.label, mapping);
+            renameInEdgeName(y.rhs, mapping);
+          }
+        }
+      }
+
+      renameInEdgeLabel(x.label, mapping);
+      renameInEdgeName(x.lhs, mapping);
+      renameInEdgeName(x.rhs, mapping);
+    }
+  }
 }
 
 export function outgoing(edges: ast.EdgeDeclaration[], edgeName: ast.EdgeName) {
