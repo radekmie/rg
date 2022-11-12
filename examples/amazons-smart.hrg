@@ -8,33 +8,39 @@ domain SquareOrNull = Square | null
 
 domain DirIndex = upleft | up | upright | left | right | downleft | down | downright
 
-leftdir : Square -> SquareOrNull
+leftdir : SquareOrNull -> SquareOrNull
 leftdir(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
+leftdir(_) = null
 
-rightdir : Square -> SquareOrNull
+rightdir : SquareOrNull -> SquareOrNull
 rightdir(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
+rightdir(_) = null
 
-updir : Square -> SquareOrNull
-updir(V(_, 0)) = null
-updir(V(X, Y)) = V(X, Y - 1)
+updir : SquareOrNull -> SquareOrNull
+updir(V(X, Y)) = if Y == 0 then null else V(X, Y - 1)
+updir(_) = null
 
-downdir : Square -> SquareOrNull
-downdir(V(_, 9)) = null
-downdir(V(X, Y)) = V(X, Y + 1)
+downdir : SquareOrNull -> SquareOrNull
+downdir(V(X, Y)) = if Y == 9 then null else V(X, Y + 1)
+downdir(_) = null
 
-upleftdir : Square -> SquareOrNull
+upleftdir : SquareOrNull -> SquareOrNull
 upleftdir(V(X, Y)) = if X == 0 || Y == 0 then null else V(X-1,Y-1)
+upleftdir(_) = null
 
-uprightdir : Square -> SquareOrNull
+uprightdir : SquareOrNull -> SquareOrNull
 uprightdir(V(X, Y)) = if X == 9 || Y == 0 then null else V(X+1,Y-1)
+uprightdir(_) = null
 
-downleftdir : Square -> SquareOrNull
+downleftdir : SquareOrNull -> SquareOrNull
 downleftdir(V(X, Y)) = if X == 0 || Y == 9 then null else V(X-1,Y+1)
+downleftdir(_) = null
 
-downrightdir : Square -> SquareOrNull
+downrightdir : SquareOrNull -> SquareOrNull
 downrightdir(V(X, Y)) = if X == 9 || Y == 9 then null else V(X+1,Y+1)
+downrightdir(_) = null
 
-direction: DirIndex -> Square -> SquareOrNull
+direction: DirIndex -> SquareOrNull -> SquareOrNull
 direction(upleft) = upleftdir
 direction(up) = updir
 direction(upright) = uprightdir
@@ -54,13 +60,11 @@ opponent(_) = white
 
 
 // Variables
-board : Square -> Piece
+board : SquareOrNull -> Piece
 board = {
 V(X, Y) =
-  if Y == 0 then if X == 3 then blackqueen else if X == 6 then blackqueen else empty else
-  if Y == 3 then if X == 0 then blackqueen else if X == 9 then blackqueen else empty else
-  if Y == 6 then if X == 0 then whitequeen else if X == 9 then whitequeen else empty else
-  if Y == 9 then if X == 3 then whitequeen else if X == 6 then whitequeen else empty else
+  if Y == 0 && (X == 3 || X == 6) || Y == 3 && (X == 0 || X == 9) then blackqueen else
+  if Y == 6 && (X == 0 || X == 9) || Y == 9 && (X == 3 || X == 6) then whitequeen else
   empty
   where X in 0..9, Y in 0..9
 }
@@ -73,10 +77,9 @@ me = white
 player : PlayerOrKeeper
 player = keeper
 
-position : Square
+position : SquareOrNull
 
 goals : Player -> Score
-
 
 graph queenShift() {
   forall(di)
@@ -102,7 +105,7 @@ graph queenShift() {
 
 graph move(me: Player) {
   forall(position)
-  assert(board[position] == piece(me))
+  assert(position != null && board[position] == piece(me))
   board[position] = empty
   queenShift()
   //player = keeper // split2 option

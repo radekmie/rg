@@ -6,31 +6,37 @@ domain Score = lose | win
 domain Square = V(X, Y) where X in 0..9, Y in { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }
 domain SquareOrNull = Square | null
 
-left : Square -> SquareOrNull
+left : SquareOrNull -> SquareOrNull
 left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
+left(_) = null
 
-right : Square -> SquareOrNull
+right : SquareOrNull -> SquareOrNull
 right(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
+right(_) = null
 
-up : Square -> SquareOrNull
-up(V(_, 0)) = null
-up(V(X, Y)) = V(X, Y - 1)
+up : SquareOrNull -> SquareOrNull
+up(V(X, Y)) = if Y == 0 then null else V(X, Y - 1)
+up(_) = null
 
-down : Square -> SquareOrNull
-down(V(_, 9)) = null
-down(V(X, Y)) = V(X, Y + 1)
+down : SquareOrNull -> SquareOrNull
+down(V(X, Y)) = if Y == 9 then null else V(X, Y + 1)
+down(_) = null
 
-upleft : Square -> SquareOrNull
-upleft(V(X, Y)) = if X == 0 || Y == 0 then null else V(X-1,Y-1)
+upleft : SquareOrNull -> SquareOrNull
+upleft(V(X, Y)) = if X == 0 || Y == 0 then null else V(X - 1, Y - 1)
+upleft(_) = null
 
-upright : Square -> SquareOrNull
-upright(V(X, Y)) = if X == 9 || Y == 0 then null else V(X+1,Y-1)
+upright : SquareOrNull -> SquareOrNull
+upright(V(X, Y)) = if X == 9 || Y == 0 then null else V(X + 1, Y - 1)
+upright(_) = null
 
-downleft : Square -> SquareOrNull
-downleft(V(X, Y)) = if X == 0 || Y == 9 then null else V(X-1,Y+1)
+downleft : SquareOrNull -> SquareOrNull
+downleft(V(X, Y)) = if X == 0 || Y == 9 then null else V(X - 1, Y + 1)
+downleft(_) = null
 
-downright : Square -> SquareOrNull
-downright(V(X, Y)) = if X == 9 || Y == 9 then null else V(X+1,Y+1)
+downright : SquareOrNull -> SquareOrNull
+downright(V(X, Y)) = if X == 9 || Y == 9 then null else V(X + 1, Y + 1)
+downright(_) = null
 
 piece : Player -> Piece
 piece(white) = whitequeen
@@ -42,13 +48,11 @@ opponent(_) = white
 
 
 // Variables
-board : Square -> Piece
+board : SquareOrNull -> Piece
 board = {
 V(X, Y) =
-  if Y == 0 then if X == 3 then blackqueen else if X == 6 then blackqueen else empty else
-  if Y == 3 then if X == 0 then blackqueen else if X == 9 then blackqueen else empty else
-  if Y == 6 then if X == 0 then whitequeen else if X == 9 then whitequeen else empty else
-  if Y == 9 then if X == 3 then whitequeen else if X == 6 then whitequeen else empty else
+  if Y == 0 && (X == 3 || X == 6) || Y == 3 && (X == 0 || X == 9) then blackqueen else
+  if Y == 6 && (X == 0 || X == 9) || Y == 9 && (X == 3 || X == 6) then whitequeen else
   empty
   where X in 0..9, Y in 0..9
 }
@@ -59,12 +63,12 @@ me = white
 player : PlayerOrKeeper
 player = keeper
 
-position : Square
+position : SquareOrNull
 
 goals : Player -> Score
 
 
-graph followDirection(direction: Square -> SquareOrNull) {
+graph followDirection(direction: SquareOrNull -> SquareOrNull) {
   position = direction(position) assert(position != null) assert(board[position] == empty)
   branch {} or {
   position = direction(position) assert(position != null) assert(board[position] == empty)
@@ -107,7 +111,7 @@ graph queenShift() {
 
 graph move(me: Player) {
   forall(position)
-  assert(board[position] == piece(me))
+  assert(position != null && board[position] == piece(me))
   board[position] = empty
   queenShift()
   //player = keeper // split2 option

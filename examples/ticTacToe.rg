@@ -1,5 +1,3 @@
-// TicTacToe (direct LL example)
-
 type Player = {X,O};
 type PlayerOrKeeper = {keeper,X,O};
 type Score = {0,50,100};

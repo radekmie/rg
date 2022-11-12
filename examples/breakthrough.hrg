@@ -7,21 +7,25 @@ domain Square = V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
 domain SquareOrNull = Square | null
 
 // Helpers
-left : Square -> SquareOrNull
+left : SquareOrNull -> SquareOrNull
+left(null) = null
 left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
 
-right : Square -> SquareOrNull
+right : SquareOrNull -> SquareOrNull
+right(null) = null
 right(V(X, Y)) = if X == 7 then null else V(X + 1, Y)
 
-up : Square -> SquareOrNull
+up : SquareOrNull -> SquareOrNull
+up(null) = null
 up(V(_, 0)) = null
 up(V(X, Y)) = V(X, Y - 1)
 
-down : Square -> SquareOrNull
+down : SquareOrNull -> SquareOrNull
+down(null) = null
 down(V(_, 7)) = null
 down(V(X, Y)) = V(X, Y + 1)
 
-direction : Player -> Square -> SquareOrNull
+direction : Player -> SquareOrNull -> SquareOrNull
 direction(white) = up
 direction(_) = down
 
@@ -36,7 +40,7 @@ opponent(_) = white
 
 // Variables
 //   Special variables are defined implicitly (player, score, visibility)
-board : Square -> Piece
+board : SquareOrNull -> Piece
 board = {
   V(X, Y) = if Y < 2
     then blackpawn
@@ -52,7 +56,7 @@ me = white
 player : PlayerOrKeeper
 player = keeper
 
-position : Square
+position : SquareOrNull
 
 goals : Player -> Score
 
@@ -60,7 +64,7 @@ goals : Player -> Score
 // Automaton
 graph move(me: Player) {
   forall(position)
-  assert(board[position] == piece(me))
+  assert(position != null && board[position] == piece(me))
   board[position] = empty
   position = direction(me)(position)
   branch {
