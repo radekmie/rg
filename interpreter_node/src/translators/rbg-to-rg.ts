@@ -4,6 +4,10 @@ import * as utils from '../utils';
 
 type Context = {
   $connect: (lhs: rg.EdgeName, rhs: rg.EdgeName, label: rg.EdgeLabel) => void;
+  $createConstantFromMap: (
+    pairs: [string, string][],
+    defaultValue: string,
+  ) => string;
   $createTypeFromSet: (identifiers: string[]) => string;
   $randomEdgeName: () => rg.EdgeName;
   rbg: rbg.Game;
@@ -140,6 +144,36 @@ function translateAtomContent(
             rg.Assignment({
               lhs: rg.Reference({ identifier: 'coord' }),
               rhs: rg.Reference({ identifier: 'coordGenerator' }),
+            }),
+          );
+          return;
+        }
+
+        if (pairs.every(pair => pair[1].length <= 1)) {
+          const map = pairs
+            .map<[string, string]>(([k, [v = 'null']]) => [k, v])
+            .concat([['null', 'null']]);
+
+          const contant = context.$createConstantFromMap(map, 'null');
+          const local = context.$randomEdgeName();
+          context.$connect(
+            from,
+            local,
+            rg.Assignment({
+              lhs: rg.Reference({ identifier: 'coord' }),
+              rhs: rg.Access({
+                lhs: rg.Reference({ identifier: contant }),
+                rhs: rg.Reference({ identifier: 'coord' }),
+              }),
+            }),
+          );
+          context.$connect(
+            local,
+            to,
+            rg.Comparison({
+              lhs: rg.Reference({ identifier: 'coord' }),
+              rhs: rg.Reference({ identifier: 'null' }),
+              negated: true,
             }),
           );
           return;
@@ -574,7 +608,8 @@ function makeShiftPattern(game: rbg.Game, coord: string, rule: rbg.Rule) {
         [coord],
       ),
     )
-    .reduce<string[]>(utils.unique, []);
+    .reduce<string[]>(utils.unique, [])
+    .sort();
 }
 
 export default function translate(game: rbg.Game) {
@@ -583,11 +618,60 @@ export default function translate(game: rbg.Game) {
     $connect(lhs, rhs, label) {
       this.rg.edges.push(rg.EdgeDeclaration({ lhs, rhs, label }));
     },
-    $createTypeFromSet(identifiers: string[]) {
-      const identifier = `Coord${counter++}`;
-      this.rg.types.push(
-        rg.TypeDeclaration({ identifier, type: rg.Set({ identifiers }) }),
+    $createConstantFromMap(pairs, defaultValue) {
+      const type = rg.Arrow({
+        lhs: this.$createTypeFromSet(
+          pairs
+            .map(pair => pair[0])
+            .reduce<string[]>(utils.unique, [])
+            .sort(),
+        ),
+        rhs: rg.TypeReference({
+          identifier: this.$createTypeFromSet(
+            pairs
+              .map(pair => pair[1])
+              .reduce<string[]>(utils.unique, [])
+              .sort(),
+          ),
+        }),
+      });
+
+      const value = rg.Map({
+        entries: [
+          rg.DefaultEntry({ value: rg.Element({ identifier: defaultValue }) }),
+          ...pairs
+            .filter(([, to]) => to !== defaultValue)
+            .sort()
+            .map(([from, to]) =>
+              rg.NamedEntry({
+                identifier: from,
+                value: rg.Element({ identifier: to }),
+              }),
+            ),
+        ],
+      });
+
+      const existing = utils.find(this.rg.constants, { type, value });
+      if (existing) {
+        return existing.identifier;
+      }
+
+      const identifier = `CoordMap${counter++}`;
+      this.rg.constants.push(
+        rg.ConstantDeclaration({ identifier, type, value }),
       );
+
+      return identifier;
+    },
+    $createTypeFromSet(identifiers) {
+      const type = rg.Set({ identifiers });
+      const existing = utils.find(this.rg.types, { type });
+      if (existing) {
+        return existing.identifier;
+      }
+
+      const identifier = `CoordGen${counter++}`;
+      this.rg.types.push(rg.TypeDeclaration({ identifier, type }));
 
       return identifier;
     },

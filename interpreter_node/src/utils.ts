@@ -26,7 +26,7 @@ export function creator<T extends { kind: string }>(kind: T['kind']) {
 
 export function find<T>(xs: T[], needle: Partial<T>) {
   const keys = Object.keys(needle) as (keyof T)[];
-  return xs.find(x => keys.every(key => x[key] === needle[key]));
+  return xs.find(x => keys.every(key => isEqual(x[key], needle[key])));
 }
 
 export function findMap<T, U>(xs: T[], fn: (x: T) => U | undefined) {
