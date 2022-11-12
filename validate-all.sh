@@ -19,7 +19,7 @@ function combine() {
   eval echo $(printf "{,%s}_" $(echo "$@ " | tac -s ' '))
 }
 
-for game in ./examples/*.{hrg,rbg,rg}; do
+for game in $(ls -1 ./examples/*.{hrg,rbg,rg} | sort); do
   for flags in $(combine 'compactSkipEdges' 'expandGeneratorNodes' 'mangleSymbols' 'reuseFunctions'); do
     flags=( $(echo "${flags//_/ }" | xargs) )
     flags=${flags[@]/#/--}

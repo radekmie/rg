@@ -146,6 +146,20 @@ export function rebindExpression(
   }
 }
 
+export function resolveTypeReference(
+  { types }: ast.GameDeclaration,
+  type: ast.Type,
+) {
+  while (type.kind === 'TypeReference') {
+    const { identifier } = type;
+    const typeDeclaration = utils.find(types, { identifier });
+    utils.assert(typeDeclaration, `Unresolved TypeReference: "${identifier}".`);
+    type = typeDeclaration.type;
+  }
+
+  return type;
+}
+
 export function substituteInEdgeLabel(
   edgeLabel: ast.EdgeLabel,
   mapping: Record<string, ast.Expression>,
