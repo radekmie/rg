@@ -1,46 +1,45 @@
 // Domains
 domain Piece = arrow | blackqueen | empty | whitequeen
 domain Player = black | white
-domain PlayerOrKeeper = black | keeper | white
+domain PlayerOrKeeper = Player | keeper
 domain Score = lose | win
-domain Square = V(X, Y) where X in 0..9, Y in { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }
-domain SquareOrNull = Square | null
+domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
 
 domain DirIndex = upleft | up | upright | left | right | downleft | down | downright
 
-leftdir : SquareOrNull -> SquareOrNull
+leftdir : Position -> Position
 leftdir(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
 leftdir(_) = null
 
-rightdir : SquareOrNull -> SquareOrNull
+rightdir : Position -> Position
 rightdir(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
 rightdir(_) = null
 
-updir : SquareOrNull -> SquareOrNull
+updir : Position -> Position
 updir(V(X, Y)) = if Y == 0 then null else V(X, Y - 1)
 updir(_) = null
 
-downdir : SquareOrNull -> SquareOrNull
+downdir : Position -> Position
 downdir(V(X, Y)) = if Y == 9 then null else V(X, Y + 1)
 downdir(_) = null
 
-upleftdir : SquareOrNull -> SquareOrNull
+upleftdir : Position -> Position
 upleftdir(V(X, Y)) = if X == 0 || Y == 0 then null else V(X-1,Y-1)
 upleftdir(_) = null
 
-uprightdir : SquareOrNull -> SquareOrNull
+uprightdir : Position -> Position
 uprightdir(V(X, Y)) = if X == 9 || Y == 0 then null else V(X+1,Y-1)
 uprightdir(_) = null
 
-downleftdir : SquareOrNull -> SquareOrNull
+downleftdir : Position -> Position
 downleftdir(V(X, Y)) = if X == 0 || Y == 9 then null else V(X-1,Y+1)
 downleftdir(_) = null
 
-downrightdir : SquareOrNull -> SquareOrNull
+downrightdir : Position -> Position
 downrightdir(V(X, Y)) = if X == 9 || Y == 9 then null else V(X+1,Y+1)
 downrightdir(_) = null
 
-direction: DirIndex -> SquareOrNull -> SquareOrNull
+direction: DirIndex -> Position -> Position
 direction(upleft) = upleftdir
 direction(up) = updir
 direction(upright) = uprightdir
@@ -60,7 +59,7 @@ opponent(_) = white
 
 
 // Variables
-board : SquareOrNull -> Piece
+board : Position -> Piece
 board = {
 V(X, Y) =
   if Y == 0 && (X == 3 || X == 6) || Y == 3 && (X == 0 || X == 9) then blackqueen else
@@ -77,7 +76,7 @@ me = white
 player : PlayerOrKeeper
 player = keeper
 
-position : SquareOrNull
+position : Position
 
 goals : Player -> Score
 

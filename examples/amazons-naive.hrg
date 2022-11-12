@@ -1,40 +1,39 @@
 // Domains
 domain Piece = arrow | blackqueen | empty | whitequeen
 domain Player = black | white
-domain PlayerOrKeeper = black | keeper | white
+domain PlayerOrKeeper = Player | keeper
 domain Score = lose | win
-domain Square = V(X, Y) where X in 0..9, Y in { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }
-domain SquareOrNull = Square | null
+domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
 
-left : SquareOrNull -> SquareOrNull
+left : Position -> Position
 left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
 left(_) = null
 
-right : SquareOrNull -> SquareOrNull
+right : Position -> Position
 right(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
 right(_) = null
 
-up : SquareOrNull -> SquareOrNull
+up : Position -> Position
 up(V(X, Y)) = if Y == 0 then null else V(X, Y - 1)
 up(_) = null
 
-down : SquareOrNull -> SquareOrNull
+down : Position -> Position
 down(V(X, Y)) = if Y == 9 then null else V(X, Y + 1)
 down(_) = null
 
-upleft : SquareOrNull -> SquareOrNull
+upleft : Position -> Position
 upleft(V(X, Y)) = if X == 0 || Y == 0 then null else V(X - 1, Y - 1)
 upleft(_) = null
 
-upright : SquareOrNull -> SquareOrNull
+upright : Position -> Position
 upright(V(X, Y)) = if X == 9 || Y == 0 then null else V(X + 1, Y - 1)
 upright(_) = null
 
-downleft : SquareOrNull -> SquareOrNull
+downleft : Position -> Position
 downleft(V(X, Y)) = if X == 0 || Y == 9 then null else V(X - 1, Y + 1)
 downleft(_) = null
 
-downright : SquareOrNull -> SquareOrNull
+downright : Position -> Position
 downright(V(X, Y)) = if X == 9 || Y == 9 then null else V(X + 1, Y + 1)
 downright(_) = null
 
@@ -48,7 +47,7 @@ opponent(_) = white
 
 
 // Variables
-board : SquareOrNull -> Piece
+board : Position -> Piece
 board = {
 V(X, Y) =
   if Y == 0 && (X == 3 || X == 6) || Y == 3 && (X == 0 || X == 9) then blackqueen else
@@ -63,12 +62,12 @@ me = white
 player : PlayerOrKeeper
 player = keeper
 
-position : SquareOrNull
+position : Position
 
 goals : Player -> Score
 
 
-graph followDirection(direction: SquareOrNull -> SquareOrNull) {
+graph followDirection(direction: Position -> Position) {
   position = direction(position) assert(position != null) assert(board[position] == empty)
   branch {} or {
   position = direction(position) assert(position != null) assert(board[position] == empty)

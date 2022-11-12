@@ -1,32 +1,31 @@
 domain Piece = empty | red | yellow
 domain Player = keeper | red | yellow
-domain Position = V(X, Y) where X in 1..7, Y in 1..6
-domain PositionOrNull = Position | null
+domain Position = null | V(X, Y) where X in 1..7, Y in 1..6
 domain Score = draw | lose | win
 
-up : PositionOrNull -> PositionOrNull
+up : Position -> Position
 up(V(X, Y)) = if Y == 6 then null else V(X, Y + 1)
 up(_) = null
 
-right : PositionOrNull -> PositionOrNull
+right : Position -> Position
 right(V(X, Y)) = if X == 7 then null else V(X + 1, Y)
 right(_) = null
 
-down : PositionOrNull -> PositionOrNull
+down : Position -> Position
 down(V(X, Y)) = if Y == 1 then null else V(X, Y - 1)
 down(_) = null
 
-left : PositionOrNull -> PositionOrNull
+left : Position -> Position
 left(V(X, Y)) = if X == 1 then null else V(X - 1, Y)
 left(_) = null
 
-board : PositionOrNull -> Piece
+board : Position -> Piece
 board = { V(X, Y) = empty where X in 1..7, Y in 1..6 }
 
 player : Player
 player = keeper
 
-position : PositionOrNull
+position : Position
 
 score : Player -> Score
 

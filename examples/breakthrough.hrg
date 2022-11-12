@@ -1,31 +1,30 @@
 // Domains
 domain Piece = blackpawn | empty | whitepawn
 domain Player = black | white
-domain PlayerOrKeeper = black | keeper | white
+domain PlayerOrKeeper = Player | keeper
 domain Score = lose | win
-domain Square = V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
-domain SquareOrNull = Square | null
+domain Position = null | V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
 
 // Helpers
-left : SquareOrNull -> SquareOrNull
+left : Position -> Position
 left(null) = null
 left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
 
-right : SquareOrNull -> SquareOrNull
+right : Position -> Position
 right(null) = null
 right(V(X, Y)) = if X == 7 then null else V(X + 1, Y)
 
-up : SquareOrNull -> SquareOrNull
+up : Position -> Position
 up(null) = null
 up(V(_, 0)) = null
 up(V(X, Y)) = V(X, Y - 1)
 
-down : SquareOrNull -> SquareOrNull
+down : Position -> Position
 down(null) = null
 down(V(_, 7)) = null
 down(V(X, Y)) = V(X, Y + 1)
 
-direction : Player -> SquareOrNull -> SquareOrNull
+direction : Player -> Position -> Position
 direction(white) = up
 direction(_) = down
 
@@ -40,7 +39,7 @@ opponent(_) = white
 
 // Variables
 //   Special variables are defined implicitly (player, score, visibility)
-board : SquareOrNull -> Piece
+board : Position -> Piece
 board = {
   V(X, Y) = if Y < 2
     then blackpawn
@@ -56,7 +55,7 @@ me = white
 player : PlayerOrKeeper
 player = keeper
 
-position : SquareOrNull
+position : Position
 
 goals : Player -> Score
 
