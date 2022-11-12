@@ -998,6 +998,21 @@ function translateCondition(
             }
           }
 
+          if (context.$settings.flags.reuseFunctions) {
+            const callEdgeName = context.$randomEdgeName(automatonPrefix);
+            context.rg.edges.push(
+              rg.EdgeDeclaration({
+                lhs: automatonCurrentEdgeName,
+                rhs: callEdgeName,
+                label: rg.Assignment({
+                  lhs: rg.Reference({ identifier: variable }),
+                  rhs: rg.Reference({ identifier: callId }),
+                }),
+              }),
+            );
+            automatonCurrentEdgeName = callEdgeName;
+          }
+
           for (const arg of call.args) {
             const argEdgeName = context.$randomEdgeName(automatonPrefix);
             context.rg.edges.push(
@@ -1014,21 +1029,6 @@ function translateCondition(
               }),
             );
             automatonCurrentEdgeName = argEdgeName;
-          }
-
-          if (context.$settings.flags.reuseFunctions) {
-            const callEdgeName = context.$randomEdgeName(automatonPrefix);
-            context.rg.edges.push(
-              rg.EdgeDeclaration({
-                lhs: automatonCurrentEdgeName,
-                rhs: callEdgeName,
-                label: rg.Assignment({
-                  lhs: rg.Reference({ identifier: variable }),
-                  rhs: rg.Reference({ identifier: callId }),
-                }),
-              }),
-            );
-            automatonCurrentEdgeName = callEdgeName;
           }
 
           context.rg.edges.push(
