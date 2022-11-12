@@ -119,7 +119,21 @@ function translateAtomContent(
             }),
           );
 
-          context.$connect(from, local, rg.Skip({}));
+          context.$connect(
+            from,
+            local,
+            rg.Comparison({
+              lhs: rg.Cast({
+                lhs: rg.TypeReference({ identifier: 'Coord' }),
+                rhs: rg.Reference({ identifier: 'coordGenerator' }),
+              }),
+              rhs: rg.Cast({
+                lhs: rg.TypeReference({ identifier: 'Coord' }),
+                rhs: rg.Reference({ identifier: 'null' }),
+              }),
+              negated: true,
+            }),
+          );
           context.$connect(
             local,
             to,
@@ -171,7 +185,21 @@ function translateAtomContent(
           );
 
           if (usesAllCoords) {
-            context.$connect(from, local, rg.Skip({}));
+            context.$connect(
+              from,
+              local,
+              rg.Comparison({
+                lhs: rg.Cast({
+                  lhs: rg.TypeReference({ identifier: 'Coord' }),
+                  rhs: rg.Reference({ identifier: 'coordGenerator' }),
+                }),
+                rhs: rg.Cast({
+                  lhs: rg.TypeReference({ identifier: 'Coord' }),
+                  rhs: rg.Reference({ identifier: 'null' }),
+                }),
+                negated: true,
+              }),
+            );
             context.$connect(
               local,
               to,
@@ -326,10 +354,6 @@ function translateGame(context: Context) {
     }),
     rg.TypeDeclaration({
       identifier: 'Coord',
-      type: rg.Set({ identifiers: context.rbg.board.map(node => node.node) }),
-    }),
-    rg.TypeDeclaration({
-      identifier: 'CoordOrNull',
       type: rg.Set({
         identifiers: context.rbg.board.map(node => node.node).concat('null'),
       }),
@@ -350,7 +374,7 @@ function translateGame(context: Context) {
         lhs: 'Coord',
         rhs: rg.Arrow({
           lhs: 'Label',
-          rhs: rg.TypeReference({ identifier: 'CoordOrNull' }),
+          rhs: rg.TypeReference({ identifier: 'Coord' }),
         }),
       }),
       value: rg.Map({
