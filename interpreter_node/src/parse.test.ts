@@ -1,19 +1,29 @@
 import { parse } from '../src/parse';
-import { Extension } from '../src/types';
+import { Extension, Settings } from '../src/types';
+
+function createRun(settings: Settings, definitions: string[] = []) {
+  return (source: string) => {
+    const result = parse(definitions.join('\n') + source, settings);
+    return definitions
+      .reduce(
+        (source, definition) => source.replace(definition, ''),
+        result.sourceRgFormatted,
+      )
+      .trim();
+  };
+}
 
 describe('compactSkipEdges', () => {
-  function run(source: string) {
-    return parse(source, {
-      extension: Extension.rg,
-      flags: {
-        compactSkipEdges: true,
-        expandGeneratorNodes: true,
-        mangleSymbols: false,
-        removeSelfAssignments: false,
-        reuseFunctions: false,
-      },
-    }).sourceRgFormatted;
-  }
+  const run = createRun({
+    extension: Extension.rg,
+    flags: {
+      compactSkipEdges: true,
+      expandGeneratorNodes: false,
+      mangleSymbols: false,
+      removeSelfAssignments: false,
+      reuseFunctions: false,
+    },
+  });
 
   test('prefix', () => {
     expect(run('a, b: ; b, c: x == x; c, d: y == y;')).toMatchInlineSnapshot(`
@@ -38,14 +48,8 @@ describe('compactSkipEdges', () => {
 });
 
 describe('expandGeneratorNodes', () => {
-  const typeDefinitions = `
-    type T1 = { 1, 2 };
-    type T2 = { 3, 4 };
-    type T3 = { 5, 6 };
-  `;
-
-  function run(source: string) {
-    return parse(typeDefinitions + source, {
+  const run = createRun(
+    {
       extension: Extension.rg,
       flags: {
         compactSkipEdges: false,
@@ -54,158 +58,156 @@ describe('expandGeneratorNodes', () => {
         removeSelfAssignments: false,
         reuseFunctions: false,
       },
-    }).sourceRgFormatted;
-  }
+    },
+    [
+      'type T1 = { 1, 2 };',
+      'type T2 = { 3, 4 };',
+      'type T3 = { 5, 6 };',
+      'type T4 = { 1, 2, 3, 4, 5, 6 };',
+      'const map: T4 -> T4 -> T4 = { :1 };',
+    ],
+  );
 
   test('one lhs bind', () => {
     expect(run('a(x: T1), b: x == x;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a__bind__1, b: 1 == 1;
+      "a__bind__1, b: 1 == 1;
       a__bind__2, b: 2 == 2;"
     `);
   });
 
   test('one rhs bind', () => {
     expect(run('a, b(x: T1): x == x;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a, b__bind__1: 1 == 1;
+      "a, b__bind__1: 1 == 1;
       a, b__bind__2: 2 == 2;"
     `);
   });
 
   test('one lhs and one rhs bind (equal)', () => {
     expect(run('a(x: T1), b(x: T1): x == x;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a__bind__1, b__bind__1: 1 == 1;
+      "a__bind__1, b__bind__1: 1 == 1;
       a__bind__2, b__bind__2: 2 == 2;"
     `);
   });
 
   test('one lhs and one rhs bind (different)', () => {
-    expect(run('a(x: T1), b(y: T2): x == y;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a__bind__1, b__bind__3: 1 == 3;
-      a__bind__1, b__bind__4: 1 == 4;
-      a__bind__2, b__bind__3: 2 == 3;
-      a__bind__2, b__bind__4: 2 == 4;"
+    expect(run('a(x: T1), b(y: T2): T4(x) == T4(y);')).toMatchInlineSnapshot(`
+      "a__bind__1, b__bind__3: T4(1) == T4(3);
+      a__bind__1, b__bind__4: T4(1) == T4(4);
+      a__bind__2, b__bind__3: T4(2) == T4(3);
+      a__bind__2, b__bind__4: T4(2) == T4(4);"
     `);
   });
 
   test('two lhs binds', () => {
-    expect(run('a(x: T1)(y: T2), b: x == y;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a__bind__1__bind__3, b: 1 == 3;
-      a__bind__1__bind__4, b: 1 == 4;
-      a__bind__2__bind__3, b: 2 == 3;
-      a__bind__2__bind__4, b: 2 == 4;"
+    expect(run('a(x: T1)(y: T2), b: T4(x) == T4(y);')).toMatchInlineSnapshot(`
+      "a__bind__1__bind__3, b: T4(1) == T4(3);
+      a__bind__1__bind__4, b: T4(1) == T4(4);
+      a__bind__2__bind__3, b: T4(2) == T4(3);
+      a__bind__2__bind__4, b: T4(2) == T4(4);"
     `);
   });
 
   test('two rhs binds', () => {
-    expect(run('a, b(x: T1)(y: T2): x == y;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a, b__bind__1__bind__3: 1 == 3;
-      a, b__bind__1__bind__4: 1 == 4;
-      a, b__bind__2__bind__3: 2 == 3;
-      a, b__bind__2__bind__4: 2 == 4;"
+    expect(run('a, b(x: T1)(y: T2): T4(x) == T4(y);')).toMatchInlineSnapshot(`
+      "a, b__bind__1__bind__3: T4(1) == T4(3);
+      a, b__bind__1__bind__4: T4(1) == T4(4);
+      a, b__bind__2__bind__3: T4(2) == T4(3);
+      a, b__bind__2__bind__4: T4(2) == T4(4);"
     `);
   });
 
   test('two lhs and one rhs bind (equal)', () => {
-    expect(run('a(x: T1)(y: T2), b(x: T1): x == y;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a__bind__1__bind__3, b__bind__1: 1 == 3;
-      a__bind__1__bind__4, b__bind__1: 1 == 4;
-      a__bind__2__bind__3, b__bind__2: 2 == 3;
-      a__bind__2__bind__4, b__bind__2: 2 == 4;"
+    expect(run('a(x: T1)(y: T2), b(x: T1): T4(x) == T4(y);'))
+      .toMatchInlineSnapshot(`
+      "a__bind__1__bind__3, b__bind__1: T4(1) == T4(3);
+      a__bind__1__bind__4, b__bind__1: T4(1) == T4(4);
+      a__bind__2__bind__3, b__bind__2: T4(2) == T4(3);
+      a__bind__2__bind__4, b__bind__2: T4(2) == T4(4);"
     `);
-    expect(run('a(x: T1)(y: T2), b(y: T2): x == y;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a__bind__1__bind__3, b__bind__3: 1 == 3;
-      a__bind__1__bind__4, b__bind__4: 1 == 4;
-      a__bind__2__bind__3, b__bind__3: 2 == 3;
-      a__bind__2__bind__4, b__bind__4: 2 == 4;"
+    expect(run('a(x: T1)(y: T2), b(y: T2): T4(x) == T4(y);'))
+      .toMatchInlineSnapshot(`
+      "a__bind__1__bind__3, b__bind__3: T4(1) == T4(3);
+      a__bind__1__bind__4, b__bind__4: T4(1) == T4(4);
+      a__bind__2__bind__3, b__bind__3: T4(2) == T4(3);
+      a__bind__2__bind__4, b__bind__4: T4(2) == T4(4);"
     `);
   });
 
   test('two lhs and one rhs bind (different)', () => {
-    expect(run('a(x: T1)(y: T2), b(z: T3): x[y] == z;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a__bind__1__bind__3, b__bind__5: 1[3] == 5;
-      a__bind__1__bind__3, b__bind__6: 1[3] == 6;
-      a__bind__1__bind__4, b__bind__5: 1[4] == 5;
-      a__bind__1__bind__4, b__bind__6: 1[4] == 6;
-      a__bind__2__bind__3, b__bind__5: 2[3] == 5;
-      a__bind__2__bind__3, b__bind__6: 2[3] == 6;
-      a__bind__2__bind__4, b__bind__5: 2[4] == 5;
-      a__bind__2__bind__4, b__bind__6: 2[4] == 6;"
+    expect(run('a(x: T1)(y: T2), b(z: T3): map[x][y] == T4(z);'))
+      .toMatchInlineSnapshot(`
+      "a__bind__1__bind__3, b__bind__5: map[1][3] == T4(5);
+      a__bind__1__bind__3, b__bind__6: map[1][3] == T4(6);
+      a__bind__1__bind__4, b__bind__5: map[1][4] == T4(5);
+      a__bind__1__bind__4, b__bind__6: map[1][4] == T4(6);
+      a__bind__2__bind__3, b__bind__5: map[2][3] == T4(5);
+      a__bind__2__bind__3, b__bind__6: map[2][3] == T4(6);
+      a__bind__2__bind__4, b__bind__5: map[2][4] == T4(5);
+      a__bind__2__bind__4, b__bind__6: map[2][4] == T4(6);"
     `);
   });
 
   test('one lhs and two rhs binds (equal)', () => {
-    expect(run('a(x: T1), b(x: T1)(y: T2): x == y;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a__bind__1, b__bind__1__bind__3: 1 == 3;
-      a__bind__1, b__bind__1__bind__4: 1 == 4;
-      a__bind__2, b__bind__2__bind__3: 2 == 3;
-      a__bind__2, b__bind__2__bind__4: 2 == 4;"
+    expect(run('a(x: T1), b(x: T1)(y: T2): T4(x) == T4(y);'))
+      .toMatchInlineSnapshot(`
+      "a__bind__1, b__bind__1__bind__3: T4(1) == T4(3);
+      a__bind__1, b__bind__1__bind__4: T4(1) == T4(4);
+      a__bind__2, b__bind__2__bind__3: T4(2) == T4(3);
+      a__bind__2, b__bind__2__bind__4: T4(2) == T4(4);"
     `);
-    expect(run('a(y: T2), b(x: T1)(y: T2): x == y;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a__bind__3, b__bind__1__bind__3: 1 == 3;
-      a__bind__3, b__bind__2__bind__3: 2 == 3;
-      a__bind__4, b__bind__1__bind__4: 1 == 4;
-      a__bind__4, b__bind__2__bind__4: 2 == 4;"
+    expect(run('a(y: T2), b(x: T1)(y: T2): T4(x) == T4(y);'))
+      .toMatchInlineSnapshot(`
+      "a__bind__3, b__bind__1__bind__3: T4(1) == T4(3);
+      a__bind__3, b__bind__2__bind__3: T4(2) == T4(3);
+      a__bind__4, b__bind__1__bind__4: T4(1) == T4(4);
+      a__bind__4, b__bind__2__bind__4: T4(2) == T4(4);"
     `);
   });
 
   test('one lhs and two rhs binds (different)', () => {
-    expect(run('a(x: T1), b(y: T2)(z: T3): x[y] == z;')).toMatchInlineSnapshot(`
-      "type T1 = { 1, 2 };
-      type T2 = { 3, 4 };
-      type T3 = { 5, 6 };
-
-      a__bind__1, b__bind__3__bind__5: 1[3] == 5;
-      a__bind__1, b__bind__3__bind__6: 1[3] == 6;
-      a__bind__1, b__bind__4__bind__5: 1[4] == 5;
-      a__bind__1, b__bind__4__bind__6: 1[4] == 6;
-      a__bind__2, b__bind__3__bind__5: 2[3] == 5;
-      a__bind__2, b__bind__3__bind__6: 2[3] == 6;
-      a__bind__2, b__bind__4__bind__5: 2[4] == 5;
-      a__bind__2, b__bind__4__bind__6: 2[4] == 6;"
+    expect(run('a(x: T1), b(y: T2)(z: T3): map[x][y] == T4(z);'))
+      .toMatchInlineSnapshot(`
+      "a__bind__1, b__bind__3__bind__5: map[1][3] == T4(5);
+      a__bind__1, b__bind__3__bind__6: map[1][3] == T4(6);
+      a__bind__1, b__bind__4__bind__5: map[1][4] == T4(5);
+      a__bind__1, b__bind__4__bind__6: map[1][4] == T4(6);
+      a__bind__2, b__bind__3__bind__5: map[2][3] == T4(5);
+      a__bind__2, b__bind__3__bind__6: map[2][3] == T4(6);
+      a__bind__2, b__bind__4__bind__5: map[2][4] == T4(5);
+      a__bind__2, b__bind__4__bind__6: map[2][4] == T4(6);"
     `);
+  });
+});
+
+describe('removeSelfAssignments', () => {
+  const run = createRun(
+    {
+      extension: Extension.rg,
+      flags: {
+        compactSkipEdges: false,
+        expandGeneratorNodes: false,
+        mangleSymbols: false,
+        removeSelfAssignments: true,
+        reuseFunctions: false,
+      },
+    },
+    ['type T = { x };', 'var map: T -> T = { :x };'],
+  );
+
+  test('basic', () => {
+    expect(run('a, b: x = x;')).toMatchInlineSnapshot('"a, b: ;"');
+  });
+
+  test('basic with cast', () => {
+    expect(run('a, b: x = T(x);')).toMatchInlineSnapshot('"a, b: ;"');
+  });
+
+  test('access', () => {
+    expect(run('a, b: map[x] = map[x];')).toMatchInlineSnapshot('"a, b: ;"');
+  });
+
+  test('access with cast', () => {
+    expect(run('a, b: map[x] = T(map[x]);')).toMatchInlineSnapshot('"a, b: ;"');
+    expect(run('a, b: map[x] = map[T(x)];')).toMatchInlineSnapshot('"a, b: ;"');
   });
 });
