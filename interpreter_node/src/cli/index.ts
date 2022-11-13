@@ -14,6 +14,10 @@ program
     '--expandGeneratorNodes',
     'expand generator nodes (.hrg and .rg only)',
   )
+  .option(
+    '--joinForkSuffixes',
+    'Join paths that have identical labels when possible',
+  )
   .option('--mangleSymbols', 'mangle all user-defined symbols')
   .option(
     '--reuseFunctions',
@@ -55,6 +59,7 @@ function addCommand(
         flags: {
           compactSkipEdges: !!options.compactSkipEdges,
           expandGeneratorNodes: !!options.expandGeneratorNodes,
+          joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,
           skipSelfAssignments: !!options.skipSelfAssignments,
           reuseFunctions: !!options.reuseFunctions,

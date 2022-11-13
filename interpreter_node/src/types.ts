@@ -11,11 +11,13 @@ export type Settings = {
   flags: {
     compactSkipEdges: boolean;
     expandGeneratorNodes: boolean;
+    joinForkSuffixes: boolean;
     mangleSymbols: boolean;
     reuseFunctions: boolean;
     skipSelfAssignments: boolean;
   };
 };
+
 // <TODO> where do I move this? Perhaps to tests where it's used?
 function allOptimizations(x: boolean) {
   return {
@@ -32,5 +34,6 @@ export const noOptimizations = allOptimizations(false);
 export const basicOptimizations = {
   ...noOptimizations,
   compactSkipEdges: true,
+  skipSelfAssignments: true,
 };
 // </TODO> where do I move this?
