@@ -71,6 +71,7 @@ export function Settings({
       { value: 'mangleSymbols' },
       { value: 'reuseFunctions', disabled: !isHrg },
       { value: 'skipSelfAssignments' },
+      { value: 'joinForkSuffixes' },
     ],
     [isHrg],
   );
