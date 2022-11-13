@@ -1,5 +1,5 @@
 import { parse } from '../src/parse';
-import { Extension, Settings } from '../src/types';
+import { Extension, Settings, noOptimizations } from '../src/types';
 
 function createRun(settings: Settings, definitions: string[] = []) {
   return (source: string) => {
@@ -16,13 +16,7 @@ function createRun(settings: Settings, definitions: string[] = []) {
 describe('compactSkipEdges', () => {
   const run = createRun({
     extension: Extension.rg,
-    flags: {
-      compactSkipEdges: true,
-      expandGeneratorNodes: false,
-      mangleSymbols: false,
-      reuseFunctions: false,
-      skipSelfAssignments: false,
-    },
+    flags: { ...noOptimizations, compactSkipEdges: true },
   });
 
   test('prefix', () => {
@@ -51,13 +45,7 @@ describe('expandGeneratorNodes', () => {
   const run = createRun(
     {
       extension: Extension.rg,
-      flags: {
-        compactSkipEdges: false,
-        expandGeneratorNodes: true,
-        mangleSymbols: false,
-        reuseFunctions: false,
-        skipSelfAssignments: false,
-      },
+      flags: { ...noOptimizations, expandGeneratorNodes: true },
     },
     [
       'type T1 = { 1, 2 };',
@@ -185,13 +173,7 @@ describe('expandGeneratorNodes', () => {
 describe('inlineReachability', () => {
   const run = createRun({
     extension: Extension.rg,
-    flags: {
-      compactSkipEdges: false,
-      expandGeneratorNodes: false,
-      mangleSymbols: false,
-      reuseFunctions: false,
-      skipSelfAssignments: false,
-    },
+    flags: noOptimizations,
   });
 
   test('basic', () => {
@@ -232,13 +214,7 @@ describe('skipSelfAssignments', () => {
   const run = createRun(
     {
       extension: Extension.rg,
-      flags: {
-        compactSkipEdges: false,
-        expandGeneratorNodes: false,
-        mangleSymbols: false,
-        reuseFunctions: false,
-        skipSelfAssignments: true,
-      },
+      flags: { ...noOptimizations, skipSelfAssignments: true },
     },
     ['type T = { x };', 'var map: T -> T = { :x };'],
   );

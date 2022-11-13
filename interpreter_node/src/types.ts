@@ -16,3 +16,21 @@ export type Settings = {
     skipSelfAssignments: boolean;
   };
 };
+// <TODO> where do I move this? Perhaps to tests where it's used?
+function allOptimizations(x: boolean) {
+  return {
+    compactSkipEdges: x,
+    expandGeneratorNodes: x,
+    joinForkSuffixes: x,
+    mangleSymbols: x,
+    reuseFunctions: x,
+    skipSelfAssignments: x,
+  };
+}
+
+export const noOptimizations = allOptimizations(false);
+export const basicOptimizations = {
+  ...noOptimizations,
+  compactSkipEdges: true,
+};
+// </TODO> where do I move this?
