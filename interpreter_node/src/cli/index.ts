@@ -16,12 +16,12 @@ program
   )
   .option('--mangleSymbols', 'mangle all user-defined symbols')
   .option(
-    '--removeSelfAssignments',
-    'replaces all self assignments (e.g., `x = x`) with skip edges',
-  )
-  .option(
     '--reuseFunctions',
     'reuse subautomatons when translating function calls (.hrg only)',
+  )
+  .option(
+    '--skipSelfAssignments',
+    'replaces all self assignments (e.g., `x = x`) with skip edges',
   )
   .configureHelp({ sortSubcommands: true });
 
@@ -56,7 +56,7 @@ function addCommand(
           compactSkipEdges: !!options.compactSkipEdges,
           expandGeneratorNodes: !!options.expandGeneratorNodes,
           mangleSymbols: !!options.mangleSymbols,
-          removeSelfAssignments: !!options.removeSelfAssignments,
+          skipSelfAssignments: !!options.skipSelfAssignments,
           reuseFunctions: !!options.reuseFunctions,
         },
       });

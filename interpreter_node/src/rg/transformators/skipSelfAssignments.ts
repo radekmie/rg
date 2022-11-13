@@ -1,6 +1,6 @@
 import * as ast from '../ast';
 
-export function removeSelfAssignments({ edges }: ast.GameDeclaration) {
+export function skipSelfAssignments({ edges }: ast.GameDeclaration) {
   for (const edge of edges) {
     if (isSelfAssignment(edge.label)) {
       edge.label = ast.Skip({});

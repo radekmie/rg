@@ -83,7 +83,7 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
     },
     (
       [
-        'removeSelfAssignments',
+        'skipSelfAssignments',
         'compactSkipEdges',
         'expandGeneratorNodes',
         'mangleSymbols',

@@ -20,8 +20,8 @@ describe('compactSkipEdges', () => {
       compactSkipEdges: true,
       expandGeneratorNodes: false,
       mangleSymbols: false,
-      removeSelfAssignments: false,
       reuseFunctions: false,
+      skipSelfAssignments: false,
     },
   });
 
@@ -55,8 +55,8 @@ describe('expandGeneratorNodes', () => {
         compactSkipEdges: false,
         expandGeneratorNodes: true,
         mangleSymbols: false,
-        removeSelfAssignments: false,
         reuseFunctions: false,
+        skipSelfAssignments: false,
       },
     },
     [
@@ -179,7 +179,7 @@ describe('expandGeneratorNodes', () => {
   });
 });
 
-describe('removeSelfAssignments', () => {
+describe('skipSelfAssignments', () => {
   const run = createRun(
     {
       extension: Extension.rg,
@@ -187,8 +187,8 @@ describe('removeSelfAssignments', () => {
         compactSkipEdges: false,
         expandGeneratorNodes: false,
         mangleSymbols: false,
-        removeSelfAssignments: true,
         reuseFunctions: false,
+        skipSelfAssignments: true,
       },
     },
     ['type T = { x };', 'var map: T -> T = { :x };'],

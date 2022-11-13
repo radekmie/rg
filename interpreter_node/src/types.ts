@@ -12,7 +12,7 @@ export type Settings = {
     compactSkipEdges: boolean;
     expandGeneratorNodes: boolean;
     mangleSymbols: boolean;
-    removeSelfAssignments: boolean;
     reuseFunctions: boolean;
+    skipSelfAssignments: boolean;
   };
 };
