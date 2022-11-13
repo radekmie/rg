@@ -87,6 +87,7 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
         'compactSkipEdges',
         'expandGeneratorNodes',
         'mangleSymbols',
+        'joinForkSuffixes',
       ] as const
     )
       .filter(option => settings.flags[option])
