@@ -179,6 +179,55 @@ describe('expandGeneratorNodes', () => {
   });
 });
 
+// 1. Check each entrypoint of a subautomaton.
+// 2. It has exactly one exclusive path.
+// 3. It has no assignements.
+describe('inlineReachability', () => {
+  const run = createRun({
+    extension: Extension.rg,
+    flags: {
+      compactSkipEdges: false,
+      expandGeneratorNodes: false,
+      mangleSymbols: false,
+      reuseFunctions: false,
+      skipSelfAssignments: false,
+    },
+  });
+
+  test('basic', () => {
+    expect(run('a, b: ? x -> y; x, y: 1 == 1;')).toMatchInlineSnapshot(
+      '"a, b: 1 == 1;"',
+    );
+    expect(
+      run('a, b: ? x -> z; x, y: 1 == 1; y, z: 2 == 2;'),
+    ).toMatchInlineSnapshot('"a, temp: 1 == 1; temp, b: 2 == 2;"');
+    expect(run('a, b: ? x -> z; x, y: ; y, z: 2 == 2;')).toMatchInlineSnapshot(
+      '"a, temp: ; temp, b: 2 == 2;"',
+    );
+    expect(run('a, b: ? x -> z; x, y: 1 == 1; y, z: ;')).toMatchInlineSnapshot(
+      '"a, temp: 1 == 1; temp, b: ;"',
+    );
+  });
+
+  test('exclusive comparision', () => {
+    expect(
+      run('x, y: ? a -> d; a, b: 1 == 1; a, c: 1 != 1; b, d: ; c, d: ;'),
+    ).toMatchInlineSnapshot(
+      '"x, _b: 1 == 1; x, _c: 1 != 1; _b, y: ; _c, y: ;"',
+    );
+  });
+
+  test('exclusive reachability', () => {
+    expect(
+      run(
+        'x, y: ? a -> d; a, b: ? e -> f; a, c: ! e -> f; b, d: ; c, d: ; e, f: ;',
+      ),
+    ).toMatchInlineSnapshot(
+      '"x, _b: ? e -> f; x, _c: ! e -> f; _b, y: ; _c, y: ; e, f: ;"',
+    );
+  });
+});
+
 describe('skipSelfAssignments', () => {
   const run = createRun(
     {
