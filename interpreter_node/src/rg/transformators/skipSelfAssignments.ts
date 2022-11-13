@@ -14,7 +14,7 @@ function isEqualReference(lhs: ast.Expression, rhs: ast.Expression): boolean {
   }
 
   if (rhs.kind === 'Cast') {
-    return isEqualReference(rhs, rhs.rhs);
+    return isEqualReference(lhs, rhs.rhs);
   }
 
   switch (lhs.kind) {
