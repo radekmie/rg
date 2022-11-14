@@ -100,10 +100,6 @@ pub enum Expression {
         lhs: Box<Expression>,
         rhs: Box<Expression>,
     },
-    Cast {
-        lhs: Box<Type>,
-        rhs: Box<Expression>,
-    },
     BindReference {
         identifier: Id,
     },
@@ -146,10 +142,6 @@ impl State {
                 // TODO: Check for unknown bound variables.
                 self.position.values.get(identifier).unwrap()
             }
-            Expression::Cast { rhs, .. } => {
-                // TODO: Type check.
-                self.eval(game, rhs)
-            }
             Expression::ConstantReference { identifier } => {
                 // TODO: Check for unknown constants.
                 game.constants.get(identifier).unwrap()
@@ -182,7 +174,6 @@ impl State {
                 _ => panic!("Only Element can be key."),
             },
             Expression::BindReference { .. } => panic!("BindReference is immutable."),
-            Expression::Cast { .. } => panic!("Cast is immutable."),
             Expression::ConstantReference { .. } => panic!("ConstantReference is immutable."),
             Expression::Literal { .. } => panic!("Literal is immutable."),
             Expression::VariableReference { identifier } => {

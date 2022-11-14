@@ -46,10 +46,6 @@ enum ExpressionSerialized {
         lhs: Box<ExpressionSerialized>,
         rhs: Box<ExpressionSerialized>,
     },
-    Cast {
-        lhs: TypeSerialized,
-        rhs: Box<ExpressionSerialized>,
-    },
     BindReference {
         identifier: String,
     },
@@ -174,10 +170,6 @@ impl GameSerializedState {
             },
             ExpressionSerialized::BindReference { identifier } => Expression::BindReference {
                 identifier: self.intern_string(identifier),
-            },
-            ExpressionSerialized::Cast { lhs, rhs } => Expression::Cast {
-                lhs: self.intern_type(lhs),
-                rhs: self.intern_expression(rhs),
             },
             ExpressionSerialized::ConstantReference { identifier } => {
                 Expression::ConstantReference {

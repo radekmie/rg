@@ -16,9 +16,6 @@ export type Assignment = {
 export const BindReference = creator<BindReference>('BindReference');
 export type BindReference = { kind: 'BindReference'; identifier: string };
 
-export const Cast = creator<Cast>('Cast');
-export type Cast = { kind: 'Cast'; lhs: Type; rhs: Expression };
-
 export const Comparison = creator<Comparison>('Comparison');
 export type Comparison = {
   kind: 'Comparison';
@@ -106,7 +103,6 @@ export type VariableReference = {
 export type EdgeLabel = Assignment | Comparison | Reachability | Skip;
 export type Expression =
   | Access
-  | Cast
   | BindReference
   | ConstantReference
   | Literal

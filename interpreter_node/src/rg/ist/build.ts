@@ -122,10 +122,7 @@ function buildExpression(
         rhs: buildExpression(game, expression.rhs, binds),
       });
     case 'Cast':
-      return ist.Cast({
-        lhs: buildTypeOrFail(game, expression.lhs),
-        rhs: buildExpression(game, expression.rhs, binds),
-      });
+      return buildExpression(game, expression.rhs, binds);
     case 'Reference':
       if (binds.has(expression.identifier)) {
         return ist.BindReference({ identifier: expression.identifier });

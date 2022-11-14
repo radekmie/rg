@@ -97,9 +97,6 @@ export function evaluateExpression(
       utils.assert(value, `Unbound bind: ${expression.identifier}.`);
       return value;
     }
-    case 'Cast':
-      // TODO: Type check.
-      return evaluateExpression(game, state, expression.rhs, readOnly);
     case 'ConstantReference':
       return game.constants[expression.identifier];
     case 'Literal':
@@ -262,9 +259,6 @@ export function setValue(
     }
     case 'BindReference':
       utils.assert(false, 'Cannot assign to a BindReference.');
-      break;
-    case 'Cast':
-      utils.assert(false, 'Cannot assign to a Cast.');
       break;
     case 'ConstantReference':
       utils.assert(false, 'Cannot assign to a ConstantReference.');
