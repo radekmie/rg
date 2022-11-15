@@ -13,9 +13,6 @@ export type Assignment = {
   rhs: Expression;
 };
 
-export const BindReference = creator<BindReference>('BindReference');
-export type BindReference = { kind: 'BindReference'; identifier: string };
-
 export const Comparison = creator<Comparison>('Comparison');
 export type Comparison = {
   kind: 'Comparison';
@@ -34,17 +31,8 @@ export type ConstantReference = {
 export const Edge = creator<Edge>('Edge');
 export type Edge = {
   kind: 'Edge';
-  lhs: EdgeName;
-  rhs: EdgeName;
   label: EdgeLabel;
-};
-
-export const EdgeName = creator<EdgeName>('EdgeName');
-export type EdgeName = {
-  kind: 'EdgeName';
-  label: string;
-  types: Record<string, Type>;
-  values: Record<string, Value | null>;
+  next: string;
 };
 
 export const Element = creator<Element>('Element');
@@ -54,7 +42,7 @@ export const Game = creator<Game>('Game');
 export type Game = {
   kind: 'Game';
   constants: Record<string, Value>;
-  edges: Edge[];
+  edges: Record<string, Edge[]>;
   types: Record<string, Type>;
   variables: Record<string, Variable>;
 };
@@ -72,8 +60,8 @@ export type Map = {
 export const Reachability = creator<Reachability>('Reachability');
 export type Reachability = {
   kind: 'Reachability';
-  lhs: EdgeName;
-  rhs: EdgeName;
+  lhs: string;
+  rhs: string;
   negated: boolean;
 };
 
@@ -86,7 +74,7 @@ export type Skip = { kind: 'Skip' };
 export const State = creator<State>('State');
 export type State = {
   kind: 'State';
-  position: EdgeName;
+  position: string;
   values: Record<string, Value>;
 };
 
@@ -103,7 +91,6 @@ export type VariableReference = {
 export type EdgeLabel = Assignment | Comparison | Reachability | Skip;
 export type Expression =
   | Access
-  | BindReference
   | ConstantReference
   | Literal
   | VariableReference;

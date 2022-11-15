@@ -22,11 +22,7 @@ export function cloneValue(value: ist.Value): ist.Value {
 
 export function createInitialState(game: ist.Game) {
   return ist.State({
-    position: ist.EdgeName({
-      label: 'begin',
-      types: Object.create(null),
-      values: Object.create(null),
-    }),
+    position: 'begin',
     values: utils.mapValues(game.variables, variable => variable.defaultValue),
   });
 }
@@ -50,20 +46,20 @@ export function evaluateEquality(lhs: ist.Value, rhs: ist.Value): boolean {
       return lhs.value === rhs.value;
     case 'Map':
       utils.assert(rhs.kind === 'Map', 'Equality for different kinds.');
-      // TODO: Type check.
-      // TODO: It should iterate over type values.
       for (const [key, lhsValue] of Object.entries(lhs.values)) {
         const rhsValue = key in rhs.values ? rhs.values[key] : rhs.defaultValue;
         if (!evaluateEquality(lhsValue, rhsValue)) {
           return false;
         }
       }
+
       for (const [key, rhsValue] of Object.entries(rhs.values)) {
         const lhsValue = key in lhs.values ? lhs.values[key] : lhs.defaultValue;
         if (!evaluateEquality(rhsValue, lhsValue)) {
           return false;
         }
       }
+
       return true;
   }
 }
@@ -80,7 +76,6 @@ export function evaluateExpression(
       utils.assert(map.kind === 'Map', 'Only Map can be accessed.');
       const key = evaluateExpression(game, state, expression.rhs, readOnly);
       utils.assert(key.kind === 'Element', 'Only Element can be key.');
-      // TODO: Type check.
       if (readOnly) {
         return key.value in map.values
           ? map.values[key.value]
@@ -90,12 +85,8 @@ export function evaluateExpression(
       if (!(key.value in map.values)) {
         map.values[key.value] = cloneValue(map.defaultValue);
       }
+
       return map.values[key.value];
-    }
-    case 'BindReference': {
-      const value = state.position.values[expression.identifier];
-      utils.assert(value, `Unbound bind: ${expression.identifier}.`);
-      return value;
     }
     case 'ConstantReference':
       return game.constants[expression.identifier];
@@ -116,12 +107,12 @@ export function evaluateReachability(
   const clone = cloneState(state);
   clone.position = label.lhs;
 
-  // TODO: Check binds.
   for (const reachedState of nextStates(game, clone, false)) {
-    if (reachedState.position.label === label.rhs.label) {
+    if (reachedState.position === label.rhs) {
       return true;
     }
   }
+
   return false;
 }
 
@@ -135,104 +126,46 @@ export function* nextStates(
     yield state;
   }
 
-  for (const { label, lhs: lhsGenerator, rhs: rhsGenerator } of game.edges) {
-    // TODO: Check binds.
-    if (state.position.label !== lhsGenerator.label) {
-      continue;
-    }
+  for (const { label, next } of game.edges[state.position] ?? []) {
+    const prev = state.position;
+    state.position = next;
+    switch (label.kind) {
+      case 'Assignment': {
+        const value = evaluateExpression(game, state, label.rhs, true);
+        const previousValue = setValue(game, state, label.lhs, value);
 
-    const lhs = state.position;
-    for (const rhs of reifyNodes(lhs, rhsGenerator)) {
-      state.position = rhs;
-      switch (label.kind) {
-        case 'Assignment': {
-          const value = evaluateExpression(game, state, label.rhs, true);
-          const previousValue = setValue(game, state, label.lhs, value);
+        const yieldAndStop =
+          yieldOnPlayer &&
+          label.lhs.kind === 'VariableReference' &&
+          label.lhs.identifier === 'player';
 
-          const yieldAndStop =
-            yieldOnPlayer &&
-            label.lhs.kind === 'VariableReference' &&
-            label.lhs.identifier === 'player';
-
-          if (yieldAndStop) {
-            yield state;
-          } else {
-            yield* nextStates(game, state, yieldOnPlayer);
-          }
-
-          setValue(game, state, label.lhs, previousValue);
-          break;
-        }
-        case 'Comparison':
-          if (evaluateComparison(game, state, label)) {
-            yield* nextStates(game, state, yieldOnPlayer);
-          }
-          break;
-        case 'Reachability':
-          if (evaluateReachability(game, state, label) !== label.negated) {
-            yield* nextStates(game, state, yieldOnPlayer);
-          }
-          break;
-        case 'Skip':
+        if (yieldAndStop) {
+          yield state;
+        } else {
           yield* nextStates(game, state, yieldOnPlayer);
-          break;
+        }
+
+        setValue(game, state, label.lhs, previousValue);
+        break;
       }
-      state.position = lhs;
+      case 'Comparison':
+        if (evaluateComparison(game, state, label)) {
+          yield* nextStates(game, state, yieldOnPlayer);
+        }
+
+        break;
+      case 'Reachability':
+        if (evaluateReachability(game, state, label) !== label.negated) {
+          yield* nextStates(game, state, yieldOnPlayer);
+        }
+
+        break;
+      case 'Skip':
+        yield* nextStates(game, state, yieldOnPlayer);
+        break;
     }
+    state.position = prev;
   }
-}
-
-export function* reifyNodes(lhs: ist.EdgeName, rhsGenerator: ist.EdgeName) {
-  // Fast path: nothing to substitute.
-  const bindTypes = { ...lhs.types, ...rhsGenerator.types };
-  const binds = Object.keys(bindTypes);
-  if (binds.length === 0) {
-    yield rhsGenerator;
-    return;
-  }
-
-  // Slow path: substitute all binds.
-  const rhs = ist.EdgeName({
-    label: rhsGenerator.label,
-    types: rhsGenerator.types,
-    values: { ...rhsGenerator.values },
-  });
-
-  // Copy existing lhs binds to rhs.
-  for (const bind of binds) {
-    if (bind in lhs.types && lhs.values[bind] !== undefined) {
-      utils.assert(rhs.values[bind] === undefined, 'Double bind.');
-      rhs.values[bind] = lhs.values[bind];
-    }
-  }
-
-  function* iterateNth(
-    index: number,
-  ): Generator<ist.EdgeName, void, undefined> {
-    // All binds are substituted.
-    if (binds.length === index) {
-      yield rhs;
-      return;
-    }
-
-    const bind = binds[index];
-    const bindType = bindTypes[bind];
-    utils.assert(bindType.kind === 'Set', 'Can iterate only over Set.');
-
-    // This bind was substituted by lhs.
-    if (rhs.values[bind] !== undefined) {
-      yield* iterateNth(index + 1);
-    } else {
-      for (const value of bindType.values) {
-        rhs.values[bind] = value;
-        yield* iterateNth(index + 1);
-      }
-    }
-
-    delete rhs.values[bind];
-  }
-
-  yield* iterateNth(0);
 }
 
 export function setValue(
@@ -249,17 +182,16 @@ export function setValue(
       utils.assert(key.kind === 'Element', 'Only Element can be a key.');
       const previousValue =
         key.value in map.values ? map.values[key.value] : map.defaultValue;
+
       if (evaluateEquality(previousValue, value)) {
         delete map.values[key.value];
       } else {
         map.values[key.value] = value;
       }
+
       compact(map);
       return previousValue;
     }
-    case 'BindReference':
-      utils.assert(false, 'Cannot assign to a BindReference.');
-      break;
     case 'ConstantReference':
       utils.assert(false, 'Cannot assign to a ConstantReference.');
       break;
@@ -284,6 +216,7 @@ export function compact(value: ist.Value) {
           delete value.values[key];
         }
       }
+
       break;
     case 'Element':
       break;

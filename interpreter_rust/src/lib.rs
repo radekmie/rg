@@ -14,48 +14,8 @@ const LABEL_PLAYER: Id = 3;
 type ValueMap = BTreeMap<Id, Rc<Value>>;
 
 pub struct Edge {
-    lhs: EdgeName,
-    rhs: EdgeName,
     label: EdgeLabel,
-}
-
-impl Edge {
-    pub fn generate(&self, lhs: &EdgeName) -> Vec<Rc<ValueMap>> {
-        lhs.types
-            .iter()
-            .chain(
-                self.rhs
-                    .types
-                    .iter()
-                    .filter(|(bind, _)| !lhs.types.contains_key(bind)),
-            )
-            .fold(vec![self.rhs.values.clone()], |sources, (bind, type_)| {
-                if let Some(value) = lhs.values.get(bind) {
-                    sources
-                        .iter()
-                        .map(move |source| {
-                            let mut source = source.clone();
-                            Rc::make_mut(&mut source).insert(*bind, value.clone());
-                            source
-                        })
-                        .collect()
-                } else {
-                    match type_.deref() {
-                        Type::Arrow { .. } => panic!("Arrow iteration is disallowed."),
-                        Type::Set { values } => values
-                            .iter()
-                            .flat_map(|value| {
-                                sources.iter().map(move |source| {
-                                    let mut source = source.clone();
-                                    Rc::make_mut(&mut source).insert(*bind, value.clone());
-                                    source
-                                })
-                            })
-                            .collect(),
-                    }
-                }
-            })
-    }
+    next: Id,
 }
 
 pub enum EdgeLabel {
@@ -69,39 +29,17 @@ pub enum EdgeLabel {
         negated: bool,
     },
     Reachability {
-        lhs: EdgeName,
-        rhs: EdgeName,
+        lhs: Id,
+        rhs: Id,
         negated: bool,
     },
     Skip,
-}
-
-#[derive(Clone)]
-pub struct EdgeName {
-    label: Id,
-    types: Rc<BTreeMap<Id, Type>>,
-    values: Rc<ValueMap>,
-}
-
-impl EdgeName {
-    fn is(&self, label: Id) -> bool {
-        self.label == label
-    }
-}
-
-impl PartialEq for EdgeName {
-    fn eq(&self, other: &Self) -> bool {
-        self.label == other.label
-    }
 }
 
 pub enum Expression {
     Access {
         lhs: Box<Expression>,
         rhs: Box<Expression>,
-    },
-    BindReference {
-        identifier: Id,
     },
     ConstantReference {
         identifier: Id,
@@ -116,7 +54,7 @@ pub enum Expression {
 
 pub struct Game {
     constants: ValueMap,
-    edges: Vec<Edge>,
+    edges: BTreeMap<Id, Vec<Edge>>,
     #[allow(dead_code)]
     types: BTreeMap<Id, Type>,
     variables: BTreeMap<Id, Variable>,
@@ -124,7 +62,7 @@ pub struct Game {
 
 #[derive(Clone)]
 pub struct State {
-    position: EdgeName,
+    position: Id,
     values: Rc<ValueMap>,
 }
 
@@ -138,19 +76,9 @@ impl State {
                 },
                 _ => panic!("Only Element can be key."),
             },
-            Expression::BindReference { identifier } => {
-                // TODO: Check for unknown bound variables.
-                self.position.values.get(identifier).unwrap()
-            }
-            Expression::ConstantReference { identifier } => {
-                // TODO: Check for unknown constants.
-                game.constants.get(identifier).unwrap()
-            }
+            Expression::ConstantReference { identifier } => game.constants.get(identifier).unwrap(),
             Expression::Literal { value } => value,
-            Expression::VariableReference { identifier } => {
-                // TODO: Check for unknown variables.
-                self.values.get(identifier).unwrap()
-            }
+            Expression::VariableReference { identifier } => self.values.get(identifier).unwrap(),
         }
     }
 
@@ -173,11 +101,9 @@ impl State {
                 }
                 _ => panic!("Only Element can be key."),
             },
-            Expression::BindReference { .. } => panic!("BindReference is immutable."),
             Expression::ConstantReference { .. } => panic!("ConstantReference is immutable."),
             Expression::Literal { .. } => panic!("Literal is immutable."),
             Expression::VariableReference { identifier } => {
-                // TODO: Check for unknown variables.
                 *Rc::make_mut(&mut self.values).get_mut(identifier).unwrap() = set;
             }
         }
@@ -185,17 +111,7 @@ impl State {
 
     pub fn initial(game: &Game) -> Self {
         State {
-            position: game
-                .edges
-                .iter()
-                .find_map(|edge| {
-                    if edge.lhs.is(LABEL_BEGIN) {
-                        Some(edge.lhs.clone())
-                    } else {
-                        None
-                    }
-                })
-                .expect("No begin node found."),
+            position: LABEL_BEGIN,
             values: Rc::new(
                 game.variables
                     .iter()
@@ -206,7 +122,7 @@ impl State {
     }
 
     pub fn is_final(&self) -> bool {
-        self.position.is(LABEL_END)
+        self.position == LABEL_END
     }
 
     pub fn is_keeper(&self) -> bool {
@@ -216,13 +132,11 @@ impl State {
             .is_element_of(LABEL_KEEPER)
     }
 
-    pub fn is_reachable(&self, game: &Game, position: &EdgeName) -> bool {
-        if self.position == *position {
-            true
-        } else {
-            self.next_states(game)
+    pub fn is_reachable(&self, game: &Game, position: Id) -> bool {
+        self.position == position
+            || self
+                .next_states(game)
                 .any(|state| state.is_reachable(game, position))
-        }
     }
 
     pub fn next_states<'a>(&'a self, game: &'a Game) -> StateNext<'a> {
@@ -230,16 +144,10 @@ impl State {
             game,
             queue: game
                 .edges
-                .iter()
-                .filter(|edge| edge.lhs == self.position)
-                .flat_map(|edge| {
-                    edge.generate(&self.position)
-                        .into_iter()
-                        .map(move |values| (edge, values))
-                })
-                .collect(),
+                .get(&self.position)
+                .map_or(vec![], |edges| edges.iter().collect()),
             reachables: BTreeMap::new(),
-            values: self.values.clone(),
+            values: &self.values,
         }
     }
 
@@ -259,9 +167,9 @@ impl State {
 
 pub struct StateNext<'a> {
     game: &'a Game,
-    queue: Vec<(&'a Edge, Rc<ValueMap>)>,
+    queue: Vec<&'a Edge>,
     reachables: BTreeMap<(Id, Id), bool>,
-    values: Rc<ValueMap>,
+    values: &'a Rc<ValueMap>,
 }
 
 impl Iterator for StateNext<'_> {
@@ -275,13 +183,9 @@ impl Iterator for StateNext<'_> {
             values,
         } = self;
 
-        while let Some((edge, binds)) = queue.pop() {
+        while let Some(edge) = queue.pop() {
             let mut state = State {
-                position: EdgeName {
-                    label: edge.rhs.label,
-                    types: edge.rhs.types.clone(),
-                    values: binds,
-                },
+                position: edge.next,
                 values: values.clone(),
             };
 
@@ -299,14 +203,13 @@ impl Iterator for StateNext<'_> {
                     }
                 }
                 EdgeLabel::Reachability { lhs, rhs, negated } => {
-                    let is_reachable =
-                        *reachables.entry((lhs.label, rhs.label)).or_insert_with(|| {
-                            let position = state.position.clone();
-                            state.position = lhs.clone();
-                            let is_reachable = state.is_reachable(game, rhs);
-                            state.position = position;
-                            is_reachable
-                        });
+                    let is_reachable = *reachables.entry((*lhs, *rhs)).or_insert_with(|| {
+                        let position = state.position;
+                        state.position = *lhs;
+                        let is_reachable = state.is_reachable(game, *rhs);
+                        state.position = position;
+                        is_reachable
+                    });
                     if is_reachable != *negated {
                         return Some(state);
                     }

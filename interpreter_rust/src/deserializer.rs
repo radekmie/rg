@@ -1,5 +1,5 @@
 use crate::{
-    Edge, EdgeLabel, EdgeName, Expression, Game, Id, Type, Value, Variable, LABEL_BEGIN, LABEL_END,
+    Edge, EdgeLabel, Expression, Game, Id, Type, Value, Variable, LABEL_BEGIN, LABEL_END,
     LABEL_KEEPER, LABEL_PLAYER,
 };
 use serde::Deserialize;
@@ -7,9 +7,8 @@ use std::{collections::BTreeMap, fs, ops::Deref, rc::Rc};
 
 #[derive(Debug, Deserialize, PartialEq)]
 struct EdgeSerialized {
-    lhs: EdgeNameSerialized,
-    rhs: EdgeNameSerialized,
     label: EdgeLabelSerialized,
+    next: String,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -25,18 +24,11 @@ enum EdgeLabelSerialized {
         negated: bool,
     },
     Reachability {
-        lhs: EdgeNameSerialized,
-        rhs: EdgeNameSerialized,
+        lhs: String,
+        rhs: String,
         negated: bool,
     },
     Skip,
-}
-
-#[derive(Debug, Deserialize, PartialEq)]
-struct EdgeNameSerialized {
-    label: String,
-    types: BTreeMap<String, TypeSerialized>,
-    values: BTreeMap<String, Box<ValueSerialized>>,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -45,9 +37,6 @@ enum ExpressionSerialized {
     Access {
         lhs: Box<ExpressionSerialized>,
         rhs: Box<ExpressionSerialized>,
-    },
-    BindReference {
-        identifier: String,
     },
     ConstantReference {
         identifier: String,
@@ -63,7 +52,7 @@ enum ExpressionSerialized {
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct GameSerialized {
     constants: BTreeMap<String, Box<ValueSerialized>>,
-    edges: Vec<EdgeSerialized>,
+    edges: BTreeMap<String, Vec<EdgeSerialized>>,
     types: BTreeMap<String, TypeSerialized>,
     variables: BTreeMap<String, VariableSerialized>,
 }
@@ -91,7 +80,15 @@ impl From<GameSerialized> for Game {
             edges: game_serialized
                 .edges
                 .into_iter()
-                .map(|edge| state.intern_edge(edge))
+                .map(|(key, edges)| {
+                    (
+                        state.intern_string(&key),
+                        edges
+                            .into_iter()
+                            .map(|edge| state.intern_edge(edge))
+                            .collect(),
+                    )
+                })
                 .collect(),
             types: game_serialized
                 .types
@@ -116,29 +113,8 @@ struct GameSerializedState {
 impl GameSerializedState {
     fn intern_edge(&mut self, edge: EdgeSerialized) -> Edge {
         Edge {
-            lhs: self.intern_edge_name(edge.lhs),
-            rhs: self.intern_edge_name(edge.rhs),
             label: self.intern_edge_label(edge.label),
-        }
-    }
-
-    fn intern_edge_name(&mut self, edge_name: EdgeNameSerialized) -> EdgeName {
-        EdgeName {
-            label: self.intern_string(&edge_name.label),
-            types: Rc::new(
-                edge_name
-                    .types
-                    .into_iter()
-                    .map(|(key, type_)| (self.intern_string(&key), *self.intern_type(&type_)))
-                    .collect(),
-            ),
-            values: Rc::new(
-                edge_name
-                    .values
-                    .into_iter()
-                    .map(|(key, value)| (self.intern_string(&key), self.intern_value(&value)))
-                    .collect(),
-            ),
+            next: self.intern_string(&edge.next),
         }
     }
 
@@ -154,8 +130,8 @@ impl GameSerializedState {
                 negated,
             },
             EdgeLabelSerialized::Reachability { lhs, rhs, negated } => EdgeLabel::Reachability {
-                lhs: self.intern_edge_name(lhs),
-                rhs: self.intern_edge_name(rhs),
+                lhs: self.intern_string(&lhs),
+                rhs: self.intern_string(&rhs),
                 negated,
             },
             EdgeLabelSerialized::Skip => EdgeLabel::Skip,
@@ -167,9 +143,6 @@ impl GameSerializedState {
             ExpressionSerialized::Access { lhs, rhs } => Expression::Access {
                 lhs: self.intern_expression(lhs),
                 rhs: self.intern_expression(rhs),
-            },
-            ExpressionSerialized::BindReference { identifier } => Expression::BindReference {
-                identifier: self.intern_string(identifier),
             },
             ExpressionSerialized::ConstantReference { identifier } => {
                 Expression::ConstantReference {

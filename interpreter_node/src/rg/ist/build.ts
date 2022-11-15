@@ -1,11 +1,15 @@
 import * as utils from '../../utils';
 import * as ast from '../ast';
+import * as transformators from '../transformators';
 import * as ist from './types';
 
 export function build(gameDeclaration: ast.GameDeclaration) {
+  gameDeclaration.edges = utils.clone(gameDeclaration.edges);
+  transformators.expandGeneratorNodes(gameDeclaration);
+
   const game = ist.Game({
     constants: Object.create(null),
-    edges: [],
+    edges: Object.create(null),
     types: Object.create(null),
     variables: Object.create(null),
   });
@@ -14,8 +18,6 @@ export function build(gameDeclaration: ast.GameDeclaration) {
   buildConstants(game, gameDeclaration.constants);
   buildVariables(game, gameDeclaration.variables);
   buildEdges(game, gameDeclaration.edges);
-
-  // TODO: Check if begin and end exists and are have no binds.
 
   return game;
 }
@@ -33,56 +35,29 @@ function buildConstants(
   }
 }
 
-function buildEdgeName(game: ist.Game, edgeName: ast.EdgeName) {
-  return ist.EdgeName({
-    label: edgeName.parts
-      .map(edgeNamePart => {
-        switch (edgeNamePart.kind) {
-          case 'Binding':
-            return `(${edgeNamePart.identifier})`;
-          case 'Literal':
-            return edgeNamePart.identifier;
-        }
-      })
-      .join(''),
-    types: edgeName.parts
-      .flatMap(edgeNamePart => {
-        switch (edgeNamePart.kind) {
-          case 'Binding':
-            return [edgeNamePart];
-          case 'Literal':
-            return [];
-        }
-      })
-      .reduce<Record<string, ist.Type>>((types, binding) => {
-        types[binding.identifier] = buildTypeOrFail(game, binding.type);
-        return types;
-      }, Object.create(null)),
-    values: Object.create(null),
-  });
+function buildEdgeName({ parts }: ast.EdgeName) {
+  utils.assert(parts.length === 1, 'Expected simple EdgeName.');
+  utils.assert(parts[0].kind === 'Literal', 'Expected simple EdgeName.');
+  return parts[0].identifier;
 }
 
-function buildEdgeLabel(
-  game: ist.Game,
-  edgeLabel: ast.EdgeLabel,
-  binds: Set<string>,
-) {
+function buildEdgeLabel(game: ist.Game, edgeLabel: ast.EdgeLabel) {
   switch (edgeLabel.kind) {
     case 'Assignment':
       return ist.Assignment({
-        lhs: buildExpression(game, edgeLabel.lhs, binds),
-        rhs: buildExpression(game, edgeLabel.rhs, binds),
+        lhs: buildExpression(game, edgeLabel.lhs),
+        rhs: buildExpression(game, edgeLabel.rhs),
       });
     case 'Comparison':
       return ist.Comparison({
-        lhs: buildExpression(game, edgeLabel.lhs, binds),
-        rhs: buildExpression(game, edgeLabel.rhs, binds),
+        lhs: buildExpression(game, edgeLabel.lhs),
+        rhs: buildExpression(game, edgeLabel.rhs),
         negated: edgeLabel.negated,
       });
     case 'Reachability':
       return ist.Reachability({
-        lhs: buildEdgeName(game, edgeLabel.lhs),
-        rhs: buildEdgeName(game, edgeLabel.rhs),
+        lhs: buildEdgeName(edgeLabel.lhs),
+        rhs: buildEdgeName(edgeLabel.rhs),
         negated: edgeLabel.negated,
       });
     case 'Skip':
@@ -92,47 +67,36 @@ function buildEdgeLabel(
 
 function buildEdges(game: ist.Game, edgeDeclarations: ast.EdgeDeclaration[]) {
   for (const edgeDeclaration of edgeDeclarations) {
-    // TODO: Type check binds.
-    const lhs = buildEdgeName(game, edgeDeclaration.lhs);
-    const rhs = buildEdgeName(game, edgeDeclaration.rhs);
-    const binds = new Set([
-      ...Object.keys(lhs.types),
-      ...Object.keys(rhs.types),
-    ]);
+    const lhs = buildEdgeName(edgeDeclaration.lhs);
+    const rhs = buildEdgeName(edgeDeclaration.rhs);
+    const label = buildEdgeLabel(game, edgeDeclaration.label);
 
-    game.edges.push(
-      ist.Edge({
-        lhs,
-        rhs,
-        label: buildEdgeLabel(game, edgeDeclaration.label, binds),
-      }),
-    );
+    game.edges[lhs] ??= [];
+    game.edges[lhs].push(ist.Edge({ label, next: rhs }));
   }
 }
 
 function buildExpression(
   game: ist.Game,
   expression: ast.Expression,
-  binds: Set<string>,
 ): ist.Expression {
   switch (expression.kind) {
     case 'Access':
       return ist.Access({
-        lhs: buildExpression(game, expression.lhs, binds),
-        rhs: buildExpression(game, expression.rhs, binds),
+        lhs: buildExpression(game, expression.lhs),
+        rhs: buildExpression(game, expression.rhs),
       });
     case 'Cast':
-      return buildExpression(game, expression.rhs, binds);
+      return buildExpression(game, expression.rhs);
     case 'Reference':
-      if (binds.has(expression.identifier)) {
-        return ist.BindReference({ identifier: expression.identifier });
-      }
       if (expression.identifier in game.constants) {
         return ist.ConstantReference({ identifier: expression.identifier });
       }
+
       if (expression.identifier in game.variables) {
         return ist.VariableReference({ identifier: expression.identifier });
       }
+
       return ist.Literal({
         value: ist.Element({ value: expression.identifier }),
       });
@@ -145,11 +109,13 @@ function buildType(game: ist.Game, type: ast.Type): ist.Type | null {
       if (!(type.lhs in game.types)) {
         return null;
       }
+
       const lhs = game.types[type.lhs];
       const rhs = buildType(game, type.rhs);
       if (rhs === null) {
         return null;
       }
+
       return ist.Arrow({ lhs, rhs });
     }
     case 'Set':
@@ -160,6 +126,7 @@ function buildType(game: ist.Game, type: ast.Type): ist.Type | null {
       if (type.identifier in game.types) {
         return game.types[type.identifier];
       }
+
       return null;
   }
 }
@@ -201,6 +168,7 @@ function buildValue(
       if (value.identifier in game.constants) {
         return game.constants[value.identifier];
       }
+
       return ist.Element({ value: value.identifier });
     case 'Map': {
       utils.assert(type.kind === 'Arrow', 'Incorrect Map type found.');
