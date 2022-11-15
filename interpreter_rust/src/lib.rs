@@ -145,7 +145,7 @@ impl State {
             queue: game
                 .edges
                 .get(&self.position)
-                .map_or(vec![], |edges| edges.iter().collect()),
+                .map(|edges| edges.iter().collect()),
             reachables: BTreeMap::new(),
             values: &self.values,
         }
@@ -167,7 +167,7 @@ impl State {
 
 pub struct StateNext<'a> {
     game: &'a Game,
-    queue: Vec<&'a Edge>,
+    queue: Option<Vec<&'a Edge>>,
     reachables: BTreeMap<(Id, Id), bool>,
     values: &'a Rc<ValueMap>,
 }
@@ -183,7 +183,7 @@ impl Iterator for StateNext<'_> {
             values,
         } = self;
 
-        while let Some(edge) = queue.pop() {
+        while let Some(edge) = queue.as_mut().and_then(|queue| queue.pop()) {
             let mut state = State {
                 position: edge.next,
                 values: values.clone(),
@@ -224,7 +224,10 @@ impl Iterator for StateNext<'_> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.queue.len(), Some(self.queue.len()))
+        match &self.queue {
+            Some(queue) => (queue.len(), Some(queue.len())),
+            None => (0, Some(0)),
+        }
     }
 }
 
