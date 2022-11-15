@@ -4,7 +4,12 @@ import * as transformators from '../transformators';
 import * as ist from './types';
 
 export function build(gameDeclaration: ast.GameDeclaration) {
-  gameDeclaration.edges = utils.clone(gameDeclaration.edges);
+  gameDeclaration = ast.GameDeclaration({
+    constants: gameDeclaration.constants,
+    edges: utils.clone(gameDeclaration.edges),
+    types: gameDeclaration.types,
+    variables: gameDeclaration.variables,
+  });
   transformators.expandGeneratorNodes(gameDeclaration);
 
   const game = ist.Game({
