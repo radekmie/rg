@@ -77,7 +77,10 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
 
   utils.runTransformators(
     astRg,
-    rg.validators.typecheck,
+    ast => {
+      rg.validators.reachables(ast);
+      rg.validators.typecheck(ast);
+    },
     (['compactSkipEdges', 'expandGeneratorNodes', 'mangleSymbols'] as const)
       .filter(option => settings.flags[option])
       .map(option => rg.transformators[option]),

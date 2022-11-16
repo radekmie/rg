@@ -11,6 +11,12 @@ export function graphviz(gameDeclaration: ast.GameDeclaration) {
   return `digraph {\n${graphvizEdges.join('\n')}\n}`;
 }
 
+export function serializeEdge({ label, lhs, rhs }: ast.EdgeDeclaration) {
+  return `${serializeEdgeName(lhs)}, ${serializeEdgeName(
+    rhs,
+  )}: ${serializeEdgeLabel(label)}`;
+}
+
 export function serializeEdgeLabel(edgeLabel: ast.EdgeLabel): string {
   switch (edgeLabel.kind) {
     case 'Assignment':
@@ -84,12 +90,7 @@ export function serializeGameDeclaration(gameDeclaration: ast.GameDeclaration) {
     ),
     '',
     ...gameDeclaration.edges
-      .map(
-        edge =>
-          `${serializeEdgeName(edge.lhs)}, ${serializeEdgeName(
-            edge.rhs,
-          )}: ${serializeEdgeLabel(edge.label)}`,
-      )
+      .map(serializeEdge)
       .reduce<string[]>(
         (xs, x) => (
           xs.length &&
