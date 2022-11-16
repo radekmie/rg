@@ -141,12 +141,9 @@ impl State {
 
     pub fn next_states<'a>(&'a self, game: &'a Game) -> StateNext<'a> {
         StateNext {
+            edges: game.edges.get(&self.position).map_or(&[], Vec::as_slice),
             game,
-            queue: game
-                .edges
-                .get(&self.position)
-                .map(|edges| edges.iter().collect()),
-            reachables: BTreeMap::new(),
+            reachables: None,
             values: &self.values,
         }
     }
@@ -166,9 +163,9 @@ impl State {
 }
 
 pub struct StateNext<'a> {
+    edges: &'a [Edge],
     game: &'a Game,
-    queue: Option<Vec<&'a Edge>>,
-    reachables: BTreeMap<(Id, Id), bool>,
+    reachables: Option<BTreeMap<(Id, Id), bool>>,
     values: &'a Rc<ValueMap>,
 }
 
@@ -177,13 +174,15 @@ impl Iterator for StateNext<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let StateNext {
+            edges,
             game,
-            queue,
             reachables,
             values,
         } = self;
 
-        while let Some(edge) = queue.as_mut().and_then(|queue| queue.pop()) {
+        while let [edge, tail @ ..] = edges {
+            *edges = tail;
+
             let mut state = State {
                 position: edge.next,
                 values: values.clone(),
@@ -203,13 +202,16 @@ impl Iterator for StateNext<'_> {
                     }
                 }
                 EdgeLabel::Reachability { lhs, rhs, negated } => {
-                    let is_reachable = *reachables.entry((*lhs, *rhs)).or_insert_with(|| {
-                        let position = state.position;
-                        state.position = *lhs;
-                        let is_reachable = state.is_reachable(game, *rhs);
-                        state.position = position;
-                        is_reachable
-                    });
+                    let is_reachable = *reachables
+                        .get_or_insert_with(BTreeMap::new)
+                        .entry((*lhs, *rhs))
+                        .or_insert_with(|| {
+                            let position = state.position;
+                            state.position = *lhs;
+                            let is_reachable = state.is_reachable(game, *rhs);
+                            state.position = position;
+                            is_reachable
+                        });
                     if is_reachable != *negated {
                         return Some(state);
                     }
@@ -224,10 +226,8 @@ impl Iterator for StateNext<'_> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        match &self.queue {
-            Some(queue) => (queue.len(), Some(queue.len())),
-            None => (0, Some(0)),
-        }
+        let length = self.edges.len();
+        (length, Some(length))
     }
 }
 
