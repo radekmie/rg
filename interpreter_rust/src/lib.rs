@@ -224,11 +224,6 @@ impl Iterator for StateNext<'_> {
 
         None
     }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let length = self.edges.len();
-        (length, Some(length))
-    }
 }
 
 pub struct StateNextN<'a> {
