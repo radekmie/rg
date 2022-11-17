@@ -236,3 +236,62 @@ describe('skipSelfAssignments', () => {
     expect(run('a, b: map[x] = map[T(x)];')).toMatchInlineSnapshot('"a, b: ;"');
   });
 });
+
+describe('joinForkSuffixes', () => {
+  const run = createRun(
+    {
+      extension: Extension.rg,
+      flags: { ...noOptimizations, joinForkSuffixes: true },
+    },
+    []
+  )
+
+  test('basic', () => {
+    const common = '0 == 0';
+    const prog =
+      [ '1, l1: 1 == 1;',
+        '1, r1: 2 == 2;',
+        '1, d1: 3 == 3;',
+        'l1, l2: 4 == 4;',
+        `l2, 2: ${common};`,
+        'r1, r2: 5 == 5;',
+        `r2, 2: ${common};`,
+        'd1, d2: 6 == 6;',
+        `d2, 2: ${common};`,
+        '2, 3: 7 == 7;'
+      ].join('\n')
+
+    const simplified =
+      [ '1, l1: 1 == 1;',
+        '1, r1: 2 == 2;',
+        '1, d1: 3 == 3;',
+        'l1, l2: 4 == 4;',
+        `l2, 2: ${common};`,
+        'r1, l2: 5 == 5;',
+        'd1, l2: 6 == 6;',
+        '2, 3: 7 == 7;'
+      ].join('\n')
+
+    expect(run(prog)).toMatchInlineSnapshot(
+      '"' + simplified + '"'
+    );
+  })
+
+  test('shape from breakthrough.rbg', () => {
+    const prog =
+      [ '11, 9: 3 == 3;',
+        '9, 12: 5 == 5;',
+        '9, 18: 1 == 1;',
+        '9, 20: 2 == 2;',
+        '18, 15: 3 == 3;',
+        '20, 15: 3 == 3;',
+        '15, 12: 4 == 4;',
+        '15, 23: ;',
+        '23, 12: 5 == 5;'
+      ].join('\n')
+
+    expect(run(prog)).toMatchInlineSnapshot(
+      '"' + prog + '"'
+    );
+  })
+})
