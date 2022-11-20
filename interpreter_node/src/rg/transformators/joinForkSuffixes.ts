@@ -2,16 +2,36 @@ import * as utils from '../../utils';
 import * as ast from '../ast';
 
 export function joinForkSuffixes({ edges }: ast.GameDeclaration) {
-  // TODO: Flip the image horizontally (lhs on the left).
   // Before:
-  //     <--(e1)-- y1 <--(e3)-- z1
-  //   x
-  //     <--(e2)-- y2 <--(e4)-- z2
+  //
+  //  Visual:
+  //
+  //    z1──(e3)─►y1──(e1)─┐
+  //                       ▼
+  //                       x
+  //                       ▲
+  //    z2──(e4)─►y2──(e2)─┘
+  //
+  //   Edges:
+  //   - e1 from y1 to x
+  //   - e2 from y2 to x
+  //   - e3 from z1 to y1
+  //   - e4 from z2 to y2
   //
   // After:
-  //                  <--(e3)-- z1
-  //   x <--(e1)-- y1
-  //                  <--(e4)-- z2
+  //
+  //  Visual:
+  //
+  //    z1──(e3)─┐
+  //             ▼
+  //             y1──(e1)─►x
+  //             ▲
+  //    z2──(e4)─┘
+  //
+  //   Edges:
+  //   - e1 from y1 to x
+  //   - e3 from z1 to y1
+  //   - e4 from z2 to y1
   //
   // Conditions:
   //   1. y1 has no other outgoing edges
