@@ -176,7 +176,7 @@ describe('inlineReachability', () => {
     flags: noOptimizations,
   });
 
-  test('basic', () => {
+  test.skip('basic', () => {
     expect(run('a, b: ? x -> y; x, y: 1 == 1;')).toMatchInlineSnapshot(
       '"a, b: 1 == 1;"',
     );
@@ -191,7 +191,7 @@ describe('inlineReachability', () => {
     );
   });
 
-  test('exclusive comparision', () => {
+  test.skip('exclusive comparision', () => {
     expect(
       run('x, y: ? a -> d; a, b: 1 == 1; a, c: 1 != 1; b, d: ; c, d: ;'),
     ).toMatchInlineSnapshot(
@@ -199,7 +199,7 @@ describe('inlineReachability', () => {
     );
   });
 
-  test('exclusive reachability', () => {
+  test.skip('exclusive reachability', () => {
     expect(
       run(
         'x, y: ? a -> d; a, b: ? e -> f; a, c: ! e -> f; b, d: ; c, d: ; e, f: ;',
