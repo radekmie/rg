@@ -280,7 +280,7 @@ describe("joinForkSuffixes", () => {
         (k) => `${label}${k}, ${label}${k + 1}: ${k} == ${k};`
       );
     }
-    const branches = ["a", "b"];
+    const branches = ["a", "b", "c", "d"];
     const prog = branches
       .flatMap((l, i) =>
         [
@@ -293,13 +293,17 @@ describe("joinForkSuffixes", () => {
     expect(run(prog)).toMatchInlineSnapshot(`
       "start, a0: branch0 == branch0;
       a5, end: 5 == 5;
-      a0, b1: 0 == 0;
-      a2, b3: 2 == 2;
+      a0, d1: 0 == 0;
       a4, a5: 4 == 4;
       start, b0: branch1 == branch1;
-      b0, b1: 0 == 0;
-      b1, a2: 1 == 1;
-      b3, a4: 3 == 3;"
+      b0, d1: 0 == 0;
+      b3, a4: 3 == 3;
+      start, c0: branch2 == branch2;
+      c0, d1: 0 == 0;
+      c2, b3: 2 == 2;
+      start, d0: branch3 == branch3;
+      d0, d1: 0 == 0;
+      d1, c2: 1 == 1;"
     `);
   });
 
