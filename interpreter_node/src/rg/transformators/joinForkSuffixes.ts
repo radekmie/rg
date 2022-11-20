@@ -43,33 +43,35 @@ export function joinForkSuffixes({ edges }: ast.GameDeclaration) {
   //   7. z1 and z2 are not equal
   //   8. e1 and e2 have the same label
   for (const e1 of edges) {
+    // (1)
     if (!ast.lib.outgoing(edges, e1.lhs).some(e => e !== e1)) {
       for (const e2 of edges) {
         if (
           e1 !== e2 &&
           utils.isEqual(e1.rhs, e2.rhs) &&
-          utils.isEqual(e1.label, e2.label) &&
-          utils.isEqual(ast.lib.bindings(e1.lhs), ast.lib.bindings(e2.lhs)) &&
+          utils.isEqual(e1.label, e2.label) && // (8)
+          utils.isEqual(ast.lib.bindings(e1.lhs), ast.lib.bindings(e2.lhs)) && // (5)
+          !ast.lib.outgoing(edges, e2.lhs).some(e => e !== e2) && // (2)
           !edges.some(
             e =>
               e.label.kind === 'Reachability' &&
               (utils.isEqual(e.label.lhs, e2.lhs) ||
                 utils.isEqual(e.label.rhs, e2.lhs)),
-          )
+          ) // (4)
         ) {
           for (const e4 of edges) {
             if (
               ast.lib.isFollowing(e4, e2) &&
-              !ast.lib.incoming(edges, e2.lhs).some(e => e !== e4)
+              !ast.lib.incoming(edges, e2.lhs).some(e => e !== e4) // (3)
             ) {
               for (const e3 of edges) {
                 if (
-                  !utils.isEqual(e3.lhs, e4.lhs) &&
+                  !utils.isEqual(e3.lhs, e4.lhs) && // (8)
                   ast.lib.isFollowing(e3, e1) &&
                   utils.isEqual(
                     ast.lib.bindings(e3.lhs),
                     ast.lib.bindings(e4.lhs),
-                  )
+                  ) // (6)
                 ) {
                   e4.rhs = e3.rhs;
                   utils.remove(edges, e2);
