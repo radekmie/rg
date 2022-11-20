@@ -53,7 +53,7 @@ export function joinForkSuffixes({ edges }: ast.GameDeclaration) {
           utils.isEqual(x, e2.rhs) &&
           utils.isEqual(e1.label, e2.label) && // (8)
           utils.isEqual(ast.lib.bindings(y1), ast.lib.bindings(y2)) && // (5)
-          !ast.lib.outgoing(edges, y2).some(e => e !== e2) && // (2)
+          ast.lib.outgoing(edges, y2).length == 1 && // (2)
           !edges.some(
             e =>
               e.label.kind === 'Reachability' &&
@@ -65,7 +65,7 @@ export function joinForkSuffixes({ edges }: ast.GameDeclaration) {
             const z2 = e4.lhs
             if (
               ast.lib.isFollowing(e4, e2) &&
-              !ast.lib.incoming(edges, y2).some(e => e !== e4) // (3)
+              ast.lib.incoming(edges, y2).length == 1 // (3)
             ) {
               for (const e3 of edges) {
                 const z1 = e3.lhs
