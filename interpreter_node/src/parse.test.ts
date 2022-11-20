@@ -275,6 +275,25 @@ describe("joinForkSuffixes", () => {
     expect(run(prog)).toMatchInlineSnapshot('"' + simplified + '"');
   });
 
+  test("don't create multiple edges between nodes", () => {
+    const common = "0 == 0";
+    const prog = [
+      "1, l1: 0 == 0;",
+      "1, r1: 0 == 0;",
+      "l1, 2: 1 == 1;",
+      "r1, 2: 1 == 1;",
+      "2, 3: 7 == 7;",
+    ].join("\n");
+
+    expect(run(prog)).toMatchInlineSnapshot(`
+      "1, l1: 0 == 0;
+      1, r1: 0 == 0;
+      l1, 2: 1 == 1;
+      r1, 2: 1 == 1;
+      2, 3: 7 == 7;"
+    `);
+  });
+
   test("shape from breakthrough.rbg", () => {
     const prog = [
       "11, 9: 3 == 3;",
