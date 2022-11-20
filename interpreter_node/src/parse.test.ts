@@ -238,6 +238,8 @@ describe("skipSelfAssignments", () => {
 });
 
 describe("joinForkSuffixes", () => {
+  // TODO don't join nodes referenced in reachability
+  // TODO don't join nodes with different bindings
   const run = createRun(
     {
       extension: Extension.rg,
