@@ -251,24 +251,19 @@ describe("joinForkSuffixes", () => {
     const prog = [
       "1, l1: 1 == 1;",
       "1, r1: 2 == 2;",
-      "1, d1: 3 == 3;",
       "l1, l2: 4 == 4;",
       `l2, 2: ${common};`,
       "r1, r2: 5 == 5;",
       `r2, 2: ${common};`,
-      "d1, d2: 6 == 6;",
-      `d2, 2: ${common};`,
       "2, 3: 7 == 7;",
     ].join("\n");
 
     expect(run(prog)).toMatchInlineSnapshot(`
       "1, l1: 1 == 1;
       1, r1: 2 == 2;
-      1, d1: 3 == 3;
       l1, l2: 4 == 4;
       l2, 2: 0 == 0;
       r1, l2: 5 == 5;
-      d1, l2: 6 == 6;
       2, 3: 7 == 7;"
     `);
   });
