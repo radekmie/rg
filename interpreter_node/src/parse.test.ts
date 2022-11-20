@@ -273,6 +273,36 @@ describe("joinForkSuffixes", () => {
     `);
   });
 
+  test("more nodes but simple", () => {
+    const last = 5;
+    function chain(label: string): Array<string> {
+      return Array.from(Array(last).keys()).map(
+        (k) => `${label}${k}, ${label}${k + 1}: ${k} == ${k};`
+      );
+    }
+    const branches = ["a", "b"];
+    const prog = branches
+      .flatMap((l, i) =>
+        [
+          `start, ${l}0: branch${i} == branch${i};`,
+          `${l}${last}, end: ${last} == ${last};`,
+        ].concat(chain(l))
+      )
+      .join("\n");
+
+    expect(run(prog)).toMatchInlineSnapshot(`
+      "start, a0: branch0 == branch0;
+      a5, end: 5 == 5;
+      a0, b1: 0 == 0;
+      a2, b3: 2 == 2;
+      a4, a5: 4 == 4;
+      start, b0: branch1 == branch1;
+      b0, b1: 0 == 0;
+      b1, a2: 1 == 1;
+      b3, a4: 3 == 3;"
+    `);
+  });
+
   test("don't create multiple edges between nodes", () => {
     const common = "0 == 0";
     const prog = [
