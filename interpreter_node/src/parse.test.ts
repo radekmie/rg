@@ -354,6 +354,57 @@ describe("joinForkSuffixes", () => {
     `);
   });
 
+  test("don't join if both branches have more incoming edges", () => {
+    const common = "0 == 0";
+    const prog = [
+      "1, l1: 1 == 1;",
+      "1, r1: 2 == 2;",
+      "l1, l2: 4 == 4;",
+      `l2, 2: ${common};`,
+      "r1, r2: 5 == 5;",
+      `r2, 2: ${common};`,
+      "2, 3: 7 == 7;",
+      `4, l2: ${common};`,
+      `4, r2: ${common};`
+    ].join("\n");
+
+    expect(run(prog)).toMatchInlineSnapshot(`
+      "1, l1: 1 == 1;
+      1, r1: 2 == 2;
+      l1, l2: 4 == 4;
+      l2, 2: 0 == 0;
+      r1, r2: 5 == 5;
+      r2, 2: 0 == 0;
+      2, 3: 7 == 7;
+      4, l2: 0 == 0;
+      4, r2: 0 == 0;"
+    `);
+  });
+
+  test("join if only one branch has more incoming edges", () => {
+    const common = "0 == 0";
+    const prog = [
+      "1, l1: 1 == 1;",
+      "1, r1: 2 == 2;",
+      "l1, l2: 4 == 4;",
+      `l2, 2: ${common};`,
+      "r1, r2: 5 == 5;",
+      `r2, 2: ${common};`,
+      "2, 3: 7 == 7;",
+      `4, l2: ${common};`
+    ].join("\n");
+
+    expect(run(prog)).toMatchInlineSnapshot(`
+      "1, l1: 1 == 1;
+      1, r1: 2 == 2;
+      l1, l2: 4 == 4;
+      l2, 2: 0 == 0;
+      r1, l2: 5 == 5;
+      2, 3: 7 == 7;
+      4, l2: 0 == 0;"
+    `);
+  });
+
   test("don't create multiple edges between nodes", () => {
     const common = "0 == 0";
     const prog = [
