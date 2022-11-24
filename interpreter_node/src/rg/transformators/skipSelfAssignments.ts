@@ -1,4 +1,3 @@
-import * as utils from '../../utils';
 import * as ast from '../ast';
 
 export function skipSelfAssignments({ edges }: ast.GameDeclaration) {
