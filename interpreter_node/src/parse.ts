@@ -86,8 +86,8 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
         'skipSelfAssignments',
         'compactSkipEdges',
         'expandGeneratorNodes',
-        'mangleSymbols',
         'joinForkSuffixes',
+        'mangleSymbols',
       ] as const
     )
       .filter(option => settings.flags[option])
