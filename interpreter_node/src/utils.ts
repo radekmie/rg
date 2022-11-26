@@ -6,9 +6,19 @@ export type Result<T, E = unknown> =
   | { ok: true; value: T }
   | { ok: false; error: E };
 
-export function assert(condition: unknown, message: string): asserts condition {
+export class AssertionError extends Error {
+  constructor(message: string) {
+    super(message);
+    Object.defineProperty(this, 'name', { value: 'AssertionError' });
+  }
+}
+
+export function assert(
+  condition: unknown,
+  message: string | (() => string),
+): asserts condition {
   if (!(condition as boolean)) {
-    throw new Error(message);
+    throw new AssertionError(typeof message === 'string' ? message : message());
   }
 }
 

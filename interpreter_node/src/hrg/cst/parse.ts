@@ -4,16 +4,16 @@ import { lexer } from './lexer';
 import { parser as parserInstance } from './parser';
 
 export class LexerError extends Error {
-  name = 'LexerError';
   constructor(public readonly errors: ILexingError[]) {
     super();
+    Object.defineProperty(this, 'name', { value: 'LexerError' });
   }
 }
 
 export class ParserError extends Error {
-  name = 'ParserError';
   constructor(public readonly errors: IRecognitionException[]) {
     super();
+    Object.defineProperty(this, 'name', { value: 'ParserError' });
   }
 }
 
