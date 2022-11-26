@@ -16,7 +16,7 @@ program
   )
   .option(
     '--joinForkSuffixes',
-    'Join paths with identical labels leading to the same node',
+    'join paths with identical labels leading to the same node',
   )
   .option('--mangleSymbols', 'mangle all user-defined symbols')
   .option(
