@@ -34,9 +34,9 @@ export function creator<T extends { kind: string }>(kind: T['kind']) {
   return (data: Expand<Omit<T, 'kind'>>) => ({ kind, ...data } as unknown as T);
 }
 
-export function find<T>(xs: T[], needle: Partial<T>) {
+export function find<T>(xs: undefined | T[], needle: Partial<T>) {
   const keys = Object.keys(needle) as (keyof T)[];
-  return xs.find(x => keys.every(key => isEqual(x[key], needle[key])));
+  return xs?.find(x => keys.every(key => isEqual(x[key], needle[key])));
 }
 
 export function findMap<T, U>(xs: T[], fn: (x: T) => U | undefined) {
@@ -48,6 +48,10 @@ export function findMap<T, U>(xs: T[], fn: (x: T) => U | undefined) {
   }
 
   return undefined;
+}
+
+export function generate<T>(length: number, generate: (index: number) => T) {
+  return Array.from({ length }, (_, index) => generate(index));
 }
 
 export function isEqual<T>(a: T, b: T) {
@@ -164,7 +168,25 @@ export function safe<T>(fn: () => T): Result<T> {
 }
 
 export function unique<T>(array: T[], element: T) {
-  if (!array.some(other => isEqual(other, element))) {
+  // Specialized version that works in O(log(n)) instead of O(n) time.
+  if (typeof element === 'number' || typeof element === 'string') {
+    let min = 0;
+    let max = array.length;
+    while (min < max) {
+      const mid = Math.floor((min + max) / 2);
+      if (array[mid] === element) {
+        return array;
+      }
+
+      if (array[mid] < element) {
+        min = mid + 1;
+      } else {
+        max = mid;
+      }
+    }
+
+    array.splice(min, 0, element);
+  } else if (!array.some(other => isEqual(other, element))) {
     array.push(element);
   }
 

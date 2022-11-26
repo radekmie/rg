@@ -49,7 +49,7 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
   Assignment(context: Context): ast.Assignment {
     return ast.Assignment({
       variable: this.visitNode(context.VariableName[0]),
-      value: this.visitNode(context.RValue[0]),
+      rvalue: this.visitNode(context.RValue[0]),
     });
   }
 
@@ -128,7 +128,7 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
     });
   }
 
-  MultiplicationElement(context: Context): ast.Value {
+  MultiplicationElement(context: Context): ast.RValue {
     if ('VariableName' in context) {
       return this.visitNode(context.VariableName[0]);
     }
@@ -144,14 +144,14 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
     utils.assert(false, 'Unknown context in MultiplicationElement.');
   }
 
-  NextMultiplicationElements(context: Context): ['*' | '/', ast.Value] {
+  NextMultiplicationElements(context: Context): ['*' | '/', ast.RValue] {
     return [
       'Star' in context ? '*' : '/',
       this.visitNode(context.MultiplicationElement[0]),
     ];
   }
 
-  NextSumElements(context: Context): ['+' | '-', ast.Value] {
+  NextSumElements(context: Context): ['+' | '-', ast.RValue] {
     return [
       'Plus' in context ? '+' : '-',
       this.visitNode(context.SumElement[0]),
@@ -198,7 +198,7 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
     return 'Star' in context;
   }
 
-  RValue(context: Context): ast.Value {
+  RValue(context: Context): ast.RValue {
     return this.visitNode(context.Sum[0]);
   }
 
@@ -232,14 +232,14 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
     return ast.Shift({ label: this.visitNode(context.Label[0]) });
   }
 
-  Sum(context: Context): ast.Value {
+  Sum(context: Context): ast.RValue {
     return this.visitNodes(context.NextSumElements).reduce(
       (lhs, [operator, rhs]) => ast.Expression({ lhs, rhs, operator }),
       this.visitNode(context.SumElement[0]),
     );
   }
 
-  SumElement(context: Context): ast.Value {
+  SumElement(context: Context): ast.RValue {
     return this.visitNodes(context.NextMultiplicationElements).reduce(
       (lhs, [operator, rhs]) => ast.Expression({ lhs, rhs, operator }),
       this.visitNode(context.MultiplicationElement[0]),

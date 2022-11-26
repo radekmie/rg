@@ -3,7 +3,7 @@ import * as ast from './types';
 export function serializeAction(action: ast.Action) {
   switch (action.kind) {
     case 'Assignment':
-      return `[$ ${action.variable} = ${serializeValue(action.value)}]`;
+      return `[$ ${action.variable} = ${serializeValue(action.rvalue)}]`;
     case 'Check':
       return `{${action.negated ? '!' : '?'} ${serializeRule(action.rule)}}`;
     case 'Comparison': {
@@ -55,7 +55,7 @@ export function serializeRule(rule: ast.Rule): string {
     .join(' + ');
 }
 
-export function serializeValue(value: ast.Value): string {
+export function serializeValue(value: ast.RValue): string {
   switch (typeof value) {
     case 'number':
       return `${value}`;

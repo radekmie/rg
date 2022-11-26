@@ -13,7 +13,7 @@ export const Assignment = creator<Assignment>('Assignment');
 export type Assignment = {
   kind: 'Assignment';
   variable: string;
-  value: Value;
+  rvalue: RValue;
 };
 
 export const Atom = creator<Atom>('Atom');
@@ -33,8 +33,8 @@ export type Check = {
 export const Comparison = creator<Comparison>('Comparison');
 export type Comparison = {
   kind: 'Comparison';
-  lhs: Value;
-  rhs: Value;
+  lhs: RValue;
+  rhs: RValue;
   operator: '>' | '>=' | '==' | '!=' | '<=' | '<';
 };
 
@@ -48,8 +48,8 @@ export type Edge = {
 export const Expression = creator<Expression>('Expression');
 export type Expression = {
   kind: 'Expression';
-  lhs: Value;
-  rhs: Value;
+  lhs: RValue;
+  rhs: RValue;
   operator: '+' | '-' | '*' | '/';
 };
 
@@ -101,7 +101,7 @@ export type Rule = {
   elements: Atom[][];
 };
 
-export type Value = Expression | number | string;
+export type RValue = Expression | number | string;
 
 export const Variable = creator<Variable>('Variable');
 export type Variable = {

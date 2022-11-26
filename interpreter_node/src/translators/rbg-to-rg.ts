@@ -10,11 +10,13 @@ type Context = {
   ) => string;
   $createTypeFromSet: (identifiers: string[]) => string;
   $randomEdgeName: () => rg.EdgeName;
+  $shiftPatternsCache: Record<string, string[]>;
   rbg: rbg.Game;
   rg: rg.GameDeclaration;
   ruleAutomatons: Record<string, [rg.EdgeName, rg.EdgeName]>;
 };
 
+// eslint-disable-next-line complexity -- This function could be improved.
 function translateAtomContent(
   context: Context,
   content: rbg.Action | rbg.Rule,
@@ -34,15 +36,20 @@ function translateAtomContent(
               lhs: rg.Reference({ identifier: 'goals' }),
               rhs: rg.Reference({ identifier: content.variable }),
             }),
-            rhs: rg.Reference({
-              identifier: translateValue(context, content.value),
-            }),
+            rhs: translateRValue(context, content.rvalue),
           }),
         );
-        return;
+      } else {
+        context.$connect(
+          from,
+          to,
+          rg.Assignment({
+            lhs: rg.Reference({ identifier: content.variable }),
+            rhs: translateRValue(context, content.rvalue),
+          }),
+        );
       }
-      console.log(content);
-      throw new Error('Not implemented (Assignment).');
+      return;
     case 'Check': {
       const rule = rbg.serializeRule(content.rule);
       if (!(rule in context.ruleAutomatons)) {
@@ -65,8 +72,20 @@ function translateAtomContent(
       return;
     }
     case 'Comparison':
-      console.log(content);
-      throw new Error('Not implemented (Comparison).');
+      if (content.operator !== '==' && content.operator !== '!=') {
+        throw new Error(`Not implemented (Comparison ${content.operator}).`);
+      }
+
+      context.$connect(
+        from,
+        to,
+        rg.Comparison({
+          lhs: translateRValue(context, content.lhs),
+          rhs: translateRValue(context, content.rhs),
+          negated: content.operator === '!=',
+        }),
+      );
+      return;
     case 'Off':
       context.$connect(
         from,
@@ -111,7 +130,7 @@ function translateAtomContent(
       if (isExpandableShiftPattern(content)) {
         const pairs = context.rbg.board.map<[string, string[]]>(node => [
           node.node,
-          makeShiftPattern(context.rbg, node.node, content),
+          makeShiftPattern(context, node.node, content),
         ]);
 
         if (pairs.every(pair => pair[1].length === pairs.length)) {
@@ -357,12 +376,9 @@ function translateGame(context: Context) {
     rg.TypeDeclaration({
       identifier: 'Score',
       type: rg.Set({
-        identifiers: Array.from(
-          {
-            length:
-              Math.max(...context.rbg.players.map(player => player.bound)) + 1,
-          },
-          (_, index) => `${index}`,
+        identifiers: utils.generate(
+          Math.max(...context.rbg.players.map(player => player.bound)) + 1,
+          String,
         ),
       }),
     }),
@@ -482,18 +498,119 @@ function translateGame(context: Context) {
     }),
   );
 
+  for (const variable of context.rbg.variables) {
+    translateVariable(context, variable);
+  }
+
   return context.rg;
 }
 
-function translateValue(context: Context, value: rbg.Value) {
-  switch (typeof value) {
+function translateRValue(context: Context, rvalue: rbg.RValue): rg.Expression {
+  switch (typeof rvalue) {
     case 'number':
-      return `${value}`;
+      return rg.Reference({ identifier: `${rvalue}` });
     case 'string':
-      return value;
+      return rg.Reference({ identifier: rvalue });
   }
 
-  throw new Error('Not implemented (Value).');
+  const lhs = translateRValue(context, rvalue.lhs);
+  const rhs = translateRValue(context, rvalue.rhs);
+  const limit = boundRValue(context, rvalue) + 1;
+  const typeNumber = context.$createTypeFromSet(utils.generate(limit, String));
+
+  switch (rvalue.operator) {
+    case '+': {
+      const identifier = `math_add_${limit}`;
+      if (!utils.find(context.rg.constants, { identifier })) {
+        const typeOperator = rg.Arrow({
+          lhs: typeNumber,
+          rhs: rg.Arrow({
+            lhs: typeNumber,
+            rhs: rg.TypeReference({ identifier: typeNumber }),
+          }),
+        });
+
+        context.rg.constants.push(
+          rg.ConstantDeclaration({
+            identifier,
+            type: typeOperator,
+            value: rg.Map({
+              entries: [
+                rg.DefaultEntry({
+                  value: rg.Map({
+                    entries: [
+                      rg.DefaultEntry({
+                        value: rg.Element({ identifier: '0' }),
+                      }),
+                    ],
+                  }),
+                }),
+                ...utils.generate(limit, lhs =>
+                  rg.NamedEntry({
+                    identifier: `${lhs}`,
+                    value: rg.Map({
+                      entries: [
+                        rg.DefaultEntry({
+                          value: rg.Element({ identifier: '0' }),
+                        }),
+                        ...utils.generate(limit, rhs =>
+                          rg.NamedEntry({
+                            identifier: `${rhs}`,
+                            value: rg.Element({
+                              identifier:
+                                lhs + rhs >= limit ? '0' : `${lhs + rhs}`,
+                            }),
+                          }),
+                        ),
+                      ],
+                    }),
+                  }),
+                ),
+              ],
+            }),
+          }),
+        );
+      }
+
+      return rg.Access({
+        lhs: rg.Access({ lhs: rg.Reference({ identifier }), rhs: lhs }),
+        rhs,
+      });
+    }
+    default:
+      throw new Error(`Not implemented (RValue${rvalue.operator}).`);
+  }
+}
+
+function translateVariable(context: Context, variable: rbg.Variable) {
+  context.rg.variables.push(
+    rg.VariableDeclaration({
+      identifier: variable.name,
+      type: rg.TypeReference({
+        identifier: context.$createTypeFromSet(
+          utils.generate(variable.bound + 1, String),
+        ),
+      }),
+      defaultValue: rg.Element({ identifier: '0' }),
+    }),
+  );
+}
+
+function boundRValue(context: Context, rvalue: rbg.RValue): number {
+  switch (typeof rvalue) {
+    case 'number':
+      return rvalue;
+    case 'string': {
+      const variable = utils.find(context.rbg.variables, { name: rvalue });
+      utils.assert(variable, `Unknown variable ${rvalue}.`);
+      return variable.bound;
+    }
+  }
+
+  return Math.max(
+    boundRValue(context, rvalue.lhs),
+    boundRValue(context, rvalue.rhs),
+  );
 }
 
 function isExpandableShiftPattern(content: rbg.Action | rbg.Rule) {
@@ -568,48 +685,57 @@ function groupShiftPatterns(rule: rbg.Rule) {
   });
 }
 
-function makeShiftPattern(game: rbg.Game, coord: string, rule: rbg.Rule) {
-  return rule.elements
-    .flatMap(concatenation =>
-      concatenation.reduce(
-        (coords, { content, power }) => {
-          const reachableCoords = power ? coords.slice() : [];
-          for (let coord of coords) {
-            switch (content.kind) {
-              case 'Shift': {
-                const { label } = content;
-                do {
-                  const node = game.board.find(node => node.node === coord);
-                  const edge = node?.edges.find(edge => edge.label === label);
-                  if (edge) {
-                    utils.unique(reachableCoords, edge.node);
-                    coord = edge.node;
-                  } else {
-                    break;
-                  }
-                } while (power);
-                break;
-              }
-              case 'Rule': {
-                for (const node of makeShiftPattern(game, coord, content)) {
-                  utils.unique(reachableCoords, node);
+function makeShiftPattern(context: Context, coord: string, rule: rbg.Rule) {
+  const key = `${coord}:${rbg.serializeRule(rule)}`;
+  if (!(key in context.$shiftPatternsCache)) {
+    context.$shiftPatternsCache[key] = rule.elements
+      .flatMap(concatenation =>
+        concatenation.reduce(
+          (coords, { content, power }) => {
+            const reachableCoords = power ? coords.slice() : [];
+            for (let coord of coords) {
+              switch (content.kind) {
+                case 'Shift': {
+                  const { label } = content;
+                  do {
+                    const node = utils.find(context.rbg.board, { node: coord });
+                    const edge = utils.find(node?.edges, { label });
+                    if (edge) {
+                      utils.unique(reachableCoords, edge.node);
+                      coord = edge.node;
+                    } else {
+                      break;
+                    }
+                  } while (power);
+                  break;
                 }
-                break;
+                case 'Rule': {
+                  for (const node of makeShiftPattern(
+                    context,
+                    coord,
+                    content,
+                  )) {
+                    utils.unique(reachableCoords, node);
+                  }
+                  break;
+                }
+                default:
+                  throw new Error(
+                    `Incorrect shift pattern: ${content.toString()}`,
+                  );
               }
-              default:
-                throw new Error(
-                  `Incorrect shift pattern: ${content.toString()}`,
-                );
             }
-          }
 
-          return reachableCoords;
-        },
-        [coord],
-      ),
-    )
-    .reduce<string[]>(utils.unique, [])
-    .sort();
+            return reachableCoords;
+          },
+          [coord],
+        ),
+      )
+      .reduce<string[]>(utils.unique, [])
+      .sort();
+  }
+
+  return context.$shiftPatternsCache[key];
 }
 
 export default function translate(game: rbg.Game) {
@@ -670,7 +796,7 @@ export default function translate(game: rbg.Game) {
         return existing.identifier;
       }
 
-      const identifier = `CoordGen${counter++}`;
+      const identifier = `Type_${counter++}`;
       this.rg.types.push(rg.TypeDeclaration({ identifier, type }));
 
       return identifier;
@@ -680,6 +806,7 @@ export default function translate(game: rbg.Game) {
         parts: [rg.Literal({ identifier: `${counter++}` })],
       });
     },
+    $shiftPatternsCache: Object.create(null),
     rbg: rbg.Game({
       board: game.board,
       pieces: game.pieces,
