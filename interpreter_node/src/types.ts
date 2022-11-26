@@ -31,9 +31,4 @@ function allOptimizations(x: boolean) {
 }
 
 export const noOptimizations = allOptimizations(false);
-export const basicOptimizations = {
-  ...noOptimizations,
-  compactSkipEdges: true,
-  skipSelfAssignments: true,
-};
 // </TODO> where do I move this?

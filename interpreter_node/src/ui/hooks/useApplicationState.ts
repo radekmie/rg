@@ -1,7 +1,7 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 
 import { parse } from '../../parse';
-import { Settings, basicOptimizations } from '../../types';
+import { Settings, noOptimizations } from '../../types';
 import * as utils from '../../utils';
 import { safe } from '../../utils';
 import { presets } from '../const/presets';
@@ -34,7 +34,11 @@ const initialPreset = presets[0];
 const initialState: State = {
   settings: {
     extension: initialPreset.extension,
-    flags: basicOptimizations,
+    flags: {
+      ...noOptimizations,
+      compactSkipEdges: true,
+      skipSelfAssignments: true,
+    },
   },
   source: initialPreset.source,
   view: 'Automaton',
