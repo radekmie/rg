@@ -256,18 +256,15 @@ describe('joinForkSuffixes', () => {
   );
 
   test('basic', () => {
-    const common = '0 == 0';
-    const prog = [
+    expect(run([
       '1, l1: 1 == 1;',
       '1, r1: 2 == 2;',
       'l1, l2: 4 == 4;',
-      `l2, 2: ${common};`,
+      'l2, 2: 0 == 0;',
       'r1, r2: 5 == 5;',
-      `r2, 2: ${common};`,
+      'r2, 2: 0 == 0;',
       '2, 3: 7 == 7;',
-    ].join('\n');
-
-    expect(run(prog)).toMatchInlineSnapshot(`
+    ].join('\n'))).toMatchInlineSnapshot(`
       "1, l1: 1 == 1;
       1, r1: 2 == 2;
       l1, l2: 4 == 4;
