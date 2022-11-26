@@ -68,10 +68,10 @@ export function Settings({
     () => [
       { value: 'compactSkipEdges' },
       { value: 'expandGeneratorNodes' },
+      { value: 'joinForkSuffixes' },
       { value: 'mangleSymbols' },
       { value: 'reuseFunctions', disabled: !isHrg },
       { value: 'skipSelfAssignments' },
-      { value: 'joinForkSuffixes' },
     ],
     [isHrg],
   );
