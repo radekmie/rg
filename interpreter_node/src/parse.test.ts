@@ -174,7 +174,7 @@ describe('expandGeneratorNodes', () => {
 // 1. Check each entrypoint of a subautomaton.
 // 2. It has exactly one exclusive path.
 // 3. It has no assignements.
-describe('inlineReachability', () => {
+describe.skip('inlineReachability', () => {
   const run = createRun(
     {
       extension: Extension.rg,
@@ -183,7 +183,7 @@ describe('inlineReachability', () => {
     ['begin, end: ;'],
   );
 
-  test.skip('basic', () => {
+  test('basic', () => {
     expect(run('a, b: ? x -> y; x, y: 1 == 1;')).toMatchInlineSnapshot(
       '"a, b: 1 == 1;"',
     );
@@ -198,7 +198,7 @@ describe('inlineReachability', () => {
     );
   });
 
-  test.skip('exclusive comparision', () => {
+  test('exclusive comparision', () => {
     expect(
       run('x, y: ? a -> d; a, b: 1 == 1; a, c: 1 != 1; b, d: ; c, d: ;'),
     ).toMatchInlineSnapshot(
@@ -206,7 +206,7 @@ describe('inlineReachability', () => {
     );
   });
 
-  test.skip('exclusive reachability', () => {
+  test('exclusive reachability', () => {
     expect(
       run(
         'x, y: ? a -> d; a, b: ? e -> f; a, c: ! e -> f; b, d: ; c, d: ; e, f: ;',
