@@ -255,7 +255,7 @@ describe('joinForkSuffixes', () => {
     ['begin, end: ;'],
   );
 
-  test('basic', () => {
+  test('fork and join: small', () => {
     expect(run([
       '1, l1: 1 == 1;',
       '1, r1: 2 == 2;',
@@ -274,7 +274,7 @@ describe('joinForkSuffixes', () => {
     `);
   });
 
-  test('more nodes but simple', () => {
+  test('fork and join: bigger', () => {
     const last = 5;
     function chain(label: string): Array<string> {
       return Array.from(Array(last).keys()).map(
