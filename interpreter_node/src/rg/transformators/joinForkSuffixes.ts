@@ -45,7 +45,7 @@ export function joinForkSuffixes({ edges }: ast.GameDeclaration) {
   for (const e1 of edges) {
     const { lhs: y1, rhs: x } = e1;
     // (1)
-    if (!ast.lib.outgoing(edges, y1).some(e => e !== e1)) {
+    if (ast.lib.outgoing(edges, y1).length === 1) {
       for (const e2 of edges) {
         const y2 = e2.lhs;
         if (
