@@ -69,6 +69,7 @@ export function Settings({
       { value: 'compactSkipEdges' },
       { value: 'expandGeneratorNodes' },
       { value: 'mangleSymbols' },
+      { value: 'removeSelfAssignments' },
       { value: 'reuseFunctions', disabled: !isHrg },
     ],
     [isHrg],

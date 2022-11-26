@@ -9,13 +9,16 @@ import * as utils from '../utils';
 
 program
   .name('node lib/cli')
-  .argument('<file>', 'path to game description file (.hrg, .rbg, or .rg)')
   .option('--compactSkipEdges', 'optimize automaton by compacting skip edges')
   .option(
     '--expandGeneratorNodes',
     'expand generator nodes (.hrg and .rg only)',
   )
   .option('--mangleSymbols', 'mangle all user-defined symbols')
+  .option(
+    '--removeSelfAssignments',
+    'replaces all self assignments (e.g., `x = x`) with skip edges',
+  )
   .option(
     '--reuseFunctions',
     'reuse subautomatons when translating function calls (.hrg only)',
@@ -29,6 +32,7 @@ function addCommand(
 ) {
   return program
     .command(name)
+    .argument('<file>', 'path to game description file (.hrg, .rbg, or .rg)')
     .description(description)
     .action((...input) => {
       const {
@@ -52,6 +56,7 @@ function addCommand(
           compactSkipEdges: !!options.compactSkipEdges,
           expandGeneratorNodes: !!options.expandGeneratorNodes,
           mangleSymbols: !!options.mangleSymbols,
+          removeSelfAssignments: !!options.removeSelfAssignments,
           reuseFunctions: !!options.reuseFunctions,
         },
       });

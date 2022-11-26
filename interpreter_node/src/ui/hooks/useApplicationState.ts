@@ -38,6 +38,7 @@ const initialState: State = {
       compactSkipEdges: true,
       expandGeneratorNodes: false,
       mangleSymbols: false,
+      removeSelfAssignments: true,
       reuseFunctions: true,
     },
   },

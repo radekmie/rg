@@ -9,6 +9,7 @@ describe('compactSkipEdges', () => {
         compactSkipEdges: true,
         expandGeneratorNodes: true,
         mangleSymbols: false,
+        removeSelfAssignments: false,
         reuseFunctions: false,
       },
     }).sourceRgFormatted;
@@ -50,6 +51,7 @@ describe('expandGeneratorNodes', () => {
         compactSkipEdges: false,
         expandGeneratorNodes: true,
         mangleSymbols: false,
+        removeSelfAssignments: false,
         reuseFunctions: false,
       },
     }).sourceRgFormatted;

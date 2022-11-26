@@ -19,29 +19,30 @@ npm test
 # CLI
 
 ```
-Usage: node lib/cli [options] [command] <file>
-
-Arguments:
-  file                    path to game description file (.hrg or .rg)
+Usage: node lib/cli [options] [command]
 
 Options:
-  --compactSkipEdges      optimize automaton by compacting skip edges
-  --expandGeneratorNodes  expand generator nodes
-  -h, --help              display help for command
-  --mangleSymbols         mangle all user-defined symbols
-  --reuseFunctions        reuse subautomatons when translating function calls (high-level only)
+  --compactSkipEdges       optimize automaton by compacting skip edges
+  --expandGeneratorNodes   expand generator nodes (.hrg and .rg only)
+  --mangleSymbols          mangle all user-defined symbols
+  --removeSelfAssignments  replaces all self assignments (e.g., `x = x`) with skip edges
+  --reuseFunctions         reuse subautomatons when translating function calls (.hrg only)
+  -h, --help               display help for command
 
 Commands:
-  help [command]          display help for command
-  hrg-ast                 print high-level Abstract Syntax Tree
-  hrg-cst                 print high-level Concrete Syntax Tree
-  hrg-source              print high-level source
-  rg-ast                  print  low-level Abstract Syntax Tree
-  rg-cst                  print  low-level Concrete Syntax Tree
-  rg-ist                  print  low-level Interpreter State Tree
-  rg-perf <depth>         run    low-level tree depth check
-  rg-run <plays>          run    low-level simulations
-  rg-source               print  low-level source
+  help [command]           display help for command
+  hrg-ast <file>           print .hrg Abstract Syntax Tree
+  hrg-cst <file>           print .hrg Concrete Syntax Tree
+  hrg-source <file>        print .hrg source
+  rbg-ast <file>           print .rbg Abstract Syntax Tree
+  rbg-cst <file>           print .rbg Concrete Syntax Tree
+  rbg-source <file>        print .rbg source
+  rg-ast <file>            print .rg  Abstract Syntax Tree
+  rg-cst <file>            print .rg  Concrete Syntax Tree
+  rg-ist <file>            print .rg  Interpreter State Tree
+  rg-perf <file> <depth>   run   .rg  tree depth check
+  rg-run <file> <plays>    run   .rg  simulations
+  rg-source <file>         print .rg  source
 ```
 
 # UI
