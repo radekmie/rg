@@ -9,6 +9,12 @@ type Context = {
     defaultValue: string,
   ) => string;
   $createTypeFromSet: (identifiers: string[]) => string;
+  $mathOperator: (
+    limit: number,
+    lhs: rg.Expression,
+    rhs: rg.Expression,
+    operator: rbg.Expression['operator'],
+  ) => rg.Expression;
   $randomEdgeName: () => rg.EdgeName;
   $shiftPatternsCache: Record<string, string[]>;
   rbg: rbg.Game;
@@ -24,32 +30,82 @@ function translateAtomContent(
   to: rg.EdgeName,
 ) {
   switch (content.kind) {
-    case 'Assignment':
-      if (
-        context.rbg.players.some(player => player.name === content.variable)
-      ) {
-        context.$connect(
-          from,
-          to,
-          rg.Assignment({
-            lhs: rg.Access({
-              lhs: rg.Reference({ identifier: 'goals' }),
-              rhs: rg.Reference({ identifier: content.variable }),
-            }),
-            rhs: translateRValue(context, content.rvalue),
-          }),
-        );
-      } else {
-        context.$connect(
-          from,
-          to,
-          rg.Assignment({
-            lhs: rg.Reference({ identifier: content.variable }),
-            rhs: translateRValue(context, content.rvalue),
-          }),
-        );
+    case 'Assignment': {
+      let lhs: rg.Expression = rg.Reference({ identifier: content.variable });
+      const rhs = translateRValue(context, content.rvalue);
+
+      if (utils.find(context.rbg.players, { name: content.variable })) {
+        lhs = rg.Access({
+          lhs: rg.Reference({ identifier: 'goals' }),
+          rhs: lhs,
+        });
+
+        if (
+          rhs.kind === 'Reference' &&
+          context.rbg.pieces.includes(rhs.identifier)
+        ) {
+          const one = rg.Reference({ identifier: '1' });
+          const limit =
+            Math.max(...context.rbg.players.map(({ bound }) => bound)) + 1;
+
+          let localFrom = context.$randomEdgeName();
+          context.$connect(
+            from,
+            localFrom,
+            rg.Assignment({ lhs, rhs: rg.Reference({ identifier: '0' }) }),
+          );
+
+          for (const { node } of context.rbg.board) {
+            const localTo = context.$randomEdgeName();
+            const localThen = context.$randomEdgeName();
+            const localElse = context.$randomEdgeName();
+
+            context.$connect(
+              localFrom,
+              localThen,
+              rg.Comparison({
+                lhs: rg.Access({
+                  lhs: rg.Reference({ identifier: 'board' }),
+                  rhs: rg.Reference({ identifier: node }),
+                }),
+                rhs,
+                negated: false,
+              }),
+            );
+            context.$connect(
+              localThen,
+              localTo,
+              rg.Assignment({
+                lhs,
+                rhs: context.$mathOperator(limit, lhs, one, '+'),
+              }),
+            );
+
+            context.$connect(
+              localFrom,
+              localElse,
+              rg.Comparison({
+                lhs: rg.Access({
+                  lhs: rg.Reference({ identifier: 'board' }),
+                  rhs: rg.Reference({ identifier: node }),
+                }),
+                rhs,
+                negated: true,
+              }),
+            );
+            context.$connect(localElse, localTo, rg.Skip({}));
+
+            localFrom = localTo;
+          }
+
+          context.$connect(localFrom, to, rg.Skip({}));
+          return;
+        }
       }
+
+      context.$connect(from, to, rg.Assignment({ lhs, rhs }));
       return;
+    }
     case 'Check': {
       const rule = rbg.serializeRule(content.rule);
       if (!(rule in context.ruleAutomatons)) {
@@ -173,7 +229,7 @@ function translateAtomContent(
             .map<[string, string]>(([k, [v = 'null']]) => [k, v])
             .concat([['null', 'null']]);
 
-          const contant = context.$createConstantFromMap(map, 'null');
+          const constant = context.$createConstantFromMap(map, 'null');
           const local = context.$randomEdgeName();
           context.$connect(
             from,
@@ -181,7 +237,7 @@ function translateAtomContent(
             rg.Assignment({
               lhs: rg.Reference({ identifier: 'coord' }),
               rhs: rg.Access({
-                lhs: rg.Reference({ identifier: contant }),
+                lhs: rg.Reference({ identifier: constant }),
                 rhs: rg.Reference({ identifier: 'coord' }),
               }),
             }),
@@ -377,7 +433,7 @@ function translateGame(context: Context) {
       identifier: 'Score',
       type: rg.Set({
         identifiers: utils.generate(
-          Math.max(...context.rbg.players.map(player => player.bound)) + 1,
+          Math.max(...context.rbg.players.map(({ bound }) => bound)) + 1,
           String,
         ),
       }),
@@ -516,70 +572,7 @@ function translateRValue(context: Context, rvalue: rbg.RValue): rg.Expression {
   const lhs = translateRValue(context, rvalue.lhs);
   const rhs = translateRValue(context, rvalue.rhs);
   const limit = boundRValue(context, rvalue) + 1;
-  const typeNumber = context.$createTypeFromSet(utils.generate(limit, String));
-
-  switch (rvalue.operator) {
-    case '+': {
-      const identifier = `math_add_${limit}`;
-      if (!utils.find(context.rg.constants, { identifier })) {
-        const typeOperator = rg.Arrow({
-          lhs: typeNumber,
-          rhs: rg.Arrow({
-            lhs: typeNumber,
-            rhs: rg.TypeReference({ identifier: typeNumber }),
-          }),
-        });
-
-        context.rg.constants.push(
-          rg.ConstantDeclaration({
-            identifier,
-            type: typeOperator,
-            value: rg.Map({
-              entries: [
-                rg.DefaultEntry({
-                  value: rg.Map({
-                    entries: [
-                      rg.DefaultEntry({
-                        value: rg.Element({ identifier: '0' }),
-                      }),
-                    ],
-                  }),
-                }),
-                ...utils.generate(limit, lhs =>
-                  rg.NamedEntry({
-                    identifier: `${lhs}`,
-                    value: rg.Map({
-                      entries: [
-                        rg.DefaultEntry({
-                          value: rg.Element({ identifier: '0' }),
-                        }),
-                        ...utils.generate(limit, rhs =>
-                          rg.NamedEntry({
-                            identifier: `${rhs}`,
-                            value: rg.Element({
-                              identifier:
-                                lhs + rhs >= limit ? '0' : `${lhs + rhs}`,
-                            }),
-                          }),
-                        ),
-                      ],
-                    }),
-                  }),
-                ),
-              ],
-            }),
-          }),
-        );
-      }
-
-      return rg.Access({
-        lhs: rg.Access({ lhs: rg.Reference({ identifier }), rhs: lhs }),
-        rhs,
-      });
-    }
-    default:
-      throw new Error(`Not implemented (RValue${rvalue.operator}).`);
-  }
+  return context.$mathOperator(limit, lhs, rhs, rvalue.operator);
 }
 
 function translateVariable(context: Context, variable: rbg.Variable) {
@@ -800,6 +793,88 @@ export default function translate(game: rbg.Game) {
       this.rg.types.push(rg.TypeDeclaration({ identifier, type }));
 
       return identifier;
+    },
+    $mathOperator(limit, lhs, rhs, operator) {
+      const numberType = this.$createTypeFromSet(utils.generate(limit, String));
+      let mathOperator: string;
+      switch (operator) {
+        case '+':
+          mathOperator = `math_add_${limit}`;
+          break;
+        case '-':
+          mathOperator = `math_sub_${limit}`;
+          break;
+        case '*':
+          mathOperator = `math_mul_${limit}`;
+          break;
+        case '/':
+          mathOperator = `math_dib_${limit}`;
+          break;
+      }
+
+      if (!utils.find(this.rg.constants, { identifier: mathOperator })) {
+        const zero = rg.Element({ identifier: '0' });
+        const zeroEntry = rg.DefaultEntry({ value: zero });
+
+        this.rg.constants.push(
+          rg.ConstantDeclaration({
+            identifier: mathOperator,
+            type: rg.Arrow({
+              lhs: numberType,
+              rhs: rg.Arrow({
+                lhs: numberType,
+                rhs: rg.TypeReference({ identifier: numberType }),
+              }),
+            }),
+            value: rg.Map({
+              entries: [
+                rg.DefaultEntry({
+                  value: rg.Map({
+                    entries: [zeroEntry],
+                  }),
+                }),
+                ...utils.generate(limit, lhs =>
+                  rg.NamedEntry({
+                    identifier: `${lhs}`,
+                    value: rg.Map({
+                      entries: [
+                        zeroEntry,
+                        ...utils.generate(limit, rhs => {
+                          let result: string;
+
+                          switch (operator) {
+                            case '+':
+                              result =
+                                lhs + rhs >= limit ? '0' : `${lhs + rhs}`;
+                              break;
+                            default:
+                              throw new Error(
+                                `Not implemented ($mathOperator${operator}).`,
+                              );
+                          }
+
+                          return rg.NamedEntry({
+                            identifier: `${rhs}`,
+                            value: rg.Element({ identifier: result }),
+                          });
+                        }),
+                      ],
+                    }),
+                  }),
+                ),
+              ],
+            }),
+          }),
+        );
+      }
+
+      return rg.Access({
+        lhs: rg.Access({
+          lhs: rg.Reference({ identifier: mathOperator }),
+          rhs: lhs,
+        }),
+        rhs,
+      });
     },
     $randomEdgeName() {
       return rg.EdgeName({
