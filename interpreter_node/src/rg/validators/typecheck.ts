@@ -6,12 +6,27 @@ type Context = {
   $extend(scope: Scope): Context;
   $scope(scope: Scope): Context;
   game: ast.GameDeclaration;
+  inferedTypes: Record<string, ast.Type>;
   scopes: Scope[];
 };
 
 type Scope = Record<string, ast.EdgeDeclaration | ast.Expression | ast.Type>;
 
 function inferExpression(
+  context: Context,
+  edge: ast.EdgeDeclaration,
+  expression: ast.Expression,
+) {
+  if (ast.lib.hasBindings(edge.lhs) || ast.lib.hasBindings(edge.rhs)) {
+    return inferExpressionInner(context, edge, expression);
+  }
+
+  const key = ast.serializeExpression(expression);
+  context.inferedTypes[key] ??= inferExpressionInner(context, edge, expression);
+  return context.inferedTypes[key];
+}
+
+function inferExpressionInner(
   context: Context,
   edge: ast.EdgeDeclaration,
   expression: ast.Expression,
@@ -85,6 +100,11 @@ function inferExpression(
 function isAssignable(context: Context, lhs: ast.Type, rhs: ast.Type): boolean {
   lhs = resolveTypeReference(context, lhs);
   rhs = resolveTypeReference(context, rhs);
+
+  // Fast path for defined types.
+  if (lhs === rhs) {
+    return true;
+  }
 
   switch (lhs.kind) {
     case 'Arrow':
@@ -192,6 +212,7 @@ export function typecheck(game: ast.GameDeclaration) {
       return { ...this, scopes: this.scopes.concat(scope) };
     },
     game,
+    inferedTypes: Object.create(null),
     scopes: [],
   };
 

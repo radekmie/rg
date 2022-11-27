@@ -27,11 +27,26 @@ export function cartesian<T>(xss: T[][], ys: T[]): T[][] {
 }
 
 export function clone<T>(x: T): T {
-  return JSON.parse(JSON.stringify(x));
+  if (x === null || typeof x !== 'object') {
+    return x;
+  }
+
+  if (Array.isArray(x)) {
+    return x.map(clone) as unknown as T;
+  }
+
+  const y = {} as T;
+  for (const key of Object.keys(x) as (keyof T)[]) {
+    y[key] = clone(x[key]);
+  }
+
+  return y;
 }
 
 export function creator<T extends { kind: string }>(kind: T['kind']) {
-  return (data: Expand<Omit<T, 'kind'>>) => ({ kind, ...data } as unknown as T);
+  return function creator(data: Expand<Omit<T, 'kind'>>) {
+    return Object.assign({ kind }, data) as unknown as T;
+  };
 }
 
 export function find<T>(xs: undefined | T[], needle: Partial<T>) {
@@ -92,6 +107,11 @@ export function isEqual<T>(a: T, b: T) {
 }
 
 export function isSubset<T>(xs: T[], ys: T[]) {
+  // Specialized version for simple data.
+  if (xs.length && (typeof xs[0] === 'number' || typeof xs[0] === 'string')) {
+    return xs.every(x => ys.includes(x));
+  }
+
   return xs.every(x => ys.some(y => isEqual(x, y)));
 }
 

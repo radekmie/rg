@@ -4,11 +4,7 @@ import * as tokens from './tokens';
 
 class Parser extends CstParser {
   AutomatonBranch = this.RULE('AutomatonBranch', () => {
-    this.MANY({
-      DEF: () => {
-        this.SUBRULE(this.AutomatonStatement);
-      },
-    });
+    this.MANY(() => this.SUBRULE(this.AutomatonStatement));
   });
 
   AutomatonFunction = this.RULE('AutomatonFunction', () => {
@@ -17,17 +13,11 @@ class Parser extends CstParser {
     this.CONSUME(tokens.ParenthesisLeft);
     this.MANY_SEP({
       SEP: tokens.Comma,
-      DEF: () => {
-        this.SUBRULE(this.AutomatonFunctionArgument);
-      },
+      DEF: () => this.SUBRULE(this.AutomatonFunctionArgument),
     });
     this.CONSUME(tokens.ParenthesisRight);
     this.CONSUME(tokens.BraceLeft);
-    this.MANY({
-      DEF: () => {
-        this.SUBRULE(this.AutomatonStatement);
-      },
-    });
+    this.MANY(() => this.SUBRULE(this.AutomatonStatement));
     this.CONSUME(tokens.BraceRight);
   });
 
@@ -45,9 +35,7 @@ class Parser extends CstParser {
           this.CONSUME(tokens.ParenthesisLeft);
           this.MANY_SEP({
             SEP: tokens.Comma,
-            DEF: () => {
-              this.SUBRULE(this.Expression);
-            },
+            DEF: () => this.SUBRULE(this.Expression),
           });
           this.CONSUME(tokens.ParenthesisRight);
         },
@@ -82,11 +70,7 @@ class Parser extends CstParser {
           this.CONSUME(tokens.KeywordWhen);
           this.SUBRULE4(this.Expression);
           this.CONSUME2(tokens.BraceLeft);
-          this.MANY2({
-            DEF: () => {
-              this.SUBRULE(this.AutomatonStatement);
-            },
-          });
+          this.MANY2(() => this.SUBRULE(this.AutomatonStatement));
           this.CONSUME2(tokens.BraceRight);
         },
       },
@@ -94,11 +78,7 @@ class Parser extends CstParser {
         ALT: () => {
           this.CONSUME(tokens.KeywordLoop);
           this.CONSUME3(tokens.BraceLeft);
-          this.MANY3({
-            DEF: () => {
-              this.SUBRULE2(this.AutomatonStatement);
-            },
-          });
+          this.MANY3(() => this.SUBRULE2(this.AutomatonStatement));
           this.CONSUME3(tokens.BraceRight);
         },
       },
@@ -109,11 +89,7 @@ class Parser extends CstParser {
           this.SUBRULE5(this.Expression);
           this.CONSUME3(tokens.ParenthesisRight);
           this.CONSUME4(tokens.BraceLeft);
-          this.MANY4({
-            DEF: () => {
-              this.SUBRULE3(this.AutomatonStatement);
-            },
-          });
+          this.MANY4(() => this.SUBRULE3(this.AutomatonStatement));
           this.CONSUME4(tokens.BraceRight);
         },
       },
@@ -126,9 +102,7 @@ class Parser extends CstParser {
     this.CONSUME(tokens.Equal);
     this.AT_LEAST_ONE_SEP({
       SEP: tokens.Or,
-      DEF: () => {
-        this.SUBRULE(this.DomainElement);
-      },
+      DEF: () => this.SUBRULE(this.DomainElement),
     });
   });
 
@@ -140,25 +114,17 @@ class Parser extends CstParser {
           this.CONSUME(tokens.ParenthesisLeft);
           this.AT_LEAST_ONE_SEP({
             SEP: tokens.Comma,
-            DEF: () => {
-              this.CONSUME3(tokens.Identifier);
-            },
+            DEF: () => this.CONSUME3(tokens.Identifier),
           });
           this.CONSUME(tokens.ParenthesisRight);
           this.CONSUME(tokens.KeywordWhere);
           this.AT_LEAST_ONE_SEP2({
             SEP: tokens.Comma,
-            DEF: () => {
-              this.SUBRULE(this.DomainValues);
-            },
+            DEF: () => this.SUBRULE(this.DomainValues),
           });
         },
       },
-      {
-        ALT: () => {
-          this.CONSUME2(tokens.Identifier);
-        },
-      },
+      { ALT: () => this.CONSUME2(tokens.Identifier) },
     ]);
   });
 
@@ -178,9 +144,7 @@ class Parser extends CstParser {
           this.CONSUME(tokens.BraceLeft);
           this.AT_LEAST_ONE_SEP({
             SEP: tokens.Comma,
-            DEF: () => {
-              this.CONSUME4(tokens.Identifier);
-            },
+            DEF: () => this.CONSUME4(tokens.Identifier),
           });
           this.CONSUME(tokens.BraceRight);
         },
@@ -209,9 +173,7 @@ class Parser extends CstParser {
           this.CONSUME(tokens.KeywordWhere);
           this.AT_LEAST_ONE_SEP2({
             SEP: tokens.Comma,
-            DEF: () => {
-              this.SUBRULE(this.DomainValues);
-            },
+            DEF: () => this.SUBRULE(this.DomainValues),
           });
           this.CONSUME(tokens.BraceRight);
         },
@@ -275,11 +237,7 @@ class Parser extends CstParser {
       {
         ALT: () => {
           this.CONSUME(tokens.Identifier);
-          this.MANY({
-            DEF: () => {
-              this.SUBRULE(this.ExpressionSuffix);
-            },
-          });
+          this.MANY(() => this.SUBRULE(this.ExpressionSuffix));
         },
       },
       {
@@ -306,9 +264,7 @@ class Parser extends CstParser {
           this.CONSUME(tokens.ParenthesisLeft);
           this.MANY_SEP({
             SEP: tokens.Comma,
-            DEF: () => {
-              this.SUBRULE2(this.Expression);
-            },
+            DEF: () => this.SUBRULE2(this.Expression),
           });
           this.CONSUME(tokens.ParenthesisRight);
         },
@@ -321,9 +277,7 @@ class Parser extends CstParser {
     this.CONSUME(tokens.ParenthesisLeft);
     this.MANY_SEP({
       SEP: tokens.Comma,
-      DEF: () => {
-        this.SUBRULE(this.Pattern);
-      },
+      DEF: () => this.SUBRULE(this.Pattern),
     });
     this.CONSUME(tokens.ParenthesisRight);
     this.CONSUME(tokens.Equal);
@@ -350,23 +304,13 @@ class Parser extends CstParser {
           this.CONSUME(tokens.ParenthesisLeft);
           this.MANY_SEP({
             SEP: tokens.Comma,
-            DEF: () => {
-              this.SUBRULE(this.Pattern);
-            },
+            DEF: () => this.SUBRULE(this.Pattern),
           });
           this.CONSUME(tokens.ParenthesisRight);
         },
       },
-      {
-        ALT: () => {
-          this.CONSUME(tokens.KeywordWildcard);
-        },
-      },
-      {
-        ALT: () => {
-          this.CONSUME2(tokens.Identifier);
-        },
-      },
+      { ALT: () => this.CONSUME(tokens.KeywordWildcard) },
+      { ALT: () => this.CONSUME2(tokens.Identifier) },
     ]);
   });
 
@@ -379,11 +323,7 @@ class Parser extends CstParser {
           this.SUBRULE(this.Type);
         },
       },
-      {
-        ALT: () => {
-          this.CONSUME2(tokens.Identifier);
-        },
-      },
+      { ALT: () => this.CONSUME2(tokens.Identifier) },
     ]);
   });
 

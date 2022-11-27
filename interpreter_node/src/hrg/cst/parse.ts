@@ -1,7 +1,7 @@
 import { ILexingError, IRecognitionException } from 'chevrotain';
 
 import { lexer } from './lexer';
-import { parser as parserInstance } from './parser';
+import { parser } from './parser';
 
 export class LexerError extends Error {
   constructor(public readonly errors: ILexingError[]) {
@@ -18,18 +18,19 @@ export class ParserError extends Error {
 }
 
 export function parse(source: string) {
-  parserInstance.input = [];
+  parser.input = [];
+  parser.reset();
 
   const { errors, tokens } = lexer.tokenize(source);
   if (errors.length > 0) {
     throw new LexerError(errors);
   }
 
-  parserInstance.input = tokens;
-  const cstNode = parserInstance.GameDeclaration();
+  parser.input = tokens;
+  const cstNode = parser.GameDeclaration();
 
-  if (parserInstance.errors.length > 0) {
-    throw new ParserError(parserInstance.errors);
+  if (parser.errors.length > 0) {
+    throw new ParserError(parser.errors);
   }
 
   return { cstNode, tokens };

@@ -52,18 +52,12 @@ class ParserClass extends CstParser {
   });
 
   EdgeName = this.RULE('EdgeName', () => {
-    this.AT_LEAST_ONE(() => {
-      this.SUBRULE(this.EdgeNamePart);
-    });
+    this.AT_LEAST_ONE(() => this.SUBRULE(this.EdgeNamePart));
   });
 
   EdgeNamePart = this.RULE('EdgeNamePart', () => {
     this.OR([
-      {
-        ALT: () => {
-          this.CONSUME(tokens.Identifier);
-        },
-      },
+      { ALT: () => this.CONSUME(tokens.Identifier) },
       {
         ALT: () => {
           this.CONSUME(tokens.ParenthesisLeft);
@@ -101,14 +95,14 @@ class ParserClass extends CstParser {
   });
 
   GameDeclaration = this.RULE('GameDeclaration', () => {
-    this.MANY(() => {
+    this.MANY(() =>
       this.OR([
         { ALT: () => this.SUBRULE(this.ConstantDeclaration) },
         { ALT: () => this.SUBRULE(this.EdgeDeclaration) },
         { ALT: () => this.SUBRULE(this.TypeDeclaration) },
         { ALT: () => this.SUBRULE(this.VariableDeclaration) },
-      ]);
-    });
+      ]),
+    );
   });
 
   Type = this.RULE('Type', () => {
@@ -127,9 +121,7 @@ class ParserClass extends CstParser {
           this.CONSUME(tokens.BraceLeft);
           this.MANY_SEP({
             SEP: tokens.Comma,
-            DEF: () => {
-              this.CONSUME2(tokens.Identifier);
-            },
+            DEF: () => this.CONSUME2(tokens.Identifier),
           });
           this.CONSUME(tokens.BraceRight);
         },
@@ -147,19 +139,13 @@ class ParserClass extends CstParser {
 
   Value = this.RULE('Value', () => {
     this.OR([
-      {
-        ALT: () => {
-          this.CONSUME(tokens.Identifier);
-        },
-      },
+      { ALT: () => this.CONSUME(tokens.Identifier) },
       {
         ALT: () => {
           this.CONSUME(tokens.BraceLeft);
           this.MANY_SEP({
             SEP: tokens.Comma,
-            DEF: () => {
-              this.SUBRULE(this.ValueEntry);
-            },
+            DEF: () => this.SUBRULE(this.ValueEntry),
           });
           this.CONSUME(tokens.BraceRight);
         },
@@ -168,9 +154,7 @@ class ParserClass extends CstParser {
   });
 
   ValueEntry = this.RULE('ValueEntry', () => {
-    this.OPTION(() => {
-      this.CONSUME(tokens.Identifier);
-    });
+    this.OPTION(() => this.CONSUME(tokens.Identifier));
     this.CONSUME(tokens.Colon);
     this.SUBRULE(this.Value);
   });
@@ -186,7 +170,7 @@ class ParserClass extends CstParser {
   });
 
   constructor() {
-    super(tokens.tokens);
+    super(tokens.tokens, { maxLookahead: 1 });
     this.performSelfAnalysis();
   }
 }

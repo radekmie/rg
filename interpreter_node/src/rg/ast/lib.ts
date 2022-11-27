@@ -26,8 +26,8 @@ export function bindings({ parts }: ast.EdgeName) {
   });
 }
 
-export function hasBindings(edgeName: ast.EdgeName) {
-  return bindings(edgeName).length !== 0;
+export function hasBindings({ parts }: ast.EdgeName) {
+  return parts.some(part => part.kind === 'Binding');
 }
 
 export function hasConnection(

@@ -11,6 +11,16 @@ export function graphviz(gameDeclaration: ast.GameDeclaration) {
   return `digraph {\n${graphvizEdges.join('\n')}\n}`;
 }
 
+export function serializeConstantDeclaration({
+  identifier,
+  type,
+  value,
+}: ast.ConstantDeclaration) {
+  return `const ${identifier}: ${serializeType(type)} = ${serializeValue(
+    value,
+  )};`;
+}
+
 export function serializeEdge({ label, lhs, rhs }: ast.EdgeDeclaration) {
   return `${serializeEdgeName(lhs)}, ${serializeEdgeName(
     rhs,
@@ -36,8 +46,13 @@ export function serializeEdgeLabel(edgeLabel: ast.EdgeLabel): string {
   }
 }
 
-export function serializeEdgeName(edgeName: ast.EdgeName) {
-  return edgeName.parts.map(serializeEdgeNamePart).join('');
+export function serializeEdgeName({ parts }: ast.EdgeName) {
+  // Fast path for the most common case.
+  if (parts.length === 1 && parts[0].kind === 'Literal') {
+    return parts[0].identifier;
+  }
+
+  return parts.map(serializeEdgeNamePart).join('');
 }
 
 export function serializeEdgeNamePart(edgeNamePart: ast.EdgeNamePart) {
@@ -68,49 +83,11 @@ export function serializeExpression(expression: ast.Expression): string {
 
 export function serializeGameDeclaration(gameDeclaration: ast.GameDeclaration) {
   return [
-    ...gameDeclaration.types.map(
-      typeDeclaration =>
-        `type ${typeDeclaration.identifier} = ${serializeType(
-          typeDeclaration.type,
-        )};`,
-    ),
-    '',
-    ...gameDeclaration.constants.map(
-      constantDeclaration =>
-        `const ${constantDeclaration.identifier}: ${serializeType(
-          constantDeclaration.type,
-        )} = ${serializeValue(constantDeclaration.value)};`,
-    ),
-    '',
-    ...gameDeclaration.variables.map(
-      variableDeclaration =>
-        `var ${variableDeclaration.identifier}: ${serializeType(
-          variableDeclaration.type,
-        )} = ${serializeValue(variableDeclaration.defaultValue)};`,
-    ),
-    '',
-    ...gameDeclaration.edges
-      .map(serializeEdge)
-      .reduce<string[]>(
-        (xs, x) => (
-          xs.length &&
-            xs[xs.length - 1]
-              .split('(')[0]
-              .split(',')[0]
-              .split('_')
-              .slice(0, -1)
-              .join('_') !==
-              x.split('(')[0].split(',')[0].split('_').slice(0, -1).join('_') &&
-            xs.push(''),
-          xs.push(x),
-          xs
-        ),
-        [],
-      ),
-  ]
-    .join('\n')
-    .trim()
-    .replace(/\n\n/g, '\n');
+    ...gameDeclaration.types.map(serializeTypeDeclaration),
+    ...gameDeclaration.constants.map(serializeConstantDeclaration),
+    ...gameDeclaration.variables.map(serializeVariableDeclaration),
+    ...gameDeclaration.edges.map(serializeEdge),
+  ].join('\n');
 }
 
 export function serializeType(type: ast.Type): string {
@@ -122,6 +99,13 @@ export function serializeType(type: ast.Type): string {
     case 'TypeReference':
       return type.identifier;
   }
+}
+
+export function serializeTypeDeclaration({
+  identifier,
+  type,
+}: ast.TypeDeclaration) {
+  return `type ${identifier} = ${serializeType(type)};`;
 }
 
 export function serializeValue(value: ast.Value): string {
@@ -140,4 +124,14 @@ export function serializeValueEntry(valueEntry: ast.ValueEntry) {
     case 'NamedEntry':
       return `${valueEntry.identifier}: ${serializeValue(valueEntry.value)}`;
   }
+}
+
+export function serializeVariableDeclaration({
+  defaultValue,
+  identifier,
+  type,
+}: ast.VariableDeclaration) {
+  return `var ${identifier}: ${serializeType(type)} = ${serializeValue(
+    defaultValue,
+  )};`;
 }

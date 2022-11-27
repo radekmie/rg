@@ -29,9 +29,7 @@ class ParserClass extends CstParser {
     this.CONSUME(tokens.Equal);
     this.AT_LEAST_ONE_SEP({
       SEP: tokens.Comma,
-      DEF: () => {
-        this.SUBRULE(this.PieceName);
-      },
+      DEF: () => this.SUBRULE(this.PieceName),
     });
   });
 
@@ -56,9 +54,7 @@ class ParserClass extends CstParser {
     this.CONSUME(tokens.Equal);
     this.MANY_SEP({
       SEP: tokens.Comma,
-      DEF: () => {
-        this.SUBRULE(this.BoundedVariable);
-      },
+      DEF: () => this.SUBRULE(this.BoundedVariable),
     });
   });
 
@@ -68,9 +64,7 @@ class ParserClass extends CstParser {
     this.CONSUME(tokens.Equal);
     this.AT_LEAST_ONE_SEP({
       SEP: tokens.Comma,
-      DEF: () => {
-        this.SUBRULE(this.BoundedVariable);
-      },
+      DEF: () => this.SUBRULE(this.BoundedVariable),
     });
   });
 
@@ -96,9 +90,7 @@ class ParserClass extends CstParser {
     this.CONSUME(tokens.BraceLeft);
     this.AT_LEAST_ONE_SEP({
       SEP: tokens.Comma,
-      DEF: () => {
-        this.SUBRULE(this.Edge);
-      },
+      DEF: () => this.SUBRULE(this.Edge),
     });
     this.CONSUME(tokens.BraceRight);
   });
@@ -107,11 +99,7 @@ class ParserClass extends CstParser {
     this.CONSUME(tokens.Hash);
     this.CONSUME(tokens.KeywordBoard);
     this.CONSUME(tokens.Equal);
-    this.AT_LEAST_ONE({
-      DEF: () => {
-        this.SUBRULE(this.Node);
-      },
-    });
+    this.AT_LEAST_ONE(() => this.SUBRULE(this.Node));
   });
 
   Shift = this.RULE('Shift', () => {
@@ -122,9 +110,7 @@ class ParserClass extends CstParser {
     this.CONSUME(tokens.BraceLeft);
     this.MANY_SEP({
       SEP: tokens.Comma,
-      DEF: () => {
-        this.SUBRULE(this.PieceName);
-      },
+      DEF: () => this.SUBRULE(this.PieceName),
     });
     this.CONSUME(tokens.BraceRight);
   });
@@ -141,11 +127,7 @@ class ParserClass extends CstParser {
 
   Sum = this.RULE('Sum', () => {
     this.SUBRULE(this.SumElement);
-    this.MANY({
-      DEF: () => {
-        this.SUBRULE(this.NextSumElements);
-      },
-    });
+    this.MANY(() => this.SUBRULE(this.NextSumElements));
   });
 
   NextSumElements = this.RULE('NextSumElements', () => {
@@ -167,11 +149,7 @@ class ParserClass extends CstParser {
 
   SumElement = this.RULE('SumElement', () => {
     this.SUBRULE(this.MultiplicationElement);
-    this.MANY({
-      DEF: () => {
-        this.SUBRULE(this.NextMultiplicationElements);
-      },
-    });
+    this.MANY(() => this.SUBRULE(this.NextMultiplicationElements));
   });
 
   NextMultiplicationElements = this.RULE('NextMultiplicationElements', () => {
@@ -200,16 +178,8 @@ class ParserClass extends CstParser {
           this.CONSUME(tokens.ParenthesisRight);
         },
       },
-      {
-        ALT: () => {
-          this.CONSUME(tokens.Nat);
-        },
-      },
-      {
-        ALT: () => {
-          this.SUBRULE(this.VariableName);
-        },
-      },
+      { ALT: () => this.CONSUME(tokens.Nat) },
+      { ALT: () => this.SUBRULE(this.VariableName) },
     ]);
   });
 
@@ -223,36 +193,12 @@ class ParserClass extends CstParser {
 
   ComparisonOperator = this.RULE('ComparisonOperator', () => {
     this.OR([
-      {
-        ALT: () => {
-          this.CONSUME(tokens.Gt);
-        },
-      },
-      {
-        ALT: () => {
-          this.CONSUME(tokens.GtEqual);
-        },
-      },
-      {
-        ALT: () => {
-          this.CONSUME(tokens.EqualEqual);
-        },
-      },
-      {
-        ALT: () => {
-          this.CONSUME(tokens.BangEqual);
-        },
-      },
-      {
-        ALT: () => {
-          this.CONSUME(tokens.LtEqual);
-        },
-      },
-      {
-        ALT: () => {
-          this.CONSUME(tokens.Lt);
-        },
-      },
+      { ALT: () => this.CONSUME(tokens.Gt) },
+      { ALT: () => this.CONSUME(tokens.GtEqual) },
+      { ALT: () => this.CONSUME(tokens.EqualEqual) },
+      { ALT: () => this.CONSUME(tokens.BangEqual) },
+      { ALT: () => this.CONSUME(tokens.LtEqual) },
+      { ALT: () => this.CONSUME(tokens.Lt) },
     ]);
   });
 
@@ -277,11 +223,7 @@ class ParserClass extends CstParser {
           this.SUBRULE(this.PlayerName);
         },
       },
-      {
-        ALT: () => {
-          this.CONSUME(tokens.DashGtGt);
-        },
-      },
+      { ALT: () => this.CONSUME(tokens.DashGtGt) },
     ]);
   });
 
@@ -306,41 +248,13 @@ class ParserClass extends CstParser {
 
   Action = this.RULE('Action', () => {
     this.OR([
-      {
-        ALT: () => {
-          this.SUBRULE(this.Shift);
-        },
-      },
-      {
-        ALT: () => {
-          this.SUBRULE(this.On);
-        },
-      },
-      {
-        ALT: () => {
-          this.SUBRULE(this.Off);
-        },
-      },
-      {
-        ALT: () => {
-          this.SUBRULE(this.Assignment);
-        },
-      },
-      {
-        ALT: () => {
-          this.SUBRULE(this.Comparison);
-        },
-      },
-      {
-        ALT: () => {
-          this.SUBRULE(this.Switch);
-        },
-      },
-      {
-        ALT: () => {
-          this.SUBRULE(this.MoveCheck);
-        },
-      },
+      { ALT: () => this.SUBRULE(this.Shift) },
+      { ALT: () => this.SUBRULE(this.On) },
+      { ALT: () => this.SUBRULE(this.Off) },
+      { ALT: () => this.SUBRULE(this.Assignment) },
+      { ALT: () => this.SUBRULE(this.Comparison) },
+      { ALT: () => this.SUBRULE(this.Switch) },
+      { ALT: () => this.SUBRULE(this.MoveCheck) },
     ]);
   });
 
@@ -354,17 +268,13 @@ class ParserClass extends CstParser {
     // natural definition.
     this.AT_LEAST_ONE_SEP({
       SEP: tokens.Plus,
-      DEF: () => {
-        this.SUBRULE(this.RuleSumElement);
-      },
+      DEF: () => this.SUBRULE(this.RuleSumElement),
     });
   });
 
   RuleSumElement = this.RULE('RuleSumElement', () => {
     this.AT_LEAST_ONE({
-      DEF: () => {
-        this.SUBRULE(this.RuleConcatenationElement);
-      },
+      DEF: () => this.SUBRULE(this.RuleConcatenationElement),
     });
   });
 
@@ -388,11 +298,7 @@ class ParserClass extends CstParser {
   });
 
   PotentialPower = this.RULE('PotentialPower', () => {
-    this.OPTION({
-      DEF: () => {
-        this.CONSUME(tokens.Star);
-      },
-    });
+    this.OPTION(() => this.CONSUME(tokens.Star));
   });
 
   RulesSection = this.RULE('RulesSection', () => {
@@ -403,7 +309,7 @@ class ParserClass extends CstParser {
   });
 
   constructor() {
-    super(tokens.tokens);
+    super(tokens.tokens, { maxLookahead: 2 });
     this.performSelfAnalysis();
   }
 }
