@@ -18,7 +18,6 @@ export type Settings = {
   };
 };
 
-// <TODO> where do I move this? Perhaps to tests where it's used?
 function allFlags(x: boolean) {
   return {
     compactSkipEdges: x,
@@ -31,4 +30,3 @@ function allFlags(x: boolean) {
 }
 
 export const noFlags = allFlags(false);
-// </TODO> where do I move this?
