@@ -1,5 +1,5 @@
 import { parse } from '../src/parse';
-import { Extension, Settings, noOptimizations } from '../src/types';
+import { Extension, Settings, noFlags } from '../src/types';
 
 function createRun(settings: Settings, definitions: string[] = []) {
   return (source: string) => {
@@ -17,7 +17,7 @@ describe('compactSkipEdges', () => {
   const run = createRun(
     {
       extension: Extension.rg,
-      flags: { ...noOptimizations, compactSkipEdges: true },
+      flags: { ...noFlags, compactSkipEdges: true },
     },
     ['begin, end: ;'],
   );
@@ -48,7 +48,7 @@ describe('expandGeneratorNodes', () => {
   const run = createRun(
     {
       extension: Extension.rg,
-      flags: { ...noOptimizations, expandGeneratorNodes: true },
+      flags: { ...noFlags, expandGeneratorNodes: true },
     },
     [
       'type T1 = { 1, 2 };',
@@ -178,7 +178,7 @@ describe.skip('inlineReachability', () => {
   const run = createRun(
     {
       extension: Extension.rg,
-      flags: noOptimizations,
+      flags: noFlags,
     },
     ['begin, end: ;'],
   );
@@ -221,7 +221,7 @@ describe('skipSelfAssignments', () => {
   const run = createRun(
     {
       extension: Extension.rg,
-      flags: { ...noOptimizations, skipSelfAssignments: true },
+      flags: { ...noFlags, skipSelfAssignments: true },
     },
     ['type T = { x };', 'var map: T -> T = { :x };', 'begin, end: ;'],
   );
@@ -250,7 +250,7 @@ describe('joinForkSuffixes', () => {
   const run = createRun(
     {
       extension: Extension.rg,
-      flags: { ...noOptimizations, joinForkSuffixes: true },
+      flags: { ...noFlags, joinForkSuffixes: true },
     },
     ['begin, end: ;'],
   );

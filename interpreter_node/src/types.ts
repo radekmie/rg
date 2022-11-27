@@ -19,7 +19,7 @@ export type Settings = {
 };
 
 // <TODO> where do I move this? Perhaps to tests where it's used?
-function allOptimizations(x: boolean) {
+function allFlags(x: boolean) {
   return {
     compactSkipEdges: x,
     expandGeneratorNodes: x,
@@ -30,5 +30,5 @@ function allOptimizations(x: boolean) {
   };
 }
 
-export const noOptimizations = allOptimizations(false);
+export const noFlags = allFlags(false);
 // </TODO> where do I move this?
