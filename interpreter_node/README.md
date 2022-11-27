@@ -24,7 +24,7 @@ Usage: node lib/cli [options] [command]
 Options:
   --compactSkipEdges      optimize automaton by compacting skip edges
   --expandGeneratorNodes  expand generator nodes (.hrg and .rg only)
-  --joinForkSuffixes      Join paths with identical labels leading to the same node
+  --joinForkSuffixes      join paths with identical labels leading to the same node
   --mangleSymbols         mangle all user-defined symbols
   --reuseFunctions        reuse subautomatons when translating function calls (.hrg only)
   --skipSelfAssignments   replaces all self assignments (e.g., `x = x`) with skip edges
