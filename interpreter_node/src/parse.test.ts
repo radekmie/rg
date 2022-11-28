@@ -256,15 +256,19 @@ describe('joinForkSuffixes', () => {
   );
 
   test('fork and join: small', () => {
-    expect(run([
-      '1, l1: 1 == 1;',
-      '1, r1: 2 == 2;',
-      'l1, l2: 4 == 4;',
-      'l2, 2: 0 == 0;',
-      'r1, r2: 5 == 5;',
-      'r2, 2: 0 == 0;',
-      '2, 3: 7 == 7;',
-    ].join('\n'))).toMatchInlineSnapshot(`
+    expect(
+      run(
+        [
+          '1, l1: 1 == 1;',
+          '1, r1: 2 == 2;',
+          'l1, l2: 4 == 4;',
+          'l2, 2: 0 == 0;',
+          'r1, r2: 5 == 5;',
+          'r2, 2: 0 == 0;',
+          '2, 3: 7 == 7;',
+        ].join('\n'),
+      ),
+    ).toMatchInlineSnapshot(`
       "1, l1: 1 == 1;
       1, r1: 2 == 2;
       l1, l2: 4 == 4;

@@ -48,13 +48,15 @@ export function isFollowing(x: ast.EdgeDeclaration, y: ast.EdgeDeclaration) {
   return utils.isEqual(x.rhs, y.lhs);
 }
 
-export function isReachabilityTarget(x: ast.EdgeName, edges: ast.EdgeDeclaration[]) {
+export function isReachabilityTarget(
+  x: ast.EdgeName,
+  edges: ast.EdgeDeclaration[],
+) {
   return edges.some(
     e =>
       e.label.kind === 'Reachability' &&
-      (utils.isEqual(e.label.lhs, x) ||
-       utils.isEqual(e.label.rhs, x)),
-  )
+      (utils.isEqual(e.label.lhs, x) || utils.isEqual(e.label.rhs, x)),
+  );
 }
 
 export function isSkip(edgeLabel: ast.EdgeLabel): edgeLabel is ast.Skip {
