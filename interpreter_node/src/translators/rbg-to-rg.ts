@@ -377,18 +377,18 @@ function translateAtomContent(
       context.$connect(
         from,
         testCoord,
-        rg.Comparison({
-          lhs: nextCoord,
-          rhs: rg.Reference({ identifier: 'null' }),
-          negated: true,
+        rg.Assignment({
+          lhs: rg.Reference({ identifier: 'coord' }),
+          rhs: nextCoord,
         }),
       );
       context.$connect(
         testCoord,
         to,
-        rg.Assignment({
+        rg.Comparison({
           lhs: rg.Reference({ identifier: 'coord' }),
-          rhs: nextCoord,
+          rhs: rg.Reference({ identifier: 'null' }),
+          negated: true,
         }),
       );
       return;

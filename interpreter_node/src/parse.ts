@@ -81,7 +81,15 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
       rg.validators.reachables(ast);
       rg.validators.typecheck(ast);
     },
-    (['compactSkipEdges', 'expandGeneratorNodes', 'mangleSymbols'] as const)
+    (
+      [
+        'skipSelfAssignments',
+        'compactSkipEdges',
+        'expandGeneratorNodes',
+        'joinForkSuffixes',
+        'mangleSymbols',
+      ] as const
+    )
       .filter(option => settings.flags[option])
       .map(option => rg.transformators[option]),
   );
