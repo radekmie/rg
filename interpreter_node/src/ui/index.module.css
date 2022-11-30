@@ -33,23 +33,22 @@
   width: 9ch;
 }
 
-.panel,
-.panelContent {
+.panel {
   display: flex;
   flex-direction: column;
 }
 
-.panelContent {
-  flex: 1;
-  height: 0;
+.panel:first-child {
+  border-right: 0.1rem solid;
+}
+
+.settings {
+  flex: 0 0 7rem;
+  overflow-y: auto;
 }
 
 .spinner {
   margin-top: 1rem;
-}
-
-.wrap polygon[fill=white] {
-  fill: transparent;
 }
 
 .wrapHidden,

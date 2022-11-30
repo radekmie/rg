@@ -100,7 +100,7 @@ export function Settings({
 
   return (
     <>
-      <section className={styles.grid}>
+      <div className={styles.grid}>
         <HTMLSelect
           className={styles.noOutline}
           onChange={onPreset}
@@ -113,8 +113,8 @@ export function Settings({
           options={availableViews}
           value={view}
         />
-      </section>
-      <Callout intent={intent}>
+      </div>
+      <Callout className={styles.settings} intent={intent}>
         <RadioGroup
           className={styles.options}
           label="Extension"
@@ -122,11 +122,11 @@ export function Settings({
           selectedValue={settings.extension}
         >
           <Radio label="hrg" value={Extension.hrg} />
-          <Radio label="rbg (experimental)" value={Extension.rbg} />
+          <Radio label="rbgᵝ" value={Extension.rbg} />
           <Radio label="rg" value={Extension.rg} />
         </RadioGroup>
         {availableFlags.map(({ disabled, value }, index) => (
-          <section className={styles.options} key={value}>
+          <div className={styles.options} key={value}>
             <Label>{index === 0 ? 'Flags' : ''}</Label>
             <Checkbox
               checked={settings.flags[value]}
@@ -135,7 +135,7 @@ export function Settings({
               name={value}
               onChange={onFlag}
             />
-          </section>
+          </div>
         ))}
       </Callout>
     </>
