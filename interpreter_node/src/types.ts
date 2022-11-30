@@ -18,15 +18,11 @@ export type Settings = {
   };
 };
 
-function allFlags(x: boolean) {
-  return {
-    compactSkipEdges: x,
-    expandGeneratorNodes: x,
-    joinForkSuffixes: x,
-    mangleSymbols: x,
-    reuseFunctions: x,
-    skipSelfAssignments: x,
-  };
-}
-
-export const noFlags = allFlags(false);
+export const noFlagsEnabled: Settings['flags'] = {
+  compactSkipEdges: false,
+  expandGeneratorNodes: false,
+  joinForkSuffixes: false,
+  mangleSymbols: false,
+  reuseFunctions: false,
+  skipSelfAssignments: false,
+};
