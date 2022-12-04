@@ -73,24 +73,14 @@ class ParserClass extends CstParser {
   Expression = this.RULE('Expression', () => {
     this.CONSUME(tokens.Identifier);
     this.OPTION(() => {
-      this.OR([
-        {
-          ALT: () => {
-            this.AT_LEAST_ONE(() => {
-              this.CONSUME(tokens.BracketLeft);
-              this.SUBRULE(this.Expression);
-              this.CONSUME(tokens.BracketRight);
-            });
-          },
-        },
-        {
-          ALT: () => {
-            this.CONSUME(tokens.ParenthesisLeft);
-            this.SUBRULE2(this.Expression);
-            this.CONSUME(tokens.ParenthesisRight);
-          },
-        },
-      ]);
+      this.CONSUME(tokens.ParenthesisLeft);
+      this.SUBRULE(this.Expression);
+      this.CONSUME(tokens.ParenthesisRight);
+    });
+    this.MANY(() => {
+      this.CONSUME(tokens.BracketLeft);
+      this.SUBRULE2(this.Expression);
+      this.CONSUME(tokens.BracketRight);
     });
   });
 

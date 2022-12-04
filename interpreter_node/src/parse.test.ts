@@ -12,7 +12,137 @@ function createRun(settings: Settings, definitions: string[] = []) {
       .trim();
 }
 
-describe('compactSkipEdges', () => {
+describe('parse (.rg)', () => {
+  describe('ast.Cast', () => {
+    const run = createRun({ extension: Extension.rg, flags: noFlagsEnabled }, [
+      'type A = { 0 };',
+      'type B = { 1 };',
+      'type C = A -> B;',
+      'type D = B -> C;',
+      'var a: A = 0;',
+      'var b: B = 1;',
+      'var c: C = { :1 };',
+      'var d: D = { :{ :1 } };',
+      'begin, end: ;',
+    ]);
+
+    test.each([
+      'a = a;',
+      'a = A(a);',
+      'A(a) = a;',
+      'A(a) = A(a);',
+      'b = b;',
+      'b = B(b);',
+      'B(b) = b;',
+      'B(b) = B(b);',
+      'c = c;',
+      'c = C(c);',
+      'C(c) = c;',
+      'C(c) = C(c);',
+      'd = d;',
+      'd = D(d);',
+      'D(d) = d;',
+      'D(d) = D(d);',
+      'c = d[b];',
+      'c = d[B(b)];',
+      'c = D(d)[b];',
+      'c = D(d)[B(b)];',
+      'c = C(d[b]);',
+      'c = C(d[B(b)]);',
+      'c = C(D(d)[b]);',
+      'c = C(D(d)[B(b)]);',
+      'C(c) = d[b];',
+      'C(c) = d[B(b)];',
+      'C(c) = D(d)[b];',
+      'C(c) = D(d)[B(b)];',
+      'C(c) = C(d[b]);',
+      'C(c) = C(d[B(b)]);',
+      'C(c) = C(D(d)[b]);',
+      'C(c) = C(D(d)[B(b)]);',
+      'b = d[b][a];',
+      'b = d[b][A(a)];',
+      'b = d[B(b)][a];',
+      'b = d[B(b)][A(a)];',
+      'b = c[a];',
+      'b = c[A(a)];',
+      'b = D(d)[b][a];',
+      'b = D(d)[b][A(a)];',
+      'b = D(d)[B(b)][a];',
+      'b = D(d)[B(b)][A(a)];',
+      'b = C(d[b])[a];',
+      'b = C(d[b])[A(a)];',
+      'b = C(d[B(b)])[a];',
+      'b = C(d[B(b)])[A(a)];',
+      'b = C(c)[a];',
+      'b = C(c)[A(a)];',
+      'b = C(D(d)[b])[a];',
+      'b = C(D(d)[b])[A(a)];',
+      'b = C(D(d)[B(b)])[a];',
+      'b = C(D(d)[B(b)])[A(a)];',
+      'b = B(d[b][a]);',
+      'b = B(d[b][A(a)]);',
+      'b = B(d[B(b)][a]);',
+      'b = B(d[B(b)][A(a)]);',
+      'b = B(c[a]);',
+      'b = B(c[A(a)]);',
+      'b = B(D(d)[b][a]);',
+      'b = B(D(d)[b][A(a)]);',
+      'b = B(D(d)[B(b)][a]);',
+      'b = B(D(d)[B(b)][A(a)]);',
+      'b = B(C(d[b])[a]);',
+      'b = B(C(d[b])[A(a)]);',
+      'b = B(C(d[B(b)])[a]);',
+      'b = B(C(d[B(b)])[A(a)]);',
+      'b = B(C(c)[a]);',
+      'b = B(C(c)[A(a)]);',
+      'b = B(C(D(d)[b])[a]);',
+      'b = B(C(D(d)[b])[A(a)]);',
+      'b = B(C(D(d)[B(b)])[a]);',
+      'b = B(C(D(d)[B(b)])[A(a)]);',
+      'B(b) = d[b][a];',
+      'B(b) = d[b][A(a)];',
+      'B(b) = d[B(b)][a];',
+      'B(b) = d[B(b)][A(a)];',
+      'B(b) = c[a];',
+      'B(b) = c[A(a)];',
+      'B(b) = D(d)[b][a];',
+      'B(b) = D(d)[b][A(a)];',
+      'B(b) = D(d)[B(b)][a];',
+      'B(b) = C(d[b])[a];',
+      'B(b) = C(d[b])[A(a)];',
+      'B(b) = C(d[B(b)])[a];',
+      'B(b) = C(d[B(b)])[A(a)];',
+      'B(b) = C(c)[a];',
+      'B(b) = C(c)[A(a)];',
+      'B(b) = C(D(d)[b])[a];',
+      'B(b) = C(D(d)[b])[A(a)];',
+      'B(b) = C(D(d)[B(b)])[a];',
+      'B(b) = B(d[b][a]);',
+      'B(b) = B(d[b][A(a)]);',
+      'B(b) = B(d[B(b)][a]);',
+      'B(b) = B(d[B(b)][A(a)]);',
+      'B(b) = B(c[a]);',
+      'B(b) = B(c[A(a)]);',
+      'B(b) = B(D(d)[b][a]);',
+      'B(b) = B(D(d)[b][A(a)]);',
+      'B(b) = B(D(d)[B(b)][a]);',
+      'B(b) = B(C(d[b])[a]);',
+      'B(b) = B(C(d[b])[A(a)]);',
+      'B(b) = B(C(d[B(b)])[a]);',
+      'B(b) = B(C(d[B(b)])[A(a)]);',
+      'B(b) = B(C(c)[a]);',
+      'B(b) = B(C(c)[A(a)]);',
+      'B(b) = B(C(D(d)[b])[a]);',
+      'B(b) = B(C(D(d)[b])[A(a)]);',
+      'B(b) = B(C(D(d)[B(b)])[a]);',
+    ])('%s', label => {
+      const edge = `x, y: ${label}`;
+      expect(run([edge])).toBe(edge);
+    });
+  });
+});
+
+describe('--compactSkipEdges', () => {
   const run = createRun(
     {
       extension: Extension.rg,
@@ -46,7 +176,7 @@ describe('compactSkipEdges', () => {
   });
 });
 
-describe('expandGeneratorNodes', () => {
+describe('--expandGeneratorNodes', () => {
   const run = createRun(
     {
       extension: Extension.rg,
@@ -176,7 +306,7 @@ describe('expandGeneratorNodes', () => {
 // 1. Check each entrypoint of a subautomaton.
 // 2. It has exactly one exclusive path.
 // 3. It has no assignements.
-describe.skip('inlineReachability', () => {
+describe.skip('--inlineReachability', () => {
   const run = createRun(
     {
       extension: Extension.rg,
@@ -230,7 +360,7 @@ describe.skip('inlineReachability', () => {
   });
 });
 
-describe('skipSelfAssignments', () => {
+describe('--skipSelfAssignments', () => {
   const run = createRun(
     {
       extension: Extension.rg,
@@ -261,7 +391,7 @@ describe('skipSelfAssignments', () => {
   });
 });
 
-describe('joinForkSuffixes', () => {
+describe('--joinForkSuffixes', () => {
   // TODO test: don't join nodes referenced in reachability
   // TODO test: don't join nodes with different bindings
   const run = createRun(

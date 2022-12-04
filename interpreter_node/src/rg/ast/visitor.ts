@@ -86,28 +86,23 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
   }
 
   Expression(context: Context): ast.Expression {
-    if ('BracketLeft' in context) {
-      return context.Expression.reduce(
-        (expression, cstNode) =>
-          ast.Access({ lhs: expression, rhs: this.visitNode(cstNode) }),
-        ast.Reference({
-          identifier: this.visitToken(context.Identifier[0]),
-        }) as ast.Expression,
-      );
-    }
+    const isCast = 'ParenthesisLeft' in context;
+    const expressions = context.Expression?.slice() ?? [];
 
-    if ('ParenthesisLeft' in context) {
-      return ast.Cast({
-        lhs: ast.TypeReference({
-          identifier: this.visitToken(context.Identifier[0]),
-        }),
-        rhs: this.visitNode(context.Expression[0]),
-      });
-    }
+    const identifier = this.visitToken(context.Identifier[0]);
+    const expression = isCast
+      ? ast.Cast({
+          lhs: ast.TypeReference({ identifier }),
+          rhs: this.visitNode(expressions[0]),
+        })
+      : ast.Reference({ identifier });
 
-    return ast.Reference({
-      identifier: this.visitToken(context.Identifier[0]),
-    });
+    const cstNodes = isCast ? expressions.slice(1) : expressions;
+    return cstNodes.reduce<ast.Expression>(
+      (expression, cstNode) =>
+        ast.Access({ lhs: expression, rhs: this.visitNode(cstNode) }),
+      expression,
+    );
   }
 
   GameDeclaration(context: Context): ast.GameDeclaration {
