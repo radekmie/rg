@@ -55,7 +55,7 @@ export function joinForkSuffixes({ edges }: ast.GameDeclaration) {
           utils.isEqual(e1.label, e2.label) && // (8)
           utils.isEqual(ast.lib.bindings(y1), ast.lib.bindings(y2)) && // (5)
           ast.lib.outgoing(edges, y2).length === 1 && // (2)
-          !ast.lib.isReachabilityTarget(x, edges) // (4)
+          !ast.lib.isReachabilityTarget(y2, edges) // (4)
         ) {
           for (const e4 of edges) {
             const z2 = e4.lhs;
