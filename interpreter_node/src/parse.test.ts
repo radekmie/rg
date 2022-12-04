@@ -746,4 +746,47 @@ describe('--joinForkSuffixes', () => {
       23, 12: 5 == 5;"
     `);
   });
+
+  test('should join when the last node is reachability target', () => {
+    expect(
+      run([
+        'x, y: ? 1 -> 3;',
+        '1, 1a: 1==1;',
+        '1a, 2a: 3==3;',
+        '2a, 3: 4==4;',
+        '1, 1b: 2==2;',
+        '1b, 2b: 3==3;',
+        '2b, 3: 4==4;'
+      ]),
+    ).toMatchInlineSnapshot(`
+      "x, y: ? 1 -> 3;
+      1, 1a: 1 == 1;
+      1a, 2a: 3 == 3;
+      2a, 3: 4 == 4;
+      1, 1b: 2 == 2;
+      1b, 2a: 3 == 3;"
+    `);
+  });
+
+  test("shouldn't join when an inner node is reachability target", () => {
+    expect(
+      run([
+        'x, y: ? 1 -> 2a;',
+        '1, 1a: 1==1;',
+        '1a, 2a: 3==3;',
+        '2a, 3: 4==4;',
+        '1, 1b: 2==2;',
+        '1b, 2b: 3==3;',
+        '2b, 3: 4==4;'
+    ]),
+    ).toMatchInlineSnapshot(`
+      "x, y: ? 1 -> 2a;
+      1, 1a: 1 == 1;
+      1a, 2a: 3 == 3;
+      2a, 3: 4 == 4;
+      1, 1b: 2 == 2;
+      1b, 2b: 3 == 3;
+      2b, 3: 4 == 4;"
+    `);
+  });
 });
