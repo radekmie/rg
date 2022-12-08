@@ -2,14 +2,20 @@ import { parse } from '../src/parse';
 import { Extension, Settings, noFlagsEnabled } from '../src/types';
 
 function createRun(settings: Settings, definitions: string[] = []) {
-  return (source: string[]) =>
-    definitions
-      .reduce(
-        (source, definition) => source.replace(definition, ''),
-        parse([...definitions, ...source].join('\n'), settings)
-          .sourceRgFormatted,
-      )
-      .trim();
+  return (source: string[]) => {
+    try {
+      return definitions
+        .reduce(
+          (source, definition) => source.replace(definition, ''),
+          parse([...definitions, ...source].join('\n'), settings)
+            .sourceRgFormatted,
+        )
+        .trim();
+    } catch (e) {
+      console.log(e);
+      throw e;
+    }
+  };
 }
 
 describe('parse (.rg)', () => {
