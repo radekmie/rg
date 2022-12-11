@@ -66,10 +66,12 @@ export function Settings({
 
   const availableFlags = useMemo<{ value: Flag; disabled?: boolean }[]>(
     () => [
+      { value: 'addExplicitCasts' },
       { value: 'compactSkipEdges' },
       { value: 'expandGeneratorNodes' },
       { value: 'joinForkSuffixes' },
       { value: 'mangleSymbols' },
+      { value: 'normalizeTypes' },
       { value: 'reuseFunctions', disabled: !isHrg },
       { value: 'skipSelfAssignments' },
     ],

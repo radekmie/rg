@@ -407,13 +407,6 @@ function translateAtomContent(
 }
 
 function translateGame(context: Context) {
-  translateAtomContent(
-    context,
-    context.rbg.rules,
-    rg.EdgeName({ parts: [rg.Literal({ identifier: 'begin' })] }),
-    rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
-  );
-
   context.rg.types.push(
     rg.TypeDeclaration({
       identifier: 'Player',
@@ -461,7 +454,7 @@ function translateGame(context: Context) {
     rg.TypeDeclaration({
       identifier: 'Coord',
       type: rg.Set({
-        identifiers: context.rbg.board.map(node => node.node).concat('null'),
+        identifiers: ['null', ...context.rbg.board.map(node => node.node)],
       }),
     }),
     rg.TypeDeclaration({
@@ -557,6 +550,13 @@ function translateGame(context: Context) {
   for (const variable of context.rbg.variables) {
     translateVariable(context, variable);
   }
+
+  translateAtomContent(
+    context,
+    context.rbg.rules,
+    rg.EdgeName({ parts: [rg.Literal({ identifier: 'begin' })] }),
+    rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
+  );
 
   return context.rg;
 }
@@ -770,27 +770,27 @@ export default function translate(game: rbg.Game) {
         ],
       });
 
-      const existing = utils.find(this.rg.constants, { type, value });
+      const { constants } = this.rg;
+      const existing = utils.find(constants, { type, value });
       if (existing) {
         return existing.identifier;
       }
 
-      const identifier = `CoordMap${counter++}`;
-      this.rg.constants.push(
-        rg.ConstantDeclaration({ identifier, type, value }),
-      );
+      const identifier = utils.generateIdentifier(constants, 'RbgCoordMap1');
+      constants.push(rg.ConstantDeclaration({ identifier, type, value }));
 
       return identifier;
     },
     $createTypeFromSet(identifiers) {
       const type = rg.Set({ identifiers });
-      const existing = utils.find(this.rg.types, { type });
+      const { types } = this.rg;
+      const existing = utils.find(types, { type });
       if (existing) {
         return existing.identifier;
       }
 
-      const identifier = `Type_${counter++}`;
-      this.rg.types.push(rg.TypeDeclaration({ identifier, type }));
+      const identifier = utils.generateIdentifier(types, 'RbgType1');
+      types.push(rg.TypeDeclaration({ identifier, type }));
 
       return identifier;
     },
@@ -877,9 +877,8 @@ export default function translate(game: rbg.Game) {
       });
     },
     $randomEdgeName() {
-      return rg.EdgeName({
-        parts: [rg.Literal({ identifier: `${counter++}` })],
-      });
+      const identifier = `${++counter}`;
+      return rg.EdgeName({ parts: [rg.Literal({ identifier })] });
     },
     $shiftPatternsCache: Object.create(null),
     rbg: rbg.Game({

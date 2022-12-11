@@ -9,16 +9,20 @@ export type Flag = keyof Settings['flags'];
 export type Settings = {
   extension: Extension;
   flags: {
+    addExplicitCasts: boolean;
     compactSkipEdges: boolean;
     expandGeneratorNodes: boolean;
     joinForkSuffixes: boolean;
     mangleSymbols: boolean;
+    normalizeTypes: boolean;
     reuseFunctions: boolean;
     skipSelfAssignments: boolean;
   };
 };
 
 export const noFlagsEnabled: Settings['flags'] = {
+  addExplicitCasts: false,
+  normalizeTypes: false,
   compactSkipEdges: false,
   expandGeneratorNodes: false,
   joinForkSuffixes: false,

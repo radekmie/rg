@@ -1,6 +1,7 @@
 import * as utils from '../../utils';
 import * as ast from '../ast';
 
+// eslint-disable-next-line complexity -- It could be split.
 export function joinForkSuffixes({ edges }: ast.GameDeclaration) {
   // Before:
   //

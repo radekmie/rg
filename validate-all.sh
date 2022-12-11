@@ -20,7 +20,7 @@ function combine() {
 }
 
 for game in $(ls -1 ./examples/*.{hrg,rbg,rg} | sort); do
-  for flags in $(combine 'compactSkipEdges' 'expandGeneratorNodes' 'mangleSymbols' 'reuseFunctions'); do
+  for flags in $(combine 'addExplicitCasts' 'compactSkipEdges' 'expandGeneratorNodes' 'joinForkSuffixes' 'mangleSymbols' 'normalizeTypes' 'reuseFunctions' 'skipSelfAssignments'); do
     flags=( $(echo "${flags//_/ }" | xargs) )
     flags=${flags[@]/#/--}
     if [ ! -z "$flags" ]; then

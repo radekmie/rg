@@ -49,7 +49,7 @@ games[7]='amazons-naive.hrg 1 2176' # 4307152'
 
 for game in "${games[@]}"; do
   game=( $game )
-  for flags in $(combine 'compactSkipEdges' 'expandGeneratorNodes' 'mangleSymbols' 'reuseFunctions'); do
+  for flags in $(combine 'addExplicitCasts' 'compactSkipEdges' 'expandGeneratorNodes' 'joinForkSuffixes' 'mangleSymbols' 'normalizeTypes' 'reuseFunctions' 'skipSelfAssignments'); do
     flags=( $(echo "${flags//_/ }" | xargs) )
     flags=${flags[@]/#/--}
     if [ ! -z "$flags" ]; then

@@ -135,10 +135,84 @@ describe('parse (.rg)', () => {
       'B(b) = B(C(D(d)[b])[a]);',
       'B(b) = B(C(D(d)[b])[A(a)]);',
       'B(b) = B(C(D(d)[B(b)])[a]);',
+      'B(b) = B(C(D(d)[B(b)])[A(a)]);',
     ])('%s', label => {
       const edge = `x, y: ${label}`;
       expect(run([edge])).toBe(edge);
     });
+  });
+});
+
+describe('--addExplicitCasts', () => {
+  const run = createRun(
+    {
+      extension: Extension.rg,
+      flags: { ...noFlagsEnabled, addExplicitCasts: true },
+    },
+    [
+      'type A = { 0 };',
+      'type B = { 1 };',
+      'type C = A -> B;',
+      'type D = B -> C;',
+      'var a: A = 0;',
+      'var b: B = 1;',
+      'var c: C = { :1 };',
+      'var d: D = { :{ :1 } };',
+      'begin, end: ;',
+    ],
+  );
+
+  test.each([
+    'b = d[b][a];',
+    'b = d[b][A(a)];',
+    'b = d[B(b)][a];',
+    'b = d[B(b)][A(a)];',
+    'b = D(d)[b][a];',
+    'b = D(d)[b][A(a)];',
+    'b = D(d)[B(b)][a];',
+    'b = D(d)[B(b)][A(a)];',
+    'b = B(d[b][a]);',
+    'b = B(d[b][A(a)]);',
+    'b = B(d[B(b)][a]);',
+    'b = B(d[B(b)][A(a)]);',
+    'b = B(D(d)[b][a]);',
+    'b = B(D(d)[b][A(a)]);',
+    'b = B(D(d)[B(b)][a]);',
+    'b = B(D(d)[B(b)][A(a)]);',
+    'b = B(C(d[b])[a]);',
+    'b = B(C(d[b])[A(a)]);',
+    'b = B(C(d[B(b)])[a]);',
+    'b = B(C(d[B(b)])[A(a)]);',
+    'b = B(C(D(d)[b])[a]);',
+    'b = B(C(D(d)[b])[A(a)]);',
+    'b = B(C(D(d)[B(b)])[a]);',
+    'b = B(C(D(d)[B(b)])[A(a)]);',
+    'B(b) = d[b][a];',
+    'B(b) = d[b][A(a)];',
+    'B(b) = d[B(b)][a];',
+    'B(b) = d[B(b)][A(a)];',
+    'B(b) = D(d)[b][a];',
+    'B(b) = D(d)[b][A(a)];',
+    'B(b) = D(d)[B(b)][a];',
+    'B(b) = B(d[b][a]);',
+    'B(b) = B(d[b][A(a)]);',
+    'B(b) = B(d[B(b)][a]);',
+    'B(b) = B(d[B(b)][A(a)]);',
+    'B(b) = B(D(d)[b][a]);',
+    'B(b) = B(D(d)[b][A(a)]);',
+    'B(b) = B(D(d)[B(b)][a]);',
+    'B(b) = B(C(d[b])[a]);',
+    'B(b) = B(C(d[b])[A(a)]);',
+    'B(b) = B(C(d[B(b)])[a]);',
+    'B(b) = B(C(d[B(b)])[A(a)]);',
+    'B(b) = B(C(D(d)[b])[a]);',
+    'B(b) = B(C(D(d)[b])[A(a)]);',
+    'B(b) = B(C(D(d)[B(b)])[a]);',
+    'B(b) = B(C(D(d)[B(b)])[A(a)]);',
+  ])('%s', label => {
+    const input = `x, y: ${label}`;
+    const output = 'x, y: B(b) = B(C(D(d)[B(b)])[A(a)]);';
+    expect(run([input])).toBe(output);
   });
 });
 
@@ -357,6 +431,64 @@ describe.skip('--inlineReachability', () => {
     ).toMatchInlineSnapshot(
       '"x, _b: ? e -> f; x, _c: ! e -> f; _b, y: ; _c, y: ; e, f: ;"',
     );
+  });
+});
+
+describe('--normalizeTypes', () => {
+  const run = createRun(
+    {
+      extension: Extension.rg,
+      flags: { ...noFlagsEnabled, normalizeTypes: true },
+    },
+    ['type A = { 0 };', 'begin, end: ;'],
+  );
+
+  test('constant declarations', () => {
+    expect(run(['const b: A -> A = { :0 };'])).toMatchInlineSnapshot(`
+      "type A_A = A -> A;
+      const b: A_A = { :0 };"
+    `);
+    expect(run(['const b: A -> A -> A = { :{ :0 } };'])).toMatchInlineSnapshot(`
+      "type A_A = A -> A;
+      type A_A_A = A -> A_A;
+      const b: A_A_A = { :{ :0 } };"
+    `);
+  });
+
+  test('variable declarations', () => {
+    expect(run(['var b: A -> A = { :0 };'])).toMatchInlineSnapshot(`
+      "type A_A = A -> A;
+      var b: A_A = { :0 };"
+    `);
+    expect(run(['var b: A -> A -> A = { :{ :0 } };'])).toMatchInlineSnapshot(`
+      "type A_A = A -> A;
+      type A_A_A = A -> A_A;
+      var b: A_A_A = { :{ :0 } };"
+    `);
+  });
+
+  test('type declarations', () => {
+    expect(run(['type B = A -> A;'])).toMatchInlineSnapshot(
+      '"type B = A -> A;"',
+    );
+    expect(run(['type B = A -> A -> A;'])).toMatchInlineSnapshot(`
+      "type B = A -> A_A;
+      type A_A = A -> A;"
+    `);
+    expect(run(['type B = A -> A -> A -> A;'])).toMatchInlineSnapshot(`
+      "type B = A -> A_A_A;
+      type A_A = A -> A;
+      type A_A_A = A -> A_A;"
+    `);
+  });
+
+  test('existing types', () => {
+    expect(run(['type B = A -> A -> A;', 'type A_A = A;']))
+      .toMatchInlineSnapshot(`
+      "type B = A -> A_A2;
+      type A_A = A;
+      type A_A2 = A -> A;"
+    `);
   });
 });
 

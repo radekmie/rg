@@ -1,8 +1,8 @@
 import * as ast from '../ast';
 
-export function typecheck(gameDeclaration: ast.GameDeclaration) {
+export function addExplicitCasts(gameDeclaration: ast.GameDeclaration) {
   const typeChecker = new ast.TypeChecker(gameDeclaration);
   for (const edge of gameDeclaration.edges) {
-    typeChecker.checkEdge(edge);
+    typeChecker.addExplicitCasts(edge);
   }
 }

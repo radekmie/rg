@@ -69,6 +69,24 @@ export function generate<T>(length: number, generate: (index: number) => T) {
   return Array.from({ length }, (_, index) => generate(index));
 }
 
+const indexPattern = /(\d*)$/;
+function nextIndex(index: string) {
+  return index ? String(1 + Number(index)) : '2';
+}
+
+export function generateIdentifier(
+  xs: { identifier: string }[],
+  identifier: string,
+) {
+  const identifiers = new Set(xs.map(x => x.identifier));
+  while (identifiers.has(identifier)) {
+    identifier = identifier.replace(indexPattern, nextIndex);
+  }
+
+  return identifier;
+}
+
+// eslint-disable-next-line complexity -- It's fine.
 export function isEqual<T>(a: T, b: T) {
   if (a === b) {
     return true;
@@ -157,16 +175,21 @@ export function remove<T>(array: T[], element: T) {
 
 export function runTransformators<T>(
   object: T,
-  validator: (object: T) => void,
+  validators: ((object: T) => void)[],
   transformators: ((object: T) => void)[],
 ) {
-  validator(object);
+  for (const validator of validators) {
+    validator(object);
+  }
 
   outer: for (let round = 0; round <= 1000; ++round) {
     const cloned = clone(object);
     for (const transformator of transformators) {
       transformator(object);
-      validator(object);
+
+      for (const validator of validators) {
+        validator(object);
+      }
 
       if (!isEqual(object, cloned)) {
         continue outer;

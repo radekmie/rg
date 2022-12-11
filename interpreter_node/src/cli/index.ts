@@ -9,6 +9,7 @@ import * as utils from '../utils';
 
 program
   .name('node lib/cli')
+  .option('--addExplicitCasts', 'add type casts to all expressions')
   .option('--compactSkipEdges', 'optimize automaton by compacting skip edges')
   .option(
     '--expandGeneratorNodes',
@@ -19,6 +20,10 @@ program
     'join paths with identical labels leading to the same node',
   )
   .option('--mangleSymbols', 'mangle all user-defined symbols')
+  .option(
+    '--normalizeTypes',
+    'normalize all types so Arrow types appear only in type definitions and are at most one level deep',
+  )
   .option(
     '--reuseFunctions',
     'reuse subautomatons when translating function calls (.hrg only)',
@@ -57,12 +62,14 @@ function addCommand(
       const game = parse(fs.readFileSync(file, { encoding: 'utf8' }), {
         extension,
         flags: {
+          addExplicitCasts: !!options.addExplicitCasts,
           compactSkipEdges: !!options.compactSkipEdges,
           expandGeneratorNodes: !!options.expandGeneratorNodes,
           joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,
-          skipSelfAssignments: !!options.skipSelfAssignments,
+          normalizeTypes: !!options.normalizeTypes,
           reuseFunctions: !!options.reuseFunctions,
+          skipSelfAssignments: !!options.skipSelfAssignments,
         },
       });
 

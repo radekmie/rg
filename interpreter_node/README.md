@@ -22,10 +22,12 @@ npm test
 Usage: node lib/cli [options] [command]
 
 Options:
+  --addExplicitCasts      add type casts to all expressions
   --compactSkipEdges      optimize automaton by compacting skip edges
   --expandGeneratorNodes  expand generator nodes (.hrg and .rg only)
   --joinForkSuffixes      join paths with identical labels leading to the same node
   --mangleSymbols         mangle all user-defined symbols
+  --normalizeTypes        normalize all types so Arrow types appear only in type definitions and are at most one level deep
   --reuseFunctions        reuse subautomatons when translating function calls (.hrg only)
   --skipSelfAssignments   replaces all self assignments (e.g., `x = x`) with skip edges
   -h, --help              display help for command

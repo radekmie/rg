@@ -33,6 +33,7 @@ function isReachable(nextEdges: NextEdges, from: string, to: string) {
   const seen = new Set<string>();
   const queue = [from];
   while (queue.length) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- Length is checked above.
     const lhs = queue.pop()!;
     if (lhs in nextEdges) {
       for (const rhs of nextEdges[lhs]) {

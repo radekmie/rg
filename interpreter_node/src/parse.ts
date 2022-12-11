@@ -77,14 +77,13 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
 
   utils.runTransformators(
     astRg,
-    ast => {
-      rg.validators.reachables(ast);
-      rg.validators.typecheck(ast);
-    },
+    [rg.validators.reachables, rg.validators.typecheck],
     (
       [
+        'normalizeTypes',
         'skipSelfAssignments',
         'compactSkipEdges',
+        'addExplicitCasts',
         'expandGeneratorNodes',
         'joinForkSuffixes',
         'mangleSymbols',
