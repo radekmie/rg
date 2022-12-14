@@ -11,9 +11,9 @@ function createRun(settings: Settings, definitions: string[] = []) {
             .sourceRgFormatted,
         )
         .trim();
-    } catch (e) {
-      console.log(e);
-      throw e;
+    } catch (error) {
+      console.log(error);
+      throw error;
     }
   };
 }
