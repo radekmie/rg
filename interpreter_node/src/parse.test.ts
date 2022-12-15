@@ -2,14 +2,20 @@ import { parse } from '../src/parse';
 import { Extension, Settings, noFlagsEnabled } from '../src/types';
 
 function createRun(settings: Settings, definitions: string[] = []) {
-  return (source: string[]) =>
-    definitions
-      .reduce(
-        (source, definition) => source.replace(definition, ''),
-        parse([...definitions, ...source].join('\n'), settings)
-          .sourceRgFormatted,
-      )
-      .trim();
+  return (source: string[]) => {
+    try {
+      return definitions
+        .reduce(
+          (source, definition) => source.replace(definition, ''),
+          parse([...definitions, ...source].join('\n'), settings)
+            .sourceRgFormatted,
+        )
+        .trim();
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  };
 }
 
 describe('parse (.rg)', () => {
@@ -530,13 +536,13 @@ describe('--joinForkSuffixes', () => {
     {
       extension: Extension.rg,
       flags: { ...noFlagsEnabled, joinForkSuffixes: true },
-    },
-    ['begin, end: ;'],
+    }
   );
 
   test('fork and join: small', () => {
     expect(
       run([
+        'begin, end: ;',
         '1, l1: 1 == 1;',
         '1, r1: 2 == 2;',
         'l1, l2: 4 == 4;',
@@ -546,7 +552,8 @@ describe('--joinForkSuffixes', () => {
         '2, 3: 7 == 7;',
       ]),
     ).toMatchInlineSnapshot(`
-      "1, l1: 1 == 1;
+      "begin, end: ;
+      1, l1: 1 == 1;
       1, r1: 2 == 2;
       l1, l2: 4 == 4;
       l2, 2: 0 == 0;
@@ -558,28 +565,28 @@ describe('--joinForkSuffixes', () => {
   test('fork and join: bigger', () => {
     expect(
       run([
-        'start, a0: branch0 == branch0;',
+        'begin, a0: branch0 == branch0;',
         'a5, end: 5 == 5;',
         'a0, a1: 0 == 0;',
         'a1, a2: 1 == 1;',
         'a2, a3: 2 == 2;',
         'a3, a4: 3 == 3;',
         'a4, a5: 4 == 4;',
-        'start, b0: branch1 == branch1;',
+        'begin, b0: branch1 == branch1;',
         'b5, end: 5 == 5;',
         'b0, b1: 0 == 0;',
         'b1, b2: 1 == 1;',
         'b2, b3: 2 == 2;',
         'b3, b4: 3 == 3;',
         'b4, b5: 4 == 4;',
-        'start, c0: branch2 == branch2;',
+        'begin, c0: branch2 == branch2;',
         'c5, end: 5 == 5;',
         'c0, c1: 0 == 0;',
         'c1, c2: 1 == 1;',
         'c2, c3: 2 == 2;',
         'c3, c4: 3 == 3;',
         'c4, c5: 4 == 4;',
-        'start, d0: branch3 == branch3;',
+        'begin, d0: branch3 == branch3;',
         'd5, end: 5 == 5;',
         'd0, d1: 0 == 0;',
         'd1, d2: 1 == 1;',
@@ -588,17 +595,17 @@ describe('--joinForkSuffixes', () => {
         'd4, d5: 4 == 4;',
       ]),
     ).toMatchInlineSnapshot(`
-      "start, a0: branch0 == branch0;
+      "begin, a0: branch0 == branch0;
       a5, end: 5 == 5;
       a0, d1: 0 == 0;
       a4, a5: 4 == 4;
-      start, b0: branch1 == branch1;
+      begin, b0: branch1 == branch1;
       b0, d1: 0 == 0;
       b3, a4: 3 == 3;
-      start, c0: branch2 == branch2;
+      begin, c0: branch2 == branch2;
       c0, d1: 0 == 0;
       c2, b3: 2 == 2;
-      start, d0: branch3 == branch3;
+      begin, d0: branch3 == branch3;
       d0, d1: 0 == 0;
       d1, c2: 1 == 1;"
     `);
@@ -607,6 +614,7 @@ describe('--joinForkSuffixes', () => {
   test("don't join if both branches have more outgoing edges", () => {
     expect(
       run([
+        'begin, end: ;',
         '1, l1: 1 == 1;',
         '1, r1: 2 == 2;',
         'l1, l2: 4 == 4;',
@@ -618,7 +626,8 @@ describe('--joinForkSuffixes', () => {
         'r2, 4: 0 == 0;',
       ]),
     ).toMatchInlineSnapshot(`
-      "1, l1: 1 == 1;
+      "begin, end: ;
+      1, l1: 1 == 1;
       1, r1: 2 == 2;
       l1, l2: 4 == 4;
       l2, 2: 0 == 0;
@@ -633,6 +642,7 @@ describe('--joinForkSuffixes', () => {
   test("don't join if one branch has more outgoing edges", () => {
     expect(
       run([
+        'begin, end: ;',
         '1, l1: 1 == 1;',
         '1, r1: 2 == 2;',
         'l1, l2: 4 == 4;',
@@ -643,7 +653,8 @@ describe('--joinForkSuffixes', () => {
         'l2, 4: 0 == 0;',
       ]),
     ).toMatchInlineSnapshot(`
-      "1, l1: 1 == 1;
+      "begin, end: ;
+      1, l1: 1 == 1;
       1, r1: 2 == 2;
       l1, l2: 4 == 4;
       l2, 2: 0 == 0;
@@ -657,6 +668,7 @@ describe('--joinForkSuffixes', () => {
   test("don't join if both branches have more incoming edges", () => {
     expect(
       run([
+        'begin, end: ;',
         '1, l1: 1 == 1;',
         '1, r1: 2 == 2;',
         'l1, l2: 4 == 4;',
@@ -668,7 +680,8 @@ describe('--joinForkSuffixes', () => {
         '4, r2: 0 == 0;',
       ]),
     ).toMatchInlineSnapshot(`
-      "1, l1: 1 == 1;
+      "begin, end: ;
+      1, l1: 1 == 1;
       1, r1: 2 == 2;
       l1, l2: 4 == 4;
       l2, 2: 0 == 0;
@@ -683,6 +696,7 @@ describe('--joinForkSuffixes', () => {
   test('join if only one branch has more incoming edges', () => {
     expect(
       run([
+        'begin, end: ;',
         '1, l1: 1 == 1;',
         '1, r1: 2 == 2;',
         'l1, l2: 4 == 4;',
@@ -693,7 +707,8 @@ describe('--joinForkSuffixes', () => {
         '4, l2: 0 == 0;',
       ]),
     ).toMatchInlineSnapshot(`
-      "1, l1: 1 == 1;
+      "begin, end: ;
+      1, l1: 1 == 1;
       1, r1: 2 == 2;
       l1, l2: 4 == 4;
       l2, 2: 0 == 0;
@@ -706,6 +721,7 @@ describe('--joinForkSuffixes', () => {
   test("don't create multiple edges between nodes", () => {
     expect(
       run([
+        'begin, end: ;',
         '1, l1: 0 == 0;',
         '1, r1: 0 == 0;',
         'l1, 2: 1 == 1;',
@@ -713,7 +729,8 @@ describe('--joinForkSuffixes', () => {
         '2, 3: 7 == 7;',
       ]),
     ).toMatchInlineSnapshot(`
-      "1, l1: 0 == 0;
+      "begin, end: ;
+      1, l1: 0 == 0;
       1, r1: 0 == 0;
       l1, 2: 1 == 1;
       r1, 2: 1 == 1;
@@ -724,6 +741,7 @@ describe('--joinForkSuffixes', () => {
   test('shape from breakthrough.rbg', () => {
     expect(
       run([
+        'begin, end: ;',
         '11, 9: 3 == 3;',
         '9, 12: 5 == 5;',
         '9, 18: 1 == 1;',
@@ -735,7 +753,8 @@ describe('--joinForkSuffixes', () => {
         '23, 12: 5 == 5;',
       ]),
     ).toMatchInlineSnapshot(`
-      "11, 9: 3 == 3;
+      "begin, end: ;
+      11, 9: 3 == 3;
       9, 12: 5 == 5;
       9, 18: 1 == 1;
       9, 20: 2 == 2;
@@ -744,6 +763,53 @@ describe('--joinForkSuffixes', () => {
       15, 12: 4 == 4;
       15, 23: ;
       23, 12: 5 == 5;"
+    `);
+  });
+
+  test('should join when the last node is reachability target', () => {
+    expect(
+      run([
+        'begin, end: ;',
+        'x, y: ? 1 -> 3;',
+        '1, 1a: 1==1;',
+        '1a, 2a: 3==3;',
+        '2a, 3: 4==4;',
+        '1, 1b: 2==2;',
+        '1b, 2b: 3==3;',
+        '2b, 3: 4==4;'
+      ]),
+    ).toMatchInlineSnapshot(`
+      "begin, end: ;
+      x, y: ? 1 -> 3;
+      1, 1a: 1 == 1;
+      1a, 2a: 3 == 3;
+      2a, 3: 4 == 4;
+      1, 1b: 2 == 2;
+      1b, 2a: 3 == 3;"
+    `);
+  });
+
+  test("shouldn't join when an inner node is reachability target", () => {
+    expect(
+      run([
+        'begin, end: ;',
+        'x, y: ? 1 -> 2a;',
+        '1, 1a: 1==1;',
+        '1a, 2a: 3==3;',
+        '2a, 3: 4==4;',
+        '1, 1b: 2==2;',
+        '1b, 2b: 3==3;',
+        '2b, 3: 4==4;'
+    ]),
+    ).toMatchInlineSnapshot(`
+      "begin, end: ;
+      x, y: ? 1 -> 2a;
+      1, 1a: 1 == 1;
+      1a, 2a: 3 == 3;
+      2a, 3: 4 == 4;
+      1, 1b: 2 == 2;
+      1b, 2b: 3 == 3;
+      2b, 3: 4 == 4;"
     `);
   });
 });
