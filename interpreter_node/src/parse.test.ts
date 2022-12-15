@@ -386,7 +386,7 @@ describe('--expandGeneratorNodes', () => {
 // 1. Check each entrypoint of a subautomaton.
 // 2. It has exactly one exclusive path.
 // 3. It has no assignements.
-describe.skip('--inlineReachability', () => {
+describe('--inlineReachability', () => {
   const run = createRun(
     {
       extension: Extension.rg,
