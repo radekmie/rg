@@ -15,6 +15,7 @@ program
     '--expandGeneratorNodes',
     'expand generator nodes (.hrg and .rg only)',
   )
+  .option('--inlineReachability', 'inline reachability when possible')
   .option(
     '--joinForkSuffixes',
     'join paths with identical labels leading to the same node',
@@ -65,6 +66,7 @@ function addCommand(
           addExplicitCasts: !!options.addExplicitCasts,
           compactSkipEdges: !!options.compactSkipEdges,
           expandGeneratorNodes: !!options.expandGeneratorNodes,
+          inlineReachability: !!options.inlineReachability,
           joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,
           normalizeTypes: !!options.normalizeTypes,
