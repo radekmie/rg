@@ -390,7 +390,7 @@ describe('--inlineReachability', () => {
   const run = createRun(
     {
       extension: Extension.rg,
-      flags: noFlagsEnabled,
+      flags: { ...noFlagsEnabled, inlineReachability: true },
     },
     ['begin, end: ;'],
   );
