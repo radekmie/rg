@@ -396,18 +396,31 @@ describe('--inlineReachability', () => {
   );
 
   test('basic', () => {
-    expect(run(['a, b: ? x -> y;', 'x, y: 1 == 1;'])).toMatchInlineSnapshot(
-      '"a, b: 1 == 1;"',
-    );
-    expect(
-      run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: 2 == 2;']),
-    ).toMatchInlineSnapshot('"a, temp: 1 == 1; temp, b: 2 == 2;"');
-    expect(
-      run(['a, b: ? x -> z;', 'x, y: ;', 'y, z: 2 == 2;']),
-    ).toMatchInlineSnapshot('"a, temp: ; temp, b: 2 == 2;"');
-    expect(
-      run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: ;']),
-    ).toMatchInlineSnapshot('"a, temp: 1 == 1; temp, b: ;"');
+    expect(run(['a, b: ? x -> y;', 'x, y: 1 == 1;'])).toMatchInlineSnapshot(`
+      "a, b: 1 == 1;
+      x, y: 1 == 1;"
+    `);
+    expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: 2 == 2;']))
+      .toMatchInlineSnapshot(`
+      "a, __gen_1: 1 == 1;
+      x, y: 1 == 1;
+      y, z: 2 == 2;
+      __gen_1, b: 2 == 2;"
+    `);
+    expect(run(['a, b: ? x -> z;', 'x, y: ;', 'y, z: 2 == 2;']))
+      .toMatchInlineSnapshot(`
+      "a, __gen_1: ;
+      x, y: ;
+      y, z: 2 == 2;
+      __gen_1, b: 2 == 2;"
+    `);
+    expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: ;']))
+      .toMatchInlineSnapshot(`
+      "a, __gen_1: 1 == 1;
+      x, y: 1 == 1;
+      y, z: ;
+      __gen_1, b: ;"
+    `);
   });
 
   test('exclusive comparision', () => {
