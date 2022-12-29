@@ -39,7 +39,7 @@ export function findThePath(
 
 export function freshVar() {
   // TODO
-  return ast.EdgeName({ parts: [ast.Literal({ identifier: 'foobar' })] });
+  return ast.EdgeName({ parts: [ast.Literal({ identifier: '__gen_1' })] });
 }
 
 export function substitutePath(
