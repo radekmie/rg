@@ -75,7 +75,7 @@ export function inlineReachability({ edges }: ast.GameDeclaration) {
   for (const e of edges) {
     if (e.label.kind === 'Reachability') {
       console.log('hello reachability');
-      const path = findThePath(edges, e.lhs, e.rhs);
+      const path = findThePath(edges, e.label.lhs, e.label.rhs);
       if (typeof path === 'object') {
         substitutePath(edges, e, path);
       } else {
