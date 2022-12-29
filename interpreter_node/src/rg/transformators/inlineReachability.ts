@@ -78,6 +78,7 @@ export function inlineReachability({ edges }: ast.GameDeclaration) {
       if (typeof path === 'object') {
         substitutePath(edges, e, path);
       } else {
+        // TODO hey, maybe remove the edge then?
         console.log("can't find path, msg:" + path);
       }
     }
