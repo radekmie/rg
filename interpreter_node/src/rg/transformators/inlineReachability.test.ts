@@ -3,6 +3,10 @@ import * as ast from '../ast';
 
 import * as t from './inlineReachability';
 
+function pretty(object: unknown) {
+  return utils.pretty(object, { colors: false });
+}
+
 function mkEdgeName(n: string): ast.EdgeName {
   return ast.EdgeName({ parts: [ast.Literal({ identifier: n })] });
 }
@@ -41,17 +45,9 @@ describe('inlineReachability', () => {
     let nodes = ['x', 'y', 'z'].map(mkEdgeName);
     let edges = mkEdges(nodes);
 
-    expect(t.findThePath(edges, nodes[0], nodes.reverse()[0]))
-      .toMatchInlineSnapshot(`
-      Array [
-        Object {
-          "kind": "Skip",
-        },
-        Object {
-          "kind": "Skip",
-        },
-      ]
-    `);
+    expect(
+      pretty(t.findThePath(edges, nodes[0], nodes.reverse()[0])),
+    ).toMatchInlineSnapshot(`"[ { kind: 'Skip' }, { kind: 'Skip' } ]"`);
   });
 
   test('findThePath should reject multiple paths', () => {
@@ -70,65 +66,37 @@ describe('inlineReachability', () => {
 
     t.substitutePath(edges, edges[0], [mkLabel(1)]);
 
-    expect(edges).toMatchInlineSnapshot(`
-      Array [
-        Object {
-          "kind": "EdgeDeclaration",
-          "label": Object {
-            "kind": "Assignment",
-            "lhs": Object {
-              "identifier": "x1",
-              "kind": "Reference",
-            },
-            "rhs": Object {
-              "identifier": "y",
-              "kind": "Reference",
-            },
+    expect(pretty(edges)).toMatchInlineSnapshot(`
+      "[
+        {
+          kind: 'EdgeDeclaration',
+          label: {
+            kind: 'Assignment',
+            lhs: { identifier: 'x1', kind: 'Reference' },
+            rhs: { identifier: 'y', kind: 'Reference' }
           },
-          "lhs": Object {
-            "kind": "EdgeName",
-            "parts": Array [
-              Object {
-                "identifier": "x",
-                "kind": "Literal",
-              },
-            ],
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'x', kind: 'Literal' } ]
           },
-          "rhs": Object {
-            "kind": "EdgeName",
-            "parts": Array [
-              Object {
-                "identifier": "y",
-                "kind": "Literal",
-              },
-            ],
-          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
+          }
         },
-        Object {
-          "kind": "EdgeDeclaration",
-          "label": Object {
-            "kind": "Skip",
+        {
+          kind: 'EdgeDeclaration',
+          label: { kind: 'Skip' },
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
           },
-          "lhs": Object {
-            "kind": "EdgeName",
-            "parts": Array [
-              Object {
-                "identifier": "y",
-                "kind": "Literal",
-              },
-            ],
-          },
-          "rhs": Object {
-            "kind": "EdgeName",
-            "parts": Array [
-              Object {
-                "identifier": "z",
-                "kind": "Literal",
-              },
-            ],
-          },
-        },
-      ]
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'z', kind: 'Literal' } ]
+          }
+        }
+      ]"
     `);
   });
 
@@ -138,97 +106,53 @@ describe('inlineReachability', () => {
 
     t.substitutePath(edges, edges[0], [1, 2].map(mkLabel));
 
-    expect(edges).toMatchInlineSnapshot(`
-      Array [
-        Object {
-          "kind": "EdgeDeclaration",
-          "label": Object {
-            "kind": "Assignment",
-            "lhs": Object {
-              "identifier": "x1",
-              "kind": "Reference",
-            },
-            "rhs": Object {
-              "identifier": "y",
-              "kind": "Reference",
-            },
+    expect(pretty(edges)).toMatchInlineSnapshot(`
+      "[
+        {
+          kind: 'EdgeDeclaration',
+          label: {
+            kind: 'Assignment',
+            lhs: { identifier: 'x1', kind: 'Reference' },
+            rhs: { identifier: 'y', kind: 'Reference' }
           },
-          "lhs": Object {
-            "kind": "EdgeName",
-            "parts": Array [
-              Object {
-                "identifier": "x",
-                "kind": "Literal",
-              },
-            ],
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'x', kind: 'Literal' } ]
           },
-          "rhs": Object {
-            "kind": "EdgeName",
-            "parts": Array [
-              Object {
-                "identifier": "__gen_1",
-                "kind": "Literal",
-              },
-            ],
-          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: '__gen_1', kind: 'Literal' } ]
+          }
         },
-        Object {
-          "kind": "EdgeDeclaration",
-          "label": Object {
-            "kind": "Skip",
+        {
+          kind: 'EdgeDeclaration',
+          label: { kind: 'Skip' },
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
           },
-          "lhs": Object {
-            "kind": "EdgeName",
-            "parts": Array [
-              Object {
-                "identifier": "y",
-                "kind": "Literal",
-              },
-            ],
-          },
-          "rhs": Object {
-            "kind": "EdgeName",
-            "parts": Array [
-              Object {
-                "identifier": "z",
-                "kind": "Literal",
-              },
-            ],
-          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'z', kind: 'Literal' } ]
+          }
         },
-        Object {
-          "kind": "EdgeDeclaration",
-          "label": Object {
-            "kind": "Assignment",
-            "lhs": Object {
-              "identifier": "x2",
-              "kind": "Reference",
-            },
-            "rhs": Object {
-              "identifier": "y",
-              "kind": "Reference",
-            },
+        {
+          kind: 'EdgeDeclaration',
+          label: {
+            kind: 'Assignment',
+            lhs: { identifier: 'x2', kind: 'Reference' },
+            rhs: { identifier: 'y', kind: 'Reference' }
           },
-          "lhs": Object {
-            "kind": "EdgeName",
-            "parts": Array [
-              Object {
-                "identifier": "__gen_1",
-                "kind": "Literal",
-              },
-            ],
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: '__gen_1', kind: 'Literal' } ]
           },
-          "rhs": Object {
-            "kind": "EdgeName",
-            "parts": Array [
-              Object {
-                "identifier": "y",
-                "kind": "Literal",
-              },
-            ],
-          },
-        },
-      ]
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
+          }
+        }
+      ]"
     `);
   });
 });
