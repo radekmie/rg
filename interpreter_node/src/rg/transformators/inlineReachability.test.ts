@@ -27,9 +27,12 @@ function mkEdge(
   return edge(mkEdgeName(lhs), mkEdgeName(rhs), label);
 }
 
-function mkEdges(chain: ast.EdgeName[]): ast.EdgeDeclaration[] {
+function mkEdges(
+  chain: ast.EdgeName[],
+  labels?: ast.EdgeLabel[],
+): ast.EdgeDeclaration[] {
   return [...Array(chain.length - 1).keys()].map(i =>
-    edge(chain[i], chain[i + 1], ast.Skip({})),
+    edge(chain[i], chain[i + 1], labels ? labels[i] : ast.Skip({})),
   );
 }
 
@@ -41,30 +44,62 @@ function mkLabel(n: number): ast.EdgeLabel {
 }
 
 describe('inlineReachability', () => {
-  test('findThePath should find a simple path in a chain', () => {
+  test('findAcceptablePaths should find a simple path in a chain', () => {
     let nodes = ['x', 'y', 'z'].map(mkEdgeName);
     let edges = mkEdges(nodes);
 
-    expect(
-      pretty(t.findThePath(edges, nodes[0], nodes.reverse()[0])),
-    ).toMatchInlineSnapshot(`"[ { kind: 'Skip' }, { kind: 'Skip' } ]"`);
+    expect(pretty(t.findAcceptablePaths(edges, nodes[0], nodes.reverse()[0])))
+      .toMatchInlineSnapshot(`
+      "[
+        {
+          kind: 'EdgeDeclaration',
+          label: { kind: 'Skip' },
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'x', kind: 'Literal' } ]
+          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
+          }
+        },
+        {
+          kind: 'EdgeDeclaration',
+          label: { kind: 'Skip' },
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
+          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'z', kind: 'Literal' } ]
+          }
+        }
+      ]"
+    `);
   });
 
-  test('findThePath should reject multiple paths', () => {
+  test('findAcceptablePaths should reject multiple paths', () => {
     let nodes1 = ['x', 'y', 'z'].map(mkEdgeName);
     let nodes2 = ['x', 'y1', 'z'].map(mkEdgeName);
     let edges = mkEdges(nodes1).concat(mkEdges(nodes2));
 
     expect(
-      t.findThePath(edges, nodes1[0], nodes1.reverse()[0]),
+      t.findAcceptablePaths(edges, nodes1[0], nodes1.reverse()[0]),
     ).toMatchInlineSnapshot(`"nope"`);
   });
 
-  test('substitutePath should reuse edge when substituting single edge', () => {
+  test.skip('substituteWithPaths should reuse edge when substituting single edge', () => {
     let nodes = ['x', 'y', 'z'].map(mkEdgeName);
     let edges = mkEdges(nodes);
 
-    t.substitutePath(edges, edges[0], [mkLabel(1)]);
+    t.substituteWithPaths(
+      edges,
+      edges[0],
+      mkEdges(['a', 'b'].map(mkEdgeName), [mkLabel(1)]),
+      mkEdgeName('a'),
+      mkEdgeName('b')
+    );
 
     expect(pretty(edges)).toMatchInlineSnapshot(`
       "[
@@ -100,11 +135,15 @@ describe('inlineReachability', () => {
     `);
   });
 
-  test('substitutePath should create one edge when substituting two', () => {
+  test.skip('substituteWithPaths should create one edge when substituting two', () => {
     let nodes = ['x', 'y', 'z'].map(mkEdgeName);
     let edges = mkEdges(nodes);
+    let replacement = mkEdges(
+      ['a', 'b', 'c'].map(mkEdgeName),
+      [1, 2].map(mkLabel),
+    );
 
-    t.substitutePath(edges, edges[0], [1, 2].map(mkLabel));
+    t.substituteWithPaths(edges, edges[0], replacement, mkEdgeName('a'), mkEdgeName('c'));
 
     expect(pretty(edges)).toMatchInlineSnapshot(`
       "[
@@ -146,6 +185,107 @@ describe('inlineReachability', () => {
           lhs: {
             kind: 'EdgeName',
             parts: [ { identifier: '__gen_1', kind: 'Literal' } ]
+          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
+          }
+        }
+      ]"
+    `);
+  });
+
+  test('substituteWithPaths should replace existing edge with new ones', () => {
+    let nodes = ['x', 'y', 'z'].map(mkEdgeName);
+    let edges = mkEdges(nodes);
+    let replacement = mkEdges(
+      ['a', 'b', 'c'].map(mkEdgeName),
+      [1, 2].map(mkLabel),
+    );
+
+    t.substituteWithPaths(edges, edges[0], replacement, mkEdgeName('a'), mkEdgeName('c'));
+
+    expect(pretty(edges)).toMatchInlineSnapshot(`
+      "[
+        {
+          kind: 'EdgeDeclaration',
+          label: { kind: 'Skip' },
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
+          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'z', kind: 'Literal' } ]
+          }
+        },
+        {
+          kind: 'EdgeDeclaration',
+          label: {
+            kind: 'Assignment',
+            lhs: { identifier: 'x1', kind: 'Reference' },
+            rhs: { identifier: 'y', kind: 'Reference' }
+          },
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'x', kind: 'Literal' } ]
+          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: '__gen_1', kind: 'Literal' } ]
+          }
+        },
+        {
+          kind: 'EdgeDeclaration',
+          label: {
+            kind: 'Assignment',
+            lhs: { identifier: 'x2', kind: 'Reference' },
+            rhs: { identifier: 'y', kind: 'Reference' }
+          },
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: '__gen_1', kind: 'Literal' } ]
+          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
+          }
+        }
+      ]"
+    `);
+  });
+
+  test('substituteWithPaths should replace existing edge with new one', () => {
+    let nodes = ['x', 'y', 'z'].map(mkEdgeName);
+    let edges = mkEdges(nodes);
+    let replacement = [mkEdge('a', 'b', mkLabel(1))];
+
+    t.substituteWithPaths(edges, edges[0], replacement, mkEdgeName('a'), mkEdgeName('b'));
+
+    expect(pretty(edges)).toMatchInlineSnapshot(`
+      "[
+        {
+          kind: 'EdgeDeclaration',
+          label: { kind: 'Skip' },
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
+          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'z', kind: 'Literal' } ]
+          }
+        },
+        {
+          kind: 'EdgeDeclaration',
+          label: {
+            kind: 'Assignment',
+            lhs: { identifier: 'x1', kind: 'Reference' },
+            rhs: { identifier: 'y', kind: 'Reference' }
+          },
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'x', kind: 'Literal' } ]
           },
           rhs: {
             kind: 'EdgeName',

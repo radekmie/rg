@@ -397,28 +397,28 @@ describe('--inlineReachability', () => {
 
   test('basic', () => {
     expect(run(['a, b: ? x -> y;', 'x, y: 1 == 1;'])).toMatchInlineSnapshot(`
-      "a, b: 1 == 1;
-      x, y: 1 == 1;"
+      "x, y: 1 == 1;
+      a, b: 1 == 1;"
     `);
     expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: 2 == 2;']))
       .toMatchInlineSnapshot(`
-      "a, __gen_1: 1 == 1;
-      x, y: 1 == 1;
+      "x, y: 1 == 1;
       y, z: 2 == 2;
+      a, __gen_1: 1 == 1;
       __gen_1, b: 2 == 2;"
     `);
     expect(run(['a, b: ? x -> z;', 'x, y: ;', 'y, z: 2 == 2;']))
       .toMatchInlineSnapshot(`
-      "a, __gen_1: ;
-      x, y: ;
+      "x, y: ;
       y, z: 2 == 2;
+      a, __gen_1: ;
       __gen_1, b: 2 == 2;"
     `);
     expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: ;']))
       .toMatchInlineSnapshot(`
-      "a, __gen_1: 1 == 1;
-      x, y: 1 == 1;
+      "x, y: 1 == 1;
       y, z: ;
+      a, __gen_1: 1 == 1;
       __gen_1, b: ;"
     `);
   });
