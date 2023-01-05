@@ -432,9 +432,12 @@ describe('--inlineReachability', () => {
         'b, d: ;',
         'c, d: ;',
       ]),
-    ).toMatchInlineSnapshot(
-      '"x, _b: 1 == 1; x, _c: 1 != 1; _b, y: ; _c, y: ;"',
-    );
+    ).toMatchInlineSnapshot(`
+      "x, _b: 1 == 1;
+      x, _c: 1 != 1;
+      _b, y: ;
+      _c, y: ;"
+    `);
   });
 
   test('exclusive reachability', () => {
@@ -447,9 +450,12 @@ describe('--inlineReachability', () => {
         'c, d: ;',
         'e, f: ;',
       ]),
-    ).toMatchInlineSnapshot(
-      '"x, _b: ? e -> f; x, _c: ! e -> f; _b, y: ; _c, y: ; e, f: ;"',
-    );
+    ).toMatchInlineSnapshot(`
+      "x, _b: ? e -> f;
+      x, _c: ! e -> f;
+      _b, y: ; _c, y: ;
+      e, f: ;"
+    `);
   });
 });
 
