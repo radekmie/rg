@@ -75,11 +75,15 @@ export function substituteWithPaths(
 
   // pairs: [original node (in subgraph), mapped node (replacing reachability edge)]
   let queue: [ast.EdgeName, ast.EdgeName][] = [[pathsStart, originalEdge.lhs]];
+  let visited: ast.EdgeName[] = []
+  // TODO test for paths with overlapping vertices ([visited] should be needed)
 
   while (queue.length > 0) {
     let packed = queue.shift()
     if (typeof packed === 'undefined') { throw new Error("queue was non-empty but didn't have element") }
     let [last, lastFresh] = packed
+    if (visited.some(v => utils.isEqual(v, last))) { continue; }
+    visited.push(last)
     if (utils.isEqual(last, pathsEnd)) { throw new Error("target shouldn't be in queue") }
 
     let branches = paths.filter(e => utils.isEqual(e.lhs, last))
