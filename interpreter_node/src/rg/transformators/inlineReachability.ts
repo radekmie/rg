@@ -52,6 +52,9 @@ export function freshVar() {
   return ast.EdgeName({ parts: [ast.Literal({ identifier: '__gen_1' })] });
 }
 
+/* TODO isn't this unnecessarily complex? Couldn't it simply map nodes fresh variables and copy all edges?
+ * (but existing code could be used for [findAcceptablePaths])
+ */
 // TODO? could reuse the subgraph instead (with extra variable and comparisons)
 /* TODO need some naming convention to differentiate nodes from [edges] and [paths]
  * (original graph vs subgraph)
