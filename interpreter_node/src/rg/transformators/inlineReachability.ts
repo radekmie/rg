@@ -56,6 +56,8 @@ export function freshVar() {
 /* TODO need some naming convention to differentiate nodes from [edges] and [paths]
  * (original graph vs subgraph)
  */
+// Replace [originalEdge] in [edges] with a copy of all edges in [paths] contained in
+// paths that start in [pathsStart] and end in [pathsEnd].
 export function substituteWithPaths(
   edges: ast.EdgeDeclaration[],
   originalEdge: ast.EdgeDeclaration,
@@ -89,7 +91,6 @@ export function substituteWithPaths(
         label: fromSubgraph.label
       })
       edges.push(created)
-      // TODO are you sure this isn't needed? (if not then explain)
       if(!utils.isEqual(fromSubgraph.rhs, pathsEnd))
         queue.push([fromSubgraph.rhs, created.rhs])
     }
