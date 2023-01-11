@@ -1,7 +1,6 @@
 // Domains
 domain Piece = blackpawn | empty | whitepawn
 domain Player = black | white
-domain PlayerOrKeeper = Player | keeper
 domain Score = lose | win
 domain Position = null | V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
 
@@ -52,12 +51,7 @@ board = {
 me : Player
 me = white
 
-player : PlayerOrKeeper
-player = keeper
-
 position : Position
-
-goals : Player -> Score
 
 
 // Automaton

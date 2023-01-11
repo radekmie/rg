@@ -1,7 +1,6 @@
 // Domains
 domain Piece = arrow | blackqueen | empty | whitequeen
 domain Player = black | white
-domain PlayerOrKeeper = Player | keeper
 domain Score = lose | win
 domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
 
@@ -73,12 +72,7 @@ di : DirIndex
 me : Player
 me = white
 
-player : PlayerOrKeeper
-player = keeper
-
 position : Position
-
-goals : Player -> Score
 
 graph queenShift() {
   forall(di)

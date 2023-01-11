@@ -1,11 +1,7 @@
 type Player = {white, black};
-type PlayerOrKeeper = {keeper, white, black};
 type Score = {0, 100};
-type Goals = Player -> Score;
 type Piece = {e, b, w};
-type Bool = {0, 1};
 type Board = Position -> Piece;
-type Visibility = Player -> Bool;
 type PieceOfPlayer = Player -> Piece;
 type PieceToBool = Piece -> Bool;
 type PlayerToPieceToBool = Player -> PieceToBool;
@@ -73,9 +69,7 @@ const pieceOfPlayer: PieceOfPlayer = {white:w, :b};
 const directionOfPlayer: PlayerToDirection = {white:up, :down};
 const opponent: PlayerToPlayer = {white:black, :white};
 
-var player: PlayerOrKeeper = keeper;
 var turnPlayer: Player = white;
-var goals: Goals = {:0};
 var board: Board = {
     v00:b, v10:b, v20:b, v30:b, v40:b, v50:b, v60:b, v70:b,
     v01:b, v11:b, v21:b, v31:b, v41:b, v51:b, v61:b, v71:b,
@@ -84,7 +78,6 @@ var board: Board = {
     v07:w, v17:w, v27:w, v37:w, v47:w, v57:w, v67:w, v77:w
 };
 var pos: Position = v00;
-var visible: Visibility = {:1};
 
 
 begin, turn: ;

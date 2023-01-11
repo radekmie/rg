@@ -201,13 +201,12 @@ export class TypeChecker {
           }
         }
 
-        const { constants, variables } = this.gameDeclaration;
-        const constant = utils.find(constants, { identifier });
+        const constant = this.resolveConstant(identifier);
         if (constant) {
           return this.scopeExit(this.resolveTypeReference(constant.type));
         }
 
-        const variable = utils.find(variables, { identifier });
+        const variable = this.resolveVariable(identifier);
         if (variable) {
           return this.scopeExit(this.resolveTypeReference(variable.type));
         }
@@ -279,6 +278,14 @@ export class TypeChecker {
     return ast.TypeReference({ identifier });
   }
 
+  resolveConstant(identifier: string) {
+    return utils.find(this.gameDeclaration.constants, { identifier });
+  }
+
+  resolveType(identifier: string) {
+    return utils.find(this.gameDeclaration.types, { identifier });
+  }
+
   resolveTypeDeclaration(type: ast.Type) {
     return this.gameDeclaration.types.find(
       typeDeclaration =>
@@ -301,6 +308,10 @@ export class TypeChecker {
     }
 
     return this.scopeExit(type, iterations);
+  }
+
+  resolveVariable(identifier: string) {
+    return utils.find(this.gameDeclaration.variables, { identifier });
   }
 
   private scopeEntry(scope: Scope) {

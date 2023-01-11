@@ -1,24 +1,17 @@
 type Player = {X,O};
-type PlayerOrKeeper = {keeper,X,O};
 type Score = {0,50,100};
-type Goals = Player -> Score;
 type Coord = {0,1,2};
 type Piece = {e,X,O};
 type ColumnOfBoard = Coord -> Piece;
 type Board = Coord -> ColumnOfBoard;
 type PlayerToPlayer = Player -> Player;
-type Bool = {0,1};
-type Visibility = Player -> Bool;
 
 const opponent: PlayerToPlayer = {X:O, :X};
 
-var player: PlayerOrKeeper = keeper;
 var playerTurn: Player = X;
-var goals: Goals = {:50};
 var posX: Coord = 0;
 var posY: Coord = 0;
 var board: Board = {:{:e}};
-var visibility: Visibility = {:1};
 
 const otherInLine1: Coord -> Coord = {0:1, :0};
 const otherInLine2: Coord -> Coord = {:2, 2:1};

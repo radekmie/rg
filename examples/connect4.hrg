@@ -22,12 +22,7 @@ left(_) = null
 board : Position -> Piece
 board = { V(X, Y) = empty where X in 1..7, Y in 1..6 }
 
-player : Player
-player = keeper
-
 position : Position
-
-score : Player -> Score
 
 graph win(piece: Piece) {
   branch {
@@ -93,15 +88,15 @@ graph turn(me: Player, op: Player, piece: Piece) {
   board[position] = piece
   player = keeper
   when reachable(win()) {
-    score[me] = win
-    score[op] = lose
+    goals[me] = win
+    goals[op] = lose
     end()
   }
 }
 
 graph rules() {
-  score[red] = draw
-  score[yellow] = draw
+  goals[red] = draw
+  goals[yellow] = draw
   loop {
     turn(red, yellow, red)
     turn(yellow, red, yellow)

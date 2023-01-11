@@ -75,6 +75,10 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
   const cstRg = rg.cst.parse(sourceRg).cstNode;
   const astRg = rg.ast.visit(cstRg);
 
+  // Some transformations are required before we do anything else.
+  rg.transformators.addBuiltins(astRg);
+
+  // Other transformations are run in a fixpoint loop.
   utils.runTransformators(
     astRg,
     [rg.validators.reachables, rg.validators.typecheck],
