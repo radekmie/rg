@@ -1,7 +1,10 @@
-import { parse } from '../src/parse';
-import { Extension, Settings, noFlagsEnabled } from '../src/types';
+import { parse } from './parse';
+import { Extension, Settings, noFlagsEnabled } from './types';
 
 function createRun(settings: Settings, definitions: string[] = []) {
+  // TODO: This is a builtin added to all games.
+  definitions = ['type Bool = { 0, 1 };', ...definitions];
+
   return (source: string[]) => {
     try {
       return definitions
@@ -532,12 +535,10 @@ describe('--skipSelfAssignments', () => {
 describe('--joinForkSuffixes', () => {
   // TODO test: don't join nodes referenced in reachability
   // TODO test: don't join nodes with different bindings
-  const run = createRun(
-    {
-      extension: Extension.rg,
-      flags: { ...noFlagsEnabled, joinForkSuffixes: true },
-    }
-  );
+  const run = createRun({
+    extension: Extension.rg,
+    flags: { ...noFlagsEnabled, joinForkSuffixes: true },
+  });
 
   test('fork and join: small', () => {
     expect(
@@ -776,7 +777,7 @@ describe('--joinForkSuffixes', () => {
         '2a, 3: 4==4;',
         '1, 1b: 2==2;',
         '1b, 2b: 3==3;',
-        '2b, 3: 4==4;'
+        '2b, 3: 4==4;',
       ]),
     ).toMatchInlineSnapshot(`
       "begin, end: ;
@@ -799,8 +800,8 @@ describe('--joinForkSuffixes', () => {
         '2a, 3: 4==4;',
         '1, 1b: 2==2;',
         '1b, 2b: 3==3;',
-        '2b, 3: 4==4;'
-    ]),
+        '2b, 3: 4==4;',
+      ]),
     ).toMatchInlineSnapshot(`
       "begin, end: ;
       x, y: ? 1 -> 2a;
