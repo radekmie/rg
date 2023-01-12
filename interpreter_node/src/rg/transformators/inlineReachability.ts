@@ -52,15 +52,12 @@ export function freshVar() {
   return ast.EdgeName({ parts: [ast.Literal({ identifier: '__gen_1' })] });
 }
 
-/* TODO isn't this unnecessarily complex? Couldn't it simply map nodes fresh variables and copy all edges?
- * (but existing code could be used for [findAcceptablePaths])
- */
 // TODO? could reuse the subgraph instead (with extra variable and comparisons)
 /* TODO need some naming convention to differentiate nodes from [edges] and [paths]
  * (original graph vs subgraph)
  */
-// Replace [originalEdge] in [edges] with a copy of all edges in [paths] contained in
-// paths that start in [pathsStart] and end in [pathsEnd].
+// Replace [originalEdge] in [edges] with a copy of all edges in [paths] while mapping
+// [pathsStart] to [originalEdge.lhs] and [pathsEnd] to [originalEdge.rhs]
 export function substituteWithPaths(
   edges: ast.EdgeDeclaration[],
   originalEdge: ast.EdgeDeclaration,
@@ -76,31 +73,32 @@ export function substituteWithPaths(
   // TODO would replacing the original edge with skip be better? (paths would start from some new node)
   edges.splice(edges.indexOf(originalEdge), 1);
 
-  // pairs: [original node (in subgraph), mapped node (replacing reachability edge)]
-  let queue: [ast.EdgeName, ast.EdgeName][] = [[pathsStart, originalEdge.lhs]];
-  let visited: ast.EdgeName[] = []
-  // TODO test for paths with overlapping vertices ([visited] should be needed)
-
-  while (queue.length > 0) {
-    let packed = queue.shift()
-    if (typeof packed === 'undefined') { throw new Error("queue was non-empty but didn't have element") }
-    let [last, lastFresh] = packed
-    if (visited.some(v => utils.isEqual(v, last))) { continue; }
-    visited.push(last)
-    if (utils.isEqual(last, pathsEnd)) { throw new Error("target shouldn't be in queue") }
-
-    let branches = paths.filter(e => utils.isEqual(e.lhs, last))
-    for (const fromSubgraph of branches) {
-      const created = ast.EdgeDeclaration({
-        lhs: lastFresh,
-        // TODO could pass [fromSubgraph.rhs] to [freshVar] for more descriptive name
-        rhs: utils.isEqual(fromSubgraph.rhs, pathsEnd) ? originalEdge.rhs : freshVar(), 
-        label: fromSubgraph.label
-      })
-      edges.push(created)
-      if(!utils.isEqual(fromSubgraph.rhs, pathsEnd))
-        queue.push([fromSubgraph.rhs, created.rhs])
+  // TODO? wanted this to be a map but can't find how to create Map<object, ...> that works
+  const mapping: [ast.EdgeName, ast.EdgeName][] = [[pathsStart, originalEdge.lhs], [pathsEnd, originalEdge.rhs]]
+  function getMapping(inSubgraph: ast.EdgeName): ast.EdgeName | undefined {
+    return mapping.find(x => utils.isEqual(x[0], inSubgraph))?.at(1)
+  }
+  // if the key is already present, function asserts that the present mapping is equal to [newName]
+  function setMapping(inSubgraph: ast.EdgeName, newName: ast.EdgeName) {
+    const place = mapping.findIndex(x => utils.isEqual(x[0], inSubgraph))
+    if (place < 0) {
+      mapping.push([inSubgraph, newName])
+    } else {
+      if (!utils.isEqual(mapping[place][1], newName)) {
+        throw new Error("help me")
+      }
     }
+  }
+
+  for (const e of paths) {
+    const newEdge = ast.EdgeDeclaration({
+      lhs: getMapping(e.lhs) || freshVar(),
+      rhs: getMapping(e.rhs) || freshVar(),
+      label: e.label
+    })
+    setMapping(e.lhs, newEdge.lhs)
+    setMapping(e.rhs, newEdge.rhs)
+    edges.push(newEdge)
   }
 }
 
