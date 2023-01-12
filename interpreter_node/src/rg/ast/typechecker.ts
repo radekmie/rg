@@ -91,6 +91,26 @@ export class TypeChecker {
           });
       }
 
+      if (this.gameDeclaration.constants.length) {
+        lines.push('  Constant definitions:');
+        this.gameDeclaration.constants
+          .slice()
+          .sort((a, b) => a.identifier.localeCompare(b.identifier))
+          .forEach(({ identifier, type }) => {
+            lines.push(`    ${identifier}: ${ast.serializeType(type)}`);
+          });
+      }
+
+      if (this.gameDeclaration.variables.length) {
+        lines.push('  Variables definitions:');
+        this.gameDeclaration.variables
+          .slice()
+          .sort((a, b) => a.identifier.localeCompare(b.identifier))
+          .forEach(({ identifier, type }) => {
+            lines.push(`    ${identifier}: ${ast.serializeType(type)}`);
+          });
+      }
+
       this.scopes.forEach((scope, index) => {
         const prefix = ''.padEnd(index * 2);
         Object.entries(scope).forEach(([key, value]) => {
