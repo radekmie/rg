@@ -19,16 +19,18 @@ export function findAcceptablePaths(
 ): ast.EdgeDeclaration[] | string {
   let x: ast.EdgeName = start;
   const visited: ast.EdgeName[] = [];
+  const thisPath: ast.EdgeName[] = [];
   const paths: ast.EdgeDeclaration[] = [];
   // TODO when is '===' instead of 'isEqual' enough?
   while (!utils.isEqual(x, target)) {
     // no loops because they increase the number of possible paths
-    if (visited.some(y => utils.isEqual(y, x))) {
+    if (thisPath.some(y => utils.isEqual(y, x))) {
       return 'nope';
     }
 
     const reachable = edges.filter(e => utils.isEqual(e.lhs, x));
 
+    // TODO allow more cases (4)
     if (reachable.length != 1) {
       return 'nope';
     }
