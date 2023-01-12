@@ -1,13 +1,21 @@
 import * as ast from '../ast';
 
 const reservedSymbols = [
+  '0',
+  '1',
+  'Bool',
+  'Goals',
   'Player',
+  'PlayerOrKeeper',
   'Score',
+  'Visibility',
   'begin',
   'end',
+  'goals',
   'keeper',
   'player',
   'score',
+  'visible',
 ];
 
 export function mangleSymbols(gameDeclaration: ast.GameDeclaration) {
@@ -28,7 +36,12 @@ export function mangleSymbols(gameDeclaration: ast.GameDeclaration) {
   }
 
   function symbol(identifier: string) {
-    return (symbolsMap[identifier] ??= `${(++symbolsIndex).toString(36)}`);
+    if (!(identifier in symbolsMap)) {
+      const next = '_' + (++symbolsIndex).toString(36);
+      symbolsMap[identifier] = symbolsMap[next] = next;
+    }
+
+    return symbolsMap[identifier];
   }
 
   const mangleSymbolsInEdgeLabel = memo((edgeLabel: ast.EdgeLabel) => {
