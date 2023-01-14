@@ -93,10 +93,19 @@ export function findAcceptablePaths(
   return result;
 }
 
-export function freshVar(identifier = '') {
-  // TODO ensure it's unique
+var freshVarId = 0
+
+/* TODO check whether nodes don't already contain [__gen_] prefix
+ * Really the best option would be to somehow tie this state with the game description.
+ * E.g.
+ * > let v1 = gameDeclaration.freshVar("foo")
+ * > let v2 = gameDeclaration.freshVar("bar")
+ * That would also require other kinds of checks (e.g. when modyfing edges)
+ */
+export function freshVar(identifier: string = '') {
+  freshVarId += 1
   return ast.EdgeName({
-    parts: [ast.Literal({ identifier: '__gen_1_' + identifier })],
+    parts: [ast.Literal({ identifier: `__gen_${freshVarId}_` + identifier })]
   });
 }
 
