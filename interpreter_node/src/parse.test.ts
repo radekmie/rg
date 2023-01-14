@@ -433,10 +433,14 @@ describe('--inlineReachability', () => {
         'c, d: ;',
       ]),
     ).toMatchInlineSnapshot(`
-      "x, _b: 1 == 1;
-      x, _c: 1 != 1;
-      _b, y: ;
-      _c, y: ;"
+      "a, b: 1 == 1;
+      a, c: 1 != 1;
+      b, d: ;
+      c, d: ;
+      x, __gen_1_b: 1 == 1;
+      x, __gen_1_c: 1 != 1;
+      __gen_1_c, y: ;
+      __gen_1_b, y: ;"
     `);
   });
 

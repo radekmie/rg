@@ -4,8 +4,9 @@ import { serializeEdgeName } from '../ast/serializer';
 
 function areObviouslyExclusive(a: ast.EdgeLabel, b: ast.EdgeLabel): boolean {
   if (a.kind === 'Comparison' && b.kind === 'Comparison') {
-    // TODO
-    return false;
+    const argsMatch = utils.isEqual(a.lhs, b.lhs) && utils.isEqual(a.rhs, b.rhs)
+    const argsMatchCrossed = utils.isEqual(a.lhs, b.rhs) && utils.isEqual(a.rhs, b.lhs)
+    return a.negated !== b.negated && (argsMatch || argsMatchCrossed)
   }
 
   if (a.kind === 'Reachability' && b.kind === 'Reachability') {
