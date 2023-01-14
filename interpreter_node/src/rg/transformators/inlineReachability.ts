@@ -2,8 +2,7 @@ import * as utils from '../../utils';
 import * as ast from '../ast';
 
 // TODO could return information if [target] can't be reached at all (limited analysis)
-/* TODO update implementation to specification:
- * Return a subgraph of [edges] that:
+/* Return a subgraph of [edges] that:
  * 1. contains [start] and [target]
  * 2. for any vertex except [target] contains all outgoing nodes
  * 3. contains no edges from [target]
@@ -17,36 +16,49 @@ export function findAcceptablePaths(
   start: ast.EdgeName,
   target: ast.EdgeName,
 ): ast.EdgeDeclaration[] | string {
-  let x: ast.EdgeName = start;
-  const visited: ast.EdgeName[] = [];
-  const thisPath: ast.EdgeName[] = [];
-  const paths: ast.EdgeDeclaration[] = [];
-  // TODO when is '===' instead of 'isEqual' enough?
-  while (!utils.isEqual(x, target)) {
-    // no loops because they increase the number of possible paths
-    if (thisPath.some(y => utils.isEqual(y, x))) {
-      return 'nope';
+  const toExplore: ast.EdgeName[] = [start];
+  const wasQueued: ast.EdgeName[] = [start];
+  const currentPath: ast.EdgeName[] = [];
+  const result: ast.EdgeDeclaration[] = [];
+  while (toExplore.length > 0) {
+    const current = toExplore[toExplore.length - 1]
+    if (utils.isEqual(current, currentPath[currentPath.length - 1])) {
+      toExplore.pop()
+      currentPath.pop()
+      continue
     }
+    currentPath.push(current)
 
-    const reachable = edges.filter(e => utils.isEqual(e.lhs, x));
+    const reachable = edges.filter(e => utils.isEqual(e.lhs, current))
 
     // TODO allow more cases (4)
-    if (reachable.length != 1) {
-      return 'nope';
+    if (reachable.length > 1) {
+      return 'unimplemented'
     }
 
-    const edge = reachable[0];
+    for(const edge of reachable) {
+      const next = edge.rhs
 
-    if (edge.label.kind === 'Assignment') {
-      return 'nope';
+      if (edge.label.kind === 'Assignment') {
+        return 'found assignment'
+      }
+
+      if (currentPath.some(ancestor => utils.isEqual(ancestor, next)))
+        return 'found cycle'
+
+      result.push(edge)
+
+      if (!wasQueued.some(y => utils.isEqual(y, next))) {
+        toExplore.push(next)
+        wasQueued.push(next)
+      }
     }
-
-    paths.push(edge);
-    visited.push(x);
-    x = edge.rhs;
   }
 
-  return paths;
+  if (!wasQueued.some(x => utils.isEqual(x, target)))
+    return "couldn't find path to target"
+
+  return result;
 }
 
 export function freshVar() {
