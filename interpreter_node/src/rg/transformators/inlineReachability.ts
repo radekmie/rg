@@ -1,5 +1,6 @@
 import * as utils from '../../utils';
 import * as ast from '../ast';
+import { serializeEdgeName } from '../ast/serializer';
 
 function areObviouslyExclusive(a: ast.EdgeLabel, b: ast.EdgeLabel): boolean {
   if (a.kind == 'Comparison' && b.kind == 'Comparison') {
@@ -75,9 +76,9 @@ export function findAcceptablePaths(
   return result;
 }
 
-export function freshVar() {
-  // TODO
-  return ast.EdgeName({ parts: [ast.Literal({ identifier: '__gen_1' })] });
+export function freshVar(identifier: string = "") {
+  // TODO ensure it's unique
+  return ast.EdgeName({ parts: [ast.Literal({ identifier: '__gen_1_' + identifier })] });
 }
 
 // TODO? could reuse the subgraph instead (with extra variable and comparisons)
@@ -120,8 +121,8 @@ export function substituteWithPaths(
 
   for (const e of paths) {
     const newEdge = ast.EdgeDeclaration({
-      lhs: getMapping(e.lhs) || freshVar(),
-      rhs: getMapping(e.rhs) || freshVar(),
+      lhs: getMapping(e.lhs) || freshVar(serializeEdgeName(e.lhs)),
+      rhs: getMapping(e.rhs) || freshVar(serializeEdgeName(e.rhs)),
       label: e.label
     })
     setMapping(e.lhs, newEdge.lhs)

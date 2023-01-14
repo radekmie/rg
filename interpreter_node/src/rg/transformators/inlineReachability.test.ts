@@ -232,7 +232,7 @@ describe('inlineReachability', () => {
           },
           rhs: {
             kind: 'EdgeName',
-            parts: [ { identifier: '__gen_1', kind: 'Literal' } ]
+            parts: [ { identifier: '__gen_1_b', kind: 'Literal' } ]
           }
         },
         {
@@ -244,7 +244,7 @@ describe('inlineReachability', () => {
           },
           lhs: {
             kind: 'EdgeName',
-            parts: [ { identifier: '__gen_1', kind: 'Literal' } ]
+            parts: [ { identifier: '__gen_1_b', kind: 'Literal' } ]
           },
           rhs: {
             kind: 'EdgeName',

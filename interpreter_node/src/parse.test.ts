@@ -404,22 +404,22 @@ describe('--inlineReachability', () => {
       .toMatchInlineSnapshot(`
       "x, y: 1 == 1;
       y, z: 2 == 2;
-      a, __gen_1: 1 == 1;
-      __gen_1, b: 2 == 2;"
+      a, __gen_1_y: 1 == 1;
+      __gen_1_y, b: 2 == 2;"
     `);
     expect(run(['a, b: ? x -> z;', 'x, y: ;', 'y, z: 2 == 2;']))
       .toMatchInlineSnapshot(`
       "x, y: ;
       y, z: 2 == 2;
-      a, __gen_1: ;
-      __gen_1, b: 2 == 2;"
+      a, __gen_1_y: ;
+      __gen_1_y, b: 2 == 2;"
     `);
     expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: ;']))
       .toMatchInlineSnapshot(`
       "x, y: 1 == 1;
       y, z: ;
-      a, __gen_1: 1 == 1;
-      __gen_1, b: ;"
+      a, __gen_1_y: 1 == 1;
+      __gen_1_y, b: ;"
     `);
   });
 
@@ -451,10 +451,15 @@ describe('--inlineReachability', () => {
         'e, f: ;',
       ]),
     ).toMatchInlineSnapshot(`
-      "x, _b: ? e -> f;
-      x, _c: ! e -> f;
-      _b, y: ; _c, y: ;
-      e, f: ;"
+      "a, c: ! e -> f;
+      b, d: ;
+      c, d: ;
+      e, f: ;
+      x, __gen_1_c: ! e -> f;
+      __gen_1_c, y: ;
+      __gen_1_b, y: ;
+      x, __gen_1_b: ;
+      a, b: ;"
     `);
   });
 });
