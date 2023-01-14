@@ -32,6 +32,9 @@ function areObviouslyExclusive(a: ast.EdgeLabel, b: ast.EdgeLabel): boolean {
  *
  * If such subgraph can't be found, return error.
  */
+/* TODO this also returns edges following [target]. If it's wrong then it shall have a test.
+ * - they do need to be checked (for cycle [target -> target])
+ */
 export function findAcceptablePaths(
   edges: ast.EdgeDeclaration[],
   start: ast.EdgeName,
@@ -97,7 +100,9 @@ export function freshVar(identifier = '') {
   });
 }
 
-// TODO? could reuse the subgraph instead (with extra variable and comparisons)
+/* TODO? could reuse the subgraph instead (with extra variable and comparisons)
+ * Something like [--reuseFunctions]
+ */
 /* TODO need some naming convention to differentiate nodes from [edges] and [paths]
  * (original graph vs subgraph)
  */
@@ -156,7 +161,7 @@ export function inlineReachability({ edges }: ast.GameDeclaration) {
       if (typeof path === 'object') {
         substituteWithPaths(edges, e, path, e.label.lhs, e.label.rhs);
       } else {
-        // TODO hey, maybe remove the edge then?
+        // TODO? maybe remove the edge then?
         console.log("can't find path, msg:" + path);
       }
     }
