@@ -86,7 +86,7 @@ describe('inlineReachability', () => {
 
     expect(
       t.findAcceptablePaths(edges, nodes1[0], nodes1.reverse()[0]),
-    ).toMatchInlineSnapshot(`"unimplemented"`);
+    ).toMatchInlineSnapshot(`"can't ensure single path at runtime"`);
   });
 
   test.skip('substituteWithPaths should reuse edge when substituting single edge', () => {

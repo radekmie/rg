@@ -1,6 +1,19 @@
 import * as utils from '../../utils';
 import * as ast from '../ast';
 
+function areObviouslyExclusive(a: ast.EdgeLabel, b: ast.EdgeLabel): boolean {
+  if (a.kind == 'Comparison' && b.kind == 'Comparison') {
+    // TODO
+    return false
+  }
+
+  if (a.kind == 'Reachability' && b.kind == 'Reachability') {
+    return a.negated !== b.negated && utils.isEqual(a.lhs, b.lhs) && utils.isEqual(a.rhs, b.rhs)
+  }
+
+  return false
+}
+
 // TODO could return information if [target] can't be reached at all (limited analysis)
 /* Return a subgraph of [edges] that:
  * 1. contains [start] and [target]
@@ -31,10 +44,11 @@ export function findAcceptablePaths(
 
     const reachable = edges.filter(e => utils.isEqual(e.lhs, current))
 
-    // TODO allow more cases (4)
-    if (reachable.length > 1) {
+    if (reachable.length > 2)
       return 'unimplemented'
-    }
+
+    if (reachable.length == 2 && !areObviouslyExclusive(reachable[0].label, reachable[1].label))
+      return "can't ensure single path at runtime"
 
     for(const edge of reachable) {
       const next = edge.rhs
