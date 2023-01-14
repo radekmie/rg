@@ -46,7 +46,7 @@ export function findAcceptablePaths(
     const reachable = edges.filter(e => utils.isEqual(e.lhs, current))
 
     if (reachable.length > 2)
-      return 'unimplemented'
+      return "can't ensure single path at runtime"
 
     if (reachable.length == 2 && !areObviouslyExclusive(reachable[0].label, reachable[1].label))
       return "can't ensure single path at runtime"
