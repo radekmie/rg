@@ -423,7 +423,7 @@ describe('--inlineReachability', () => {
     `);
   });
 
-  test('exclusive comparision', () => {
+  test('exclusive comparison', () => {
     expect(
       run([
         'x, y: ? a -> d;',
