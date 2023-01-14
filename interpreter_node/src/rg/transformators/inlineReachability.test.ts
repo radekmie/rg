@@ -1,6 +1,5 @@
 import * as utils from '../../utils';
 import * as ast from '../ast';
-
 import * as t from './inlineReachability';
 
 function pretty(object: unknown) {
@@ -16,7 +15,7 @@ function edge(
   rhs: ast.EdgeName,
   label: ast.EdgeLabel,
 ): ast.EdgeDeclaration {
-  return ast.EdgeDeclaration({ lhs: lhs, rhs: rhs, label: label });
+  return ast.EdgeDeclaration({ lhs, rhs, label });
 }
 
 function mkEdge(
@@ -45,8 +44,8 @@ function mkLabel(n: number): ast.EdgeLabel {
 
 describe('inlineReachability', () => {
   test('findAcceptablePaths should find a simple path in a chain', () => {
-    let nodes = ['x', 'y', 'z'].map(mkEdgeName);
-    let edges = mkEdges(nodes);
+    const nodes = ['x', 'y', 'z'].map(mkEdgeName);
+    const edges = mkEdges(nodes);
 
     expect(pretty(t.findAcceptablePaths(edges, nodes[0], nodes.reverse()[0])))
       .toMatchInlineSnapshot(`
@@ -80,25 +79,25 @@ describe('inlineReachability', () => {
   });
 
   test('findAcceptablePaths should reject multiple paths', () => {
-    let nodes1 = ['x', 'y', 'z'].map(mkEdgeName);
-    let nodes2 = ['x', 'y1', 'z'].map(mkEdgeName);
-    let edges = mkEdges(nodes1).concat(mkEdges(nodes2));
+    const nodes1 = ['x', 'y', 'z'].map(mkEdgeName);
+    const nodes2 = ['x', 'y1', 'z'].map(mkEdgeName);
+    const edges = mkEdges(nodes1).concat(mkEdges(nodes2));
 
     expect(
       t.findAcceptablePaths(edges, nodes1[0], nodes1.reverse()[0]),
-    ).toMatchInlineSnapshot(`"can't ensure single path at runtime"`);
+    ).toMatchInlineSnapshot('"can\'t ensure single path at runtime"');
   });
 
   test.skip('substituteWithPaths should reuse edge when substituting single edge', () => {
-    let nodes = ['x', 'y', 'z'].map(mkEdgeName);
-    let edges = mkEdges(nodes);
+    const nodes = ['x', 'y', 'z'].map(mkEdgeName);
+    const edges = mkEdges(nodes);
 
     t.substituteWithPaths(
       edges,
       edges[0],
       mkEdges(['a', 'b'].map(mkEdgeName), [mkLabel(1)]),
       mkEdgeName('a'),
-      mkEdgeName('b')
+      mkEdgeName('b'),
     );
 
     expect(pretty(edges)).toMatchInlineSnapshot(`
@@ -136,14 +135,20 @@ describe('inlineReachability', () => {
   });
 
   test.skip('substituteWithPaths should create one edge when substituting two', () => {
-    let nodes = ['x', 'y', 'z'].map(mkEdgeName);
-    let edges = mkEdges(nodes);
-    let replacement = mkEdges(
+    const nodes = ['x', 'y', 'z'].map(mkEdgeName);
+    const edges = mkEdges(nodes);
+    const replacement = mkEdges(
       ['a', 'b', 'c'].map(mkEdgeName),
       [1, 2].map(mkLabel),
     );
 
-    t.substituteWithPaths(edges, edges[0], replacement, mkEdgeName('a'), mkEdgeName('c'));
+    t.substituteWithPaths(
+      edges,
+      edges[0],
+      replacement,
+      mkEdgeName('a'),
+      mkEdgeName('c'),
+    );
 
     expect(pretty(edges)).toMatchInlineSnapshot(`
       "[
@@ -196,14 +201,20 @@ describe('inlineReachability', () => {
   });
 
   test('substituteWithPaths should replace existing edge with new ones', () => {
-    let nodes = ['x', 'y', 'z'].map(mkEdgeName);
-    let edges = mkEdges(nodes);
-    let replacement = mkEdges(
+    const nodes = ['x', 'y', 'z'].map(mkEdgeName);
+    const edges = mkEdges(nodes);
+    const replacement = mkEdges(
       ['a', 'b', 'c'].map(mkEdgeName),
       [1, 2].map(mkLabel),
     );
 
-    t.substituteWithPaths(edges, edges[0], replacement, mkEdgeName('a'), mkEdgeName('c'));
+    t.substituteWithPaths(
+      edges,
+      edges[0],
+      replacement,
+      mkEdgeName('a'),
+      mkEdgeName('c'),
+    );
 
     expect(pretty(edges)).toMatchInlineSnapshot(`
       "[
@@ -256,11 +267,17 @@ describe('inlineReachability', () => {
   });
 
   test('substituteWithPaths should replace existing edge with new one', () => {
-    let nodes = ['x', 'y', 'z'].map(mkEdgeName);
-    let edges = mkEdges(nodes);
-    let replacement = [mkEdge('a', 'b', mkLabel(1))];
+    const nodes = ['x', 'y', 'z'].map(mkEdgeName);
+    const edges = mkEdges(nodes);
+    const replacement = [mkEdge('a', 'b', mkLabel(1))];
 
-    t.substituteWithPaths(edges, edges[0], replacement, mkEdgeName('a'), mkEdgeName('b'));
+    t.substituteWithPaths(
+      edges,
+      edges[0],
+      replacement,
+      mkEdgeName('a'),
+      mkEdgeName('b'),
+    );
 
     expect(pretty(edges)).toMatchInlineSnapshot(`
       "[

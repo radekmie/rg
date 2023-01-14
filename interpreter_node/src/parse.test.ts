@@ -556,12 +556,10 @@ describe('--skipSelfAssignments', () => {
 describe('--joinForkSuffixes', () => {
   // TODO test: don't join nodes referenced in reachability
   // TODO test: don't join nodes with different bindings
-  const run = createRun(
-    {
-      extension: Extension.rg,
-      flags: { ...noFlagsEnabled, joinForkSuffixes: true },
-    }
-  );
+  const run = createRun({
+    extension: Extension.rg,
+    flags: { ...noFlagsEnabled, joinForkSuffixes: true },
+  });
 
   test('fork and join: small', () => {
     expect(
@@ -800,7 +798,7 @@ describe('--joinForkSuffixes', () => {
         '2a, 3: 4==4;',
         '1, 1b: 2==2;',
         '1b, 2b: 3==3;',
-        '2b, 3: 4==4;'
+        '2b, 3: 4==4;',
       ]),
     ).toMatchInlineSnapshot(`
       "begin, end: ;
@@ -823,8 +821,8 @@ describe('--joinForkSuffixes', () => {
         '2a, 3: 4==4;',
         '1, 1b: 2==2;',
         '1b, 2b: 3==3;',
-        '2b, 3: 4==4;'
-    ]),
+        '2b, 3: 4==4;',
+      ]),
     ).toMatchInlineSnapshot(`
       "begin, end: ;
       x, y: ? 1 -> 2a;
