@@ -25,6 +25,7 @@ Options:
   --addExplicitCasts      add type casts to all expressions
   --compactSkipEdges      optimize automaton by compacting skip edges
   --expandGeneratorNodes  expand generator nodes (.hrg and .rg only)
+  --inlineReachability    inline reachability when possible
   --joinForkSuffixes      join paths with identical labels leading to the same node
   --mangleSymbols         mangle all user-defined symbols
   --normalizeTypes        normalize all types so Arrow types appear only in type definitions and are at most one level deep
