@@ -2,8 +2,19 @@ import { parse } from './parse';
 import { Extension, Settings, noFlagsEnabled } from './types';
 
 function createRun(settings: Settings, definitions: string[] = []) {
-  // TODO: This is a builtin added to all games.
-  definitions = ['type Bool = { 0, 1 };', ...definitions];
+  // TODO: These are builtins added to all games.
+  definitions = [
+    'type Bool = { 0, 1 };',
+    'type Goals = Player -> Score;',
+    'type Player = { you };',
+    'type PlayerOrKeeper = { you, keeper };',
+    'type Score = { zero };',
+    'type Visibility = Player -> Bool;',
+    'var goals: Goals = { :zero };',
+    'var player: PlayerOrKeeper = keeper;',
+    'var visible: Visibility = { :1 };',
+    ...definitions,
+  ];
 
   return (source: string[]) => {
     try {
@@ -13,6 +24,7 @@ function createRun(settings: Settings, definitions: string[] = []) {
           parse([...definitions, ...source].join('\n'), settings)
             .sourceRgFormatted,
         )
+        .replace(/\n\n+/g, '\n')
         .trim();
     } catch (error) {
       console.log(error);
