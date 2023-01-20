@@ -20,14 +20,17 @@ export function areBindingsUnique(edges: ast.EdgeDeclaration[]) {
   return true;
 }
 
-export function areObviouslyExclusive(a: ast.EdgeLabel, b: ast.EdgeLabel): boolean {
+export function areObviouslyExclusive(
+  a: ast.EdgeLabel,
+  b: ast.EdgeLabel,
+): boolean {
   if (a.kind === 'Comparison' && b.kind === 'Comparison') {
     const argsMatch = function () {
       return utils.isEqual(a.lhs, b.lhs) && utils.isEqual(a.rhs, b.rhs);
-    }
+    };
     const argsMatchCrossed = function () {
       return utils.isEqual(a.lhs, b.rhs) && utils.isEqual(a.rhs, b.lhs);
-    }
+    };
     return a.negated !== b.negated && (argsMatch() || argsMatchCrossed());
   }
 
