@@ -466,6 +466,24 @@ describe('--inlineReachability', () => {
       a, b: ;"
     `);
   });
+
+  test('may copy trailing edges', () => {
+    expect(
+      run([
+        'x, y: ? a -> c;',
+        'a, b: 0 == 0;',
+        'b, c: 1 == 1;',
+        'c, d: 2 == 2;',
+      ]),
+    ).toMatchInlineSnapshot(`
+      "a, b: 0 == 0;
+      b, c: 1 == 1;
+      c, d: 2 == 2;
+      x, __gen_8_b: 0 == 0;
+      __gen_8_b, y: 1 == 1;
+      y, __gen_9_d: 2 == 2;"
+    `);
+  });
 });
 
 describe('--normalizeTypes', () => {

@@ -32,9 +32,6 @@ function areObviouslyExclusive(a: ast.EdgeLabel, b: ast.EdgeLabel): boolean {
  *
  * If such subgraph can't be found, return error.
  */
-/* TODO this also returns edges following [target]. If it's wrong then it shall have a test.
- * - they do need to be checked (for cycle [target -> target])
- */
 export function findAcceptablePaths(
   edges: ast.EdgeDeclaration[],
   start: ast.EdgeName,
