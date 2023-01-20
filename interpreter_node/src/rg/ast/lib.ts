@@ -20,6 +20,26 @@ export function areBindingsUnique(edges: ast.EdgeDeclaration[]) {
   return true;
 }
 
+export function areObviouslyExclusive(a: ast.EdgeLabel, b: ast.EdgeLabel): boolean {
+  if (a.kind === 'Comparison' && b.kind === 'Comparison') {
+    const argsMatch =
+      utils.isEqual(a.lhs, b.lhs) && utils.isEqual(a.rhs, b.rhs);
+    const argsMatchCrossed =
+      utils.isEqual(a.lhs, b.rhs) && utils.isEqual(a.rhs, b.lhs);
+    return a.negated !== b.negated && (argsMatch || argsMatchCrossed);
+  }
+
+  if (a.kind === 'Reachability' && b.kind === 'Reachability') {
+    return (
+      a.negated !== b.negated &&
+      utils.isEqual(a.lhs, b.lhs) &&
+      utils.isEqual(a.rhs, b.rhs)
+    );
+  }
+
+  return false;
+}
+
 export function bindings({ parts }: ast.EdgeName) {
   return parts.filter(function isBind(part): part is ast.Binding {
     return part.kind === 'Binding';
