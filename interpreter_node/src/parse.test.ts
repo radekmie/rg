@@ -423,7 +423,7 @@ describe('--inlineReachability', () => {
     `);
   });
 
-  test('exclusive comparison', () => {
+  test('inlines exclusive comparison', () => {
     expect(
       run([
         'x, y: ? a -> d;',
@@ -444,7 +444,30 @@ describe('--inlineReachability', () => {
     `);
   });
 
-  test('exclusive reachability', () => {
+  test("doesn't inline non-exclusive comparison", () => {
+    expect(
+      run([
+        'type T = {1, 2};',
+        'var v: T = 1;',
+        'x, y: ? a -> d;',
+        'a, b: v == 1;',
+        'a, c: v != 2;',
+        'b, d: ;',
+        'c, d: ;',
+      ]),
+    ).toMatchInlineSnapshot(`
+      "type T = { 1, 2 };
+      var v: T = 1;
+
+      x, y: ? a -> d;
+      a, b: v == 1;
+      a, c: v != 2;
+      b, d: ;
+      c, d: ;"
+    `);
+  });
+
+  test('inlines exclusive reachability', () => {
     expect(
       run([
         'x, y: ? a -> d;',
@@ -464,6 +487,30 @@ describe('--inlineReachability', () => {
       __gen_6_b, y: ;
       x, __gen_6_b: ;
       a, b: ;"
+    `);
+  });
+
+  test("doesn't inline non-exclusive reachability", () => {
+    // technically it is exclusive but that can be seen only after
+    // further analysis
+    expect(
+      run([
+        'x, y: ? a -> d;',
+        'a, b: ? e -> f;',
+        'a, c: ! e -> g;',
+        'b, d: ;',
+        'c, d: ;',
+        'e, f: ;',
+        'e, g: ;',
+      ]),
+    ).toMatchInlineSnapshot(`
+      "x, y: ? a -> d;
+      a, b: ? e -> f;
+      a, c: ! e -> g;
+      b, d: ;
+      c, d: ;
+      e, f: ;
+      e, g: ;"
     `);
   });
 
