@@ -24,14 +24,14 @@ function areObviouslyExclusive(a: ast.EdgeLabel, b: ast.EdgeLabel): boolean {
 
 // TODO could return information if [target] can't be reached at all (limited analysis)
 /**
- * Return a subgraph of [edges] that:
+ * Return a subautomaton of [edges] that:
  * 1. contains [start] and [target]
- * 2. for any vertex except [target] contains all outgoing nodes
+ * 2. for any node except [target] contains all outgoing nodes
  * 3. contains no edges from [target]
  * 4. for any initial environment, at most one path can reach [target] from [start]
  *    - limited analysis, may reject some valid results here
  *
- * If such subgraph can't be found, return error.
+ * If such subautomaton can't be found, return error.
  */
 export function findAcceptablePaths(
   edges: ast.EdgeDeclaration[],
