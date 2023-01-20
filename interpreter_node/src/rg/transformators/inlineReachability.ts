@@ -23,7 +23,8 @@ function areObviouslyExclusive(a: ast.EdgeLabel, b: ast.EdgeLabel): boolean {
 }
 
 // TODO could return information if [target] can't be reached at all (limited analysis)
-/* Return a subgraph of [edges] that:
+/**
+ * Return a subgraph of [edges] that:
  * 1. contains [start] and [target]
  * 2. for any vertex except [target] contains all outgoing nodes
  * 3. contains no edges from [target]
