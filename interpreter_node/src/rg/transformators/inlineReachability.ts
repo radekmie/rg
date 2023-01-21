@@ -117,7 +117,7 @@ export function substituteWithPaths(
     [pathsEnd, originalEdge.rhs],
   ];
   function getMapping(inSubgraph: ast.EdgeName): ast.EdgeName | undefined {
-    return mapping.find(x => utils.isEqual(x[0], inSubgraph))?.at(1);
+    return mapping.find(x => utils.isEqual(x[0], inSubgraph))?.[1];
   }
   // if the key is already present, function asserts that the present mapping is equal to [newName]
   function setMapping(inSubgraph: ast.EdgeName, newName: ast.EdgeName) {
