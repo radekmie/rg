@@ -108,12 +108,13 @@ export function substituteWithPaths(
     return;
   }
 
-  // TODO would replacing the original edge with skip be better? (paths would start from some new node)
-  edges.splice(edges.indexOf(originalEdge), 1);
+  const originalLhs = originalEdge.lhs;
+  originalEdge.label = ast.Skip({});
+  originalEdge.lhs = freshVar('ignoreme');
 
   // TODO? wanted this to be a map but can't find how to create Map<object, ...> that works
   const mapping: [ast.EdgeName, ast.EdgeName][] = [
-    [pathsStart, originalEdge.lhs],
+    [pathsStart, originalLhs],
     [pathsEnd, originalEdge.rhs],
   ];
   function getMapping(inSubgraph: ast.EdgeName): ast.EdgeName | undefined {

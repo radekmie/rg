@@ -223,6 +223,18 @@ describe('inlineReachability', () => {
           label: { kind: 'Skip' },
           lhs: {
             kind: 'EdgeName',
+            parts: [ { identifier: '__gen_1_ignoreme', kind: 'Literal' } ]
+          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
+          }
+        },
+        {
+          kind: 'EdgeDeclaration',
+          label: { kind: 'Skip' },
+          lhs: {
+            kind: 'EdgeName',
             parts: [ { identifier: 'y', kind: 'Literal' } ]
           },
           rhs: {
@@ -243,7 +255,7 @@ describe('inlineReachability', () => {
           },
           rhs: {
             kind: 'EdgeName',
-            parts: [ { identifier: '__gen_1_b', kind: 'Literal' } ]
+            parts: [ { identifier: '__gen_2_b', kind: 'Literal' } ]
           }
         },
         {
@@ -255,7 +267,7 @@ describe('inlineReachability', () => {
           },
           lhs: {
             kind: 'EdgeName',
-            parts: [ { identifier: '__gen_1_b', kind: 'Literal' } ]
+            parts: [ { identifier: '__gen_2_b', kind: 'Literal' } ]
           },
           rhs: {
             kind: 'EdgeName',
@@ -281,6 +293,18 @@ describe('inlineReachability', () => {
 
     expect(pretty(edges)).toMatchInlineSnapshot(`
       "[
+        {
+          kind: 'EdgeDeclaration',
+          label: { kind: 'Skip' },
+          lhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: '__gen_3_ignoreme', kind: 'Literal' } ]
+          },
+          rhs: {
+            kind: 'EdgeName',
+            parts: [ { identifier: 'y', kind: 'Literal' } ]
+          }
+        },
         {
           kind: 'EdgeDeclaration',
           label: { kind: 'Skip' },
