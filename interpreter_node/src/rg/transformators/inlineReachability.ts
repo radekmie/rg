@@ -112,7 +112,6 @@ export function substituteWithPaths(
   originalEdge.label = ast.Skip({});
   originalEdge.lhs = freshVar('ignoreme');
 
-  // TODO? wanted this to be a map but can't find how to create Map<object, ...> that works
   const mapping: [ast.EdgeName, ast.EdgeName][] = [
     [pathsStart, originalLhs],
     [pathsEnd, originalEdge.rhs],
