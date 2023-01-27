@@ -49,32 +49,35 @@ describe('inlineReachability', () => {
 
     expect(pretty(t.findAcceptablePaths(edges, nodes[0], nodes.reverse()[0])))
       .toMatchInlineSnapshot(`
-      "[
-        {
-          kind: 'EdgeDeclaration',
-          label: { kind: 'Skip' },
-          lhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'x', kind: 'Literal' } ]
+      "{
+        ok: true,
+        value: [
+          {
+            kind: 'EdgeDeclaration',
+            label: { kind: 'Skip' },
+            lhs: {
+              kind: 'EdgeName',
+              parts: [ { identifier: 'x', kind: 'Literal' } ]
+            },
+            rhs: {
+              kind: 'EdgeName',
+              parts: [ { identifier: 'y', kind: 'Literal' } ]
+            }
           },
-          rhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'y', kind: 'Literal' } ]
+          {
+            kind: 'EdgeDeclaration',
+            label: { kind: 'Skip' },
+            lhs: {
+              kind: 'EdgeName',
+              parts: [ { identifier: 'y', kind: 'Literal' } ]
+            },
+            rhs: {
+              kind: 'EdgeName',
+              parts: [ { identifier: 'z', kind: 'Literal' } ]
+            }
           }
-        },
-        {
-          kind: 'EdgeDeclaration',
-          label: { kind: 'Skip' },
-          lhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'y', kind: 'Literal' } ]
-          },
-          rhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'z', kind: 'Literal' } ]
-          }
-        }
-      ]"
+        ]
+      }"
     `);
   });
 
@@ -85,7 +88,12 @@ describe('inlineReachability', () => {
 
     expect(
       t.findAcceptablePaths(edges, nodes1[0], nodes1.reverse()[0]),
-    ).toMatchInlineSnapshot('"can\'t ensure single path at runtime"');
+    ).toMatchInlineSnapshot(`
+      Object {
+        "error": "can't ensure single path at runtime",
+        "ok": false,
+      }
+    `);
   });
 
   test.skip('substituteWithPaths should reuse edge when substituting single edge', () => {
