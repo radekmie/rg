@@ -1,9 +1,21 @@
 import * as utils from '../../utils';
+import { Result } from '../../utils';
 import * as ast from '../ast';
+import * as s from '../ast/serializer';
 import * as t from './inlineReachability';
 
-function pretty(object: unknown) {
-  return utils.pretty(object, { colors: false });
+function serializeEdges(edges: ast.EdgeDeclaration[]): string {
+  return edges.map(s.serializeEdge).join('\n');
+}
+
+function serializeResult(
+  maybeEdges: Result<ast.EdgeDeclaration[], string>,
+): string {
+  if (maybeEdges.ok) {
+    return 'success:\n' + serializeEdges(maybeEdges.value);
+  } else {
+    return 'failure:\n' + maybeEdges.error;
+  }
 }
 
 function makeEdgeName(n: string): ast.EdgeName {
@@ -47,37 +59,14 @@ describe('inlineReachability', () => {
     const nodes = ['x', 'y', 'z'].map(makeEdgeName);
     const edges = makeEdges(nodes);
 
-    expect(pretty(t.findAcceptablePaths(edges, nodes[0], nodes.reverse()[0])))
-      .toMatchInlineSnapshot(`
-      "{
-        ok: true,
-        value: [
-          {
-            kind: 'EdgeDeclaration',
-            label: { kind: 'Skip' },
-            lhs: {
-              kind: 'EdgeName',
-              parts: [ { identifier: 'x', kind: 'Literal' } ]
-            },
-            rhs: {
-              kind: 'EdgeName',
-              parts: [ { identifier: 'y', kind: 'Literal' } ]
-            }
-          },
-          {
-            kind: 'EdgeDeclaration',
-            label: { kind: 'Skip' },
-            lhs: {
-              kind: 'EdgeName',
-              parts: [ { identifier: 'y', kind: 'Literal' } ]
-            },
-            rhs: {
-              kind: 'EdgeName',
-              parts: [ { identifier: 'z', kind: 'Literal' } ]
-            }
-          }
-        ]
-      }"
+    expect(
+      serializeResult(
+        t.findAcceptablePaths(edges, nodes[0], nodes.reverse()[0]),
+      ),
+    ).toMatchInlineSnapshot(`
+      "success:
+      x, y: ;
+      y, z: ;"
     `);
   });
 
@@ -87,12 +76,12 @@ describe('inlineReachability', () => {
     const edges = makeEdges(nodes1).concat(makeEdges(nodes2));
 
     expect(
-      t.findAcceptablePaths(edges, nodes1[0], nodes1.reverse()[0]),
+      serializeResult(
+        t.findAcceptablePaths(edges, nodes1[0], nodes1.reverse()[0]),
+      ),
     ).toMatchInlineSnapshot(`
-      Object {
-        "error": "can't ensure single path at runtime",
-        "ok": false,
-      }
+      "failure:
+      can't ensure single path at runtime"
     `);
   });
 
@@ -108,7 +97,7 @@ describe('inlineReachability', () => {
       makeEdgeName('b'),
     );
 
-    expect(pretty(edges)).toMatchInlineSnapshot(`
+    expect(serializeEdges(edges)).toMatchInlineSnapshot(`
       "[
         {
           kind: 'EdgeDeclaration',
@@ -158,7 +147,7 @@ describe('inlineReachability', () => {
       makeEdgeName('c'),
     );
 
-    expect(pretty(edges)).toMatchInlineSnapshot(`
+    expect(serializeEdges(edges)).toMatchInlineSnapshot(`
       "[
         {
           kind: 'EdgeDeclaration',
@@ -224,65 +213,11 @@ describe('inlineReachability', () => {
       makeEdgeName('c'),
     );
 
-    expect(pretty(edges)).toMatchInlineSnapshot(`
-      "[
-        {
-          kind: 'EdgeDeclaration',
-          label: { kind: 'Skip' },
-          lhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: '__gen_1_ignoreme', kind: 'Literal' } ]
-          },
-          rhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'y', kind: 'Literal' } ]
-          }
-        },
-        {
-          kind: 'EdgeDeclaration',
-          label: { kind: 'Skip' },
-          lhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'y', kind: 'Literal' } ]
-          },
-          rhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'z', kind: 'Literal' } ]
-          }
-        },
-        {
-          kind: 'EdgeDeclaration',
-          label: {
-            kind: 'Assignment',
-            lhs: { identifier: 'x1', kind: 'Reference' },
-            rhs: { identifier: 'y', kind: 'Reference' }
-          },
-          lhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'x', kind: 'Literal' } ]
-          },
-          rhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: '__gen_2_b', kind: 'Literal' } ]
-          }
-        },
-        {
-          kind: 'EdgeDeclaration',
-          label: {
-            kind: 'Assignment',
-            lhs: { identifier: 'x2', kind: 'Reference' },
-            rhs: { identifier: 'y', kind: 'Reference' }
-          },
-          lhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: '__gen_2_b', kind: 'Literal' } ]
-          },
-          rhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'y', kind: 'Literal' } ]
-          }
-        }
-      ]"
+    expect(serializeEdges(edges)).toMatchInlineSnapshot(`
+      "__gen_1_ignoreme, y: ;
+      y, z: ;
+      x, __gen_2_b: x1 = y;
+      __gen_2_b, y: x2 = y;"
     `);
   });
 
@@ -299,49 +234,10 @@ describe('inlineReachability', () => {
       makeEdgeName('b'),
     );
 
-    expect(pretty(edges)).toMatchInlineSnapshot(`
-      "[
-        {
-          kind: 'EdgeDeclaration',
-          label: { kind: 'Skip' },
-          lhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: '__gen_3_ignoreme', kind: 'Literal' } ]
-          },
-          rhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'y', kind: 'Literal' } ]
-          }
-        },
-        {
-          kind: 'EdgeDeclaration',
-          label: { kind: 'Skip' },
-          lhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'y', kind: 'Literal' } ]
-          },
-          rhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'z', kind: 'Literal' } ]
-          }
-        },
-        {
-          kind: 'EdgeDeclaration',
-          label: {
-            kind: 'Assignment',
-            lhs: { identifier: 'x1', kind: 'Reference' },
-            rhs: { identifier: 'y', kind: 'Reference' }
-          },
-          lhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'x', kind: 'Literal' } ]
-          },
-          rhs: {
-            kind: 'EdgeName',
-            parts: [ { identifier: 'y', kind: 'Literal' } ]
-          }
-        }
-      ]"
+    expect(serializeEdges(edges)).toMatchInlineSnapshot(`
+      "__gen_3_ignoreme, y: ;
+      y, z: ;
+      x, y: x1 = y;"
     `);
   });
 });
