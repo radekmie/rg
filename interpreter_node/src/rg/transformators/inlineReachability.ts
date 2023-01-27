@@ -122,11 +122,11 @@ export function substituteWithPaths(
   }
   // if the key is already present, function asserts that the present mapping is equal to [newName]
   function setMapping(inSubgraph: ast.EdgeName, newName: ast.EdgeName) {
-    const place = mapping.findIndex(x => utils.isEqual(x[0], inSubgraph));
-    if (place < 0) {
+    const found = mapping.find(x => utils.isEqual(x[0], inSubgraph));
+    if (found === undefined) {
       mapping.push([inSubgraph, newName]);
-    } else if (!utils.isEqual(mapping[place][1], newName)) {
-      throw new Error('help me');
+    } else if (!utils.isEqual(found[1], newName)) {
+      throw new Error('inlineReachability: tried to set a new mapping for a node that was already mapped');
     }
   }
 
