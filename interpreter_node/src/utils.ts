@@ -6,6 +6,14 @@ export type Result<T, E = unknown> =
   | { ok: true; value: T }
   | { ok: false; error: E };
 
+export function success<T, E>(value: T): Result<T, E> {
+  return { ok: true, value: value };
+}
+
+export function failure<T, E>(error: E): Result<T, E> {
+  return { ok: false, error: error };
+}
+
 export class AssertionError extends Error {
   constructor(message: string) {
     super(message);
