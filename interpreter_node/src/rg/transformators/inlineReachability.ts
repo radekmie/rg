@@ -149,9 +149,6 @@ export function inlineReachability({ edges }: ast.GameDeclaration) {
       const path = findAcceptablePaths(edges, e.label.lhs, e.label.rhs);
       if (path.ok) {
         substituteWithPaths(edges, e, path.value, e.label.lhs, e.label.rhs);
-      } else {
-        // TODO? maybe remove the edge then?
-        console.log("can't find path, msg:" + path);
       }
     }
   }
