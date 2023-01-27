@@ -19,7 +19,7 @@ export function findAcceptablePaths(
   edges: ast.EdgeDeclaration[],
   start: ast.EdgeName,
   target: ast.EdgeName,
-): utils.Result<ast.EdgeDeclaration[], string> {
+): Result<ast.EdgeDeclaration[], string> {
   const toExplore: ast.EdgeName[] = [start];
   const wasQueued: ast.EdgeName[] = [start];
   const currentPath: ast.EdgeName[] = [];
@@ -85,7 +85,11 @@ let freshVarId = 0;
 export function freshVar(identifier = '') {
   freshVarId += 1;
   return ast.EdgeName({
-    parts: [ast.Literal({ identifier: `__gen_${freshVarId}_` + identifier.replace(/[\W\s]/g, '_') })],
+    parts: [
+      ast.Literal({
+        identifier: `__gen_${freshVarId}_` + identifier.replace(/[\W\s]/g, '_'),
+      }),
+    ],
   });
 }
 
@@ -126,7 +130,9 @@ export function substituteWithPaths(
     if (found === undefined) {
       mapping.push([inSubgraph, newName]);
     } else if (!utils.isEqual(found[1], newName)) {
-      throw new Error('inlineReachability: tried to set a new mapping for a node that was already mapped');
+      throw new Error(
+        'inlineReachability: tried to set a new mapping for a node that was already mapped',
+      );
     }
   }
 

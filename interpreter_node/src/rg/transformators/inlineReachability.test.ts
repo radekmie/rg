@@ -1,4 +1,3 @@
-import * as utils from '../../utils';
 import { Result } from '../../utils';
 import * as ast from '../ast';
 import * as s from '../ast/serializer';
@@ -13,9 +12,8 @@ function serializeResult(
 ): string {
   if (maybeEdges.ok) {
     return 'success:\n' + serializeEdges(maybeEdges.value);
-  } else {
-    return 'failure:\n' + maybeEdges.error;
   }
+  return 'failure:\n' + maybeEdges.error;
 }
 
 function makeEdgeName(n: string): ast.EdgeName {

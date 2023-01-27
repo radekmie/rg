@@ -7,11 +7,11 @@ export type Result<T, E = unknown> =
   | { ok: false; error: E };
 
 export function success<T, E>(value: T): Result<T, E> {
-  return { ok: true, value: value };
+  return { ok: true, value };
 }
 
 export function failure<T, E>(error: E): Result<T, E> {
-  return { ok: false, error: error };
+  return { ok: false, error };
 }
 
 export class AssertionError extends Error {
