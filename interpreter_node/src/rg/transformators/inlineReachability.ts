@@ -12,8 +12,12 @@ import { serializeEdgeName } from '../ast/serializer';
  * 3. contains no edges from [target]
  * 4. for any initial environment, at most one path can reach [target] from [start]
  *    - limited analysis, may reject some valid results here
+ * 4.1. and none of them change the environment (currently: no assignments allowed)
  *
- * If such subautomaton can't be found, return error.
+ * @param {ast.EdgeDeclaration[]} edges - considered automaton
+ * @param {ast.EdgeName} start - origin of the search
+ * @param {ast.EdgeName} target - target of the search
+ * @returns {Result<ast.EdgeDeclaration[], string>} Subautomaton of 'edges' or an error
  */
 export function findAcceptablePaths(
   edges: ast.EdgeDeclaration[],
