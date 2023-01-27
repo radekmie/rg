@@ -85,7 +85,7 @@ let freshVarId = 0;
 export function freshVar(identifier = '') {
   freshVarId += 1;
   return ast.EdgeName({
-    parts: [ast.Literal({ identifier: `__gen_${freshVarId}_` + identifier })],
+    parts: [ast.Literal({ identifier: `__gen_${freshVarId}_` + identifier.replace(/[\W\s]/g, '_') })],
   });
 }
 
