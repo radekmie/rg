@@ -510,6 +510,14 @@ function translateGame(context: Context) {
     }),
   );
 
+  const mostCommonPiece = Object.entries(
+    context.rbg.board.reduce<Record<string, number>>((pieces, { piece }) => {
+      pieces[piece] ??= 0;
+      pieces[piece]++;
+      return pieces;
+    }, {}),
+  ).reduce((x, y) => (x[1] > y[1] ? x : y))[0];
+
   context.rg.variables.push(
     rg.VariableDeclaration({
       identifier: 'player',
@@ -529,13 +537,17 @@ function translateGame(context: Context) {
       defaultValue: rg.Map({
         entries: [
           rg.DefaultEntry({
-            value: rg.Element({ identifier: context.rbg.pieces[0] }),
+            value: rg.Element({ identifier: mostCommonPiece }),
           }),
-          ...context.rbg.board.map(node =>
-            rg.NamedEntry({
-              identifier: node.node,
-              value: rg.Element({ identifier: node.piece }),
-            }),
+          ...context.rbg.board.flatMap(node =>
+            node.piece === mostCommonPiece
+              ? []
+              : [
+                  rg.NamedEntry({
+                    identifier: node.node,
+                    value: rg.Element({ identifier: node.piece }),
+                  }),
+                ],
           ),
         ],
       }),
