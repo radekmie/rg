@@ -1,14 +1,20 @@
-use crate::{
-    Edge, EdgeLabel, Expression, Game, Id, Type, Value, Variable, LABEL_BEGIN, LABEL_END,
-    LABEL_KEEPER, LABEL_PLAYER,
-};
+use crate::{Edge, EdgeLabel, Expression, Game, IdMap, Type, Value, Variable};
 use serde::Deserialize;
-use std::{collections::BTreeMap, fs, ops::Deref, rc::Rc};
+use std::{collections::BTreeMap, fs};
 
 #[derive(Debug, Deserialize, PartialEq)]
 struct EdgeSerialized {
     label: EdgeLabelSerialized,
     next: String,
+}
+
+impl EdgeSerialized {
+    fn deserialize(self, id_map: &mut IdMap) -> Edge {
+        Edge {
+            label: self.label.deserialize(id_map),
+            next: id_map.intern(&self.next),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -31,6 +37,28 @@ enum EdgeLabelSerialized {
     Skip,
 }
 
+impl EdgeLabelSerialized {
+    fn deserialize(self, id_map: &mut IdMap) -> EdgeLabel {
+        match self {
+            EdgeLabelSerialized::Assignment { lhs, rhs } => EdgeLabel::Assignment {
+                lhs: lhs.deserialize(id_map),
+                rhs: rhs.deserialize(id_map),
+            },
+            EdgeLabelSerialized::Comparison { lhs, rhs, negated } => EdgeLabel::Comparison {
+                lhs: lhs.deserialize(id_map),
+                rhs: rhs.deserialize(id_map),
+                negated,
+            },
+            EdgeLabelSerialized::Reachability { lhs, rhs, negated } => EdgeLabel::Reachability {
+                lhs: id_map.intern(&lhs),
+                rhs: id_map.intern(&rhs),
+                negated,
+            },
+            EdgeLabelSerialized::Skip => EdgeLabel::Skip,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(tag = "kind")]
 enum ExpressionSerialized {
@@ -47,6 +75,30 @@ enum ExpressionSerialized {
     VariableReference {
         identifier: String,
     },
+}
+
+impl ExpressionSerialized {
+    fn deserialize(self, id_map: &mut IdMap) -> Expression {
+        match self {
+            ExpressionSerialized::Access { lhs, rhs } => Expression::Access {
+                lhs: lhs.deserialize(id_map).into(),
+                rhs: rhs.deserialize(id_map).into(),
+            },
+            ExpressionSerialized::ConstantReference { identifier } => {
+                Expression::ConstantReference {
+                    identifier: id_map.intern(&identifier),
+                }
+            }
+            ExpressionSerialized::Literal { value } => Expression::Literal {
+                value: value.deserialize(id_map).into(),
+            },
+            ExpressionSerialized::VariableReference { identifier } => {
+                Expression::VariableReference {
+                    identifier: id_map.intern(&identifier),
+                }
+            }
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -66,162 +118,42 @@ impl GameSerialized {
         let source = fs::read_to_string(source_file).unwrap();
         GameSerialized::from_ist(&source)
     }
-}
 
-impl From<GameSerialized> for Game {
-    fn from(game_serialized: GameSerialized) -> Game {
-        let mut state = GameSerializedState::new();
+    pub fn deserialize(self) -> Game {
+        let mut id_map = IdMap::default();
         Game {
-            constants: game_serialized
+            constants: self
                 .constants
                 .into_iter()
-                .map(|(key, value)| (state.intern_string(&key), state.intern_value(&value)))
-                .collect(),
-            edges: game_serialized
+                .map(|(key, value)| (id_map.intern(&key), value.deserialize(&mut id_map).into()))
+                .collect::<BTreeMap<_, _>>()
+                .into(),
+            edges: self
                 .edges
                 .into_iter()
                 .map(|(key, edges)| {
                     (
-                        state.intern_string(&key),
+                        id_map.intern(&key),
                         edges
                             .into_iter()
-                            .map(|edge| state.intern_edge(edge))
+                            .map(|edge| edge.deserialize(&mut id_map))
                             .collect(),
                     )
                 })
                 .collect(),
-            types: game_serialized
+            types: self
                 .types
                 .into_iter()
-                .map(|(key, type_)| (state.intern_string(&key), *state.intern_type(&type_)))
+                .map(|(key, type_)| (id_map.intern(&key), type_.deserialize(&mut id_map)))
                 .collect(),
-            variables: game_serialized
+            variables: self
                 .variables
                 .into_iter()
-                .map(|(key, variable)| {
-                    (state.intern_string(&key), state.intern_variable(&variable))
-                })
+                .map(|(key, variable)| (id_map.intern(&key), variable.deserialize(&mut id_map)))
                 .collect(),
-        }
-    }
-}
 
-struct GameSerializedState {
-    strings: BTreeMap<String, Id>,
-}
-
-impl GameSerializedState {
-    fn intern_edge(&mut self, edge: EdgeSerialized) -> Edge {
-        Edge {
-            label: self.intern_edge_label(edge.label),
-            next: self.intern_string(&edge.next),
-        }
-    }
-
-    fn intern_edge_label(&mut self, edge_label: EdgeLabelSerialized) -> EdgeLabel {
-        match edge_label {
-            EdgeLabelSerialized::Assignment { lhs, rhs } => EdgeLabel::Assignment {
-                lhs: *self.intern_expression(&lhs),
-                rhs: *self.intern_expression(&rhs),
-            },
-            EdgeLabelSerialized::Comparison { lhs, rhs, negated } => EdgeLabel::Comparison {
-                lhs: *self.intern_expression(&lhs),
-                rhs: *self.intern_expression(&rhs),
-                negated,
-            },
-            EdgeLabelSerialized::Reachability { lhs, rhs, negated } => EdgeLabel::Reachability {
-                lhs: self.intern_string(&lhs),
-                rhs: self.intern_string(&rhs),
-                negated,
-            },
-            EdgeLabelSerialized::Skip => EdgeLabel::Skip,
-        }
-    }
-
-    fn intern_expression(&mut self, expression: &ExpressionSerialized) -> Box<Expression> {
-        let expression = match expression {
-            ExpressionSerialized::Access { lhs, rhs } => Expression::Access {
-                lhs: self.intern_expression(lhs),
-                rhs: self.intern_expression(rhs),
-            },
-            ExpressionSerialized::ConstantReference { identifier } => {
-                Expression::ConstantReference {
-                    identifier: self.intern_string(identifier),
-                }
-            }
-            ExpressionSerialized::Literal { value } => Expression::Literal {
-                value: self.intern_value(value),
-            },
-            ExpressionSerialized::VariableReference { identifier } => {
-                Expression::VariableReference {
-                    identifier: self.intern_string(identifier),
-                }
-            }
-        };
-
-        Box::new(expression)
-    }
-
-    fn intern_string(&mut self, string: &str) -> Id {
-        if self.strings.len() == Id::MAX as usize {
-            panic!("Maximum number of interned strings reached! Increase Id size.")
-        }
-
-        let next_id = (self.strings.len() + 1) as Id;
-        *self.strings.entry(string.to_string()).or_insert(next_id)
-    }
-
-    fn intern_type(&mut self, type_: &TypeSerialized) -> Box<Type> {
-        let type_ = match type_.deref() {
-            TypeSerialized::Arrow { lhs, rhs } => Type::Arrow {
-                lhs: self.intern_type(lhs),
-                rhs: self.intern_type(rhs),
-            },
-            TypeSerialized::Set { values } => Type::Set {
-                values: values
-                    .iter()
-                    .map(|value| self.intern_value(value))
-                    .collect(),
-            },
-        };
-
-        Box::new(type_)
-    }
-
-    fn intern_value(&mut self, value: &ValueSerialized) -> Rc<Value> {
-        let value = match value.deref() {
-            ValueSerialized::Element { value } => Value::Element {
-                value: self.intern_string(value),
-            },
-            ValueSerialized::Map { default, values } => Value::Map {
-                default: self.intern_value(default),
-                values: values
-                    .iter()
-                    .map(|(key, value)| (self.intern_string(key), self.intern_value(value)))
-                    .collect(),
-            },
-        };
-
-        Rc::new(value)
-    }
-
-    fn intern_variable(&mut self, variable: &VariableSerialized) -> Variable {
-        Variable {
-            default: self.intern_value(&variable.default),
-            type_: self.intern_type(&variable.type_),
-        }
-    }
-
-    fn new() -> Self {
-        GameSerializedState {
-            strings: vec![
-                ("begin".into(), LABEL_BEGIN),
-                ("end".into(), LABEL_END),
-                ("keeper".into(), LABEL_KEEPER),
-                ("player".into(), LABEL_PLAYER),
-            ]
-            .into_iter()
-            .collect(),
+            // It has to be moved last.
+            id_map,
         }
     }
 }
@@ -238,6 +170,23 @@ enum TypeSerialized {
     },
 }
 
+impl TypeSerialized {
+    fn deserialize(self, id_map: &mut IdMap) -> Type {
+        match self {
+            TypeSerialized::Arrow { lhs, rhs } => Type::Arrow {
+                lhs: lhs.deserialize(id_map).into(),
+                rhs: rhs.deserialize(id_map).into(),
+            },
+            TypeSerialized::Set { values } => Type::Set {
+                values: values
+                    .into_iter()
+                    .map(|value| value.deserialize(id_map).into())
+                    .collect(),
+            },
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(tag = "kind")]
 enum ValueSerialized {
@@ -251,10 +200,37 @@ enum ValueSerialized {
     },
 }
 
+impl ValueSerialized {
+    fn deserialize(self, id_map: &mut IdMap) -> Value {
+        match self {
+            ValueSerialized::Element { value } => Value::Element {
+                value: id_map.intern(&value),
+            },
+            ValueSerialized::Map { default, values } => Value::Map {
+                default: default.deserialize(id_map).into(),
+                values: values
+                    .into_iter()
+                    .map(|(key, value)| (id_map.intern(&key), value.deserialize(id_map).into()))
+                    .collect::<BTreeMap<_, _>>()
+                    .into(),
+            },
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, PartialEq)]
 struct VariableSerialized {
     #[serde(rename = "defaultValue")]
     default: Box<ValueSerialized>,
     #[serde(rename = "type")]
     type_: Box<TypeSerialized>,
+}
+
+impl VariableSerialized {
+    fn deserialize(self, id_map: &mut IdMap) -> Variable {
+        Variable {
+            default: self.default.deserialize(id_map).into(),
+            type_: self.type_.deserialize(id_map).into(),
+        }
+    }
 }

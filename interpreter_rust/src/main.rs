@@ -1,5 +1,5 @@
 use interpreter_rust::deserializer::GameSerialized;
-use interpreter_rust::{Game, State};
+use interpreter_rust::Game;
 use rand::{rngs::ThreadRng, seq::IteratorRandom};
 use std::{collections::BTreeMap, env, time::Instant};
 
@@ -19,21 +19,21 @@ fn run(game: &Game, rng: &mut ThreadRng, plays: usize) {
     let step = 1f32.max(10f32.powf((plays as f32 / 100f32).log10().floor())) as usize;
 
     // Initialize counters.
-    let mut moves: BTreeMap<usize, usize> = BTreeMap::new();
-    let mut times: BTreeMap<usize, usize> = BTreeMap::new();
-    let mut turns: BTreeMap<usize, usize> = BTreeMap::new();
+    let mut moves: BTreeMap<usize, usize> = Default::default();
+    let mut times: BTreeMap<usize, usize> = Default::default();
+    let mut turns: BTreeMap<usize, usize> = Default::default();
 
     for play in 1..=plays {
         let start = Instant::now();
-        let mut state = State::initial(game);
+        let mut state = game.initial_state();
         let mut turn = 0;
         loop {
-            let states = state.next_states_n(game, 1, false).collect::<Vec<_>>();
+            let states = state.next_states_depth(game, 1, false).collect::<Vec<_>>();
             if states.is_empty() {
                 break;
             }
 
-            if !state.is_keeper() {
+            if !state.get_player().is_keeper() {
                 increase(&mut moves, states.len());
                 turn += 1;
             }
@@ -55,9 +55,9 @@ fn run(game: &Game, rng: &mut ThreadRng, plays: usize) {
 }
 
 fn perf(game: &Game, depth: usize) {
-    let state = State::initial(game);
     let start = Instant::now();
-    let count = state.next_states_n(game, depth, true).count();
+    let state = game.initial_state();
+    let count = state.next_states_depth(game, depth, true).count();
     println!(
         "perf(depth: {}) = {} in {:.3}ms",
         depth,
@@ -69,7 +69,7 @@ fn perf(game: &Game, depth: usize) {
 fn main() {
     let args = env::args().collect::<Vec<_>>();
     let file = args.get(1).expect("Game IST file expected.");
-    let game = GameSerialized::from_ist_file(file).into();
+    let game = GameSerialized::from_ist_file(file).deserialize();
 
     match args.get(2).expect("Operation expected.").as_str() {
         "perf" => {

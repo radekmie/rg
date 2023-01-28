@@ -116,13 +116,33 @@ export function evaluateReachability(
   return false;
 }
 
-// eslint-disable-next-line complexity -- This function could be improved.
-export function* nextStates(
+export function nextStates(
   game: ist.Game,
   state: ist.State,
-  yieldOnPlayer: boolean,
+  breakOnPlayer: boolean,
+) {
+  return nextStatesInner(game, state, breakOnPlayer, Object.create(null));
+}
+
+// eslint-disable-next-line complexity -- This function could be improved.
+function* nextStatesInner(
+  game: ist.Game,
+  state: ist.State,
+  breakOnPlayer: boolean,
+  visitedStates: Record<string, Record<string, ist.Value>[]>,
 ): Generator<ist.State, void, undefined> {
-  if (!yieldOnPlayer) {
+  // Check whether this state was already visited and if so, skip it. It could
+  // happen conditionally, only when a game requires that, but that'd require an
+  // additional analysis.
+  const visited = (visitedStates[state.position] ??= []);
+  if (visited?.some(values => utils.isEqual(values, state.values))) {
+    return;
+  }
+
+  visited.push(utils.clone(state.values));
+
+  // Yield all states by default.
+  if (!breakOnPlayer) {
     yield state;
   }
 
@@ -135,14 +155,14 @@ export function* nextStates(
         const previousValue = setValue(game, state, label.lhs, value);
 
         const yieldAndStop =
-          yieldOnPlayer &&
+          breakOnPlayer &&
           label.lhs.kind === 'VariableReference' &&
           label.lhs.identifier === 'player';
 
         if (yieldAndStop) {
           yield state;
         } else {
-          yield* nextStates(game, state, yieldOnPlayer);
+          yield* nextStatesInner(game, state, breakOnPlayer, visitedStates);
         }
 
         setValue(game, state, label.lhs, previousValue);
@@ -150,18 +170,18 @@ export function* nextStates(
       }
       case 'Comparison':
         if (evaluateComparison(game, state, label)) {
-          yield* nextStates(game, state, yieldOnPlayer);
+          yield* nextStatesInner(game, state, breakOnPlayer, visitedStates);
         }
 
         break;
       case 'Reachability':
         if (evaluateReachability(game, state, label) !== label.negated) {
-          yield* nextStates(game, state, yieldOnPlayer);
+          yield* nextStatesInner(game, state, breakOnPlayer, visitedStates);
         }
 
         break;
       case 'Skip':
-        yield* nextStates(game, state, yieldOnPlayer);
+        yield* nextStatesInner(game, state, breakOnPlayer, visitedStates);
         break;
     }
     state.position = prev;
@@ -194,10 +214,8 @@ export function setValue(
     }
     case 'ConstantReference':
       utils.assert(false, 'Cannot assign to a ConstantReference.');
-      break;
     case 'Literal':
       utils.assert(false, 'Cannot assign to a Literal.');
-      break;
     case 'VariableReference': {
       const previousValue = state.values[expression.identifier];
       state.values[expression.identifier] = value;

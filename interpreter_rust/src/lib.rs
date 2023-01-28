@@ -1,23 +1,31 @@
 pub mod deserializer;
 
-use std::{collections::BTreeMap, ops::Deref, rc::Rc};
+use regex::{Captures, Regex};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    convert::TryInto,
+    ops::Deref,
+    rc::Rc,
+};
 
 // We assume that there is not _a lot_ of unique symbols.
-type Id = u16;
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
+pub struct Id(u16);
 
 // Interned strings that the interpreter relies on.
-const LABEL_BEGIN: Id = 0;
-const LABEL_END: Id = 1;
-const LABEL_KEEPER: Id = 2;
-const LABEL_PLAYER: Id = 3;
+const LABEL_BEGIN: Id = Id(0);
+const LABEL_KEEPER: Id = Id(1);
+const LABEL_PLAYER: Id = Id(2);
 
-type ValueMap = BTreeMap<Id, Rc<Value>>;
+type ValueMap = Rc<BTreeMap<Id, Rc<Value>>>;
 
+#[derive(Debug)]
 pub struct Edge {
     label: EdgeLabel,
     next: Id,
 }
 
+#[derive(Debug)]
 pub enum EdgeLabel {
     Assignment {
         lhs: Expression,
@@ -36,6 +44,7 @@ pub enum EdgeLabel {
     Skip,
 }
 
+#[derive(Debug)]
 pub enum Expression {
     Access {
         lhs: Box<Expression>,
@@ -52,21 +61,101 @@ pub enum Expression {
     },
 }
 
+impl Expression {
+    pub fn is_player_reference(&self) -> bool {
+        matches!(self, Self::VariableReference { identifier } if *identifier == LABEL_PLAYER)
+    }
+}
+
+#[derive(Debug)]
 pub struct Game {
     constants: ValueMap,
     edges: BTreeMap<Id, Vec<Edge>>,
+    id_map: IdMap,
     #[allow(dead_code)]
     types: BTreeMap<Id, Type>,
     variables: BTreeMap<Id, Variable>,
 }
 
-#[derive(Clone)]
+impl Game {
+    pub fn initial_state(&self) -> State {
+        State {
+            position: LABEL_BEGIN,
+            values: Rc::new(
+                self.variables
+                    .iter()
+                    .map(|(name, variable)| (*name, variable.default.clone()))
+                    .collect(),
+            ),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct IdMap {
+    // TODO: Maybe `Rc<String>` would be better?
+    id_to_string: BTreeMap<Id, String>,
+    string_to_id: BTreeMap<String, Id>,
+}
+
+impl IdMap {
+    pub fn intern(&mut self, string: &str) -> Id {
+        if let Some(id) = self.string_to_id.get(string) {
+            return *id;
+        }
+
+        const ERROR: &str = "Maximum number of interned strings reached! Increase Id size.";
+        let id = Id(self
+            .string_to_id
+            .len()
+            .checked_add(1)
+            .expect(ERROR)
+            .try_into()
+            .expect(ERROR));
+        self.intern_as(string, id)
+    }
+
+    fn intern_as(&mut self, string: &str, id: Id) -> Id {
+        assert!(!self.id_to_string.contains_key(&id));
+        assert!(!self.string_to_id.contains_key(string));
+        self.id_to_string.insert(id, string.into());
+        self.string_to_id.insert(string.into(), id);
+        id
+    }
+
+    pub fn recall(&self, id: &Id) -> Option<&String> {
+        self.id_to_string.get(id)
+    }
+}
+
+impl Default for IdMap {
+    fn default() -> Self {
+        let mut id_map = Self {
+            id_to_string: Default::default(),
+            string_to_id: Default::default(),
+        };
+
+        id_map.intern_as("begin", LABEL_BEGIN);
+        id_map.intern_as("keeper", LABEL_KEEPER);
+        id_map.intern_as("player", LABEL_PLAYER);
+        id_map
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct State {
     position: Id,
-    values: Rc<ValueMap>,
+    values: ValueMap,
 }
 
 impl State {
+    pub fn clone_at(&self, position: Id) -> Self {
+        Self {
+            position,
+            values: self.values.clone(),
+        }
+    }
+
     pub fn eval<'a>(&'a self, game: &'a Game, expression: &'a Expression) -> &'a Rc<Value> {
         match expression {
             Expression::Access { lhs, rhs } => match self.eval(game, rhs).deref() {
@@ -89,9 +178,9 @@ impl State {
                     let mut map = self.eval(game, lhs).clone();
                     if let Value::Map { default, values } = Rc::make_mut(&mut map) {
                         if &set == default {
-                            values.remove(value);
+                            Rc::make_mut(values).remove(value);
                         } else {
-                            values.insert(*value, set);
+                            Rc::make_mut(values).insert(*value, set);
                         }
                     } else {
                         panic!("Only Map can be accessed.");
@@ -104,119 +193,149 @@ impl State {
             Expression::ConstantReference { .. } => panic!("ConstantReference is immutable."),
             Expression::Literal { .. } => panic!("Literal is immutable."),
             Expression::VariableReference { identifier } => {
-                *Rc::make_mut(&mut self.values).get_mut(identifier).unwrap() = set;
+                Rc::make_mut(&mut self.values).insert(*identifier, set);
             }
         }
     }
 
-    pub fn initial(game: &Game) -> Self {
-        State {
-            position: LABEL_BEGIN,
-            values: Rc::new(
-                game.variables
-                    .iter()
-                    .map(|(name, variable)| (*name, variable.default.clone()))
-                    .collect(),
-            ),
-        }
-    }
-
-    pub fn is_final(&self) -> bool {
-        self.position == LABEL_END
-    }
-
-    pub fn is_keeper(&self) -> bool {
-        self.values
-            .get(&LABEL_PLAYER)
-            .unwrap()
-            .is_element_of(LABEL_KEEPER)
+    pub fn get_player(&self) -> &Rc<Value> {
+        self.values.get(&LABEL_PLAYER).unwrap()
     }
 
     pub fn is_reachable(&self, game: &Game, position: Id) -> bool {
-        self.position == position
-            || self
-                .next_states(game)
-                .any(|state| state.is_reachable(game, position))
+        self.next_states(game, false)
+            .any(|state| state.position == position)
     }
 
-    pub fn next_states<'a>(&'a self, game: &'a Game) -> StateNext<'a> {
+    pub fn next_states<'a>(&'a self, game: &'a Game, break_on_player: bool) -> StateNext<'a> {
         StateNext {
-            edges: game.edges.get(&self.position).map_or(&[], Vec::as_slice),
+            break_on_player,
             game,
-            reachables: None,
-            values: &self.values,
+            return_queue: Default::default(),
+            search_queue: vec![self.clone()],
+            visited_states: Default::default(),
         }
     }
 
-    pub fn next_states_n<'a>(
+    pub fn next_states_depth<'a>(
         &'a self,
         game: &'a Game,
-        n: usize,
+        depth: usize,
         ignore_keeper: bool,
-    ) -> StateNextN<'a> {
-        StateNextN {
+    ) -> StateNextDepth<'a> {
+        StateNextDepth {
             game,
             ignore_keeper,
-            queue: vec![(self.clone(), n)],
+            queue: vec![(self.clone(), depth)],
         }
+    }
+
+    pub fn serialize(&self, game: &Game) -> String {
+        let string = format!("{:?}", self);
+
+        // Replace `Id`s with full names.
+        let id_regex = Regex::new(r"Id\(\s*(\d+),?\s*\)").unwrap();
+        let string = id_regex
+            .replace_all(string.as_str(), |captures: &Captures| {
+                captures
+                    .get(1)
+                    .map(|id| Id(id.as_str().parse().unwrap()))
+                    .and_then(|id| game.id_map.recall(&id))
+                    .unwrap()
+            })
+            .to_string();
+
+        // Shorten `Element`s into their values.
+        let element_regex = Regex::new(r"Element\s*\{\s*value:\s*(.*?),?\s*\}").unwrap();
+        let string = element_regex
+            .replace_all(string.as_str(), |captures: &Captures| {
+                captures
+                    .get(1)
+                    .map(|value| value.as_str().to_string())
+                    .unwrap()
+            })
+            .to_string();
+
+        string
     }
 }
 
 pub struct StateNext<'a> {
-    edges: &'a [Edge],
+    break_on_player: bool,
     game: &'a Game,
-    reachables: Option<BTreeMap<(Id, Id), bool>>,
-    values: &'a Rc<ValueMap>,
+    return_queue: Vec<State>,
+    search_queue: Vec<State>,
+    visited_states: BTreeSet<State>,
 }
 
 impl Iterator for StateNext<'_> {
     type Item = State;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let StateNext {
-            edges,
+        let Self {
+            break_on_player,
             game,
-            reachables,
-            values,
+            return_queue,
+            search_queue,
+            visited_states,
         } = self;
 
-        while let [edge, tail @ ..] = edges {
-            *edges = tail;
+        while !return_queue.is_empty() || !search_queue.is_empty() {
+            if let Some(state) = return_queue.pop() {
+                return Some(state);
+            }
 
-            let mut state = State {
-                position: edge.next,
-                values: values.clone(),
-            };
-
-            match &edge.label {
-                EdgeLabel::Assignment { lhs, rhs } => {
-                    state.eval_set(game, lhs, state.eval(game, rhs).clone());
-                    return Some(state);
+            if let Some(state) = search_queue.pop() {
+                // Check whether this state was already visited and if so, skip
+                // it. It could happen conditionally, only when a game requires
+                // that, but that'd require an additional analysis.
+                if visited_states.contains(&state) {
+                    continue;
                 }
-                EdgeLabel::Comparison { lhs, rhs, negated } => {
-                    let lhs_value = state.eval(game, lhs);
-                    let rhs_value = state.eval(game, rhs);
-                    let is_equal = lhs_value == rhs_value;
-                    if is_equal != *negated {
-                        return Some(state);
+
+                visited_states.insert(state.clone());
+
+                if let Some(edges) = game.edges.get(&state.position) {
+                    let mut reachables: Option<BTreeMap<(Id, Id), bool>> = None;
+                    for edge in edges {
+                        let mut state = state.clone_at(edge.next);
+                        match &edge.label {
+                            EdgeLabel::Assignment { lhs, rhs } => {
+                                state.eval_set(game, lhs, state.eval(game, rhs).clone());
+                                if *break_on_player && lhs.is_player_reference() {
+                                    return_queue.push(state);
+                                } else {
+                                    search_queue.push(state);
+                                }
+                            }
+                            EdgeLabel::Comparison { lhs, rhs, negated } => {
+                                let lhs_value = state.eval(game, lhs);
+                                let rhs_value = state.eval(game, rhs);
+                                let is_equal = lhs_value == rhs_value;
+                                if is_equal != *negated {
+                                    search_queue.push(state);
+                                }
+                            }
+                            EdgeLabel::Reachability { lhs, rhs, negated } => {
+                                let is_reachable = *reachables
+                                    .get_or_insert_with(BTreeMap::new)
+                                    .entry((*lhs, *rhs))
+                                    .or_insert_with(|| {
+                                        state.clone_at(*lhs).is_reachable(game, *rhs)
+                                    });
+
+                                if is_reachable != *negated {
+                                    search_queue.push(state);
+                                }
+                            }
+                            EdgeLabel::Skip => {
+                                search_queue.push(state);
+                            }
+                        }
                     }
                 }
-                EdgeLabel::Reachability { lhs, rhs, negated } => {
-                    let is_reachable = *reachables
-                        .get_or_insert_with(BTreeMap::new)
-                        .entry((*lhs, *rhs))
-                        .or_insert_with(|| {
-                            let position = state.position;
-                            state.position = *lhs;
-                            let is_reachable = state.is_reachable(game, *rhs);
-                            state.position = position;
-                            is_reachable
-                        });
-                    if is_reachable != *negated {
-                        return Some(state);
-                    }
-                }
-                EdgeLabel::Skip => {
+
+                if !*break_on_player {
                     return Some(state);
                 }
             }
@@ -226,28 +345,34 @@ impl Iterator for StateNext<'_> {
     }
 }
 
-pub struct StateNextN<'a> {
+pub struct StateNextDepth<'a> {
     game: &'a Game,
     ignore_keeper: bool,
     queue: Vec<(State, usize)>,
 }
 
-impl Iterator for StateNextN<'_> {
+impl Iterator for StateNextDepth<'_> {
     type Item = State;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some((state, n)) = self.queue.pop() {
-            if n == 0 {
+        let Self {
+            game,
+            ignore_keeper,
+            queue,
+        } = self;
+
+        while let Some((state, depth)) = queue.pop() {
+            if depth == 0 {
                 return Some(state);
             }
 
-            let prev = state.values.get(&LABEL_PLAYER).unwrap();
-            let skip = self.ignore_keeper && prev.is_element_of(LABEL_KEEPER);
-            for state in state.next_states(self.game) {
-                let next = state.values.get(&LABEL_PLAYER).unwrap();
-                let depth = if skip || prev == next { n } else { n - 1 };
+            let prev = state.get_player();
+            let skip = *ignore_keeper && prev.is_keeper();
+            for state in state.next_states(game, true) {
+                let next = state.get_player();
+                let step = if skip || prev == next { 0 } else { 1 };
 
-                self.queue.push((state, depth));
+                queue.push((state, depth - step));
             }
         }
 
@@ -255,12 +380,14 @@ impl Iterator for StateNextN<'_> {
     }
 }
 
+#[derive(Debug)]
 pub enum Type {
-    Arrow { lhs: Box<Type>, rhs: Box<Type> },
+    Arrow { lhs: Rc<Type>, rhs: Rc<Type> },
     Set { values: Vec<Rc<Value>> },
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u8)]
 pub enum Value {
     Map {
         default: Rc<Value>,
@@ -272,35 +399,14 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn is_element_of(&self, tag: Id) -> bool {
-        match self {
-            Value::Element { value } => *value == tag,
-            Value::Map { .. } => false,
-        }
+    pub fn is_keeper(&self) -> bool {
+        matches!(self, Self::Element { value } if *value == LABEL_KEEPER)
     }
 }
 
-impl PartialEq for Value {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Value::Element { value: a }, Value::Element { value: b }) => a == b,
-            (
-                Value::Map {
-                    default: a_default,
-                    values: a_values,
-                },
-                Value::Map {
-                    default: b_default,
-                    values: b_values,
-                },
-            ) if a_default == b_default => a_values == b_values,
-            _ => unimplemented!(),
-        }
-    }
-}
-
+#[derive(Debug)]
 pub struct Variable {
     default: Rc<Value>,
     #[allow(dead_code)]
-    type_: Box<Type>,
+    type_: Rc<Type>,
 }

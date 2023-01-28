@@ -2,7 +2,7 @@ set -e
 
 (cd interpreter_node && npm run --silent build)
 
-function perf_test {
+function validate {
   # Arguments
   local flags="$1"
   local name=$2
@@ -27,6 +27,6 @@ for game in $(ls -1 ./examples/*.{hrg,rbg,rg} | sort); do
       flags=" $flags"
     fi
 
-    perf_test "$flags" "${game/\.\/examples\//}"
+    validate "$flags" "${game/\.\/examples\//}"
   done
 done
