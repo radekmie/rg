@@ -1,7 +1,7 @@
 import * as utils from '../../utils';
 import { Result, success, failure } from '../../utils';
 import * as ast from '../ast';
-import { areObviouslyExclusive } from '../ast/lib';
+import { makeFreshEdgeName, areObviouslyExclusive } from '../ast/lib';
 import { serializeEdgeName } from '../ast/serializer';
 
 // TODO could return information if [target] can't be reached at all (limited analysis)
@@ -74,26 +74,6 @@ export function findAcceptablePaths(
   return success(result);
 }
 
-let freshVarId = 0;
-
-/* TODO check whether nodes don't already contain [__gen_] prefix
- * Really the best option would be to somehow tie this state with the game description.
- * E.g.
- * > let v1 = gameDeclaration.freshVar("foo")
- * > let v2 = gameDeclaration.freshVar("bar")
- * That would also require other kinds of checks (e.g. when modyfing edges)
- */
-export function freshVar(identifier = '') {
-  freshVarId += 1;
-  return ast.EdgeName({
-    parts: [
-      ast.Literal({
-        identifier: `__gen_${freshVarId}_` + identifier.replace(/[\W\s]/g, '_'),
-      }),
-    ],
-  });
-}
-
 /* TODO? could reuse the subgraph instead (with extra variable and comparisons)
  * Something like [--reuseFunctions]
  */
@@ -116,7 +96,7 @@ export function substituteWithPaths(
 
   const originalLhs = originalEdge.lhs;
   originalEdge.label = ast.Skip({});
-  originalEdge.lhs = freshVar('ignoreme');
+  originalEdge.lhs = makeFreshEdgeName('ignoreme');
 
   const mapping: [ast.EdgeName, ast.EdgeName][] = [
     [pathsStart, originalLhs],
@@ -139,8 +119,8 @@ export function substituteWithPaths(
 
   for (const e of paths) {
     const newEdge = ast.EdgeDeclaration({
-      lhs: getMapping(e.lhs) || freshVar(serializeEdgeName(e.lhs)),
-      rhs: getMapping(e.rhs) || freshVar(serializeEdgeName(e.rhs)),
+      lhs: getMapping(e.lhs) || makeFreshEdgeName(serializeEdgeName(e.lhs)),
+      rhs: getMapping(e.rhs) || makeFreshEdgeName(serializeEdgeName(e.rhs)),
       label: e.label,
     });
     setMapping(e.lhs, newEdge.lhs);

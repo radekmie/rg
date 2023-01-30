@@ -118,6 +118,27 @@ export function makeBindingsUnique(edges: ast.EdgeDeclaration[]) {
   }
 }
 
+/* TODO check whether nodes don't already contain [__gen_] prefix
+ * Really the best option would be to somehow tie this state with the game description.
+ * E.g.
+ * > let v1 = gameDeclaration.makeFreshEdgeName("foo")
+ * > let v2 = gameDeclaration.makeFreshEdgeName("bar")
+ * That would also require other kinds of checks (e.g. when modyfing edges)
+ */
+let freshVarId = 0;
+export function makeFreshEdgeName(identifier: string = ''): ast.EdgeName {
+  freshVarId += 1;
+
+  return ast.EdgeName({
+    parts: [
+      ast.Literal({
+        identifier:
+        `__gen_${freshVarId}_` + identifier.replace(/[\W\s]/g, '_'),
+      }),
+    ],
+  });
+}
+
 export function outgoing(edges: ast.EdgeDeclaration[], edgeName: ast.EdgeName) {
   return edges.filter(({ lhs }) => utils.isEqual(edgeName, lhs));
 }
