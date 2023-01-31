@@ -125,18 +125,20 @@ export function makeBindingsUnique(edges: ast.EdgeDeclaration[]) {
  * > let v2 = gameDeclaration.makeFreshEdgeName("bar")
  * That would also require other kinds of checks (e.g. when modyfing edges)
  */
-let freshVarId = 0;
-export function makeFreshEdgeName(identifier: string = ''): ast.EdgeName {
-  freshVarId += 1;
+export function makeFreshEdgeName() {
+  let freshVarId = 0;
 
-  return ast.EdgeName({
-    parts: [
-      ast.Literal({
-        identifier:
-        `__gen_${freshVarId}_` + identifier.replace(/[\W\s]/g, '_'),
-      }),
-    ],
-  });
+  return function (identifier = '') {
+    freshVarId += 1;
+    return ast.EdgeName({
+      parts: [
+        ast.Literal({
+          identifier:
+            `__gen_${freshVarId}_` + identifier.replace(/[\W\s]/g, '_'),
+        }),
+      ],
+    });
+  };
 }
 
 export function outgoing(edges: ast.EdgeDeclaration[], edgeName: ast.EdgeName) {

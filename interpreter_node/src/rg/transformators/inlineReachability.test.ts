@@ -52,6 +52,8 @@ function makeLabel(n: number): ast.EdgeLabel {
   });
 }
 
+const makeFreshNode = ast.lib.makeFreshEdgeName()
+
 describe('inlineReachability', () => {
   test('findAcceptablePaths should find a simple path in a chain', () => {
     const nodes = ['x', 'y', 'z'].map(makeEdgeName);
@@ -93,6 +95,7 @@ describe('inlineReachability', () => {
 
     t.substituteWithPaths(
       edges,
+      makeFreshNode,
       edges[0],
       replacement,
       makeEdgeName('a'),
@@ -114,6 +117,7 @@ describe('inlineReachability', () => {
 
     t.substituteWithPaths(
       edges,
+      makeFreshNode,
       edges[0],
       replacement,
       makeEdgeName('a'),

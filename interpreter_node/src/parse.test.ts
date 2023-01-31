@@ -403,27 +403,27 @@ describe('--inlineReachability', () => {
     `);
     expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: 2 == 2;']))
       .toMatchInlineSnapshot(`
-      "__gen_2_ignoreme, b: ;
+      "__gen_1_ignoreme, b: ;
       x, y: 1 == 1;
       y, z: 2 == 2;
-      a, __gen_3_y: 1 == 1;
-      __gen_3_y, b: 2 == 2;"
+      a, __gen_2_y: 1 == 1;
+      __gen_2_y, b: 2 == 2;"
     `);
     expect(run(['a, b: ? x -> z;', 'x, y: ;', 'y, z: 2 == 2;']))
       .toMatchInlineSnapshot(`
-      "__gen_4_ignoreme, b: ;
+      "__gen_1_ignoreme, b: ;
       x, y: ;
       y, z: 2 == 2;
-      a, __gen_5_y: ;
-      __gen_5_y, b: 2 == 2;"
+      a, __gen_2_y: ;
+      __gen_2_y, b: 2 == 2;"
     `);
     expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: ;']))
       .toMatchInlineSnapshot(`
-      "__gen_6_ignoreme, b: ;
+      "__gen_1_ignoreme, b: ;
       x, y: 1 == 1;
       y, z: ;
-      a, __gen_7_y: 1 == 1;
-      __gen_7_y, b: ;"
+      a, __gen_2_y: 1 == 1;
+      __gen_2_y, b: ;"
     `);
   });
 
@@ -437,15 +437,15 @@ describe('--inlineReachability', () => {
         'c, d: ;',
       ]),
     ).toMatchInlineSnapshot(`
-      "__gen_8_ignoreme, y: ;
+      "__gen_1_ignoreme, y: ;
       a, b: 1 == 1;
       a, c: 1 != 1;
       b, d: ;
       c, d: ;
-      x, __gen_9_b: 1 == 1;
-      x, __gen_10_c: 1 != 1;
-      __gen_10_c, y: ;
-      __gen_9_b, y: ;"
+      x, __gen_2_b: 1 == 1;
+      x, __gen_3_c: 1 != 1;
+      __gen_3_c, y: ;
+      __gen_2_b, y: ;"
     `);
   });
 
@@ -483,18 +483,18 @@ describe('--inlineReachability', () => {
         'e, f: ;',
       ]),
     ).toMatchInlineSnapshot(`
-      "__gen_11_ignoreme, y: ;
-      __gen_14_ignoreme, b: ;
+      "__gen_1_ignoreme, y: ;
+      __gen_4_ignoreme, b: ;
       a, c: ! e -> f;
       b, d: ;
       c, d: ;
       e, f: ;
-      __gen_15_ignoreme, __gen_12_b: ;
-      x, __gen_13_c: ! e -> f;
-      __gen_13_c, y: ;
-      __gen_12_b, y: ;
+      __gen_5_ignoreme, __gen_2_b: ;
+      x, __gen_3_c: ! e -> f;
+      __gen_3_c, y: ;
+      __gen_2_b, y: ;
       a, b: ;
-      x, __gen_12_b: ;"
+      x, __gen_2_b: ;"
     `);
   });
 
@@ -531,13 +531,13 @@ describe('--inlineReachability', () => {
         'c, d: 2 == 2;',
       ]),
     ).toMatchInlineSnapshot(`
-      "__gen_16_ignoreme, y: ;
+      "__gen_1_ignoreme, y: ;
       a, b: 0 == 0;
       b, c: 1 == 1;
       c, d: 2 == 2;
-      x, __gen_17_b: 0 == 0;
-      __gen_17_b, y: 1 == 1;
-      y, __gen_18_d: 2 == 2;"
+      x, __gen_2_b: 0 == 0;
+      __gen_2_b, y: 1 == 1;
+      y, __gen_3_d: 2 == 2;"
     `);
   });
 });

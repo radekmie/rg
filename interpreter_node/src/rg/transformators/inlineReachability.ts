@@ -1,7 +1,7 @@
 import * as utils from '../../utils';
 import { Result, success, failure } from '../../utils';
 import * as ast from '../ast';
-import { makeFreshEdgeName, areObviouslyExclusive } from '../ast/lib';
+import { areObviouslyExclusive } from '../ast/lib';
 import { serializeEdgeName } from '../ast/serializer';
 
 // TODO could return information if [target] can't be reached at all (limited analysis)
@@ -84,6 +84,7 @@ export function findAcceptablePaths(
 // [pathsStart] to [originalEdge.lhs] and [pathsEnd] to [originalEdge.rhs]
 export function substituteWithPaths(
   edges: ast.EdgeDeclaration[],
+  makeFreshNode: (identifier?: string) => ast.EdgeName,
   originalEdge: ast.EdgeDeclaration,
   paths: ast.EdgeDeclaration[],
   pathsStart: ast.EdgeName,
@@ -96,7 +97,7 @@ export function substituteWithPaths(
 
   const originalLhs = originalEdge.lhs;
   originalEdge.label = ast.Skip({});
-  originalEdge.lhs = makeFreshEdgeName('ignoreme');
+  originalEdge.lhs = makeFreshNode('ignoreme');
 
   const mapping: [ast.EdgeName, ast.EdgeName][] = [
     [pathsStart, originalLhs],
@@ -119,8 +120,8 @@ export function substituteWithPaths(
 
   for (const e of paths) {
     const newEdge = ast.EdgeDeclaration({
-      lhs: getMapping(e.lhs) || makeFreshEdgeName(serializeEdgeName(e.lhs)),
-      rhs: getMapping(e.rhs) || makeFreshEdgeName(serializeEdgeName(e.rhs)),
+      lhs: getMapping(e.lhs) || makeFreshNode(serializeEdgeName(e.lhs)),
+      rhs: getMapping(e.rhs) || makeFreshNode(serializeEdgeName(e.rhs)),
       label: e.label,
     });
     setMapping(e.lhs, newEdge.lhs);
@@ -130,12 +131,14 @@ export function substituteWithPaths(
 }
 
 export function inlineReachability({ edges }: ast.GameDeclaration) {
+  const makeFreshNode = ast.lib.makeFreshEdgeName()
+
   for (const e of edges) {
     // TODO can you handle negated reachability by simply negating all labels?
     if (e.label.kind === 'Reachability' && !e.label.negated) {
       const path = findAcceptablePaths(edges, e.label.lhs, e.label.rhs);
       if (path.ok) {
-        substituteWithPaths(edges, e, path.value, e.label.lhs, e.label.rhs);
+        substituteWithPaths(edges, makeFreshNode, e, path.value, e.label.lhs, e.label.rhs);
       }
     }
   }
