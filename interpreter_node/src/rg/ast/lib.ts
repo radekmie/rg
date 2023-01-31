@@ -51,6 +51,15 @@ export function bindings({ parts }: ast.EdgeName) {
   });
 }
 
+export function collectEdgeNames(edges: ast.EdgeDeclaration[]): ast.EdgeName[] {
+  return edges.flatMap(e => {
+    const l = e.label;
+    return [e.lhs, e.rhs].concat(
+      l.kind === 'Reachability' ? [l.lhs, l.rhs] : [],
+    );
+  });
+}
+
 export function hasBindings({ parts }: ast.EdgeName) {
   return parts.some(part => part.kind === 'Binding');
 }
@@ -118,23 +127,42 @@ export function makeBindingsUnique(edges: ast.EdgeDeclaration[]) {
   }
 }
 
-/* TODO check whether nodes don't already contain [__gen_] prefix
- * Really the best option would be to somehow tie this state with the game description.
- * E.g.
- * > let v1 = gameDeclaration.makeFreshEdgeName("foo")
- * > let v2 = gameDeclaration.makeFreshEdgeName("bar")
- * That would also require other kinds of checks (e.g. when modyfing edges)
+// TODO add tests (verify that it doesn't create duplicate nodes)
+/** Generator for fresh node names: 'makeFreshEdgeName(edges)(referenceString?)' -- can be partially applied to check name conflicts only during initial application (assumes no other '__gen_' identifiers are added after that).
+ * @param {ast.EdgeDeclaration[]} edges - the automaton for which fresh identifiers will be created
+ * @returns {freshVarGenerator} generator for fresh nodes
  */
-export function makeFreshEdgeName() {
-  let freshVarId = 0;
+export function makeFreshEdgeName(
+  edges: ast.EdgeDeclaration[],
+): (reference: string | undefined) => ast.EdgeName {
+  const pattern = (id: string, extra: string) => `__gen_${id}_${extra}`;
+  const matcher = new RegExp(pattern('(?<num>d+)', '.*'));
 
-  return function (identifier = '') {
+  let freshVarId = Number(
+    collectEdgeNames(edges)
+      .map(name => {
+        if (name.parts.length === 1 && name.parts[0].kind === 'Literal') {
+          return name.parts[0].identifier.match(matcher)?.groups?.num;
+        }
+      })
+      .reduce<string>((acc, x) => (x === undefined || acc > x ? acc : x), '0'),
+  );
+
+  /** Creates fresh identifiers for given game context assuming no other nodes with '__gen_' prefix are added.
+   * @name freshVarGenerator
+   * @function
+   * @param {string?} reference - string that will be appended (in some way) to the created node for reference
+   * @returns {ast.EdgeName} node with a unique identifier
+   */
+  return function (reference = '') {
     freshVarId += 1;
     return ast.EdgeName({
       parts: [
         ast.Literal({
-          identifier:
-            `__gen_${freshVarId}_` + identifier.replace(/[\W\s]/g, '_'),
+          identifier: pattern(
+            freshVarId.toString(),
+            reference.replace(/[\W\s]/g, '_'),
+          ),
         }),
       ],
     });

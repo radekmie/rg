@@ -52,7 +52,7 @@ function makeLabel(n: number): ast.EdgeLabel {
   });
 }
 
-const makeFreshNode = ast.lib.makeFreshEdgeName()
+const makeFreshNode = ast.lib.makeFreshEdgeName([]);
 
 describe('inlineReachability', () => {
   test('findAcceptablePaths should find a simple path in a chain', () => {

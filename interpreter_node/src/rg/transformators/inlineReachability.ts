@@ -131,14 +131,21 @@ export function substituteWithPaths(
 }
 
 export function inlineReachability({ edges }: ast.GameDeclaration) {
-  const makeFreshNode = ast.lib.makeFreshEdgeName()
+  const makeFreshNode = ast.lib.makeFreshEdgeName(edges);
 
   for (const e of edges) {
     // TODO can you handle negated reachability by simply negating all labels?
     if (e.label.kind === 'Reachability' && !e.label.negated) {
       const path = findAcceptablePaths(edges, e.label.lhs, e.label.rhs);
       if (path.ok) {
-        substituteWithPaths(edges, makeFreshNode, e, path.value, e.label.lhs, e.label.rhs);
+        substituteWithPaths(
+          edges,
+          makeFreshNode,
+          e,
+          path.value,
+          e.label.lhs,
+          e.label.rhs,
+        );
       }
     }
   }
