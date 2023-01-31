@@ -91,14 +91,17 @@ export function substituteWithPaths(
     return;
   }
 
-  const originalLhs = originalEdge.lhs;
-  originalEdge.label = ast.Skip({});
-  originalEdge.lhs = makeFreshNode('ignoreme');
-
+  const serializedStart = serializeEdgeName(pathsStart);
+  const serializedEnd = serializeEdgeName(pathsEnd);
+  const copyInit = makeFreshNode(`reachability-${serializedStart}-${serializedEnd}`);
   const mapping: [ast.EdgeName, ast.EdgeName][] = [
-    [pathsStart, originalLhs],
+    [pathsStart, copyInit],
     [pathsEnd, originalEdge.rhs],
   ];
+
+  originalEdge.rhs = copyInit;
+  originalEdge.label = ast.Skip({});
+
   function getMapping(inSubgraph: ast.EdgeName): ast.EdgeName | undefined {
     return mapping.find(x => utils.isEqual(x[0], inSubgraph))?.[1];
   }

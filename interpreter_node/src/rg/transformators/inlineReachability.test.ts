@@ -103,9 +103,9 @@ describe('inlineReachability', () => {
     );
 
     expect(serializeEdges(edges)).toMatchInlineSnapshot(`
-      "__gen_1_ignoreme, y: ;
+      "x, __gen_1_reachability_a_c: ;
       y, z: ;
-      x, __gen_2_b: x1 = y;
+      __gen_1_reachability_a_c, __gen_2_b: x1 = y;
       __gen_2_b, y: x2 = y;"
     `);
   });
@@ -125,9 +125,9 @@ describe('inlineReachability', () => {
     );
 
     expect(serializeEdges(edges)).toMatchInlineSnapshot(`
-      "__gen_3_ignoreme, y: ;
+      "x, __gen_3_reachability_a_b: ;
       y, z: ;
-      x, y: x1 = y;"
+      __gen_3_reachability_a_b, y: x1 = y;"
     `);
   });
 });
