@@ -73,8 +73,12 @@ export function findAcceptablePaths(
   return success(result);
 }
 
-/* TODO? could reuse the subgraph instead (with extra variable and comparisons)
- * Something like [--reuseFunctions]
+/* TODO? could reuse the subautomaton "in-place" instead (like [--reuseFunctions]):
+ * - create fresh variable: "reachability-pathsStart-pathsEnd"
+ * - create corresponding type, add new possible value for each call of this method
+ * - new edge: originalEdge.lhs, pathsStart: reachability-pathsStart-pathsEnd = newValue;
+ * - new edge: pathsEnd, originalEdge.rhs: reachability-pathsStart-pathsEnd == newValue;
+ * - remove originalEdge
  */
 // Replace [originalEdge] in [edges] with a copy of all edges in [paths] while mapping
 // [pathsStart] to [originalEdge.lhs] and [pathsEnd] to [originalEdge.rhs]
