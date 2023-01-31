@@ -4,7 +4,6 @@ import * as ast from '../ast';
 import { areObviouslyExclusive } from '../ast/lib';
 import { serializeEdgeName } from '../ast/serializer';
 
-// TODO could return information if [target] can't be reached at all (limited analysis)
 /**
  * Return a subautomaton of [edges] that:
  * 1. contains [start] and [target]
@@ -76,9 +75,6 @@ export function findAcceptablePaths(
 
 /* TODO? could reuse the subgraph instead (with extra variable and comparisons)
  * Something like [--reuseFunctions]
- */
-/* TODO need some naming convention to differentiate nodes from [edges] and [paths]
- * (original graph vs subgraph)
  */
 // Replace [originalEdge] in [edges] with a copy of all edges in [paths] while mapping
 // [pathsStart] to [originalEdge.lhs] and [pathsEnd] to [originalEdge.rhs]
