@@ -2,7 +2,7 @@ use crate::utils::map_id::MapId;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct ConstantDeclaration<Id> {
     pub identifier: Id,
@@ -31,7 +31,7 @@ impl<OldId, NewId> MapId<ConstantDeclaration<NewId>, OldId, NewId> for ConstantD
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct EdgeDeclaration<Id> {
     pub label: Rc<EdgeLabel<Id>>,
@@ -55,7 +55,7 @@ impl<OldId, NewId> MapId<EdgeDeclaration<NewId>, OldId, NewId> for EdgeDeclarati
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum EdgeLabel<Id> {
     Assignment {
@@ -121,7 +121,7 @@ impl<OldId, NewId> MapId<EdgeLabel<NewId>, OldId, NewId> for EdgeLabel<OldId> {
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct EdgeName<Id> {
     pub parts: Vec<Rc<EdgeNamePart<Id>>>,
@@ -141,7 +141,7 @@ impl<OldId, NewId> MapId<EdgeName<NewId>, OldId, NewId> for EdgeName<OldId> {
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum EdgeNamePart<Id> {
     Binding {
@@ -180,7 +180,7 @@ impl<OldId, NewId> MapId<EdgeNamePart<NewId>, OldId, NewId> for EdgeNamePart<Old
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Expression<Id> {
     Access {
@@ -255,7 +255,7 @@ impl<OldId, NewId> MapId<GameDeclaration<NewId>, OldId, NewId> for GameDeclarati
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Type<Id> {
     Arrow { lhs: Id, rhs: Rc<Type<Id>> },
@@ -298,7 +298,7 @@ impl<OldId, NewId> MapId<Type<NewId>, OldId, NewId> for Type<OldId> {
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct TypeDeclaration<Id> {
     identifier: Id,
@@ -321,7 +321,7 @@ impl<OldId, NewId> MapId<TypeDeclaration<NewId>, OldId, NewId> for TypeDeclarati
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Value<Id> {
     Element { identifier: Id },
@@ -353,7 +353,7 @@ impl<OldId, NewId> MapId<Value<NewId>, OldId, NewId> for Value<OldId> {
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum ValueEntry<Id> {
     DefaultEntry {
@@ -388,7 +388,7 @@ impl<OldId, NewId> MapId<ValueEntry<NewId>, OldId, NewId> for ValueEntry<OldId> 
     }
 }
 
-#[derive(Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct VariableDeclaration<Id> {
     #[serde(rename = "defaultValue")]

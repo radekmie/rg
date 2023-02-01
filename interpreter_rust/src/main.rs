@@ -1,6 +1,8 @@
-use interpreter_rust::deserializer::GameSerialized;
-use interpreter_rust::Game;
+use interpreter_rust::rg::ist::{Game, RuntimeId, LABEL_BEGIN, LABEL_KEEPER, LABEL_PLAYER};
+use interpreter_rust::utils::interner::Interner;
+use interpreter_rust::utils::map_id::MapId;
 use rand::{rngs::ThreadRng, seq::IteratorRandom};
+use std::fs::read_to_string;
 use std::{collections::BTreeMap, env, time::Instant};
 
 fn avg(counter: &BTreeMap<usize, usize>) -> f32 {
@@ -14,7 +16,7 @@ fn increase(counter: &mut BTreeMap<usize, usize>, x: usize) {
     counter.entry(x).and_modify(|n| *n += 1).or_insert(1);
 }
 
-fn run(game: &Game, rng: &mut ThreadRng, plays: usize) {
+fn run(game: &Game<RuntimeId>, rng: &mut ThreadRng, plays: usize) {
     // Display stats every ~1% of plays.
     let step = 1f32.max(10f32.powf((plays as f32 / 100f32).log10().floor())) as usize;
 
@@ -54,7 +56,7 @@ fn run(game: &Game, rng: &mut ThreadRng, plays: usize) {
     }
 }
 
-fn perf(game: &Game, depth: usize) {
+fn perf(game: &Game<RuntimeId>, depth: usize) {
     let start = Instant::now();
     let state = game.initial_state();
     let count = state.next_states_depth(game, depth, true).count();
@@ -69,7 +71,16 @@ fn perf(game: &Game, depth: usize) {
 fn main() {
     let args = env::args().collect::<Vec<_>>();
     let file = args.get(1).expect("Game IST file expected.");
-    let game = GameSerialized::from_ist_file(file).deserialize();
+    let source = read_to_string(file).expect("Couldn't open file.");
+
+    let mut interner = Interner::default();
+    interner.intern_as("begin", LABEL_BEGIN);
+    interner.intern_as("keeper", LABEL_KEEPER);
+    interner.intern_as("player", LABEL_PLAYER);
+
+    let game = serde_json::from_str::<Game<&str>>(source.as_str())
+        .expect("Incorrect IST file.")
+        .map_id(&mut |id| interner.intern(id));
 
     match args.get(2).expect("Operation expected.").as_str() {
         "perf" => {
