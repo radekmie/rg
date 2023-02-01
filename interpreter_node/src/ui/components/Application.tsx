@@ -26,7 +26,6 @@ const valueForView = {
   'AST.rg': (game: AnalyzedGame) => game.astRg,
   'CST.hrg': (game: AnalyzedGame) => game.cstHrg,
   'CST.rbg': (game: AnalyzedGame) => game.cstRbg,
-  'CST.rg': (game: AnalyzedGame) => game.cstRg,
   'IST.rg': (game: AnalyzedGame) => game.istRg,
   'Source (result).hrg': (game: AnalyzedGame) =>
     ({ mode: 'hrg', value: game.sourceHrgFormatted ?? '' } as const),

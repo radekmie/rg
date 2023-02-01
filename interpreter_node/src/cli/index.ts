@@ -107,10 +107,6 @@ addCommand('rg-ast', 'print .rg  Abstract Syntax Tree', game => {
   console.log(JSON.stringify(game.astRg));
 });
 
-addCommand('rg-cst', 'print .rg  Concrete Syntax Tree', game => {
-  console.log(JSON.stringify(game.cstRg));
-});
-
 addCommand('rg-ist', 'print .rg  Interpreter State Tree', game => {
   console.log(JSON.stringify(game.istRg));
 });

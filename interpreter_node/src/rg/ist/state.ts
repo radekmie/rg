@@ -214,8 +214,10 @@ export function setValue(
     }
     case 'ConstantReference':
       utils.assert(false, 'Cannot assign to a ConstantReference.');
+      break;
     case 'Literal':
       utils.assert(false, 'Cannot assign to a Literal.');
+      break;
     case 'VariableReference': {
       const previousValue = state.values[expression.identifier];
       state.values[expression.identifier] = value;

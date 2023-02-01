@@ -13,5 +13,6 @@
     "react": {
       "version": "18"
     }
-  }
+  },
+  "ignorePatterns": ["src/wasm"]
 }

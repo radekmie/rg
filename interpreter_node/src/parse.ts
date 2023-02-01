@@ -1,4 +1,5 @@
 import { CstNode } from 'chevrotain';
+import fs from 'fs';
 
 import * as hrg from './hrg';
 import * as rbg from './rbg';
@@ -6,6 +7,11 @@ import * as rg from './rg';
 import * as translators from './translators';
 import { Extension, Settings } from './types';
 import * as utils from './utils';
+import * as wasm from './wasm';
+
+// Initialize the Rust module. It's inlined in the browser and referenced in the
+// CLI version.
+wasm.initSync(fs.readFileSync(__dirname + '/wasm/index_bg.wasm'));
 
 export type AnalyzedGame = {
   astHrg: hrg.ast.GameDeclaration | null;
@@ -13,7 +19,6 @@ export type AnalyzedGame = {
   astRg: rg.ast.GameDeclaration;
   cstHrg: CstNode | null;
   cstRbg: CstNode | null;
-  cstRg: CstNode | null;
   graphvizRg: string;
   istRg: rg.ist.Game;
   sourceHrg: string | null;
@@ -72,8 +77,7 @@ function analyzeRbg(source: string, settings: Settings): AnalyzedGame {
 
 function analyzeRg(source: string, settings: Settings): AnalyzedGame {
   const sourceRg = source;
-  const cstRg = rg.cst.parse(sourceRg).cstNode;
-  const astRg = rg.ast.visit(cstRg);
+  const astRg = JSON.parse(wasm.parse_rg(sourceRg));
 
   // Some transformations are required before we do anything else.
   rg.transformators.addBuiltins(astRg);
@@ -102,8 +106,7 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
   const graphvizRg = rg.ast.graphviz(astRg);
 
   const sourceRgFormatted = rg.ast.serializeGameDeclaration(astRg);
-  const cstRgFormatted = rg.cst.parse(sourceRgFormatted).cstNode;
-  const astRgFormatted = rg.ast.visit(cstRgFormatted);
+  const astRgFormatted = JSON.parse(wasm.parse_rg(sourceRgFormatted));
   if (!utils.isEqual(astRg, astRgFormatted)) {
     throw new Error('RgFormattingError (AST mismatch)');
   }
@@ -114,7 +117,6 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
     astRg,
     cstHrg: null,
     cstRbg: null,
-    cstRg,
     graphvizRg,
     istRg,
     sourceHrg: null,

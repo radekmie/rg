@@ -1,12 +1,14 @@
 pub mod deserializer;
+pub mod rg;
+pub mod utils;
+
+// Below code should be moved into rg::ist module.
 
 use regex::{Captures, Regex};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    convert::TryInto,
-    ops::Deref,
-    rc::Rc,
-};
+use std::collections::{BTreeMap, BTreeSet};
+use std::convert::TryInto;
+use std::ops::Deref;
+use std::rc::Rc;
 
 // We assume that there is not _a lot_ of unique symbols.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -409,4 +411,41 @@ pub struct Variable {
     default: Rc<Value>,
     #[allow(dead_code)]
     type_: Rc<Type>,
+}
+
+use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
+
+#[wasm_bindgen]
+pub fn parse_rg(source: &str) -> Result<String, JsValue> {
+    use nom::combinator::all_consuming;
+    use nom::error::convert_error;
+    use nom::Finish;
+    use rg::parser::game_declaration;
+
+    // Parsing comments would require far more complex grammar (and parser),
+    // because a comment can occur basically everywhere.
+    let comment_regex = Regex::new(r"(//.*?)(\n|$)").unwrap();
+    let source = comment_regex.replace_all(source, |captures: &Captures| {
+        captures
+            .get(1)
+            .map(|comment| {
+                format!(
+                    "{:indent$}{}",
+                    "",
+                    captures.get(2).map_or("", |newline| newline.as_str()),
+                    indent = comment.as_str().len()
+                )
+            })
+            .unwrap()
+    });
+
+    let result = match all_consuming(game_declaration)(&source).finish() {
+        Ok((_, game_declaration)) => match serde_json::to_string(game_declaration.deref()) {
+            Ok(json) => Ok(json),
+            Err(error) => Err(error.to_string().into()),
+        },
+        Err(error) => Err(convert_error(source.deref(), error).into()),
+    };
+
+    result
 }

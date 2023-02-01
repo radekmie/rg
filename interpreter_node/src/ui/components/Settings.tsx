@@ -94,7 +94,6 @@ export function Settings({
       { value: 'CST.rbg', disabled: !isRbg },
       { value: 'AST.hrg', disabled: !isHrg },
       { value: 'AST.rbg', disabled: !isRbg },
-      { value: 'CST.rg' },
       { value: 'AST.rg' },
       { value: 'IST.rg' },
     ],

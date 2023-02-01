@@ -20,7 +20,6 @@ export type View =
   | 'Bench'
   | 'CST.hrg'
   | 'CST.rbg'
-  | 'CST.rg'
   | 'Graphviz'
   | 'IST.rg'
   | 'Source (result).hrg'

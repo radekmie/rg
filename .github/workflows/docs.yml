@@ -8,19 +8,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.0.2
-      - name: Use Node.js
-        uses: actions/setup-node@v3.1.1
+        uses: actions/checkout@v3.3.0
+      - name: Install Node.js
+        uses: actions/setup-node@v3.6.0
         with:
           cache: npm
           cache-dependency-path: interpreter_node/package-lock.json
-          node-version: '16.15.0'
+          node-version: "18.13.0"
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - name: Install
         run: npm --prefix interpreter_node ci
+      - name: Build WASM module
+        run: wasm-pack build --out-dir ../interpreter_node/src/wasm --out-name index --target web interpreter_rust
       - name: Build docs
-        run: npm --prefix interpreter_node run ui:build
+        run: npm --prefix interpreter_node run build
       - name: Deploy docs
-        uses: peaceiris/actions-gh-pages@v3.8.0
+        uses: peaceiris/actions-gh-pages@v3.9.2
         with:
           allow_empty_commit: true
           force_orphan: true
