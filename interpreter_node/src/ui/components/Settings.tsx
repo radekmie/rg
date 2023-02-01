@@ -69,6 +69,7 @@ export function Settings({
       { value: 'addExplicitCasts' },
       { value: 'compactSkipEdges' },
       { value: 'expandGeneratorNodes' },
+      { value: 'inlineReachability' },
       { value: 'joinForkSuffixes' },
       { value: 'mangleSymbols' },
       { value: 'normalizeTypes' },

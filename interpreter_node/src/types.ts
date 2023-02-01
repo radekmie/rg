@@ -12,6 +12,7 @@ export type Settings = {
     addExplicitCasts: boolean;
     compactSkipEdges: boolean;
     expandGeneratorNodes: boolean;
+    inlineReachability: boolean;
     joinForkSuffixes: boolean;
     mangleSymbols: boolean;
     normalizeTypes: boolean;
@@ -25,6 +26,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   normalizeTypes: false,
   compactSkipEdges: false,
   expandGeneratorNodes: false,
+  inlineReachability: false,
   joinForkSuffixes: false,
   mangleSymbols: false,
   reuseFunctions: false,

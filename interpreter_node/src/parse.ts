@@ -90,6 +90,7 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
         'addExplicitCasts',
         'expandGeneratorNodes',
         'joinForkSuffixes',
+        'inlineReachability',
         'mangleSymbols',
       ] as const
     )

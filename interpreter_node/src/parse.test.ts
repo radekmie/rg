@@ -401,31 +401,48 @@ describe('--expandGeneratorNodes', () => {
 // 1. Check each entrypoint of a subautomaton.
 // 2. It has exactly one exclusive path.
 // 3. It has no assignements.
-describe.skip('--inlineReachability', () => {
+describe('--inlineReachability', () => {
   const run = createRun(
     {
       extension: Extension.rg,
-      flags: noFlagsEnabled,
+      flags: { ...noFlagsEnabled, inlineReachability: true },
     },
     ['begin, end: ;'],
   );
 
   test('basic', () => {
-    expect(run(['a, b: ? x -> y;', 'x, y: 1 == 1;'])).toMatchInlineSnapshot(
-      '"a, b: 1 == 1;"',
-    );
-    expect(
-      run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: 2 == 2;']),
-    ).toMatchInlineSnapshot('"a, temp: 1 == 1; temp, b: 2 == 2;"');
-    expect(
-      run(['a, b: ? x -> z;', 'x, y: ;', 'y, z: 2 == 2;']),
-    ).toMatchInlineSnapshot('"a, temp: ; temp, b: 2 == 2;"');
-    expect(
-      run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: ;']),
-    ).toMatchInlineSnapshot('"a, temp: 1 == 1; temp, b: ;"');
+    expect(run(['a, b: ? x -> y;', 'x, y: 1 == 1;'])).toMatchInlineSnapshot(`
+      "a, __gen_1_reachability_x_y: ;
+      x, y: 1 == 1;
+      __gen_1_reachability_x_y, b: 1 == 1;"
+    `);
+    expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: 2 == 2;']))
+      .toMatchInlineSnapshot(`
+      "a, __gen_1_reachability_x_z: ;
+      x, y: 1 == 1;
+      y, z: 2 == 2;
+      __gen_1_reachability_x_z, __gen_2_y: 1 == 1;
+      __gen_2_y, b: 2 == 2;"
+    `);
+    expect(run(['a, b: ? x -> z;', 'x, y: ;', 'y, z: 2 == 2;']))
+      .toMatchInlineSnapshot(`
+      "a, __gen_1_reachability_x_z: ;
+      x, y: ;
+      y, z: 2 == 2;
+      __gen_1_reachability_x_z, __gen_2_y: ;
+      __gen_2_y, b: 2 == 2;"
+    `);
+    expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: ;']))
+      .toMatchInlineSnapshot(`
+      "a, __gen_1_reachability_x_z: ;
+      x, y: 1 == 1;
+      y, z: ;
+      __gen_1_reachability_x_z, __gen_2_y: 1 == 1;
+      __gen_2_y, b: ;"
+    `);
   });
 
-  test('exclusive comparision', () => {
+  test('inlines exclusive comparison', () => {
     expect(
       run([
         'x, y: ? a -> d;',
@@ -434,12 +451,43 @@ describe.skip('--inlineReachability', () => {
         'b, d: ;',
         'c, d: ;',
       ]),
-    ).toMatchInlineSnapshot(
-      '"x, _b: 1 == 1; x, _c: 1 != 1; _b, y: ; _c, y: ;"',
-    );
+    ).toMatchInlineSnapshot(`
+      "x, __gen_1_reachability_a_d: ;
+      a, b: 1 == 1;
+      a, c: 1 != 1;
+      b, d: ;
+      c, d: ;
+      __gen_1_reachability_a_d, __gen_2_b: 1 == 1;
+      __gen_1_reachability_a_d, __gen_3_c: 1 != 1;
+      __gen_3_c, y: ;
+      __gen_2_b, y: ;"
+    `);
   });
 
-  test('exclusive reachability', () => {
+  test("doesn't inline non-exclusive comparison", () => {
+    expect(
+      run([
+        'type T = {1, 2};',
+        'var v: T = 1;',
+        'x, y: ? a -> d;',
+        'a, b: v == 1;',
+        'a, c: v != 2;',
+        'b, d: ;',
+        'c, d: ;',
+      ]),
+    ).toMatchInlineSnapshot(`
+      "type T = { 1, 2 };
+      var v: T = 1;
+
+      x, y: ? a -> d;
+      a, b: v == 1;
+      a, c: v != 2;
+      b, d: ;
+      c, d: ;"
+    `);
+  });
+
+  test('inlines exclusive reachability', () => {
     expect(
       run([
         'x, y: ? a -> d;',
@@ -449,9 +497,63 @@ describe.skip('--inlineReachability', () => {
         'c, d: ;',
         'e, f: ;',
       ]),
-    ).toMatchInlineSnapshot(
-      '"x, _b: ? e -> f; x, _c: ! e -> f; _b, y: ; _c, y: ; e, f: ;"',
-    );
+    ).toMatchInlineSnapshot(`
+      "x, __gen_1_reachability_a_d: ;
+      a, __gen_4_reachability_e_f: ;
+      a, c: ! e -> f;
+      b, d: ;
+      c, d: ;
+      e, f: ;
+      __gen_1_reachability_a_d, __gen_5_reachability_e_f: ;
+      __gen_1_reachability_a_d, __gen_3_c: ! e -> f;
+      __gen_3_c, y: ;
+      __gen_2_b, y: ;
+      __gen_4_reachability_e_f, b: ;
+      __gen_5_reachability_e_f, __gen_2_b: ;"
+    `);
+  });
+
+  test("doesn't inline non-exclusive reachability", () => {
+    // technically it is exclusive but that can be seen only after
+    // further analysis
+    expect(
+      run([
+        'x, y: ? a -> d;',
+        'a, b: ? e -> f;',
+        'a, c: ! e -> g;',
+        'b, d: ;',
+        'c, d: ;',
+        'e, f: ;',
+        'e, g: ;',
+      ]),
+    ).toMatchInlineSnapshot(`
+      "x, y: ? a -> d;
+      a, b: ? e -> f;
+      a, c: ! e -> g;
+      b, d: ;
+      c, d: ;
+      e, f: ;
+      e, g: ;"
+    `);
+  });
+
+  test('may copy trailing edges', () => {
+    expect(
+      run([
+        'x, y: ? a -> c;',
+        'a, b: 0 == 0;',
+        'b, c: 1 == 1;',
+        'c, d: 2 == 2;',
+      ]),
+    ).toMatchInlineSnapshot(`
+      "x, __gen_1_reachability_a_c: ;
+      a, b: 0 == 0;
+      b, c: 1 == 1;
+      c, d: 2 == 2;
+      __gen_1_reachability_a_c, __gen_2_b: 0 == 0;
+      __gen_2_b, y: 1 == 1;
+      y, __gen_3_d: 2 == 2;"
+    `);
   });
 });
 
