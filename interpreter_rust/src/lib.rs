@@ -29,10 +29,8 @@ pub fn parse_rg(source: &str) -> Result<String, JsValue> {
     });
 
     let result = match all_consuming(game_declaration)(&source).finish() {
-        Ok((_, game_declaration)) => match serde_json::to_string(game_declaration.deref()) {
-            Ok(json) => Ok(json),
-            Err(error) => Err(error.to_string().into()),
-        },
+        Ok((_, game_declaration)) => serde_json::to_string(game_declaration.deref())
+            .map_err(|error| error.to_string().into()),
         Err(error) => Err(convert_error(source.deref(), error).into()),
     };
 
