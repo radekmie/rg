@@ -6,6 +6,7 @@ import { parse } from '../parse';
 import * as rg from '../rg';
 import { Extension } from '../types';
 import * as utils from '../utils';
+import * as wasm from '../wasm';
 
 program
   .name('node lib/cli')
@@ -44,7 +45,8 @@ function addCommand(
     .command(name)
     .argument('<file>', 'path to game description file (.hrg, .rbg, or .rg)')
     .description(description)
-    .action((...input) => {
+    .action(async (...input) => {
+      await wasm.initPromise;
       const {
         args: [file, ...args],
         parent,

@@ -13,11 +13,7 @@ import { useNumericState } from '../hooks/useNumericState';
 import * as styles from '../index.module.css';
 
 type BenchBlockProps = {
-  action: (
-    game: rg.ist.Game,
-    value: number,
-    logger: rg.ist.Logger,
-  ) => Promise<void>;
+  action: (game: rg.ist.Game, value: number, logger: rg.ist.Logger) => void;
   actionText: string;
   game: rg.ist.Game;
   id?: string;
@@ -58,15 +54,13 @@ function BenchBlock({
   const onAction = useCallback(() => {
     setLogs([]);
     setResult(Intent.PRIMARY);
-    action(game, inputState.valueAsNumber, logger).then(
-      () => {
-        setResult(Intent.SUCCESS);
-      },
-      error => {
-        setResult(Intent.DANGER);
-        console.error(error);
-      },
-    );
+    try {
+      action(game, inputState.valueAsNumber, logger);
+      setResult(Intent.SUCCESS);
+    } catch (error) {
+      setResult(Intent.DANGER);
+      console.error(error);
+    }
   }, [action, game, inputState.valueAsNumber, logger]);
 
   return (

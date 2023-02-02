@@ -12,7 +12,7 @@ Quick setup:
 
 ```sh
 # In interpreter_rust
-wasm-pack wasm-pack build --out-dir ../interpreter_node/src/wasm --out-name index --target web
+wasm-pack wasm-pack build --out-dir ../interpreter_node/src/wasm-module --out-name index --target web
 
 # In interpreter_node
 npm run build
@@ -26,8 +26,8 @@ Check everything before commit:
 
 ```sh
 # In interpreter_rust
-cargo fmt
 cargo clippy
+cargo fmt
 
 # In interpreter_node
 npm run check
@@ -36,22 +36,22 @@ npm run lint
 
 ## Features
 
-| Feature                                         |  `interpreter_node`  |    `interpreter_rust`    |
-| :---------------------------------------------- | :------------------: | :----------------------: |
-| Parser of RG (Regular Games)                    | :heavy_check_mark:\* |    :heavy_check_mark:    |
-| Parser of HRG (High-level Regular Games)        |  :heavy_check_mark:  | :heavy_multiplication_x: |
-| Parser of RBG (Regular Board Games)             |  :heavy_check_mark:  | :heavy_multiplication_x: |
-| Interpreter of the IST (Interpreter State Tree) |  :heavy_check_mark:  |    :heavy_check_mark:    |
-| Translation of RG into IST                      |  :heavy_check_mark:  | :heavy_multiplication_x: |
-| Translation of HRG into RG                      |  :heavy_check_mark:  | :heavy_multiplication_x: |
-| Translation of RBG into RG                      |  :heavy_check_mark:  | :heavy_multiplication_x: |
-| Transformation `addExplicitCasts`               |  :heavy_check_mark:  | :heavy_multiplication_x: |
-| Transformation `compactSkipEdges`               |  :heavy_check_mark:  | :heavy_multiplication_x: |
-| Transformation `expandGeneratorNodes`           |  :heavy_check_mark:  | :heavy_multiplication_x: |
-| Transformation `joinForkSuffixes`               |  :heavy_check_mark:  | :heavy_multiplication_x: |
-| Transformation `mangleSymbols`                  |  :heavy_check_mark:  | :heavy_multiplication_x: |
-| Transformation `normalizeTypes`                 |  :heavy_check_mark:  | :heavy_multiplication_x: |
-| Transformation `skipSelfAssignments`            |  :heavy_check_mark:  | :heavy_multiplication_x: |
+| Feature                                         |    `interpreter_node`    |    `interpreter_rust`    |
+| :---------------------------------------------- | :----------------------: | :----------------------: |
+| Parser of RG (Regular Games)                    |   :heavy_check_mark:\*   |    :heavy_check_mark:    |
+| Parser of HRG (High-level Regular Games)        |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Parser of RBG (Regular Board Games)             |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Interpreter of the IST (Interpreter State Tree) | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Translation of RG into IST                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Translation of HRG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Translation of RBG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Transformation `addExplicitCasts`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Transformation `compactSkipEdges`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Transformation `expandGeneratorNodes`           |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Transformation `joinForkSuffixes`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Transformation `mangleSymbols`                  |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Transformation `normalizeTypes`                 |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Transformation `skipSelfAssignments`            |    :heavy_check_mark:    | :heavy_multiplication_x: |
 
 \* It's used only for syntaxt highlighting - other operations use the one from `interpreter_rust`.
 
@@ -67,7 +67,7 @@ cargo fmt
 cargo clippy
 
 # Build WASM for `interpreter_node`.
-wasm-pack wasm-pack build --out-dir ../interpreter_node/src/wasm --out-name index --target web
+wasm-pack wasm-pack build --out-dir ../interpreter_node/src/wasm-module --out-name index --target web
 ```
 
 ### Usage

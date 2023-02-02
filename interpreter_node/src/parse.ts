@@ -1,5 +1,4 @@
 import { CstNode } from 'chevrotain';
-import fs from 'fs';
 
 import * as hrg from './hrg';
 import * as rbg from './rbg';
@@ -8,10 +7,6 @@ import * as translators from './translators';
 import { Extension, Settings } from './types';
 import * as utils from './utils';
 import * as wasm from './wasm';
-
-// Initialize the Rust module. It's inlined in the browser and referenced in the
-// CLI version.
-wasm.initSync(fs.readFileSync(__dirname + '/wasm/index_bg.wasm'));
 
 export type AnalyzedGame = {
   astHrg: hrg.ast.GameDeclaration | null;

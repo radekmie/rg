@@ -1,4 +1,3 @@
-use crate::rg::ist_state::State;
 use crate::utils::map_id::MapId;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -119,20 +118,6 @@ pub struct Game<Id: Ord> {
     pub edges: BTreeMap<Id, Vec<Edge<Id>>>,
     pub types: BTreeMap<Id, Type<Id>>,
     pub variables: BTreeMap<Id, Variable<Id>>,
-}
-
-impl Game<RuntimeId> {
-    pub fn initial_state(&self) -> State {
-        State {
-            position: LABEL_BEGIN,
-            values: Rc::new(
-                self.variables
-                    .iter()
-                    .map(|(name, variable)| (*name, variable.default.clone()))
-                    .collect(),
-            ),
-        }
-    }
 }
 
 impl<OldId: Ord, NewId: Ord> MapId<Game<NewId>, OldId, NewId> for Game<OldId> {

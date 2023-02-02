@@ -1,11 +1,18 @@
 pub mod rg;
 pub mod utils;
 
+use crate::rg::ist_tools::Interner;
+use crate::utils::map_id::MapId;
+use js_sys::Function;
 use nom::combinator::all_consuming;
 use nom::error::convert_error;
 use nom::Finish;
+use rand::thread_rng;
 use regex::{Captures, Regex};
+use rg::ist::Game;
+use rg::ist_tools::{perf, run};
 use rg::parser::game_declaration;
+use serde_json::from_str;
 use std::ops::Deref;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
@@ -35,4 +42,33 @@ pub fn parse_rg(source: &str) -> Result<String, JsValue> {
     };
 
     result
+}
+
+#[wasm_bindgen]
+pub fn perf_rg(source: &str, depth: usize, callback: &Function) {
+    let mut interner = Interner::default();
+    let game = from_str::<Game<&str>>(source)
+        .expect("Incorrect IST file.")
+        .map_id(&mut |id| interner.intern(id));
+
+    let this = JsValue::null();
+    perf(&game, depth, &|count| {
+        callback.call1(&this, &count.into()).unwrap();
+    });
+}
+
+#[wasm_bindgen]
+pub fn run_rg(source: &str, plays: usize, callback: &Function) {
+    let mut interner = Interner::default();
+    let game = from_str::<Game<&str>>(source)
+        .expect("Incorrect IST file.")
+        .map_id(&mut |id| interner.intern(id));
+
+    let this = JsValue::null();
+    let mut rng = thread_rng();
+    run(&game, &mut rng, plays, &|(plays, moves, turns)| {
+        callback
+            .call3(&this, &plays.into(), &moves.into(), &turns.into())
+            .unwrap();
+    });
 }
