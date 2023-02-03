@@ -18,6 +18,8 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 #[wasm_bindgen]
 pub fn parse_rg(source: &str) -> Result<String, JsValue> {
+    console_error_panic_hook::set_once();
+
     // Parsing comments would require far more complex grammar (and parser),
     // because a comment can occur basically everywhere.
     let comment_regex = Regex::new(r"(//.*?)(\n|$)").unwrap();
@@ -46,6 +48,8 @@ pub fn parse_rg(source: &str) -> Result<String, JsValue> {
 
 #[wasm_bindgen]
 pub fn perf_rg(source: &str, depth: usize, callback: &Function) {
+    console_error_panic_hook::set_once();
+
     let mut interner = Interner::default();
     let game = from_str::<Game<&str>>(source)
         .expect("Incorrect IST file.")
@@ -59,6 +63,8 @@ pub fn perf_rg(source: &str, depth: usize, callback: &Function) {
 
 #[wasm_bindgen]
 pub fn run_rg(source: &str, plays: usize, callback: &Function) {
+    console_error_panic_hook::set_once();
+
     let mut interner = Interner::default();
     let game = from_str::<Game<&str>>(source)
         .expect("Incorrect IST file.")
