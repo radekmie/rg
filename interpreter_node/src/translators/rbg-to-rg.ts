@@ -31,9 +31,9 @@ function translateAtomContent(
 ) {
   switch (content.kind) {
     case 'Assignment': {
-      let lhs: rg.Expression = rg.Reference({ identifier: content.variable });
-      const rhs = translateRValue(context, content.rvalue);
+      let rhs = translateRValue(context, content.rvalue, 0);
 
+      let lhs: rg.Expression = rg.Reference({ identifier: content.variable });
       if (utils.find(context.rbg.players, { name: content.variable })) {
         lhs = rg.Access({
           lhs: rg.Reference({ identifier: 'goals' }),
@@ -44,62 +44,10 @@ function translateAtomContent(
           rhs.kind === 'Reference' &&
           context.rbg.pieces.includes(rhs.identifier)
         ) {
-          const one = rg.Reference({ identifier: '1' });
-          const limit =
-            Math.max(...context.rbg.players.map(({ bound }) => bound)) + 1;
-
-          let localFrom = context.$randomEdgeName();
-          context.$connect(
-            from,
-            localFrom,
-            rg.Assignment({ lhs, rhs: rg.Reference({ identifier: '0' }) }),
-          );
-
-          for (const { node } of context.rbg.board) {
-            const localTo = context.$randomEdgeName();
-            const localThen = context.$randomEdgeName();
-            const localElse = context.$randomEdgeName();
-
-            context.$connect(
-              localFrom,
-              localThen,
-              rg.Comparison({
-                lhs: rg.Access({
-                  lhs: rg.Reference({ identifier: 'board' }),
-                  rhs: rg.Reference({ identifier: node }),
-                }),
-                rhs,
-                negated: false,
-              }),
-            );
-            context.$connect(
-              localThen,
-              localTo,
-              rg.Assignment({
-                lhs,
-                rhs: context.$mathOperator(limit, lhs, one, '+'),
-              }),
-            );
-
-            context.$connect(
-              localFrom,
-              localElse,
-              rg.Comparison({
-                lhs: rg.Access({
-                  lhs: rg.Reference({ identifier: 'board' }),
-                  rhs: rg.Reference({ identifier: node }),
-                }),
-                rhs,
-                negated: true,
-              }),
-            );
-            context.$connect(localElse, localTo, rg.Skip({}));
-
-            localFrom = localTo;
-          }
-
-          context.$connect(localFrom, to, rg.Skip({}));
-          return;
+          rhs = rg.Access({
+            lhs: rg.Reference({ identifier: 'counters' }),
+            rhs,
+          });
         }
       }
 
@@ -127,25 +75,56 @@ function translateAtomContent(
       );
       return;
     }
-    case 'Comparison':
+    case 'Comparison': {
       if (content.operator !== '==' && content.operator !== '!=') {
         throw new Error(`Not implemented (Comparison ${content.operator}).`);
       }
+
+      const limit = Math.max(
+        typeof content.lhs === 'object'
+          ? boundRValue(context, content.lhs) + 1
+          : 0,
+        typeof content.rhs === 'object'
+          ? boundRValue(context, content.rhs) + 1
+          : 0,
+      );
 
       context.$connect(
         from,
         to,
         rg.Comparison({
-          lhs: translateRValue(context, content.lhs),
-          rhs: translateRValue(context, content.rhs),
+          lhs: translateRValue(context, content.lhs, limit),
+          rhs: translateRValue(context, content.rhs, limit),
           negated: content.operator === '!=',
         }),
       );
       return;
-    case 'Off':
+    }
+    case 'Off': {
+      const localSub = context.$randomEdgeName();
+      const localAdd = context.$randomEdgeName();
       context.$connect(
         from,
-        to,
+        localSub,
+        rg.Assignment({
+          lhs: rg.Access({
+            lhs: rg.Reference({ identifier: 'counters' }),
+            rhs: rg.Reference({ identifier: content.piece }),
+          }),
+          rhs: context.$mathOperator(
+            context.rbg.board.length + 1,
+            rg.Access({
+              lhs: rg.Reference({ identifier: 'counters' }),
+              rhs: rg.Reference({ identifier: content.piece }),
+            }),
+            rg.Reference({ identifier: '1' }),
+            '-',
+          ),
+        }),
+      );
+      context.$connect(
+        localSub,
+        localAdd,
         rg.Assignment({
           lhs: rg.Access({
             lhs: rg.Reference({ identifier: 'board' }),
@@ -154,7 +133,27 @@ function translateAtomContent(
           rhs: rg.Reference({ identifier: content.piece }),
         }),
       );
+      context.$connect(
+        localAdd,
+        to,
+        rg.Assignment({
+          lhs: rg.Access({
+            lhs: rg.Reference({ identifier: 'counters' }),
+            rhs: rg.Reference({ identifier: content.piece }),
+          }),
+          rhs: context.$mathOperator(
+            context.rbg.board.length + 1,
+            rg.Access({
+              lhs: rg.Reference({ identifier: 'counters' }),
+              rhs: rg.Reference({ identifier: content.piece }),
+            }),
+            rg.Reference({ identifier: '1' }),
+            '+',
+          ),
+        }),
+      );
       return;
+    }
     case 'On':
       if (content.pieces.length === 0) {
         context.$connect(
@@ -464,6 +463,17 @@ function translateGame(context: Context) {
         rhs: rg.TypeReference({ identifier: 'Piece' }),
       }),
     }),
+    rg.TypeDeclaration({
+      identifier: 'Counters',
+      type: rg.Arrow({
+        lhs: 'Piece',
+        rhs: rg.TypeReference({
+          identifier: context.$createTypeFromSet(
+            utils.generate(context.rbg.board.length + 1, String),
+          ),
+        }),
+      }),
+    }),
   );
 
   context.rg.constants.push(
@@ -557,6 +567,11 @@ function translateGame(context: Context) {
       type: rg.TypeReference({ identifier: 'Coord' }),
       defaultValue: rg.Element({ identifier: context.rbg.board[0].node }),
     }),
+    rg.VariableDeclaration({
+      identifier: 'counters',
+      type: rg.TypeReference({ identifier: 'Counters' }),
+      defaultValue: rg.Element({ identifier: '0' }),
+    }),
   );
 
   for (const variable of context.rbg.variables) {
@@ -573,7 +588,11 @@ function translateGame(context: Context) {
   return context.rg;
 }
 
-function translateRValue(context: Context, rvalue: rbg.RValue): rg.Expression {
+function translateRValue(
+  context: Context,
+  rvalue: rbg.RValue,
+  limit: number,
+): rg.Expression {
   switch (typeof rvalue) {
     case 'number':
       return rg.Reference({ identifier: `${rvalue}` });
@@ -581,10 +600,14 @@ function translateRValue(context: Context, rvalue: rbg.RValue): rg.Expression {
       return rg.Reference({ identifier: rvalue });
   }
 
-  const lhs = translateRValue(context, rvalue.lhs);
-  const rhs = translateRValue(context, rvalue.rhs);
-  const limit = boundRValue(context, rvalue) + 1;
-  return context.$mathOperator(limit, lhs, rhs, rvalue.operator);
+  const lhs = translateRValue(context, rvalue.lhs, limit);
+  const rhs = translateRValue(context, rvalue.rhs, limit);
+  return context.$mathOperator(
+    (limit || boundRValue(context, rvalue)) + 1,
+    lhs,
+    rhs,
+    rvalue.operator,
+  );
 }
 
 function translateVariable(context: Context, variable: rbg.Variable) {
@@ -858,6 +881,9 @@ export default function translate(game: rbg.Game) {
                             case '+':
                               result =
                                 lhs + rhs >= limit ? '0' : `${lhs + rhs}`;
+                              break;
+                            case '-':
+                              result = lhs - rhs < 0 ? '0' : `${lhs - rhs}`;
                               break;
                             default:
                               throw new Error(
