@@ -13,7 +13,9 @@ type Context = {
     limit: number,
     lhs: rg.Expression,
     rhs: rg.Expression,
-    operator: rbg.Expression['operator'],
+    operator:
+      | rbg.Expression['operator']
+      | Exclude<rbg.Comparison['operator'], '==' | '!='>,
   ) => rg.Expression;
   $randomEdgeName: () => rg.EdgeName;
   $shiftPatternsCache: Record<string, string[]>;
@@ -31,9 +33,12 @@ function translateAtomContent(
 ) {
   switch (content.kind) {
     case 'Assignment': {
-      let rhs = translateRValue(context, content.rvalue, 0);
+      let { lhs, rhs } = translateRValuePair(
+        context,
+        content.variable,
+        content.rvalue,
+      );
 
-      let lhs: rg.Expression = rg.Reference({ identifier: content.variable });
       if (utils.find(context.rbg.players, { name: content.variable })) {
         lhs = rg.Access({
           lhs: rg.Reference({ identifier: 'goals' }),
@@ -76,27 +81,22 @@ function translateAtomContent(
       return;
     }
     case 'Comparison': {
-      if (content.operator !== '==' && content.operator !== '!=') {
-        throw new Error(`Not implemented (Comparison ${content.operator}).`);
-      }
-
-      const limit = Math.max(
-        typeof content.lhs === 'object'
-          ? boundRValue(context, content.lhs) + 1
-          : 0,
-        typeof content.rhs === 'object'
-          ? boundRValue(context, content.rhs) + 1
-          : 0,
+      const { limit, lhs, rhs } = translateRValuePair(
+        context,
+        content.lhs,
+        content.rhs,
       );
 
       context.$connect(
         from,
         to,
-        rg.Comparison({
-          lhs: translateRValue(context, content.lhs, limit),
-          rhs: translateRValue(context, content.rhs, limit),
-          negated: content.operator === '!=',
-        }),
+        content.operator === '==' || content.operator === '!='
+          ? rg.Comparison({ lhs, rhs, negated: content.operator === '!=' })
+          : rg.Comparison({
+              lhs: context.$mathOperator(limit + 1, lhs, rhs, content.operator),
+              rhs: rg.Reference({ identifier: '1' }),
+              negated: false,
+            }),
       );
       return;
     }
@@ -570,7 +570,9 @@ function translateGame(context: Context) {
     rg.VariableDeclaration({
       identifier: 'counters',
       type: rg.TypeReference({ identifier: 'Counters' }),
-      defaultValue: rg.Element({ identifier: '0' }),
+      defaultValue: rg.Map({
+        entries: [rg.DefaultEntry({ value: rg.Element({ identifier: '0' }) })],
+      }),
     }),
   );
 
@@ -602,12 +604,24 @@ function translateRValue(
 
   const lhs = translateRValue(context, rvalue.lhs, limit);
   const rhs = translateRValue(context, rvalue.rhs, limit);
-  return context.$mathOperator(
-    (limit || boundRValue(context, rvalue)) + 1,
-    lhs,
-    rhs,
-    rvalue.operator,
+  return context.$mathOperator(limit + 1, lhs, rhs, rvalue.operator);
+}
+
+function translateRValuePair(
+  context: Context,
+  lhs: rbg.RValue,
+  rhs: rbg.RValue,
+) {
+  const limit = boundRValue(
+    context,
+    rbg.Expression({ lhs, rhs, operator: '+' }),
   );
+
+  return {
+    limit,
+    lhs: translateRValue(context, lhs, limit),
+    rhs: translateRValue(context, rhs, limit),
+  };
 }
 
 function translateVariable(context: Context, variable: rbg.Variable) {
@@ -629,9 +643,21 @@ function boundRValue(context: Context, rvalue: rbg.RValue): number {
     case 'number':
       return rvalue;
     case 'string': {
+      const player = utils.find(context.rbg.players, { name: rvalue });
+      if (player) {
+        return player.bound;
+      }
+
       const variable = utils.find(context.rbg.variables, { name: rvalue });
-      utils.assert(variable, `Unknown variable ${rvalue}.`);
-      return variable.bound;
+      if (variable) {
+        return variable.bound;
+      }
+
+      if (context.rbg.pieces.includes(rvalue)) {
+        return context.rbg.board.length;
+      }
+
+      utils.assert(false, `Unbounded rvalue ${rvalue}.`);
     }
   }
 
@@ -831,21 +857,20 @@ export default function translate(game: rbg.Game) {
     },
     $mathOperator(limit, lhs, rhs, operator) {
       const numberType = this.$createTypeFromSet(utils.generate(limit, String));
-      let mathOperator: string;
-      switch (operator) {
-        case '+':
-          mathOperator = `math_add_${limit}`;
-          break;
-        case '-':
-          mathOperator = `math_sub_${limit}`;
-          break;
-        case '*':
-          mathOperator = `math_mul_${limit}`;
-          break;
-        case '/':
-          mathOperator = `math_dib_${limit}`;
-          break;
-      }
+      const mathOperator = [
+        'math',
+        {
+          '*': 'mul',
+          '+': 'add',
+          '-': 'sub',
+          '/': 'div',
+          '<': 'lt',
+          '<=': 'lte',
+          '>': 'gt',
+          '>=': 'gte',
+        }[operator],
+        limit,
+      ].join('_');
 
       if (!utils.find(this.rg.constants, { identifier: mathOperator })) {
         const zero = rg.Element({ identifier: '0' });
@@ -884,6 +909,18 @@ export default function translate(game: rbg.Game) {
                               break;
                             case '-':
                               result = lhs - rhs < 0 ? '0' : `${lhs - rhs}`;
+                              break;
+                            case '<':
+                              result = lhs < rhs ? '1' : '0';
+                              break;
+                            case '<=':
+                              result = lhs <= rhs ? '1' : '0';
+                              break;
+                            case '>':
+                              result = lhs > rhs ? '1' : '0';
+                              break;
+                            case '>=':
+                              result = lhs >= rhs ? '1' : '0';
                               break;
                             default:
                               throw new Error(
