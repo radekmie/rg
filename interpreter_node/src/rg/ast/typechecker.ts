@@ -45,7 +45,7 @@ export class TypeChecker {
           lhs: this.addExplicitCastsInner(edge, expression.lhs, lhsType),
           rhs: this.addExplicitCastsInner(edge, expression.rhs, rhsType),
         });
-        this.scopeExit(undefined, 1);
+        this.scopeExit(undefined);
         break;
       }
       case 'Cast': {
@@ -75,7 +75,7 @@ export class TypeChecker {
       expression = expression.rhs;
     }
 
-    return this.scopeExit(expression, 1);
+    return this.scopeExit(expression);
   }
 
   assert(condition: unknown, message: string): asserts condition {
@@ -231,7 +231,7 @@ export class TypeChecker {
           return this.scopeExit(this.resolveTypeReference(variable.type));
         }
 
-        return ast.Set({ identifiers: [identifier] });
+        return this.scopeExit(ast.Set({ identifiers: [identifier] }));
       }
     }
   }
