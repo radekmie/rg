@@ -133,17 +133,6 @@ function translateAtomContent(
         localAdd,
         rg.Assignment({
           lhs: rg.Access({
-            lhs: rg.Reference({ identifier: 'board' }),
-            rhs: rg.Reference({ identifier: 'coord' }),
-          }),
-          rhs: rg.Reference({ identifier: content.piece }),
-        }),
-      );
-      context.$connect(
-        localAdd,
-        to,
-        rg.Assignment({
-          lhs: rg.Access({
             lhs: rg.Reference({ identifier: 'counters' }),
             rhs: rg.Reference({ identifier: content.piece }),
           }),
@@ -156,6 +145,17 @@ function translateAtomContent(
             rg.Reference({ identifier: '1' }),
             '+',
           ),
+        }),
+      );
+      context.$connect(
+        localAdd,
+        to,
+        rg.Assignment({
+          lhs: rg.Access({
+            lhs: rg.Reference({ identifier: 'board' }),
+            rhs: rg.Reference({ identifier: 'coord' }),
+          }),
+          rhs: rg.Reference({ identifier: content.piece }),
         }),
       );
       return;
