@@ -33,30 +33,24 @@ function translateAtomContent(
 ) {
   switch (content.kind) {
     case 'Assignment': {
-      let { lhs, rhs } = translateRValuePair(
+      const { lhs, rhs } = translateRValuePair(
         context,
         content.variable,
         content.rvalue,
       );
 
-      if (utils.find(context.rbg.players, { name: content.variable })) {
-        lhs = rg.Access({
-          lhs: rg.Reference({ identifier: 'goals' }),
-          rhs: lhs,
-        });
-
-        if (
-          rhs.kind === 'Reference' &&
-          context.rbg.pieces.includes(rhs.identifier)
-        ) {
-          rhs = rg.Access({
-            lhs: rg.Reference({ identifier: 'counters' }),
-            rhs,
-          });
-        }
-      }
-
-      context.$connect(from, to, rg.Assignment({ lhs, rhs }));
+      // Check for overflow.
+      const check = context.$randomEdgeName();
+      context.$connect(
+        from,
+        check,
+        rg.Comparison({
+          lhs: rhs,
+          rhs: rg.Reference({ identifier: 'nan' }),
+          negated: true,
+        }),
+      );
+      context.$connect(check, to, rg.Assignment({ lhs, rhs }));
       return;
     }
     case 'Check': {
@@ -101,54 +95,91 @@ function translateAtomContent(
       return;
     }
     case 'Off': {
-      const localSub = context.$randomEdgeName();
-      const localAdd = context.$randomEdgeName();
+      const oneElement = rg.Reference({ identifier: '1' });
+      const nanElement = rg.Reference({ identifier: 'nan' });
+
+      const counterDec = context.$randomEdgeName();
+      const counterDecCheck = context.$randomEdgeName();
+      const counterDecValue = rg.Access({
+        lhs: rg.Reference({ identifier: 'counters' }),
+        rhs: rg.Access({
+          lhs: rg.Reference({ identifier: 'board' }),
+          rhs: rg.Reference({ identifier: 'coord' }),
+        }),
+      });
+
+      // Check for overflow.
       context.$connect(
         from,
-        localSub,
+        counterDecCheck,
+        rg.Comparison({
+          lhs: context.$mathOperator(
+            context.rbg.board.length + 1,
+            counterDecValue,
+            oneElement,
+            '-',
+          ),
+          rhs: nanElement,
+          negated: true,
+        }),
+      );
+
+      // Decrease.
+      context.$connect(
+        counterDecCheck,
+        counterDec,
         rg.Assignment({
-          lhs: rg.Access({
-            lhs: rg.Reference({ identifier: 'counters' }),
-            rhs: rg.Access({
-              lhs: rg.Reference({ identifier: 'board' }),
-              rhs: rg.Reference({ identifier: 'coord' }),
-            }),
-          }),
+          lhs: counterDecValue,
           rhs: context.$mathOperator(
             context.rbg.board.length + 1,
-            rg.Access({
-              lhs: rg.Reference({ identifier: 'counters' }),
-              rhs: rg.Access({
-                lhs: rg.Reference({ identifier: 'board' }),
-                rhs: rg.Reference({ identifier: 'coord' }),
-              }),
-            }),
-            rg.Reference({ identifier: '1' }),
+            counterDecValue,
+            oneElement,
             '-',
           ),
         }),
       );
+
+      const counterInc = context.$randomEdgeName();
+      const counterIncCheck = context.$randomEdgeName();
+      const counterIncValue = rg.Access({
+        lhs: rg.Reference({ identifier: 'counters' }),
+        rhs: rg.Reference({ identifier: content.piece }),
+      });
+
+      // Check for overflow.
       context.$connect(
-        localSub,
-        localAdd,
+        counterDec,
+        counterIncCheck,
+        rg.Comparison({
+          lhs: context.$mathOperator(
+            context.rbg.board.length + 1,
+            counterIncValue,
+            oneElement,
+            '+',
+          ),
+          rhs: nanElement,
+          negated: true,
+        }),
+      );
+
+      // Increase.
+      context.$connect(
+        counterIncCheck,
+        counterInc,
         rg.Assignment({
-          lhs: rg.Access({
-            lhs: rg.Reference({ identifier: 'counters' }),
-            rhs: rg.Reference({ identifier: content.piece }),
-          }),
+          lhs: counterIncValue,
           rhs: context.$mathOperator(
             context.rbg.board.length + 1,
-            rg.Access({
-              lhs: rg.Reference({ identifier: 'counters' }),
-              rhs: rg.Reference({ identifier: content.piece }),
-            }),
-            rg.Reference({ identifier: '1' }),
+            counterIncValue,
+            oneElement,
             '+',
           ),
         }),
       );
+
+      // Set piece.
       context.$connect(
-        localAdd,
+        counterInc,
         to,
         rg.Assignment({
           lhs: rg.Access({
@@ -617,6 +648,20 @@ function translateRValue(
     case 'number':
       return rg.Reference({ identifier: `${rvalue}` });
     case 'string':
+      if (utils.find(context.rbg.players, { name: rvalue })) {
+        return rg.Access({
+          lhs: rg.Reference({ identifier: 'goals' }),
+          rhs: rg.Reference({ identifier: rvalue }),
+        });
+      }
+
+      if (context.rbg.pieces.includes(rvalue)) {
+        return rg.Access({
+          lhs: rg.Reference({ identifier: 'counters' }),
+          rhs: rg.Reference({ identifier: rvalue }),
+        });
+      }
+
       return rg.Reference({ identifier: rvalue });
   }
 
@@ -874,7 +919,6 @@ export default function translate(game: rbg.Game) {
       return identifier;
     },
     $mathOperator(limit, lhs, rhs, operator) {
-      const numberType = this.$createTypeFromSet(utils.generate(limit, String));
       const mathOperator = [
         'math',
         {
@@ -891,8 +935,14 @@ export default function translate(game: rbg.Game) {
       ].join('_');
 
       if (!utils.find(this.rg.constants, { identifier: mathOperator })) {
-        const zero = rg.Element({ identifier: '0' });
-        const zeroEntry = rg.DefaultEntry({ value: zero });
+        const nanSymbol = 'nan';
+        const nanElement = rg.Element({ identifier: nanSymbol });
+        const nanEntry = rg.DefaultEntry({ value: nanElement });
+
+        const numberType = this.$createTypeFromSet([
+          nanSymbol,
+          ...utils.generate(limit, String),
+        ]);
 
         this.rg.constants.push(
           rg.ConstantDeclaration({
@@ -906,50 +956,51 @@ export default function translate(game: rbg.Game) {
             }),
             value: rg.Map({
               entries: [
-                rg.DefaultEntry({
-                  value: rg.Map({
-                    entries: [zeroEntry],
-                  }),
-                }),
+                rg.DefaultEntry({ value: rg.Map({ entries: [nanEntry] }) }),
                 ...utils.generate(limit, lhs =>
                   rg.NamedEntry({
                     identifier: `${lhs}`,
                     value: rg.Map({
                       entries: [
-                        zeroEntry,
-                        ...utils.generate(limit, rhs => {
-                          let result: string;
+                        nanEntry,
+                        ...utils
+                          .generate(limit, rhs => {
+                            let result: number | null;
+                            switch (operator) {
+                              case '+':
+                                result = lhs + rhs >= limit ? null : lhs + rhs;
+                                break;
+                              case '-':
+                                result = lhs - rhs < 0 ? null : lhs - rhs;
+                                break;
+                              case '<':
+                                result = Number(lhs < rhs);
+                                break;
+                              case '<=':
+                                result = Number(lhs <= rhs);
+                                break;
+                              case '>':
+                                result = Number(lhs > rhs);
+                                break;
+                              case '>=':
+                                result = Number(lhs >= rhs);
+                                break;
+                              default:
+                                throw new Error(
+                                  `Not implemented ($mathOperator(${operator})).`,
+                                );
+                            }
 
-                          switch (operator) {
-                            case '+':
-                              result = String(Math.min(lhs + rhs, limit - 1));
-                              break;
-                            case '-':
-                              result = String(Math.max(lhs - rhs, 0));
-                              break;
-                            case '<':
-                              result = lhs < rhs ? '1' : '0';
-                              break;
-                            case '<=':
-                              result = lhs <= rhs ? '1' : '0';
-                              break;
-                            case '>':
-                              result = lhs > rhs ? '1' : '0';
-                              break;
-                            case '>=':
-                              result = lhs >= rhs ? '1' : '0';
-                              break;
-                            default:
-                              throw new Error(
-                                `Not implemented ($mathOperator${operator}).`,
-                              );
-                          }
+                            if (result === null) {
+                              return null;
+                            }
 
-                          return rg.NamedEntry({
-                            identifier: `${rhs}`,
-                            value: rg.Element({ identifier: result }),
-                          });
-                        }),
+                            return rg.NamedEntry({
+                              identifier: `${rhs}`,
+                              value: rg.Element({ identifier: String(result) }),
+                            });
+                          })
+                          .filter(utils.isNotNull),
                       ],
                     }),
                   }),
