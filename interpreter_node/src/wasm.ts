@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 
 // If you see an error here, make sure to build the Rust module first!
 import init from './wasm-module';
-export * from './wasm-module';
+export { parse_rg, perf_rg, run_rg } from './wasm-module';
 
 // Node.js requires a crypto polyfill. Importing it directly inlines it in the
 // browser too, but we don't need it there.

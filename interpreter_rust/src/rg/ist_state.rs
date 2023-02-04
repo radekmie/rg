@@ -226,7 +226,7 @@ impl Iterator for StateNextDepth<'_> {
             let skip = *ignore_keeper && prev.is_keeper();
             for state in state.next_states(game, true) {
                 let next = state.get_player();
-                let is_finish = next.is_keeper() && state.is_final();
+                let is_finish = next.is_keeper() && state.is_final() && !*ignore_keeper;
                 let is_switch = next != prev && !skip;
                 queue.push((state, depth - usize::from(is_finish || is_switch)));
             }
