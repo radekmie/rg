@@ -40,17 +40,22 @@ function translateAtomContent(
       );
 
       // Check for overflow.
-      const check = context.$randomEdgeName();
-      context.$connect(
-        from,
-        check,
-        rg.Comparison({
-          lhs: rhs,
-          rhs: rg.Reference({ identifier: 'nan' }),
-          negated: true,
-        }),
-      );
-      context.$connect(check, to, rg.Assignment({ lhs, rhs }));
+      if (hasMathExpression(rhs)) {
+        const local = context.$randomEdgeName();
+        context.$connect(
+          from,
+          local,
+          rg.Comparison({
+            lhs: rhs,
+            rhs: rg.Reference({ identifier: 'nan' }),
+            negated: true,
+          }),
+        );
+
+        from = local;
+      }
+
+      context.$connect(from, to, rg.Assignment({ lhs, rhs }));
       return;
     }
     case 'Check': {
@@ -728,6 +733,19 @@ function boundRValue(context: Context, rvalue: rbg.RValue): number {
     boundRValue(context, rvalue.lhs),
     boundRValue(context, rvalue.rhs),
   );
+}
+
+function hasMathExpression(expression: rg.Expression): boolean {
+  switch (expression.kind) {
+    case 'Access':
+      return (
+        hasMathExpression(expression.lhs) || hasMathExpression(expression.rhs)
+      );
+    case 'Cast':
+      return hasMathExpression(expression.rhs);
+    case 'Reference':
+      return expression.identifier.startsWith('math_');
+  }
 }
 
 function isExpandableShiftPattern(content: rbg.Action | rbg.Rule) {
