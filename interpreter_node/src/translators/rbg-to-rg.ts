@@ -910,11 +910,10 @@ export default function translate(game: rbg.Game) {
 
                           switch (operator) {
                             case '+':
-                              result =
-                                lhs + rhs >= limit ? '0' : `${lhs + rhs}`;
+                              result = String(Math.min(lhs + rhs, limit - 1));
                               break;
                             case '-':
-                              result = lhs - rhs < 0 ? '0' : `${lhs - rhs}`;
+                              result = String(Math.max(lhs - rhs, 0));
                               break;
                             case '<':
                               result = lhs < rhs ? '1' : '0';
