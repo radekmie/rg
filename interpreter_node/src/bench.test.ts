@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { describe, test } from 'vitest';
 
 import { parse } from './parse';
 import { Extension, Flag, noFlagsEnabled } from './types';

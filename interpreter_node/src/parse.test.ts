@@ -1,3 +1,5 @@
+import { describe, expect, test } from 'vitest';
+
 import { parse } from './parse';
 import { Extension, Settings, noFlagsEnabled } from './types';
 
@@ -478,7 +480,6 @@ describe('--inlineReachability', () => {
     ).toMatchInlineSnapshot(`
       "type T = { 1, 2 };
       var v: T = 1;
-
       x, y: ? a -> d;
       a, b: v == 1;
       a, c: v != 2;

@@ -1,3 +1,5 @@
+import { describe, expect, test } from 'vitest';
+
 import { Result } from '../../utils';
 import * as ast from '../ast';
 import * as s from '../ast/serializer';
