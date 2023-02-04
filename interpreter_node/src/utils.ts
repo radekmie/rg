@@ -141,6 +141,7 @@ export function isEqual<T>(a: T, b: T) {
   return true;
 }
 
+export const isNotNull = Boolean as unknown as <T>(x: T | null) => x is T;
 
 export function mapToObject<T, U>(
   array: T[],

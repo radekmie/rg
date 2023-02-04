@@ -3,7 +3,7 @@ pub mod utils;
 
 use crate::rg::ist_tools::Interner;
 use crate::utils::map_id::MapId;
-use js_sys::Function;
+use js_sys::{Array, Function};
 use nom::combinator::all_consuming;
 use nom::error::convert_error;
 use nom::Finish;
@@ -13,6 +13,7 @@ use rg::ist::Game;
 use rg::ist_tools::{perf, run};
 use rg::parser::game_declaration;
 use serde_json::from_str;
+use std::iter::FromIterator;
 use std::ops::Deref;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
@@ -72,9 +73,28 @@ pub fn run_rg(source: &str, plays: usize, callback: &Function) {
 
     let this = JsValue::null();
     let mut rng = thread_rng();
-    run(&game, &mut rng, plays, &|(plays, moves, turns)| {
+    run(&game, &mut rng, plays, &|(plays, moves, turns, goals)| {
         callback
-            .call3(&this, &plays.into(), &moves.into(), &turns.into())
+            .apply(
+                &this,
+                &Array::from_iter::<[&JsValue; 4]>([
+                    &plays.into(),
+                    &moves.into(),
+                    &turns.into(),
+                    &goals
+                        .iter()
+                        .map(|(value, count)| {
+                            format!(
+                                "    {}: {:6.2}%",
+                                value.map_id(&mut |id| interner.recall(id).unwrap()),
+                                *count as f32 * 1e2 / plays as f32
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                        .into(),
+                ]),
+            )
             .unwrap();
     });
 }

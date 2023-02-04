@@ -1,4 +1,6 @@
-use crate::rg::ist::{EdgeLabel, Expression, Game, RuntimeId, Value, LABEL_PLAYER};
+use crate::rg::ist::{
+    EdgeLabel, Expression, Game, RuntimeId, Value, LABEL_END, LABEL_GOALS, LABEL_PLAYER,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Deref;
@@ -69,8 +71,16 @@ impl State {
         }
     }
 
+    pub fn get_goals(&self) -> &Rc<Value<RuntimeId>> {
+        self.values.get(&LABEL_GOALS).unwrap()
+    }
+
     pub fn get_player(&self) -> &Rc<Value<RuntimeId>> {
         self.values.get(&LABEL_PLAYER).unwrap()
+    }
+
+    pub fn is_final(&self) -> bool {
+        self.position == LABEL_END
     }
 
     pub fn is_reachable(&self, game: &Game<RuntimeId>, position: RuntimeId) -> bool {
@@ -216,9 +226,9 @@ impl Iterator for StateNextDepth<'_> {
             let skip = *ignore_keeper && prev.is_keeper();
             for state in state.next_states(game, true) {
                 let next = state.get_player();
-                let step = if skip || prev == next { 0 } else { 1 };
-
-                queue.push((state, depth - step));
+                let is_finish = next.is_keeper() && state.is_final();
+                let is_switch = next != prev && !skip;
+                queue.push((state, depth - usize::from(is_finish || is_switch)));
             }
         }
 

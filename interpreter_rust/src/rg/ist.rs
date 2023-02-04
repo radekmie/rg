@@ -1,13 +1,16 @@
 use crate::utils::map_id::MapId;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::fmt;
 use std::rc::Rc;
 
 // Interned strings that the interpreter relies on.
 pub type RuntimeId = u16;
 pub const LABEL_BEGIN: RuntimeId = 0;
-pub const LABEL_KEEPER: RuntimeId = 1;
-pub const LABEL_PLAYER: RuntimeId = 2;
+pub const LABEL_END: RuntimeId = 1;
+pub const LABEL_GOALS: RuntimeId = 2;
+pub const LABEL_KEEPER: RuntimeId = 3;
+pub const LABEL_PLAYER: RuntimeId = 4;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, PartialOrd, Ord, Serialize)]
 #[serde(tag = "kind")]
@@ -173,6 +176,21 @@ pub enum Value<Id: Ord> {
 impl Value<RuntimeId> {
     pub fn is_keeper(&self) -> bool {
         matches!(self, Self::Element { value } if *value == LABEL_KEEPER)
+    }
+}
+
+impl<Id: fmt::Display + Ord> fmt::Display for Value<Id> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Element { value } => write!(f, "{}", value),
+            Self::Map { default, values } => {
+                write!(f, "{{ :{}", default)?;
+                for (key, value) in values.iter() {
+                    write!(f, ", {}: {}", key, value)?;
+                }
+                write!(f, " }}")
+            }
+        }
     }
 }
 

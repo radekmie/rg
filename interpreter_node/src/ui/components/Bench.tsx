@@ -102,7 +102,7 @@ export function Bench({ game }: BenchProps) {
         initialValue={100}
         label="Iterations"
         labelInfo="(number of random games to play)"
-        logsLimit={12}
+        logsLimit={18}
         max={1000}
         min={1}
       />

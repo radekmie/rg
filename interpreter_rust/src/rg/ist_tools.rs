@@ -1,10 +1,13 @@
-use crate::rg::ist::{Game, RuntimeId, LABEL_BEGIN, LABEL_KEEPER, LABEL_PLAYER};
+use crate::rg::ist::{
+    Game, RuntimeId, Value, LABEL_BEGIN, LABEL_END, LABEL_GOALS, LABEL_KEEPER, LABEL_PLAYER,
+};
 use crate::rg::ist_state::State;
 use rand::seq::IteratorRandom;
 use rand::Rng;
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Debug;
+use std::ops::Deref;
 use std::rc::Rc;
 
 pub struct Interner<Id: Ord> {
@@ -53,6 +56,8 @@ impl Default for Interner<RuntimeId> {
             string_to_id: Default::default(),
         };
         interner.intern_as("begin", LABEL_BEGIN);
+        interner.intern_as("end", LABEL_END);
+        interner.intern_as("goals", LABEL_GOALS);
         interner.intern_as("keeper", LABEL_KEEPER);
         interner.intern_as("player", LABEL_PLAYER);
         interner
@@ -83,7 +88,7 @@ pub fn run<R: Rng>(
     game: &Game<RuntimeId>,
     rng: &mut R,
     plays: usize,
-    callback: &impl Fn((usize, f32, f32)),
+    callback: &impl Fn((usize, f32, f32, &BTreeMap<Value<RuntimeId>, usize>)),
 ) {
     fn avg(counter: &BTreeMap<usize, usize>) -> f32 {
         let (x0, n0) = counter
@@ -92,7 +97,7 @@ pub fn run<R: Rng>(
         x0 as f32 / n0 as f32
     }
 
-    fn increase(counter: &mut BTreeMap<usize, usize>, x: usize) {
+    fn increase<Key: Ord>(counter: &mut BTreeMap<Key, usize>, x: Key) {
         counter.entry(x).and_modify(|n| *n += 1).or_insert(1);
     }
 
@@ -100,6 +105,7 @@ pub fn run<R: Rng>(
     let step = 1f32.max(10f32.powf((plays as f32 / 100f32).log10().floor())) as usize;
 
     // Initialize counters.
+    let mut goals: BTreeMap<Value<RuntimeId>, usize> = Default::default();
     let mut moves: BTreeMap<usize, usize> = Default::default();
     let mut turns: BTreeMap<usize, usize> = Default::default();
 
@@ -109,6 +115,7 @@ pub fn run<R: Rng>(
         loop {
             let states = state.next_states_depth(game, 1, false).collect::<Vec<_>>();
             if states.is_empty() {
+                increase(&mut goals, state.get_goals().deref().clone());
                 break;
             }
 
@@ -123,7 +130,7 @@ pub fn run<R: Rng>(
         increase(&mut turns, turn);
 
         if play % step == 0 {
-            callback((play, avg(&moves), avg(&turns)));
+            callback((play, avg(&moves), avg(&turns), &goals));
         }
     }
 }
