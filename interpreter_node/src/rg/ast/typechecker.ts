@@ -256,8 +256,11 @@ export class TypeChecker {
           )
         );
       case 'Set':
+        // At type level it's enough to have _anything_ in common. In runtime,
+        // only assignments within type are allowed.
         return (
-          rhs.kind === 'Set' && utils.isSubset(rhs.identifiers, lhs.identifiers)
+          rhs.kind === 'Set' &&
+          !utils.isDisjoint(rhs.identifiers, lhs.identifiers)
         );
     }
   }

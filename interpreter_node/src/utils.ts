@@ -94,6 +94,15 @@ export function generateIdentifier(
   return identifier;
 }
 
+export function isDisjoint<T>(xs: T[], ys: T[]) {
+  // Specialized version for simple data.
+  if (xs.length && (typeof xs[0] === 'number' || typeof xs[0] === 'string')) {
+    return xs.every(x => !ys.includes(x));
+  }
+
+  return xs.every(x => !ys.some(y => isEqual(x, y)));
+}
+
 // eslint-disable-next-line complexity -- It's fine.
 export function isEqual<T>(a: T, b: T) {
   if (a === b) {
@@ -132,14 +141,6 @@ export function isEqual<T>(a: T, b: T) {
   return true;
 }
 
-export function isSubset<T>(xs: T[], ys: T[]) {
-  // Specialized version for simple data.
-  if (xs.length && (typeof xs[0] === 'number' || typeof xs[0] === 'string')) {
-    return xs.every(x => ys.includes(x));
-  }
-
-  return xs.every(x => ys.some(y => isEqual(x, y)));
-}
 
 export function mapToObject<T, U>(
   array: T[],
