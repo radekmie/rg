@@ -24,7 +24,7 @@ delimited!(in_brackets, tag("["), tag("]"));
 delimited!(in_parens, tag("("), tag(")"));
 delimited!(ws, multispace0, multispace0);
 
-pub fn map_into<'a, O1, O2: From<O1>, E: ParseError<&'a str>>(
+pub fn map_into_rc<'a, O1, O2: From<O1>, E: ParseError<&'a str>>(
     inner: impl FnMut(&'a str) -> IResult<&'a str, O1, E>,
 ) -> impl FnMut(&'a str) -> IResult<&'a str, Rc<O2>, E> {
     map(inner, |x| Rc::new(x.into()))
