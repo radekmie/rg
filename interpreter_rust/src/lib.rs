@@ -85,9 +85,9 @@ pub fn run_rg(source: &str, plays: usize, callback: &Function) {
                         .iter()
                         .map(|(value, count)| {
                             format!(
-                                "    {}: {:6.2}%",
-                                value.map_id(&mut |id| interner.recall(id).unwrap()),
-                                *count as f32 * 1e2 / plays as f32
+                                "    {:5.2}% of {}",
+                                *count as f32 * 1e2 / plays as f32,
+                                value.map_id(&mut |id| interner.recall(id).unwrap())
                             )
                         })
                         .collect::<Vec<_>>()
