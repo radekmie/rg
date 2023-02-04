@@ -141,6 +141,15 @@ export function isEqual<T>(a: T, b: T) {
   return true;
 }
 
+export function isSubset<T>(xs: T[], ys: T[]) {
+  // Specialized version for simple data.
+  if (xs.length && (typeof xs[0] === 'number' || typeof xs[0] === 'string')) {
+    return xs.every(x => ys.includes(x));
+  }
+
+  return xs.every(x => ys.some(y => isEqual(x, y)));
+}
+
 export const isNotNull = Boolean as unknown as <T>(x: T | null) => x is T;
 
 export function mapToObject<T, U>(

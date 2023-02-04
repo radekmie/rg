@@ -236,7 +236,7 @@ export class TypeChecker {
     }
   }
 
-  isAssignable(lhs: ast.Type, rhs: ast.Type): boolean {
+  isAssignable(lhs: ast.Type, rhs: ast.Type, strict = false): boolean {
     lhs = this.resolveTypeReference(lhs);
     rhs = this.resolveTypeReference(rhs);
 
@@ -249,10 +249,11 @@ export class TypeChecker {
       case 'Arrow':
         return (
           rhs.kind === 'Arrow' &&
-          this.isAssignable(lhs.rhs, rhs.rhs) &&
+          this.isAssignable(lhs.rhs, rhs.rhs, strict) &&
           this.isAssignable(
             ast.TypeReference({ identifier: rhs.lhs }),
             ast.TypeReference({ identifier: lhs.lhs }),
+            strict,
           )
         );
       case 'Set':
@@ -260,7 +261,9 @@ export class TypeChecker {
         // only assignments within type are allowed.
         return (
           rhs.kind === 'Set' &&
-          !utils.isDisjoint(rhs.identifiers, lhs.identifiers)
+          (strict
+            ? utils.isSubset(rhs.identifiers, lhs.identifiers)
+            : !utils.isDisjoint(rhs.identifiers, lhs.identifiers))
         );
     }
   }
@@ -312,8 +315,8 @@ export class TypeChecker {
   resolveTypeDeclaration(type: ast.Type) {
     return this.gameDeclaration.types.find(
       typeDeclaration =>
-        this.isAssignable(type, typeDeclaration.type) &&
-        this.isAssignable(typeDeclaration.type, type),
+        this.isAssignable(type, typeDeclaration.type, true) &&
+        this.isAssignable(typeDeclaration.type, type, true),
     );
   }
 
