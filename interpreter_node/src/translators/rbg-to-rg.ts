@@ -577,7 +577,19 @@ function translateGame(context: Context) {
       identifier: 'counters',
       type: rg.TypeReference({ identifier: 'Counters' }),
       defaultValue: rg.Map({
-        entries: [rg.DefaultEntry({ value: rg.Element({ identifier: '0' }) })],
+        entries: [
+          rg.DefaultEntry({ value: rg.Element({ identifier: '0' }) }),
+          ...context.rbg.pieces.map(piece =>
+            rg.NamedEntry({
+              identifier: piece,
+              value: rg.Element({
+                identifier: String(
+                  context.rbg.board.filter(node => node.piece === piece).length,
+                ),
+              }),
+            }),
+          ),
+        ],
       }),
     }),
   );
