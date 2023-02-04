@@ -28,10 +28,12 @@ Check everything before commit:
 # In interpreter_rust
 cargo clippy
 cargo fmt
+cargo test
 
 # In interpreter_node
 npm run check
 npm run lint
+npm test
 ```
 
 ## Features
