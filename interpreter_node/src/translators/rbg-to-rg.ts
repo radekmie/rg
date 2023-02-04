@@ -109,13 +109,19 @@ function translateAtomContent(
         rg.Assignment({
           lhs: rg.Access({
             lhs: rg.Reference({ identifier: 'counters' }),
-            rhs: rg.Reference({ identifier: content.piece }),
+            rhs: rg.Access({
+              lhs: rg.Reference({ identifier: 'board' }),
+              rhs: rg.Reference({ identifier: 'coord' }),
+            }),
           }),
           rhs: context.$mathOperator(
             context.rbg.board.length + 1,
             rg.Access({
               lhs: rg.Reference({ identifier: 'counters' }),
-              rhs: rg.Reference({ identifier: content.piece }),
+              rhs: rg.Access({
+                lhs: rg.Reference({ identifier: 'board' }),
+                rhs: rg.Reference({ identifier: 'coord' }),
+              }),
             }),
             rg.Reference({ identifier: '1' }),
             '-',
