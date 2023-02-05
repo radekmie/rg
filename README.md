@@ -12,7 +12,7 @@ Quick setup:
 
 ```sh
 # In interpreter_rust
-wasm-pack wasm-pack build --out-dir ../interpreter_node/src/wasm-module --out-name index --target web
+wasm-pack build --out-dir ../interpreter_node/src/wasm/module --out-name index --target web
 
 # In interpreter_node
 npm run build
@@ -69,7 +69,7 @@ cargo fmt
 cargo clippy
 
 # Build WASM for `interpreter_node`.
-wasm-pack wasm-pack build --out-dir ../interpreter_node/src/wasm-module --out-name index --target web
+wasm-pack build --out-dir ../interpreter_node/src/wasm/module --out-name index --target web
 ```
 
 ### Usage

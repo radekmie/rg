@@ -24,7 +24,7 @@ export type AnalyzedGame = {
   sourceRgFormatted: string;
 };
 
-function analyzeHrg(source: string, settings: Settings): AnalyzedGame {
+async function analyzeHrg(source: string, settings: Settings) {
   const sourceHrg = source;
   const cstHrg = hrg.cst.parse(sourceHrg).cstNode;
   const astHrg = hrg.ast.visit(cstHrg);
@@ -39,15 +39,15 @@ function analyzeHrg(source: string, settings: Settings): AnalyzedGame {
   }
 
   return {
-    ...analyzeRg(sourceRg, settings),
+    ...(await analyzeRg(sourceRg, settings)),
     astHrg,
     cstHrg,
     sourceHrg,
     sourceHrgFormatted,
-  };
+  } as AnalyzedGame;
 }
 
-function analyzeRbg(source: string, settings: Settings): AnalyzedGame {
+async function analyzeRbg(source: string, settings: Settings) {
   const sourceRbg = source;
   const cstRbg = rbg.cst.parse(sourceRbg).cstNode;
   const astRbg = rbg.ast.visit(cstRbg);
@@ -62,17 +62,17 @@ function analyzeRbg(source: string, settings: Settings): AnalyzedGame {
   }
 
   return {
-    ...analyzeRg(sourceRg, settings),
+    ...(await analyzeRg(sourceRg, settings)),
     astRbg,
     cstRbg,
     sourceRbg,
     sourceRbgFormatted,
-  };
+  } as AnalyzedGame;
 }
 
-function analyzeRg(source: string, settings: Settings): AnalyzedGame {
+async function analyzeRg(source: string, settings: Settings) {
   const sourceRg = source;
-  const astRg = JSON.parse(wasm.parse_rg(sourceRg));
+  const astRg = await wasm.parseRg(sourceRg);
 
   // Some transformations are required before we do anything else.
   rg.transformators.addBuiltins(astRg);
@@ -101,7 +101,7 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
   const graphvizRg = rg.ast.graphviz(astRg);
 
   const sourceRgFormatted = rg.ast.serializeGameDeclaration(astRg);
-  const astRgFormatted = JSON.parse(wasm.parse_rg(sourceRgFormatted));
+  const astRgFormatted = await wasm.parseRg(sourceRgFormatted);
   if (!utils.isEqual(astRg, astRgFormatted)) {
     throw new Error('RgFormattingError (AST mismatch)');
   }
@@ -120,7 +120,7 @@ function analyzeRg(source: string, settings: Settings): AnalyzedGame {
     sourceRbgFormatted: null,
     sourceRg,
     sourceRgFormatted,
-  };
+  } as AnalyzedGame;
 }
 
 export function parse(source: string, settings: Settings) {

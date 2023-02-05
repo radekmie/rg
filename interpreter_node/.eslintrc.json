@@ -14,5 +14,5 @@
       "version": "18"
     }
   },
-  "ignorePatterns": ["src/wasm"]
+  "ignorePatterns": ["src/wasm/module"]
 }

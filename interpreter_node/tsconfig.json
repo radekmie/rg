@@ -6,7 +6,7 @@
     "incremental": true,
     "jsx": "react-jsx",
     "lib": ["DOM", "ES2020"],
-    "module": "CommonJS",
+    "module": "ES2020",
     "moduleResolution": "node",
     "noEmit": true,
     "outDir": "lib",
@@ -14,7 +14,7 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
-    "target": "ES2019",
+    "target": "ES2020",
     "tsBuildInfoFile": "./node_modules/.cache/interpreter_node.tsbuildinfo"
   },
   "include": ["src"]

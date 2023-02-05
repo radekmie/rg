@@ -1,12 +1,11 @@
 import { Command, program } from 'commander';
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 
-import { parse } from '../parse';
+import { AnalyzedGame, parse } from '../parse';
 import * as rg from '../rg';
 import { Extension } from '../types';
 import * as utils from '../utils';
-import * as wasm from '../wasm';
 
 program
   .name('node lib/cli')
@@ -39,14 +38,13 @@ program
 function addCommand(
   name: string,
   description: string,
-  operation: (game: ReturnType<typeof parse>, ...args: string[]) => void,
+  operation: (game: AnalyzedGame, ...args: string[]) => void | Promise<void>,
 ) {
   return program
     .command(name)
     .argument('<file>', 'path to game description file (.hrg, .rbg, or .rg)')
     .description(description)
     .action(async (...input) => {
-      await wasm.initPromise;
       const {
         args: [file, ...args],
         parent,
@@ -62,7 +60,8 @@ function addCommand(
         throw new Error(`Unknown extension "${extension}".`);
       }
 
-      const game = parse(fs.readFileSync(file, { encoding: 'utf8' }), {
+      const source = await fs.readFile(file, { encoding: 'utf8' });
+      const game = await parse(source, {
         extension,
         flags: {
           addExplicitCasts: !!options.addExplicitCasts,
@@ -77,7 +76,10 @@ function addCommand(
         },
       });
 
-      operation(game, ...args);
+      await operation(game, ...args);
+
+      // Worker keeps the reference, so we have to exit manually.
+      process.exit();
     });
 }
 
@@ -113,16 +115,14 @@ addCommand('rg-ist', 'print .rg  Interpreter State Tree', game => {
   console.log(JSON.stringify(game.istRg));
 });
 
-addCommand('rg-perf', 'run   .rg  tree depth check', (game, depth) => {
+addCommand('rg-perf', 'run   .rg  tree depth check', async (game, depth) => {
   utils.assert(isFinite(+depth) && +depth > 0, 'depth must be positive');
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises -- Node.js will wait automatically.
-  rg.ist.perf(game.istRg, +depth, console);
+  await rg.ist.perf(game.istRg, +depth, console);
 }).argument('<depth>', 'maximum tree depth');
 
-addCommand('rg-run', 'run   .rg  simulations', (game, plays) => {
+addCommand('rg-run', 'run   .rg  simulations', async (game, plays) => {
   utils.assert(isFinite(+plays) && +plays > 0, 'plays must be positive');
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises -- Node.js will wait automatically.
-  rg.ist.run(game.istRg, +plays, console);
+  await rg.ist.run(game.istRg, +plays, console);
 }).argument('<plays>', 'number of simulated games');
 
 addCommand('rg-source', 'print .rg  source', game => {

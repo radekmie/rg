@@ -110,13 +110,16 @@ export function Settings({
         />
         <HTMLSelect
           className={styles.noOutline}
-          disabled={intent !== Intent.SUCCESS}
           onChange={onView}
           options={availableViews}
           value={view}
         />
       </div>
-      <Callout className={styles.settings} intent={intent}>
+      <Callout
+        className={styles.settings}
+        icon={intent === Intent.NONE ? 'time' : undefined}
+        intent={intent}
+      >
         <RadioGroup
           className={styles.options}
           label="Extension"

@@ -18,13 +18,14 @@ function createRun(settings: Settings, definitions: string[] = []) {
     ...definitions,
   ];
 
-  return (source: string[]) => {
+  return async (source: string[]) => {
     try {
+      const gameSource = [...definitions, ...source].join('\n');
+      const game = await parse(gameSource, settings);
       return definitions
         .reduce(
           (source, definition) => source.replace(definition, ''),
-          parse([...definitions, ...source].join('\n'), settings)
-            .sourceRgFormatted,
+          game.sourceRgFormatted,
         )
         .replace(/\n\n+/g, '\n')
         .trim();
@@ -159,9 +160,9 @@ describe('parse (.rg)', () => {
       'B(b) = B(C(D(d)[b])[A(a)]);',
       'B(b) = B(C(D(d)[B(b)])[a]);',
       'B(b) = B(C(D(d)[B(b)])[A(a)]);',
-    ])('%s', label => {
+    ])('%s', async label => {
       const edge = `x, y: ${label}`;
-      expect(run([edge])).toBe(edge);
+      await expect(run([edge])).resolves.toBe(edge);
     });
   });
 });
@@ -232,10 +233,10 @@ describe('--addExplicitCasts', () => {
     'B(b) = B(C(D(d)[b])[A(a)]);',
     'B(b) = B(C(D(d)[B(b)])[a]);',
     'B(b) = B(C(D(d)[B(b)])[A(a)]);',
-  ])('%s', label => {
+  ])('%s', async label => {
     const input = `x, y: ${label}`;
     const output = 'x, y: B(b) = B(C(D(d)[B(b)])[A(a)]);';
-    expect(run([input])).toBe(output);
+    await expect(run([input])).resolves.toBe(output);
   });
 });
 
@@ -248,24 +249,24 @@ describe('--compactSkipEdges', () => {
     ['begin, end: ;'],
   );
 
-  test('prefix', () => {
-    expect(run(['a, b: ;', 'b, c: x == x;', 'c, d: y == y;']))
+  test('prefix', async () => {
+    await expect(run(['a, b: ;', 'b, c: x == x;', 'c, d: y == y;'])).resolves
       .toMatchInlineSnapshot(`
       "a, c: x == x;
       c, d: y == y;"
     `);
   });
 
-  test('infix', () => {
-    expect(run(['a, b: x == x;', 'b, c: ;', 'c, d: y == y;']))
+  test('infix', async () => {
+    await expect(run(['a, b: x == x;', 'b, c: ;', 'c, d: y == y;'])).resolves
       .toMatchInlineSnapshot(`
       "a, c: x == x;
       c, d: y == y;"
     `);
   });
 
-  test('suffix', () => {
-    expect(run(['a, b: x == x;', 'b, c: y == y;', 'c, d: ;']))
+  test('suffix', async () => {
+    await expect(run(['a, b: x == x;', 'b, c: y == y;', 'c, d: ;'])).resolves
       .toMatchInlineSnapshot(`
       "a, b: x == x;
       b, d: y == y;"
@@ -289,29 +290,31 @@ describe('--expandGeneratorNodes', () => {
     ],
   );
 
-  test('one lhs bind', () => {
-    expect(run(['a(x: T1), b: x == x;'])).toMatchInlineSnapshot(`
+  test('one lhs bind', async () => {
+    await expect(run(['a(x: T1), b: x == x;'])).resolves.toMatchInlineSnapshot(`
       "a__bind__1, b: 1 == 1;
       a__bind__2, b: 2 == 2;"
     `);
   });
 
-  test('one rhs bind', () => {
-    expect(run(['a, b(x: T1): x == x;'])).toMatchInlineSnapshot(`
+  test('one rhs bind', async () => {
+    await expect(run(['a, b(x: T1): x == x;'])).resolves.toMatchInlineSnapshot(`
       "a, b__bind__1: 1 == 1;
       a, b__bind__2: 2 == 2;"
     `);
   });
 
-  test('one lhs and one rhs bind (equal)', () => {
-    expect(run(['a(x: T1), b(x: T1): x == x;'])).toMatchInlineSnapshot(`
+  test('one lhs and one rhs bind (equal)', async () => {
+    await expect(run(['a(x: T1), b(x: T1): x == x;'])).resolves
+      .toMatchInlineSnapshot(`
       "a__bind__1, b__bind__1: 1 == 1;
       a__bind__2, b__bind__2: 2 == 2;"
     `);
   });
 
-  test('one lhs and one rhs bind (different)', () => {
-    expect(run(['a(x: T1), b(y: T2): T4(x) == T4(y);'])).toMatchInlineSnapshot(`
+  test('one lhs and one rhs bind (different)', async () => {
+    await expect(run(['a(x: T1), b(y: T2): T4(x) == T4(y);'])).resolves
+      .toMatchInlineSnapshot(`
       "a__bind__1, b__bind__3: T4(1) == T4(3);
       a__bind__1, b__bind__4: T4(1) == T4(4);
       a__bind__2, b__bind__3: T4(2) == T4(3);
@@ -319,8 +322,9 @@ describe('--expandGeneratorNodes', () => {
     `);
   });
 
-  test('two lhs binds', () => {
-    expect(run(['a(x: T1)(y: T2), b: T4(x) == T4(y);'])).toMatchInlineSnapshot(`
+  test('two lhs binds', async () => {
+    await expect(run(['a(x: T1)(y: T2), b: T4(x) == T4(y);'])).resolves
+      .toMatchInlineSnapshot(`
       "a__bind__1__bind__3, b: T4(1) == T4(3);
       a__bind__1__bind__4, b: T4(1) == T4(4);
       a__bind__2__bind__3, b: T4(2) == T4(3);
@@ -328,8 +332,9 @@ describe('--expandGeneratorNodes', () => {
     `);
   });
 
-  test('two rhs binds', () => {
-    expect(run(['a, b(x: T1)(y: T2): T4(x) == T4(y);'])).toMatchInlineSnapshot(`
+  test('two rhs binds', async () => {
+    await expect(run(['a, b(x: T1)(y: T2): T4(x) == T4(y);'])).resolves
+      .toMatchInlineSnapshot(`
       "a, b__bind__1__bind__3: T4(1) == T4(3);
       a, b__bind__1__bind__4: T4(1) == T4(4);
       a, b__bind__2__bind__3: T4(2) == T4(3);
@@ -337,15 +342,15 @@ describe('--expandGeneratorNodes', () => {
     `);
   });
 
-  test('two lhs and one rhs bind (equal)', () => {
-    expect(run(['a(x: T1)(y: T2), b(x: T1): T4(x) == T4(y);']))
+  test('two lhs and one rhs bind (equal)', async () => {
+    await expect(run(['a(x: T1)(y: T2), b(x: T1): T4(x) == T4(y);'])).resolves
       .toMatchInlineSnapshot(`
       "a__bind__1__bind__3, b__bind__1: T4(1) == T4(3);
       a__bind__1__bind__4, b__bind__1: T4(1) == T4(4);
       a__bind__2__bind__3, b__bind__2: T4(2) == T4(3);
       a__bind__2__bind__4, b__bind__2: T4(2) == T4(4);"
     `);
-    expect(run(['a(x: T1)(y: T2), b(y: T2): T4(x) == T4(y);']))
+    await expect(run(['a(x: T1)(y: T2), b(y: T2): T4(x) == T4(y);'])).resolves
       .toMatchInlineSnapshot(`
       "a__bind__1__bind__3, b__bind__3: T4(1) == T4(3);
       a__bind__1__bind__4, b__bind__4: T4(1) == T4(4);
@@ -354,9 +359,9 @@ describe('--expandGeneratorNodes', () => {
     `);
   });
 
-  test('two lhs and one rhs bind (different)', () => {
-    expect(run(['a(x: T1)(y: T2), b(z: T3): map[x][y] == T4(z);']))
-      .toMatchInlineSnapshot(`
+  test('two lhs and one rhs bind (different)', async () => {
+    await expect(run(['a(x: T1)(y: T2), b(z: T3): map[x][y] == T4(z);']))
+      .resolves.toMatchInlineSnapshot(`
       "a__bind__1__bind__3, b__bind__5: map[1][3] == T4(5);
       a__bind__1__bind__3, b__bind__6: map[1][3] == T4(6);
       a__bind__1__bind__4, b__bind__5: map[1][4] == T4(5);
@@ -368,15 +373,15 @@ describe('--expandGeneratorNodes', () => {
     `);
   });
 
-  test('one lhs and two rhs binds (equal)', () => {
-    expect(run(['a(x: T1), b(x: T1)(y: T2): T4(x) == T4(y);']))
+  test('one lhs and two rhs binds (equal)', async () => {
+    await expect(run(['a(x: T1), b(x: T1)(y: T2): T4(x) == T4(y);'])).resolves
       .toMatchInlineSnapshot(`
       "a__bind__1, b__bind__1__bind__3: T4(1) == T4(3);
       a__bind__1, b__bind__1__bind__4: T4(1) == T4(4);
       a__bind__2, b__bind__2__bind__3: T4(2) == T4(3);
       a__bind__2, b__bind__2__bind__4: T4(2) == T4(4);"
     `);
-    expect(run(['a(y: T2), b(x: T1)(y: T2): T4(x) == T4(y);']))
+    await expect(run(['a(y: T2), b(x: T1)(y: T2): T4(x) == T4(y);'])).resolves
       .toMatchInlineSnapshot(`
       "a__bind__3, b__bind__1__bind__3: T4(1) == T4(3);
       a__bind__3, b__bind__2__bind__3: T4(2) == T4(3);
@@ -385,9 +390,9 @@ describe('--expandGeneratorNodes', () => {
     `);
   });
 
-  test('one lhs and two rhs binds (different)', () => {
-    expect(run(['a(x: T1), b(y: T2)(z: T3): map[x][y] == T4(z);']))
-      .toMatchInlineSnapshot(`
+  test('one lhs and two rhs binds (different)', async () => {
+    await expect(run(['a(x: T1), b(y: T2)(z: T3): map[x][y] == T4(z);']))
+      .resolves.toMatchInlineSnapshot(`
       "a__bind__1, b__bind__3__bind__5: map[1][3] == T4(5);
       a__bind__1, b__bind__3__bind__6: map[1][3] == T4(6);
       a__bind__1, b__bind__4__bind__5: map[1][4] == T4(5);
@@ -412,21 +417,22 @@ describe('--inlineReachability', () => {
     ['begin, end: ;'],
   );
 
-  test('basic', () => {
-    expect(run(['a, b: ? x -> y;', 'x, y: 1 == 1;'])).toMatchInlineSnapshot(`
+  test('basic', async () => {
+    await expect(run(['a, b: ? x -> y;', 'x, y: 1 == 1;'])).resolves
+      .toMatchInlineSnapshot(`
       "a, __gen_1_reachability_x_y: ;
       x, y: 1 == 1;
       __gen_1_reachability_x_y, b: 1 == 1;"
     `);
-    expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: 2 == 2;']))
-      .toMatchInlineSnapshot(`
+    await expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: 2 == 2;']))
+      .resolves.toMatchInlineSnapshot(`
       "a, __gen_1_reachability_x_z: ;
       x, y: 1 == 1;
       y, z: 2 == 2;
       __gen_1_reachability_x_z, __gen_2_y: 1 == 1;
       __gen_2_y, b: 2 == 2;"
     `);
-    expect(run(['a, b: ? x -> z;', 'x, y: ;', 'y, z: 2 == 2;']))
+    await expect(run(['a, b: ? x -> z;', 'x, y: ;', 'y, z: 2 == 2;'])).resolves
       .toMatchInlineSnapshot(`
       "a, __gen_1_reachability_x_z: ;
       x, y: ;
@@ -434,7 +440,7 @@ describe('--inlineReachability', () => {
       __gen_1_reachability_x_z, __gen_2_y: ;
       __gen_2_y, b: 2 == 2;"
     `);
-    expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: ;']))
+    await expect(run(['a, b: ? x -> z;', 'x, y: 1 == 1;', 'y, z: ;'])).resolves
       .toMatchInlineSnapshot(`
       "a, __gen_1_reachability_x_z: ;
       x, y: 1 == 1;
@@ -444,8 +450,8 @@ describe('--inlineReachability', () => {
     `);
   });
 
-  test('inlines exclusive comparison', () => {
-    expect(
+  test('inlines exclusive comparison', async () => {
+    await expect(
       run([
         'x, y: ? a -> d;',
         'a, b: 1 == 1;',
@@ -453,7 +459,7 @@ describe('--inlineReachability', () => {
         'b, d: ;',
         'c, d: ;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "x, __gen_1_reachability_a_d: ;
       a, b: 1 == 1;
       a, c: 1 != 1;
@@ -466,8 +472,8 @@ describe('--inlineReachability', () => {
     `);
   });
 
-  test("doesn't inline non-exclusive comparison", () => {
-    expect(
+  test("doesn't inline non-exclusive comparison", async () => {
+    await expect(
       run([
         'type T = {1, 2};',
         'var v: T = 1;',
@@ -477,7 +483,7 @@ describe('--inlineReachability', () => {
         'b, d: ;',
         'c, d: ;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "type T = { 1, 2 };
       var v: T = 1;
       x, y: ? a -> d;
@@ -488,8 +494,8 @@ describe('--inlineReachability', () => {
     `);
   });
 
-  test('inlines exclusive reachability', () => {
-    expect(
+  test('inlines exclusive reachability', async () => {
+    await expect(
       run([
         'x, y: ? a -> d;',
         'a, b: ? e -> f;',
@@ -498,7 +504,7 @@ describe('--inlineReachability', () => {
         'c, d: ;',
         'e, f: ;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "x, __gen_1_reachability_a_d: ;
       a, __gen_4_reachability_e_f: ;
       a, c: ! e -> f;
@@ -514,10 +520,10 @@ describe('--inlineReachability', () => {
     `);
   });
 
-  test("doesn't inline non-exclusive reachability", () => {
+  test("doesn't inline non-exclusive reachability", async () => {
     // technically it is exclusive but that can be seen only after
     // further analysis
-    expect(
+    await expect(
       run([
         'x, y: ? a -> d;',
         'a, b: ? e -> f;',
@@ -527,7 +533,7 @@ describe('--inlineReachability', () => {
         'e, f: ;',
         'e, g: ;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "x, y: ? a -> d;
       a, b: ? e -> f;
       a, c: ! e -> g;
@@ -538,15 +544,15 @@ describe('--inlineReachability', () => {
     `);
   });
 
-  test('may copy trailing edges', () => {
-    expect(
+  test('may copy trailing edges', async () => {
+    await expect(
       run([
         'x, y: ? a -> c;',
         'a, b: 0 == 0;',
         'b, c: 1 == 1;',
         'c, d: 2 == 2;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "x, __gen_1_reachability_a_c: ;
       a, b: 0 == 0;
       b, c: 1 == 1;
@@ -567,47 +573,53 @@ describe('--normalizeTypes', () => {
     ['type A = { 0 };', 'begin, end: ;'],
   );
 
-  test('constant declarations', () => {
-    expect(run(['const b: A -> A = { :0 };'])).toMatchInlineSnapshot(`
+  test('constant declarations', async () => {
+    await expect(run(['const b: A -> A = { :0 };'])).resolves
+      .toMatchInlineSnapshot(`
       "type A_A = A -> A;
       const b: A_A = { :0 };"
     `);
-    expect(run(['const b: A -> A -> A = { :{ :0 } };'])).toMatchInlineSnapshot(`
+    await expect(run(['const b: A -> A -> A = { :{ :0 } };'])).resolves
+      .toMatchInlineSnapshot(`
       "type A_A = A -> A;
       type A_A_A = A -> A_A;
       const b: A_A_A = { :{ :0 } };"
     `);
   });
 
-  test('variable declarations', () => {
-    expect(run(['var b: A -> A = { :0 };'])).toMatchInlineSnapshot(`
+  test('variable declarations', async () => {
+    await expect(run(['var b: A -> A = { :0 };'])).resolves
+      .toMatchInlineSnapshot(`
       "type A_A = A -> A;
       var b: A_A = { :0 };"
     `);
-    expect(run(['var b: A -> A -> A = { :{ :0 } };'])).toMatchInlineSnapshot(`
+    await expect(run(['var b: A -> A -> A = { :{ :0 } };'])).resolves
+      .toMatchInlineSnapshot(`
       "type A_A = A -> A;
       type A_A_A = A -> A_A;
       var b: A_A_A = { :{ :0 } };"
     `);
   });
 
-  test('type declarations', () => {
-    expect(run(['type B = A -> A;'])).toMatchInlineSnapshot(
+  test('type declarations', async () => {
+    await expect(run(['type B = A -> A;'])).resolves.toMatchInlineSnapshot(
       '"type B = A -> A;"',
     );
-    expect(run(['type B = A -> A -> A;'])).toMatchInlineSnapshot(`
+    await expect(run(['type B = A -> A -> A;'])).resolves
+      .toMatchInlineSnapshot(`
       "type B = A -> A_A;
       type A_A = A -> A;"
     `);
-    expect(run(['type B = A -> A -> A -> A;'])).toMatchInlineSnapshot(`
+    await expect(run(['type B = A -> A -> A -> A;'])).resolves
+      .toMatchInlineSnapshot(`
       "type B = A -> A_A_A;
       type A_A = A -> A;
       type A_A_A = A -> A_A;"
     `);
   });
 
-  test('existing types', () => {
-    expect(run(['type B = A -> A -> A;', 'type A_A = A;']))
+  test('existing types', async () => {
+    await expect(run(['type B = A -> A -> A;', 'type A_A = A;'])).resolves
       .toMatchInlineSnapshot(`
       "type B = A -> A_A2;
       type A_A = A;
@@ -625,25 +637,31 @@ describe('--skipSelfAssignments', () => {
     ['type T = { x };', 'var map: T -> T = { :x };', 'begin, end: ;'],
   );
 
-  test('basic', () => {
-    expect(run(['a, b: x = x;'])).toMatchInlineSnapshot('"a, b: ;"');
-  });
-
-  test('basic with cast', () => {
-    expect(run(['a, b: x = T(x);'])).toMatchInlineSnapshot('"a, b: ;"');
-  });
-
-  test('access', () => {
-    expect(run(['a, b: map[x] = map[x];'])).toMatchInlineSnapshot('"a, b: ;"');
-  });
-
-  test('access with cast', () => {
-    expect(run(['a, b: map[x] = T(map[x]);'])).toMatchInlineSnapshot(
+  test('basic', async () => {
+    await expect(run(['a, b: x = x;'])).resolves.toMatchInlineSnapshot(
       '"a, b: ;"',
     );
-    expect(run(['a, b: map[x] = map[T(x)];'])).toMatchInlineSnapshot(
+  });
+
+  test('basic with cast', async () => {
+    await expect(run(['a, b: x = T(x);'])).resolves.toMatchInlineSnapshot(
       '"a, b: ;"',
     );
+  });
+
+  test('access', async () => {
+    await expect(
+      run(['a, b: map[x] = map[x];']),
+    ).resolves.toMatchInlineSnapshot('"a, b: ;"');
+  });
+
+  test('access with cast', async () => {
+    await expect(
+      run(['a, b: map[x] = T(map[x]);']),
+    ).resolves.toMatchInlineSnapshot('"a, b: ;"');
+    await expect(
+      run(['a, b: map[x] = map[T(x)];']),
+    ).resolves.toMatchInlineSnapshot('"a, b: ;"');
   });
 });
 
@@ -655,8 +673,8 @@ describe('--joinForkSuffixes', () => {
     flags: { ...noFlagsEnabled, joinForkSuffixes: true },
   });
 
-  test('fork and join: small', () => {
-    expect(
+  test('fork and join: small', async () => {
+    await expect(
       run([
         'begin, end: ;',
         '1, l1: 1 == 1;',
@@ -667,7 +685,7 @@ describe('--joinForkSuffixes', () => {
         'r2, 2: 0 == 0;',
         '2, 3: 7 == 7;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "begin, end: ;
       1, l1: 1 == 1;
       1, r1: 2 == 2;
@@ -678,8 +696,8 @@ describe('--joinForkSuffixes', () => {
     `);
   });
 
-  test('fork and join: bigger', () => {
-    expect(
+  test('fork and join: bigger', async () => {
+    await expect(
       run([
         'begin, a0: branch0 == branch0;',
         'a5, end: 5 == 5;',
@@ -710,7 +728,7 @@ describe('--joinForkSuffixes', () => {
         'd3, d4: 3 == 3;',
         'd4, d5: 4 == 4;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "begin, a0: branch0 == branch0;
       a5, end: 5 == 5;
       a0, d1: 0 == 0;
@@ -727,8 +745,8 @@ describe('--joinForkSuffixes', () => {
     `);
   });
 
-  test("don't join if both branches have more outgoing edges", () => {
-    expect(
+  test("don't join if both branches have more outgoing edges", async () => {
+    await expect(
       run([
         'begin, end: ;',
         '1, l1: 1 == 1;',
@@ -741,7 +759,7 @@ describe('--joinForkSuffixes', () => {
         'l2, 4: 0 == 0;',
         'r2, 4: 0 == 0;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "begin, end: ;
       1, l1: 1 == 1;
       1, r1: 2 == 2;
@@ -755,8 +773,8 @@ describe('--joinForkSuffixes', () => {
     `);
   });
 
-  test("don't join if one branch has more outgoing edges", () => {
-    expect(
+  test("don't join if one branch has more outgoing edges", async () => {
+    await expect(
       run([
         'begin, end: ;',
         '1, l1: 1 == 1;',
@@ -768,7 +786,7 @@ describe('--joinForkSuffixes', () => {
         '2, 3: 7 == 7;',
         'l2, 4: 0 == 0;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "begin, end: ;
       1, l1: 1 == 1;
       1, r1: 2 == 2;
@@ -781,8 +799,8 @@ describe('--joinForkSuffixes', () => {
     `);
   });
 
-  test("don't join if both branches have more incoming edges", () => {
-    expect(
+  test("don't join if both branches have more incoming edges", async () => {
+    await expect(
       run([
         'begin, end: ;',
         '1, l1: 1 == 1;',
@@ -795,7 +813,7 @@ describe('--joinForkSuffixes', () => {
         '4, l2: 0 == 0;',
         '4, r2: 0 == 0;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "begin, end: ;
       1, l1: 1 == 1;
       1, r1: 2 == 2;
@@ -809,8 +827,8 @@ describe('--joinForkSuffixes', () => {
     `);
   });
 
-  test('join if only one branch has more incoming edges', () => {
-    expect(
+  test('join if only one branch has more incoming edges', async () => {
+    await expect(
       run([
         'begin, end: ;',
         '1, l1: 1 == 1;',
@@ -822,7 +840,7 @@ describe('--joinForkSuffixes', () => {
         '2, 3: 7 == 7;',
         '4, l2: 0 == 0;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "begin, end: ;
       1, l1: 1 == 1;
       1, r1: 2 == 2;
@@ -834,8 +852,8 @@ describe('--joinForkSuffixes', () => {
     `);
   });
 
-  test("don't create multiple edges between nodes", () => {
-    expect(
+  test("don't create multiple edges between nodes", async () => {
+    await expect(
       run([
         'begin, end: ;',
         '1, l1: 0 == 0;',
@@ -844,7 +862,7 @@ describe('--joinForkSuffixes', () => {
         'r1, 2: 1 == 1;',
         '2, 3: 7 == 7;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "begin, end: ;
       1, l1: 0 == 0;
       1, r1: 0 == 0;
@@ -854,8 +872,8 @@ describe('--joinForkSuffixes', () => {
     `);
   });
 
-  test('shape from breakthrough.rbg', () => {
-    expect(
+  test('shape from breakthrough.rbg', async () => {
+    await expect(
       run([
         'begin, end: ;',
         '11, 9: 3 == 3;',
@@ -868,7 +886,7 @@ describe('--joinForkSuffixes', () => {
         '15, 23: ;',
         '23, 12: 5 == 5;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "begin, end: ;
       11, 9: 3 == 3;
       9, 12: 5 == 5;
@@ -882,8 +900,8 @@ describe('--joinForkSuffixes', () => {
     `);
   });
 
-  test('should join when the last node is reachability target', () => {
-    expect(
+  test('should join when the last node is reachability target', async () => {
+    await expect(
       run([
         'begin, end: ;',
         'x, y: ? 1 -> 3;',
@@ -894,7 +912,7 @@ describe('--joinForkSuffixes', () => {
         '1b, 2b: 3==3;',
         '2b, 3: 4==4;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "begin, end: ;
       x, y: ? 1 -> 3;
       1, 1a: 1 == 1;
@@ -905,8 +923,8 @@ describe('--joinForkSuffixes', () => {
     `);
   });
 
-  test("shouldn't join when an inner node is reachability target", () => {
-    expect(
+  test("shouldn't join when an inner node is reachability target", async () => {
+    await expect(
       run([
         'begin, end: ;',
         'x, y: ? 1 -> 2a;',
@@ -917,7 +935,7 @@ describe('--joinForkSuffixes', () => {
         '1b, 2b: 3==3;',
         '2b, 3: 4==4;',
       ]),
-    ).toMatchInlineSnapshot(`
+    ).resolves.toMatchInlineSnapshot(`
       "begin, end: ;
       x, y: ? 1 -> 2a;
       1, 1a: 1 == 1;

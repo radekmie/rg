@@ -42,8 +42,8 @@ describe.skip('bench', () => {
 
     for (const { extension, fileName, source } of examples) {
       const args = flagsSelected.map(flag => `--${flag}`).join(' ');
-      test(`${fileName} ${args}`, () => {
-        parse(source, { extension, flags });
+      test(`${fileName} ${args}`, async () => {
+        await parse(source, { extension, flags });
       });
     }
   }

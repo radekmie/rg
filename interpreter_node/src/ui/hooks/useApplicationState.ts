@@ -1,10 +1,10 @@
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { parse } from '../../parse';
 import { Settings, noFlagsEnabled } from '../../types';
 import * as utils from '../../utils';
-import { safe } from '../../utils';
 import { presets } from '../const/presets';
+import { usePromise } from './usePromise';
 
 export type State = {
   settings: Settings;
@@ -45,7 +45,8 @@ const initialState: State = {
 };
 
 export function useApplicationState() {
-  const [state, setState] = useState(initialState);
+  const [{ settings, source, view }, setState] = useState(initialState);
+  const game = usePromise(() => parse(source, settings), [settings, source]);
   const actions = useMemo(
     () => ({
       setPreset(name: string) {
@@ -70,9 +71,5 @@ export function useApplicationState() {
     [],
   );
 
-  // Use deferred source as `openGame` is potentially slow.
-  const gameInput = useDeferredValue([state.source, state.settings] as const);
-  const game = useMemo(() => safe(() => parse(...gameInput)), [gameInput]);
-
-  return { actions, game, state };
+  return { actions, game, settings, source, view };
 }

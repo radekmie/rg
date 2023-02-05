@@ -1,12 +1,13 @@
 import { Intent } from '@blueprintjs/core';
-import { AnalyzedGame } from 'parse';
 
+import { AnalyzedGame } from '../../parse';
 import { Extension } from '../../types';
 import { useApplicationState } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
 import { Bench } from './Bench';
 import { Editor } from './Editor';
 import { Graphviz } from './Graphviz';
+import { Loader } from './Loader';
 import { PrettyPrint } from './PrettyPrint';
 import { Settings } from './Settings';
 
@@ -45,7 +46,9 @@ export function Application() {
   const {
     actions: { setPreset, setSettings, setSource, setView },
     game,
-    state: { settings, source, view },
+    settings,
+    source,
+    view,
   } = useApplicationState();
 
   return (
@@ -59,14 +62,22 @@ export function Application() {
       </section>
       <section className={styles.panel}>
         <Settings
-          intent={game.ok ? Intent.SUCCESS : Intent.DANGER}
+          intent={
+            game.loading
+              ? Intent.NONE
+              : game.error
+              ? Intent.DANGER
+              : Intent.SUCCESS
+          }
           setPreset={setPreset}
           setSettings={setSettings}
           setView={setView}
           settings={settings}
           view={view}
         />
-        {game.ok ? (
+        {game.error ? (
+          <PrettyPrint value={game.error} />
+        ) : game.value ? (
           (() => {
             switch (view) {
               case 'Automaton':
@@ -86,7 +97,7 @@ export function Application() {
             }
           })()
         ) : (
-          <PrettyPrint value={game.error} />
+          <Loader />
         )}
       </section>
     </>

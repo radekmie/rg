@@ -12,12 +12,12 @@ use regex::{Captures, Regex};
 use rg::ist::Game;
 use rg::ist_tools::{perf, run};
 use rg::parser::game_declaration;
-use serde_json::from_str;
+use serde_json::{from_str, to_string};
 use std::iter::FromIterator;
 use std::ops::Deref;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = parseRg)]
 pub fn parse_rg(source: &str) -> Result<String, JsValue> {
     console_error_panic_hook::set_once();
 
@@ -39,15 +39,16 @@ pub fn parse_rg(source: &str) -> Result<String, JsValue> {
     });
 
     let result = match all_consuming(game_declaration)(&source).finish() {
-        Ok((_, game_declaration)) => serde_json::to_string(game_declaration.deref())
-            .map_err(|error| error.to_string().into()),
+        Ok((_, game_declaration)) => {
+            to_string(game_declaration.deref()).map_err(|error| error.to_string().into())
+        }
         Err(error) => Err(convert_error(source.deref(), error).into()),
     };
 
     result
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = perfRg)]
 pub fn perf_rg(source: &str, depth: usize, callback: &Function) {
     console_error_panic_hook::set_once();
 
@@ -62,7 +63,7 @@ pub fn perf_rg(source: &str, depth: usize, callback: &Function) {
     });
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = runRg)]
 pub fn run_rg(source: &str, plays: usize, callback: &Function) {
     console_error_panic_hook::set_once();
 

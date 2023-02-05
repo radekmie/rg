@@ -13,7 +13,11 @@ import { useNumericState } from '../hooks/useNumericState';
 import * as styles from '../index.module.css';
 
 type BenchBlockProps = {
-  action: (game: rg.ist.Game, value: number, logger: rg.ist.Logger) => void;
+  action: (
+    game: rg.ist.Game,
+    value: number,
+    logger: rg.ist.Logger,
+  ) => Promise<void>;
   actionText: string;
   game: rg.ist.Game;
   id?: string;
@@ -52,15 +56,20 @@ function BenchBlock({
 
   const [result, setResult] = useState<Intent>(Intent.NONE);
   const onAction = useCallback(() => {
-    setLogs([]);
-    setResult(Intent.PRIMARY);
-    try {
-      action(game, inputState.valueAsNumber, logger);
-      setResult(Intent.SUCCESS);
-    } catch (error) {
-      setResult(Intent.DANGER);
-      console.error(error);
+    async function run() {
+      setLogs([]);
+      setResult(Intent.PRIMARY);
+      try {
+        await action(game, inputState.valueAsNumber, logger);
+        setResult(Intent.SUCCESS);
+      } catch (error) {
+        setResult(Intent.DANGER);
+        console.error(error);
+      }
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises -- Run it in background.
+    run();
   }, [action, game, inputState.valueAsNumber, logger]);
 
   return (

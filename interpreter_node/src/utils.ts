@@ -172,6 +172,8 @@ export function mapValues<T, U>(
   );
 }
 
+export function noop() {}
+
 type Options = Partial<Parameters<typeof util.inspect>[1]>;
 export function pretty(object: unknown, options?: Options) {
   return util
@@ -219,14 +221,6 @@ export function runTransformators<T>(
   }
 
   throw new Error('Transformators did not converge.');
-}
-
-export function safe<T>(fn: () => T): Result<T> {
-  try {
-    return { ok: true, value: fn() };
-  } catch (error) {
-    return { ok: false, error };
-  }
 }
 
 export function unique<T>(array: T[], element: T) {
