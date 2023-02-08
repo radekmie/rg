@@ -1,15 +1,12 @@
-pub mod rg;
-pub mod utils;
-
-use crate::rg::ist_tools::Interner;
-use crate::utils::map_id::MapId;
 use js_sys::{Array, Function};
+use map_id::MapId;
 use nom::combinator::all_consuming;
 use nom::error::convert_error;
 use nom::Finish;
 use rand::thread_rng;
 use regex::{Captures, Regex};
 use rg::ist::Game;
+use rg::ist_tools::Interner;
 use rg::ist_tools::{perf, run};
 use rg::parser::game_declaration;
 use serde_json::{from_str, to_string};
@@ -36,6 +33,8 @@ pub fn parse_rg(source: &str) -> Result<String, JsValue> {
             .unwrap()
     });
 
+    // Removing `let` causes problems with lifetimes.
+    #[allow(clippy::let_and_return)]
     let result = match all_consuming(game_declaration)(&source).finish() {
         Ok((_, game_declaration)) => {
             to_string(&game_declaration).map_err(|error| error.to_string().into())

@@ -1,7 +1,7 @@
-use crate::rg::ist::{
+use crate::ist::{
     Game, RuntimeId, Value, LABEL_BEGIN, LABEL_END, LABEL_GOALS, LABEL_KEEPER, LABEL_PLAYER,
 };
-use crate::rg::ist_state::State;
+use crate::ist_state::State;
 use rand::seq::IteratorRandom;
 use rand::Rng;
 use std::collections::BTreeMap;

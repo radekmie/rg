@@ -1,4 +1,4 @@
-use crate::rg::ist::{
+use crate::ist::{
     EdgeLabel, Expression, Game, RuntimeId, Value, LABEL_END, LABEL_GOALS, LABEL_PLAYER,
 };
 use serde::{Deserialize, Serialize};

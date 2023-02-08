@@ -1,8 +1,7 @@
-use crate::rg::ast::{
+use crate::ast::{
     ConstantDeclaration, EdgeDeclaration, EdgeLabel, EdgeName, EdgeNamePart, Expression,
     GameDeclaration, Type, TypeDeclaration, Value, ValueEntry, VariableDeclaration,
 };
-use crate::utils::parser::{in_braces, in_brackets, in_parens, map_into_rc, ws, Result};
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};
 use nom::character::complete::char;
@@ -10,6 +9,7 @@ use nom::combinator::{cut, map, opt, success};
 use nom::error::context;
 use nom::multi::{fold_many0, many1, separated_list0};
 use nom::sequence::{delimited, separated_pair, terminated, tuple};
+use parser_utils::{in_braces, in_brackets, in_parens, map_into_rc, ws, Result};
 use std::rc::Rc;
 
 pub fn constant_declaration(input: &str) -> Result<Rc<ConstantDeclaration<&str>>> {
