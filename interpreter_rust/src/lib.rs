@@ -13,8 +13,6 @@ use rg::ist::Game;
 use rg::ist_tools::{perf, run};
 use rg::parser::game_declaration;
 use serde_json::{from_str, to_string};
-use std::iter::FromIterator;
-use std::ops::Deref;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 #[wasm_bindgen(js_name = parseRg)]
@@ -40,9 +38,9 @@ pub fn parse_rg(source: &str) -> Result<String, JsValue> {
 
     let result = match all_consuming(game_declaration)(&source).finish() {
         Ok((_, game_declaration)) => {
-            to_string(game_declaration.deref()).map_err(|error| error.to_string().into())
+            to_string(&game_declaration).map_err(|error| error.to_string().into())
         }
-        Err(error) => Err(convert_error(source.deref(), error).into()),
+        Err(error) => Err(convert_error(&*source, error).into()),
     };
 
     result

@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::ops::Deref;
 use std::rc::Rc;
 
 pub trait MapId<ToType, OldId, NewId> {
@@ -18,7 +17,7 @@ impl<FromType: MapId<ToType, OldId, NewId>, ToType, OldId, NewId> MapId<Rc<ToTyp
     for Rc<FromType>
 {
     fn map_id(&self, map: &mut impl FnMut(&OldId) -> NewId) -> Rc<ToType> {
-        self.deref().map_id(map).into()
+        (**self).map_id(map).into()
     }
 }
 

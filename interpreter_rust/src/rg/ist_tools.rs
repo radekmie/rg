@@ -5,9 +5,7 @@ use crate::rg::ist_state::State;
 use rand::seq::IteratorRandom;
 use rand::Rng;
 use std::collections::BTreeMap;
-use std::convert::{TryFrom, TryInto};
 use std::fmt::Debug;
-use std::ops::Deref;
 use std::rc::Rc;
 
 pub struct Interner<Id: Ord> {
@@ -115,7 +113,7 @@ pub fn run<R: Rng>(
         loop {
             let states = state.next_states_depth(game, 1, false).collect::<Vec<_>>();
             if states.is_empty() {
-                increase(&mut goals, state.get_goals().deref().clone());
+                increase(&mut goals, (**state.get_goals()).clone());
                 break;
             }
 

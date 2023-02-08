@@ -2,7 +2,7 @@
 name = "interpreter_rust"
 version = "0.1.0"
 authors = ["Radosław Miernik <radekmie@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 console_error_panic_hook = "0.1.7"
