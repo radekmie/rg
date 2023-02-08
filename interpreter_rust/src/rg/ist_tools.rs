@@ -52,8 +52,8 @@ impl<Id: Copy + Ord + TryFrom<usize>> Interner<Id> {
 impl Default for Interner<RuntimeId> {
     fn default() -> Self {
         let mut interner = Self {
-            id_to_string: Default::default(),
-            string_to_id: Default::default(),
+            id_to_string: BTreeMap::default(),
+            string_to_id: BTreeMap::default(),
         };
         interner.intern_as("begin", LABEL_BEGIN);
         interner.intern_as("end", LABEL_END);
@@ -105,9 +105,9 @@ pub fn run<R: Rng>(
     let step = 1f32.max(10f32.powf((plays as f32 / 100f32).log10().floor())) as usize;
 
     // Initialize counters.
-    let mut goals: BTreeMap<Value<RuntimeId>, usize> = Default::default();
-    let mut moves: BTreeMap<usize, usize> = Default::default();
-    let mut turns: BTreeMap<usize, usize> = Default::default();
+    let mut goals: BTreeMap<Value<RuntimeId>, usize> = BTreeMap::default();
+    let mut moves: BTreeMap<usize, usize> = BTreeMap::default();
+    let mut turns: BTreeMap<usize, usize> = BTreeMap::default();
 
     for play in 1..=plays {
         let mut state = initial_state(game);

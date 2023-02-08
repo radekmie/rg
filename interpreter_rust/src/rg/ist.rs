@@ -73,19 +73,10 @@ impl<OldId: Ord, NewId: Ord> MapId<EdgeLabel<NewId>, OldId, NewId> for EdgeLabel
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, PartialOrd, Ord, Serialize)]
 #[serde(tag = "kind")]
 pub enum Expression<Id: Ord> {
-    Access {
-        lhs: Rc<Expression<Id>>,
-        rhs: Rc<Expression<Id>>,
-    },
-    ConstantReference {
-        identifier: Id,
-    },
-    Literal {
-        value: Rc<Value<Id>>,
-    },
-    VariableReference {
-        identifier: Id,
-    },
+    Access { lhs: Rc<Self>, rhs: Rc<Self> },
+    ConstantReference { identifier: Id },
+    Literal { value: Rc<Value<Id>> },
+    VariableReference { identifier: Id },
 }
 
 impl Expression<RuntimeId> {
@@ -137,13 +128,8 @@ impl<OldId: Ord, NewId: Ord> MapId<Game<NewId>, OldId, NewId> for Game<OldId> {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, PartialOrd, Ord, Serialize)]
 #[serde(tag = "kind")]
 pub enum Type<Id: Ord> {
-    Arrow {
-        lhs: Rc<Type<Id>>,
-        rhs: Rc<Type<Id>>,
-    },
-    Set {
-        values: Vec<Value<Id>>,
-    },
+    Arrow { lhs: Rc<Self>, rhs: Rc<Self> },
+    Set { values: Vec<Value<Id>> },
 }
 
 impl<OldId: Ord, NewId: Ord> MapId<Type<NewId>, OldId, NewId> for Type<OldId> {
@@ -168,8 +154,8 @@ pub enum Value<Id: Ord> {
     },
     Map {
         #[serde(rename = "defaultValue")]
-        default: Rc<Value<Id>>,
-        values: Rc<BTreeMap<Id, Rc<Value<Id>>>>,
+        default: Rc<Self>,
+        values: Rc<BTreeMap<Id, Rc<Self>>>,
     },
 }
 

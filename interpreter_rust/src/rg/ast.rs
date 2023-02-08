@@ -183,17 +183,9 @@ impl<OldId, NewId> MapId<EdgeNamePart<NewId>, OldId, NewId> for EdgeNamePart<Old
 #[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Expression<Id> {
-    Access {
-        lhs: Rc<Expression<Id>>,
-        rhs: Rc<Expression<Id>>,
-    },
-    Cast {
-        lhs: Rc<Type<Id>>,
-        rhs: Rc<Expression<Id>>,
-    },
-    Reference {
-        identifier: Id,
-    },
+    Access { lhs: Rc<Self>, rhs: Rc<Self> },
+    Cast { lhs: Rc<Type<Id>>, rhs: Rc<Self> },
+    Reference { identifier: Id },
 }
 
 impl<Id> From<(Rc<Expression<Id>>, Rc<Expression<Id>>)> for Expression<Id> {
@@ -258,7 +250,7 @@ impl<OldId, NewId> MapId<GameDeclaration<NewId>, OldId, NewId> for GameDeclarati
 #[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Type<Id> {
-    Arrow { lhs: Id, rhs: Rc<Type<Id>> },
+    Arrow { lhs: Id, rhs: Rc<Self> },
     Set { identifiers: Vec<Id> },
     TypeReference { identifier: Id },
 }

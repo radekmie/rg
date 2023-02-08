@@ -3,7 +3,6 @@ use crate::rg::ist::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
-use std::ops::Deref;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, PartialOrd, Ord, Serialize)]
@@ -26,8 +25,8 @@ impl State {
         expression: &'a Expression<RuntimeId>,
     ) -> &'a Rc<Value<RuntimeId>> {
         match expression {
-            Expression::Access { lhs, rhs } => match self.eval(game, rhs).deref() {
-                Value::Element { value } => match self.eval(game, lhs).deref() {
+            Expression::Access { lhs, rhs } => match &**self.eval(game, rhs) {
+                Value::Element { value } => match &**self.eval(game, lhs) {
                     Value::Map { default, values } => values.get(value).unwrap_or(default),
                     _ => panic!("Only Map can be accessed."),
                 },
@@ -46,7 +45,7 @@ impl State {
         set: Rc<Value<RuntimeId>>,
     ) {
         match expression {
-            Expression::Access { lhs, rhs } => match self.eval(game, rhs).deref() {
+            Expression::Access { lhs, rhs } => match &**self.eval(game, rhs) {
                 Value::Element { value } => {
                     let mut map = self.eval(game, lhs).clone();
                     if let Value::Map { default, values } = Rc::make_mut(&mut map) {
@@ -96,9 +95,9 @@ impl State {
         StateNext {
             break_on_player,
             game,
-            return_queue: Default::default(),
+            return_queue: Vec::default(),
             search_queue: vec![self.clone()],
-            visited_states: Default::default(),
+            visited_states: BTreeSet::default(),
         }
     }
 

@@ -82,7 +82,7 @@ pub fn expression(input: &str) -> Result<Rc<Expression<&str>>> {
         let (input, maybe_cast) = opt(in_parens(cut(ws(expression))))(input)?;
         let (input, expression) = fold_many0(
             in_brackets(cut(ws(expression))),
-            || match maybe_cast.to_owned() {
+            || match maybe_cast.clone() {
                 Some(rhs) => Expression::Cast {
                     lhs: Type::TypeReference { identifier }.into(),
                     rhs,
