@@ -7,46 +7,85 @@ import { Autosize } from './Autosize';
 import * as hrg from '../../hrg';
 import * as rbg from '../../rbg';
 import * as rg from '../../rg';
+import * as wasm from '../../wasm';
 import * as styles from '../index.module.css';
-import { createChevrotainHighlighter } from '../lib/createChevrotainHighlighter';
+import { createAsyncHighlighter } from '../lib/createAsyncHighlighter';
+
+function extractIdentifier(object: { identifier: string }) {
+  return object.identifier;
+}
+
+function extractLabel(object: { label: string }) {
+  return object.label;
+}
+
+function extractName(object: { name: string }) {
+  return object.name;
+}
+
+const hrgKeywords = new Set([
+  'branch',
+  'domain',
+  'else',
+  'graph',
+  'if',
+  'in',
+  'loop',
+  'or',
+  'then',
+  'when',
+  'where',
+  'while',
+]);
+
+const rbgKeywords = new Set([
+  'board',
+  'pieces',
+  'players',
+  'rules',
+  'variables',
+]);
+
+const rgKeywords = new Set(['const', 'type', 'var']);
 
 const modeToExtensions = {
   hrg: [
-    createChevrotainHighlighter(source => {
-      const { cstNode, tokens } = hrg.cst.parse(source);
-      const ast = hrg.ast.visit(cstNode);
-      return {
-        color1: ast.functions.map(({ identifier }) => identifier),
-        color2: ast.domains.map(({ identifier }) => identifier),
-        color3: ast.variables.map(({ identifier }) => identifier),
-        tokens,
-      };
+    createAsyncHighlighter(source => {
+      const { cstNode } = hrg.cst.parse(source);
+      const { domains, functions, variables } = hrg.ast.visit(cstNode);
+      return Promise.resolve([
+        hrgKeywords,
+        new Set(functions.map(extractIdentifier)),
+        new Set(domains.map(extractIdentifier)),
+        new Set(variables.map(extractIdentifier)),
+      ]);
     }),
   ],
   javascript: [javascript()],
   json: [json()],
   rbg: [
-    createChevrotainHighlighter(source => {
-      const { cstNode, tokens } = rbg.cst.parse(source);
-      const ast = rbg.ast.visit(cstNode);
-      return {
-        color1: ast.board.flatMap(({ edges }) => edges.map(edge => edge.label)),
-        color2: ast.pieces,
-        color3: ast.players.concat(ast.variables).map(({ name }) => name),
-        tokens,
-      };
+    createAsyncHighlighter(source => {
+      const { cstNode } = rbg.cst.parse(source);
+      const { board, pieces, players, variables } = rbg.ast.visit(cstNode);
+      return Promise.resolve([
+        rbgKeywords,
+        new Set(board.flatMap(({ edges }) => edges.map(extractLabel))),
+        new Set(pieces),
+        new Set(players.concat(variables).map(extractName)),
+      ]);
     }),
   ],
   rg: [
-    createChevrotainHighlighter(source => {
-      const { cstNode, tokens } = rg.cst.parse(source);
-      const ast = rg.ast.visit(cstNode);
-      return {
-        color1: ast.constants.map(({ identifier }) => identifier),
-        color2: ast.types.map(({ identifier }) => identifier),
-        color3: ast.variables.map(({ identifier }) => identifier),
-        tokens,
-      };
+    createAsyncHighlighter(async source => {
+      const ast = await wasm.parseRg(source);
+      rg.transformators.addBuiltins(ast);
+      const { constants, types, variables } = ast;
+      return [
+        rgKeywords,
+        new Set(constants.map(extractIdentifier)),
+        new Set(types.map(extractIdentifier)),
+        new Set(variables.map(extractIdentifier)),
+      ];
     }),
   ],
   text: [],
