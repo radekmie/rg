@@ -1,7 +1,7 @@
 // Domains
 domain Piece = blackpawn | empty | whitepawn
 domain Player = black | white
-domain Score = lose | win
+domain Score = 0 | 100
 domain Position = null | V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
 
 // Helpers
@@ -83,8 +83,8 @@ graph turn() {
   board[position] = piece(me)
   player = keeper
   when direction(me)(position) == null || not(reachable(move(opponent(me)))) {
-    goals[me] = win
-    goals[opponent(me)] = lose
+    goals[me] = 100
+    goals[opponent(me)] = 0
     end()
   }
   me = opponent(me)

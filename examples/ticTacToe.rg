@@ -8,6 +8,7 @@ type PlayerToPlayer = Player -> Player;
 
 const opponent: PlayerToPlayer = {X:O, :X};
 
+var goals: Goals = {:50};
 var playerTurn: Player = X;
 var posX: Coord = 0;
 var posY: Coord = 0;

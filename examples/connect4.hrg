@@ -1,7 +1,7 @@
 domain Piece = empty | red | yellow
 domain Player = keeper | red | yellow
 domain Position = null | V(X, Y) where X in 1..7, Y in 1..6
-domain Score = draw | lose | win
+domain Score = 50 | 0 | 100
 
 up : Position -> Position
 up(V(X, Y)) = if Y == 6 then null else V(X, Y + 1)
@@ -88,15 +88,13 @@ graph turn(me: Player, op: Player, piece: Piece) {
   board[position] = piece
   player = keeper
   when reachable(win()) {
-    goals[me] = win
-    goals[op] = lose
+    goals[me] = 100
+    goals[op] = 0
     end()
   }
 }
 
 graph rules() {
-  goals[red] = draw
-  goals[yellow] = draw
   loop {
     turn(red, yellow, red)
     turn(yellow, red, yellow)

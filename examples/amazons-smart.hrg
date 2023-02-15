@@ -1,7 +1,7 @@
 // Domains
 domain Piece = arrow | blackqueen | empty | whitequeen
 domain Player = black | white
-domain Score = lose | win
+domain Score = 0 | 100
 domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
 
 domain DirIndex = upleft | up | upright | left | right | downleft | down | downright
@@ -113,8 +113,8 @@ graph turn() {
   move(me)
   player = keeper
   when not(reachable(move(opponent(me)))) {
-    goals[me] = win
-    goals[opponent(me)] = lose
+    goals[me] = 100
+    goals[opponent(me)] = 0
     end()
   }
   me = opponent(me)
