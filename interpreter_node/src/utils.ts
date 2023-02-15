@@ -172,6 +172,7 @@ export function mapValues<T, U>(
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-function -- Only one in the project.
 export function noop() {}
 
 type Options = Partial<Parameters<typeof util.inspect>[1]>;

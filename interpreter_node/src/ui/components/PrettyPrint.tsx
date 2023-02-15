@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
-import { pretty } from '../../utils';
 import { Editor } from './Editor';
+import { pretty } from '../../utils';
 
 export type PrettyPrintProps = { value: unknown };
 

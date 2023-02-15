@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 
+import { usePromise } from './usePromise';
 import { parse } from '../../parse';
 import { Settings, noFlagsEnabled } from '../../types';
 import * as utils from '../../utils';
 import { presets } from '../const/presets';
-import { usePromise } from './usePromise';
 
 export type State = {
   settings: Settings;

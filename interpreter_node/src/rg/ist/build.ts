@@ -1,7 +1,7 @@
+import * as ist from './types';
 import * as utils from '../../utils';
 import * as ast from '../ast';
 import * as transformators from '../transformators';
-import * as ist from './types';
 
 export function build(gameDeclaration: ast.GameDeclaration) {
   gameDeclaration = ast.GameDeclaration({

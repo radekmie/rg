@@ -1,15 +1,15 @@
 import { Intent } from '@blueprintjs/core';
 
-import { AnalyzedGame } from '../../parse';
-import { Extension } from '../../types';
-import { useApplicationState } from '../hooks/useApplicationState';
-import * as styles from '../index.module.css';
 import { Bench } from './Bench';
 import { Editor } from './Editor';
 import { Graphviz } from './Graphviz';
 import { Loader } from './Loader';
 import { PrettyPrint } from './PrettyPrint';
 import { Settings } from './Settings';
+import { AnalyzedGame } from '../../parse';
+import { Extension } from '../../types';
+import { useApplicationState } from '../hooks/useApplicationState';
+import * as styles from '../index.module.css';
 
 const extensionToMode = {
   [Extension.hrg]: 'hrg',

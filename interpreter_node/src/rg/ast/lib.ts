@@ -1,5 +1,5 @@
-import * as utils from '../../utils';
 import * as ast from './types';
+import * as utils from '../../utils';
 
 export function areBindingsUnique(edges: ast.EdgeDeclaration[]) {
   const bindingToEdgeName = new Map<string, ast.EdgeName>();
@@ -25,13 +25,22 @@ export function areObviouslyExclusive(
   b: ast.EdgeLabel,
 ): boolean {
   if (a.kind === 'Comparison' && b.kind === 'Comparison') {
-    const argsMatch = function () {
-      return utils.isEqual(a.lhs, b.lhs) && utils.isEqual(a.rhs, b.rhs);
-    };
-    const argsMatchCrossed = function () {
-      return utils.isEqual(a.lhs, b.rhs) && utils.isEqual(a.rhs, b.lhs);
-    };
-    return a.negated !== b.negated && (argsMatch() || argsMatchCrossed());
+    if (a.negated === b.negated) {
+      return false;
+    }
+
+    const exact = utils.isEqual(a.lhs, b.lhs) && utils.isEqual(a.rhs, b.rhs);
+    if (exact) {
+      return true;
+    }
+
+    const cross = utils.isEqual(a.lhs, b.rhs) && utils.isEqual(a.rhs, b.lhs);
+    if (cross) {
+      return true;
+    }
+
+    // TODO: Are there more cases?
+    return false;
   }
 
   if (a.kind === 'Reachability' && b.kind === 'Reachability') {
@@ -132,47 +141,43 @@ export function makeBindingsUnique(edges: ast.EdgeDeclaration[]) {
  * @param {ast.EdgeDeclaration[]} edges - the automaton for which fresh identifiers will be created
  * @returns {freshVarGenerator} generator for fresh nodes
  */
-export function makeFreshEdgeName(edges: ast.EdgeDeclaration[]): (reference: string | undefined) => ast.EdgeName {
+export function makeFreshEdgeName(edges: ast.EdgeDeclaration[]) {
   const pattern = (id: string, extra: string) => `__gen_${id}_${extra}`;
   const matcher = new RegExp(pattern('(?<num>d+)', '.*'));
 
-  let g = makeFreshName(pattern, collectEdgeNames(edges).map(name => {
-    if (name.parts.length === 1 && name.parts[0].kind === 'Literal') {
-      return name.parts[0].identifier.match(matcher)?.groups?.num;
-    }
-  }));
+  const generate = makeFreshName(
+    pattern,
+    collectEdgeNames(edges).map(name => {
+      if (name.parts.length === 1 && name.parts[0].kind === 'Literal') {
+        return name.parts[0].identifier.match(matcher)?.groups?.num;
+      }
+    }),
+  );
 
   /** Creates fresh identifiers for given game context assuming no other nodes with '__gen_' prefix are added.
-   * @name freshVarGenerator
-   * @function
    * @param {string?} reference - string that will be appended (in some way) to the created node for reference
    * @returns {ast.EdgeName} node with a unique identifier
    */
-  return function (reference = '') {
-    return ast.EdgeName({
-      parts: [
-        ast.Literal({
-          identifier: g(reference)
-        }),
-      ],
-    });
+  return function freshVarGenerator(reference = '') {
+    const identifier = generate(reference);
+    return ast.EdgeName({ parts: [ast.Literal({ identifier })] });
   };
 }
 
 export function makeFreshName(
   pattern: (id: string, extra: string) => string,
   names: (string | undefined)[],
-): (reference: string | undefined) => string {
+) {
   let freshVarId = Number(
-    names.reduce<string>((acc, x) => (x === undefined || acc > x ? acc : x), '0'),
+    names.reduce<string>(
+      (acc, x) => (x === undefined || acc > x ? acc : x),
+      '0',
+    ),
   );
 
-  return function (reference = '') {
+  return function freshNameGenerator(reference = '') {
     freshVarId += 1;
-    return pattern(
-      freshVarId.toString(),
-      reference.replace(/[\W\s]/g, '_'),
-    )
+    return pattern(freshVarId.toString(), reference.replace(/[\W\s]/g, '_'));
   };
 }
 

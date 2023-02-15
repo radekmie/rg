@@ -97,7 +97,9 @@ export function substituteWithPaths(
 
   const serializedStart = serializeEdgeName(pathsStart);
   const serializedEnd = serializeEdgeName(pathsEnd);
-  const copyInit = makeFreshNode(`reachability-${serializedStart}-${serializedEnd}`);
+  const copyInit = makeFreshNode(
+    `reachability-${serializedStart}-${serializedEnd}`,
+  );
   const mapping: [ast.EdgeName, ast.EdgeName][] = [
     [pathsStart, copyInit],
     [pathsEnd, originalEdge.rhs],

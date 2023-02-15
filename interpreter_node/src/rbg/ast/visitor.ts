@@ -4,9 +4,9 @@ import {
   CstNode,
 } from 'chevrotain';
 
+import * as ast from './types';
 import * as utils from '../../utils';
 import * as cst from '../cst';
-import * as ast from './types';
 
 class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
   constructor() {

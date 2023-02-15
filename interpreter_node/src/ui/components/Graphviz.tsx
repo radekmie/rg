@@ -1,11 +1,11 @@
 import { Graphviz as GraphvizWasm } from '@hpcc-js/wasm';
 import { TOOL_PAN, UncontrolledReactSVGPanZoom } from 'react-svg-pan-zoom';
 
-import { usePromise } from '../hooks/usePromise';
-import * as styles from '../index.module.css';
 import { Autosize } from './Autosize';
 import { Loader } from './Loader';
 import { PrettyPrint } from './PrettyPrint';
+import { usePromise } from '../hooks/usePromise';
+import * as styles from '../index.module.css';
 
 export type GraphvizProps = {
   source: string;

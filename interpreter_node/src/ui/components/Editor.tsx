@@ -3,12 +3,12 @@ import { json } from '@codemirror/lang-json';
 import CodeMirror, { ReactCodeMirrorProps } from '@uiw/react-codemirror';
 import { useCallback } from 'react';
 
+import { Autosize } from './Autosize';
 import * as hrg from '../../hrg';
 import * as rbg from '../../rbg';
 import * as rg from '../../rg';
 import * as styles from '../index.module.css';
 import { createChevrotainHighlighter } from '../lib/createChevrotainHighlighter';
-import { Autosize } from './Autosize';
 
 const modeToExtensions = {
   hrg: [

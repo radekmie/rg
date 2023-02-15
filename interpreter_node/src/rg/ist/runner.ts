@@ -1,5 +1,5 @@
-import * as wasm from '../../wasm';
 import * as ist from './types';
+import * as wasm from '../../wasm';
 
 export type Logger = { log: (message: string) => void };
 
