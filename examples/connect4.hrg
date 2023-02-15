@@ -81,6 +81,11 @@ graph win(piece: Piece) {
   }
 }
 
+graph findNonempty() {
+  forall(position)
+  assert(position != null && board[position] == empty)
+}
+
 graph turn(me: Player, op: Player, piece: Piece) {
   player = me
   forall(position)
@@ -91,6 +96,9 @@ graph turn(me: Player, op: Player, piece: Piece) {
   when reachable(win()) {
     goals[me] = 100
     goals[op] = 0
+    end()
+  }
+  when not(reachable(findNonempty())) {// Draw
     end()
   }
 }
