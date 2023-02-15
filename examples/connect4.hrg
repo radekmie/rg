@@ -1,5 +1,6 @@
+// Connect4
 domain Piece = empty | red | yellow
-domain Player = keeper | red | yellow
+domain Player = red | yellow
 domain Position = null | V(X, Y) where X in 1..7, Y in 1..6
 domain Score = 50 | 0 | 100
 
