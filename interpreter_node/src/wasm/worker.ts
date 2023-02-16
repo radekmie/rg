@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises';
 
-import init, { parseRg, perfRg, runRg } from './module';
+import init, { parseRg, perfRg, runRg, serializeRg } from './module';
 
 // Node.js requires a crypto polyfill. Importing it directly inlines it in the
 // browser too, but we don't need it there. Yep, this is a nasty `eval` trick.
@@ -13,7 +13,7 @@ const response = url.protocol === 'file:' ? readFile(url.pathname) : fetch(url);
 const initPromise = init(response);
 initPromise.catch(console.error);
 
-const methods = { parseRg, perfRg, runRg };
+const methods = { parseRg, perfRg, runRg, serializeRg };
 self.addEventListener('message', ({ data }) => {
   initPromise
     .then(() => {

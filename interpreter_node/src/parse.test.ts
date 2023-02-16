@@ -19,20 +19,15 @@ function createRun(settings: Settings, definitions: string[] = []) {
   ];
 
   return async (source: string[]) => {
-    try {
-      const gameSource = [...definitions, ...source].join('\n');
-      const game = await parse(gameSource, settings);
-      return definitions
-        .reduce(
-          (source, definition) => source.replace(definition, ''),
-          game.sourceRgFormatted,
-        )
-        .replace(/\n\n+/g, '\n')
-        .trim();
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
+    const gameSource = [...definitions, ...source].join('\n');
+    const game = await parse(gameSource, settings);
+    return definitions
+      .reduce(
+        (source, definition) => source.replace(definition, ''),
+        game.sourceRgFormatted,
+      )
+      .replace(/\n\n+/g, '\n')
+      .trim();
   };
 }
 

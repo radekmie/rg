@@ -1,53 +1,32 @@
 import { describe, expect, test } from 'vitest';
 
-import * as t from './inlineReachability';
-import { Result } from '../../utils';
+import { findAcceptablePaths, substituteWithPaths } from './inlineReachability';
+import * as utils from '../../utils';
 import * as ast from '../ast';
-import * as s from '../ast/serializer';
 
-function serializeEdges(edges: ast.EdgeDeclaration[]): string {
-  return edges.map(s.serializeEdge).join('\n');
+function serializeEdges(edges: ast.EdgeDeclaration[]) {
+  return edges.map(ast.serializeEdge).join('\n');
 }
 
-function serializeResult(
-  maybeEdges: Result<ast.EdgeDeclaration[], string>,
-): string {
-  if (maybeEdges.ok) {
-    return 'success:\n' + serializeEdges(maybeEdges.value);
-  }
-  return 'failure:\n' + maybeEdges.error;
-}
-
-function makeEdgeName(n: string): ast.EdgeName {
+function makeEdgeName(n: string) {
   return ast.EdgeName({ parts: [ast.Literal({ identifier: n })] });
 }
 
-function edge(
-  lhs: ast.EdgeName,
-  rhs: ast.EdgeName,
-  label: ast.EdgeLabel,
-): ast.EdgeDeclaration {
+function edge(lhs: ast.EdgeName, rhs: ast.EdgeName, label: ast.EdgeLabel) {
   return ast.EdgeDeclaration({ lhs, rhs, label });
 }
 
-function makeEdge(
-  lhs: string,
-  rhs: string,
-  label: ast.EdgeLabel,
-): ast.EdgeDeclaration {
+function makeEdge(lhs: string, rhs: string, label: ast.EdgeLabel) {
   return edge(makeEdgeName(lhs), makeEdgeName(rhs), label);
 }
 
-function makeEdges(
-  chain: ast.EdgeName[],
-  labels?: ast.EdgeLabel[],
-): ast.EdgeDeclaration[] {
+function makeEdges(chain: ast.EdgeName[], labels?: ast.EdgeLabel[]) {
   return [...Array(chain.length - 1).keys()].map(i =>
     edge(chain[i], chain[i + 1], labels ? labels[i] : ast.Skip({})),
   );
 }
 
-function makeLabel(n: number): ast.EdgeLabel {
+function makeLabel(n: number) {
   return ast.Assignment({
     lhs: ast.Reference({ identifier: 'x' + n.toString() }),
     rhs: ast.Reference({ identifier: 'y' }),
@@ -60,14 +39,12 @@ describe('inlineReachability', () => {
   test('findAcceptablePaths should find a simple path in a chain', () => {
     const nodes = ['x', 'y', 'z'].map(makeEdgeName);
     const edges = makeEdges(nodes);
+    const result = findAcceptablePaths(edges, nodes[0], nodes.reverse()[0]);
 
-    expect(
-      serializeResult(
-        t.findAcceptablePaths(edges, nodes[0], nodes.reverse()[0]),
-      ),
-    ).toMatchInlineSnapshot(`
-      "success:
-      x, y: ;
+    expect(result.ok).toBe(true);
+    utils.assert(result.ok, ''); // Make TypeScript happy.
+    expect(serializeEdges(result.value)).toMatchInlineSnapshot(`
+      "x, y: ;
       y, z: ;"
     `);
   });
@@ -76,15 +53,13 @@ describe('inlineReachability', () => {
     const nodes1 = ['x', 'y', 'z'].map(makeEdgeName);
     const nodes2 = ['x', 'y1', 'z'].map(makeEdgeName);
     const edges = makeEdges(nodes1).concat(makeEdges(nodes2));
+    const result = findAcceptablePaths(edges, nodes1[0], nodes1.reverse()[0]);
 
-    expect(
-      serializeResult(
-        t.findAcceptablePaths(edges, nodes1[0], nodes1.reverse()[0]),
-      ),
-    ).toMatchInlineSnapshot(`
-      "failure:
-      can't ensure single path at runtime"
-    `);
+    expect(result.ok).toBe(false);
+    utils.assert(!result.ok, ''); // Make TypeScript happy.
+    expect(result.error).toMatchInlineSnapshot(
+      '"can\'t ensure single path at runtime"',
+    );
   });
 
   test('substituteWithPaths should replace existing edge with new ones', () => {
@@ -95,7 +70,7 @@ describe('inlineReachability', () => {
       [1, 2].map(makeLabel),
     );
 
-    t.substituteWithPaths(
+    substituteWithPaths(
       edges,
       makeFreshNode,
       edges[0],
@@ -117,7 +92,7 @@ describe('inlineReachability', () => {
     const edges = makeEdges(nodes);
     const replacement = [makeEdge('a', 'b', makeLabel(1))];
 
-    t.substituteWithPaths(
+    substituteWithPaths(
       edges,
       makeFreshNode,
       edges[0],

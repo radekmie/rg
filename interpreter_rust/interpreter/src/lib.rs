@@ -5,6 +5,7 @@ use nom::error::convert_error;
 use nom::Finish;
 use rand::thread_rng;
 use regex::{Captures, Regex};
+use rg::ast::GameDeclaration;
 use rg::ist::Game;
 use rg::ist_tools::Interner;
 use rg::ist_tools::{perf, run};
@@ -46,12 +47,12 @@ pub fn parse_rg(source: &str) -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen(js_name = perfRg)]
-pub fn perf_rg(source: &str, depth: usize, callback: &Function) {
+pub fn perf_rg(ist: &str, depth: usize, callback: &Function) {
     console_error_panic_hook::set_once();
 
     let mut interner = Interner::default();
-    let game = from_str::<Game<&str>>(source)
-        .expect("Incorrect IST file.")
+    let game = from_str::<Game<&str>>(ist)
+        .expect("Incorrect IST string.")
         .map_id(&mut |id| interner.intern(id));
 
     let this = JsValue::null();
@@ -61,12 +62,12 @@ pub fn perf_rg(source: &str, depth: usize, callback: &Function) {
 }
 
 #[wasm_bindgen(js_name = runRg)]
-pub fn run_rg(source: &str, plays: usize, callback: &Function) {
+pub fn run_rg(ist: &str, plays: usize, callback: &Function) {
     console_error_panic_hook::set_once();
 
     let mut interner = Interner::default();
-    let game = from_str::<Game<&str>>(source)
-        .expect("Incorrect IST file.")
+    let game = from_str::<Game<&str>>(ist)
+        .expect("Incorrect IST string.")
         .map_id(&mut |id| interner.intern(id));
 
     let this = JsValue::null();
@@ -95,4 +96,13 @@ pub fn run_rg(source: &str, plays: usize, callback: &Function) {
             )
             .unwrap();
     });
+}
+
+#[wasm_bindgen(js_name = serializeRg)]
+pub fn serialize_rg(ast: &str) -> String {
+    console_error_panic_hook::set_once();
+
+    let game_declaration = from_str::<GameDeclaration<&str>>(ast).expect("Incorrect AST string.");
+
+    format!("{game_declaration}")
 }

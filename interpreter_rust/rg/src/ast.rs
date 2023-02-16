@@ -184,9 +184,9 @@ impl<Id> From<Id> for Type<Id> {
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct TypeDeclaration<Id> {
-    identifier: Id,
+    pub identifier: Id,
     #[serde(rename = "type")]
-    type_: Rc<Type<Id>>,
+    pub type_: Rc<Type<Id>>,
 }
 
 impl<Id> From<(Id, Rc<Type<Id>>)> for TypeDeclaration<Id> {
@@ -240,7 +240,7 @@ impl<Id> From<(Option<Id>, Rc<Value<Id>>)> for ValueEntry<Id> {
 pub struct VariableDeclaration<Id> {
     #[serde(rename = "defaultValue")]
     pub default_value: Rc<Value<Id>>,
-    identifier: Id,
+    pub identifier: Id,
     #[serde(rename = "type")]
     pub type_: Rc<Type<Id>>,
 }

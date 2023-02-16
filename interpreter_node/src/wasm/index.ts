@@ -86,3 +86,9 @@ export async function runRg(
   const source = JSON.stringify(game);
   await workerMethod('runRg', [source, plays], callback);
 }
+
+export async function serializeRg(gameDeclaration: rg.ast.GameDeclaration) {
+  const ast = JSON.stringify(gameDeclaration);
+  const result = await workerMethod('serializeRg', [ast], utils.noop);
+  return result;
+}

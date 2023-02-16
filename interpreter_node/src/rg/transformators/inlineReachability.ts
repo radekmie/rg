@@ -1,8 +1,5 @@
 import * as utils from '../../utils';
-import { Result, success, failure } from '../../utils';
 import * as ast from '../ast';
-import { areObviouslyExclusive } from '../ast/lib';
-import { serializeEdgeName } from '../ast/serializer';
 
 /**
  * Return a subautomaton of [edges] that:
@@ -22,7 +19,7 @@ export function findAcceptablePaths(
   edges: ast.EdgeDeclaration[],
   start: ast.EdgeName,
   target: ast.EdgeName,
-): Result<ast.EdgeDeclaration[], string> {
+): utils.Result<ast.EdgeDeclaration[], string> {
   const toExplore: ast.EdgeName[] = [start];
   const wasQueued: ast.EdgeName[] = [start];
   const currentPath: ast.EdgeName[] = [];
@@ -41,20 +38,20 @@ export function findAcceptablePaths(
     if (
       reachable.length > 2 ||
       (reachable.length === 2 &&
-        !areObviouslyExclusive(reachable[0].label, reachable[1].label))
+        !ast.lib.areObviouslyExclusive(reachable[0].label, reachable[1].label))
     ) {
-      return failure("can't ensure single path at runtime");
+      return utils.failure("can't ensure single path at runtime");
     }
 
     for (const edge of reachable) {
       const next = edge.rhs;
 
       if (edge.label.kind === 'Assignment') {
-        return failure('found assignment');
+        return utils.failure('found assignment');
       }
 
       if (currentPath.some(ancestor => utils.isEqual(ancestor, next))) {
-        return failure('found cycle');
+        return utils.failure('found cycle');
       }
 
       result.push(edge);
@@ -67,10 +64,10 @@ export function findAcceptablePaths(
   }
 
   if (!wasQueued.some(x => utils.isEqual(x, target))) {
-    return failure("couldn't find path to target");
+    return utils.failure("couldn't find path to target");
   }
 
-  return success(result);
+  return utils.success(result);
 }
 
 /* TODO? could reuse the subautomaton "in-place" instead (like [--reuseFunctions]):
@@ -95,8 +92,8 @@ export function substituteWithPaths(
     return;
   }
 
-  const serializedStart = serializeEdgeName(pathsStart);
-  const serializedEnd = serializeEdgeName(pathsEnd);
+  const serializedStart = ast.serializeEdgeName(pathsStart);
+  const serializedEnd = ast.serializeEdgeName(pathsEnd);
   const copyInit = makeFreshNode(
     `reachability-${serializedStart}-${serializedEnd}`,
   );
@@ -125,8 +122,8 @@ export function substituteWithPaths(
 
   for (const e of paths) {
     const newEdge = ast.EdgeDeclaration({
-      lhs: getMapping(e.lhs) || makeFreshNode(serializeEdgeName(e.lhs)),
-      rhs: getMapping(e.rhs) || makeFreshNode(serializeEdgeName(e.rhs)),
+      lhs: getMapping(e.lhs) || makeFreshNode(ast.serializeEdgeName(e.lhs)),
+      rhs: getMapping(e.rhs) || makeFreshNode(ast.serializeEdgeName(e.rhs)),
       label: e.label,
     });
     setMapping(e.lhs, newEdge.lhs);

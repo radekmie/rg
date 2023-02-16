@@ -29,7 +29,7 @@ async function analyzeHrg(source: string, settings: Settings) {
   const cstHrg = hrg.cst.parse(sourceHrg).cstNode;
   const astHrg = hrg.ast.visit(cstHrg);
   const astRg = translators.hrg2rg(astHrg, settings);
-  const sourceRg = rg.ast.serializeGameDeclaration(astRg);
+  const sourceRg = await wasm.serializeRg(astRg);
 
   const sourceHrgFormatted = hrg.ast.serializeGameDeclaration(astHrg);
   const cstHrgFormatted = hrg.cst.parse(sourceHrgFormatted).cstNode;
@@ -52,7 +52,7 @@ async function analyzeRbg(source: string, settings: Settings) {
   const cstRbg = rbg.cst.parse(sourceRbg).cstNode;
   const astRbg = rbg.ast.visit(cstRbg);
   const astRg = translators.rbg2rg(astRbg);
-  const sourceRg = rg.ast.serializeGameDeclaration(astRg);
+  const sourceRg = await wasm.serializeRg(astRg);
 
   const sourceRbgFormatted = rbg.ast.serializeGame(astRbg);
   const cstRbgFormatted = rbg.cst.parse(sourceRbgFormatted).cstNode;
@@ -100,7 +100,7 @@ async function analyzeRg(source: string, settings: Settings) {
   const istRg = rg.ist.build(astRg);
   const graphvizRg = rg.ast.graphviz(astRg);
 
-  const sourceRgFormatted = rg.ast.serializeGameDeclaration(astRg);
+  const sourceRgFormatted = await wasm.serializeRg(astRg);
   const astRgFormatted = await wasm.parseRg(sourceRgFormatted);
   if (!utils.isEqual(astRg, astRgFormatted)) {
     throw new Error('RgFormattingError (AST mismatch)');
