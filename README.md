@@ -19,7 +19,7 @@ npm run build
 node lib/cli rg-ist --compactSkipEdges ../examples/ticTacToe.rg > ../examples/ticTacToe.rg.ist.json
 
 # In interpreter_rust
-cargo run ../examples/ticTacToe.ist.json run 1000
+cargo run ../examples/ticTacToe.rg.ist.json run 1000
 ```
 
 Check everything before commit:
