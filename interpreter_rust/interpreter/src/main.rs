@@ -1,7 +1,7 @@
 use map_id::MapId;
 use rand::thread_rng;
 use rg::ist::Game;
-use rg::ist_tools::{perf, run, Interner};
+use rg::ist_tools::Interner;
 use serde_json::from_str;
 use std::env::args;
 use std::fs::read_to_string;
@@ -25,7 +25,7 @@ fn main() {
 
             for depth in 0..=depth {
                 let start = Instant::now();
-                perf(&game, depth, &|count| {
+                game.perf(depth, &|count| {
                     println!(
                         "perf(depth: {}) = {} in {:.3}ms",
                         depth,
@@ -42,7 +42,7 @@ fn main() {
                 .map_or(10, |plays| plays.parse::<usize>().unwrap());
 
             let start = Instant::now();
-            run(&game, &mut rng, plays, &|(plays, moves, turns, goals)| {
+            game.run(&mut rng, plays, &|(plays, moves, turns, goals)| {
                 println!(
                     "{esc}c\
                      after {} plays:\n  \

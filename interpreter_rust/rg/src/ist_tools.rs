@@ -62,73 +62,75 @@ impl Default for Interner<RuntimeId> {
     }
 }
 
-pub fn initial_state(game: &Game<RuntimeId>) -> State {
-    State {
-        position: LABEL_BEGIN,
-        values: Rc::new(
-            game.variables
+impl Game<RuntimeId> {
+    pub fn initial_state(&self) -> State {
+        State {
+            position: LABEL_BEGIN,
+            values: Rc::new(
+                self.variables
+                    .iter()
+                    .map(|(name, variable)| (*name, variable.default.clone()))
+                    .collect(),
+            ),
+        }
+    }
+
+    pub fn perf(&self, depth: usize, callback: &impl Fn(usize)) {
+        callback(
+            self.initial_state()
+                .next_states_depth(self, depth, true)
+                .count(),
+        );
+    }
+
+    pub fn run<R: Rng>(
+        &self,
+        rng: &mut R,
+        plays: usize,
+        callback: &impl Fn((usize, f32, f32, &BTreeMap<Value<RuntimeId>, usize>)),
+    ) {
+        fn avg(counter: &BTreeMap<usize, usize>) -> f32 {
+            let (x0, n0) = counter
                 .iter()
-                .map(|(name, variable)| (*name, variable.default.clone()))
-                .collect(),
-        ),
-    }
-}
-
-pub fn perf(game: &Game<RuntimeId>, depth: usize, callback: &impl Fn(usize)) {
-    callback(
-        initial_state(game)
-            .next_states_depth(game, depth, true)
-            .count(),
-    );
-}
-
-pub fn run<R: Rng>(
-    game: &Game<RuntimeId>,
-    rng: &mut R,
-    plays: usize,
-    callback: &impl Fn((usize, f32, f32, &BTreeMap<Value<RuntimeId>, usize>)),
-) {
-    fn avg(counter: &BTreeMap<usize, usize>) -> f32 {
-        let (x0, n0) = counter
-            .iter()
-            .fold((0, 0), |(x0, n0), (x, n)| (x0 + n * x, n0 + n));
-        x0 as f32 / n0 as f32
-    }
-
-    fn increase<Key: Ord>(counter: &mut BTreeMap<Key, usize>, x: Key) {
-        counter.entry(x).and_modify(|n| *n += 1).or_insert(1);
-    }
-
-    // Display stats every ~1% of plays.
-    let step = 1f32.max(10f32.powf((plays as f32 / 100f32).log10().floor())) as usize;
-
-    // Initialize counters.
-    let mut goals: BTreeMap<Value<RuntimeId>, usize> = BTreeMap::default();
-    let mut moves: BTreeMap<usize, usize> = BTreeMap::default();
-    let mut turns: BTreeMap<usize, usize> = BTreeMap::default();
-
-    for play in 1..=plays {
-        let mut state = initial_state(game);
-        let mut turn = 0;
-        loop {
-            let states = state.next_states_depth(game, 1, false).collect::<Vec<_>>();
-            if states.is_empty() {
-                increase(&mut goals, (**state.get_goals()).clone());
-                break;
-            }
-
-            if !state.get_player().is_keeper() {
-                increase(&mut moves, states.len());
-                turn += 1;
-            }
-
-            state = states.into_iter().choose(rng).unwrap();
+                .fold((0, 0), |(x0, n0), (x, n)| (x0 + n * x, n0 + n));
+            x0 as f32 / n0 as f32
         }
 
-        increase(&mut turns, turn);
+        fn increase<Key: Ord>(counter: &mut BTreeMap<Key, usize>, x: Key) {
+            counter.entry(x).and_modify(|n| *n += 1).or_insert(1);
+        }
 
-        if play % step == 0 {
-            callback((play, avg(&moves), avg(&turns), &goals));
+        // Display stats every ~1% of plays.
+        let step = 1f32.max(10f32.powf((plays as f32 / 100f32).log10().floor())) as usize;
+
+        // Initialize counters.
+        let mut goals: BTreeMap<Value<RuntimeId>, usize> = BTreeMap::default();
+        let mut moves: BTreeMap<usize, usize> = BTreeMap::default();
+        let mut turns: BTreeMap<usize, usize> = BTreeMap::default();
+
+        for play in 1..=plays {
+            let mut state = self.initial_state();
+            let mut turn = 0;
+            loop {
+                let states = state.next_states_depth(self, 1, false).collect::<Vec<_>>();
+                if states.is_empty() {
+                    increase(&mut goals, (**state.get_goals()).clone());
+                    break;
+                }
+
+                if !state.get_player().is_keeper() {
+                    increase(&mut moves, states.len());
+                    turn += 1;
+                }
+
+                state = states.into_iter().choose(rng).unwrap();
+            }
+
+            increase(&mut turns, turn);
+
+            if play % step == 0 {
+                callback((play, avg(&moves), avg(&turns), &goals));
+            }
         }
     }
 }

@@ -8,7 +8,6 @@ use regex::{Captures, Regex};
 use rg::ast::GameDeclaration;
 use rg::ist::Game;
 use rg::ist_tools::Interner;
-use rg::ist_tools::{perf, run};
 use rg::parser::game_declaration;
 use serde_json::{from_str, to_string};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
@@ -56,7 +55,7 @@ pub fn perf_rg(ist: &str, depth: usize, callback: &Function) {
         .map_id(&mut |id| interner.intern(id));
 
     let this = JsValue::null();
-    perf(&game, depth, &|count| {
+    game.perf(depth, &|count| {
         callback.call1(&this, &count.into()).unwrap();
     });
 }
@@ -72,7 +71,7 @@ pub fn run_rg(ist: &str, plays: usize, callback: &Function) {
 
     let this = JsValue::null();
     let mut rng = thread_rng();
-    run(&game, &mut rng, plays, &|(plays, moves, turns, goals)| {
+    game.run(&mut rng, plays, &|(plays, moves, turns, goals)| {
         callback
             .apply(
                 &this,

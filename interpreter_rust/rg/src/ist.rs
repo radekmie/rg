@@ -2,7 +2,6 @@ use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::fmt;
 use std::rc::Rc;
 
 // Interned strings that the interpreter relies on.
@@ -87,21 +86,6 @@ pub enum Value<Id: Ord> {
 impl Value<RuntimeId> {
     pub fn is_keeper(&self) -> bool {
         matches!(self, Self::Element { value } if *value == LABEL_KEEPER)
-    }
-}
-
-impl<Id: fmt::Display + Ord> fmt::Display for Value<Id> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Element { value } => write!(f, "{}", value),
-            Self::Map { default, values } => {
-                write!(f, "{{ :{}", default)?;
-                for (key, value) in values.iter() {
-                    write!(f, ", {}: {}", key, value)?;
-                }
-                write!(f, " }}")
-            }
-        }
     }
 }
 
