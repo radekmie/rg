@@ -2,13 +2,36 @@
 
 # Regular Games repo
 
-Requirements:
+## Setup
+
+Dependencies:
 
 - [Node.js](https://nodejs.org/en/) 18.13.0
 - [Rust](https://www.rust-lang.org) 1.65.0
 - [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) 0.10.3
 
-Quick setup:
+Install dependencies:
+
+```sh
+# System-wide tools on Debian-based systems
+apt update
+apt install curl gcc libssl-dev pkg-config
+
+# Node.js via nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+source ~/.bashrc
+nvm install 18.13.0
+
+# Rust via rustup
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.bashrc
+rustup install 1.65.0
+
+# wasm-pack
+curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+```
+
+Quick start:
 
 ```sh
 # In interpreter_rust
@@ -19,7 +42,7 @@ npm run build
 node lib/cli rg-ist --compactSkipEdges ../examples/ticTacToe.rg > ../examples/ticTacToe.rg.ist.json
 
 # In interpreter_rust
-cargo run ../examples/ticTacToe.rg.ist.json run 1000
+cargo run --release ../examples/ticTacToe.rg.ist.json run 1000
 ```
 
 Check everything before commit:
@@ -40,7 +63,7 @@ npm test
 
 | Feature                                         |    `interpreter_node`    |    `interpreter_rust`    |
 | :---------------------------------------------- | :----------------------: | :----------------------: |
-| Parser of RG (Regular Games)                    |   :heavy_check_mark:\*   |    :heavy_check_mark:    |
+| Parser of RG (Regular Games)                    | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Parser of HRG (High-level Regular Games)        |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Parser of RBG (Regular Board Games)             |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Interpreter of the IST (Interpreter State Tree) | :heavy_multiplication_x: |    :heavy_check_mark:    |
@@ -54,8 +77,6 @@ npm test
 | Transformation `mangleSymbols`                  |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `normalizeTypes`                 |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `skipSelfAssignments`            |    :heavy_check_mark:    | :heavy_multiplication_x: |
-
-\* It's used only for syntaxt highlighting - other operations use the one from `interpreter_rust`.
 
 ## `interpreter_rust`
 
@@ -75,8 +96,8 @@ wasm-pack build --out-dir ../../interpreter_node/src/wasm/module --out-name inde
 ### Usage
 
 ```sh
-cargo run game.ist.json run [plays]
-cargo run game.ist.json perf [depth]
+cargo run --release game.ist.json run [plays]
+cargo run --release game.ist.json perf [depth]
 ```
 
 ## `interpreter_node`
