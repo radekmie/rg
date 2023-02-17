@@ -3,14 +3,13 @@
 # Regular Games repo
 
 ## Setup
-
-Dependencies:
+### Dependencies
 
 - [Node.js](https://nodejs.org/en/) 18.15.0
 - [Rust](https://www.rust-lang.org) 1.68.0
 - [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) 0.10.3
 
-Install dependencies:
+#### Manual installation
 
 ```sh
 # System-wide tools on Debian-based systems
@@ -31,13 +30,21 @@ rustup install 1.68.0
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 ```
 
-Quick start:
+#### Nix
+
+Open a shell with all required dependencies:
+```sh
+nix develop
+```
+
+### Quick start
 
 ```sh
 # In interpreter_rust
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/module --out-name index --target web interpreter
 
 # In interpreter_node
+npm install
 npm run build
 node lib/cli rg-source --compactSkipEdges ../examples/ticTacToe.rg > ../examples/ticTacToe.rg.ll
 
@@ -45,7 +52,7 @@ node lib/cli rg-source --compactSkipEdges ../examples/ticTacToe.rg > ../examples
 cargo run --release ../examples/ticTacToe.rg.ll run 1000
 ```
 
-Check everything before commit:
+### Check everything before commit
 
 ```sh
 # In interpreter_rust
