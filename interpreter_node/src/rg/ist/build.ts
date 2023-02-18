@@ -113,8 +113,8 @@ function buildExpression(
 
 function buildPragma(pragma: ast.Pragma) {
   switch (pragma.kind) {
-    case 'Distinct':
-      return ist.Distinct({ edgeName: buildEdgeName(pragma.edgeName) });
+    case 'Disjoint':
+      return ist.Disjoint({ edgeName: buildEdgeName(pragma.edgeName) });
   }
 }
 

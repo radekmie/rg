@@ -143,7 +143,7 @@ pub fn pragma(input: &str) -> Result<Rc<Pragma<&str>>> {
         delimited(
             tag("@"),
             cut(map_into_rc(preceded(
-                tag("distinct "),
+                tag("disjoint "),
                 separated(edge_name),
             ))),
             cut(char(';')),

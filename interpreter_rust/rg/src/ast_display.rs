@@ -104,7 +104,7 @@ impl<Id: Display> Display for GameDeclaration<Id> {
 impl<Id: Display> Display for Pragma<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::Distinct { edge_name } => write!(f, "@distinct {edge_name};"),
+            Self::Disjoint { edge_name } => write!(f, "@disjoint {edge_name};"),
         }
     }
 }

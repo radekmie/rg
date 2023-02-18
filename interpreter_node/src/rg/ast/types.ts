@@ -40,8 +40,8 @@ export type ConstantDeclaration = {
 export const DefaultEntry = creator<DefaultEntry>('DefaultEntry');
 export type DefaultEntry = { kind: 'DefaultEntry'; value: Value };
 
-export const Distinct = creator<Distinct>('Distinct');
-export type Distinct = { kind: 'Distinct'; edgeName: EdgeName };
+export const Disjoint = creator<Disjoint>('Disjoint');
+export type Disjoint = { kind: 'Disjoint'; edgeName: EdgeName };
 
 export const EdgeDeclaration = creator<EdgeDeclaration>('EdgeDeclaration');
 export type EdgeDeclaration = {
@@ -120,7 +120,7 @@ export type VariableDeclaration = {
 export type EdgeLabel = Assignment | Comparison | Reachability | Skip;
 export type EdgeNamePart = Binding | Literal;
 export type Expression = Access | Cast | Reference;
-export type Pragma = Distinct;
+export type Pragma = Disjoint;
 export type Type = Arrow | Set | TypeReference;
 export type Value = Map | Element;
 export type ValueEntry = DefaultEntry | NamedEntry;

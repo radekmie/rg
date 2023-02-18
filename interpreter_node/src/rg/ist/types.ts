@@ -28,8 +28,8 @@ export type ConstantReference = {
   identifier: string;
 };
 
-export const Distinct = creator<Distinct>('Distinct');
-export type Distinct = { kind: 'Distinct'; edgeName: string };
+export const Disjoint = creator<Disjoint>('Disjoint');
+export type Disjoint = { kind: 'Disjoint'; edgeName: string };
 
 export const Edge = creator<Edge>('Edge');
 export type Edge = {
@@ -98,6 +98,6 @@ export type Expression =
   | ConstantReference
   | Literal
   | VariableReference;
-export type Pragma = Distinct;
+export type Pragma = Disjoint;
 export type Type = Arrow | Set;
 export type Value = Map | Element;

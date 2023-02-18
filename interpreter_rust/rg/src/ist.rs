@@ -67,7 +67,7 @@ pub struct Game<Id: Ord> {
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Pragma<Id> {
-    Distinct {
+    Disjoint {
         #[serde(rename = "edgeName")]
         edge_name: Id,
     },

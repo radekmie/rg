@@ -79,7 +79,7 @@ impl<Id> From<Id> for Expression<Id> {
 
 impl<Id> From<Rc<EdgeName<Id>>> for Pragma<Id> {
     fn from(edge_name: Rc<EdgeName<Id>>) -> Self {
-        Self::Distinct { edge_name }
+        Self::Disjoint { edge_name }
     }
 }
 
