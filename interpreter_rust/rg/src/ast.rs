@@ -40,6 +40,12 @@ pub enum EdgeLabel<Id> {
     Skip,
 }
 
+impl<Id: PartialEq> EdgeLabel<Id> {
+    pub fn is_self_assignment(&self) -> bool {
+        matches!(self, EdgeLabel::Assignment { lhs, rhs } if lhs.is_equal_reference(rhs))
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct EdgeName<Id> {
@@ -71,6 +77,82 @@ pub enum Expression<Id> {
     Access { lhs: Rc<Self>, rhs: Rc<Self> },
     Cast { lhs: Rc<Type<Id>>, rhs: Rc<Self> },
     Reference { identifier: Id },
+}
+
+impl<Id: PartialEq> Expression<Id> {
+    pub fn is_equal_reference(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Expression::Cast { rhs: x, .. }, y) => x.is_equal_reference(y),
+            (x, Expression::Cast { rhs: y, .. }) => x.is_equal_reference(y),
+            (
+                Expression::Access {
+                    lhs: x_lhs,
+                    rhs: x_rhs,
+                },
+                Expression::Access {
+                    lhs: y_lhs,
+                    rhs: y_rhs,
+                },
+            ) => x_lhs.is_equal_reference(y_lhs) && x_rhs.is_equal_reference(y_rhs),
+            (Expression::Reference { identifier: x }, Expression::Reference { identifier: y }) => {
+                x == y
+            }
+            _ => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod expression {
+    mod is_equal_reference {
+        use crate::parser::expression;
+        use nom::combinator::all_consuming;
+
+        fn check(lhs: &str, rhs: &str, expected: bool) {
+            let (_, lhs) = all_consuming(expression)(lhs).expect("Incorrect lhs.");
+            let (_, rhs) = all_consuming(expression)(rhs).expect("Incorrect rhs.");
+            assert_eq!(lhs.is_equal_reference(&rhs), expected);
+        }
+
+        #[test]
+        fn references() {
+            check("x", "x", true);
+            check("x", "y", false);
+        }
+
+        #[test]
+        fn references_with_casts() {
+            check("x", "T(x)", true);
+            check("T(x)", "x", true);
+            check("T(x)", "T(x)", true);
+
+            check("x", "T(y)", false);
+            check("T(x)", "y", false);
+            check("T(x)", "T(y)", false);
+        }
+
+        #[test]
+        fn accesses() {
+            check("x[y]", "x[y]", true);
+            check("x[y]", "z[y]", false);
+            check("x[y]", "x[z]", false);
+        }
+
+        #[test]
+        fn accesses_with_casts() {
+            check("x[y]", "T(x[y])", true);
+            check("T(x[y])", "x[y]", true);
+            check("T(x[y])", "T(x[y])", true);
+
+            check("x[y]", "T(z[y])", false);
+            check("T(x[y])", "z[y]", false);
+            check("T(x[y])", "T(z[y])", false);
+
+            check("x[y]", "T(x[z])", false);
+            check("T(x[y])", "x[z]", false);
+            check("T(x[y])", "T(x[z])", false);
+        }
+    }
 }
 
 #[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -125,14 +207,4 @@ pub struct VariableDeclaration<Id> {
     pub identifier: Id,
     #[serde(rename = "type")]
     pub type_: Rc<Type<Id>>,
-}
-
-impl<Id> From<(Id, Rc<Type<Id>>, Rc<Value<Id>>)> for VariableDeclaration<Id> {
-    fn from((identifier, type_, default_value): (Id, Rc<Type<Id>>, Rc<Value<Id>>)) -> Self {
-        Self {
-            default_value,
-            identifier,
-            type_,
-        }
-    }
 }

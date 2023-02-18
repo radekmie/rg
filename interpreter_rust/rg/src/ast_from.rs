@@ -1,6 +1,6 @@
 use crate::ast::{
     ConstantDeclaration, EdgeDeclaration, EdgeLabel, EdgeName, EdgeNamePart, Expression, Type,
-    TypeDeclaration, Value, ValueEntry,
+    TypeDeclaration, Value, ValueEntry, VariableDeclaration,
 };
 use std::rc::Rc;
 
@@ -118,6 +118,16 @@ impl<Id> From<(Option<Id>, Rc<Value<Id>>)> for ValueEntry<Id> {
         match identifier {
             None => Self::DefaultEntry { value },
             Some(identifier) => Self::NamedEntry { identifier, value },
+        }
+    }
+}
+
+impl<Id> From<(Id, Rc<Type<Id>>, Rc<Value<Id>>)> for VariableDeclaration<Id> {
+    fn from((identifier, type_, default_value): (Id, Rc<Type<Id>>, Rc<Value<Id>>)) -> Self {
+        Self {
+            default_value,
+            identifier,
+            type_,
         }
     }
 }
