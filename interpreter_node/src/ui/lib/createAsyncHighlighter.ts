@@ -7,8 +7,10 @@ import {
 } from '@codemirror/view';
 
 const boundaryWordRegex = /\b\w+\b/g;
+const commentRegex = /\/\/.*?(?:\n|$)/g;
+const pragmaRegex = /@\w+\b/g;
 const emptyDecorations = new RangeSetBuilder<Decoration>().finish();
-const marksPerType = 'bklm5'
+const marksPerType = '5fbklm'
   .split('')
   .map(tag => Decoration.mark({ attributes: { class: `ͼ${tag}` } }));
 
@@ -19,14 +21,16 @@ export function createAsyncHighlighter(parse: ParseFunction) {
     const marks: [number, number, number][] = [];
     const source = view.state.doc.sliceString(0);
 
-    // Comment decorations.
-    const lines = source.split('\n');
-    for (let index = 0; index < lines.length; ++index) {
-      const line = lines[index];
-      const position = line.indexOf('//');
-      if (position !== -1) {
-        const start = lines.slice(0, index).join('\n').length;
-        marks.push([start + position, start + line.length + 1, 4]);
+    // Comment and pragma decorations.
+    for (const { index, 0: image } of source.matchAll(commentRegex)) {
+      if (index !== undefined) {
+        marks.push([index, index + image.length, 0]);
+      }
+    }
+
+    for (const { index, 0: image } of source.matchAll(pragmaRegex)) {
+      if (index !== undefined) {
+        marks.push([index, index + image.length, 1]);
       }
     }
 
@@ -43,7 +47,7 @@ export function createAsyncHighlighter(parse: ParseFunction) {
       if (index !== undefined) {
         const tag = parseResult.findIndex(ids => ids.has(image));
         if (tag !== -1) {
-          marks.push([index, index + image.length, tag]);
+          marks.push([index, index + image.length, tag + 2]);
         }
       }
     }

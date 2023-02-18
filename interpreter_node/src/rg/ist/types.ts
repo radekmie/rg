@@ -28,6 +28,9 @@ export type ConstantReference = {
   identifier: string;
 };
 
+export const Distinct = creator<Distinct>('Distinct');
+export type Distinct = { kind: 'Distinct'; edgeName: string };
+
 export const Edge = creator<Edge>('Edge');
 export type Edge = {
   kind: 'Edge';
@@ -43,6 +46,7 @@ export type Game = {
   kind: 'Game';
   constants: Record<string, Value>;
   edges: Record<string, Edge[]>;
+  pragmas: Pragma[];
   types: Record<string, Type>;
   variables: Record<string, Variable>;
 };
@@ -94,5 +98,6 @@ export type Expression =
   | ConstantReference
   | Literal
   | VariableReference;
+export type Pragma = Distinct;
 export type Type = Arrow | Set;
 export type Value = Map | Element;

@@ -160,8 +160,18 @@ mod expression {
 pub struct GameDeclaration<Id> {
     pub constants: Vec<Rc<ConstantDeclaration<Id>>>,
     pub edges: Vec<Rc<EdgeDeclaration<Id>>>,
+    pub pragmas: Vec<Rc<Pragma<Id>>>,
     pub types: Vec<Rc<TypeDeclaration<Id>>>,
     pub variables: Vec<Rc<VariableDeclaration<Id>>>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(tag = "kind")]
+pub enum Pragma<Id> {
+    Distinct {
+        #[serde(rename = "edgeName")]
+        edge_name: Rc<EdgeName<Id>>,
+    },
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

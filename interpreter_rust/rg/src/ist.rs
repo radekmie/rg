@@ -59,8 +59,18 @@ impl Expression<RuntimeId> {
 pub struct Game<Id: Ord> {
     pub constants: BTreeMap<Id, Rc<Value<Id>>>,
     pub edges: BTreeMap<Id, Vec<Edge<Id>>>,
+    pub pragmas: Vec<Pragma<Id>>,
     pub types: BTreeMap<Id, Type<Id>>,
     pub variables: BTreeMap<Id, Variable<Id>>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(tag = "kind")]
+pub enum Pragma<Id> {
+    Distinct {
+        #[serde(rename = "edgeName")]
+        edge_name: Id,
+    },
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, PartialEq, PartialOrd, Ord, Serialize)]

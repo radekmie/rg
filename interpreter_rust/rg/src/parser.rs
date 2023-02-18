@@ -137,6 +137,20 @@ pub fn identifier(input: &str) -> Result<&str> {
     )(input)
 }
 
+pub fn pragma(input: &str) -> Result<Rc<Pragma<&str>>> {
+    context(
+        "pragma",
+        delimited(
+            tag("@"),
+            cut(map_into_rc(preceded(
+                tag("distinct "),
+                separated(edge_name),
+            ))),
+            cut(char(';')),
+        ),
+    )(input)
+}
+
 pub fn type_(input: &str) -> Result<Rc<Type<&str>>> {
     context(
         "type",

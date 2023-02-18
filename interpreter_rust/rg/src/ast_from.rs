@@ -1,6 +1,6 @@
 use crate::ast::{
-    ConstantDeclaration, EdgeDeclaration, EdgeLabel, EdgeName, EdgeNamePart, Expression, Type,
-    TypeDeclaration, Value, ValueEntry, VariableDeclaration,
+    ConstantDeclaration, EdgeDeclaration, EdgeLabel, EdgeName, EdgeNamePart, Expression, Pragma,
+    Type, TypeDeclaration, Value, ValueEntry, VariableDeclaration,
 };
 use std::rc::Rc;
 
@@ -74,6 +74,12 @@ impl<Id> From<(Id, Rc<Expression<Id>>)> for Expression<Id> {
 impl<Id> From<Id> for Expression<Id> {
     fn from(identifier: Id) -> Self {
         Self::Reference { identifier }
+    }
+}
+
+impl<Id> From<Rc<EdgeName<Id>>> for Pragma<Id> {
+    fn from(edge_name: Rc<EdgeName<Id>>) -> Self {
+        Self::Distinct { edge_name }
     }
 }
 

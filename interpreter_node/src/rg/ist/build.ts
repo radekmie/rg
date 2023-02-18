@@ -7,6 +7,7 @@ export function build(gameDeclaration: ast.GameDeclaration) {
   gameDeclaration = ast.GameDeclaration({
     constants: gameDeclaration.constants,
     edges: utils.clone(gameDeclaration.edges),
+    pragmas: gameDeclaration.pragmas,
     types: gameDeclaration.types,
     variables: gameDeclaration.variables,
   });
@@ -15,10 +16,12 @@ export function build(gameDeclaration: ast.GameDeclaration) {
   const game = ist.Game({
     constants: Object.create(null),
     edges: Object.create(null),
+    pragmas: [],
     types: Object.create(null),
     variables: Object.create(null),
   });
 
+  buildPragmas(game, gameDeclaration.pragmas);
   buildTypes(game, gameDeclaration.types);
   buildConstants(game, gameDeclaration.constants);
   buildVariables(game, gameDeclaration.variables);
@@ -105,6 +108,19 @@ function buildExpression(
       return ist.Literal({
         value: ist.Element({ value: expression.identifier }),
       });
+  }
+}
+
+function buildPragma(pragma: ast.Pragma) {
+  switch (pragma.kind) {
+    case 'Distinct':
+      return ist.Distinct({ edgeName: buildEdgeName(pragma.edgeName) });
+  }
+}
+
+function buildPragmas(game: ist.Game, pragmas: ast.Pragma[]) {
+  for (const pragma of pragmas) {
+    game.pragmas.push(buildPragma(pragma));
   }
 }
 

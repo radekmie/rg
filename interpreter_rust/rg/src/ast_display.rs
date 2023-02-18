@@ -1,6 +1,6 @@
 use crate::ast::{
     ConstantDeclaration, EdgeDeclaration, EdgeLabel, EdgeName, EdgeNamePart, Expression,
-    GameDeclaration, Type, TypeDeclaration, Value, ValueEntry, VariableDeclaration,
+    GameDeclaration, Pragma, Type, TypeDeclaration, Value, ValueEntry, VariableDeclaration,
 };
 use std::fmt::{Display, Formatter, Result};
 
@@ -82,6 +82,9 @@ impl<Id: Display> Display for Expression<Id> {
 
 impl<Id: Display> Display for GameDeclaration<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        for pragma in &self.pragmas {
+            writeln!(f, "{pragma}")?;
+        }
         for type_ in &self.types {
             writeln!(f, "{type_}")?;
         }
@@ -95,6 +98,14 @@ impl<Id: Display> Display for GameDeclaration<Id> {
             writeln!(f, "{edge}")?;
         }
         Ok(())
+    }
+}
+
+impl<Id: Display> Display for Pragma<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Self::Distinct { edge_name } => write!(f, "@distinct {edge_name};"),
+        }
     }
 }
 

@@ -1514,6 +1514,7 @@ export default function translate(
     rg: rg.GameDeclaration({
       constants: [],
       edges: [],
+      pragmas: [],
       types: [],
       variables: [],
     }),

@@ -40,6 +40,9 @@ export type ConstantDeclaration = {
 export const DefaultEntry = creator<DefaultEntry>('DefaultEntry');
 export type DefaultEntry = { kind: 'DefaultEntry'; value: Value };
 
+export const Distinct = creator<Distinct>('Distinct');
+export type Distinct = { kind: 'Distinct'; edgeName: EdgeName };
+
 export const EdgeDeclaration = creator<EdgeDeclaration>('EdgeDeclaration');
 export type EdgeDeclaration = {
   kind: 'EdgeDeclaration';
@@ -59,6 +62,7 @@ export type GameDeclaration = {
   kind: 'GameDeclaration';
   constants: ConstantDeclaration[];
   edges: EdgeDeclaration[];
+  pragmas: Pragma[];
   types: TypeDeclaration[];
   variables: VariableDeclaration[];
 };
@@ -116,6 +120,7 @@ export type VariableDeclaration = {
 export type EdgeLabel = Assignment | Comparison | Reachability | Skip;
 export type EdgeNamePart = Binding | Literal;
 export type Expression = Access | Cast | Reference;
+export type Pragma = Distinct;
 export type Type = Arrow | Set | TypeReference;
 export type Value = Map | Element;
 export type ValueEntry = DefaultEntry | NamedEntry;

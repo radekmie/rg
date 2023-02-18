@@ -1052,6 +1052,7 @@ export default function translate(game: rbg.Game) {
     rg: rg.GameDeclaration({
       constants: [],
       edges: [],
+      pragmas: [],
       types: [],
       variables: [],
     }),
