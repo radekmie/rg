@@ -20,5 +20,5 @@ export function PrettyPrint({ value }: PrettyPrintProps) {
     return ['json', JSON.stringify(value, null, 2)] as const;
   }, [value]);
 
-  return <Editor editable={false} mode={mode} readOnly value={text} />;
+  return <Editor mode={mode} readOnly value={text} />;
 }
