@@ -623,43 +623,6 @@ describe('--normalizeTypes', () => {
   });
 });
 
-describe('--skipSelfAssignments', () => {
-  const run = createRun(
-    {
-      extension: Extension.rg,
-      flags: { ...noFlagsEnabled, skipSelfAssignments: true },
-    },
-    ['type T = { x };', 'var map: T -> T = { :x };', 'begin, end: ;'],
-  );
-
-  test('basic', async () => {
-    await expect(run(['a, b: x = x;'])).resolves.toMatchInlineSnapshot(
-      '"a, b: ;"',
-    );
-  });
-
-  test('basic with cast', async () => {
-    await expect(run(['a, b: x = T(x);'])).resolves.toMatchInlineSnapshot(
-      '"a, b: ;"',
-    );
-  });
-
-  test('access', async () => {
-    await expect(
-      run(['a, b: map[x] = map[x];']),
-    ).resolves.toMatchInlineSnapshot('"a, b: ;"');
-  });
-
-  test('access with cast', async () => {
-    await expect(
-      run(['a, b: map[x] = T(map[x]);']),
-    ).resolves.toMatchInlineSnapshot('"a, b: ;"');
-    await expect(
-      run(['a, b: map[x] = map[T(x)];']),
-    ).resolves.toMatchInlineSnapshot('"a, b: ;"');
-  });
-});
-
 describe('--joinForkSuffixes', () => {
   // TODO test: don't join nodes referenced in reachability
   // TODO test: don't join nodes with different bindings

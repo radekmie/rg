@@ -195,30 +195,30 @@ export function remove<T>(array: T[], element: T) {
   }
 }
 
-export function runTransformators<T>(
+export async function runTransformators<T>(
   object: T,
   validators: ((object: T) => void)[],
-  transformators: ((object: T) => void)[],
+  transformators: ((object: T) => Promise<T>)[],
 ) {
   for (const validator of validators) {
     validator(object);
   }
 
   outer: for (let round = 0; round <= 1000; ++round) {
-    const cloned = clone(object);
+    const before = object;
     for (const transformator of transformators) {
-      transformator(object);
+      object = await transformator(object);
 
       for (const validator of validators) {
         validator(object);
       }
 
-      if (!isEqual(object, cloned)) {
+      if (!isEqual(before, object)) {
         continue outer;
       }
     }
 
-    return;
+    return object;
   }
 
   throw new Error('Transformators did not converge.');

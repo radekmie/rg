@@ -9,6 +9,7 @@ use rg::ast::GameDeclaration;
 use rg::ist::Game;
 use rg::ist_tools::Interner;
 use rg::parser::game_declaration;
+use rg_transform::skip_self_assignments;
 use serde_json::{from_str, to_string};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
@@ -104,4 +105,15 @@ pub fn serialize_rg(ast: &str) -> String {
     let game_declaration = from_str::<GameDeclaration<&str>>(ast).expect("Incorrect AST string.");
 
     format!("{game_declaration}")
+}
+
+#[wasm_bindgen(js_name = transformSkipSelfAssignments)]
+pub fn transform_skip_self_assignments(ast: &str) -> Result<String, JsValue> {
+    console_error_panic_hook::set_once();
+
+    let mut game_declaration =
+        from_str::<GameDeclaration<&str>>(ast).expect("Incorrect AST string.");
+    skip_self_assignments(&mut game_declaration);
+
+    to_string(&game_declaration).map_err(|error| error.to_string().into())
 }

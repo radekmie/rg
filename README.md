@@ -76,7 +76,7 @@ npm test
 | Transformation `joinForkSuffixes`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `mangleSymbols`                  |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `normalizeTypes`                 |    :heavy_check_mark:    | :heavy_multiplication_x: |
-| Transformation `skipSelfAssignments`            |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Transformation `skipSelfAssignments`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 
 ## `interpreter_rust`
 

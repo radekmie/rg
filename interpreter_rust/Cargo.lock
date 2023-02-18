@@ -58,6 +58,7 @@ dependencies = [
  "rand",
  "regex",
  "rg",
+ "rg_transform",
  "serde",
  "serde_json",
  "wasm-bindgen",
@@ -221,6 +222,13 @@ dependencies = [
  "parser_utils",
  "rand",
  "serde",
+]
+
+[[package]]
+name = "rg_transform"
+version = "0.1.0"
+dependencies = [
+ "rg",
 ]
 
 [[package]]

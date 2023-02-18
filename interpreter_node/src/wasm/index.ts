@@ -92,3 +92,15 @@ export async function serializeRg(gameDeclaration: rg.ast.GameDeclaration) {
   const result = await workerMethod('serializeRg', [ast], utils.noop);
   return result;
 }
+
+export async function transformSkipSelfAssignments(
+  gameDeclaration: rg.ast.GameDeclaration,
+) {
+  const ast = JSON.stringify(gameDeclaration);
+  const result = await workerMethod(
+    'transformSkipSelfAssignments',
+    [ast],
+    utils.noop,
+  );
+  return JSON.parse(result) as rg.ast.GameDeclaration;
+}
