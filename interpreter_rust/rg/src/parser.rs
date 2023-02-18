@@ -1,6 +1,6 @@
 use crate::ast::{
     ConstantDeclaration, EdgeDeclaration, EdgeLabel, EdgeName, EdgeNamePart, Expression,
-    GameDeclaration, Type, TypeDeclaration, Value, ValueEntry, VariableDeclaration,
+    GameDeclaration, Pragma, Type, TypeDeclaration, Value, ValueEntry, VariableDeclaration,
 };
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};
@@ -8,8 +8,8 @@ use nom::character::complete::char;
 use nom::combinator::{cut, map, opt, success};
 use nom::error::context;
 use nom::multi::{fold_many0, many1, separated_list0};
-use nom::sequence::{delimited, separated_pair, terminated, tuple};
-use parser_utils::{in_braces, in_brackets, in_parens, map_into_rc, ws, Result};
+use nom::sequence::{delimited, preceded, separated_pair, terminated, tuple};
+use parser_utils::{in_braces, in_brackets, in_parens, map_into_rc, separated, Result};
 use std::rc::Rc;
 
 pub fn constant_declaration(input: &str) -> Result<Rc<ConstantDeclaration<&str>>> {
@@ -18,9 +18,9 @@ pub fn constant_declaration(input: &str) -> Result<Rc<ConstantDeclaration<&str>>
         map_into_rc(delimited(
             tag("const"),
             cut(tuple((
-                ws(identifier),
-                delimited(cut(char(':')), ws(type_), cut(char('='))),
-                ws(value),
+                separated(identifier),
+                delimited(cut(char(':')), separated(type_), cut(char('='))),
+                separated(value),
             ))),
             cut(char(';')),
         )),
@@ -31,9 +31,9 @@ pub fn edge_declaration(input: &str) -> Result<Rc<EdgeDeclaration<&str>>> {
     context(
         "edge_declaration",
         map_into_rc(tuple((
-            terminated(ws(edge_name), char(',')),
-            terminated(ws(edge_name), cut(char(':'))),
-            terminated(ws(edge_label), cut(char(';'))),
+            terminated(separated(edge_name), char(',')),
+            terminated(separated(edge_name), cut(char(':'))),
+            terminated(separated(edge_label), cut(char(';'))),
         ))),
     )(input)
 }
@@ -44,13 +44,17 @@ pub fn edge_label(input: &str) -> Result<Rc<EdgeLabel<&str>>> {
         alt((
             map_into_rc(tuple((
                 expression,
-                ws(map(alt((tag("=="), tag("!="))), |c| c == "!=")),
+                separated(map(alt((tag("=="), tag("!="))), |c| c == "!=")),
                 cut(expression),
             ))),
-            map_into_rc(separated_pair(expression, ws(char('=')), cut(expression))),
+            map_into_rc(separated_pair(
+                expression,
+                separated(char('=')),
+                cut(expression),
+            )),
             map_into_rc(tuple((
                 map(alt((char('!'), char('?'))), |c| c == '!'),
-                cut(terminated(ws(edge_name), ws(tag("->")))),
+                cut(terminated(separated(edge_name), separated(tag("->")))),
                 edge_name,
             ))),
             map_into_rc(success(())),
@@ -67,9 +71,9 @@ pub fn edge_name_part(input: &str) -> Result<Rc<EdgeNamePart<&str>>> {
         "edge_name_part",
         alt((
             map_into_rc(in_parens(cut(separated_pair(
-                ws(identifier),
+                separated(identifier),
                 cut(char(':')),
-                ws(type_),
+                separated(type_),
             )))),
             map_into_rc(identifier),
         )),
@@ -79,9 +83,9 @@ pub fn edge_name_part(input: &str) -> Result<Rc<EdgeNamePart<&str>>> {
 pub fn expression(input: &str) -> Result<Rc<Expression<&str>>> {
     fn expression(input: &str) -> Result<Rc<Expression<&str>>> {
         let (input, identifier) = identifier(input)?;
-        let (input, maybe_cast) = opt(in_parens(cut(ws(expression))))(input)?;
+        let (input, maybe_cast) = opt(in_parens(cut(separated(expression))))(input)?;
         let (input, expression) = fold_many0(
-            in_brackets(cut(ws(expression))),
+            in_brackets(cut(separated(expression))),
             || match maybe_cast.clone() {
                 Some(rhs) => Expression::Cast {
                     lhs: Type::TypeReference { identifier }.into(),
@@ -103,19 +107,21 @@ pub fn game_declaration(input: &str) -> Result<Rc<GameDeclaration<&str>>> {
     context(
         "game_declaration",
         map_into_rc(fold_many0(
-            ws(alt((
-                map(constant_declaration, |x| (Some(x), None, None, None)),
-                map(type_declaration, |x| (None, Some(x), None, None)),
-                map(variable_declaration, |x| (None, None, Some(x), None)),
-                map(edge_declaration, |x| (None, None, None, Some(x))),
+            separated(alt((
+                map(constant_declaration, |x| (Some(x), None, None, None, None)),
+                map(type_declaration, |x| (None, Some(x), None, None, None)),
+                map(variable_declaration, |x| (None, None, Some(x), None, None)),
+                map(edge_declaration, |x| (None, None, None, Some(x), None)),
+                map(pragma, |x| (None, None, None, None, Some(x))),
             ))),
             GameDeclaration::default,
             |mut game_declaration, declaration| {
                 match declaration {
-                    (Some(x), None, None, None) => game_declaration.constants.push(x),
-                    (None, Some(x), None, None) => game_declaration.types.push(x),
-                    (None, None, Some(x), None) => game_declaration.variables.push(x),
-                    (None, None, None, Some(x)) => game_declaration.edges.push(x),
+                    (Some(x), _, _, _, _) => game_declaration.constants.push(x),
+                    (_, Some(x), _, _, _) => game_declaration.types.push(x),
+                    (_, _, Some(x), _, _) => game_declaration.variables.push(x),
+                    (_, _, _, Some(x), _) => game_declaration.edges.push(x),
+                    (_, _, _, _, Some(x)) => game_declaration.pragmas.push(x),
                     _ => unreachable!(),
                 }
                 game_declaration
@@ -135,11 +141,11 @@ pub fn type_(input: &str) -> Result<Rc<Type<&str>>> {
     context(
         "type",
         alt((
-            map_into_rc(in_braces(cut(ws(separated_list0(
+            map_into_rc(in_braces(cut(separated(separated_list0(
                 char(','),
-                ws(identifier),
+                separated(identifier),
             ))))),
-            map_into_rc(separated_pair(identifier, ws(tag("->")), cut(type_))),
+            map_into_rc(separated_pair(identifier, separated(tag("->")), cut(type_))),
             map_into_rc(identifier),
         )),
     )(input)
@@ -150,7 +156,11 @@ pub fn type_declaration(input: &str) -> Result<Rc<TypeDeclaration<&str>>> {
         "type_declaration",
         map_into_rc(delimited(
             tag("type"),
-            cut(separated_pair(ws(identifier), cut(char('=')), ws(type_))),
+            cut(separated_pair(
+                separated(identifier),
+                cut(char('=')),
+                separated(type_),
+            )),
             cut(char(';')),
         )),
     )(input)
@@ -160,9 +170,9 @@ pub fn value(input: &str) -> Result<Rc<Value<&str>>> {
     context(
         "value",
         alt((
-            map_into_rc(in_braces(cut(ws(separated_list0(
+            map_into_rc(in_braces(cut(separated(separated_list0(
                 char(','),
-                ws(value_entry),
+                separated(value_entry),
             ))))),
             map_into_rc(identifier),
         )),
@@ -174,7 +184,7 @@ pub fn value_entry(input: &str) -> Result<Rc<ValueEntry<&str>>> {
         "value_entry",
         map_into_rc(separated_pair(
             opt(identifier),
-            cut(ws(char(':'))),
+            cut(separated(char(':'))),
             cut(value),
         )),
     )(input)
@@ -186,9 +196,9 @@ pub fn variable_declaration(input: &str) -> Result<Rc<VariableDeclaration<&str>>
         map_into_rc(delimited(
             tag("var"),
             cut(tuple((
-                ws(identifier),
-                delimited(cut(char(':')), ws(type_), cut(char('='))),
-                ws(value),
+                separated(identifier),
+                delimited(cut(char(':')), separated(type_), cut(char('='))),
+                separated(value),
             ))),
             cut(char(';')),
         )),

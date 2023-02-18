@@ -4,7 +4,6 @@ use nom::combinator::all_consuming;
 use nom::error::convert_error;
 use nom::Finish;
 use rand::thread_rng;
-use regex::{Captures, Regex};
 use rg::ast::GameDeclaration;
 use rg::ist::Game;
 use rg::ist_tools::Interner;
@@ -17,33 +16,12 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 pub fn parse_rg(source: &str) -> Result<String, JsValue> {
     console_error_panic_hook::set_once();
 
-    // Parsing comments would require far more complex grammar (and parser),
-    // because a comment can occur basically everywhere.
-    let comment_regex = Regex::new(r"(//.*?)(\n|$)").unwrap();
-    let source = comment_regex.replace_all(source, |captures: &Captures| {
-        captures
-            .get(1)
-            .map(|comment| {
-                format!(
-                    "{:indent$}{}",
-                    "",
-                    captures.get(2).map_or("", |newline| newline.as_str()),
-                    indent = comment.as_str().len()
-                )
-            })
-            .unwrap()
-    });
-
-    // Removing `let` causes problems with lifetimes.
-    #[allow(clippy::let_and_return)]
-    let result = match all_consuming(game_declaration)(&source).finish() {
+    match all_consuming(game_declaration)(source).finish() {
         Ok((_, game_declaration)) => {
             to_string(&game_declaration).map_err(|error| error.to_string().into())
         }
-        Err(error) => Err(convert_error(&*source, error).into()),
-    };
-
-    result
+        Err(error) => Err(convert_error(source, error).into()),
+    }
 }
 
 #[wasm_bindgen(js_name = perfRg)]
