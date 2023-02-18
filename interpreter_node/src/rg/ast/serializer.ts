@@ -11,16 +11,6 @@ export function graphviz(gameDeclaration: ast.GameDeclaration) {
   return `digraph {\n${graphvizEdges.join('\n')}\n}`;
 }
 
-export function serializeConstantDeclaration({
-  identifier,
-  type,
-  value,
-}: ast.ConstantDeclaration) {
-  return `const ${identifier}: ${serializeType(type)} = ${serializeValue(
-    value,
-  )};`;
-}
-
 export function serializeEdge({ label, lhs, rhs }: ast.EdgeDeclaration) {
   return `${serializeEdgeName(lhs)}, ${serializeEdgeName(
     rhs,
@@ -81,15 +71,6 @@ export function serializeExpression(expression: ast.Expression): string {
   }
 }
 
-export function serializeGameDeclaration(gameDeclaration: ast.GameDeclaration) {
-  return [
-    ...gameDeclaration.types.map(serializeTypeDeclaration),
-    ...gameDeclaration.constants.map(serializeConstantDeclaration),
-    ...gameDeclaration.variables.map(serializeVariableDeclaration),
-    ...gameDeclaration.edges.map(serializeEdge),
-  ].join('\n');
-}
-
 export function serializeType(type: ast.Type): string {
   switch (type.kind) {
     case 'Arrow':
@@ -99,13 +80,6 @@ export function serializeType(type: ast.Type): string {
     case 'TypeReference':
       return type.identifier;
   }
-}
-
-export function serializeTypeDeclaration({
-  identifier,
-  type,
-}: ast.TypeDeclaration) {
-  return `type ${identifier} = ${serializeType(type)};`;
 }
 
 export function serializeValue(value: ast.Value): string {
@@ -124,14 +98,4 @@ export function serializeValueEntry(valueEntry: ast.ValueEntry) {
     case 'NamedEntry':
       return `${valueEntry.identifier}: ${serializeValue(valueEntry.value)}`;
   }
-}
-
-export function serializeVariableDeclaration({
-  defaultValue,
-  identifier,
-  type,
-}: ast.VariableDeclaration) {
-  return `var ${identifier}: ${serializeType(type)} = ${serializeValue(
-    defaultValue,
-  )};`;
 }
