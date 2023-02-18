@@ -103,10 +103,10 @@ pub fn expression(input: &str) -> Result<Rc<Expression<&str>>> {
     context("expression", expression)(input)
 }
 
-pub fn game_declaration(input: &str) -> Result<Rc<GameDeclaration<&str>>> {
+pub fn game_declaration(input: &str) -> Result<GameDeclaration<&str>> {
     context(
         "game_declaration",
-        map_into_rc(fold_many0(
+        fold_many0(
             separated(alt((
                 map(constant_declaration, |x| (Some(x), None, None, None, None)),
                 map(type_declaration, |x| (None, Some(x), None, None, None)),
@@ -126,7 +126,7 @@ pub fn game_declaration(input: &str) -> Result<Rc<GameDeclaration<&str>>> {
                 }
                 game_declaration
             },
-        )),
+        ),
     )(input)
 }
 

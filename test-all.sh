@@ -13,25 +13,25 @@ function test {
 
   # Local variables
   local game=$(realpath "examples/$name")
-  local ist=$(mktemp /tmp/rg-test.XXXXXXXX.ist.json)
-  local out=$(mktemp /tmp/rg-test.XXXXXXXX.txt)
+  local ll=$(mktemp /tmp/rg-test.XXXXXXXX.ll.json)
+  local tx=$(mktemp /tmp/rg-test.XXXXXXXX.txt)
 
   # Actual script
   echo "\033[0;33m${name}\033[0m\033[0;36m${flags}\033[0m\c"
   (
-    (cd interpreter_node && time=$(date +%s%N) && timeout --foreground 120 node lib/cli $flags rg-ist "$game" > $ist && time=$((($(date +%s%N) - $time) / 1000000)) && echo " analyse time=${time}ms\c")
-    (cd interpreter_rust && time=$(date +%s%N) && timeout --foreground 120 ./target/release/interpreter $ist perf ${#results[@]} > $out && time=$((($(date +%s%N) - $time) / 1000000)) && echo " perform time=${time}ms")
+    (cd interpreter_node && time=$(date +%s%N) && timeout --foreground 120 node lib/cli $flags rg-source "$game" > $ll && time=$((($(date +%s%N) - $time) / 1000000)) && echo " analyse time=${time}ms\c")
+    (cd interpreter_rust && time=$(date +%s%N) && timeout --foreground 120 ./target/release/interpreter $ll perf ${#results[@]} > $tx && time=$((($(date +%s%N) - $time) / 1000000)) && echo " perform time=${time}ms")
   )
 
   for (( depth=0; depth<${#results[@]}; ++depth )); do
-    local nodes=$(grep "perf(depth: $depth)" "$out" | awk '{print $4}')
+    local nodes=$(grep "perf(depth: $depth)" "$tx" | awk '{print $4}')
     if [ $nodes != ${results[depth]} ]; then
       echo "  Expected \033[0;32m${results[depth]}\033[0m nodes at depth ${depth}, but got \033[0;31m${nodes}\033[0m"
     fi
   done
 
   # Cleanup
-  rm -f $ist $out
+  rm -f $ll $tx
 }
 
 function combine() {
@@ -51,11 +51,14 @@ games[9]='amazons-naive.hrg 1 2176' # 4307152'
 
 for game in "${games[@]}"; do
   game=( $game )
-  for flags in $(combine 'addExplicitCasts' 'compactSkipEdges' 'expandGeneratorNodes' 'joinForkSuffixes' 'mangleSymbols' 'normalizeTypes' 'reuseFunctions' 'skipSelfAssignments'); do
+  for flags in $(combine 'addExplicitCasts' 'compactSkipEdges' 'joinForkSuffixes' 'mangleSymbols' 'normalizeTypes' 'reuseFunctions' 'skipSelfAssignments'); do
     flags=( $(echo "${flags//_/ }" | xargs) )
     flags=${flags[@]/#/--}
-    if [ ! -z "$flags" ]; then
-      flags=" $flags"
+    # TODO: Remove this as soon as the IST builder will be able to handle binds.
+    if [ -z "$flags" ]; then
+      flags=" --expandGeneratorNodes"
+    else
+      flags=" --expandGeneratorNodes $flags"
     fi
 
     test "$flags" "${game[0]}" ${game[@]:1}

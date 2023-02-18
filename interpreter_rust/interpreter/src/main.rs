@@ -1,21 +1,29 @@
+use nom::Finish;
 use map_id::MapId;
+use nom::combinator::all_consuming;
+use nom::error::convert_error;
 use rand::thread_rng;
 use rg::ist::Game;
 use rg::ist_tools::Interner;
-use serde_json::from_str;
+use rg::parser::game_declaration;
 use std::env::args;
 use std::fs::read_to_string;
+
 use std::time::Instant;
 
 fn main() {
     let args = args().collect::<Vec<_>>();
-    let file = args.get(1).expect("Game IST file expected.");
+    let file = args.get(1).expect("game.rg file expected.");
     let source = read_to_string(file).expect("Couldn't open file.");
+    let source = source.as_str();
+
+    let game_declaration = match all_consuming(game_declaration)(source).finish() {
+        Ok((_, game_declaration)) => game_declaration,
+        Err(error) => panic!("{}", convert_error(source, error))
+    };
 
     let mut interner = Interner::default();
-    let game = from_str::<Game<&str>>(source.as_str())
-        .expect("Incorrect IST file.")
-        .map_id(&mut |id| interner.intern(id));
+    let game = Game::from(game_declaration).map_id(&mut |id| interner.intern(id));
 
     match args.get(2).expect("Operation expected.").as_str() {
         "perf" => {

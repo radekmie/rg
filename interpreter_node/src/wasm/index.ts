@@ -60,21 +60,24 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
 }
 
 export async function parseRg(source: string) {
-  const result = await workerMethod('parseRg', [source], utils.noop);
-  return JSON.parse(result) as rg.ast.GameDeclaration;
+  const ast = await workerMethod('parseRg', [source], utils.noop);
+  return JSON.parse(ast) as rg.ast.GameDeclaration;
 }
 
 export async function perfRg(
-  game: rg.ist.Game,
+  gameDeclaration: rg.ast.GameDeclaration,
   depth: number,
   callback: (count: number) => void,
 ) {
-  const source = JSON.stringify(game);
-  await workerMethod('perfRg', [source, depth], callback);
+  // TODO: Remove this as soon as the IST builder will be able to handle binds.
+  gameDeclaration = utils.clone(gameDeclaration);
+  rg.transformators.expandGeneratorNodes(gameDeclaration);
+  const ast = JSON.stringify(gameDeclaration);
+  await workerMethod('perfRg', [ast, depth], callback);
 }
 
 export async function runRg(
-  game: rg.ist.Game,
+  gameDeclaration: rg.ast.GameDeclaration,
   plays: number,
   callback: (
     plays: number,
@@ -83,24 +86,27 @@ export async function runRg(
     goals: string,
   ) => void,
 ) {
-  const source = JSON.stringify(game);
-  await workerMethod('runRg', [source, plays], callback);
+  // TODO: Remove this as soon as the IST builder will be able to handle binds.
+  gameDeclaration = utils.clone(gameDeclaration);
+  rg.transformators.expandGeneratorNodes(gameDeclaration);
+  const ast = JSON.stringify(gameDeclaration);
+  await workerMethod('runRg', [ast, plays], callback);
 }
 
 export async function serializeRg(gameDeclaration: rg.ast.GameDeclaration) {
   const ast = JSON.stringify(gameDeclaration);
-  const result = await workerMethod('serializeRg', [ast], utils.noop);
-  return result;
+  const rg = await workerMethod('serializeRg', [ast], utils.noop);
+  return rg;
 }
 
 export async function transformSkipSelfAssignments(
   gameDeclaration: rg.ast.GameDeclaration,
 ) {
   const ast = JSON.stringify(gameDeclaration);
-  const result = await workerMethod(
+  const astTransformed = await workerMethod(
     'transformSkipSelfAssignments',
     [ast],
     utils.noop,
   );
-  return JSON.parse(result) as rg.ast.GameDeclaration;
+  return JSON.parse(astTransformed) as rg.ast.GameDeclaration;
 }

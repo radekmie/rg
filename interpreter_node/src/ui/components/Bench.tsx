@@ -14,12 +14,12 @@ import * as styles from '../index.module.css';
 
 type BenchBlockProps = {
   action: (
-    game: rg.ist.Game,
+    gameDeclaration: rg.ast.GameDeclaration,
     value: number,
-    logger: rg.ist.Logger,
+    logger: rg.ast.Logger,
   ) => Promise<void>;
   actionText: string;
-  game: rg.ist.Game;
+  gameDeclaration: rg.ast.GameDeclaration;
   id?: string;
   initialValue: number;
   label: string;
@@ -32,7 +32,7 @@ type BenchBlockProps = {
 function BenchBlock({
   action,
   actionText,
-  game,
+  gameDeclaration,
   id,
   initialValue,
   label,
@@ -60,7 +60,7 @@ function BenchBlock({
       setLogs([]);
       setResult(Intent.PRIMARY);
       try {
-        await action(game, inputState.valueAsNumber, logger);
+        await action(gameDeclaration, inputState.valueAsNumber, logger);
         setResult(Intent.SUCCESS);
       } catch (error) {
         setResult(Intent.DANGER);
@@ -70,7 +70,7 @@ function BenchBlock({
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises -- Run it in background.
     run();
-  }, [action, game, inputState.valueAsNumber, logger]);
+  }, [action, gameDeclaration, inputState.valueAsNumber, logger]);
 
   return (
     <Card className={styles.block} elevation={Elevation.TWO}>
@@ -98,15 +98,15 @@ function BenchBlock({
   );
 }
 
-export type BenchProps = { game: rg.ist.Game };
+export type BenchProps = { gameDeclaration: rg.ast.GameDeclaration };
 
-export function Bench({ game }: BenchProps) {
+export function Bench({ gameDeclaration }: BenchProps) {
   return (
     <section className={styles.wrapScroll}>
       <BenchBlock
-        action={rg.ist.run}
+        action={rg.ast.run}
         actionText="Run"
-        game={game}
+        gameDeclaration={gameDeclaration}
         id="iterations"
         initialValue={100}
         label="Iterations"
@@ -116,9 +116,9 @@ export function Bench({ game }: BenchProps) {
         min={1}
       />
       <BenchBlock
-        action={rg.ist.perf}
+        action={rg.ast.perf}
         actionText="Bench"
-        game={game}
+        gameDeclaration={gameDeclaration}
         id="depth"
         initialValue={3}
         label="Maximum depth"

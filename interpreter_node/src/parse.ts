@@ -15,7 +15,6 @@ export type AnalyzedGame = {
   cstHrg: CstNode | null;
   cstRbg: CstNode | null;
   graphvizRg: string;
-  istRg: rg.ist.Game;
   sourceHrg: string | null;
   sourceHrgFormatted: string | null;
   sourceRbg: string | null;
@@ -118,14 +117,13 @@ async function analyzeRg(source: string, settings: Settings) {
     ].filter(utils.isNotNull),
   );
 
-  const istRg = rg.ist.build(astRg);
-  const graphvizRg = rg.ast.graphviz(astRg);
-
   const sourceRgFormatted = await wasm.serializeRg(astRg);
   const astRgFormatted = await wasm.parseRg(sourceRgFormatted);
   if (!utils.isEqual(astRg, astRgFormatted)) {
     throw new Error('RgFormattingError (AST mismatch)');
   }
+
+  const graphvizRg = rg.ast.graphviz(astRg);
 
   return {
     astHrg: null,
@@ -134,7 +132,6 @@ async function analyzeRg(source: string, settings: Settings) {
     cstHrg: null,
     cstRbg: null,
     graphvizRg,
-    istRg,
     sourceHrg: null,
     sourceHrgFormatted: null,
     sourceRbg: null,

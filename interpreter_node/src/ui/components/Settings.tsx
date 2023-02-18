@@ -95,7 +95,6 @@ export function Settings({
       { value: 'AST.hrg', disabled: !isHrg },
       { value: 'AST.rbg', disabled: !isRbg },
       { value: 'AST.rg' },
-      { value: 'IST.rg' },
     ],
     [isHrg, isRbg],
   );

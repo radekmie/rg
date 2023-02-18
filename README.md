@@ -39,10 +39,10 @@ wasm-pack build --out-dir ../../interpreter_node/src/wasm/module --out-name inde
 
 # In interpreter_node
 npm run build
-node lib/cli rg-ist --compactSkipEdges ../examples/ticTacToe.rg > ../examples/ticTacToe.rg.ist.json
+node lib/cli rg-source --compactSkipEdges --expandGeneratorNodes ../examples/ticTacToe.rg > ../examples/ticTacToe.rg.ll
 
 # In interpreter_rust
-cargo run --release ../examples/ticTacToe.rg.ist.json run 1000
+cargo run --release ../examples/ticTacToe.rg.ll run 1000
 ```
 
 Check everything before commit:
@@ -67,7 +67,7 @@ npm test
 | Parser of HRG (High-level Regular Games)        |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Parser of RBG (Regular Board Games)             |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Interpreter of the IST (Interpreter State Tree) | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Translation of RG into IST                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Translation of RG into IST                      | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Translation of HRG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Translation of RBG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `addExplicitCasts`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
@@ -96,8 +96,8 @@ wasm-pack build --out-dir ../../interpreter_node/src/wasm/module --out-name inde
 ### Usage
 
 ```sh
-cargo run --release game.ist.json run [plays]
-cargo run --release game.ist.json perf [depth]
+cargo run --release game.rg run [plays]
+cargo run --release game.rg perf [depth]
 ```
 
 ## `interpreter_node`
@@ -153,7 +153,6 @@ Commands:
   rbg-cst <file>          print .rbg Concrete Syntax Tree
   rbg-source <file>       print .rbg source
   rg-ast <file>           print .rg  Abstract Syntax Tree
-  rg-ist <file>           print .rg  Interpreter State Tree
   rg-perf <file> <depth>  run   .rg  tree depth check
   rg-run <file> <plays>   run   .rg  simulations
   rg-source <file>        print .rg  source

@@ -21,7 +21,6 @@ export type View =
   | 'CST.hrg'
   | 'CST.rbg'
   | 'Graphviz'
-  | 'IST.rg'
   | 'Source (result).hrg'
   | 'Source (result).rbg'
   | 'Source (result).rg'

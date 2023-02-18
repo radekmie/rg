@@ -19,7 +19,7 @@ const extensionToMode = {
 
 const valueForView = {
   Automaton: (game: AnalyzedGame) => game.graphvizRg,
-  Bench: (game: AnalyzedGame) => game.istRg,
+  Bench: (game: AnalyzedGame) => game.astRg,
   Graphviz: (game: AnalyzedGame) =>
     ({ mode: 'text', value: game.graphvizRg } as const),
   'AST.hrg': (game: AnalyzedGame) => game.astHrg,
@@ -27,7 +27,6 @@ const valueForView = {
   'AST.rg': (game: AnalyzedGame) => game.astRg,
   'CST.hrg': (game: AnalyzedGame) => game.cstHrg,
   'CST.rbg': (game: AnalyzedGame) => game.cstRbg,
-  'IST.rg': (game: AnalyzedGame) => game.istRg,
   'Source (result).hrg': (game: AnalyzedGame) =>
     ({ mode: 'hrg', value: game.sourceHrgFormatted ?? '' } as const),
   'Source (source).hrg': (game: AnalyzedGame) =>
@@ -83,7 +82,9 @@ export function Application() {
               case 'Automaton':
                 return <Graphviz source={valueForView[view](game.value)} />;
               case 'Bench':
-                return <Bench game={valueForView[view](game.value)} />;
+                return (
+                  <Bench gameDeclaration={valueForView[view](game.value)} />
+                );
               case 'Graphviz':
               case 'Source (result).hrg':
               case 'Source (result).rbg':

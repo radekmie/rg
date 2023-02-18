@@ -25,13 +25,12 @@ pub fn parse_rg(source: &str) -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen(js_name = perfRg)]
-pub fn perf_rg(ist: &str, depth: usize, callback: &Function) {
+pub fn perf_rg(ast: &str, depth: usize, callback: &Function) {
     console_error_panic_hook::set_once();
 
     let mut interner = Interner::default();
-    let game = from_str::<Game<&str>>(ist)
-        .expect("Incorrect IST string.")
-        .map_id(&mut |id| interner.intern(id));
+    let game_declaration = from_str::<GameDeclaration<&str>>(ast).expect("Incorrect AST string.");
+    let game = Game::from(game_declaration).map_id(&mut |id| interner.intern(id));
 
     let this = JsValue::null();
     game.perf(depth, &|count| {
@@ -40,13 +39,12 @@ pub fn perf_rg(ist: &str, depth: usize, callback: &Function) {
 }
 
 #[wasm_bindgen(js_name = runRg)]
-pub fn run_rg(ist: &str, plays: usize, callback: &Function) {
+pub fn run_rg(ast: &str, plays: usize, callback: &Function) {
     console_error_panic_hook::set_once();
 
     let mut interner = Interner::default();
-    let game = from_str::<Game<&str>>(ist)
-        .expect("Incorrect IST string.")
-        .map_id(&mut |id| interner.intern(id));
+    let game_declaration = from_str::<GameDeclaration<&str>>(ast).expect("Incorrect AST string.");
+    let game = Game::from(game_declaration).map_id(&mut |id| interner.intern(id));
 
     let this = JsValue::null();
     let mut rng = thread_rng();

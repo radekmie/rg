@@ -60,7 +60,7 @@ pub struct Game<Id: Ord> {
     pub constants: BTreeMap<Id, Rc<Value<Id>>>,
     pub edges: BTreeMap<Id, Vec<Edge<Id>>>,
     pub pragmas: Vec<Pragma<Id>>,
-    pub types: BTreeMap<Id, Type<Id>>,
+    pub types: BTreeMap<Id, Rc<Type<Id>>>,
     pub variables: BTreeMap<Id, Variable<Id>>,
 }
 
@@ -77,7 +77,7 @@ pub enum Pragma<Id> {
 #[serde(tag = "kind")]
 pub enum Type<Id: Ord> {
     Arrow { lhs: Rc<Self>, rhs: Rc<Self> },
-    Set { values: Vec<Value<Id>> },
+    Set { values: Vec<Rc<Value<Id>>> },
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, PartialEq, PartialOrd, Ord, Serialize)]
