@@ -37,10 +37,10 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
         }: MessageEvent<
           | { done: false; value: Progress }
           | { done: true; value: ReturnType<WASM[Name]> }
-          | { error: unknown }
+          | { error: { message: string; name: string } }
         >) {
           if ('error' in data) {
-            reject(data.error);
+            reject(Object.assign(new Error(), data.error));
           } else if (data.done) {
             resolve(data.value);
           } else {

@@ -6,7 +6,6 @@ import { useCallback } from 'react';
 import { Autosize } from './Autosize';
 import * as hrg from '../../hrg';
 import * as rbg from '../../rbg';
-import * as rg from '../../rg';
 import * as wasm from '../../wasm';
 import * as styles from '../index.module.css';
 import { createAsyncHighlighter } from '../lib/createAsyncHighlighter';
@@ -78,7 +77,6 @@ const modeToExtensions = {
   rg: [
     createAsyncHighlighter(async source => {
       const ast = await wasm.parseRg(source);
-      rg.transformators.addBuiltins(ast);
       const { constants, types, variables } = ast;
       return [
         rgKeywords,

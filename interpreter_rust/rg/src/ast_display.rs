@@ -18,35 +18,35 @@ impl<Id: Display> Display for ConstantDeclaration<Id> {
 impl<Id: Display> Display for EdgeDeclaration<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { label, lhs, rhs } = self;
-        write!(f, "{lhs}, {rhs}: {label}")
+        write!(f, "{lhs}, {rhs}: {label};")
     }
 }
 
 impl<Id: Display> Display for EdgeLabel<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::Assignment { lhs, rhs } => write!(f, "{lhs} = {rhs};"),
+            Self::Assignment { lhs, rhs } => write!(f, "{lhs} = {rhs}"),
             Self::Comparison {
                 lhs,
                 rhs,
                 negated: false,
-            } => write!(f, "{lhs} == {rhs};"),
+            } => write!(f, "{lhs} == {rhs}"),
             Self::Comparison {
                 lhs,
                 rhs,
                 negated: true,
-            } => write!(f, "{lhs} != {rhs};"),
+            } => write!(f, "{lhs} != {rhs}"),
             Self::Reachability {
                 lhs,
                 rhs,
                 negated: false,
-            } => write!(f, "? {lhs} -> {rhs};"),
+            } => write!(f, "? {lhs} -> {rhs}"),
             Self::Reachability {
                 lhs,
                 rhs,
                 negated: true,
-            } => write!(f, "! {lhs} -> {rhs};"),
-            Self::Skip => write!(f, ";"),
+            } => write!(f, "! {lhs} -> {rhs}"),
+            Self::Skip => write!(f, ""),
         }
     }
 }

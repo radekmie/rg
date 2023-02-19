@@ -1,33 +1,16 @@
+use interpreter::{prepare_ist, safe_parse_source};
 use map_id::MapId;
-use nom::combinator::all_consuming;
-use nom::error::convert_error;
-use nom::Finish;
 use rand::thread_rng;
-use rg::ist::Game;
-use rg::ist_tools::Interner;
-use rg::parser::game_declaration;
-use rg_transform::expand_generator_nodes;
 use std::env::args;
 use std::fs::read_to_string;
-
 use std::time::Instant;
 
-fn main() {
+fn main() -> Result<(), String> {
     let args = args().collect::<Vec<_>>();
     let file = args.get(1).expect("game.rg file expected.");
-    let source = read_to_string(file).expect("Couldn't open file.");
-    let source = source.as_str();
-
-    let game_declaration = match all_consuming(game_declaration)(source).finish() {
-        Ok((_, game_declaration)) => game_declaration,
-        Err(error) => panic!("{}", convert_error(source, error)),
-    };
-
-    let mut game_declaration = game_declaration.map_id(&mut |id| id.to_string());
-    expand_generator_nodes(&mut game_declaration);
-
-    let mut interner = Interner::default();
-    let game = Game::from(game_declaration).map_id(&mut |id| interner.intern(id));
+    let source = read_to_string(file).map_err(|error| error.to_string())?;
+    let game_declaration = safe_parse_source(source.as_str())?;
+    let (game, interner) = prepare_ist(game_declaration);
 
     match args.get(2).expect("Operation expected.").as_str() {
         "perf" => {
@@ -82,4 +65,6 @@ fn main() {
         }
         _ => panic!("Unknown operation."),
     }
+
+    Ok(())
 }

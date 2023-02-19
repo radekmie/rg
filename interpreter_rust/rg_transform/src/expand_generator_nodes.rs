@@ -10,5 +10,5 @@ pub fn expand_generator_nodes(game_declaration: &mut GameDeclaration<String>) {
                 .into_iter()
                 .map(|mapping| edge.substitute_bindings(&mapping).into())
         })
-        .collect();
+        .collect()
 }

@@ -42,6 +42,11 @@ self.addEventListener('message', ({ data }) => {
       });
     })
     .catch(error => {
-      self.postMessage({ error });
+      self.postMessage({
+        error:
+          error instanceof Error
+            ? { message: error.message, name: error.name }
+            : { message: String(error), name: 'Unknown Error' },
+      });
     });
 });

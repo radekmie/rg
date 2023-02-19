@@ -73,9 +73,6 @@ async function analyzeRg(source: string, settings: Settings) {
   const sourceRg = source;
   const astRgBase = await wasm.parseRg(sourceRg);
 
-  // Some transformations are required before we do anything else.
-  rg.transformators.addBuiltins(astRgBase);
-
   // Transformation helpers.
   function nodeTransform(name: Extract<keyof typeof rg.transformators, Flag>) {
     if (!settings.flags[name]) {

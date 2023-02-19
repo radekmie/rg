@@ -70,6 +70,7 @@ npm test
 | Translation of RG into IST                      | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Translation of HRG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Translation of RBG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Transformation `addBuiltins`                    | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `addExplicitCasts`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `compactSkipEdges`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `expandGeneratorNodes`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
