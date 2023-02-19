@@ -11,10 +11,7 @@ program
   .name('node lib/cli')
   .option('--addExplicitCasts', 'add type casts to all expressions')
   .option('--compactSkipEdges', 'optimize automaton by compacting skip edges')
-  .option(
-    '--expandGeneratorNodes',
-    'expand generator nodes (.hrg and .rg only)',
-  )
+  .option('--expandGeneratorNodes', 'expand generator nodes')
   .option('--inlineReachability', 'inline reachability when possible')
   .option(
     '--joinForkSuffixes',

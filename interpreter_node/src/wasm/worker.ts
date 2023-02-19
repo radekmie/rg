@@ -5,6 +5,7 @@ import init, {
   perfRg,
   runRg,
   serializeRg,
+  transformExpandGeneratorNodes,
   transformSkipSelfAssignments,
 } from './module';
 
@@ -24,6 +25,7 @@ const methods = {
   perfRg,
   runRg,
   serializeRg,
+  transformExpandGeneratorNodes,
   transformSkipSelfAssignments,
 };
 

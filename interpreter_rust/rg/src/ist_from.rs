@@ -63,9 +63,9 @@ fn build_edge_name<Id: Display>(edge_name: &ast::EdgeName<Id>) -> String {
     match &edge_name.parts[..] {
         [edge_name_part] => match &**edge_name_part {
             ast::EdgeNamePart::Literal { identifier } => identifier.to_string(),
-            _ => panic!("Only Literal allowed. Did you forget --expandGeneratorNodes?"),
+            _ => panic!("Only Literal allowed."),
         },
-        _ => panic!("Exactly one EdgeNamePart allowed. Did you forget --expandGeneratorNodes?"),
+        _ => panic!("Exactly one EdgeNamePart allowed."),
     }
 }
 

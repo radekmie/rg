@@ -69,9 +69,6 @@ export async function perfRg(
   depth: number,
   callback: (count: number) => void,
 ) {
-  // TODO: Remove this as soon as the IST builder will be able to handle binds.
-  gameDeclaration = utils.clone(gameDeclaration);
-  rg.transformators.expandGeneratorNodes(gameDeclaration);
   const ast = JSON.stringify(gameDeclaration);
   await workerMethod('perfRg', [ast, depth], callback);
 }
@@ -86,9 +83,6 @@ export async function runRg(
     goals: string,
   ) => void,
 ) {
-  // TODO: Remove this as soon as the IST builder will be able to handle binds.
-  gameDeclaration = utils.clone(gameDeclaration);
-  rg.transformators.expandGeneratorNodes(gameDeclaration);
   const ast = JSON.stringify(gameDeclaration);
   await workerMethod('runRg', [ast, plays], callback);
 }
@@ -97,6 +91,18 @@ export async function serializeRg(gameDeclaration: rg.ast.GameDeclaration) {
   const ast = JSON.stringify(gameDeclaration);
   const rg = await workerMethod('serializeRg', [ast], utils.noop);
   return rg;
+}
+
+export async function transformExpandGeneratorNodes(
+  gameDeclaration: rg.ast.GameDeclaration,
+) {
+  const ast = JSON.stringify(gameDeclaration);
+  const astTransformed = await workerMethod(
+    'transformExpandGeneratorNodes',
+    [ast],
+    utils.noop,
+  );
+  return JSON.parse(astTransformed) as rg.ast.GameDeclaration;
 }
 
 export async function transformSkipSelfAssignments(

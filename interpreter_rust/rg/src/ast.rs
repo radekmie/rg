@@ -1,7 +1,12 @@
 use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Display;
 use std::rc::Rc;
+
+pub type Mapping<Id> = BTreeMap<Id, Id>;
+pub type Binding<'a, Id> = (&'a Id, &'a Rc<Type<Id>>);
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
@@ -18,6 +23,24 @@ pub struct EdgeDeclaration<Id> {
     pub label: Rc<EdgeLabel<Id>>,
     pub lhs: Rc<EdgeName<Id>>,
     pub rhs: Rc<EdgeName<Id>>,
+}
+
+impl<Id: Ord> EdgeDeclaration<Id> {
+    pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
+        let mut bindings = self.lhs.bindings();
+        bindings.extend(self.rhs.bindings());
+        bindings
+    }
+}
+
+impl EdgeDeclaration<String> {
+    pub fn substitute_bindings(&self, mapping: &Mapping<String>) -> Self {
+        Self {
+            label: Rc::new(self.label.substitute_bindings(mapping)),
+            lhs: Rc::new(self.lhs.substitute_bindings(mapping)),
+            rhs: Rc::new(self.rhs.substitute_bindings(mapping)),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
@@ -46,15 +69,53 @@ impl<Id: PartialEq> EdgeLabel<Id> {
     }
 }
 
+impl EdgeLabel<String> {
+    pub fn substitute_bindings(&self, mapping: &Mapping<String>) -> Self {
+        match self {
+            Self::Assignment { lhs, rhs } => Self::Assignment {
+                lhs: Rc::new(lhs.substitute_bindings(mapping)),
+                rhs: Rc::new(rhs.substitute_bindings(mapping)),
+            },
+            Self::Comparison { lhs, rhs, negated } => Self::Comparison {
+                lhs: Rc::new(lhs.substitute_bindings(mapping)),
+                rhs: Rc::new(rhs.substitute_bindings(mapping)),
+                negated: *negated,
+            },
+            _ => self.clone(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct EdgeName<Id> {
     pub parts: Vec<Rc<EdgeNamePart<Id>>>,
 }
 
-impl<Id> From<Vec<Rc<EdgeNamePart<Id>>>> for EdgeName<Id> {
-    fn from(parts: Vec<Rc<EdgeNamePart<Id>>>) -> Self {
-        Self { parts }
+impl<Id: Ord> EdgeName<Id> {
+    pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
+        self.parts
+            .iter()
+            .flat_map(|edge_name_part| edge_name_part.binding())
+            .collect()
+    }
+}
+
+impl EdgeName<String> {
+    pub fn substitute_bindings(&self, mapping: &Mapping<String>) -> Self {
+        let identifier = self
+            .parts
+            .iter()
+            .map(|edge_name_part| match &**edge_name_part {
+                EdgeNamePart::Binding { identifier, .. } => mapping.get(identifier).unwrap(),
+                EdgeNamePart::Literal { identifier } => identifier,
+            })
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("__bind__");
+        Self {
+            parts: vec![Rc::new(EdgeNamePart::Literal { identifier })],
+        }
     }
 }
 
@@ -69,6 +130,15 @@ pub enum EdgeNamePart<Id> {
     Literal {
         identifier: Id,
     },
+}
+
+impl<Id> EdgeNamePart<Id> {
+    pub fn binding(&self) -> Option<Binding<Id>> {
+        match self {
+            Self::Binding { identifier, type_ } => Some((identifier, type_)),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
@@ -98,6 +168,24 @@ impl<Id: PartialEq> Expression<Id> {
                 x == y
             }
             _ => false,
+        }
+    }
+}
+
+impl Expression<String> {
+    pub fn substitute_bindings(&self, bindings: &Mapping<String>) -> Self {
+        match self {
+            Self::Access { lhs, rhs } => Self::Access {
+                lhs: Rc::new(lhs.substitute_bindings(bindings)),
+                rhs: Rc::new(rhs.substitute_bindings(bindings)),
+            },
+            Self::Cast { lhs, rhs } => Self::Cast {
+                lhs: lhs.clone(),
+                rhs: Rc::new(rhs.substitute_bindings(bindings)),
+            },
+            Self::Reference { identifier } => Self::Reference {
+                identifier: bindings.get(identifier).unwrap_or(identifier).clone(),
+            },
         }
     }
 }
@@ -155,7 +243,7 @@ mod expression {
     }
 }
 
-#[derive(Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Debug, Default, Deserialize, Eq, MapId, PartialEq, Serialize)]
 #[serde(tag = "kind")]
 pub struct GameDeclaration<Id> {
     pub constants: Vec<Rc<ConstantDeclaration<Id>>>,
@@ -163,6 +251,50 @@ pub struct GameDeclaration<Id> {
     pub pragmas: Vec<Rc<Pragma<Id>>>,
     pub types: Vec<Rc<TypeDeclaration<Id>>>,
     pub variables: Vec<Rc<VariableDeclaration<Id>>>,
+}
+
+impl<Id: Clone + Display + PartialEq> GameDeclaration<Id> {
+    pub fn type_values(&self, type_: &Rc<Type<Id>>) -> Vec<Id> {
+        match &**type_ {
+            Type::Arrow { .. } => todo!(),
+            Type::Set { identifiers } => identifiers.clone(),
+            Type::TypeReference { identifier } => self
+                .types
+                .iter()
+                .find_map(|type_declaration| {
+                    if &type_declaration.identifier == identifier {
+                        Some(self.type_values(&type_declaration.type_))
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_else(|| panic!("Unresolved type {identifier}.")),
+        }
+    }
+}
+
+impl GameDeclaration<String> {
+    pub fn create_mappings(
+        &self,
+        bindings: BTreeSet<Binding<String>>,
+    ) -> Vec<BTreeMap<String, String>> {
+        let mut mappings = vec![BTreeMap::default()];
+        for (identifier, type_) in bindings {
+            let values = self.type_values(type_);
+            mappings = mappings
+                .into_iter()
+                .flat_map(|mapping| {
+                    values.iter().map(move |value| {
+                        let mut mapping = mapping.clone();
+                        mapping.insert(identifier.clone(), value.clone());
+                        mapping
+                    })
+                })
+                .collect();
+        }
+
+        mappings
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

@@ -44,6 +44,12 @@ impl<Id> From<()> for EdgeLabel<Id> {
     }
 }
 
+impl<Id> From<Vec<Rc<EdgeNamePart<Id>>>> for EdgeName<Id> {
+    fn from(parts: Vec<Rc<EdgeNamePart<Id>>>) -> Self {
+        Self { parts }
+    }
+}
+
 impl<Id> From<(Id, Rc<Type<Id>>)> for EdgeNamePart<Id> {
     fn from((identifier, type_): (Id, Rc<Type<Id>>)) -> Self {
         Self::Binding { identifier, type_ }

@@ -379,8 +379,8 @@ describe('--expandGeneratorNodes', () => {
     await expect(run(['a(y: T2), b(x: T1)(y: T2): T4(x) == T4(y);'])).resolves
       .toMatchInlineSnapshot(`
       "a__bind__3, b__bind__1__bind__3: T4(1) == T4(3);
-      a__bind__3, b__bind__2__bind__3: T4(2) == T4(3);
       a__bind__4, b__bind__1__bind__4: T4(1) == T4(4);
+      a__bind__3, b__bind__2__bind__3: T4(2) == T4(3);
       a__bind__4, b__bind__2__bind__4: T4(2) == T4(4);"
     `);
   });

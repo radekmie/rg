@@ -8,7 +8,7 @@ use rg::ast::GameDeclaration;
 use rg::ist::Game;
 use rg::ist_tools::Interner;
 use rg::parser::game_declaration;
-use rg_transform::skip_self_assignments;
+use rg_transform::{expand_generator_nodes, skip_self_assignments};
 use serde_json::{from_str, to_string};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
@@ -28,8 +28,11 @@ pub fn parse_rg(source: &str) -> Result<String, JsValue> {
 pub fn perf_rg(ast: &str, depth: usize, callback: &Function) {
     console_error_panic_hook::set_once();
 
+    let mut game_declaration =
+        from_str::<GameDeclaration<String>>(ast).expect("Incorrect AST string.");
+    expand_generator_nodes(&mut game_declaration);
+
     let mut interner = Interner::default();
-    let game_declaration = from_str::<GameDeclaration<&str>>(ast).expect("Incorrect AST string.");
     let game = Game::from(game_declaration).map_id(&mut |id| interner.intern(id));
 
     let this = JsValue::null();
@@ -42,8 +45,11 @@ pub fn perf_rg(ast: &str, depth: usize, callback: &Function) {
 pub fn run_rg(ast: &str, plays: usize, callback: &Function) {
     console_error_panic_hook::set_once();
 
+    let mut game_declaration =
+        from_str::<GameDeclaration<String>>(ast).expect("Incorrect AST string.");
+    expand_generator_nodes(&mut game_declaration);
+
     let mut interner = Interner::default();
-    let game_declaration = from_str::<GameDeclaration<&str>>(ast).expect("Incorrect AST string.");
     let game = Game::from(game_declaration).map_id(&mut |id| interner.intern(id));
 
     let this = JsValue::null();
@@ -81,6 +87,17 @@ pub fn serialize_rg(ast: &str) -> String {
     let game_declaration = from_str::<GameDeclaration<&str>>(ast).expect("Incorrect AST string.");
 
     format!("{game_declaration}")
+}
+
+#[wasm_bindgen(js_name = transformExpandGeneratorNodes)]
+pub fn transform_expand_generator_nodes(ast: &str) -> Result<String, JsValue> {
+    console_error_panic_hook::set_once();
+
+    let mut game_declaration =
+        from_str::<GameDeclaration<String>>(ast).expect("Incorrect AST string.");
+    expand_generator_nodes(&mut game_declaration);
+
+    to_string(&game_declaration).map_err(|error| error.to_string().into())
 }
 
 #[wasm_bindgen(js_name = transformSkipSelfAssignments)]

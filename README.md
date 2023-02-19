@@ -39,7 +39,7 @@ wasm-pack build --out-dir ../../interpreter_node/src/wasm/module --out-name inde
 
 # In interpreter_node
 npm run build
-node lib/cli rg-source --compactSkipEdges --expandGeneratorNodes ../examples/ticTacToe.rg > ../examples/ticTacToe.rg.ll
+node lib/cli rg-source --compactSkipEdges ../examples/ticTacToe.rg > ../examples/ticTacToe.rg.ll
 
 # In interpreter_rust
 cargo run --release ../examples/ticTacToe.rg.ll run 1000
@@ -72,7 +72,7 @@ npm test
 | Translation of RBG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `addExplicitCasts`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `compactSkipEdges`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
-| Transformation `expandGeneratorNodes`           |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Transformation `expandGeneratorNodes`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `joinForkSuffixes`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `mangleSymbols`                  |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `normalizeTypes`                 |    :heavy_check_mark:    | :heavy_multiplication_x: |
@@ -135,7 +135,7 @@ Usage: node lib/cli [options] [command]
 Options:
   --addExplicitCasts      add type casts to all expressions
   --compactSkipEdges      optimize automaton by compacting skip edges
-  --expandGeneratorNodes  expand generator nodes (.hrg and .rg only)
+  --expandGeneratorNodes  expand generator nodes
   --inlineReachability    inline reachability when possible
   --joinForkSuffixes      join paths with identical labels leading to the same node
   --mangleSymbols         mangle all user-defined symbols

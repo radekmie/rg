@@ -54,11 +54,8 @@ for game in "${games[@]}"; do
   for flags in $(combine 'addExplicitCasts' 'compactSkipEdges' 'joinForkSuffixes' 'mangleSymbols' 'normalizeTypes' 'reuseFunctions' 'skipSelfAssignments'); do
     flags=( $(echo "${flags//_/ }" | xargs) )
     flags=${flags[@]/#/--}
-    # TODO: Remove this as soon as the IST builder will be able to handle binds.
-    if [ -z "$flags" ]; then
-      flags=" --expandGeneratorNodes"
-    else
-      flags=" --expandGeneratorNodes $flags"
+    if [ ! -z "$flags" ]; then
+      flags=" $flags"
     fi
 
     test "$flags" "${game[0]}" ${game[@]:1}

@@ -1,11 +1,12 @@
-use nom::Finish;
 use map_id::MapId;
 use nom::combinator::all_consuming;
 use nom::error::convert_error;
+use nom::Finish;
 use rand::thread_rng;
 use rg::ist::Game;
 use rg::ist_tools::Interner;
 use rg::parser::game_declaration;
+use rg_transform::expand_generator_nodes;
 use std::env::args;
 use std::fs::read_to_string;
 
@@ -19,8 +20,11 @@ fn main() {
 
     let game_declaration = match all_consuming(game_declaration)(source).finish() {
         Ok((_, game_declaration)) => game_declaration,
-        Err(error) => panic!("{}", convert_error(source, error))
+        Err(error) => panic!("{}", convert_error(source, error)),
     };
+
+    let mut game_declaration = game_declaration.map_id(&mut |id| id.to_string());
+    expand_generator_nodes(&mut game_declaration);
 
     let mut interner = Interner::default();
     let game = Game::from(game_declaration).map_id(&mut |id| interner.intern(id));
