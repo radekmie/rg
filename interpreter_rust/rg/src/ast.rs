@@ -287,58 +287,46 @@ pub struct GameDeclaration<Id> {
 impl<Id: Clone + PartialEq> GameDeclaration<Id> {
     pub fn is_assignable_type(
         &self,
-        lhs: &Rc<Type<Id>>,
-        rhs: &Rc<Type<Id>>,
+        lhs: &Type<Id>,
+        rhs: &Type<Id>,
         is_strict: bool,
     ) -> Result<bool, Error<Id>> {
         let lhs = self.resolve_type_reference(lhs)?;
         let rhs = self.resolve_type_reference(rhs)?;
 
-        match (&**lhs, &**rhs) {
-            (
-                Type::Arrow {
-                    lhs: lhs_lhs,
-                    rhs: lhs_rhs,
-                },
-                Type::Arrow {
-                    lhs: rhs_lhs,
-                    rhs: rhs_rhs,
-                },
-            ) => Ok(self.is_assignable_type(lhs_rhs, rhs_rhs, is_strict)?
-                && self.is_assignable_type(
-                    &Rc::new(Type::TypeReference {
-                        identifier: lhs_lhs.clone(),
-                    }),
-                    &Rc::new(Type::TypeReference {
-                        identifier: rhs_lhs.clone(),
-                    }),
-                    is_strict,
-                )?),
+        Ok(match (lhs, rhs) {
+            (Type::Arrow { lhs: ll, rhs: lr }, Type::Arrow { lhs: rl, rhs: rr }) => {
+                let ll = &self.resolve_type(ll)?.type_;
+                let rl = &self.resolve_type(rl)?.type_;
+                self.is_assignable_type(ll, rl, is_strict)?
+                    && self.is_assignable_type(lr, rr, is_strict)?
+            }
             (Type::Set { identifiers: lhs }, Type::Set { identifiers: rhs }) => {
                 if is_strict {
-                    Ok(rhs.iter().all(|x| lhs.contains(x)))
+                    rhs.iter().all(|x| lhs.contains(x))
                 } else {
-                    Ok(rhs.iter().any(|x| lhs.contains(x)))
+                    rhs.iter().any(|x| lhs.contains(x))
                 }
             }
-            _ => Ok(false),
-        }
+            _ => false,
+        })
     }
 
     pub fn is_equal_type(
         &self,
-        lhs: &Rc<Type<Id>>,
-        rhs: &Rc<Type<Id>>,
+        lhs: &Type<Id>,
+        rhs: &Type<Id>,
         is_strict: bool,
     ) -> Result<bool, Error<Id>> {
         Ok(self.is_assignable_type(lhs, rhs, is_strict)?
             && self.is_assignable_type(rhs, lhs, is_strict)?)
     }
 
-    pub fn resolve_type(&self, identifier: &Id) -> Result<&Rc<TypeDeclaration<Id>>, Error<Id>> {
+    pub fn resolve_type(&self, identifier: &Id) -> Result<&TypeDeclaration<Id>, Error<Id>> {
         self.types
             .iter()
             .find(|type_declaration| &type_declaration.identifier == identifier)
+            .map(|type_declaration| &**type_declaration)
             .ok_or_else(|| Error {
                 game_declaration: self.clone(),
                 reason: ErrorReason::UnresolvedType {
@@ -349,9 +337,9 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
 
     pub fn resolve_type_reference<'a>(
         &'a self,
-        type_: &'a Rc<Type<Id>>,
-    ) -> Result<&'a Rc<Type<Id>>, Error<Id>> {
-        match &**type_ {
+        type_: &'a Type<Id>,
+    ) -> Result<&Type<Id>, Error<Id>> {
+        match type_ {
             Type::TypeReference { identifier } => {
                 self.resolve_type_reference(&self.resolve_type(identifier)?.type_)
             }
@@ -359,13 +347,11 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
         }
     }
 
-    pub fn resolve_variable(
-        &self,
-        identifier: &Id,
-    ) -> Result<&Rc<VariableDeclaration<Id>>, Error<Id>> {
+    pub fn resolve_variable(&self, identifier: &Id) -> Result<&VariableDeclaration<Id>, Error<Id>> {
         self.variables
             .iter()
             .find(|variable_declaration| &variable_declaration.identifier == identifier)
+            .map(|variable_declaration| &**variable_declaration)
             .ok_or_else(|| Error {
                 game_declaration: self.clone(),
                 reason: ErrorReason::UnresolvedVariable {
@@ -374,8 +360,8 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
             })
     }
 
-    pub fn type_values(&self, type_: &Rc<Type<Id>>) -> Result<Vec<Id>, Error<Id>> {
-        match &**type_ {
+    pub fn type_values(&self, type_: &Type<Id>) -> Result<Vec<Id>, Error<Id>> {
+        match type_ {
             Type::Arrow { .. } => todo!(),
             Type::Set { identifiers } => Ok(identifiers.clone()),
             Type::TypeReference { identifier } => {

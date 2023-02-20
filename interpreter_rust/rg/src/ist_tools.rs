@@ -114,7 +114,7 @@ impl Game<RuntimeId> {
             loop {
                 let states = state.next_states_depth(self, 1, false).collect::<Vec<_>>();
                 if states.is_empty() {
-                    increase(&mut goals, (**state.get_goals()).clone());
+                    increase(&mut goals, state.get_goals().clone());
                     break;
                 }
 

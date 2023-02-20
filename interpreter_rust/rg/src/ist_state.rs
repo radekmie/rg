@@ -70,11 +70,11 @@ impl State {
         }
     }
 
-    pub fn get_goals(&self) -> &Rc<Value<RuntimeId>> {
+    pub fn get_goals(&self) -> &Value<RuntimeId> {
         self.values.get(&LABEL_GOALS).unwrap()
     }
 
-    pub fn get_player(&self) -> &Rc<Value<RuntimeId>> {
+    pub fn get_player(&self) -> &Value<RuntimeId> {
         self.values.get(&LABEL_PLAYER).unwrap()
     }
 
