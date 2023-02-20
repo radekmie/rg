@@ -87,14 +87,13 @@ pub fn expression(input: &str) -> Result<Rc<Expression<&str>>> {
         let (input, expression) = fold_many0(
             in_brackets(cut(separated(expression))),
             || match maybe_cast.clone() {
-                Some(rhs) => Expression::Cast {
-                    lhs: Type::TypeReference { identifier }.into(),
+                Some(rhs) => Rc::new(Expression::Cast {
+                    lhs: Rc::new(Type::TypeReference { identifier }),
                     rhs,
-                }
-                .into(),
-                None => Expression::Reference { identifier }.into(),
+                }),
+                None => Rc::new(Expression::Reference { identifier }),
             },
-            |lhs, rhs| Expression::Access { lhs, rhs }.into(),
+            |lhs, rhs| Rc::new(Expression::Access { lhs, rhs }),
         )(input)?;
 
         Ok((input, expression))

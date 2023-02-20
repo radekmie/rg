@@ -29,7 +29,7 @@ pub fn safe_parse_source(source: &str) -> Result<GameDeclaration<String>, String
     match all_consuming(game_declaration)(source).finish() {
         Ok((_, game_declaration)) => {
             let mut game_declaration = game_declaration.map_id(&mut |id| id.to_string());
-            add_builtins(&mut game_declaration)?;
+            add_builtins(&mut game_declaration).map_err(|error| error.to_string())?;
             Ok(game_declaration)
         }
         Err(error) => Err(convert_error(source, error)),

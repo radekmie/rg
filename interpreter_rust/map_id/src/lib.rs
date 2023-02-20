@@ -17,7 +17,7 @@ impl<FromType: MapId<ToType, OldId, NewId>, ToType, OldId, NewId> MapId<Rc<ToTyp
     for Rc<FromType>
 {
     fn map_id(&self, map: &mut impl FnMut(&OldId) -> NewId) -> Rc<ToType> {
-        (**self).map_id(map).into()
+        Rc::new((**self).map_id(map))
     }
 }
 

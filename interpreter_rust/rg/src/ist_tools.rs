@@ -37,8 +37,8 @@ impl<Id: Copy + Ord + TryFrom<usize>> Interner<Id> {
     pub fn intern_as(&mut self, string: &str, id: Id) -> Id {
         assert!(!self.id_to_string.contains_key(&id));
         assert!(!self.string_to_id.contains_key(string));
-        self.id_to_string.insert(id, string.into());
-        self.string_to_id.insert(string.into(), id);
+        self.id_to_string.insert(id, string.to_string());
+        self.string_to_id.insert(string.to_string(), id);
         id
     }
 

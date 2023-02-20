@@ -59,5 +59,5 @@ pub fn comments_and_whitespaces<'a, E: ParseError<&'a str>>(
 pub fn map_into_rc<'a, O1, O2: From<O1>, E: ParseError<&'a str>>(
     inner: impl FnMut(&'a str) -> IResult<&'a str, O1, E>,
 ) -> impl FnMut(&'a str) -> IResult<&'a str, Rc<O2>, E> {
-    map(inner, |x| Rc::new(x.into()))
+    map(inner, |x| Rc::new(From::from(x)))
 }

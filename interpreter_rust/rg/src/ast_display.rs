@@ -1,6 +1,7 @@
 use crate::ast::{
-    ConstantDeclaration, EdgeDeclaration, EdgeLabel, EdgeName, EdgeNamePart, Expression,
-    GameDeclaration, Pragma, Type, TypeDeclaration, Value, ValueEntry, VariableDeclaration,
+    ConstantDeclaration, EdgeDeclaration, EdgeLabel, EdgeName, EdgeNamePart, Error, ErrorReason,
+    Expression, GameDeclaration, Pragma, Type, TypeDeclaration, Value, ValueEntry,
+    VariableDeclaration,
 };
 use std::fmt::{Display, Formatter, Result};
 
@@ -66,6 +67,82 @@ impl<Id: Display> Display for EdgeNamePart<Id> {
         match self {
             Self::Binding { identifier, type_ } => write!(f, "({identifier}: {type_})"),
             Self::Literal { identifier } => write!(f, "{identifier}"),
+        }
+    }
+}
+
+impl<Id: Display> Display for Error<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let Self {
+            game_declaration,
+            reason,
+        } = self;
+
+        writeln!(f, "{reason}")?;
+
+        if !game_declaration.types.is_empty() {
+            writeln!(f, "  Type definitions:")?;
+            for type_declaration in &game_declaration.types {
+                let TypeDeclaration { identifier, type_ } = &**type_declaration;
+                writeln!(f, "    {identifier}: {type_}")?;
+            }
+        }
+
+        if !game_declaration.constants.is_empty() {
+            writeln!(f, "  Constant definitions:")?;
+            for constant_declaration in &game_declaration.constants {
+                let ConstantDeclaration {
+                    identifier, type_, ..
+                } = &**constant_declaration;
+                writeln!(f, "    {identifier}: {type_}")?;
+            }
+        }
+
+        if !game_declaration.variables.is_empty() {
+            writeln!(f, "  Variable definitions:")?;
+            for variable_declaration in &game_declaration.variables {
+                let VariableDeclaration {
+                    identifier, type_, ..
+                } = &**variable_declaration;
+                writeln!(f, "    {identifier}: {type_}")?;
+            }
+        }
+
+        // TODO: Handle operation scopes.
+
+        Ok(())
+    }
+}
+
+impl<Id: Display> Display for ErrorReason<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Self::EmptySetType { identifier } => {
+                write!(f, "Type {identifier} should not be empty.")
+            }
+            Self::SetTypeExpected { identifier } => write!(f, "Type {identifier} should be a set."),
+            Self::TypeDeclarationMismatch {
+                expected,
+                identifier,
+                resolved,
+            } => {
+                writeln!(f, "Type {identifier} is incorrect.")?;
+                writeln!(f, "  Expected: {expected}")?;
+                write!(f, "  Resolved: {resolved}")
+            }
+            Self::UnresolvedType { identifier } => write!(f, "Unresolved type {identifier}."),
+            Self::UnresolvedVariable { identifier } => {
+                write!(f, "Unresolved variable {identifier}.")
+            }
+            Self::VariableDeclarationMismatch {
+                expected,
+                identifier,
+                resolved,
+            } => {
+                writeln!(f, "Variable {identifier} has incorrect type.")?;
+                writeln!(f, "  Expected: {expected}")?;
+                write!(f, "  Resolved: {resolved}")
+            }
         }
     }
 }

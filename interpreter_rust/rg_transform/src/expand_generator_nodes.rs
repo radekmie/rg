@@ -1,4 +1,5 @@
 use rg::ast::GameDeclaration;
+use std::rc::Rc;
 
 pub fn expand_generator_nodes(game_declaration: &mut GameDeclaration<String>) {
     game_declaration.edges = game_declaration
@@ -8,7 +9,7 @@ pub fn expand_generator_nodes(game_declaration: &mut GameDeclaration<String>) {
             game_declaration
                 .create_mappings(edge.bindings())
                 .into_iter()
-                .map(|mapping| edge.substitute_bindings(&mapping).into())
+                .map(|mapping| Rc::new(edge.substitute_bindings(&mapping)))
         })
         .collect()
 }

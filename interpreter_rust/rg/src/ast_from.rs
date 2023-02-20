@@ -71,7 +71,7 @@ impl<Id> From<(Rc<Expression<Id>>, Rc<Expression<Id>>)> for Expression<Id> {
 impl<Id> From<(Id, Rc<Expression<Id>>)> for Expression<Id> {
     fn from((identifier, rhs): (Id, Rc<Expression<Id>>)) -> Self {
         Self::Cast {
-            lhs: Type::TypeReference { identifier }.into(),
+            lhs: Rc::new(Type::TypeReference { identifier }),
             rhs,
         }
     }

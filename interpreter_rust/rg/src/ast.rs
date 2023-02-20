@@ -2,7 +2,6 @@ use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
-use std::fmt::Display;
 use std::rc::Rc;
 
 pub type Mapping<Id> = BTreeMap<Id, Id>;
@@ -141,6 +140,38 @@ impl<Id> EdgeNamePart<Id> {
     }
 }
 
+#[derive(Debug)]
+pub struct Error<Id> {
+    pub game_declaration: GameDeclaration<Id>,
+    pub reason: ErrorReason<Id>,
+}
+
+#[derive(Debug)]
+pub enum ErrorReason<Id> {
+    EmptySetType {
+        identifier: Id,
+    },
+    SetTypeExpected {
+        identifier: Id,
+    },
+    TypeDeclarationMismatch {
+        expected: Rc<Type<Id>>,
+        identifier: Id,
+        resolved: Rc<Type<Id>>,
+    },
+    UnresolvedType {
+        identifier: Id,
+    },
+    UnresolvedVariable {
+        identifier: Id,
+    },
+    VariableDeclarationMismatch {
+        expected: Rc<Type<Id>>,
+        identifier: Id,
+        resolved: Rc<Type<Id>>,
+    },
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Expression<Id> {
@@ -243,7 +274,7 @@ mod expression {
     }
 }
 
-#[derive(Debug, Default, Deserialize, Eq, MapId, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct GameDeclaration<Id> {
     pub constants: Vec<Rc<ConstantDeclaration<Id>>>,
@@ -253,56 +284,13 @@ pub struct GameDeclaration<Id> {
     pub variables: Vec<Rc<VariableDeclaration<Id>>>,
 }
 
-impl<Id: Clone + Display + Ord + PartialEq> GameDeclaration<Id> {
-    // TODO: Move to a separate struct.
-    pub fn type_error_context(&self, message: String) -> String {
-        let mut lines = vec![message];
-
-        if !self.types.is_empty() {
-            lines.push("  Type definitions:".into());
-            let mut type_declarations = self.types.clone();
-            type_declarations.sort_unstable_by(|x, y| x.identifier.cmp(&y.identifier));
-            for type_declaration in &type_declarations {
-                let TypeDeclaration { identifier, type_ } = &**type_declaration;
-                lines.push(format!("    {identifier}: {type_}"));
-            }
-        }
-
-        if !self.constants.is_empty() {
-            lines.push("  Constant definitions:".into());
-            let mut constant_declarations = self.constants.clone();
-            constant_declarations.sort_unstable_by(|x, y| x.identifier.cmp(&y.identifier));
-            for constant_declaration in &constant_declarations {
-                let ConstantDeclaration {
-                    identifier, type_, ..
-                } = &**constant_declaration;
-                lines.push(format!("    {identifier}: {type_}"));
-            }
-        }
-
-        if !self.variables.is_empty() {
-            lines.push("  Variables definitions:".into());
-            let mut variable_declarations = self.variables.clone();
-            variable_declarations.sort_unstable_by(|x, y| x.identifier.cmp(&y.identifier));
-            for variable_declaration in &variable_declarations {
-                let VariableDeclaration {
-                    identifier, type_, ..
-                } = &**variable_declaration;
-                lines.push(format!("    {identifier}: {type_}"));
-            }
-        }
-
-        // TODO: Handle operation scopes.
-
-        lines.join("\n")
-    }
-
+impl<Id: Clone + PartialEq> GameDeclaration<Id> {
     pub fn is_assignable_type(
         &self,
         lhs: &Rc<Type<Id>>,
         rhs: &Rc<Type<Id>>,
         is_strict: bool,
-    ) -> Result<bool, String> {
+    ) -> Result<bool, Error<Id>> {
         let lhs = self.resolve_type_reference(lhs)?;
         let rhs = self.resolve_type_reference(rhs)?;
 
@@ -342,22 +330,27 @@ impl<Id: Clone + Display + Ord + PartialEq> GameDeclaration<Id> {
         lhs: &Rc<Type<Id>>,
         rhs: &Rc<Type<Id>>,
         is_strict: bool,
-    ) -> Result<bool, String> {
+    ) -> Result<bool, Error<Id>> {
         Ok(self.is_assignable_type(lhs, rhs, is_strict)?
             && self.is_assignable_type(rhs, lhs, is_strict)?)
     }
 
-    pub fn resolve_type(&self, identifier: &Id) -> Result<&Rc<TypeDeclaration<Id>>, String> {
+    pub fn resolve_type(&self, identifier: &Id) -> Result<&Rc<TypeDeclaration<Id>>, Error<Id>> {
         self.types
             .iter()
             .find(|type_declaration| &type_declaration.identifier == identifier)
-            .ok_or_else(|| self.type_error_context(format!("Unresolved type {identifier}.")))
+            .ok_or_else(|| Error {
+                game_declaration: self.clone(),
+                reason: ErrorReason::UnresolvedType {
+                    identifier: identifier.clone(),
+                },
+            })
     }
 
     pub fn resolve_type_reference<'a>(
         &'a self,
         type_: &'a Rc<Type<Id>>,
-    ) -> Result<&'a Rc<Type<Id>>, String> {
+    ) -> Result<&'a Rc<Type<Id>>, Error<Id>> {
         match &**type_ {
             Type::TypeReference { identifier } => {
                 self.resolve_type_reference(&self.resolve_type(identifier)?.type_)
@@ -369,20 +362,24 @@ impl<Id: Clone + Display + Ord + PartialEq> GameDeclaration<Id> {
     pub fn resolve_variable(
         &self,
         identifier: &Id,
-    ) -> Result<&Rc<VariableDeclaration<Id>>, String> {
+    ) -> Result<&Rc<VariableDeclaration<Id>>, Error<Id>> {
         self.variables
             .iter()
             .find(|variable_declaration| &variable_declaration.identifier == identifier)
-            .ok_or_else(|| self.type_error_context(format!("Unresolved type {identifier}.")))
+            .ok_or_else(|| Error {
+                game_declaration: self.clone(),
+                reason: ErrorReason::UnresolvedVariable {
+                    identifier: identifier.clone(),
+                },
+            })
     }
 
-    pub fn type_values(&self, type_: &Rc<Type<Id>>) -> Vec<Id> {
+    pub fn type_values(&self, type_: &Rc<Type<Id>>) -> Result<Vec<Id>, Error<Id>> {
         match &**type_ {
             Type::Arrow { .. } => todo!(),
-            Type::Set { identifiers } => identifiers.clone(),
+            Type::Set { identifiers } => Ok(identifiers.clone()),
             Type::TypeReference { identifier } => {
-                // FIXME: Error handling.
-                self.type_values(&self.resolve_type(identifier).unwrap().type_)
+                self.type_values(&self.resolve_type(identifier)?.type_)
             }
         }
     }
@@ -395,7 +392,8 @@ impl GameDeclaration<String> {
     ) -> Vec<BTreeMap<String, String>> {
         let mut mappings = vec![BTreeMap::default()];
         for (identifier, type_) in bindings {
-            let values = self.type_values(type_);
+            // FIXME: Error handling.
+            let values = self.type_values(type_).unwrap();
             mappings = mappings
                 .into_iter()
                 .flat_map(|mapping| {

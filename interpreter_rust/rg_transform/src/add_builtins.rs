@@ -1,7 +1,10 @@
-use rg::ast::{GameDeclaration, Type, TypeDeclaration, Value, ValueEntry, VariableDeclaration};
+use rg::ast::{
+    Error, ErrorReason, GameDeclaration, Type, TypeDeclaration, Value, ValueEntry,
+    VariableDeclaration,
+};
 use std::rc::Rc;
 
-pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<(), String> {
+pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<(), Error<String>> {
     // |- Bool
     add_builtin_type(
         game_declaration,
@@ -55,7 +58,12 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
             }
         }
         _ => {
-            return Err(game_declaration.type_error_context("Type Player should be a Set.".into()));
+            return Err(Error {
+                game_declaration: game_declaration.clone(),
+                reason: ErrorReason::SetTypeExpected {
+                    identifier: "Player".to_string(),
+                },
+            });
         }
     };
     add_builtin_type(
@@ -71,11 +79,19 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
     // Goals ^ Score ^ isSet(Score) |- goals
     game_declaration.resolve_type(&"Goals".to_string())?;
     let default_score = match &*game_declaration.resolve_type(&"Score".to_string())?.type_ {
-        Type::Set { identifiers } => identifiers.first().ok_or_else(|| {
-            game_declaration.type_error_context("Type Score should not be empty.".into())
+        Type::Set { identifiers } => identifiers.first().ok_or_else(|| Error {
+            game_declaration: game_declaration.clone(),
+            reason: ErrorReason::EmptySetType {
+                identifier: "Score".to_string(),
+            },
         })?,
         _ => {
-            return Err(game_declaration.type_error_context("Type Score should be a Set.".into()));
+            return Err(Error {
+                game_declaration: game_declaration.clone(),
+                reason: ErrorReason::SetTypeExpected {
+                    identifier: "Score".to_string(),
+                },
+            });
         }
     };
     add_builtin_variable(
@@ -134,23 +150,29 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
 
 fn add_builtin_type(
     game_declaration: &mut GameDeclaration<String>,
-    type_declaration: TypeDeclaration<String>,
-) -> Result<(), String> {
-    match game_declaration.resolve_type(&type_declaration.identifier) {
+    expected_type_declaration: TypeDeclaration<String>,
+) -> Result<(), Error<String>> {
+    match game_declaration.resolve_type(&expected_type_declaration.identifier) {
         Ok(resolved_type_declaration) => {
             if !game_declaration.is_equal_type(
-                &type_declaration.type_,
+                &expected_type_declaration.type_,
                 &resolved_type_declaration.type_,
                 false,
             )? {
-                return Err(game_declaration.type_error_context(format!(
-                    "Incorrect builtin type {}.",
-                    type_declaration.identifier
-                )));
+                return Err(Error {
+                    game_declaration: game_declaration.clone(),
+                    reason: ErrorReason::TypeDeclarationMismatch {
+                        identifier: expected_type_declaration.identifier,
+                        expected: expected_type_declaration.type_,
+                        resolved: resolved_type_declaration.type_.clone(),
+                    },
+                });
             }
         }
         Err(_) => {
-            game_declaration.types.push(Rc::new(type_declaration));
+            game_declaration
+                .types
+                .push(Rc::new(expected_type_declaration));
         }
     }
     Ok(())
@@ -158,25 +180,29 @@ fn add_builtin_type(
 
 fn add_builtin_variable(
     game_declaration: &mut GameDeclaration<String>,
-    variable_declaration: VariableDeclaration<String>,
-) -> Result<(), String> {
-    match game_declaration.resolve_variable(&variable_declaration.identifier) {
+    expected_variable_declaration: VariableDeclaration<String>,
+) -> Result<(), Error<String>> {
+    match game_declaration.resolve_variable(&expected_variable_declaration.identifier) {
         Ok(resolved_variable_declaration) => {
             if !game_declaration.is_equal_type(
-                &variable_declaration.type_,
+                &expected_variable_declaration.type_,
                 &resolved_variable_declaration.type_,
                 false,
             )? {
-                return Err(game_declaration.type_error_context(format!(
-                    "Incorrect builtin variable {}.",
-                    variable_declaration.identifier
-                )));
+                return Err(Error {
+                    game_declaration: game_declaration.clone(),
+                    reason: ErrorReason::VariableDeclarationMismatch {
+                        identifier: expected_variable_declaration.identifier,
+                        expected: expected_variable_declaration.type_,
+                        resolved: resolved_variable_declaration.type_.clone(),
+                    },
+                });
             }
         }
         Err(_) => {
             game_declaration
                 .variables
-                .push(Rc::new(variable_declaration));
+                .push(Rc::new(expected_variable_declaration));
         }
     }
     Ok(())
