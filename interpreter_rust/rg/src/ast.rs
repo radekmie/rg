@@ -62,14 +62,8 @@ pub enum EdgeLabel<Id> {
     Skip,
 }
 
-impl<Id: PartialEq> EdgeLabel<Id> {
-    pub fn is_self_assignment(&self) -> bool {
-        matches!(self, EdgeLabel::Assignment { lhs, rhs } if lhs.is_equal_reference(rhs))
-    }
-}
-
-impl EdgeLabel<String> {
-    pub fn substitute_bindings(&self, mapping: &Mapping<String>) -> Self {
+impl<Id: Clone + Ord> EdgeLabel<Id> {
+    pub fn substitute_bindings(&self, mapping: &Mapping<Id>) -> Self {
         match self {
             Self::Assignment { lhs, rhs } => Self::Assignment {
                 lhs: Rc::new(lhs.substitute_bindings(mapping)),
@@ -82,6 +76,12 @@ impl EdgeLabel<String> {
             },
             _ => self.clone(),
         }
+    }
+}
+
+impl<Id: PartialEq> EdgeLabel<Id> {
+    pub fn is_self_assignment(&self) -> bool {
+        matches!(self, EdgeLabel::Assignment { lhs, rhs } if lhs.is_equal_reference(rhs))
     }
 }
 
@@ -180,6 +180,24 @@ pub enum Expression<Id> {
     Reference { identifier: Id },
 }
 
+impl<Id: Clone + Ord> Expression<Id> {
+    pub fn substitute_bindings(&self, bindings: &Mapping<Id>) -> Self {
+        match self {
+            Self::Access { lhs, rhs } => Self::Access {
+                lhs: Rc::new(lhs.substitute_bindings(bindings)),
+                rhs: Rc::new(rhs.substitute_bindings(bindings)),
+            },
+            Self::Cast { lhs, rhs } => Self::Cast {
+                lhs: lhs.clone(),
+                rhs: Rc::new(rhs.substitute_bindings(bindings)),
+            },
+            Self::Reference { identifier } => Self::Reference {
+                identifier: bindings.get(identifier).unwrap_or(identifier).clone(),
+            },
+        }
+    }
+}
+
 impl<Id: PartialEq> Expression<Id> {
     pub fn is_equal_reference(&self, other: &Self) -> bool {
         match (self, other) {
@@ -199,24 +217,6 @@ impl<Id: PartialEq> Expression<Id> {
                 x == y
             }
             _ => false,
-        }
-    }
-}
-
-impl Expression<String> {
-    pub fn substitute_bindings(&self, bindings: &Mapping<String>) -> Self {
-        match self {
-            Self::Access { lhs, rhs } => Self::Access {
-                lhs: Rc::new(lhs.substitute_bindings(bindings)),
-                rhs: Rc::new(rhs.substitute_bindings(bindings)),
-            },
-            Self::Cast { lhs, rhs } => Self::Cast {
-                lhs: lhs.clone(),
-                rhs: Rc::new(rhs.substitute_bindings(bindings)),
-            },
-            Self::Reference { identifier } => Self::Reference {
-                identifier: bindings.get(identifier).unwrap_or(identifier).clone(),
-            },
         }
     }
 }
@@ -375,11 +375,10 @@ impl GameDeclaration<String> {
     pub fn create_mappings(
         &self,
         bindings: BTreeSet<Binding<String>>,
-    ) -> Vec<BTreeMap<String, String>> {
+    ) -> Result<Vec<BTreeMap<String, String>>, Error<String>> {
         let mut mappings = vec![BTreeMap::default()];
         for (identifier, type_) in bindings {
-            // FIXME: Error handling.
-            let values = self.type_values(type_).unwrap();
+            let values = self.type_values(type_)?;
             mappings = mappings
                 .into_iter()
                 .flat_map(|mapping| {
@@ -392,7 +391,7 @@ impl GameDeclaration<String> {
                 .collect();
         }
 
-        mappings
+        Ok(mappings)
     }
 }
 

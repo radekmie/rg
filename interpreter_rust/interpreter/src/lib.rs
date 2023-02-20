@@ -13,12 +13,12 @@ use serde_json::{from_str, to_string};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 pub fn prepare_ist(
-    mut game_declaration: GameDeclaration<String>,
-) -> (Game<RuntimeId>, Interner<RuntimeId>) {
-    expand_generator_nodes(&mut game_declaration);
+    game_declaration: GameDeclaration<String>,
+) -> Result<(Game<RuntimeId>, Interner<RuntimeId>), String> {
+    let game_declaration = expand_generator_nodes(game_declaration)?;
     let mut interner = Interner::default();
     let game = Game::from(game_declaration).map_id(&mut |id| interner.intern(id));
-    (game, interner)
+    Ok((game, interner))
 }
 
 pub fn safe_parse_ast(ast: &str) -> Result<GameDeclaration<String>, String> {
@@ -28,9 +28,8 @@ pub fn safe_parse_ast(ast: &str) -> Result<GameDeclaration<String>, String> {
 pub fn safe_parse_source(source: &str) -> Result<GameDeclaration<String>, String> {
     match all_consuming(game_declaration)(source).finish() {
         Ok((_, game_declaration)) => {
-            let mut game_declaration = game_declaration.map_id(&mut |id| id.to_string());
-            add_builtins(&mut game_declaration).map_err(|error| error.to_string())?;
-            Ok(game_declaration)
+            let game_declaration = game_declaration.map_id(&mut |id| id.to_string());
+            add_builtins(game_declaration).map_err(|error| error.to_string())
         }
         Err(error) => Err(convert_error(source, error)),
     }
@@ -49,7 +48,7 @@ pub fn parse_rg(source: &str) -> Result<String, String> {
 #[wasm_bindgen(js_name = perfRg)]
 pub fn perf_rg(ast: &str, depth: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
-    let game = prepare_ist(safe_parse_ast(ast)?).0;
+    let game = prepare_ist(safe_parse_ast(ast)?)?.0;
     let this = JsValue::null();
     game.perf(depth, &|count| {
         callback.call1(&this, &count.into()).unwrap();
@@ -61,7 +60,7 @@ pub fn perf_rg(ast: &str, depth: usize, callback: &Function) -> Result<(), Strin
 #[wasm_bindgen(js_name = runRg)]
 pub fn run_rg(ast: &str, plays: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
-    let (game, interner) = prepare_ist(safe_parse_ast(ast)?);
+    let (game, interner) = prepare_ist(safe_parse_ast(ast)?)?;
     let this = JsValue::null();
     let mut rng = thread_rng();
     game.run(&mut rng, plays, &|(plays, moves, turns, goals)| {
@@ -102,15 +101,11 @@ pub fn serialize_rg(ast: &str) -> Result<String, String> {
 #[wasm_bindgen(js_name = transformExpandGeneratorNodes)]
 pub fn transform_expand_generator_nodes(ast: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
-    let mut game_declaration = safe_parse_ast(ast)?;
-    expand_generator_nodes(&mut game_declaration);
-    safe_serialize_ast(game_declaration)
+    safe_serialize_ast(expand_generator_nodes(safe_parse_ast(ast)?)?)
 }
 
 #[wasm_bindgen(js_name = transformSkipSelfAssignments)]
 pub fn transform_skip_self_assignments(ast: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
-    let mut game_declaration = safe_parse_ast(ast)?;
-    skip_self_assignments(&mut game_declaration);
-    safe_serialize_ast(game_declaration)
+    safe_serialize_ast(skip_self_assignments(safe_parse_ast(ast)?)?)
 }

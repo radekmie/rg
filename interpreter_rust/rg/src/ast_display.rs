@@ -114,6 +114,12 @@ impl<Id: Display> Display for Error<Id> {
     }
 }
 
+impl<Id: Display> From<Error<Id>> for String {
+    fn from(error: Error<Id>) -> Self {
+        format!("{}", error)
+    }
+}
+
 impl<Id: Display> Display for ErrorReason<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {

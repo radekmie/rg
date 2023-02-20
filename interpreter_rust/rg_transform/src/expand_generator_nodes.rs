@@ -1,15 +1,25 @@
-use rg::ast::GameDeclaration;
+use rg::ast::{Error, GameDeclaration};
 use std::rc::Rc;
 
-pub fn expand_generator_nodes(game_declaration: &mut GameDeclaration<String>) {
+pub fn expand_generator_nodes(
+    mut game_declaration: GameDeclaration<String>,
+) -> Result<GameDeclaration<String>, Error<String>> {
     game_declaration.edges = game_declaration
         .edges
         .iter()
-        .flat_map(|edge| {
+        .map(|edge| {
             game_declaration
                 .create_mappings(edge.bindings())
-                .into_iter()
-                .map(|mapping| Rc::new(edge.substitute_bindings(&mapping)))
+                .map(|mappings| {
+                    mappings
+                        .into_iter()
+                        .map(|mapping| Rc::new(edge.substitute_bindings(&mapping)))
+                })
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?
+        .into_iter()
+        .flatten()
+        .collect();
+
+    Ok(game_declaration)
 }

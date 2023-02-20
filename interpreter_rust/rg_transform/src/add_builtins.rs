@@ -4,10 +4,12 @@ use rg::ast::{
 };
 use std::rc::Rc;
 
-pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<(), Error<String>> {
+pub fn add_builtins(
+    mut game_declaration: GameDeclaration<String>,
+) -> Result<GameDeclaration<String>, Error<String>> {
     // |- Bool
     add_builtin_type(
-        game_declaration,
+        &mut game_declaration,
         TypeDeclaration {
             identifier: "Bool".to_string(),
             type_: Rc::new(Type::Set {
@@ -19,7 +21,7 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
     // Player ^ Score |- Goals
     game_declaration.resolve_type(&"Score".to_string())?;
     add_builtin_type(
-        game_declaration,
+        &mut game_declaration,
         TypeDeclaration {
             identifier: "Goals".to_string(),
             type_: Rc::new(Type::Arrow {
@@ -34,7 +36,7 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
     // Player |- Visibility
     game_declaration.resolve_type(&"Player".to_string())?;
     add_builtin_type(
-        game_declaration,
+        &mut game_declaration,
         TypeDeclaration {
             identifier: "Visibility".to_string(),
             type_: Rc::new(Type::Arrow {
@@ -67,7 +69,7 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
         }
     };
     add_builtin_type(
-        game_declaration,
+        &mut game_declaration,
         TypeDeclaration {
             identifier: "PlayerOrKeeper".to_string(),
             type_: Rc::new(Type::Set {
@@ -79,7 +81,7 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
     // Goals ^ Score ^ isSet(Score) |- goals
     game_declaration.resolve_type(&"Goals".to_string())?;
     let default_score = match &*game_declaration.resolve_type(&"Score".to_string())?.type_ {
-        Type::Set { identifiers } => identifiers.first().ok_or_else(|| Error {
+        Type::Set { identifiers } => identifiers.first().cloned().ok_or_else(|| Error {
             game_declaration: game_declaration.clone(),
             reason: ErrorReason::EmptySetType {
                 identifier: "Score".to_string(),
@@ -95,7 +97,7 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
         }
     };
     add_builtin_variable(
-        game_declaration,
+        &mut game_declaration,
         VariableDeclaration {
             identifier: "goals".to_string(),
             type_: Rc::new(Type::TypeReference {
@@ -104,7 +106,7 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
             default_value: Rc::new(Value::Map {
                 entries: vec![Rc::new(ValueEntry::DefaultEntry {
                     value: Rc::new(Value::Element {
-                        identifier: default_score.clone(),
+                        identifier: default_score,
                     }),
                 })],
             }),
@@ -114,7 +116,7 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
     // PlayerOrKeeper |- player
     game_declaration.resolve_type(&"PlayerOrKeeper".to_string())?;
     add_builtin_variable(
-        game_declaration,
+        &mut game_declaration,
         VariableDeclaration {
             identifier: "player".to_string(),
             type_: Rc::new(Type::TypeReference {
@@ -129,7 +131,7 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
     // Visibility |- visibility
     game_declaration.resolve_type(&"Visibility".to_string())?;
     add_builtin_variable(
-        game_declaration,
+        &mut game_declaration,
         VariableDeclaration {
             identifier: "visible".to_string(),
             type_: Rc::new(Type::TypeReference {
@@ -145,7 +147,7 @@ pub fn add_builtins(game_declaration: &mut GameDeclaration<String>) -> Result<()
         },
     )?;
 
-    Ok(())
+    Ok(game_declaration)
 }
 
 fn add_builtin_type(
