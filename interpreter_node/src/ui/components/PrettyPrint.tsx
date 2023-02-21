@@ -14,7 +14,12 @@ export function PrettyPrint({ value }: PrettyPrintProps) {
 
     // Errors usually aren't JSON-serializable.
     if (value instanceof Error) {
-      return ['javascript', pretty(value, { colors: false })] as const;
+      return [
+        'javascript',
+        value.name === 'WorkerError'
+          ? value.message
+          : pretty(value, { colors: false }),
+      ] as const;
     }
 
     return ['json', JSON.stringify(value, null, 2)] as const;

@@ -46,7 +46,7 @@ self.addEventListener('message', ({ data }) => {
         error:
           error instanceof Error
             ? { message: error.message, name: error.name }
-            : { message: String(error), name: 'Unknown Error' },
+            : { message: String(error), name: 'WorkerError' },
       });
     });
 });

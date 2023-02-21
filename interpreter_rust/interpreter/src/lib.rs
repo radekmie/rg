@@ -4,20 +4,19 @@ use nom::combinator::all_consuming;
 use nom::error::convert_error;
 use nom::Finish;
 use rand::thread_rng;
-use rg::ist::Game;
+use rg::ast::GameDeclaration;
+use rg::ist::{Game, RuntimeId};
 use rg::ist_tools::Interner;
 use rg::parser::game_declaration;
-use rg::{ast::GameDeclaration, ist::RuntimeId};
-use rg_transform::{add_builtins, expand_generator_nodes, skip_self_assignments};
 use serde_json::{from_str, to_string};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 pub fn prepare_ist(
     game_declaration: GameDeclaration<String>,
 ) -> Result<(Game<RuntimeId>, Interner<RuntimeId>), String> {
-    let game_declaration = expand_generator_nodes(game_declaration)?;
     let mut interner = Interner::default();
-    let game = Game::from(game_declaration).map_id(&mut |id| interner.intern(id));
+    let game = Game::from(game_declaration.expand_generator_nodes()?)
+        .map_id(&mut |id| interner.intern(id));
     Ok((game, interner))
 }
 
@@ -27,10 +26,10 @@ pub fn safe_parse_ast(ast: &str) -> Result<GameDeclaration<String>, String> {
 
 pub fn safe_parse_source(source: &str) -> Result<GameDeclaration<String>, String> {
     match all_consuming(game_declaration)(source).finish() {
-        Ok((_, game_declaration)) => {
-            let game_declaration = game_declaration.map_id(&mut |id| id.to_string());
-            add_builtins(game_declaration).map_err(|error| error.to_string())
-        }
+        Ok((_, game_declaration)) => game_declaration
+            .map_id(&mut |id| id.to_string())
+            .add_builtins()
+            .map_err(|error| error.to_string()),
         Err(error) => Err(convert_error(source, error)),
     }
 }
@@ -101,11 +100,11 @@ pub fn serialize_rg(ast: &str) -> Result<String, String> {
 #[wasm_bindgen(js_name = transformExpandGeneratorNodes)]
 pub fn transform_expand_generator_nodes(ast: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
-    safe_serialize_ast(expand_generator_nodes(safe_parse_ast(ast)?)?)
+    safe_serialize_ast(safe_parse_ast(ast)?.expand_generator_nodes()?)
 }
 
 #[wasm_bindgen(js_name = transformSkipSelfAssignments)]
 pub fn transform_skip_self_assignments(ast: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
-    safe_serialize_ast(skip_self_assignments(safe_parse_ast(ast)?)?)
+    safe_serialize_ast(safe_parse_ast(ast)?.skip_self_assignments()?)
 }

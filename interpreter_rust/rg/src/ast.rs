@@ -284,6 +284,15 @@ pub struct GameDeclaration<Id> {
     pub variables: Vec<Rc<VariableDeclaration<Id>>>,
 }
 
+impl<Id: Clone> GameDeclaration<Id> {
+    pub fn make_error(&self, reason: ErrorReason<Id>) -> Error<Id> {
+        Error {
+            game_declaration: self.clone(),
+            reason,
+        }
+    }
+}
+
 impl<Id: Clone + PartialEq> GameDeclaration<Id> {
     pub fn is_assignable_type(
         &self,
@@ -327,11 +336,10 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
             .iter()
             .find(|type_declaration| &type_declaration.identifier == identifier)
             .map(|type_declaration| &**type_declaration)
-            .ok_or_else(|| Error {
-                game_declaration: self.clone(),
-                reason: ErrorReason::UnresolvedType {
+            .ok_or_else(|| {
+                self.make_error(ErrorReason::UnresolvedType {
                     identifier: identifier.clone(),
-                },
+                })
             })
     }
 
@@ -352,11 +360,10 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
             .iter()
             .find(|variable_declaration| &variable_declaration.identifier == identifier)
             .map(|variable_declaration| &**variable_declaration)
-            .ok_or_else(|| Error {
-                game_declaration: self.clone(),
-                reason: ErrorReason::UnresolvedVariable {
+            .ok_or_else(|| {
+                self.make_error(ErrorReason::UnresolvedVariable {
                     identifier: identifier.clone(),
-                },
+                })
             })
     }
 
