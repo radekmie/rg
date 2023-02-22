@@ -116,3 +116,10 @@ export async function transformSkipSelfAssignments(
   );
   return JSON.parse(astTransformed) as rg.ast.GameDeclaration;
 }
+
+export async function validateCheckReachabilities(
+  gameDeclaration: rg.ast.GameDeclaration,
+) {
+  const ast = JSON.stringify(gameDeclaration);
+  await workerMethod('validateCheckReachabilities', [ast], utils.noop);
+}

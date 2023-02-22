@@ -5,4 +5,6 @@ export function typecheck(gameDeclaration: ast.GameDeclaration) {
   for (const edge of gameDeclaration.edges) {
     typeChecker.checkEdge(edge);
   }
+
+  return Promise.resolve();
 }

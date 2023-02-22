@@ -197,11 +197,11 @@ export function remove<T>(array: T[], element: T) {
 
 export async function runTransformators<T>(
   object: T,
-  validators: ((object: T) => void)[],
+  validators: ((object: T) => Promise<void>)[],
   transformators: ((object: T) => Promise<T>)[],
 ) {
   for (const validator of validators) {
-    validator(object);
+    await validator(object);
   }
 
   outer: for (let round = 0; round <= 1000; ++round) {
@@ -210,7 +210,7 @@ export async function runTransformators<T>(
       object = await transformator(object);
 
       for (const validator of validators) {
-        validator(object);
+        await validator(object);
       }
 
       if (!isEqual(before, object)) {

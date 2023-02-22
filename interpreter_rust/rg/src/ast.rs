@@ -91,6 +91,14 @@ pub struct EdgeName<Id> {
     pub parts: Vec<Rc<EdgeNamePart<Id>>>,
 }
 
+impl<Id> EdgeName<Id> {
+    pub fn from_identifier(identifier: Id) -> Self {
+        Self {
+            parts: vec![Rc::new(EdgeNamePart::Literal { identifier })],
+        }
+    }
+}
+
 impl<Id: Ord> EdgeName<Id> {
     pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
         self.parts
@@ -158,6 +166,10 @@ pub enum ErrorReason<Id> {
         expected: Rc<Type<Id>>,
         identifier: Id,
         resolved: Rc<Type<Id>>,
+    },
+    Unreachable {
+        lhs: Rc<EdgeName<Id>>,
+        rhs: Rc<EdgeName<Id>>,
     },
     UnresolvedType {
         identifier: Id,

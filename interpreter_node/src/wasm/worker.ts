@@ -7,6 +7,7 @@ import init, {
   serializeRg,
   transformExpandGeneratorNodes,
   transformSkipSelfAssignments,
+  validateCheckReachabilities,
 } from './module';
 
 // Node.js requires a crypto polyfill. Importing it directly inlines it in the
@@ -27,6 +28,7 @@ const methods = {
   serializeRg,
   transformExpandGeneratorNodes,
   transformSkipSelfAssignments,
+  validateCheckReachabilities,
 };
 
 self.addEventListener('message', ({ data }) => {

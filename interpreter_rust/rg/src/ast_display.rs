@@ -136,6 +136,7 @@ impl<Id: Display> Display for ErrorReason<Id> {
                 writeln!(f, "  Expected: {expected}")?;
                 write!(f, "  Resolved: {resolved}")
             }
+            Self::Unreachable { lhs, rhs } => write!(f, "{rhs} is not reachable from {lhs}."),
             Self::UnresolvedType { identifier } => write!(f, "Unresolved type {identifier}."),
             Self::UnresolvedVariable { identifier } => {
                 write!(f, "Unresolved variable {identifier}.")

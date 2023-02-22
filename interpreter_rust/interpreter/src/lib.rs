@@ -108,3 +108,10 @@ pub fn transform_skip_self_assignments(ast: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
     safe_serialize_ast(safe_parse_ast(ast)?.skip_self_assignments()?)
 }
+
+#[wasm_bindgen(js_name = validateCheckReachabilities)]
+pub fn validate_check_reachabilities(ast: &str) -> Result<(), String> {
+    console_error_panic_hook::set_once();
+    safe_parse_ast(ast)?.check_reachabilities()?;
+    Ok(())
+}
