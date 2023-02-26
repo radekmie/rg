@@ -464,6 +464,24 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
             )
     }
 
+    pub fn resolve_type_declaration<'a>(
+        &'a self,
+        type_: &'a Type<Id>,
+    ) -> Result<Option<&TypeDeclaration<Id>>, Error<Id>> {
+        self.types
+            .iter()
+            .find_map(|type_declaration| {
+                let left_to_right = self.is_assignable_type(&type_declaration.type_, type_, true);
+                let right_to_left = self.is_assignable_type(type_, &type_declaration.type_, true);
+                match (left_to_right, right_to_left) {
+                    (Ok(true), Ok(true)) => Some(Ok(&**type_declaration)),
+                    (Ok(_), Ok(_)) => None,
+                    (Err(error), _) | (_, Err(error)) => Some(Err(error)),
+                }
+            })
+            .transpose()
+    }
+
     pub fn resolve_type_reference<'a>(
         &'a self,
         type_: &'a Type<Id>,

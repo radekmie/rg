@@ -93,6 +93,18 @@ export async function serializeRg(gameDeclaration: rg.ast.GameDeclaration) {
   return rg;
 }
 
+export async function transformAddExplicitCasts(
+  gameDeclaration: rg.ast.GameDeclaration,
+) {
+  const ast = JSON.stringify(gameDeclaration);
+  const astTransformed = await workerMethod(
+    'transformAddExplicitCasts',
+    [ast],
+    utils.noop,
+  );
+  return JSON.parse(astTransformed) as rg.ast.GameDeclaration;
+}
+
 export async function transformExpandGeneratorNodes(
   gameDeclaration: rg.ast.GameDeclaration,
 ) {

@@ -106,7 +106,7 @@ async function analyzeRg(source: string, settings: Settings) {
       nodeTransform('normalizeTypes'),
       wasmTransform('skipSelfAssignments', 'transformSkipSelfAssignments'),
       nodeTransform('compactSkipEdges'),
-      nodeTransform('addExplicitCasts'),
+      wasmTransform('addExplicitCasts', 'transformAddExplicitCasts'),
       wasmTransform('expandGeneratorNodes', 'transformExpandGeneratorNodes'),
       nodeTransform('joinForkSuffixes'),
       nodeTransform('inlineReachability'),

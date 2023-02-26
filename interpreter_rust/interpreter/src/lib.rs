@@ -97,6 +97,12 @@ pub fn serialize_rg(ast: &str) -> Result<String, String> {
     Ok(format!("{game_declaration}"))
 }
 
+#[wasm_bindgen(js_name = transformAddExplicitCasts)]
+pub fn transform_add_explicit_casts(ast: &str) -> Result<String, String> {
+    console_error_panic_hook::set_once();
+    safe_serialize_ast(safe_parse_ast(ast)?.add_explicit_casts()?)
+}
+
 #[wasm_bindgen(js_name = transformExpandGeneratorNodes)]
 pub fn transform_expand_generator_nodes(ast: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
