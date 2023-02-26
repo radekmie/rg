@@ -123,3 +123,10 @@ export async function validateCheckReachabilities(
   const ast = JSON.stringify(gameDeclaration);
   await workerMethod('validateCheckReachabilities', [ast], utils.noop);
 }
+
+export async function validateCheckTypes(
+  gameDeclaration: rg.ast.GameDeclaration,
+) {
+  const ast = JSON.stringify(gameDeclaration);
+  await workerMethod('validateCheckTypes', [ast], utils.noop);
+}

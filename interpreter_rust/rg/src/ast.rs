@@ -1,7 +1,7 @@
 use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::rc::Rc;
 
 pub type Mapping<Id> = BTreeMap<Id, Id>;
@@ -24,11 +24,19 @@ pub struct EdgeDeclaration<Id> {
     pub rhs: Rc<EdgeName<Id>>,
 }
 
-impl<Id: Ord> EdgeDeclaration<Id> {
-    pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
-        let mut bindings = self.lhs.bindings();
-        bindings.extend(self.rhs.bindings());
-        bindings
+impl<Id: PartialEq> EdgeDeclaration<Id> {
+    pub fn bindings(&self) -> Vec<Binding<Id>> {
+        self.lhs
+            .bindings()
+            .iter()
+            .chain(self.rhs.bindings().iter())
+            .fold(Vec::default(), |mut bindings, binding| {
+                if !bindings.contains(binding) {
+                    bindings.push(*binding);
+                }
+
+                bindings
+            })
     }
 }
 
@@ -99,8 +107,8 @@ impl<Id> EdgeName<Id> {
     }
 }
 
-impl<Id: Ord> EdgeName<Id> {
-    pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
+impl<Id: PartialEq> EdgeName<Id> {
+    pub fn bindings(&self) -> Vec<Binding<Id>> {
         self.parts
             .iter()
             .flat_map(|edge_name_part| edge_name_part.binding())
@@ -156,11 +164,22 @@ pub struct Error<Id> {
 
 #[derive(Debug)]
 pub enum ErrorReason<Id> {
+    ArrowTypeExpected {
+        got: Rc<Type<Id>>,
+    },
+    AssignmentTypeMismatch {
+        lhs: Rc<Type<Id>>,
+        rhs: Rc<Type<Id>>,
+    },
+    ComparisonTypeMismatch {
+        lhs: Rc<Type<Id>>,
+        rhs: Rc<Type<Id>>,
+    },
     EmptySetType {
         identifier: Id,
     },
     SetTypeExpected {
-        identifier: Id,
+        got: Rc<Type<Id>>,
     },
     TypeDeclarationMismatch {
         expected: Rc<Type<Id>>,
@@ -170,6 +189,9 @@ pub enum ErrorReason<Id> {
     Unreachable {
         lhs: Rc<EdgeName<Id>>,
         rhs: Rc<EdgeName<Id>>,
+    },
+    UnresolvedConstant {
+        identifier: Id,
     },
     UnresolvedType {
         identifier: Id,
@@ -297,15 +319,84 @@ pub struct GameDeclaration<Id> {
 }
 
 impl<Id: Clone> GameDeclaration<Id> {
-    pub fn make_error(&self, reason: ErrorReason<Id>) -> Error<Id> {
-        Error {
+    pub fn make_error<T>(&self, reason: ErrorReason<Id>) -> Result<T, Error<Id>> {
+        Err(Error {
             game_declaration: self.clone(),
             reason,
-        }
+        })
     }
 }
 
 impl<Id: Clone + PartialEq> GameDeclaration<Id> {
+    pub fn infer_expression<'a>(
+        &'a self,
+        edge_declaration: &'a EdgeDeclaration<Id>,
+        expression: &'a Expression<Id>,
+    ) -> Result<Rc<Type<Id>>, Error<Id>> {
+        match expression {
+            Expression::Access { lhs, rhs } => {
+                let lhs_type = self.infer_expression(edge_declaration, lhs)?;
+                match self.resolve_type_reference(&lhs_type)? {
+                    Type::Arrow {
+                        lhs: key_type,
+                        rhs: value_type,
+                    } => {
+                        let accessor_type = self.infer_expression(edge_declaration, rhs)?;
+                        match self.resolve_type_reference(&accessor_type)? {
+                            Type::Set { .. } => {
+                                let key_type = &self.resolve_type(key_type)?.type_;
+                                if !self.is_assignable_type(key_type, &accessor_type, false)? {
+                                    return self.make_error(ErrorReason::AssignmentTypeMismatch {
+                                        lhs: key_type.clone(),
+                                        rhs: accessor_type,
+                                    });
+                                }
+
+                                Ok(value_type.clone())
+                            }
+                            _ => {
+                                self.make_error(ErrorReason::SetTypeExpected { got: accessor_type })
+                            }
+                        }
+                    }
+                    _ => self.make_error(ErrorReason::ArrowTypeExpected { got: lhs_type }),
+                }
+            }
+            Expression::Cast { lhs, rhs } => {
+                let rhs = self.infer_expression(edge_declaration, rhs)?;
+                if !self.is_assignable_type(lhs, &rhs, false)? {
+                    return self.make_error(ErrorReason::AssignmentTypeMismatch {
+                        lhs: lhs.clone(),
+                        rhs,
+                    });
+                }
+
+                Ok(lhs.clone())
+            }
+            Expression::Reference { identifier } => {
+                if let Some(binding) = edge_declaration
+                    .bindings()
+                    .iter()
+                    .find(|binding| binding.0 == identifier)
+                {
+                    return Ok(binding.1.clone());
+                }
+
+                if let Ok(constant_declaration) = self.resolve_constant(identifier) {
+                    return Ok(constant_declaration.type_.clone());
+                }
+
+                if let Ok(variable_declaration) = self.resolve_variable(identifier) {
+                    return Ok(variable_declaration.type_.clone());
+                }
+
+                Ok(Rc::new(Type::Set {
+                    identifiers: vec![identifier.clone()],
+                }))
+            }
+        }
+    }
+
     pub fn is_assignable_type(
         &self,
         lhs: &Type<Id>,
@@ -343,16 +434,34 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
             && self.is_assignable_type(rhs, lhs, is_strict)?)
     }
 
+    pub fn resolve_constant(&self, identifier: &Id) -> Result<&ConstantDeclaration<Id>, Error<Id>> {
+        self.constants
+            .iter()
+            .find(|constant_declaration| &constant_declaration.identifier == identifier)
+            .map(|constant_declaration| &**constant_declaration)
+            .map_or_else(
+                || {
+                    self.make_error(ErrorReason::UnresolvedConstant {
+                        identifier: identifier.clone(),
+                    })
+                },
+                Ok,
+            )
+    }
+
     pub fn resolve_type(&self, identifier: &Id) -> Result<&TypeDeclaration<Id>, Error<Id>> {
         self.types
             .iter()
             .find(|type_declaration| &type_declaration.identifier == identifier)
             .map(|type_declaration| &**type_declaration)
-            .ok_or_else(|| {
-                self.make_error(ErrorReason::UnresolvedType {
-                    identifier: identifier.clone(),
-                })
-            })
+            .map_or_else(
+                || {
+                    self.make_error(ErrorReason::UnresolvedType {
+                        identifier: identifier.clone(),
+                    })
+                },
+                Ok,
+            )
     }
 
     pub fn resolve_type_reference<'a>(
@@ -372,11 +481,14 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
             .iter()
             .find(|variable_declaration| &variable_declaration.identifier == identifier)
             .map(|variable_declaration| &**variable_declaration)
-            .ok_or_else(|| {
-                self.make_error(ErrorReason::UnresolvedVariable {
-                    identifier: identifier.clone(),
-                })
-            })
+            .map_or_else(
+                || {
+                    self.make_error(ErrorReason::UnresolvedVariable {
+                        identifier: identifier.clone(),
+                    })
+                },
+                Ok,
+            )
     }
 
     pub fn type_values(&self, type_: &Type<Id>) -> Result<Vec<Id>, Error<Id>> {
@@ -393,7 +505,7 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
 impl GameDeclaration<String> {
     pub fn create_mappings(
         &self,
-        bindings: BTreeSet<Binding<String>>,
+        bindings: Vec<Binding<String>>,
     ) -> Result<Vec<BTreeMap<String, String>>, Error<String>> {
         let mut mappings = vec![BTreeMap::default()];
         for (identifier, type_) in bindings {

@@ -115,3 +115,10 @@ pub fn validate_check_reachabilities(ast: &str) -> Result<(), String> {
     safe_parse_ast(ast)?.check_reachabilities()?;
     Ok(())
 }
+
+#[wasm_bindgen(js_name = validateCheckTypes)]
+pub fn validate_check_types(ast: &str) -> Result<(), String> {
+    console_error_panic_hook::set_once();
+    safe_parse_ast(ast)?.check_types()?;
+    Ok(())
+}

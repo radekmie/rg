@@ -39,19 +39,19 @@ impl GameDeclaration<String> {
         let begin = EdgeName::from_identifier("begin".to_string());
         let end = EdgeName::from_identifier("end".to_string());
         if !is_reachable(&begin, &end) {
-            return Err(self.make_error(ErrorReason::Unreachable {
+            return self.make_error(ErrorReason::Unreachable {
                 lhs: Rc::new(begin),
                 rhs: Rc::new(end),
-            }));
+            });
         }
 
         for edge in &self.edges {
             if let EdgeLabel::Reachability { lhs, rhs, .. } = &*edge.label {
                 if !is_reachable(lhs, rhs) {
-                    return Err(self.make_error(ErrorReason::Unreachable {
+                    return self.make_error(ErrorReason::Unreachable {
                         lhs: lhs.clone(),
                         rhs: rhs.clone(),
-                    }));
+                    });
                 }
             }
         }

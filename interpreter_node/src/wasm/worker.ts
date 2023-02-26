@@ -8,6 +8,7 @@ import init, {
   transformExpandGeneratorNodes,
   transformSkipSelfAssignments,
   validateCheckReachabilities,
+  validateCheckTypes,
 } from './module';
 
 // Node.js requires a crypto polyfill. Importing it directly inlines it in the
@@ -29,6 +30,7 @@ const methods = {
   transformExpandGeneratorNodes,
   transformSkipSelfAssignments,
   validateCheckReachabilities,
+  validateCheckTypes,
 };
 
 self.addEventListener('message', ({ data }) => {

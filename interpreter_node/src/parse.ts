@@ -101,7 +101,7 @@ async function analyzeRg(source: string, settings: Settings) {
   // Other transformations are run in a fixpoint loop.
   const astRg = await utils.runTransformators(
     astRgBase,
-    [wasm.validateCheckReachabilities, rg.validators.typecheck],
+    [wasm.validateCheckReachabilities, wasm.validateCheckTypes],
     [
       nodeTransform('normalizeTypes'),
       wasmTransform('skipSelfAssignments', 'transformSkipSelfAssignments'),

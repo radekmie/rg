@@ -123,10 +123,17 @@ impl<Id: Display> From<Error<Id>> for String {
 impl<Id: Display> Display for ErrorReason<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
+            Self::ArrowTypeExpected { got } => write!(f, "Expected Arrow type, got {got}."),
+            Self::AssignmentTypeMismatch { lhs, rhs } => {
+                write!(f, "{rhs} is not assignable to {lhs}")
+            }
+            Self::ComparisonTypeMismatch { lhs, rhs } => {
+                write!(f, "{lhs} is not comparable to {rhs}")
+            }
             Self::EmptySetType { identifier } => {
                 write!(f, "Type {identifier} should not be empty.")
             }
-            Self::SetTypeExpected { identifier } => write!(f, "Type {identifier} should be a set."),
+            Self::SetTypeExpected { got } => write!(f, "Expected Set type, got {got}."),
             Self::TypeDeclarationMismatch {
                 expected,
                 identifier,
@@ -137,6 +144,9 @@ impl<Id: Display> Display for ErrorReason<Id> {
                 write!(f, "  Resolved: {resolved}")
             }
             Self::Unreachable { lhs, rhs } => write!(f, "{rhs} is not reachable from {lhs}."),
+            Self::UnresolvedConstant { identifier } => {
+                write!(f, "Unresolved constant {identifier}.")
+            }
             Self::UnresolvedType { identifier } => write!(f, "Unresolved type {identifier}."),
             Self::UnresolvedVariable { identifier } => {
                 write!(f, "Unresolved variable {identifier}.")

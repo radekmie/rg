@@ -39,7 +39,8 @@ impl GameDeclaration<String> {
         })?;
 
         // Player ^ isSet(Player) |- PlayerOrKeeper
-        let players = match &*self.resolve_type(&"Player".to_string())?.type_ {
+        let player_type = &self.resolve_type(&"Player".to_string())?.type_;
+        let players = match &**player_type {
             Type::Set { identifiers } => {
                 if identifiers.contains(&"keeper".to_string()) {
                     identifiers.clone()
@@ -50,9 +51,9 @@ impl GameDeclaration<String> {
                 }
             }
             _ => {
-                return Err(self.make_error(ErrorReason::SetTypeExpected {
-                    identifier: "Player".to_string(),
-                }));
+                return self.make_error(ErrorReason::SetTypeExpected {
+                    got: player_type.clone(),
+                });
             }
         };
         self.add_builtin_type(TypeDeclaration {
@@ -64,16 +65,20 @@ impl GameDeclaration<String> {
 
         // Goals ^ Score ^ isSet(Score) |- goals
         self.resolve_type(&"Goals".to_string())?;
-        let default_score = match &*self.resolve_type(&"Score".to_string())?.type_ {
-            Type::Set { identifiers } => identifiers.first().cloned().ok_or_else(|| {
-                self.make_error(ErrorReason::EmptySetType {
-                    identifier: "Score".to_string(),
-                })
-            })?,
+        let score_type = &self.resolve_type(&"Score".to_string())?.type_;
+        let default_score = match &**score_type {
+            Type::Set { identifiers } => identifiers.first().cloned().map_or_else(
+                || {
+                    self.make_error(ErrorReason::EmptySetType {
+                        identifier: "Score".to_string(),
+                    })
+                },
+                Ok,
+            )?,
             _ => {
-                return Err(self.make_error(ErrorReason::SetTypeExpected {
-                    identifier: "Score".to_string(),
-                }));
+                return self.make_error(ErrorReason::SetTypeExpected {
+                    got: score_type.clone(),
+                });
             }
         };
         self.add_builtin_variable(VariableDeclaration {
@@ -124,11 +129,11 @@ impl GameDeclaration<String> {
     fn add_builtin_type(&mut self, builtin: TypeDeclaration<String>) -> Result<(), Error<String>> {
         if let Ok(defined) = self.resolve_type(&builtin.identifier) {
             if !self.is_equal_type(&builtin.type_, &defined.type_, false)? {
-                return Err(self.make_error(ErrorReason::TypeDeclarationMismatch {
+                return self.make_error(ErrorReason::TypeDeclarationMismatch {
                     identifier: builtin.identifier,
                     expected: builtin.type_,
                     resolved: defined.type_.clone(),
-                }));
+                });
             }
         } else {
             self.types.push(Rc::new(builtin));
@@ -142,11 +147,11 @@ impl GameDeclaration<String> {
     ) -> Result<(), Error<String>> {
         if let Ok(defined) = self.resolve_variable(&builtin.identifier) {
             if !self.is_equal_type(&builtin.type_, &defined.type_, false)? {
-                return Err(self.make_error(ErrorReason::VariableDeclarationMismatch {
+                return self.make_error(ErrorReason::VariableDeclarationMismatch {
                     identifier: builtin.identifier,
                     expected: builtin.type_,
                     resolved: defined.type_.clone(),
-                }));
+                });
             }
         } else {
             self.variables.push(Rc::new(builtin));
