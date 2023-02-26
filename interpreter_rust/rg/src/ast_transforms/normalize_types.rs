@@ -19,15 +19,15 @@ impl ConstantDeclaration<String> {
 impl GameDeclaration<String> {
     pub fn normalize_types(mut self) -> Result<Self, Error<String>> {
         for (index, type_declaration) in self.types.clone().into_iter().enumerate() {
-            self.types[index] = Rc::new(type_declaration.normalize_type(&mut self)?);
+            self.types[index] = type_declaration.normalize_type(&mut self)?;
         }
 
         for (index, constant_declaration) in self.constants.clone().into_iter().enumerate() {
-            self.constants[index] = Rc::new(constant_declaration.normalize_type(&mut self)?);
+            self.constants[index] = constant_declaration.normalize_type(&mut self)?;
         }
 
         for (index, variable_declaration) in self.variables.clone().into_iter().enumerate() {
-            self.variables[index] = Rc::new(variable_declaration.normalize_type(&mut self)?);
+            self.variables[index] = variable_declaration.normalize_type(&mut self)?;
         }
 
         Ok(self)
@@ -96,10 +96,10 @@ impl Type<String> {
             ));
         };
 
-        game_declaration.types.push(Rc::new(TypeDeclaration {
+        game_declaration.types.push(TypeDeclaration {
             identifier: identifier.clone(),
             type_: Rc::new(self_normalized),
-        }));
+        });
 
         Ok(Self::TypeReference { identifier })
     }

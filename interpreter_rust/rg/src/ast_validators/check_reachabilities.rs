@@ -1,6 +1,5 @@
 use crate::ast::{EdgeLabel, EdgeName, Error, ErrorReason, GameDeclaration};
 use std::collections::{BTreeMap, BTreeSet};
-use std::rc::Rc;
 
 impl GameDeclaration<String> {
     pub fn check_reachabilities(&self) -> Result<(), Error<String>> {
@@ -9,9 +8,9 @@ impl GameDeclaration<String> {
             .iter()
             .fold(BTreeMap::default(), |mut next_edges, edge| {
                 next_edges
-                    .entry(&*edge.lhs)
+                    .entry(&edge.lhs)
                     .or_insert_with(BTreeSet::default)
-                    .insert(&*edge.rhs);
+                    .insert(&edge.rhs);
                 next_edges
             });
 
@@ -40,13 +39,13 @@ impl GameDeclaration<String> {
         let end = EdgeName::from_identifier("end".to_string());
         if !is_reachable(&begin, &end) {
             return self.make_error(ErrorReason::Unreachable {
-                lhs: Rc::new(begin),
-                rhs: Rc::new(end),
+                lhs: begin,
+                rhs: end,
             });
         }
 
         for edge in &self.edges {
-            if let EdgeLabel::Reachability { lhs, rhs, .. } = &*edge.label {
+            if let EdgeLabel::Reachability { lhs, rhs, .. } = &edge.label {
                 if !is_reachable(lhs, rhs) {
                     return self.make_error(ErrorReason::Unreachable {
                         lhs: lhs.clone(),

@@ -14,11 +14,11 @@ impl<Id: Display + Ord> From<ast::GameDeclaration<Id>> for ist::Game<String> {
             variables: BTreeMap::default(),
         };
 
-        build_pragmas(&mut game, &game_declaration.pragmas);
-        build_types(&mut game, &game_declaration.types);
-        build_constants(&mut game, &game_declaration.constants);
-        build_variables(&mut game, &game_declaration.variables);
-        build_edges(&mut game, &game_declaration.edges);
+        build_pragmas(&mut game, game_declaration.pragmas);
+        build_types(&mut game, game_declaration.types);
+        build_constants(&mut game, game_declaration.constants);
+        build_variables(&mut game, game_declaration.variables);
+        build_edges(&mut game, game_declaration.edges);
 
         game
     }
@@ -26,7 +26,7 @@ impl<Id: Display + Ord> From<ast::GameDeclaration<Id>> for ist::Game<String> {
 
 fn build_constants<Id: Display + Ord>(
     game: &mut ist::Game<String>,
-    constant_declarations: &Vec<Rc<ast::ConstantDeclaration<Id>>>,
+    constant_declarations: Vec<ast::ConstantDeclaration<Id>>,
 ) {
     for constant_declaration in constant_declarations {
         let type_ = build_type_or_fail(game, &constant_declaration.type_);
@@ -38,45 +38,39 @@ fn build_constants<Id: Display + Ord>(
 
 fn build_edge_label<Id: Display>(
     game: &mut ist::Game<String>,
-    edge_label: &ast::EdgeLabel<Id>,
+    edge_label: ast::EdgeLabel<Id>,
 ) -> ist::EdgeLabel<String> {
     match edge_label {
         ast::EdgeLabel::Assignment { lhs, rhs } => ist::EdgeLabel::Assignment {
-            lhs: build_expression(game, lhs),
-            rhs: build_expression(game, rhs),
+            lhs: build_expression(game, &lhs),
+            rhs: build_expression(game, &rhs),
         },
         ast::EdgeLabel::Comparison { lhs, rhs, negated } => ist::EdgeLabel::Comparison {
-            lhs: build_expression(game, lhs),
-            rhs: build_expression(game, rhs),
-            negated: *negated,
+            lhs: build_expression(game, &lhs),
+            rhs: build_expression(game, &rhs),
+            negated,
         },
         ast::EdgeLabel::Reachability { lhs, rhs, negated } => ist::EdgeLabel::Reachability {
             lhs: build_edge_name(lhs),
             rhs: build_edge_name(rhs),
-            negated: *negated,
+            negated,
         },
         ast::EdgeLabel::Skip => ist::EdgeLabel::Skip,
     }
 }
 
-fn build_edge_name<Id: Display>(edge_name: &ast::EdgeName<Id>) -> String {
+fn build_edge_name<Id: Display>(edge_name: ast::EdgeName<Id>) -> String {
     match &edge_name.parts[..] {
-        [edge_name_part] => match &**edge_name_part {
-            ast::EdgeNamePart::Literal { identifier } => identifier.to_string(),
-            _ => panic!("Only Literal allowed."),
-        },
-        _ => panic!("Exactly one EdgeNamePart allowed."),
+        [ast::EdgeNamePart::Literal { identifier }] => identifier.to_string(),
+        _ => panic!("Only trivial EdgeName allowed."),
     }
 }
 
-fn build_edges<Id: Display>(
-    game: &mut ist::Game<String>,
-    edges: &Vec<Rc<ast::EdgeDeclaration<Id>>>,
-) {
+fn build_edges<Id: Display>(game: &mut ist::Game<String>, edges: Vec<ast::EdgeDeclaration<Id>>) {
     for edge_declaration in edges {
-        let lhs = build_edge_name(&edge_declaration.lhs);
-        let rhs = build_edge_name(&edge_declaration.rhs);
-        let label = build_edge_label(game, &edge_declaration.label);
+        let lhs = build_edge_name(edge_declaration.lhs);
+        let rhs = build_edge_name(edge_declaration.rhs);
+        let label = build_edge_label(game, edge_declaration.label);
 
         game.edges
             .entry(lhs)
@@ -112,7 +106,7 @@ fn build_expression<Id: Display>(
     }
 }
 
-fn build_pragma<Id: Display>(pragma: &ast::Pragma<Id>) -> ist::Pragma<String> {
+fn build_pragma<Id: Display>(pragma: ast::Pragma<Id>) -> ist::Pragma<String> {
     match pragma {
         ast::Pragma::Disjoint { edge_name } => ist::Pragma::Disjoint {
             edge_name: edge_name.to_string(),
@@ -120,7 +114,7 @@ fn build_pragma<Id: Display>(pragma: &ast::Pragma<Id>) -> ist::Pragma<String> {
     }
 }
 
-fn build_pragmas<Id: Display>(game: &mut ist::Game<String>, pragmas: &Vec<Rc<ast::Pragma<Id>>>) {
+fn build_pragmas<Id: Display>(game: &mut ist::Game<String>, pragmas: Vec<ast::Pragma<Id>>) {
     for pragma in pragmas {
         game.pragmas.push(build_pragma(pragma));
     }
@@ -143,7 +137,7 @@ fn build_value<Id: Display + Ord>(
             ist::Type::Arrow { rhs, .. } => {
                 let default_values = entries
                     .iter()
-                    .flat_map(|entry| match &**entry {
+                    .flat_map(|entry| match entry {
                         ast::ValueEntry::DefaultEntry { value } => Some(value),
                         _ => None,
                     })
@@ -160,7 +154,7 @@ fn build_value<Id: Display + Ord>(
                     values: Rc::new(
                         entries
                             .iter()
-                            .flat_map(|entry| match &**entry {
+                            .flat_map(|entry| match entry {
                                 ast::ValueEntry::NamedEntry { identifier, value } => {
                                     Some((identifier.to_string(), build_value(game, rhs, value)))
                                 }
@@ -211,10 +205,11 @@ fn build_type_or_fail<Id: Display>(
 
 fn build_types<Id: Display>(
     game: &mut ist::Game<String>,
-    type_declarations: &Vec<Rc<ast::TypeDeclaration<Id>>>,
+    type_declarations: Vec<ast::TypeDeclaration<Id>>,
 ) {
+    let type_declarations_len = type_declarations.len();
     let unresolved_type_declarations = type_declarations
-        .iter()
+        .into_iter()
         .flat_map(
             |type_declaration| match build_type(game, &type_declaration.type_) {
                 Some(type_) => {
@@ -222,26 +217,26 @@ fn build_types<Id: Display>(
                         .insert(type_declaration.identifier.to_string(), type_);
                     None
                 }
-                None => Some(type_declaration.clone()),
+                None => Some(type_declaration),
             },
         )
         .collect::<Vec<_>>();
 
     if let Some(unresolved_type_declaration) = unresolved_type_declarations.first() {
         assert_ne!(
-            type_declarations.len(),
+            type_declarations_len,
             unresolved_type_declarations.len(),
             "Unresolved type: {}",
             unresolved_type_declaration
         );
 
-        build_types(game, &unresolved_type_declarations);
+        build_types(game, unresolved_type_declarations);
     }
 }
 
 fn build_variables<Id: Display + Ord>(
     game: &mut ist::Game<String>,
-    variable_declarations: &Vec<Rc<ast::VariableDeclaration<Id>>>,
+    variable_declarations: Vec<ast::VariableDeclaration<Id>>,
 ) {
     for variable_declaration in variable_declarations {
         let type_ = build_type_or_fail(game, &variable_declaration.type_);

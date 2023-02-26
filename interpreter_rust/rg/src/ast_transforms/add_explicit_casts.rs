@@ -9,7 +9,7 @@ impl<Id: Clone + PartialEq> EdgeDeclaration<Id> {
         game_declaration: &GameDeclaration<Id>,
     ) -> Result<Self, Error<Id>> {
         Ok(EdgeDeclaration {
-            label: Rc::new(self.label.add_explicit_casts(game_declaration, self)?),
+            label: self.label.add_explicit_casts(game_declaration, self)?,
             lhs: self.lhs.clone(),
             rhs: self.rhs.clone(),
         })
@@ -129,10 +129,7 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
             .edges
             .iter()
             .map(|edge_declaration| edge_declaration.add_explicit_casts(&self))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .map(Rc::new)
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(self)
     }

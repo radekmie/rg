@@ -83,7 +83,7 @@ impl<Id: Display> Display for Error<Id> {
         if !game_declaration.types.is_empty() {
             writeln!(f, "  Type definitions:")?;
             for type_declaration in &game_declaration.types {
-                let TypeDeclaration { identifier, type_ } = &**type_declaration;
+                let TypeDeclaration { identifier, type_ } = type_declaration;
                 writeln!(f, "    {identifier}: {type_}")?;
             }
         }
@@ -93,7 +93,7 @@ impl<Id: Display> Display for Error<Id> {
             for constant_declaration in &game_declaration.constants {
                 let ConstantDeclaration {
                     identifier, type_, ..
-                } = &**constant_declaration;
+                } = constant_declaration;
                 writeln!(f, "    {identifier}: {type_}")?;
             }
         }
@@ -103,7 +103,7 @@ impl<Id: Display> Display for Error<Id> {
             for variable_declaration in &game_declaration.variables {
                 let VariableDeclaration {
                     identifier, type_, ..
-                } = &**variable_declaration;
+                } = variable_declaration;
                 writeln!(f, "    {identifier}: {type_}")?;
             }
         }

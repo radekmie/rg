@@ -14,8 +14,8 @@ impl<Id> From<(Id, Rc<Type<Id>>, Rc<Value<Id>>)> for ConstantDeclaration<Id> {
     }
 }
 
-impl<Id> From<(Rc<EdgeName<Id>>, Rc<EdgeName<Id>>, Rc<EdgeLabel<Id>>)> for EdgeDeclaration<Id> {
-    fn from((lhs, rhs, label): (Rc<EdgeName<Id>>, Rc<EdgeName<Id>>, Rc<EdgeLabel<Id>>)) -> Self {
+impl<Id> From<(EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>)> for EdgeDeclaration<Id> {
+    fn from((lhs, rhs, label): (EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>)) -> Self {
         Self { label, lhs, rhs }
     }
 }
@@ -32,8 +32,8 @@ impl<Id> From<(Rc<Expression<Id>>, bool, Rc<Expression<Id>>)> for EdgeLabel<Id> 
     }
 }
 
-impl<Id> From<(bool, Rc<EdgeName<Id>>, Rc<EdgeName<Id>>)> for EdgeLabel<Id> {
-    fn from((negated, lhs, rhs): (bool, Rc<EdgeName<Id>>, Rc<EdgeName<Id>>)) -> Self {
+impl<Id> From<(bool, EdgeName<Id>, EdgeName<Id>)> for EdgeLabel<Id> {
+    fn from((negated, lhs, rhs): (bool, EdgeName<Id>, EdgeName<Id>)) -> Self {
         Self::Reachability { lhs, rhs, negated }
     }
 }
@@ -44,8 +44,8 @@ impl<Id> From<()> for EdgeLabel<Id> {
     }
 }
 
-impl<Id> From<Vec<Rc<EdgeNamePart<Id>>>> for EdgeName<Id> {
-    fn from(parts: Vec<Rc<EdgeNamePart<Id>>>) -> Self {
+impl<Id> From<Vec<EdgeNamePart<Id>>> for EdgeName<Id> {
+    fn from(parts: Vec<EdgeNamePart<Id>>) -> Self {
         Self { parts }
     }
 }
@@ -83,8 +83,8 @@ impl<Id> From<Id> for Expression<Id> {
     }
 }
 
-impl<Id> From<Rc<EdgeName<Id>>> for Pragma<Id> {
-    fn from(edge_name: Rc<EdgeName<Id>>) -> Self {
+impl<Id> From<EdgeName<Id>> for Pragma<Id> {
+    fn from(edge_name: EdgeName<Id>) -> Self {
         Self::Disjoint { edge_name }
     }
 }
@@ -119,8 +119,8 @@ impl<Id> From<Id> for Value<Id> {
     }
 }
 
-impl<Id> From<Vec<Rc<ValueEntry<Id>>>> for Value<Id> {
-    fn from(entries: Vec<Rc<ValueEntry<Id>>>) -> Self {
+impl<Id> From<Vec<ValueEntry<Id>>> for Value<Id> {
+    fn from(entries: Vec<ValueEntry<Id>>) -> Self {
         Self::Map { entries }
     }
 }

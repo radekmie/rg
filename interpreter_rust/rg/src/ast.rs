@@ -19,9 +19,9 @@ pub struct ConstantDeclaration<Id> {
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct EdgeDeclaration<Id> {
-    pub label: Rc<EdgeLabel<Id>>,
-    pub lhs: Rc<EdgeName<Id>>,
-    pub rhs: Rc<EdgeName<Id>>,
+    pub label: EdgeLabel<Id>,
+    pub lhs: EdgeName<Id>,
+    pub rhs: EdgeName<Id>,
 }
 
 impl<Id: PartialEq> EdgeDeclaration<Id> {
@@ -43,9 +43,9 @@ impl<Id: PartialEq> EdgeDeclaration<Id> {
 impl EdgeDeclaration<String> {
     pub fn substitute_bindings(&self, mapping: &Mapping<String>) -> Self {
         Self {
-            label: Rc::new(self.label.substitute_bindings(mapping)),
-            lhs: Rc::new(self.lhs.substitute_bindings(mapping)),
-            rhs: Rc::new(self.rhs.substitute_bindings(mapping)),
+            label: self.label.substitute_bindings(mapping),
+            lhs: self.lhs.substitute_bindings(mapping),
+            rhs: self.rhs.substitute_bindings(mapping),
         }
     }
 }
@@ -63,8 +63,8 @@ pub enum EdgeLabel<Id> {
         negated: bool,
     },
     Reachability {
-        lhs: Rc<EdgeName<Id>>,
-        rhs: Rc<EdgeName<Id>>,
+        lhs: EdgeName<Id>,
+        rhs: EdgeName<Id>,
         negated: bool,
     },
     Skip,
@@ -96,13 +96,13 @@ impl<Id: PartialEq> EdgeLabel<Id> {
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct EdgeName<Id> {
-    pub parts: Vec<Rc<EdgeNamePart<Id>>>,
+    pub parts: Vec<EdgeNamePart<Id>>,
 }
 
 impl<Id> EdgeName<Id> {
     pub fn from_identifier(identifier: Id) -> Self {
         Self {
-            parts: vec![Rc::new(EdgeNamePart::Literal { identifier })],
+            parts: vec![EdgeNamePart::Literal { identifier }],
         }
     }
 }
@@ -121,7 +121,7 @@ impl EdgeName<String> {
         let identifier = self
             .parts
             .iter()
-            .map(|edge_name_part| match &**edge_name_part {
+            .map(|edge_name_part| match edge_name_part {
                 EdgeNamePart::Binding { identifier, .. } => mapping.get(identifier).unwrap(),
                 EdgeNamePart::Literal { identifier } => identifier,
             })
@@ -129,7 +129,7 @@ impl EdgeName<String> {
             .collect::<Vec<_>>()
             .join("__bind__");
         Self {
-            parts: vec![Rc::new(EdgeNamePart::Literal { identifier })],
+            parts: vec![EdgeNamePart::Literal { identifier }],
         }
     }
 }
@@ -187,8 +187,8 @@ pub enum ErrorReason<Id> {
         resolved: Rc<Type<Id>>,
     },
     Unreachable {
-        lhs: Rc<EdgeName<Id>>,
-        rhs: Rc<EdgeName<Id>>,
+        lhs: EdgeName<Id>,
+        rhs: EdgeName<Id>,
     },
     UnresolvedConstant {
         identifier: Id,
@@ -311,11 +311,11 @@ mod expression {
 #[derive(Clone, Debug, Default, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct GameDeclaration<Id> {
-    pub constants: Vec<Rc<ConstantDeclaration<Id>>>,
-    pub edges: Vec<Rc<EdgeDeclaration<Id>>>,
-    pub pragmas: Vec<Rc<Pragma<Id>>>,
-    pub types: Vec<Rc<TypeDeclaration<Id>>>,
-    pub variables: Vec<Rc<VariableDeclaration<Id>>>,
+    pub constants: Vec<ConstantDeclaration<Id>>,
+    pub edges: Vec<EdgeDeclaration<Id>>,
+    pub pragmas: Vec<Pragma<Id>>,
+    pub types: Vec<TypeDeclaration<Id>>,
+    pub variables: Vec<VariableDeclaration<Id>>,
 }
 
 impl<Id: Clone> GameDeclaration<Id> {
@@ -438,7 +438,6 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
         self.constants
             .iter()
             .find(|constant_declaration| &constant_declaration.identifier == identifier)
-            .map(|constant_declaration| &**constant_declaration)
             .map_or_else(
                 || {
                     self.make_error(ErrorReason::UnresolvedConstant {
@@ -453,7 +452,6 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
         self.types
             .iter()
             .find(|type_declaration| &type_declaration.identifier == identifier)
-            .map(|type_declaration| &**type_declaration)
             .map_or_else(
                 || {
                     self.make_error(ErrorReason::UnresolvedType {
@@ -474,7 +472,7 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
                 let left_to_right = self.is_assignable_type(&type_declaration.type_, type_, true);
                 let right_to_left = self.is_assignable_type(type_, &type_declaration.type_, true);
                 match (left_to_right, right_to_left) {
-                    (Ok(true), Ok(true)) => Some(Ok(&**type_declaration)),
+                    (Ok(true), Ok(true)) => Some(Ok(type_declaration)),
                     (Ok(_), Ok(_)) => None,
                     (Err(error), _) | (_, Err(error)) => Some(Err(error)),
                 }
@@ -498,7 +496,6 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
         self.variables
             .iter()
             .find(|variable_declaration| &variable_declaration.identifier == identifier)
-            .map(|variable_declaration| &**variable_declaration)
             .map_or_else(
                 || {
                     self.make_error(ErrorReason::UnresolvedVariable {
@@ -549,7 +546,7 @@ impl GameDeclaration<String> {
 pub enum Pragma<Id> {
     Disjoint {
         #[serde(rename = "edgeName")]
-        edge_name: Rc<EdgeName<Id>>,
+        edge_name: EdgeName<Id>,
     },
 }
 
@@ -573,7 +570,7 @@ pub struct TypeDeclaration<Id> {
 #[serde(tag = "kind")]
 pub enum Value<Id> {
     Element { identifier: Id },
-    Map { entries: Vec<Rc<ValueEntry<Id>>> },
+    Map { entries: Vec<ValueEntry<Id>> },
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

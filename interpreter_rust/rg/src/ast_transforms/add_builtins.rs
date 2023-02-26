@@ -87,11 +87,11 @@ impl GameDeclaration<String> {
                 identifier: "Goals".to_string(),
             }),
             default_value: Rc::new(Value::Map {
-                entries: vec![Rc::new(ValueEntry::DefaultEntry {
+                entries: vec![ValueEntry::DefaultEntry {
                     value: Rc::new(Value::Element {
                         identifier: default_score,
                     }),
-                })],
+                }],
             }),
         })?;
 
@@ -115,11 +115,11 @@ impl GameDeclaration<String> {
                 identifier: "Visibility".to_string(),
             }),
             default_value: Rc::new(Value::Map {
-                entries: vec![Rc::new(ValueEntry::DefaultEntry {
+                entries: vec![ValueEntry::DefaultEntry {
                     value: Rc::new(Value::Element {
                         identifier: "1".to_string(),
                     }),
-                })],
+                }],
             }),
         })?;
 
@@ -136,7 +136,7 @@ impl GameDeclaration<String> {
                 });
             }
         } else {
-            self.types.push(Rc::new(builtin));
+            self.types.push(builtin);
         }
         Ok(())
     }
@@ -154,7 +154,7 @@ impl GameDeclaration<String> {
                 });
             }
         } else {
-            self.variables.push(Rc::new(builtin));
+            self.variables.push(builtin);
         }
         Ok(())
     }

@@ -1,5 +1,4 @@
 use crate::ast::{Error, GameDeclaration};
-use std::rc::Rc;
 
 impl GameDeclaration<String> {
     pub fn expand_generator_nodes(mut self) -> Result<Self, Error<String>> {
@@ -10,7 +9,7 @@ impl GameDeclaration<String> {
                 self.create_mappings(edge.bindings()).map(|mappings| {
                     mappings
                         .into_iter()
-                        .map(|mapping| Rc::new(edge.substitute_bindings(&mapping)))
+                        .map(|mapping| edge.substitute_bindings(&mapping))
                 })
             })
             .collect::<Result<Vec<_>, _>>()?

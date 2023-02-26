@@ -5,17 +5,17 @@ use crate::ast::{
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};
 use nom::character::complete::char;
-use nom::combinator::{cut, map, opt, success};
-use nom::error::context;
+use nom::combinator::{cut, into, map, opt, success};
+use nom::error::{context, VerboseError};
 use nom::multi::{fold_many0, many1, separated_list0};
 use nom::sequence::{delimited, preceded, separated_pair, terminated, tuple};
 use parser_utils::{in_braces, in_brackets, in_parens, map_into_rc, separated, Result};
 use std::rc::Rc;
 
-pub fn constant_declaration(input: &str) -> Result<Rc<ConstantDeclaration<&str>>> {
+pub fn constant_declaration(input: &str) -> Result<ConstantDeclaration<&str>> {
     context(
         "constant_declaration",
-        map_into_rc(delimited(
+        into(delimited(
             tag("const"),
             cut(tuple((
                 separated(identifier),
@@ -27,10 +27,10 @@ pub fn constant_declaration(input: &str) -> Result<Rc<ConstantDeclaration<&str>>
     )(input)
 }
 
-pub fn edge_declaration(input: &str) -> Result<Rc<EdgeDeclaration<&str>>> {
+pub fn edge_declaration(input: &str) -> Result<EdgeDeclaration<&str>> {
     context(
         "edge_declaration",
-        map_into_rc(tuple((
+        into(tuple((
             terminated(separated(edge_name), char(',')),
             terminated(separated(edge_name), cut(char(':'))),
             terminated(separated(edge_label), cut(char(';'))),
@@ -38,44 +38,44 @@ pub fn edge_declaration(input: &str) -> Result<Rc<EdgeDeclaration<&str>>> {
     )(input)
 }
 
-pub fn edge_label(input: &str) -> Result<Rc<EdgeLabel<&str>>> {
+pub fn edge_label(input: &str) -> Result<EdgeLabel<&str>> {
     context(
         "edge_label",
         alt((
-            map_into_rc(tuple((
+            into(tuple((
                 expression,
                 separated(map(alt((tag("=="), tag("!="))), |c| c == "!=")),
                 cut(expression),
             ))),
-            map_into_rc(separated_pair(
+            into(separated_pair(
                 expression,
                 separated(char('=')),
                 cut(expression),
             )),
-            map_into_rc(tuple((
+            into(tuple((
                 map(alt((char('!'), char('?'))), |c| c == '!'),
                 cut(terminated(separated(edge_name), separated(tag("->")))),
                 edge_name,
             ))),
-            map_into_rc(success(())),
+            into(success::<_, _, VerboseError<_>>(())),
         )),
     )(input)
 }
 
-pub fn edge_name(input: &str) -> Result<Rc<EdgeName<&str>>> {
-    context("edge_name", map_into_rc(many1(edge_name_part)))(input)
+pub fn edge_name(input: &str) -> Result<EdgeName<&str>> {
+    context("edge_name", into(many1(edge_name_part)))(input)
 }
 
-pub fn edge_name_part(input: &str) -> Result<Rc<EdgeNamePart<&str>>> {
+pub fn edge_name_part(input: &str) -> Result<EdgeNamePart<&str>> {
     context(
         "edge_name_part",
         alt((
-            map_into_rc(in_parens(cut(separated_pair(
+            into(in_parens(cut(separated_pair(
                 separated(identifier),
                 cut(char(':')),
                 separated(type_),
             )))),
-            map_into_rc(identifier),
+            into(identifier),
         )),
     )(input)
 }
@@ -136,17 +136,14 @@ pub fn identifier(input: &str) -> Result<&str> {
     )(input)
 }
 
-pub fn pragma(input: &str) -> Result<Rc<Pragma<&str>>> {
+pub fn pragma(input: &str) -> Result<Pragma<&str>> {
     context(
         "pragma",
-        delimited(
+        into(delimited(
             tag("@"),
-            cut(map_into_rc(preceded(
-                tag("disjoint "),
-                separated(edge_name),
-            ))),
+            cut(preceded(tag("disjoint "), separated(edge_name))),
             cut(char(';')),
-        ),
+        )),
     )(input)
 }
 
@@ -164,10 +161,10 @@ pub fn type_(input: &str) -> Result<Rc<Type<&str>>> {
     )(input)
 }
 
-pub fn type_declaration(input: &str) -> Result<Rc<TypeDeclaration<&str>>> {
+pub fn type_declaration(input: &str) -> Result<TypeDeclaration<&str>> {
     context(
         "type_declaration",
-        map_into_rc(delimited(
+        into(delimited(
             tag("type"),
             cut(separated_pair(
                 separated(identifier),
@@ -192,10 +189,10 @@ pub fn value(input: &str) -> Result<Rc<Value<&str>>> {
     )(input)
 }
 
-pub fn value_entry(input: &str) -> Result<Rc<ValueEntry<&str>>> {
+pub fn value_entry(input: &str) -> Result<ValueEntry<&str>> {
     context(
         "value_entry",
-        map_into_rc(separated_pair(
+        into(separated_pair(
             opt(identifier),
             cut(separated(char(':'))),
             cut(value),
@@ -203,10 +200,10 @@ pub fn value_entry(input: &str) -> Result<Rc<ValueEntry<&str>>> {
     )(input)
 }
 
-pub fn variable_declaration(input: &str) -> Result<Rc<VariableDeclaration<&str>>> {
+pub fn variable_declaration(input: &str) -> Result<VariableDeclaration<&str>> {
     context(
         "variable_declaration",
-        map_into_rc(delimited(
+        into(delimited(
             tag("var"),
             cut(tuple((
                 separated(identifier),
