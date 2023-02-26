@@ -117,6 +117,18 @@ export async function transformExpandGeneratorNodes(
   return JSON.parse(astTransformed) as rg.ast.GameDeclaration;
 }
 
+export async function transformNormalizeTypes(
+  gameDeclaration: rg.ast.GameDeclaration,
+) {
+  const ast = JSON.stringify(gameDeclaration);
+  const astTransformed = await workerMethod(
+    'transformNormalizeTypes',
+    [ast],
+    utils.noop,
+  );
+  return JSON.parse(astTransformed) as rg.ast.GameDeclaration;
+}
+
 export async function transformSkipSelfAssignments(
   gameDeclaration: rg.ast.GameDeclaration,
 ) {

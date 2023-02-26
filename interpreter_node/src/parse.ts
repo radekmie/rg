@@ -103,7 +103,7 @@ async function analyzeRg(source: string, settings: Settings) {
     astRgBase,
     [wasm.validateCheckReachabilities, wasm.validateCheckTypes],
     [
-      nodeTransform('normalizeTypes'),
+      wasmTransform('normalizeTypes', 'transformNormalizeTypes'),
       wasmTransform('skipSelfAssignments', 'transformSkipSelfAssignments'),
       nodeTransform('compactSkipEdges'),
       wasmTransform('addExplicitCasts', 'transformAddExplicitCasts'),

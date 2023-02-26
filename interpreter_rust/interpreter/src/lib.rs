@@ -109,6 +109,12 @@ pub fn transform_expand_generator_nodes(ast: &str) -> Result<String, String> {
     safe_serialize_ast(safe_parse_ast(ast)?.expand_generator_nodes()?)
 }
 
+#[wasm_bindgen(js_name = transformNormalizeTypes)]
+pub fn transform_normalize_types(ast: &str) -> Result<String, String> {
+    console_error_panic_hook::set_once();
+    safe_serialize_ast(safe_parse_ast(ast)?.normalize_types()?)
+}
+
 #[wasm_bindgen(js_name = transformSkipSelfAssignments)]
 pub fn transform_skip_self_assignments(ast: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
