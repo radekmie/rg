@@ -1,11 +1,10 @@
 use crate::ast::{
-    ConstantDeclaration, EdgeDeclaration, EdgeLabel, EdgeName, EdgeNamePart, Error, ErrorReason,
-    Expression, GameDeclaration, Pragma, Type, TypeDeclaration, Value, ValueEntry,
-    VariableDeclaration,
+    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Error, ErrorReason, Expression, Game,
+    Pragma, Type, Typedef, Value, ValueEntry, Variable,
 };
 use std::fmt::{Display, Formatter, Result};
 
-impl<Id: Display> Display for ConstantDeclaration<Id> {
+impl<Id: Display> Display for Constant<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
             identifier,
@@ -16,7 +15,7 @@ impl<Id: Display> Display for ConstantDeclaration<Id> {
     }
 }
 
-impl<Id: Display> Display for EdgeDeclaration<Id> {
+impl<Id: Display> Display for Edge<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { label, lhs, rhs } = self;
         write!(f, "{lhs}, {rhs}: {label};")
@@ -73,37 +72,34 @@ impl<Id: Display> Display for EdgeNamePart<Id> {
 
 impl<Id: Display> Display for Error<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let Self {
-            game_declaration,
-            reason,
-        } = self;
+        let Self { game, reason } = self;
 
         writeln!(f, "{reason}")?;
 
-        if !game_declaration.types.is_empty() {
+        if !game.typedefs.is_empty() {
             writeln!(f, "  Type definitions:")?;
-            for type_declaration in &game_declaration.types {
-                let TypeDeclaration { identifier, type_ } = type_declaration;
+            for typedef in &game.typedefs {
+                let Typedef { identifier, type_ } = typedef;
                 writeln!(f, "    {identifier}: {type_}")?;
             }
         }
 
-        if !game_declaration.constants.is_empty() {
+        if !game.constants.is_empty() {
             writeln!(f, "  Constant definitions:")?;
-            for constant_declaration in &game_declaration.constants {
-                let ConstantDeclaration {
+            for constant in &game.constants {
+                let Constant {
                     identifier, type_, ..
-                } = constant_declaration;
+                } = constant;
                 writeln!(f, "    {identifier}: {type_}")?;
             }
         }
 
-        if !game_declaration.variables.is_empty() {
+        if !game.variables.is_empty() {
             writeln!(f, "  Variable definitions:")?;
-            for variable_declaration in &game_declaration.variables {
-                let VariableDeclaration {
+            for variable in &game.variables {
+                let Variable {
                     identifier, type_, ..
-                } = variable_declaration;
+                } = variable;
                 writeln!(f, "    {identifier}: {type_}")?;
             }
         }
@@ -174,13 +170,13 @@ impl<Id: Display> Display for Expression<Id> {
     }
 }
 
-impl<Id: Display> Display for GameDeclaration<Id> {
+impl<Id: Display> Display for Game<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         for pragma in &self.pragmas {
             writeln!(f, "{pragma}")?;
         }
-        for type_ in &self.types {
-            writeln!(f, "{type_}")?;
+        for typedef in &self.typedefs {
+            writeln!(f, "{typedef}")?;
         }
         for constant in &self.constants {
             writeln!(f, "{constant}")?;
@@ -220,7 +216,7 @@ impl<Id: Display> Display for Type<Id> {
     }
 }
 
-impl<Id: Display> Display for TypeDeclaration<Id> {
+impl<Id: Display> Display for Typedef<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { identifier, type_ } = self;
         write!(f, "type {identifier} = {type_};")
@@ -252,7 +248,7 @@ impl<Id: Display> Display for ValueEntry<Id> {
     }
 }
 
-impl<Id: Display> Display for VariableDeclaration<Id> {
+impl<Id: Display> Display for Variable<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
             default_value,

@@ -1,7 +1,7 @@
-use crate::ast::{EdgeLabel, EdgeName, Error, ErrorReason, GameDeclaration};
+use crate::ast::{EdgeLabel, EdgeName, Error, ErrorReason, Game};
 use std::collections::{BTreeMap, BTreeSet};
 
-impl GameDeclaration<String> {
+impl Game<String> {
     pub fn check_reachabilities(&self) -> Result<(), Error<String>> {
         let next_edges = self
             .edges

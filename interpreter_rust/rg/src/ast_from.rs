@@ -1,10 +1,10 @@
 use crate::ast::{
-    ConstantDeclaration, EdgeDeclaration, EdgeLabel, EdgeName, EdgeNamePart, Expression, Pragma,
-    Type, TypeDeclaration, Value, ValueEntry, VariableDeclaration,
+    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Pragma, Type, Typedef, Value,
+    ValueEntry, Variable,
 };
 use std::rc::Rc;
 
-impl<Id> From<(Id, Rc<Type<Id>>, Rc<Value<Id>>)> for ConstantDeclaration<Id> {
+impl<Id> From<(Id, Rc<Type<Id>>, Rc<Value<Id>>)> for Constant<Id> {
     fn from((identifier, type_, value): (Id, Rc<Type<Id>>, Rc<Value<Id>>)) -> Self {
         Self {
             identifier,
@@ -14,7 +14,7 @@ impl<Id> From<(Id, Rc<Type<Id>>, Rc<Value<Id>>)> for ConstantDeclaration<Id> {
     }
 }
 
-impl<Id> From<(EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>)> for EdgeDeclaration<Id> {
+impl<Id> From<(EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>)> for Edge<Id> {
     fn from((lhs, rhs, label): (EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>)) -> Self {
         Self { label, lhs, rhs }
     }
@@ -107,7 +107,7 @@ impl<Id> From<Id> for Type<Id> {
     }
 }
 
-impl<Id> From<(Id, Rc<Type<Id>>)> for TypeDeclaration<Id> {
+impl<Id> From<(Id, Rc<Type<Id>>)> for Typedef<Id> {
     fn from((identifier, type_): (Id, Rc<Type<Id>>)) -> Self {
         Self { identifier, type_ }
     }
@@ -134,7 +134,7 @@ impl<Id> From<(Option<Id>, Rc<Value<Id>>)> for ValueEntry<Id> {
     }
 }
 
-impl<Id> From<(Id, Rc<Type<Id>>, Rc<Value<Id>>)> for VariableDeclaration<Id> {
+impl<Id> From<(Id, Rc<Type<Id>>, Rc<Value<Id>>)> for Variable<Id> {
     fn from((identifier, type_, default_value): (Id, Rc<Type<Id>>, Rc<Value<Id>>)) -> Self {
         Self {
             default_value,

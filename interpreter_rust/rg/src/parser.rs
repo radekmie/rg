@@ -1,6 +1,6 @@
 use crate::ast::{
-    ConstantDeclaration, EdgeDeclaration, EdgeLabel, EdgeName, EdgeNamePart, Expression,
-    GameDeclaration, Pragma, Type, TypeDeclaration, Value, ValueEntry, VariableDeclaration,
+    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Game, Pragma, Type, Typedef,
+    Value, ValueEntry, Variable,
 };
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};
@@ -12,9 +12,9 @@ use nom::sequence::{delimited, preceded, separated_pair, terminated, tuple};
 use parser_utils::{in_braces, in_brackets, in_parens, map_into_rc, separated, Result};
 use std::rc::Rc;
 
-pub fn constant_declaration(input: &str) -> Result<ConstantDeclaration<&str>> {
+pub fn constant(input: &str) -> Result<Constant<&str>> {
     context(
-        "constant_declaration",
+        "constant",
         into(delimited(
             tag("const"),
             cut(tuple((
@@ -27,9 +27,9 @@ pub fn constant_declaration(input: &str) -> Result<ConstantDeclaration<&str>> {
     )(input)
 }
 
-pub fn edge_declaration(input: &str) -> Result<EdgeDeclaration<&str>> {
+pub fn edge(input: &str) -> Result<Edge<&str>> {
     context(
-        "edge_declaration",
+        "edge",
         into(tuple((
             terminated(separated(edge_name), char(',')),
             terminated(separated(edge_name), cut(char(':'))),
@@ -102,28 +102,28 @@ pub fn expression(input: &str) -> Result<Rc<Expression<&str>>> {
     context("expression", expression)(input)
 }
 
-pub fn game_declaration(input: &str) -> Result<GameDeclaration<&str>> {
+pub fn game(input: &str) -> Result<Game<&str>> {
     context(
-        "game_declaration",
+        "game",
         fold_many0(
             separated(alt((
-                map(constant_declaration, |x| (Some(x), None, None, None, None)),
-                map(type_declaration, |x| (None, Some(x), None, None, None)),
-                map(variable_declaration, |x| (None, None, Some(x), None, None)),
-                map(edge_declaration, |x| (None, None, None, Some(x), None)),
+                map(constant, |x| (Some(x), None, None, None, None)),
+                map(typedef, |x| (None, Some(x), None, None, None)),
+                map(variable, |x| (None, None, Some(x), None, None)),
+                map(edge, |x| (None, None, None, Some(x), None)),
                 map(pragma, |x| (None, None, None, None, Some(x))),
             ))),
-            GameDeclaration::default,
-            |mut game_declaration, declaration| {
+            Game::default,
+            |mut game, declaration| {
                 match declaration {
-                    (Some(x), _, _, _, _) => game_declaration.constants.push(x),
-                    (_, Some(x), _, _, _) => game_declaration.types.push(x),
-                    (_, _, Some(x), _, _) => game_declaration.variables.push(x),
-                    (_, _, _, Some(x), _) => game_declaration.edges.push(x),
-                    (_, _, _, _, Some(x)) => game_declaration.pragmas.push(x),
+                    (Some(x), _, _, _, _) => game.constants.push(x),
+                    (_, Some(x), _, _, _) => game.typedefs.push(x),
+                    (_, _, Some(x), _, _) => game.variables.push(x),
+                    (_, _, _, Some(x), _) => game.edges.push(x),
+                    (_, _, _, _, Some(x)) => game.pragmas.push(x),
                     _ => unreachable!(),
                 }
-                game_declaration
+                game
             },
         ),
     )(input)
@@ -161,9 +161,9 @@ pub fn type_(input: &str) -> Result<Rc<Type<&str>>> {
     )(input)
 }
 
-pub fn type_declaration(input: &str) -> Result<TypeDeclaration<&str>> {
+pub fn typedef(input: &str) -> Result<Typedef<&str>> {
     context(
-        "type_declaration",
+        "typedef",
         into(delimited(
             tag("type"),
             cut(separated_pair(
@@ -200,9 +200,9 @@ pub fn value_entry(input: &str) -> Result<ValueEntry<&str>> {
     )(input)
 }
 
-pub fn variable_declaration(input: &str) -> Result<VariableDeclaration<&str>> {
+pub fn variable(input: &str) -> Result<Variable<&str>> {
     context(
-        "variable_declaration",
+        "variable",
         into(delimited(
             tag("var"),
             cut(tuple((

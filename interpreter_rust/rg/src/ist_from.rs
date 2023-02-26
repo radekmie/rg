@@ -4,9 +4,9 @@ use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::rc::Rc;
 
-impl<Id: Display + Ord> From<ast::GameDeclaration<Id>> for ist::Game<String> {
-    fn from(game_declaration: ast::GameDeclaration<Id>) -> Self {
-        let mut game = Self {
+impl<Id: Display + Ord> From<ast::Game<Id>> for ist::Game<String> {
+    fn from(ast: ast::Game<Id>) -> Self {
+        let mut ist = Self {
             constants: BTreeMap::default(),
             edges: BTreeMap::default(),
             pragmas: Vec::default(),
@@ -14,25 +14,25 @@ impl<Id: Display + Ord> From<ast::GameDeclaration<Id>> for ist::Game<String> {
             variables: BTreeMap::default(),
         };
 
-        build_pragmas(&mut game, game_declaration.pragmas);
-        build_types(&mut game, game_declaration.types);
-        build_constants(&mut game, game_declaration.constants);
-        build_variables(&mut game, game_declaration.variables);
-        build_edges(&mut game, game_declaration.edges);
+        build_pragmas(&mut ist, ast.pragmas);
+        build_typedefs(&mut ist, ast.typedefs);
+        build_constants(&mut ist, ast.constants);
+        build_variables(&mut ist, ast.variables);
+        build_edges(&mut ist, ast.edges);
 
-        game
+        ist
     }
 }
 
 fn build_constants<Id: Display + Ord>(
     game: &mut ist::Game<String>,
-    constant_declarations: Vec<ast::ConstantDeclaration<Id>>,
+    constants: Vec<ast::Constant<Id>>,
 ) {
-    for constant_declaration in constant_declarations {
-        let type_ = build_type_or_fail(game, &constant_declaration.type_);
-        let value = build_value(game, &type_, &constant_declaration.value);
+    for constant in constants {
+        let type_ = build_type_or_fail(game, &constant.type_);
+        let value = build_value(game, &type_, &constant.value);
         game.constants
-            .insert(constant_declaration.identifier.to_string(), value);
+            .insert(constant.identifier.to_string(), value);
     }
 }
 
@@ -66,11 +66,11 @@ fn build_edge_name<Id: Display>(edge_name: ast::EdgeName<Id>) -> String {
     }
 }
 
-fn build_edges<Id: Display>(game: &mut ist::Game<String>, edges: Vec<ast::EdgeDeclaration<Id>>) {
-    for edge_declaration in edges {
-        let lhs = build_edge_name(edge_declaration.lhs);
-        let rhs = build_edge_name(edge_declaration.rhs);
-        let label = build_edge_label(game, edge_declaration.label);
+fn build_edges<Id: Display>(game: &mut ist::Game<String>, edges: Vec<ast::Edge<Id>>) {
+    for edge in edges {
+        let lhs = build_edge_name(edge.lhs);
+        let rhs = build_edge_name(edge.rhs);
+        let label = build_edge_label(game, edge.label);
 
         game.edges
             .entry(lhs)
@@ -203,46 +203,40 @@ fn build_type_or_fail<Id: Display>(
     }
 }
 
-fn build_types<Id: Display>(
-    game: &mut ist::Game<String>,
-    type_declarations: Vec<ast::TypeDeclaration<Id>>,
-) {
-    let type_declarations_len = type_declarations.len();
-    let unresolved_type_declarations = type_declarations
+fn build_typedefs<Id: Display>(game: &mut ist::Game<String>, typedefs: Vec<ast::Typedef<Id>>) {
+    let typedefs_len = typedefs.len();
+    let unresolved_typedefs = typedefs
         .into_iter()
-        .flat_map(
-            |type_declaration| match build_type(game, &type_declaration.type_) {
-                Some(type_) => {
-                    game.types
-                        .insert(type_declaration.identifier.to_string(), type_);
-                    None
-                }
-                None => Some(type_declaration),
-            },
-        )
+        .flat_map(|typedef| match build_type(game, &typedef.type_) {
+            Some(type_) => {
+                game.types.insert(typedef.identifier.to_string(), type_);
+                None
+            }
+            None => Some(typedef),
+        })
         .collect::<Vec<_>>();
 
-    if let Some(unresolved_type_declaration) = unresolved_type_declarations.first() {
+    if let Some(unresolved_typedef) = unresolved_typedefs.first() {
         assert_ne!(
-            type_declarations_len,
-            unresolved_type_declarations.len(),
+            typedefs_len,
+            unresolved_typedefs.len(),
             "Unresolved type: {}",
-            unresolved_type_declaration
+            unresolved_typedef
         );
 
-        build_types(game, unresolved_type_declarations);
+        build_typedefs(game, unresolved_typedefs);
     }
 }
 
 fn build_variables<Id: Display + Ord>(
     game: &mut ist::Game<String>,
-    variable_declarations: Vec<ast::VariableDeclaration<Id>>,
+    variables: Vec<ast::Variable<Id>>,
 ) {
-    for variable_declaration in variable_declarations {
-        let type_ = build_type_or_fail(game, &variable_declaration.type_);
-        let default = build_value(game, &type_, &variable_declaration.default_value);
+    for variable in variables {
+        let type_ = build_type_or_fail(game, &variable.type_);
+        let default = build_value(game, &type_, &variable.default_value);
         game.variables.insert(
-            variable_declaration.identifier.to_string(),
+            variable.identifier.to_string(),
             ist::Variable { type_, default },
         );
     }

@@ -1,6 +1,6 @@
-use crate::ast::{EdgeLabel, Error, ErrorReason, GameDeclaration};
+use crate::ast::{EdgeLabel, Error, ErrorReason, Game};
 
-impl<Id: Clone + PartialEq> GameDeclaration<Id> {
+impl<Id: Clone + PartialEq> Game<Id> {
     pub fn check_types(&self) -> Result<(), Error<Id>> {
         for edge in &self.edges {
             match &edge.label {

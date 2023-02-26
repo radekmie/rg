@@ -4,29 +4,29 @@ use nom::combinator::all_consuming;
 use nom::error::convert_error;
 use nom::Finish;
 use rand::thread_rng;
-use rg::ast::GameDeclaration;
-use rg::ist::{Game, RuntimeId};
+use rg::ast::Game;
+use rg::ist;
 use rg::ist_tools::Interner;
-use rg::parser::game_declaration;
+use rg::parser::game;
 use serde_json::{from_str, to_string};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 pub fn prepare_ist(
-    game_declaration: GameDeclaration<String>,
-) -> Result<(Game<RuntimeId>, Interner<RuntimeId>), String> {
+    game: Game<String>,
+) -> Result<(ist::Game<ist::RuntimeId>, Interner<ist::RuntimeId>), String> {
     let mut interner = Interner::default();
-    let game = Game::from(game_declaration.expand_generator_nodes()?)
-        .map_id(&mut |id| interner.intern(id));
+    let game =
+        ist::Game::from(game.expand_generator_nodes()?).map_id(&mut |id| interner.intern(id));
     Ok((game, interner))
 }
 
-pub fn safe_parse_ast(ast: &str) -> Result<GameDeclaration<String>, String> {
-    from_str::<GameDeclaration<String>>(ast).map_err(|error| error.to_string())
+pub fn safe_parse_ast(ast: &str) -> Result<Game<String>, String> {
+    from_str::<Game<String>>(ast).map_err(|error| error.to_string())
 }
 
-pub fn safe_parse_source(source: &str) -> Result<GameDeclaration<String>, String> {
-    match all_consuming(game_declaration)(source).finish() {
-        Ok((_, game_declaration)) => game_declaration
+pub fn safe_parse_source(source: &str) -> Result<Game<String>, String> {
+    match all_consuming(game)(source).finish() {
+        Ok((_, game)) => game
             .map_id(&mut |id| id.to_string())
             .add_builtins()
             .map_err(|error| error.to_string()),
@@ -34,8 +34,8 @@ pub fn safe_parse_source(source: &str) -> Result<GameDeclaration<String>, String
     }
 }
 
-pub fn safe_serialize_ast(game_declaration: GameDeclaration<String>) -> Result<String, String> {
-    to_string(&game_declaration).map_err(|error| error.to_string())
+pub fn safe_serialize_ast(game: Game<String>) -> Result<String, String> {
+    to_string(&game).map_err(|error| error.to_string())
 }
 
 #[wasm_bindgen(js_name = parseRg)]
@@ -93,8 +93,8 @@ pub fn run_rg(ast: &str, plays: usize, callback: &Function) -> Result<(), String
 #[wasm_bindgen(js_name = serializeRg)]
 pub fn serialize_rg(ast: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
-    let game_declaration = safe_parse_ast(ast)?;
-    Ok(format!("{game_declaration}"))
+    let game = safe_parse_ast(ast)?;
+    Ok(format!("{game}"))
 }
 
 #[wasm_bindgen(js_name = transformAddExplicitCasts)]

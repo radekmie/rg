@@ -1,6 +1,6 @@
-use crate::ast::{Error, GameDeclaration};
+use crate::ast::{Error, Game};
 
-impl GameDeclaration<String> {
+impl Game<String> {
     pub fn expand_generator_nodes(mut self) -> Result<Self, Error<String>> {
         self.edges = self
             .edges

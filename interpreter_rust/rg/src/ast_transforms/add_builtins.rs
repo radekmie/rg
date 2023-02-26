@@ -1,13 +1,10 @@
-use crate::ast::{
-    Error, ErrorReason, GameDeclaration, Type, TypeDeclaration, Value, ValueEntry,
-    VariableDeclaration,
-};
+use crate::ast::{Error, ErrorReason, Game, Type, Typedef, Value, ValueEntry, Variable};
 use std::rc::Rc;
 
-impl GameDeclaration<String> {
+impl Game<String> {
     pub fn add_builtins(mut self) -> Result<Self, Error<String>> {
         // |- Bool
-        self.add_builtin_type(TypeDeclaration {
+        self.add_builtin_type(Typedef {
             identifier: "Bool".to_string(),
             type_: Rc::new(Type::Set {
                 identifiers: vec!["0".to_string(), "1".to_string()],
@@ -16,7 +13,7 @@ impl GameDeclaration<String> {
 
         // Player ^ Score |- Goals
         self.resolve_type(&"Score".to_string())?;
-        self.add_builtin_type(TypeDeclaration {
+        self.add_builtin_type(Typedef {
             identifier: "Goals".to_string(),
             type_: Rc::new(Type::Arrow {
                 lhs: "Player".to_string(),
@@ -28,7 +25,7 @@ impl GameDeclaration<String> {
 
         // Player |- Visibility
         self.resolve_type(&"Player".to_string())?;
-        self.add_builtin_type(TypeDeclaration {
+        self.add_builtin_type(Typedef {
             identifier: "Visibility".to_string(),
             type_: Rc::new(Type::Arrow {
                 lhs: "Player".to_string(),
@@ -56,7 +53,7 @@ impl GameDeclaration<String> {
                 });
             }
         };
-        self.add_builtin_type(TypeDeclaration {
+        self.add_builtin_type(Typedef {
             identifier: "PlayerOrKeeper".to_string(),
             type_: Rc::new(Type::Set {
                 identifiers: players,
@@ -81,7 +78,7 @@ impl GameDeclaration<String> {
                 });
             }
         };
-        self.add_builtin_variable(VariableDeclaration {
+        self.add_builtin_variable(Variable {
             identifier: "goals".to_string(),
             type_: Rc::new(Type::TypeReference {
                 identifier: "Goals".to_string(),
@@ -97,7 +94,7 @@ impl GameDeclaration<String> {
 
         // PlayerOrKeeper |- player
         self.resolve_type(&"PlayerOrKeeper".to_string())?;
-        self.add_builtin_variable(VariableDeclaration {
+        self.add_builtin_variable(Variable {
             identifier: "player".to_string(),
             type_: Rc::new(Type::TypeReference {
                 identifier: "PlayerOrKeeper".to_string(),
@@ -109,7 +106,7 @@ impl GameDeclaration<String> {
 
         // Visibility |- visibility
         self.resolve_type(&"Visibility".to_string())?;
-        self.add_builtin_variable(VariableDeclaration {
+        self.add_builtin_variable(Variable {
             identifier: "visible".to_string(),
             type_: Rc::new(Type::TypeReference {
                 identifier: "Visibility".to_string(),
@@ -126,7 +123,7 @@ impl GameDeclaration<String> {
         Ok(self)
     }
 
-    fn add_builtin_type(&mut self, builtin: TypeDeclaration<String>) -> Result<(), Error<String>> {
+    fn add_builtin_type(&mut self, builtin: Typedef<String>) -> Result<(), Error<String>> {
         if let Ok(defined) = self.resolve_type(&builtin.identifier) {
             if !self.is_equal_type(&builtin.type_, &defined.type_, false)? {
                 return self.make_error(ErrorReason::TypeDeclarationMismatch {
@@ -136,15 +133,12 @@ impl GameDeclaration<String> {
                 });
             }
         } else {
-            self.types.push(builtin);
+            self.typedefs.push(builtin);
         }
         Ok(())
     }
 
-    fn add_builtin_variable(
-        &mut self,
-        builtin: VariableDeclaration<String>,
-    ) -> Result<(), Error<String>> {
+    fn add_builtin_variable(&mut self, builtin: Variable<String>) -> Result<(), Error<String>> {
         if let Ok(defined) = self.resolve_variable(&builtin.identifier) {
             if !self.is_equal_type(&builtin.type_, &defined.type_, false)? {
                 return self.make_error(ErrorReason::VariableDeclarationMismatch {

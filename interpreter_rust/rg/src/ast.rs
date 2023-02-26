@@ -8,8 +8,8 @@ pub type Mapping<Id> = BTreeMap<Id, Id>;
 pub type Binding<'a, Id> = (&'a Id, &'a Rc<Type<Id>>);
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(tag = "kind")]
-pub struct ConstantDeclaration<Id> {
+#[serde(rename = "ConstantDeclaration", tag = "kind")]
+pub struct Constant<Id> {
     pub identifier: Id,
     #[serde(rename = "type")]
     pub type_: Rc<Type<Id>>,
@@ -17,14 +17,14 @@ pub struct ConstantDeclaration<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(tag = "kind")]
-pub struct EdgeDeclaration<Id> {
+#[serde(rename = "EdgeDeclaration", tag = "kind")]
+pub struct Edge<Id> {
     pub label: EdgeLabel<Id>,
     pub lhs: EdgeName<Id>,
     pub rhs: EdgeName<Id>,
 }
 
-impl<Id: PartialEq> EdgeDeclaration<Id> {
+impl<Id: PartialEq> Edge<Id> {
     pub fn bindings(&self) -> Vec<Binding<Id>> {
         self.lhs
             .bindings()
@@ -40,7 +40,7 @@ impl<Id: PartialEq> EdgeDeclaration<Id> {
     }
 }
 
-impl EdgeDeclaration<String> {
+impl Edge<String> {
     pub fn substitute_bindings(&self, mapping: &Mapping<String>) -> Self {
         Self {
             label: self.label.substitute_bindings(mapping),
@@ -158,7 +158,7 @@ impl<Id> EdgeNamePart<Id> {
 
 #[derive(Debug)]
 pub struct Error<Id> {
-    pub game_declaration: GameDeclaration<Id>,
+    pub game: Game<Id>,
     pub reason: ErrorReason<Id>,
 }
 
@@ -309,39 +309,40 @@ mod expression {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(tag = "kind")]
-pub struct GameDeclaration<Id> {
-    pub constants: Vec<ConstantDeclaration<Id>>,
-    pub edges: Vec<EdgeDeclaration<Id>>,
+#[serde(rename = "GameDeclaration", tag = "kind")]
+pub struct Game<Id> {
+    pub constants: Vec<Constant<Id>>,
+    pub edges: Vec<Edge<Id>>,
     pub pragmas: Vec<Pragma<Id>>,
-    pub types: Vec<TypeDeclaration<Id>>,
-    pub variables: Vec<VariableDeclaration<Id>>,
+    #[serde(rename = "types")]
+    pub typedefs: Vec<Typedef<Id>>,
+    pub variables: Vec<Variable<Id>>,
 }
 
-impl<Id: Clone> GameDeclaration<Id> {
+impl<Id: Clone> Game<Id> {
     pub fn make_error<T>(&self, reason: ErrorReason<Id>) -> Result<T, Error<Id>> {
         Err(Error {
-            game_declaration: self.clone(),
+            game: self.clone(),
             reason,
         })
     }
 }
 
-impl<Id: Clone + PartialEq> GameDeclaration<Id> {
+impl<Id: Clone + PartialEq> Game<Id> {
     pub fn infer_expression<'a>(
         &'a self,
-        edge_declaration: &'a EdgeDeclaration<Id>,
+        edge: &'a Edge<Id>,
         expression: &'a Expression<Id>,
     ) -> Result<Rc<Type<Id>>, Error<Id>> {
         match expression {
             Expression::Access { lhs, rhs } => {
-                let lhs_type = self.infer_expression(edge_declaration, lhs)?;
+                let lhs_type = self.infer_expression(edge, lhs)?;
                 match self.resolve_type_reference(&lhs_type)? {
                     Type::Arrow {
                         lhs: key_type,
                         rhs: value_type,
                     } => {
-                        let accessor_type = self.infer_expression(edge_declaration, rhs)?;
+                        let accessor_type = self.infer_expression(edge, rhs)?;
                         match self.resolve_type_reference(&accessor_type)? {
                             Type::Set { .. } => {
                                 let key_type = &self.resolve_type(key_type)?.type_;
@@ -363,7 +364,7 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
                 }
             }
             Expression::Cast { lhs, rhs } => {
-                let rhs = self.infer_expression(edge_declaration, rhs)?;
+                let rhs = self.infer_expression(edge, rhs)?;
                 if !self.is_assignable_type(lhs, &rhs, false)? {
                     return self.make_error(ErrorReason::AssignmentTypeMismatch {
                         lhs: lhs.clone(),
@@ -374,7 +375,7 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
                 Ok(lhs.clone())
             }
             Expression::Reference { identifier } => {
-                if let Some(binding) = edge_declaration
+                if let Some(binding) = edge
                     .bindings()
                     .iter()
                     .find(|binding| binding.0 == identifier)
@@ -382,12 +383,12 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
                     return Ok(binding.1.clone());
                 }
 
-                if let Ok(constant_declaration) = self.resolve_constant(identifier) {
-                    return Ok(constant_declaration.type_.clone());
+                if let Ok(constant) = self.resolve_constant(identifier) {
+                    return Ok(constant.type_.clone());
                 }
 
-                if let Ok(variable_declaration) = self.resolve_variable(identifier) {
-                    return Ok(variable_declaration.type_.clone());
+                if let Ok(variable) = self.resolve_variable(identifier) {
+                    return Ok(variable.type_.clone());
                 }
 
                 Ok(Rc::new(Type::Set {
@@ -434,10 +435,10 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
             && self.is_assignable_type(rhs, lhs, is_strict)?)
     }
 
-    pub fn resolve_constant(&self, identifier: &Id) -> Result<&ConstantDeclaration<Id>, Error<Id>> {
+    pub fn resolve_constant(&self, identifier: &Id) -> Result<&Constant<Id>, Error<Id>> {
         self.constants
             .iter()
-            .find(|constant_declaration| &constant_declaration.identifier == identifier)
+            .find(|constant| &constant.identifier == identifier)
             .map_or_else(
                 || {
                     self.make_error(ErrorReason::UnresolvedConstant {
@@ -448,10 +449,10 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
             )
     }
 
-    pub fn resolve_type(&self, identifier: &Id) -> Result<&TypeDeclaration<Id>, Error<Id>> {
-        self.types
+    pub fn resolve_type(&self, identifier: &Id) -> Result<&Typedef<Id>, Error<Id>> {
+        self.typedefs
             .iter()
-            .find(|type_declaration| &type_declaration.identifier == identifier)
+            .find(|typedef| &typedef.identifier == identifier)
             .map_or_else(
                 || {
                     self.make_error(ErrorReason::UnresolvedType {
@@ -462,17 +463,17 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
             )
     }
 
-    pub fn resolve_type_declaration<'a>(
+    pub fn resolve_typedef<'a>(
         &'a self,
         type_: &'a Type<Id>,
-    ) -> Result<Option<&TypeDeclaration<Id>>, Error<Id>> {
-        self.types
+    ) -> Result<Option<&Typedef<Id>>, Error<Id>> {
+        self.typedefs
             .iter()
-            .find_map(|type_declaration| {
-                let left_to_right = self.is_assignable_type(&type_declaration.type_, type_, true);
-                let right_to_left = self.is_assignable_type(type_, &type_declaration.type_, true);
+            .find_map(|typedef| {
+                let left_to_right = self.is_assignable_type(&typedef.type_, type_, true);
+                let right_to_left = self.is_assignable_type(type_, &typedef.type_, true);
                 match (left_to_right, right_to_left) {
-                    (Ok(true), Ok(true)) => Some(Ok(type_declaration)),
+                    (Ok(true), Ok(true)) => Some(Ok(typedef)),
                     (Ok(_), Ok(_)) => None,
                     (Err(error), _) | (_, Err(error)) => Some(Err(error)),
                 }
@@ -492,10 +493,10 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
         }
     }
 
-    pub fn resolve_variable(&self, identifier: &Id) -> Result<&VariableDeclaration<Id>, Error<Id>> {
+    pub fn resolve_variable(&self, identifier: &Id) -> Result<&Variable<Id>, Error<Id>> {
         self.variables
             .iter()
-            .find(|variable_declaration| &variable_declaration.identifier == identifier)
+            .find(|variable| &variable.identifier == identifier)
             .map_or_else(
                 || {
                     self.make_error(ErrorReason::UnresolvedVariable {
@@ -517,7 +518,7 @@ impl<Id: Clone + PartialEq> GameDeclaration<Id> {
     }
 }
 
-impl GameDeclaration<String> {
+impl Game<String> {
     pub fn create_mappings(
         &self,
         bindings: Vec<Binding<String>>,
@@ -559,8 +560,8 @@ pub enum Type<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(tag = "kind")]
-pub struct TypeDeclaration<Id> {
+#[serde(rename = "TypeDeclaration", tag = "kind")]
+pub struct Typedef<Id> {
     pub identifier: Id,
     #[serde(rename = "type")]
     pub type_: Rc<Type<Id>>,
@@ -586,8 +587,8 @@ pub enum ValueEntry<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(tag = "kind")]
-pub struct VariableDeclaration<Id> {
+#[serde(rename = "VariableDeclaration", tag = "kind")]
+pub struct Variable<Id> {
     #[serde(rename = "defaultValue")]
     pub default_value: Rc<Value<Id>>,
     pub identifier: Id,
