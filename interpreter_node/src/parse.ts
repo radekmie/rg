@@ -4,7 +4,7 @@ import * as hrg from './hrg';
 import * as rbg from './rbg';
 import * as rg from './rg';
 import * as translators from './translators';
-import { Extension, Flag, Settings } from './types';
+import { Extension, Settings } from './types';
 import * as utils from './utils';
 import * as wasm from './wasm';
 
@@ -69,57 +69,9 @@ async function analyzeRbg(source: string, settings: Settings) {
   } as AnalyzedGame;
 }
 
-async function analyzeRg(source: string, settings: Settings) {
+async function analyzeRg(source: string, { flags }: Settings) {
   const sourceRg = source;
-  const astRgBase = await wasm.parseRg(sourceRg);
-
-  // Transformation helpers.
-  function nodeTransform(name: Extract<keyof typeof rg.transformators, Flag>) {
-    if (!settings.flags[name]) {
-      return null;
-    }
-
-    return (gameDeclaration: rg.ast.GameDeclaration) => {
-      const clone = utils.clone(gameDeclaration);
-      rg.transformators[name](clone);
-      return Promise.resolve(clone);
-    };
-  }
-
-  function wasmTransform(
-    flag: Flag,
-    name: Extract<keyof typeof wasm, `transform${string}`>,
-  ) {
-    if (!settings.flags[flag]) {
-      return null;
-    }
-
-    return (gameDeclaration: rg.ast.GameDeclaration) =>
-      wasm[name](gameDeclaration);
-  }
-
-  // Other transformations are run in a fixpoint loop.
-  const astRg = await utils.runTransformators(
-    astRgBase,
-    [wasm.validateCheckReachabilities, wasm.validateCheckTypes],
-    [
-      wasmTransform('normalizeTypes', 'transformNormalizeTypes'),
-      wasmTransform('skipSelfAssignments', 'transformSkipSelfAssignments'),
-      nodeTransform('compactSkipEdges'),
-      wasmTransform('addExplicitCasts', 'transformAddExplicitCasts'),
-      wasmTransform('expandGeneratorNodes', 'transformExpandGeneratorNodes'),
-      nodeTransform('joinForkSuffixes'),
-      nodeTransform('inlineReachability'),
-      nodeTransform('mangleSymbols'),
-    ].filter(utils.isNotNull),
-  );
-
-  const sourceRgFormatted = await wasm.serializeRg(astRg);
-  const astRgFormatted = await wasm.parseRg(sourceRgFormatted);
-  if (!utils.isEqual(astRg, astRgFormatted)) {
-    throw new Error('RgFormattingError (AST mismatch)');
-  }
-
+  const [astRg, sourceRgFormatted] = await wasm.analyzeRg(source, flags);
   const graphvizRg = rg.ast.graphviz(astRg);
 
   return {

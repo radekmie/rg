@@ -1,6 +1,7 @@
 import pLimit from 'p-limit';
 
 import * as rg from '../rg';
+import { Settings } from '../types';
 import * as utils from '../utils';
 
 // Node.js requires a Worker polyfill.
@@ -59,6 +60,23 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
   );
 }
 
+export async function analyzeRg(source: string, flags: Settings['flags']) {
+  const [ast, formattedSource] = await workerMethod(
+    'analyzeRg',
+    // @ts-expect-error: Workaround for passing functions to Web Worker.
+    [
+      source,
+      JSON.stringify(flags),
+      '$$TRANSFORMATOR$$compactSkipEdges' as unknown as () => unknown,
+      '$$TRANSFORMATOR$$joinForkSuffixes' as unknown as () => unknown,
+      '$$TRANSFORMATOR$$inlineReachability' as unknown as () => unknown,
+      '$$TRANSFORMATOR$$mangleSymbols' as unknown as () => unknown,
+    ],
+    utils.noop,
+  );
+  return [JSON.parse(ast), formattedSource] as [rg.ast.GameDeclaration, string];
+}
+
 export async function parseRg(source: string) {
   const ast = await workerMethod('parseRg', [source], utils.noop);
   return JSON.parse(ast) as rg.ast.GameDeclaration;
@@ -91,66 +109,4 @@ export async function serializeRg(gameDeclaration: rg.ast.GameDeclaration) {
   const ast = JSON.stringify(gameDeclaration);
   const rg = await workerMethod('serializeRg', [ast], utils.noop);
   return rg;
-}
-
-export async function transformAddExplicitCasts(
-  gameDeclaration: rg.ast.GameDeclaration,
-) {
-  const ast = JSON.stringify(gameDeclaration);
-  const astTransformed = await workerMethod(
-    'transformAddExplicitCasts',
-    [ast],
-    utils.noop,
-  );
-  return JSON.parse(astTransformed) as rg.ast.GameDeclaration;
-}
-
-export async function transformExpandGeneratorNodes(
-  gameDeclaration: rg.ast.GameDeclaration,
-) {
-  const ast = JSON.stringify(gameDeclaration);
-  const astTransformed = await workerMethod(
-    'transformExpandGeneratorNodes',
-    [ast],
-    utils.noop,
-  );
-  return JSON.parse(astTransformed) as rg.ast.GameDeclaration;
-}
-
-export async function transformNormalizeTypes(
-  gameDeclaration: rg.ast.GameDeclaration,
-) {
-  const ast = JSON.stringify(gameDeclaration);
-  const astTransformed = await workerMethod(
-    'transformNormalizeTypes',
-    [ast],
-    utils.noop,
-  );
-  return JSON.parse(astTransformed) as rg.ast.GameDeclaration;
-}
-
-export async function transformSkipSelfAssignments(
-  gameDeclaration: rg.ast.GameDeclaration,
-) {
-  const ast = JSON.stringify(gameDeclaration);
-  const astTransformed = await workerMethod(
-    'transformSkipSelfAssignments',
-    [ast],
-    utils.noop,
-  );
-  return JSON.parse(astTransformed) as rg.ast.GameDeclaration;
-}
-
-export async function validateCheckReachabilities(
-  gameDeclaration: rg.ast.GameDeclaration,
-) {
-  const ast = JSON.stringify(gameDeclaration);
-  await workerMethod('validateCheckReachabilities', [ast], utils.noop);
-}
-
-export async function validateCheckTypes(
-  gameDeclaration: rg.ast.GameDeclaration,
-) {
-  const ast = JSON.stringify(gameDeclaration);
-  await workerMethod('validateCheckTypes', [ast], utils.noop);
 }

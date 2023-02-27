@@ -8,6 +8,7 @@ use rg::ast::Game;
 use rg::ist;
 use rg::ist_tools::Interner;
 use rg::parser::game;
+use serde::Deserialize;
 use serde_json::{from_str, to_string};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
@@ -36,6 +37,87 @@ pub fn safe_parse_source(source: &str) -> Result<Game<String>, String> {
 
 pub fn safe_serialize_ast(game: Game<String>) -> Result<String, String> {
     to_string(&game).map_err(|error| error.to_string())
+}
+
+#[derive(Deserialize)]
+struct Flags {
+    #[serde(rename = "addExplicitCasts")]
+    add_explicit_casts: bool,
+    #[serde(rename = "compactSkipEdges")]
+    compact_skip_edges: bool,
+    #[serde(rename = "expandGeneratorNodes")]
+    expand_generator_nodes: bool,
+    #[serde(rename = "inlineReachability")]
+    inline_reachability: bool,
+    #[serde(rename = "joinForkSuffixes")]
+    join_fork_suffixes: bool,
+    #[serde(rename = "mangleSymbols")]
+    mangle_symbols: bool,
+    #[serde(rename = "normalizeTypes")]
+    normalize_types: bool,
+    #[serde(rename = "skipSelfAssignments")]
+    skip_self_assignments: bool,
+}
+
+#[wasm_bindgen(js_name = analyzeRg)]
+pub fn analyze_rg(
+    source: &str,
+    flags: &str,
+    compact_skip_edges: &Function,
+    join_fork_suffixes: &Function,
+    inline_reachability: &Function,
+    mangle_symbols: &Function,
+) -> Result<Array, String> {
+    let flags = from_str::<Flags>(flags).map_err(|error| error.to_string())?;
+
+    let mut game = safe_parse_source(source)?;
+    'check: loop {
+        game.check_reachabilities()?;
+        game.check_types()?;
+
+        let copy = game.clone();
+
+        macro_rules! pass {
+            ($fn:ident $block:block) => {
+                if flags.$fn {
+                    $block
+                    if game != copy {
+                        continue 'check;
+                    }
+                }
+            };
+            (node $fn:ident) => {
+                pass!($fn {
+                    let ast = safe_serialize_ast(game)?;
+                    let ast = $fn.call1(&JsValue::null(), &ast.into()).unwrap().as_string().unwrap();
+                    game = safe_parse_ast(&ast)?;
+                });
+            };
+            (rust $fn:ident) => {
+                pass!($fn {
+                    game = game.$fn()?;
+                });
+            };
+        }
+
+        pass!(rust normalize_types);
+        pass!(rust skip_self_assignments);
+        pass!(node compact_skip_edges);
+        pass!(rust add_explicit_casts);
+        pass!(rust expand_generator_nodes);
+        pass!(node join_fork_suffixes);
+        pass!(node inline_reachability);
+        pass!(node mangle_symbols);
+
+        break;
+    }
+
+    let source_formatted = format!("{game}");
+    assert_eq!(safe_parse_source(&source_formatted)?, game);
+    Ok(Array::of2(
+        &safe_serialize_ast(game)?.into(),
+        &source_formatted.into(),
+    ))
 }
 
 #[wasm_bindgen(js_name = parseRg)]
@@ -95,42 +177,4 @@ pub fn serialize_rg(ast: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
     let game = safe_parse_ast(ast)?;
     Ok(format!("{game}"))
-}
-
-#[wasm_bindgen(js_name = transformAddExplicitCasts)]
-pub fn transform_add_explicit_casts(ast: &str) -> Result<String, String> {
-    console_error_panic_hook::set_once();
-    safe_serialize_ast(safe_parse_ast(ast)?.add_explicit_casts()?)
-}
-
-#[wasm_bindgen(js_name = transformExpandGeneratorNodes)]
-pub fn transform_expand_generator_nodes(ast: &str) -> Result<String, String> {
-    console_error_panic_hook::set_once();
-    safe_serialize_ast(safe_parse_ast(ast)?.expand_generator_nodes()?)
-}
-
-#[wasm_bindgen(js_name = transformNormalizeTypes)]
-pub fn transform_normalize_types(ast: &str) -> Result<String, String> {
-    console_error_panic_hook::set_once();
-    safe_serialize_ast(safe_parse_ast(ast)?.normalize_types()?)
-}
-
-#[wasm_bindgen(js_name = transformSkipSelfAssignments)]
-pub fn transform_skip_self_assignments(ast: &str) -> Result<String, String> {
-    console_error_panic_hook::set_once();
-    safe_serialize_ast(safe_parse_ast(ast)?.skip_self_assignments()?)
-}
-
-#[wasm_bindgen(js_name = validateCheckReachabilities)]
-pub fn validate_check_reachabilities(ast: &str) -> Result<(), String> {
-    console_error_panic_hook::set_once();
-    safe_parse_ast(ast)?.check_reachabilities()?;
-    Ok(())
-}
-
-#[wasm_bindgen(js_name = validateCheckTypes)]
-pub fn validate_check_types(ast: &str) -> Result<(), String> {
-    console_error_panic_hook::set_once();
-    safe_parse_ast(ast)?.check_types()?;
-    Ok(())
 }

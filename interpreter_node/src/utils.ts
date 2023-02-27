@@ -195,35 +195,6 @@ export function remove<T>(array: T[], element: T) {
   }
 }
 
-export async function runTransformators<T>(
-  object: T,
-  validators: ((object: T) => Promise<void>)[],
-  transformators: ((object: T) => Promise<T>)[],
-) {
-  for (const validator of validators) {
-    await validator(object);
-  }
-
-  outer: for (let round = 0; round <= 1000; ++round) {
-    const before = object;
-    for (const transformator of transformators) {
-      object = await transformator(object);
-
-      for (const validator of validators) {
-        await validator(object);
-      }
-
-      if (!isEqual(before, object)) {
-        continue outer;
-      }
-    }
-
-    return object;
-  }
-
-  throw new Error('Transformators did not converge.');
-}
-
 export function unique<T>(array: T[], element: T) {
   // Specialized version that works in O(log(n)) instead of O(n) time.
   if (typeof element === 'number' || typeof element === 'string') {
