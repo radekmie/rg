@@ -1,5 +1,7 @@
 import * as utils from '../../utils';
-import * as ast from '../ast';
+import * as lib from '../ast/lib';
+import { serializeEdgeName } from '../ast/serializer';
+import * as ast from '../ast/types';
 
 /**
  * Return a subautomaton of [edges] that:
@@ -38,7 +40,7 @@ export function findAcceptablePaths(
     if (
       reachable.length > 2 ||
       (reachable.length === 2 &&
-        !ast.lib.areObviouslyExclusive(reachable[0].label, reachable[1].label))
+        !lib.areObviouslyExclusive(reachable[0].label, reachable[1].label))
     ) {
       return utils.failure("can't ensure single path at runtime");
     }
@@ -92,8 +94,8 @@ export function substituteWithPaths(
     return;
   }
 
-  const serializedStart = ast.serializeEdgeName(pathsStart);
-  const serializedEnd = ast.serializeEdgeName(pathsEnd);
+  const serializedStart = serializeEdgeName(pathsStart);
+  const serializedEnd = serializeEdgeName(pathsEnd);
   const copyInit = makeFreshNode(
     `reachability-${serializedStart}-${serializedEnd}`,
   );
@@ -122,8 +124,8 @@ export function substituteWithPaths(
 
   for (const e of paths) {
     const newEdge = ast.EdgeDeclaration({
-      lhs: getMapping(e.lhs) || makeFreshNode(ast.serializeEdgeName(e.lhs)),
-      rhs: getMapping(e.rhs) || makeFreshNode(ast.serializeEdgeName(e.rhs)),
+      lhs: getMapping(e.lhs) || makeFreshNode(serializeEdgeName(e.lhs)),
+      rhs: getMapping(e.rhs) || makeFreshNode(serializeEdgeName(e.rhs)),
       label: e.label,
     });
     setMapping(e.lhs, newEdge.lhs);
@@ -133,7 +135,7 @@ export function substituteWithPaths(
 }
 
 export function inlineReachability({ edges }: ast.GameDeclaration) {
-  const makeFreshNode = ast.lib.makeFreshEdgeName(edges);
+  const makeFreshNode = lib.makeFreshEdgeName(edges);
 
   for (const e of edges) {
     // TODO can you handle negated reachability by simply negating all labels?
