@@ -15,14 +15,14 @@ impl<Id: Clone + PartialEq> EdgeLabel<Id> {
     pub fn add_explicit_casts(&self, game: &Game<Id>, edge: &Edge<Id>) -> Result<Self, Error<Id>> {
         Ok(match self {
             Self::Assignment { lhs, rhs } => {
-                let type_ = &game.infer_expression(edge, lhs)?;
+                let type_ = &lhs.infer(game, edge)?;
                 Self::Assignment {
                     lhs: Rc::new(lhs.add_explicit_casts(game, edge, type_)?),
                     rhs: Rc::new(rhs.add_explicit_casts(game, edge, type_)?),
                 }
             }
             Self::Comparison { lhs, rhs, negated } => {
-                let type_ = &game.infer_expression(edge, lhs)?;
+                let type_ = &lhs.infer(game, edge)?;
                 Self::Comparison {
                     lhs: Rc::new(lhs.add_explicit_casts(game, edge, type_)?),
                     rhs: Rc::new(rhs.add_explicit_casts(game, edge, type_)?),
@@ -41,12 +41,36 @@ impl<Id: Clone + PartialEq> Expression<Id> {
         edge: &Edge<Id>,
         type_: &Type<Id>,
     ) -> Result<Self, Error<Id>> {
-        let self_with_casts_in_subexpressions = match self {
+        Ok(self
+            .add_explicit_casts_in_subexpressions(game, edge, type_)?
+            .add_explicit_cast(game, type_)?
+            .deduplicate_casts())
+    }
+
+    fn add_explicit_cast(self, game: &Game<Id>, type_: &Type<Id>) -> Result<Self, Error<Id>> {
+        Ok(match game.resolve_typedef_by_type(type_)? {
+            Some(typedef) => Self::Cast {
+                lhs: Rc::new(Type::TypeReference {
+                    identifier: typedef.identifier.clone(),
+                }),
+                rhs: Rc::new(self),
+            },
+            _ => self,
+        })
+    }
+
+    fn add_explicit_casts_in_subexpressions(
+        &self,
+        game: &Game<Id>,
+        edge: &Edge<Id>,
+        type_: &Type<Id>,
+    ) -> Result<Self, Error<Id>> {
+        Ok(match self {
             Self::Access { lhs, rhs } => {
-                let lhs_type = game.infer_expression(edge, lhs)?;
-                match game.resolve_type_reference(&lhs_type)? {
+                let lhs_type = lhs.infer(game, edge)?;
+                match lhs_type.resolve(game)? {
                     Type::Arrow { lhs: key_type, .. } => {
-                        let key_type = &game.resolve_type(key_type)?.type_;
+                        let key_type = &game.resolve_typedef(key_type)?.type_;
                         Self::Access {
                             lhs: Rc::new(lhs.add_explicit_casts(game, edge, &lhs_type)?),
                             rhs: Rc::new(rhs.add_explicit_casts(game, edge, key_type)?),
@@ -62,27 +86,15 @@ impl<Id: Clone + PartialEq> Expression<Id> {
             Self::Reference { identifier } => Self::Reference {
                 identifier: identifier.clone(),
             },
-        };
+        })
+    }
 
-        let self_with_casts = match game.resolve_typedef(type_)? {
-            Some(typedef) => Self::Cast {
-                lhs: Rc::new(Type::TypeReference {
-                    identifier: typedef.identifier.clone(),
-                }),
-                rhs: Rc::new(self_with_casts_in_subexpressions),
-            },
-            _ => self_with_casts_in_subexpressions,
-        };
-
-        let mut self_with_casts_deduplicated = self_with_casts;
-        loop {
-            match self_with_casts_deduplicated {
-                Self::Cast { lhs, mut rhs } if matches!(&*rhs, Self::Cast { lhs: rhs_lhs, .. } if &lhs == rhs_lhs) =>
-                {
-                    self_with_casts_deduplicated = Rc::make_mut(&mut rhs).clone();
-                }
-                _ => return Ok(self_with_casts_deduplicated),
+    fn deduplicate_casts(self) -> Self {
+        match self {
+            Self::Cast { lhs, mut rhs } if matches!(&*rhs, Self::Cast { lhs: rhs_lhs, .. } if &lhs == rhs_lhs) => {
+                Rc::make_mut(&mut rhs).clone().deduplicate_casts()
             }
+            _ => self,
         }
     }
 }

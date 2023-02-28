@@ -1,11 +1,10 @@
 use crate::ist::{
     EdgeLabel, Expression, Game, RuntimeId, Value, LABEL_END, LABEL_GOALS, LABEL_PLAYER,
 };
-use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, PartialOrd, Ord, Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct State {
     pub position: RuntimeId,
     pub values: Rc<BTreeMap<RuntimeId, Rc<Value<RuntimeId>>>>,

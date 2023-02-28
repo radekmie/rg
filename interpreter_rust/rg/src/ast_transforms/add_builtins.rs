@@ -6,37 +6,31 @@ impl Game<String> {
         // |- Bool
         self.add_builtin_type(Typedef {
             identifier: "Bool".to_string(),
-            type_: Rc::new(Type::Set {
-                identifiers: vec!["0".to_string(), "1".to_string()],
-            }),
+            type_: Rc::new(Type::from(vec!["0".to_string(), "1".to_string()])),
         })?;
 
         // Player ^ Score |- Goals
-        self.resolve_type(&"Score".to_string())?;
+        self.resolve_typedef(&"Score".to_string())?;
         self.add_builtin_type(Typedef {
             identifier: "Goals".to_string(),
             type_: Rc::new(Type::Arrow {
                 lhs: "Player".to_string(),
-                rhs: Rc::new(Type::TypeReference {
-                    identifier: "Score".to_string(),
-                }),
+                rhs: Rc::new(Type::from("Score".to_string())),
             }),
         })?;
 
         // Player |- Visibility
-        self.resolve_type(&"Player".to_string())?;
+        self.resolve_typedef(&"Player".to_string())?;
         self.add_builtin_type(Typedef {
             identifier: "Visibility".to_string(),
             type_: Rc::new(Type::Arrow {
                 lhs: "Player".to_string(),
-                rhs: Rc::new(Type::TypeReference {
-                    identifier: "Bool".to_string(),
-                }),
+                rhs: Rc::new(Type::from("Bool".to_string())),
             }),
         })?;
 
         // Player ^ isSet(Player) |- PlayerOrKeeper
-        let player_type = &self.resolve_type(&"Player".to_string())?.type_;
+        let player_type = &self.resolve_typedef(&"Player".to_string())?.type_;
         let players = match &**player_type {
             Type::Set { identifiers } => {
                 if identifiers.contains(&"keeper".to_string()) {
@@ -55,14 +49,12 @@ impl Game<String> {
         };
         self.add_builtin_type(Typedef {
             identifier: "PlayerOrKeeper".to_string(),
-            type_: Rc::new(Type::Set {
-                identifiers: players,
-            }),
+            type_: Rc::new(Type::from(players)),
         })?;
 
         // Goals ^ Score ^ isSet(Score) |- goals
-        self.resolve_type(&"Goals".to_string())?;
-        let score_type = &self.resolve_type(&"Score".to_string())?.type_;
+        self.resolve_typedef(&"Goals".to_string())?;
+        let score_type = &self.resolve_typedef(&"Score".to_string())?.type_;
         let default_score = match &**score_type {
             Type::Set { identifiers } => identifiers.first().cloned().map_or_else(
                 || {
@@ -80,42 +72,30 @@ impl Game<String> {
         };
         self.add_builtin_variable(Variable {
             identifier: "goals".to_string(),
-            type_: Rc::new(Type::TypeReference {
-                identifier: "Goals".to_string(),
-            }),
+            type_: Rc::new(Type::from("Goals".to_string())),
             default_value: Rc::new(Value::Map {
                 entries: vec![ValueEntry::DefaultEntry {
-                    value: Rc::new(Value::Element {
-                        identifier: default_score,
-                    }),
+                    value: Rc::new(Value::from(default_score)),
                 }],
             }),
         })?;
 
         // PlayerOrKeeper |- player
-        self.resolve_type(&"PlayerOrKeeper".to_string())?;
+        self.resolve_typedef(&"PlayerOrKeeper".to_string())?;
         self.add_builtin_variable(Variable {
             identifier: "player".to_string(),
-            type_: Rc::new(Type::TypeReference {
-                identifier: "PlayerOrKeeper".to_string(),
-            }),
-            default_value: Rc::new(Value::Element {
-                identifier: "keeper".to_string(),
-            }),
+            type_: Rc::new(Type::from("PlayerOrKeeper".to_string())),
+            default_value: Rc::new(Value::from("keeper".to_string())),
         })?;
 
         // Visibility |- visibility
-        self.resolve_type(&"Visibility".to_string())?;
+        self.resolve_typedef(&"Visibility".to_string())?;
         self.add_builtin_variable(Variable {
             identifier: "visible".to_string(),
-            type_: Rc::new(Type::TypeReference {
-                identifier: "Visibility".to_string(),
-            }),
+            type_: Rc::new(Type::from("Visibility".to_string())),
             default_value: Rc::new(Value::Map {
                 entries: vec![ValueEntry::DefaultEntry {
-                    value: Rc::new(Value::Element {
-                        identifier: "1".to_string(),
-                    }),
+                    value: Rc::new(Value::from("1".to_string())),
                 }],
             }),
         })?;
@@ -124,7 +104,7 @@ impl Game<String> {
     }
 
     fn add_builtin_type(&mut self, builtin: Typedef<String>) -> Result<(), Error<String>> {
-        if let Ok(defined) = self.resolve_type(&builtin.identifier) {
+        if let Ok(defined) = self.resolve_typedef(&builtin.identifier) {
             if !self.is_equal_type(&builtin.type_, &defined.type_, false)? {
                 return self.make_error(ErrorReason::TypeDeclarationMismatch {
                     identifier: builtin.identifier,

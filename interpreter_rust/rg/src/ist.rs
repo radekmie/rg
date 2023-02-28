@@ -1,6 +1,5 @@
 use map_id::MapId;
 use map_id_macro::MapId;
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
@@ -12,15 +11,13 @@ pub const LABEL_GOALS: RuntimeId = 2;
 pub const LABEL_KEEPER: RuntimeId = 3;
 pub const LABEL_PLAYER: RuntimeId = 4;
 
-#[derive(Clone, Debug, Deserialize, Eq, MapId, PartialEq, PartialOrd, Ord, Serialize)]
-#[serde(tag = "kind")]
+#[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
 pub struct Edge<Id: Ord> {
     pub label: EdgeLabel<Id>,
     pub next: Id,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, MapId, PartialEq, PartialOrd, Ord, Serialize)]
-#[serde(tag = "kind")]
+#[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
 pub enum EdgeLabel<Id: Ord> {
     Assignment {
         lhs: Expression<Id>,
@@ -39,8 +36,7 @@ pub enum EdgeLabel<Id: Ord> {
     Skip,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, MapId, PartialEq, PartialOrd, Ord, Serialize)]
-#[serde(tag = "kind")]
+#[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
 pub enum Expression<Id: Ord> {
     Access { lhs: Rc<Self>, rhs: Rc<Self> },
     ConstantReference { identifier: Id },
@@ -54,8 +50,7 @@ impl Expression<RuntimeId> {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, MapId, PartialEq, PartialOrd, Ord, Serialize)]
-#[serde(tag = "kind")]
+#[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
 pub struct Game<Id: Ord> {
     pub constants: BTreeMap<Id, Rc<Value<Id>>>,
     pub edges: BTreeMap<Id, Vec<Edge<Id>>>,
@@ -64,30 +59,23 @@ pub struct Game<Id: Ord> {
     pub variables: BTreeMap<Id, Variable<Id>>,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(tag = "kind")]
+#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub enum Pragma<Id> {
-    Disjoint {
-        #[serde(rename = "edgeName")]
-        edge_name: Id,
-    },
+    Disjoint { edge_name: Id },
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, MapId, PartialEq, PartialOrd, Ord, Serialize)]
-#[serde(tag = "kind")]
+#[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
 pub enum Type<Id: Ord> {
     Arrow { lhs: Rc<Self>, rhs: Rc<Self> },
     Set { values: Vec<Rc<Value<Id>>> },
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, MapId, PartialEq, PartialOrd, Ord, Serialize)]
-#[serde(tag = "kind")]
+#[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
 pub enum Value<Id: Ord> {
     Element {
         value: Id,
     },
     Map {
-        #[serde(rename = "defaultValue")]
         default: Rc<Self>,
         values: Rc<BTreeMap<Id, Rc<Self>>>,
     },
@@ -99,11 +87,8 @@ impl Value<RuntimeId> {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, MapId, PartialEq, PartialOrd, Ord, Serialize)]
-#[serde(tag = "kind")]
+#[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
 pub struct Variable<Id: Ord> {
-    #[serde(rename = "defaultValue")]
     pub default: Rc<Value<Id>>,
-    #[serde(rename = "type")]
     pub type_: Rc<Type<Id>>,
 }

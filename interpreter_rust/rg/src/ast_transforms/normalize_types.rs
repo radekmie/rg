@@ -43,7 +43,7 @@ impl Type<String> {
             _ => self.clone(),
         };
 
-        if let Some(typedef) = game.resolve_typedef(&self_normalized)? {
+        if let Some(typedef) = game.resolve_typedef_by_type(&self_normalized)? {
             return Ok(Self::TypeReference {
                 identifier: typedef.identifier.clone(),
             });

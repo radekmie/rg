@@ -214,6 +214,71 @@ pub enum Expression<Id> {
     Reference { identifier: Id },
 }
 
+impl<Id: Clone + PartialEq> Expression<Id> {
+    pub fn infer(&self, game: &Game<Id>, edge: &Edge<Id>) -> Result<Rc<Type<Id>>, Error<Id>> {
+        match self {
+            Self::Access { lhs, rhs } => {
+                let accessed_type = lhs.infer(game, edge)?;
+                match accessed_type.resolve(game)? {
+                    Type::Arrow {
+                        lhs: key_type,
+                        rhs: value_type,
+                    } => {
+                        let accessor_type = rhs.infer(game, edge)?;
+                        if !accessor_type.resolve(game)?.is_set() {
+                            return game
+                                .make_error(ErrorReason::SetTypeExpected { got: accessor_type });
+                        }
+
+                        let key_type = &game.resolve_typedef(key_type)?.type_;
+                        if !game.is_assignable_type(key_type, &accessor_type, false)? {
+                            return game.make_error(ErrorReason::AssignmentTypeMismatch {
+                                lhs: key_type.clone(),
+                                rhs: accessor_type,
+                            });
+                        }
+
+                        Ok(value_type.clone())
+                    }
+                    _ => game.make_error(ErrorReason::ArrowTypeExpected { got: accessed_type }),
+                }
+            }
+            Self::Cast { lhs, rhs } => {
+                let rhs = rhs.infer(game, edge)?;
+                if !game.is_assignable_type(lhs, &rhs, false)? {
+                    return game.make_error(ErrorReason::AssignmentTypeMismatch {
+                        lhs: lhs.clone(),
+                        rhs,
+                    });
+                }
+
+                Ok(lhs.clone())
+            }
+            Self::Reference { identifier } => {
+                if let Some(binding) = edge
+                    .bindings()
+                    .iter()
+                    .find(|binding| binding.0 == identifier)
+                {
+                    return Ok(binding.1.clone());
+                }
+
+                if let Ok(constant) = game.resolve_constant(identifier) {
+                    return Ok(constant.type_.clone());
+                }
+
+                if let Ok(variable) = game.resolve_variable(identifier) {
+                    return Ok(variable.type_.clone());
+                }
+
+                Ok(Rc::new(Type::Set {
+                    identifiers: vec![identifier.clone()],
+                }))
+            }
+        }
+    }
+}
+
 impl<Id: Clone + Ord> Expression<Id> {
     pub fn substitute_bindings(&self, bindings: &Mapping<Id>) -> Self {
         match self {
@@ -235,21 +300,19 @@ impl<Id: Clone + Ord> Expression<Id> {
 impl<Id: PartialEq> Expression<Id> {
     pub fn is_equal_reference(&self, other: &Self) -> bool {
         match (self, other) {
-            (Expression::Cast { rhs: x, .. }, y) => x.is_equal_reference(y),
-            (x, Expression::Cast { rhs: y, .. }) => x.is_equal_reference(y),
+            (Self::Cast { rhs: x, .. }, y) => x.is_equal_reference(y),
+            (x, Self::Cast { rhs: y, .. }) => x.is_equal_reference(y),
             (
-                Expression::Access {
+                Self::Access {
                     lhs: x_lhs,
                     rhs: x_rhs,
                 },
-                Expression::Access {
+                Self::Access {
                     lhs: y_lhs,
                     rhs: y_rhs,
                 },
             ) => x_lhs.is_equal_reference(y_lhs) && x_rhs.is_equal_reference(y_rhs),
-            (Expression::Reference { identifier: x }, Expression::Reference { identifier: y }) => {
-                x == y
-            }
+            (Self::Reference { identifier: x }, Self::Reference { identifier: y }) => x == y,
             _ => false,
         }
     }
@@ -329,88 +392,16 @@ impl<Id: Clone> Game<Id> {
 }
 
 impl<Id: Clone + PartialEq> Game<Id> {
-    pub fn infer_expression<'a>(
-        &'a self,
-        edge: &'a Edge<Id>,
-        expression: &'a Expression<Id>,
-    ) -> Result<Rc<Type<Id>>, Error<Id>> {
-        match expression {
-            Expression::Access { lhs, rhs } => {
-                let lhs_type = self.infer_expression(edge, lhs)?;
-                match self.resolve_type_reference(&lhs_type)? {
-                    Type::Arrow {
-                        lhs: key_type,
-                        rhs: value_type,
-                    } => {
-                        let accessor_type = self.infer_expression(edge, rhs)?;
-                        match self.resolve_type_reference(&accessor_type)? {
-                            Type::Set { .. } => {
-                                let key_type = &self.resolve_type(key_type)?.type_;
-                                if !self.is_assignable_type(key_type, &accessor_type, false)? {
-                                    return self.make_error(ErrorReason::AssignmentTypeMismatch {
-                                        lhs: key_type.clone(),
-                                        rhs: accessor_type,
-                                    });
-                                }
-
-                                Ok(value_type.clone())
-                            }
-                            _ => {
-                                self.make_error(ErrorReason::SetTypeExpected { got: accessor_type })
-                            }
-                        }
-                    }
-                    _ => self.make_error(ErrorReason::ArrowTypeExpected { got: lhs_type }),
-                }
-            }
-            Expression::Cast { lhs, rhs } => {
-                let rhs = self.infer_expression(edge, rhs)?;
-                if !self.is_assignable_type(lhs, &rhs, false)? {
-                    return self.make_error(ErrorReason::AssignmentTypeMismatch {
-                        lhs: lhs.clone(),
-                        rhs,
-                    });
-                }
-
-                Ok(lhs.clone())
-            }
-            Expression::Reference { identifier } => {
-                if let Some(binding) = edge
-                    .bindings()
-                    .iter()
-                    .find(|binding| binding.0 == identifier)
-                {
-                    return Ok(binding.1.clone());
-                }
-
-                if let Ok(constant) = self.resolve_constant(identifier) {
-                    return Ok(constant.type_.clone());
-                }
-
-                if let Ok(variable) = self.resolve_variable(identifier) {
-                    return Ok(variable.type_.clone());
-                }
-
-                Ok(Rc::new(Type::Set {
-                    identifiers: vec![identifier.clone()],
-                }))
-            }
-        }
-    }
-
     pub fn is_assignable_type(
         &self,
         lhs: &Type<Id>,
         rhs: &Type<Id>,
         is_strict: bool,
     ) -> Result<bool, Error<Id>> {
-        let lhs = self.resolve_type_reference(lhs)?;
-        let rhs = self.resolve_type_reference(rhs)?;
-
-        Ok(match (lhs, rhs) {
+        Ok(match (lhs.resolve(self)?, rhs.resolve(self)?) {
             (Type::Arrow { lhs: ll, rhs: lr }, Type::Arrow { lhs: rl, rhs: rr }) => {
-                let ll = &self.resolve_type(ll)?.type_;
-                let rl = &self.resolve_type(rl)?.type_;
+                let ll = &self.resolve_typedef(ll)?.type_;
+                let rl = &self.resolve_typedef(rl)?.type_;
                 self.is_assignable_type(ll, rl, is_strict)?
                     && self.is_assignable_type(lr, rr, is_strict)?
             }
@@ -449,7 +440,7 @@ impl<Id: Clone + PartialEq> Game<Id> {
             )
     }
 
-    pub fn resolve_type(&self, identifier: &Id) -> Result<&Typedef<Id>, Error<Id>> {
+    pub fn resolve_typedef(&self, identifier: &Id) -> Result<&Typedef<Id>, Error<Id>> {
         self.typedefs
             .iter()
             .find(|typedef| &typedef.identifier == identifier)
@@ -463,10 +454,10 @@ impl<Id: Clone + PartialEq> Game<Id> {
             )
     }
 
-    pub fn resolve_typedef<'a>(
+    pub fn resolve_typedef_by_type<'a>(
         &'a self,
         type_: &'a Type<Id>,
-    ) -> Result<Option<&Typedef<Id>>, Error<Id>> {
+    ) -> Result<Option<&'a Typedef<Id>>, Error<Id>> {
         self.typedefs
             .iter()
             .find_map(|typedef| {
@@ -479,18 +470,6 @@ impl<Id: Clone + PartialEq> Game<Id> {
                 }
             })
             .transpose()
-    }
-
-    pub fn resolve_type_reference<'a>(
-        &'a self,
-        type_: &'a Type<Id>,
-    ) -> Result<&Type<Id>, Error<Id>> {
-        match type_ {
-            Type::TypeReference { identifier } => {
-                self.resolve_type_reference(&self.resolve_type(identifier)?.type_)
-            }
-            _ => Ok(type_),
-        }
     }
 
     pub fn resolve_variable(&self, identifier: &Id) -> Result<&Variable<Id>, Error<Id>> {
@@ -506,16 +485,6 @@ impl<Id: Clone + PartialEq> Game<Id> {
                 Ok,
             )
     }
-
-    pub fn type_values(&self, type_: &Type<Id>) -> Result<Vec<Id>, Error<Id>> {
-        match type_ {
-            Type::Arrow { .. } => todo!(),
-            Type::Set { identifiers } => Ok(identifiers.clone()),
-            Type::TypeReference { identifier } => {
-                self.type_values(&self.resolve_type(identifier)?.type_)
-            }
-        }
-    }
 }
 
 impl Game<String> {
@@ -525,7 +494,7 @@ impl Game<String> {
     ) -> Result<Vec<BTreeMap<String, String>>, Error<String>> {
         let mut mappings = vec![BTreeMap::default()];
         for (identifier, type_) in bindings {
-            let values = self.type_values(type_)?;
+            let values = type_.values(self)?;
             mappings = mappings
                 .into_iter()
                 .flat_map(|mapping| {
@@ -557,6 +526,33 @@ pub enum Type<Id> {
     Arrow { lhs: Id, rhs: Rc<Self> },
     Set { identifiers: Vec<Id> },
     TypeReference { identifier: Id },
+}
+
+impl<Id> Type<Id> {
+    pub fn is_set(&self) -> bool {
+        matches!(self, Self::Set { .. })
+    }
+}
+
+impl<Id: Clone + PartialEq> Type<Id> {
+    pub fn resolve<'a>(&'a self, game: &'a Game<Id>) -> Result<&'a Self, Error<Id>> {
+        match self {
+            Self::TypeReference { identifier } => {
+                game.resolve_typedef(identifier)?.type_.resolve(game)
+            }
+            _ => Ok(self),
+        }
+    }
+
+    pub fn values(&self, game: &Game<Id>) -> Result<Vec<Id>, Error<Id>> {
+        match self {
+            Self::Arrow { .. } => todo!(),
+            Self::Set { identifiers } => Ok(identifiers.clone()),
+            Self::TypeReference { identifier } => {
+                game.resolve_typedef(identifier)?.type_.values(game)
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
