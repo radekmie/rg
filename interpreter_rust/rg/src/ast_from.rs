@@ -50,6 +50,12 @@ impl<Id> From<Vec<EdgeNamePart<Id>>> for EdgeName<Id> {
     }
 }
 
+impl<Id> From<Id> for EdgeName<Id> {
+    fn from(identifier: Id) -> Self {
+        Self::from(vec![EdgeNamePart::from(identifier)])
+    }
+}
+
 impl<Id> From<(Id, Rc<Type<Id>>)> for EdgeNamePart<Id> {
     fn from((identifier, type_): (Id, Rc<Type<Id>>)) -> Self {
         Self::Binding { identifier, type_ }

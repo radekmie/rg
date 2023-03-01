@@ -63,7 +63,6 @@ struct Flags {
 pub fn analyze_rg(
     source: &str,
     flags: &str,
-    compact_skip_edges: &Function,
     join_fork_suffixes: &Function,
     inline_reachability: &Function,
     mangle_symbols: &Function,
@@ -102,7 +101,7 @@ pub fn analyze_rg(
 
         pass!(rust normalize_types);
         pass!(rust skip_self_assignments);
-        pass!(node compact_skip_edges);
+        pass!(rust compact_skip_edges);
         pass!(rust add_explicit_casts);
         pass!(rust expand_generator_nodes);
         pass!(node join_fork_suffixes);

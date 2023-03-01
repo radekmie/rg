@@ -24,6 +24,12 @@ pub struct Edge<Id> {
     pub rhs: EdgeName<Id>,
 }
 
+impl<Id> Edge<Id> {
+    pub fn has_bindings(&self) -> bool {
+        self.lhs.has_bindings() || self.rhs.has_bindings()
+    }
+}
+
 impl<Id: PartialEq> Edge<Id> {
     pub fn bindings(&self) -> Vec<Binding<Id>> {
         self.lhs
@@ -37,6 +43,18 @@ impl<Id: PartialEq> Edge<Id> {
 
                 bindings
             })
+    }
+
+    pub fn is_following(&self, other: &Self) -> bool {
+        self.rhs == other.lhs
+    }
+
+    pub fn is_same_lhs(&self, other: &Self) -> bool {
+        self.lhs == other.lhs
+    }
+
+    pub fn is_same_rhs(&self, other: &Self) -> bool {
+        self.rhs == other.rhs
     }
 }
 
@@ -70,6 +88,12 @@ pub enum EdgeLabel<Id> {
     Skip,
 }
 
+impl<Id> EdgeLabel<Id> {
+    pub fn is_skip(&self) -> bool {
+        matches!(self, Self::Skip)
+    }
+}
+
 impl<Id: Clone + Ord> EdgeLabel<Id> {
     pub fn substitute_bindings(&self, mapping: &Mapping<Id>) -> Self {
         match self {
@@ -93,6 +117,12 @@ impl<Id: PartialEq> EdgeLabel<Id> {
     }
 }
 
+impl EdgeLabel<String> {
+    pub fn is_player_assignment(&self) -> bool {
+        matches!(self, Self::Assignment { lhs, .. } if matches!(&**lhs, Expression::Reference { identifier } if identifier == "Player"))
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub struct EdgeName<Id> {
@@ -100,10 +130,10 @@ pub struct EdgeName<Id> {
 }
 
 impl<Id> EdgeName<Id> {
-    pub fn from_identifier(identifier: Id) -> Self {
-        Self {
-            parts: vec![EdgeNamePart::Literal { identifier }],
-        }
+    pub fn has_bindings(&self) -> bool {
+        self.parts
+            .iter()
+            .any(|edge_name_part| edge_name_part.binding().is_some())
     }
 }
 
@@ -117,6 +147,10 @@ impl<Id: PartialEq> EdgeName<Id> {
 }
 
 impl EdgeName<String> {
+    pub fn is_begin(&self) -> bool {
+        matches!(&self.parts[..], [EdgeNamePart::Literal { identifier }] if identifier == "begin")
+    }
+
     pub fn substitute_bindings(&self, mapping: &Mapping<String>) -> Self {
         let identifier = self
             .parts
@@ -484,6 +518,28 @@ impl<Id: Clone + PartialEq> Game<Id> {
                 },
                 Ok,
             )
+    }
+}
+
+impl<Id: PartialEq> Game<Id> {
+    pub fn are_connected(&self, lhs: &EdgeName<Id>, rhs: &EdgeName<Id>) -> bool {
+        self.edges
+            .iter()
+            .any(|edge| &edge.lhs == lhs && &edge.rhs == rhs)
+    }
+
+    pub fn incoming_edges<'a>(
+        &'a self,
+        edge_name: &'a EdgeName<Id>,
+    ) -> impl Iterator<Item = &'a Edge<Id>> {
+        self.edges.iter().filter(move |edge| &edge.rhs == edge_name)
+    }
+
+    pub fn outgoing_edges<'a>(
+        &'a self,
+        edge_name: &'a EdgeName<Id>,
+    ) -> impl Iterator<Item = &'a Edge<Id>> {
+        self.edges.iter().filter(move |edge| &edge.lhs == edge_name)
     }
 }
 

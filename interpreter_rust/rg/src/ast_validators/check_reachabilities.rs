@@ -35,8 +35,8 @@ impl Game<String> {
             false
         };
 
-        let begin = EdgeName::from_identifier("begin".to_string());
-        let end = EdgeName::from_identifier("end".to_string());
+        let begin = EdgeName::from("begin".to_string());
+        let end = EdgeName::from("end".to_string());
         if !is_reachable(&begin, &end) {
             return self.make_error(ErrorReason::Unreachable {
                 lhs: begin,
