@@ -1,8 +1,8 @@
 use crate::ast::{Constant, Error, Game, Type, Typedef, Variable};
 use std::rc::Rc;
 
-impl Constant<String> {
-    pub fn normalize_type(&self, game: &mut Game<String>) -> Result<Self, Error<String>> {
+impl Constant<Rc<str>> {
+    pub fn normalize_type(&self, game: &mut Game<Rc<str>>) -> Result<Self, Error<Rc<str>>> {
         Ok(Self {
             identifier: self.identifier.clone(),
             type_: Rc::new(self.type_.normalize(game)?),
@@ -11,26 +11,26 @@ impl Constant<String> {
     }
 }
 
-impl Game<String> {
-    pub fn normalize_types(mut self) -> Result<Self, Error<String>> {
+impl Game<Rc<str>> {
+    pub fn normalize_types(&mut self) -> Result<(), Error<Rc<str>>> {
         for (index, typedef) in self.typedefs.clone().into_iter().enumerate() {
-            self.typedefs[index] = typedef.normalize_type(&mut self)?;
+            self.typedefs[index] = typedef.normalize_type(self)?;
         }
 
         for (index, constant) in self.constants.clone().into_iter().enumerate() {
-            self.constants[index] = constant.normalize_type(&mut self)?;
+            self.constants[index] = constant.normalize_type(self)?;
         }
 
         for (index, variable) in self.variables.clone().into_iter().enumerate() {
-            self.variables[index] = variable.normalize_type(&mut self)?;
+            self.variables[index] = variable.normalize_type(self)?;
         }
 
-        Ok(self)
+        Ok(())
     }
 }
 
-impl Type<String> {
-    pub fn normalize(&self, game: &mut Game<String>) -> Result<Self, Error<String>> {
+impl Type<Rc<str>> {
+    pub fn normalize(&self, game: &mut Game<Rc<str>>) -> Result<Self, Error<Rc<str>>> {
         if matches!(self, Self::TypeReference { .. }) {
             return Ok(self.clone());
         }
@@ -61,10 +61,10 @@ impl Type<String> {
 
         let mut index: Option<usize> = None;
         let identifier = loop {
-            let identifier_with_index = format!(
+            let identifier_with_index = Rc::from(format!(
                 "{identifier}{}",
                 index.map_or("".to_string(), |index| index.to_string())
-            );
+            ));
 
             if !game
                 .typedefs
@@ -95,8 +95,8 @@ impl Type<String> {
     }
 }
 
-impl Typedef<String> {
-    pub fn normalize_type(&self, game: &mut Game<String>) -> Result<Self, Error<String>> {
+impl Typedef<Rc<str>> {
+    pub fn normalize_type(&self, game: &mut Game<Rc<str>>) -> Result<Self, Error<Rc<str>>> {
         match &*self.type_ {
             Type::Arrow { lhs, rhs } => Ok(Self {
                 identifier: self.identifier.clone(),
@@ -110,8 +110,8 @@ impl Typedef<String> {
     }
 }
 
-impl Variable<String> {
-    pub fn normalize_type(&self, game: &mut Game<String>) -> Result<Self, Error<String>> {
+impl Variable<Rc<str>> {
+    pub fn normalize_type(&self, game: &mut Game<Rc<str>>) -> Result<Self, Error<Rc<str>>> {
         Ok(Self {
             default_value: self.default_value.clone(),
             identifier: self.identifier.clone(),

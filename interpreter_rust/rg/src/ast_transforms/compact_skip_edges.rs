@@ -1,8 +1,9 @@
 use crate::ast::{Error, Game};
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
-impl Game<String> {
-    pub fn compact_skip_edges(mut self) -> Result<Self, Error<String>> {
+impl Game<Rc<str>> {
+    pub fn compact_skip_edges(&mut self) -> Result<(), Error<Rc<str>>> {
         if !self.are_bindings_unique() {
             self.make_bindings_unique();
         }
@@ -21,7 +22,7 @@ impl Game<String> {
             self.edges.remove(x);
         }
 
-        Ok(self)
+        Ok(())
     }
 
     /// Before:
@@ -148,10 +149,9 @@ impl Game<String> {
             let mapping = edges[x]
                 .rhs
                 .bindings()
-                .into_iter()
                 .map(|(binding, _)| {
                     index += 1;
-                    (binding.clone(), format!("bind_{index}"))
+                    (binding.clone(), Rc::from(format!("bind_{index}")))
                 })
                 .collect::<BTreeMap<_, _>>();
 

@@ -9,13 +9,12 @@ use std::fmt::Debug;
 use std::rc::Rc;
 
 pub struct Interner<Id: Ord> {
-    // TODO: Maybe `Rc<String>` would be better?
-    id_to_string: BTreeMap<Id, String>,
-    string_to_id: BTreeMap<String, Id>,
+    id_to_string: BTreeMap<Id, Rc<str>>,
+    string_to_id: BTreeMap<Rc<str>, Id>,
 }
 
 impl<Id: Copy + Ord + TryFrom<usize>> Interner<Id> {
-    pub fn intern(&mut self, string: &str) -> Id
+    pub fn intern(&mut self, string: &Rc<str>) -> Id
     where
         <Id as TryFrom<usize>>::Error: Debug,
     {
@@ -34,15 +33,15 @@ impl<Id: Copy + Ord + TryFrom<usize>> Interner<Id> {
         self.intern_as(string, id)
     }
 
-    pub fn intern_as(&mut self, string: &str, id: Id) -> Id {
+    pub fn intern_as(&mut self, string: &Rc<str>, id: Id) -> Id {
         assert!(!self.id_to_string.contains_key(&id));
         assert!(!self.string_to_id.contains_key(string));
-        self.id_to_string.insert(id, string.to_string());
-        self.string_to_id.insert(string.to_string(), id);
+        self.id_to_string.insert(id, string.clone());
+        self.string_to_id.insert(string.clone(), id);
         id
     }
 
-    pub fn recall(&self, id: &Id) -> Option<&String> {
+    pub fn recall(&self, id: &Id) -> Option<&Rc<str>> {
         self.id_to_string.get(id)
     }
 }
@@ -53,11 +52,11 @@ impl Default for Interner<RuntimeId> {
             id_to_string: BTreeMap::default(),
             string_to_id: BTreeMap::default(),
         };
-        interner.intern_as("begin", LABEL_BEGIN);
-        interner.intern_as("end", LABEL_END);
-        interner.intern_as("goals", LABEL_GOALS);
-        interner.intern_as("keeper", LABEL_KEEPER);
-        interner.intern_as("player", LABEL_PLAYER);
+        interner.intern_as(&Rc::from("begin"), LABEL_BEGIN);
+        interner.intern_as(&Rc::from("end"), LABEL_END);
+        interner.intern_as(&Rc::from("goals"), LABEL_GOALS);
+        interner.intern_as(&Rc::from("keeper"), LABEL_KEEPER);
+        interner.intern_as(&Rc::from("player"), LABEL_PLAYER);
         interner
     }
 }

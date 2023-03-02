@@ -10,8 +10,6 @@ fn main() -> Result<(), String> {
     let file = args.get(1).expect("game.rg file expected.");
     let source = read_to_string(file).map_err(|error| error.to_string())?;
     let game = safe_parse_source(source.as_str())?;
-    game.check_reachabilities()?;
-    game.check_types()?;
     let (game, interner) = prepare_ist(game)?;
 
     match args.get(2).expect("Operation expected.").as_str() {

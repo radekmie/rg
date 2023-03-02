@@ -32,17 +32,23 @@ impl<Id> Edge<Id> {
 
 impl<Id: PartialEq> Edge<Id> {
     pub fn bindings(&self) -> Vec<Binding<Id>> {
-        self.lhs
-            .bindings()
-            .iter()
-            .chain(self.rhs.bindings().iter())
-            .fold(Vec::default(), |mut bindings, binding| {
-                if !bindings.contains(binding) {
-                    bindings.push(*binding);
+        self.lhs.bindings().chain(self.rhs.bindings()).fold(
+            Vec::default(),
+            |mut bindings, binding| {
+                if !bindings.contains(&binding) {
+                    bindings.push(binding);
                 }
 
                 bindings
-            })
+            },
+        )
+    }
+
+    pub fn get_binding(&self, identifier: &Id) -> Option<Binding<Id>> {
+        self.lhs
+            .bindings()
+            .find(|binding| binding.0 == identifier)
+            .or_else(|| self.rhs.bindings().find(|binding| binding.0 == identifier))
     }
 
     pub fn is_following(&self, other: &Self) -> bool {
@@ -58,8 +64,8 @@ impl<Id: PartialEq> Edge<Id> {
     }
 }
 
-impl Edge<String> {
-    pub fn substitute_bindings(&self, mapping: &Mapping<String>) -> Self {
+impl Edge<Rc<str>> {
+    pub fn substitute_bindings(&self, mapping: &Mapping<Rc<str>>) -> Self {
         Self {
             label: self.label.substitute_bindings(mapping),
             lhs: self.lhs.substitute_bindings(mapping),
@@ -117,9 +123,9 @@ impl<Id: PartialEq> EdgeLabel<Id> {
     }
 }
 
-impl EdgeLabel<String> {
+impl EdgeLabel<Rc<str>> {
     pub fn is_player_assignment(&self) -> bool {
-        matches!(self, Self::Assignment { lhs, .. } if matches!(&**lhs, Expression::Reference { identifier } if identifier == "Player"))
+        matches!(self, Self::Assignment { lhs, .. } if matches!(&**lhs, Expression::Reference { identifier } if &**identifier == "Player"))
     }
 }
 
@@ -130,28 +136,25 @@ pub struct EdgeName<Id> {
 }
 
 impl<Id> EdgeName<Id> {
-    pub fn has_bindings(&self) -> bool {
-        self.parts
-            .iter()
-            .any(|edge_name_part| edge_name_part.binding().is_some())
-    }
-}
-
-impl<Id: PartialEq> EdgeName<Id> {
-    pub fn bindings(&self) -> Vec<Binding<Id>> {
+    pub fn bindings(&self) -> impl Iterator<Item = Binding<Id>> {
         self.parts
             .iter()
             .flat_map(|edge_name_part| edge_name_part.binding())
-            .collect()
+    }
+
+    pub fn has_bindings(&self) -> bool {
+        self.bindings().next().is_some()
     }
 }
 
-impl EdgeName<String> {
+impl EdgeName<Rc<str>> {
     pub fn is_begin(&self) -> bool {
-        matches!(&self.parts[..], [EdgeNamePart::Literal { identifier }] if identifier == "begin")
+        matches!(&self.parts[..], [EdgeNamePart::Literal { identifier }] if &**identifier == "begin")
     }
+}
 
-    pub fn substitute_bindings(&self, mapping: &Mapping<String>) -> Self {
+impl EdgeName<Rc<str>> {
+    pub fn substitute_bindings(&self, mapping: &Mapping<Rc<str>>) -> Self {
         let identifier = self
             .parts
             .iter()
@@ -163,7 +166,9 @@ impl EdgeName<String> {
             .collect::<Vec<_>>()
             .join("__bind__");
         Self {
-            parts: vec![EdgeNamePart::Literal { identifier }],
+            parts: vec![EdgeNamePart::Literal {
+                identifier: Rc::from(identifier),
+            }],
         }
     }
 }
@@ -289,12 +294,8 @@ impl<Id: Clone + PartialEq> Expression<Id> {
                 Ok(lhs.clone())
             }
             Self::Reference { identifier } => {
-                if let Some(binding) = edge
-                    .bindings()
-                    .iter()
-                    .find(|binding| binding.0 == identifier)
-                {
-                    return Ok(binding.1.clone());
+                if let Some((_, type_)) = edge.get_binding(identifier) {
+                    return Ok(type_.clone());
                 }
 
                 if let Ok(constant) = game.resolve_constant(identifier) {
@@ -425,6 +426,37 @@ impl<Id: Clone> Game<Id> {
     }
 }
 
+impl<Id: Clone + Ord> Game<Id> {
+    pub fn create_mappings(
+        &self,
+        bindings: Vec<Binding<Id>>,
+    ) -> Result<Vec<Mapping<Id>>, Error<Id>> {
+        let mut mappings = vec![];
+        for (identifier, type_) in bindings {
+            let values = type_.values(self)?;
+
+            // Seed with an empty mapping.
+            if mappings.is_empty() {
+                mappings.push(BTreeMap::default());
+            }
+
+            // Cartesian product of `mappings` with `values`.
+            mappings = mappings
+                .into_iter()
+                .flat_map(|mapping| {
+                    values.iter().map(move |value| {
+                        let mut mapping = mapping.clone();
+                        mapping.insert(identifier.clone(), value.clone());
+                        mapping
+                    })
+                })
+                .collect();
+        }
+
+        Ok(mappings)
+    }
+}
+
 impl<Id: Clone + PartialEq> Game<Id> {
     pub fn is_assignable_type(
         &self,
@@ -432,12 +464,20 @@ impl<Id: Clone + PartialEq> Game<Id> {
         rhs: &Type<Id>,
         is_strict: bool,
     ) -> Result<bool, Error<Id>> {
-        Ok(match (lhs.resolve(self)?, rhs.resolve(self)?) {
+        // Fast path for exact match.
+        if lhs == rhs {
+            return Ok(true);
+        }
+
+        Ok(match (lhs, rhs) {
             (Type::Arrow { lhs: ll, rhs: lr }, Type::Arrow { lhs: rl, rhs: rr }) => {
-                let ll = &self.resolve_typedef(ll)?.type_;
-                let rl = &self.resolve_typedef(rl)?.type_;
-                self.is_assignable_type(ll, rl, is_strict)?
-                    && self.is_assignable_type(lr, rr, is_strict)?
+                if self.is_assignable_type(lr, rr, is_strict)? {
+                    let ll = &self.resolve_typedef(ll)?.type_;
+                    let rl = &self.resolve_typedef(rl)?.type_;
+                    self.is_assignable_type(ll, rl, is_strict)?
+                } else {
+                    false
+                }
             }
             (Type::Set { identifiers: lhs }, Type::Set { identifiers: rhs }) => {
                 if is_strict {
@@ -445,6 +485,12 @@ impl<Id: Clone + PartialEq> Game<Id> {
                 } else {
                     rhs.iter().any(|x| lhs.contains(x))
                 }
+            }
+            (Type::TypeReference { .. }, rhs) => {
+                self.is_assignable_type(lhs.resolve(self)?, rhs, is_strict)?
+            }
+            (lhs, Type::TypeReference { .. }) => {
+                self.is_assignable_type(lhs, rhs.resolve(self)?, is_strict)?
             }
             _ => false,
         })
@@ -494,15 +540,17 @@ impl<Id: Clone + PartialEq> Game<Id> {
     ) -> Result<Option<&'a Typedef<Id>>, Error<Id>> {
         self.typedefs
             .iter()
-            .find_map(|typedef| {
-                let left_to_right = self.is_assignable_type(&typedef.type_, type_, true);
-                let right_to_left = self.is_assignable_type(type_, &typedef.type_, true);
-                match (left_to_right, right_to_left) {
-                    (Ok(true), Ok(true)) => Some(Ok(typedef)),
-                    (Ok(_), Ok(_)) => None,
-                    (Err(error), _) | (_, Err(error)) => Some(Err(error)),
-                }
-            })
+            .find_map(
+                |typedef| match self.is_assignable_type(&typedef.type_, type_, true) {
+                    Ok(true) => match self.is_assignable_type(type_, &typedef.type_, true) {
+                        Ok(true) => Some(Ok(typedef)),
+                        Ok(_) => None,
+                        Err(error) => Some(Err(error)),
+                    },
+                    Ok(_) => None,
+                    Err(error) => Some(Err(error)),
+                },
+            )
             .transpose()
     }
 
@@ -540,30 +588,6 @@ impl<Id: PartialEq> Game<Id> {
         edge_name: &'a EdgeName<Id>,
     ) -> impl Iterator<Item = &'a Edge<Id>> {
         self.edges.iter().filter(move |edge| &edge.lhs == edge_name)
-    }
-}
-
-impl Game<String> {
-    pub fn create_mappings(
-        &self,
-        bindings: Vec<Binding<String>>,
-    ) -> Result<Vec<BTreeMap<String, String>>, Error<String>> {
-        let mut mappings = vec![BTreeMap::default()];
-        for (identifier, type_) in bindings {
-            let values = type_.values(self)?;
-            mappings = mappings
-                .into_iter()
-                .flat_map(|mapping| {
-                    values.iter().map(move |value| {
-                        let mut mapping = mapping.clone();
-                        mapping.insert(identifier.clone(), value.clone());
-                        mapping
-                    })
-                })
-                .collect();
-        }
-
-        Ok(mappings)
     }
 }
 

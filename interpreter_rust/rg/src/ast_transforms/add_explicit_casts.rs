@@ -41,22 +41,27 @@ impl<Id: Clone + PartialEq> Expression<Id> {
         edge: &Edge<Id>,
         type_: &Type<Id>,
     ) -> Result<Self, Error<Id>> {
-        Ok(self
-            .add_explicit_casts_in_subexpressions(game, edge, type_)?
-            .add_explicit_cast(game, type_)?
-            .deduplicate_casts())
+        self.add_explicit_casts_in_subexpressions(game, edge, type_)?
+            .add_explicit_cast(game, type_)
     }
 
     fn add_explicit_cast(self, game: &Game<Id>, type_: &Type<Id>) -> Result<Self, Error<Id>> {
         Ok(match game.resolve_typedef_by_type(type_)? {
-            Some(typedef) => Self::Cast {
-                lhs: Rc::new(Type::TypeReference {
-                    identifier: typedef.identifier.clone(),
-                }),
-                rhs: Rc::new(self),
-            },
+            Some(typedef) => self.add_explicit_cast_if_needed(&Rc::new(Type::TypeReference {
+                identifier: typedef.identifier.clone(),
+            })),
             _ => self,
         })
+    }
+
+    fn add_explicit_cast_if_needed(self, type_: &Rc<Type<Id>>) -> Self {
+        match self {
+            Self::Cast { ref lhs, .. } if lhs == type_ => self,
+            _ => Self::Cast {
+                lhs: type_.clone(),
+                rhs: Rc::new(self),
+            },
+        }
     }
 
     fn add_explicit_casts_in_subexpressions(
@@ -79,34 +84,24 @@ impl<Id: Clone + PartialEq> Expression<Id> {
                     _ => return game.make_error(ErrorReason::ArrowTypeExpected { got: lhs_type }),
                 }
             }
-            Self::Cast { lhs, rhs } => Self::Cast {
-                lhs: lhs.clone(),
-                rhs: Rc::new(rhs.add_explicit_casts(game, edge, type_)?),
-            },
+            Self::Cast { ref lhs, rhs } => rhs
+                .add_explicit_casts(game, edge, type_)?
+                .add_explicit_cast_if_needed(lhs),
             Self::Reference { identifier } => Self::Reference {
                 identifier: identifier.clone(),
             },
         })
     }
-
-    fn deduplicate_casts(self) -> Self {
-        match self {
-            Self::Cast { lhs, mut rhs } if matches!(&*rhs, Self::Cast { lhs: rhs_lhs, .. } if &lhs == rhs_lhs) => {
-                Rc::make_mut(&mut rhs).clone().deduplicate_casts()
-            }
-            _ => self,
-        }
-    }
 }
 
 impl<Id: Clone + PartialEq> Game<Id> {
-    pub fn add_explicit_casts(mut self) -> Result<Self, Error<Id>> {
+    pub fn add_explicit_casts(&mut self) -> Result<(), Error<Id>> {
         self.edges = self
             .edges
             .iter()
-            .map(|edge| edge.add_explicit_casts(&self))
+            .map(|edge| edge.add_explicit_casts(self))
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(self)
+        Ok(())
     }
 }
