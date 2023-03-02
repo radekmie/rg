@@ -36,7 +36,7 @@ impl Game<Rc<str>> {
     /// Conditions:
     ///   1. x != Assignment of `player` OR c has no bindings
     ///   2. y == Skip
-    ///   3. b has no other outgoing edges
+    ///   3. b has no other incoming nor outgoing edges
     ///   4. b has no bindings
     ///   5. there's no other edge between a and c (multiedges are not allowed)
     fn compact_skip_edge_backward(&self) -> Option<(usize, usize)> {
@@ -46,9 +46,10 @@ impl Game<Rc<str>> {
                 && self.outgoing_edges(&y.lhs).all(|z| z == y)
             {
                 for (x_index, x) in self.edges.iter().enumerate() {
-                    if x.is_following(y)
-                        && (!y.rhs.has_bindings() || x.label.is_player_assignment())
+                    if x.rhs == y.lhs
+                        && (!y.rhs.has_bindings() || !x.label.is_player_assignment())
                         && !self.are_connected(&x.lhs, &y.rhs)
+                        && self.incoming_edges(&y.lhs).all(|z| z == x)
                     {
                         return Some((x_index, y_index));
                     }
@@ -69,7 +70,7 @@ impl Game<Rc<str>> {
     ///
     /// Conditions:
     ///   1. x == Skip
-    ///   2. b has no other incoming edges
+    ///   2. b has no other incoming nor outgoing edges
     ///   3. b has no bindings
     ///   4. there's no other edge between a and c (multiedges are not allowed)
     fn compact_skip_edge_forward(&self) -> Option<(usize, usize)> {
@@ -79,7 +80,10 @@ impl Game<Rc<str>> {
                 && self.incoming_edges(&x.rhs).all(|z| z == x)
             {
                 for (y_index, y) in self.edges.iter().enumerate() {
-                    if x.is_following(y) && !self.are_connected(&x.lhs, &y.rhs) {
+                    if x.rhs == y.lhs
+                        && !self.are_connected(&x.lhs, &y.rhs)
+                        && self.outgoing_edges(&x.rhs).all(|z| z == y)
+                    {
                         return Some((x_index, y_index));
                     }
                 }
@@ -118,19 +122,21 @@ impl Game<Rc<str>> {
         None
     }
 
+    // TODO: This could be less restrictive and consider edges sharing the same
+    // binding unique (e.g., "a(x: X), b(x: X): ;").
     fn are_bindings_unique(&self) -> bool {
         let mut binding_to_edge_name = BTreeMap::default();
         for edge in &self.edges {
             for edge_name in [&edge.lhs, &edge.rhs] {
-                for (binding, _) in edge_name.bindings() {
-                    match binding_to_edge_name.get(binding) {
+                for (identifier, _) in edge_name.bindings() {
+                    match binding_to_edge_name.get(identifier) {
                         Some(other) => {
                             if other != &edge_name {
                                 return false;
                             }
                         }
                         _ => {
-                            binding_to_edge_name.insert(binding, edge_name);
+                            binding_to_edge_name.insert(identifier, edge_name);
                         }
                     }
                 }
@@ -159,26 +165,149 @@ impl Game<Rc<str>> {
                 for y in 0..edges.len() {
                     if x != y {
                         let rebind_lhs =
-                            edges[x].is_following(&edges[y]) || edges[x].is_same_lhs(&edges[y]);
+                            edges[x].rhs == edges[y].lhs || edges[x].lhs == edges[y].lhs;
                         let rebind_rhs =
-                            edges[y].is_following(&edges[x]) || edges[x].is_same_rhs(&edges[y]);
+                            edges[y].rhs == edges[x].lhs || edges[x].rhs == edges[y].rhs;
 
                         if rebind_lhs || rebind_rhs {
-                            edges[y].label = edges[y].label.substitute_bindings(&mapping);
+                            edges[y].label = edges[y].label.rename_variables(&mapping);
                         }
 
                         if rebind_lhs {
-                            edges[y].lhs = edges[y].lhs.substitute_bindings(&mapping);
+                            edges[y].lhs = edges[y].lhs.rename_variables(&mapping);
                         }
 
                         if rebind_rhs {
-                            edges[y].rhs = edges[y].rhs.substitute_bindings(&mapping);
+                            edges[y].rhs = edges[y].rhs.rename_variables(&mapping);
                         }
                     }
                 }
 
-                edges[x] = edges[x].substitute_bindings(&mapping);
+                edges[x] = edges[x].rename_variables(&mapping);
             }
         }
     }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::ast::Game;
+    use crate::parser::game;
+    use map_id::MapId;
+    use nom::combinator::all_consuming;
+    use std::rc::Rc;
+
+    fn parse(input: &str) -> Game<Rc<str>> {
+        let (_, game) = all_consuming(game)(input).unwrap();
+        game.map_id(&mut |id| Rc::from(*id))
+    }
+
+    macro_rules! test {
+        ($name:ident { $($actual:tt)* } { $($expect:tt)* }) => {
+            #[test]
+            fn $name() {
+                let mut actual = parse(stringify!($($actual)*));
+                actual.compact_skip_edges().unwrap();
+                let expect = parse(stringify!($($expect)*));
+
+                assert_eq!(actual, expect, "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n");
+            }
+        };
+    }
+
+    test!(
+        empty
+        { begin, end: ; }
+        { begin, end: ; }
+    );
+
+    test!(
+        prefix
+        { begin, b: ; b, c: 1 == 1; c, end: 2 == 2; }
+        { begin, c: 1 == 1; c, end: 2 == 2; }
+    );
+
+    test!(
+        infix
+        { begin, b: 1 == 1; b, c: ; c, end: 2 == 2; }
+        { begin, c: 1 == 1; c, end: 2 == 2; }
+    );
+
+    test!(
+        suffix
+        { begin, b: 1 == 1; b, c: 2 == 2; c, end: ; }
+        { begin, b: 1 == 1; b, end: 2 == 2; }
+    );
+
+    test!(
+        simple_loop
+        {
+            begin, loop: ;
+            loop, cond: ;
+            cond, true: 1 == 1;
+            cond, false: 1 != 1;
+            false, loop: ;
+            true, end: player = keeper;
+        }
+        {
+            begin, loop: ;
+            loop, cond: ;
+            cond, true: 1 == 1;
+            cond, loop: 1 != 1;
+            true, end: player = keeper;
+        }
+    );
+
+    test!(
+        simple_loop_with_binds
+        {
+            type X = { x };
+            begin, loop(x: X): ;
+            loop(x: X), cond(x: X): ;
+            cond(x: X), true(x: X): 1 == 1;
+            cond(x: X), false(x: X): 1 != 1;
+            false(x: X), loop(x: X): ;
+            true(x: X), end: player = keeper;
+        }
+        {
+            type X = { x };
+            begin, loop(bind_5: X): ;
+            loop(bind_5: X), cond(bind_2: X): ;
+            cond(bind_2: X), true(bind_3: X): 1 == 1;
+            cond(bind_2: X), false(bind_4: X): 1 != 1;
+            false(bind_4: X), loop(bind_5: X): ;
+            true(bind_3: X), end: player = keeper;
+        }
+    );
+
+    test!(
+        complex_loop_with_binds
+        {
+            type T = { a, b };
+            var v: T = a;
+            begin, a: ;
+            a, b: ;
+            b, c(t: T): T(t) != T(a);
+            c(t: T), d: v = t;
+            d, e: ;
+            d, f: ;
+            e, g(t: T): T(t) != T(a);
+            f, end: ;
+            g(t: T), h: v = t;
+            h, a: ;
+            h, end: ;
+        }
+        {
+            type T = { a, b };
+            var v: T = a;
+            begin, a: ;
+            a, c(bind_1: T): T(bind_1) != T(a);
+            c(bind_1: T), d: v = bind_1;
+            d, end: ;
+            d, g(bind_2: T): T(bind_2) != T(a);
+            g(bind_2: T), h: v = bind_2;
+            h, a: ;
+            h, end: ;
+        }
+    );
 }

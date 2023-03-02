@@ -30,6 +30,16 @@ impl<Id> Edge<Id> {
     }
 }
 
+impl<Id: Clone + Ord> Edge<Id> {
+    pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
+        Self {
+            label: self.label.rename_variables(mapping),
+            lhs: self.lhs.rename_variables(mapping),
+            rhs: self.rhs.rename_variables(mapping),
+        }
+    }
+}
+
 impl<Id: PartialEq> Edge<Id> {
     pub fn bindings(&self) -> Vec<Binding<Id>> {
         self.lhs.bindings().chain(self.rhs.bindings()).fold(
@@ -50,24 +60,12 @@ impl<Id: PartialEq> Edge<Id> {
             .find(|binding| binding.0 == identifier)
             .or_else(|| self.rhs.bindings().find(|binding| binding.0 == identifier))
     }
-
-    pub fn is_following(&self, other: &Self) -> bool {
-        self.rhs == other.lhs
-    }
-
-    pub fn is_same_lhs(&self, other: &Self) -> bool {
-        self.lhs == other.lhs
-    }
-
-    pub fn is_same_rhs(&self, other: &Self) -> bool {
-        self.rhs == other.rhs
-    }
 }
 
 impl Edge<Rc<str>> {
     pub fn substitute_bindings(&self, mapping: &Mapping<Rc<str>>) -> Self {
         Self {
-            label: self.label.substitute_bindings(mapping),
+            label: self.label.rename_variables(mapping),
             lhs: self.lhs.substitute_bindings(mapping),
             rhs: self.rhs.substitute_bindings(mapping),
         }
@@ -101,15 +99,15 @@ impl<Id> EdgeLabel<Id> {
 }
 
 impl<Id: Clone + Ord> EdgeLabel<Id> {
-    pub fn substitute_bindings(&self, mapping: &Mapping<Id>) -> Self {
+    pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
         match self {
             Self::Assignment { lhs, rhs } => Self::Assignment {
-                lhs: Rc::new(lhs.substitute_bindings(mapping)),
-                rhs: Rc::new(rhs.substitute_bindings(mapping)),
+                lhs: Rc::new(lhs.rename_variables(mapping)),
+                rhs: Rc::new(rhs.rename_variables(mapping)),
             },
             Self::Comparison { lhs, rhs, negated } => Self::Comparison {
-                lhs: Rc::new(lhs.substitute_bindings(mapping)),
-                rhs: Rc::new(rhs.substitute_bindings(mapping)),
+                lhs: Rc::new(lhs.rename_variables(mapping)),
+                rhs: Rc::new(rhs.rename_variables(mapping)),
                 negated: *negated,
             },
             _ => self.clone(),
@@ -147,13 +145,23 @@ impl<Id> EdgeName<Id> {
     }
 }
 
-impl EdgeName<Rc<str>> {
-    pub fn is_begin(&self) -> bool {
-        matches!(&self.parts[..], [EdgeNamePart::Literal { identifier }] if &**identifier == "begin")
+impl<Id: Clone + Ord> EdgeName<Id> {
+    pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
+        Self {
+            parts: self
+                .parts
+                .iter()
+                .map(|edge_name| edge_name.rename_variables(mapping))
+                .collect(),
+        }
     }
 }
 
 impl EdgeName<Rc<str>> {
+    pub fn is_begin(&self) -> bool {
+        matches!(&self.parts[..], [EdgeNamePart::Literal { identifier }] if &**identifier == "begin")
+    }
+
     pub fn substitute_bindings(&self, mapping: &Mapping<Rc<str>>) -> Self {
         let identifier = self
             .parts
@@ -192,6 +200,21 @@ impl<Id> EdgeNamePart<Id> {
             Self::Binding { identifier, type_ } => Some((identifier, type_)),
             _ => None,
         }
+    }
+}
+
+impl<Id: Clone + Ord> EdgeNamePart<Id> {
+    pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
+        if let Self::Binding { identifier, type_ } = self {
+            if let Some(identifier) = mapping.get(identifier) {
+                return Self::Binding {
+                    identifier: identifier.clone(),
+                    type_: type_.clone(),
+                };
+            }
+        }
+
+        self.clone()
     }
 }
 
@@ -315,18 +338,18 @@ impl<Id: Clone + PartialEq> Expression<Id> {
 }
 
 impl<Id: Clone + Ord> Expression<Id> {
-    pub fn substitute_bindings(&self, bindings: &Mapping<Id>) -> Self {
+    pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
         match self {
             Self::Access { lhs, rhs } => Self::Access {
-                lhs: Rc::new(lhs.substitute_bindings(bindings)),
-                rhs: Rc::new(rhs.substitute_bindings(bindings)),
+                lhs: Rc::new(lhs.rename_variables(mapping)),
+                rhs: Rc::new(rhs.rename_variables(mapping)),
             },
             Self::Cast { lhs, rhs } => Self::Cast {
                 lhs: lhs.clone(),
-                rhs: Rc::new(rhs.substitute_bindings(bindings)),
+                rhs: Rc::new(rhs.rename_variables(mapping)),
             },
             Self::Reference { identifier } => Self::Reference {
-                identifier: bindings.get(identifier).unwrap_or(identifier).clone(),
+                identifier: mapping.get(identifier).unwrap_or(identifier).clone(),
             },
         }
     }

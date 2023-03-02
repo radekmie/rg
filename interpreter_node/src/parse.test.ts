@@ -236,35 +236,32 @@ describe('--addExplicitCasts', () => {
 });
 
 describe('--compactSkipEdges', () => {
-  const run = createRun(
-    {
-      extension: Extension.rg,
-      flags: { ...noFlagsEnabled, compactSkipEdges: true },
-    },
-    ['begin, end: ;'],
-  );
+  const run = createRun({
+    extension: Extension.rg,
+    flags: { ...noFlagsEnabled, compactSkipEdges: true },
+  });
 
   test('prefix', async () => {
-    await expect(run(['a, b: ;', 'b, c: x == x;', 'c, d: y == y;'])).resolves
-      .toMatchInlineSnapshot(`
-      "a, c: x == x;
-      c, d: y == y;"
+    await expect(run(['begin, b: ;', 'b, c: x == x;', 'c, end: y == y;']))
+      .resolves.toMatchInlineSnapshot(`
+      "begin, c: x == x;
+      c, end: y == y;"
     `);
   });
 
   test('infix', async () => {
-    await expect(run(['a, b: x == x;', 'b, c: ;', 'c, d: y == y;'])).resolves
-      .toMatchInlineSnapshot(`
-      "a, c: x == x;
-      c, d: y == y;"
+    await expect(run(['begin, b: x == x;', 'b, c: ;', 'c, end: y == y;']))
+      .resolves.toMatchInlineSnapshot(`
+      "begin, c: x == x;
+      c, end: y == y;"
     `);
   });
 
   test('suffix', async () => {
-    await expect(run(['a, b: x == x;', 'b, c: y == y;', 'c, d: ;'])).resolves
-      .toMatchInlineSnapshot(`
-      "a, b: x == x;
-      b, d: y == y;"
+    await expect(run(['begin, b: x == x;', 'b, c: y == y;', 'c, end: ;']))
+      .resolves.toMatchInlineSnapshot(`
+      "begin, b: x == x;
+      b, end: y == y;"
     `);
   });
 });
