@@ -68,27 +68,6 @@ impl<Id> From<Id> for EdgeNamePart<Id> {
     }
 }
 
-impl<Id> From<(Rc<Expression<Id>>, Rc<Expression<Id>>)> for Expression<Id> {
-    fn from((lhs, rhs): (Rc<Expression<Id>>, Rc<Expression<Id>>)) -> Self {
-        Self::Access { lhs, rhs }
-    }
-}
-
-impl<Id> From<(Id, Rc<Expression<Id>>)> for Expression<Id> {
-    fn from((identifier, rhs): (Id, Rc<Expression<Id>>)) -> Self {
-        Self::Cast {
-            lhs: Rc::new(Type::TypeReference { identifier }),
-            rhs,
-        }
-    }
-}
-
-impl<Id> From<Id> for Expression<Id> {
-    fn from(identifier: Id) -> Self {
-        Self::Reference { identifier }
-    }
-}
-
 impl<Id> From<EdgeName<Id>> for Pragma<Id> {
     fn from(edge_name: EdgeName<Id>) -> Self {
         Self::Disjoint { edge_name }

@@ -9,7 +9,7 @@ use nom::combinator::{cut, into, map, opt, success};
 use nom::error::{context, VerboseError};
 use nom::multi::{fold_many0, many1, separated_list0};
 use nom::sequence::{delimited, preceded, separated_pair, terminated, tuple};
-use parser_utils::{in_braces, in_brackets, in_parens, map_into_rc, separated, Result};
+use parser_utils::{in_braces, in_brackets, in_parens, into_rc, separated, Result};
 use std::rc::Rc;
 
 pub fn constant(input: &str) -> Result<Constant<&str>> {
@@ -152,11 +152,11 @@ pub fn type_(input: &str) -> Result<Rc<Type<&str>>> {
     // Eliminate direct left recursion.
     fn inner(input: &str) -> Result<Rc<Type<&str>>> {
         let (input, lhs) = alt((
-            map_into_rc(in_braces(cut(separated(separated_list0(
+            into_rc(in_braces(cut(separated(separated_list0(
                 char(','),
                 separated(identifier),
             ))))),
-            map_into_rc(identifier),
+            into_rc(identifier),
         ))(input)?;
 
         match opt(preceded(separated(tag("->")), type_))(input)? {
@@ -187,11 +187,11 @@ pub fn value(input: &str) -> Result<Rc<Value<&str>>> {
     context(
         "value",
         alt((
-            map_into_rc(in_braces(cut(separated(separated_list0(
+            into_rc(in_braces(cut(separated(separated_list0(
                 char(','),
                 separated(value_entry),
             ))))),
-            map_into_rc(identifier),
+            into_rc(identifier),
         )),
     )(input)
 }
