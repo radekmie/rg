@@ -8,7 +8,7 @@ type Context = {
     pairs: [string, string][],
     defaultValue: string,
   ) => string;
-  $createTypeFromSet: (identifiers: string[]) => string;
+  $createTypeFromSet: (identifiers: string[]) => rg.Type;
   $mathOperator: (
     limit: number,
     lhs: rg.Expression,
@@ -326,11 +326,9 @@ function translateAtomContent(
           local.parts.push(
             rg.Binding({
               identifier: 'coordGenerator',
-              type: rg.TypeReference({
-                identifier: usesAllCoords
-                  ? 'Coord'
-                  : context.$createTypeFromSet(reachableCoords),
-              }),
+              type: usesAllCoords
+                ? rg.TypeReference({ identifier: 'Coord' })
+                : context.$createTypeFromSet(reachableCoords),
             }),
           );
 
@@ -475,7 +473,7 @@ function translateGame(context: Context) {
     rg.TypeDeclaration({
       identifier: 'Goals',
       type: rg.Arrow({
-        lhs: 'Player',
+        lhs: rg.TypeReference({ identifier: 'Player' }),
         rhs: rg.TypeReference({ identifier: 'Score' }),
       }),
     }),
@@ -501,19 +499,17 @@ function translateGame(context: Context) {
     rg.TypeDeclaration({
       identifier: 'Board',
       type: rg.Arrow({
-        lhs: 'Coord',
+        lhs: rg.TypeReference({ identifier: 'Coord' }),
         rhs: rg.TypeReference({ identifier: 'Piece' }),
       }),
     }),
     rg.TypeDeclaration({
       identifier: 'Counters',
       type: rg.Arrow({
-        lhs: 'Piece',
-        rhs: rg.TypeReference({
-          identifier: context.$createTypeFromSet(
-            utils.generate(context.rbg.board.length + 1, String),
-          ),
-        }),
+        lhs: rg.TypeReference({ identifier: 'Piece' }),
+        rhs: context.$createTypeFromSet(
+          utils.generate(context.rbg.board.length + 1, String),
+        ),
       }),
     }),
   );
@@ -522,9 +518,9 @@ function translateGame(context: Context) {
     rg.ConstantDeclaration({
       identifier: 'direction',
       type: rg.Arrow({
-        lhs: 'Coord',
+        lhs: rg.TypeReference({ identifier: 'Coord' }),
         rhs: rg.Arrow({
-          lhs: 'Label',
+          lhs: rg.TypeReference({ identifier: 'Label' }),
           rhs: rg.TypeReference({ identifier: 'Coord' }),
         }),
       }),
@@ -696,11 +692,9 @@ function translateVariable(context: Context, variable: rbg.Variable) {
   context.rg.variables.push(
     rg.VariableDeclaration({
       identifier: variable.name,
-      type: rg.TypeReference({
-        identifier: context.$createTypeFromSet(
-          utils.generate(variable.bound + 1, String),
-        ),
-      }),
+      type: context.$createTypeFromSet(
+        utils.generate(variable.bound + 1, String),
+      ),
       defaultValue: rg.Element({ identifier: '0' }),
     }),
   );
@@ -887,14 +881,12 @@ export default function translate(game: rbg.Game) {
             .reduce<string[]>(utils.unique, [])
             .sort(),
         ),
-        rhs: rg.TypeReference({
-          identifier: this.$createTypeFromSet(
-            pairs
-              .map(pair => pair[1])
-              .reduce<string[]>(utils.unique, [])
-              .sort(),
-          ),
-        }),
+        rhs: this.$createTypeFromSet(
+          pairs
+            .map(pair => pair[1])
+            .reduce<string[]>(utils.unique, [])
+            .sort(),
+        ),
       });
 
       const value = rg.Map({
@@ -928,13 +920,13 @@ export default function translate(game: rbg.Game) {
       const { types } = this.rg;
       const existing = utils.find(types, { type });
       if (existing) {
-        return existing.identifier;
+        return rg.TypeReference({ identifier: existing.identifier });
       }
 
       const identifier = utils.generateIdentifier(types, 'RbgType1');
       types.push(rg.TypeDeclaration({ identifier, type }));
 
-      return identifier;
+      return rg.TypeReference({ identifier });
     },
     $mathOperator(limit, lhs, rhs, operator) {
       const mathOperator = [
@@ -967,10 +959,7 @@ export default function translate(game: rbg.Game) {
             identifier: mathOperator,
             type: rg.Arrow({
               lhs: numberType,
-              rhs: rg.Arrow({
-                lhs: numberType,
-                rhs: rg.TypeReference({ identifier: numberType }),
-              }),
+              rhs: rg.Arrow({ lhs: numberType, rhs: numberType }),
             }),
             value: rg.Map({
               entries: [

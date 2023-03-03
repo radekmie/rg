@@ -74,13 +74,10 @@ impl<Id: Clone + PartialEq> Expression<Id> {
             Self::Access { lhs, rhs } => {
                 let lhs_type = lhs.infer(game, edge)?;
                 match lhs_type.resolve(game)? {
-                    Type::Arrow { lhs: key_type, .. } => {
-                        let key_type = &game.resolve_typedef(key_type)?.type_;
-                        Self::Access {
-                            lhs: Rc::new(lhs.add_explicit_casts(game, edge, &lhs_type)?),
-                            rhs: Rc::new(rhs.add_explicit_casts(game, edge, key_type)?),
-                        }
-                    }
+                    Type::Arrow { lhs: key_type, .. } => Self::Access {
+                        lhs: Rc::new(lhs.add_explicit_casts(game, edge, &lhs_type)?),
+                        rhs: Rc::new(rhs.add_explicit_casts(game, edge, key_type)?),
+                    },
                     _ => return game.make_error(ErrorReason::ArrowTypeExpected { got: lhs_type }),
                 }
             }

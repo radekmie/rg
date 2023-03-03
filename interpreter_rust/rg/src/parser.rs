@@ -81,7 +81,8 @@ pub fn edge_name_part(input: &str) -> Result<EdgeNamePart<&str>> {
 }
 
 pub fn expression(input: &str) -> Result<Rc<Expression<&str>>> {
-    fn expression(input: &str) -> Result<Rc<Expression<&str>>> {
+    // Eliminate direct left recursion.
+    fn inner(input: &str) -> Result<Rc<Expression<&str>>> {
         let (input, identifier) = identifier(input)?;
         let (input, maybe_cast) = opt(in_parens(cut(separated(expression))))(input)?;
         let (input, expression) = fold_many0(
@@ -99,7 +100,7 @@ pub fn expression(input: &str) -> Result<Rc<Expression<&str>>> {
         Ok((input, expression))
     }
 
-    context("expression", expression)(input)
+    context("expression", inner)(input)
 }
 
 pub fn game(input: &str) -> Result<Game<&str>> {
@@ -148,17 +149,23 @@ pub fn pragma(input: &str) -> Result<Pragma<&str>> {
 }
 
 pub fn type_(input: &str) -> Result<Rc<Type<&str>>> {
-    context(
-        "type",
-        alt((
+    // Eliminate direct left recursion.
+    fn inner(input: &str) -> Result<Rc<Type<&str>>> {
+        let (input, lhs) = alt((
             map_into_rc(in_braces(cut(separated(separated_list0(
                 char(','),
                 separated(identifier),
             ))))),
-            map_into_rc(separated_pair(identifier, separated(tag("->")), cut(type_))),
             map_into_rc(identifier),
-        )),
-    )(input)
+        ))(input)?;
+
+        match opt(preceded(separated(tag("->")), type_))(input)? {
+            (input, Some(rhs)) => Ok((input, Rc::new(Type::Arrow { lhs, rhs }))),
+            (input, None) => Ok((input, lhs)),
+        }
+    }
+
+    context("type", inner)(input)
 }
 
 pub fn typedef(input: &str) -> Result<Typedef<&str>> {

@@ -4,7 +4,7 @@ export const Access = creator<Access>('Access');
 export type Access = { kind: 'Access'; lhs: Expression; rhs: Expression };
 
 export const Arrow = creator<Arrow>('Arrow');
-export type Arrow = { kind: 'Arrow'; lhs: string; rhs: Type };
+export type Arrow = { kind: 'Arrow'; lhs: Type; rhs: Type };
 
 export const Assignment = creator<Assignment>('Assignment');
 export type Assignment = {

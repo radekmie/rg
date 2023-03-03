@@ -74,7 +74,7 @@ export function serializeExpression(expression: ast.Expression): string {
 export function serializeType(type: ast.Type): string {
   switch (type.kind) {
     case 'Arrow':
-      return `${type.lhs} -> ${serializeType(type.rhs)}`;
+      return `${serializeType(type.lhs)} -> ${serializeType(type.rhs)}`;
     case 'Set':
       return `{ ${type.identifiers.join(', ')} }`;
     case 'TypeReference':

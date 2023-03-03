@@ -98,7 +98,7 @@ export function mangleSymbols(gameDeclaration: ast.GameDeclaration) {
   const mangleSymbolsInType = memo((type: ast.Type) => {
     switch (type.kind) {
       case 'Arrow':
-        type.lhs = symbol(type.lhs);
+        mangleSymbolsInType(type.lhs);
         mangleSymbolsInType(type.rhs);
         break;
       case 'Set':

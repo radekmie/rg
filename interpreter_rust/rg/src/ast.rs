@@ -292,7 +292,6 @@ impl<Id: Clone + PartialEq> Expression<Id> {
                                 .make_error(ErrorReason::SetTypeExpected { got: accessor_type });
                         }
 
-                        let key_type = &game.resolve_typedef(key_type)?.type_;
                         if !game.is_assignable_type(key_type, &accessor_type, false)? {
                             return game.make_error(ErrorReason::AssignmentTypeMismatch {
                                 lhs: key_type.clone(),
@@ -494,13 +493,8 @@ impl<Id: Clone + PartialEq> Game<Id> {
 
         Ok(match (lhs, rhs) {
             (Type::Arrow { lhs: ll, rhs: lr }, Type::Arrow { lhs: rl, rhs: rr }) => {
-                if self.is_assignable_type(lr, rr, is_strict)? {
-                    let ll = &self.resolve_typedef(ll)?.type_;
-                    let rl = &self.resolve_typedef(rl)?.type_;
-                    self.is_assignable_type(ll, rl, is_strict)?
-                } else {
-                    false
-                }
+                self.is_assignable_type(ll, rl, is_strict)?
+                    && self.is_assignable_type(lr, rr, is_strict)?
             }
             (Type::Set { identifiers: lhs }, Type::Set { identifiers: rhs }) => {
                 if is_strict {
@@ -626,7 +620,7 @@ pub enum Pragma<Id> {
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Type<Id> {
-    Arrow { lhs: Id, rhs: Rc<Self> },
+    Arrow { lhs: Rc<Self>, rhs: Rc<Self> },
     Set { identifiers: Vec<Id> },
     TypeReference { identifier: Id },
 }

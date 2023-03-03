@@ -95,12 +95,6 @@ impl<Id> From<EdgeName<Id>> for Pragma<Id> {
     }
 }
 
-impl<Id> From<(Id, Rc<Type<Id>>)> for Type<Id> {
-    fn from((lhs, rhs): (Id, Rc<Type<Id>>)) -> Self {
-        Self::Arrow { lhs, rhs }
-    }
-}
-
 impl<Id> From<Vec<Id>> for Type<Id> {
     fn from(identifiers: Vec<Id>) -> Self {
         Self::Set { identifiers }

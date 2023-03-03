@@ -14,7 +14,7 @@ impl Game<Rc<str>> {
         self.add_builtin_type(Typedef {
             identifier: Rc::from("Goals"),
             type_: Rc::new(Type::Arrow {
-                lhs: Rc::from("Player"),
+                lhs: Rc::new(Type::from(Rc::from("Player"))),
                 rhs: Rc::new(Type::from(Rc::from("Score"))),
             }),
         })?;
@@ -24,7 +24,7 @@ impl Game<Rc<str>> {
         self.add_builtin_type(Typedef {
             identifier: Rc::from("Visibility"),
             type_: Rc::new(Type::Arrow {
-                lhs: Rc::from("Player"),
+                lhs: Rc::new(Type::from(Rc::from("Player"))),
                 rhs: Rc::new(Type::from(Rc::from("Bool"))),
             }),
         })?;

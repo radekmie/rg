@@ -170,17 +170,9 @@ function evaluateCondition(
 function evaluateDefaultValue(context: Context, type: rg.Type): hrg.Value {
   switch (type.kind) {
     case 'Arrow':
-      utils.assert(
-        type.lhs in context.typeValues,
-        `Unresolved TypeReference "${type.lhs}".`,
-      );
-      utils.assert(
-        context.typeValues[type.lhs].length,
-        'Expected at least one identifier.',
-      );
       // NOTE: Is this even correct?
       return hrg.ValueMap({
-        entries: context.typeValues[type.lhs].map(value =>
+        entries: evaluateTypeValues(context, type.lhs).map(value =>
           hrg.ValueMapEntry({
             key: value,
             value: evaluateDefaultValue(context, type.rhs),
@@ -190,15 +182,7 @@ function evaluateDefaultValue(context: Context, type: rg.Type): hrg.Value {
     case 'Set':
       throw new Error('Not implemented (Set).');
     case 'TypeReference':
-      utils.assert(
-        type.identifier in context.typeValues,
-        `Unresolved TypeReference "${type.identifier}".`,
-      );
-      utils.assert(
-        context.typeValues[type.identifier].length,
-        'Expected at least one identifier.',
-      );
-      return context.typeValues[type.identifier][0];
+      return evaluateTypeValues(context, type)[0];
   }
 }
 
@@ -343,6 +327,22 @@ function evaluatePattern(
     case 'PatternWildcard':
       throw new Error('PatternWildcard is not evaluable.');
   }
+}
+
+function evaluateTypeValues(context: Context, type: rg.Type): hrg.Value[] {
+  utils.assert(
+    type.kind === 'TypeReference',
+    `Expected TypeReference, got "${type.kind}".`,
+  );
+  utils.assert(
+    type.identifier in context.typeValues,
+    `Unresolved TypeReference "${type.identifier}".`,
+  );
+  utils.assert(
+    context.typeValues[type.identifier].length,
+    'Expected at least one identifier.',
+  );
+  return context.typeValues[type.identifier];
 }
 
 function serializeValue(value: hrg.Value): string {
@@ -1353,15 +1353,7 @@ function translateFunctionDeclaration(
     type.kind === 'Arrow',
     'Function is expected to have Arrow type.',
   );
-  utils.assert(
-    type.lhs in context.typeValues,
-    `Unresolved TypeReference "${type.lhs}".`,
-  );
-  utils.assert(
-    context.typeValues[type.lhs].length,
-    'Expected at least one identifier.',
-  );
-  const entries = context.typeValues[type.lhs].map(value => {
+  const entries = evaluateTypeValues(context, type.lhs).map(value => {
     utils.assert(value.kind !== 'ValueMap', 'ValueMap is not allowed.');
     const arm = utils.findMap(functionDeclaration.cases, functionCase => {
       utils.assert(functionCase.args.length === 1, 'Not implemented.');
@@ -1440,16 +1432,11 @@ function translateGameDeclaration(context: Context): rg.GameDeclaration {
 
 function translateType(type: hrg.Type): rg.Type {
   switch (type.kind) {
-    case 'TypeFunction': {
-      utils.assert(
-        type.lhs.kind === 'TypeName',
-        'Arrow lhs must be TypeReference.',
-      );
+    case 'TypeFunction':
       return rg.Arrow({
-        lhs: type.lhs.identifier,
+        lhs: translateType(type.lhs),
         rhs: translateType(type.rhs),
       });
-    }
     case 'TypeName':
       return rg.TypeReference({ identifier: type.identifier });
   }
