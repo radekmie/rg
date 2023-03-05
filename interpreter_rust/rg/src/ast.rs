@@ -593,6 +593,10 @@ impl<Id: PartialEq> Game<Id> {
             .any(|edge| &edge.lhs == lhs && &edge.rhs == rhs)
     }
 
+    pub fn is_reachability_target(&self, edge_name: &EdgeName<Id>) -> bool {
+        self.edges.iter().any(|edge| matches!(&edge.label, EdgeLabel::Reachability { lhs, rhs, .. } if lhs == edge_name || rhs == edge_name))
+    }
+
     pub fn incoming_edges<'a>(
         &'a self,
         edge_name: &'a EdgeName<Id>,

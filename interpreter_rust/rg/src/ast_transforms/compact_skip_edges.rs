@@ -38,12 +38,14 @@ impl Game<Rc<str>> {
     ///   2. y == Skip
     ///   3. b has no other incoming nor outgoing edges
     ///   4. b has no bindings
-    ///   5. there's no other edge between a and c (multiedges are not allowed)
+    ///   5. b is not a reachability target
+    ///   6. there's no other edge between a and c (multiedges are not allowed)
     fn compact_skip_edge_backward(&self) -> Option<(usize, usize)> {
         for (y_index, y) in self.edges.iter().enumerate() {
             if y.label.is_skip()
                 && !y.lhs.has_bindings()
                 && self.outgoing_edges(&y.lhs).all(|z| z == y)
+                && !self.is_reachability_target(&y.lhs)
             {
                 for (x_index, x) in self.edges.iter().enumerate() {
                     if x.rhs == y.lhs
@@ -72,12 +74,14 @@ impl Game<Rc<str>> {
     ///   1. x == Skip
     ///   2. b has no other incoming nor outgoing edges
     ///   3. b has no bindings
-    ///   4. there's no other edge between a and c (multiedges are not allowed)
+    ///   4. b is not a reachability target
+    ///   5. there's no other edge between a and c (multiedges are not allowed)
     fn compact_skip_edge_forward(&self) -> Option<(usize, usize)> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
                 && !x.rhs.has_bindings()
                 && self.incoming_edges(&x.rhs).all(|z| z == x)
+                && !self.is_reachability_target(&x.rhs)
             {
                 for (y_index, y) in self.edges.iter().enumerate() {
                     if x.rhs == y.lhs
@@ -107,6 +111,7 @@ impl Game<Rc<str>> {
     ///   3. a has no other outgoing edges
     ///   4. a has no bindings
     ///   5. a is not `begin`
+    ///   6. a is not a reachability target
     fn compact_skip_edge_single(&self) -> Option<usize> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
@@ -114,6 +119,7 @@ impl Game<Rc<str>> {
                 && !x.lhs.is_begin()
                 && self.incoming_edges(&x.lhs).next().is_none()
                 && self.outgoing_edges(&x.lhs).all(|y| y == x)
+                && !self.is_reachability_target(&x.lhs)
             {
                 return Some(x_index);
             }
@@ -308,6 +314,32 @@ mod test {
             g(bind_2: T), h: v = bind_2;
             h, a: ;
             h, end: ;
+        }
+    );
+
+    test!(
+        disconnected_reachability
+        {
+            begin, foo: ? a -> e;
+            begin, bar: ! a -> e;
+            foo, end: ;
+            bar, end: ;
+
+            a, b: ;
+            b, c: 1 == 1;
+            c, e: ;
+            b, d: 1 == 1;
+            d, e: ;
+        }
+        {
+            begin, end: ? a -> e;
+            begin, bar: ! a -> e;
+            bar, end: ;
+
+            a, b: ;
+            b, e: 1 == 1;
+            b, d: 1 == 1;
+            d, e: ;
         }
     );
 }
