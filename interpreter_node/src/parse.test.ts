@@ -568,28 +568,28 @@ describe('--normalizeTypes', () => {
   test('constant declarations', async () => {
     await expect(run(['const b: A -> A = { :0 };'])).resolves
       .toMatchInlineSnapshot(`
-      "type A_A = A -> A;
-      const b: A_A = { :0 };"
+      "type Type1 = A -> A;
+      const b: Type1 = { :0 };"
     `);
     await expect(run(['const b: A -> A -> A = { :{ :0 } };'])).resolves
       .toMatchInlineSnapshot(`
-      "type A_A = A -> A;
-      type A_A_A = A -> A_A;
-      const b: A_A_A = { :{ :0 } };"
+      "type Type1 = A -> A;
+      type Type2 = A -> Type1;
+      const b: Type2 = { :{ :0 } };"
     `);
   });
 
   test('variable declarations', async () => {
     await expect(run(['var b: A -> A = { :0 };'])).resolves
       .toMatchInlineSnapshot(`
-      "type A_A = A -> A;
-      var b: A_A = { :0 };"
+      "type Type1 = A -> A;
+      var b: Type1 = { :0 };"
     `);
     await expect(run(['var b: A -> A -> A = { :{ :0 } };'])).resolves
       .toMatchInlineSnapshot(`
-      "type A_A = A -> A;
-      type A_A_A = A -> A_A;
-      var b: A_A_A = { :{ :0 } };"
+      "type Type1 = A -> A;
+      type Type2 = A -> Type1;
+      var b: Type2 = { :{ :0 } };"
     `);
   });
 
@@ -599,23 +599,23 @@ describe('--normalizeTypes', () => {
     );
     await expect(run(['type B = A -> A -> A;'])).resolves
       .toMatchInlineSnapshot(`
-      "type B = A -> A_A;
-      type A_A = A -> A;"
+      "type B = A -> Type1;
+      type Type1 = A -> A;"
     `);
     await expect(run(['type B = A -> A -> A -> A;'])).resolves
       .toMatchInlineSnapshot(`
-      "type B = A -> A_A_A;
-      type A_A = A -> A;
-      type A_A_A = A -> A_A;"
+      "type B = A -> Type2;
+      type Type1 = A -> A;
+      type Type2 = A -> Type1;"
     `);
   });
 
   test('existing types', async () => {
-    await expect(run(['type B = A -> A -> A;', 'type A_A = A;'])).resolves
+    await expect(run(['type B = A -> A -> A;', 'type Type1 = A;'])).resolves
       .toMatchInlineSnapshot(`
-      "type B = A -> A_A2;
-      type A_A = A;
-      type A_A2 = A -> A;"
+      "type B = A -> Type2;
+      type Type1 = A;
+      type Type2 = A -> A;"
     `);
   });
 });
