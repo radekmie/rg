@@ -135,15 +135,12 @@ impl Game<Rc<str>> {
         for edge in &self.edges {
             for edge_name in [&edge.lhs, &edge.rhs] {
                 for (identifier, _) in edge_name.bindings() {
-                    match binding_to_edge_name.get(identifier) {
-                        Some(other) => {
-                            if other != &edge_name {
-                                return false;
-                            }
+                    if let Some(other) = binding_to_edge_name.get(identifier) {
+                        if other != &edge_name {
+                            return false;
                         }
-                        _ => {
-                            binding_to_edge_name.insert(identifier, edge_name);
-                        }
+                    } else {
+                        binding_to_edge_name.insert(identifier, edge_name);
                     }
                 }
             }

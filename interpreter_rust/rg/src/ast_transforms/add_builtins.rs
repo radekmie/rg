@@ -31,21 +31,18 @@ impl Game<Rc<str>> {
 
         // Player ^ isSet(Player) |- PlayerOrKeeper
         let player_type = &self.resolve_typedef(&Rc::from("Player"))?.type_;
-        let players = match &**player_type {
-            Type::Set { identifiers } => {
-                if identifiers.contains(&Rc::from("keeper")) {
-                    identifiers.clone()
-                } else {
-                    let mut identifiers = identifiers.clone();
-                    identifiers.push(Rc::from("keeper"));
-                    identifiers
-                }
+        let players = if let Type::Set { identifiers } = &**player_type {
+            if identifiers.contains(&Rc::from("keeper")) {
+                identifiers.clone()
+            } else {
+                let mut identifiers = identifiers.clone();
+                identifiers.push(Rc::from("keeper"));
+                identifiers
             }
-            _ => {
-                return self.make_error(ErrorReason::SetTypeExpected {
-                    got: player_type.clone(),
-                });
-            }
+        } else {
+            return self.make_error(ErrorReason::SetTypeExpected {
+                got: player_type.clone(),
+            });
         };
         self.add_builtin_type(Typedef {
             identifier: Rc::from("PlayerOrKeeper"),
@@ -55,20 +52,19 @@ impl Game<Rc<str>> {
         // Goals ^ Score ^ isSet(Score) |- goals
         self.resolve_typedef(&Rc::from("Goals"))?;
         let score_type = &self.resolve_typedef(&Rc::from("Score"))?.type_;
-        let default_score = match &**score_type {
-            Type::Set { identifiers } => identifiers.first().cloned().map_or_else(
+        let default_score = if let Type::Set { identifiers } = &**score_type {
+            identifiers.first().cloned().map_or_else(
                 || {
                     self.make_error(ErrorReason::EmptySetType {
                         identifier: Rc::from("Score"),
                     })
                 },
                 Ok,
-            )?,
-            _ => {
-                return self.make_error(ErrorReason::SetTypeExpected {
-                    got: score_type.clone(),
-                });
-            }
+            )?
+        } else {
+            return self.make_error(ErrorReason::SetTypeExpected {
+                got: score_type.clone(),
+            });
         };
         self.add_builtin_variable(Variable {
             identifier: Rc::from("goals"),

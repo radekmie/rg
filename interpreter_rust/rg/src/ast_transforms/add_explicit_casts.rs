@@ -4,7 +4,7 @@ use std::rc::Rc;
 impl<Id: Clone + PartialEq> Edge<Id> {
     pub fn add_explicit_casts(&self, game: &Game<Id>) -> Result<Self, Error<Id>> {
         Ok(Edge {
-            label: self.label.add_explicit_casts(game, self)?,
+            label: self.label.add_explicit_casts(game, Some(self))?,
             lhs: self.lhs.clone(),
             rhs: self.rhs.clone(),
         })
@@ -12,7 +12,11 @@ impl<Id: Clone + PartialEq> Edge<Id> {
 }
 
 impl<Id: Clone + PartialEq> EdgeLabel<Id> {
-    pub fn add_explicit_casts(&self, game: &Game<Id>, edge: &Edge<Id>) -> Result<Self, Error<Id>> {
+    pub fn add_explicit_casts(
+        &self,
+        game: &Game<Id>,
+        edge: Option<&Edge<Id>>,
+    ) -> Result<Self, Error<Id>> {
         Ok(match self {
             Self::Assignment { lhs, rhs } => {
                 let type_ = &lhs.infer(game, edge)?;
@@ -38,7 +42,7 @@ impl<Id: Clone + PartialEq> Expression<Id> {
     pub fn add_explicit_casts(
         &self,
         game: &Game<Id>,
-        edge: &Edge<Id>,
+        edge: Option<&Edge<Id>>,
         type_: &Type<Id>,
     ) -> Result<Self, Error<Id>> {
         self.add_explicit_casts_in_subexpressions(game, edge, type_)?
@@ -67,18 +71,19 @@ impl<Id: Clone + PartialEq> Expression<Id> {
     fn add_explicit_casts_in_subexpressions(
         &self,
         game: &Game<Id>,
-        edge: &Edge<Id>,
+        edge: Option<&Edge<Id>>,
         type_: &Type<Id>,
     ) -> Result<Self, Error<Id>> {
         Ok(match self {
             Self::Access { lhs, rhs } => {
                 let lhs_type = lhs.infer(game, edge)?;
-                match lhs_type.resolve(game)? {
-                    Type::Arrow { lhs: key_type, .. } => Self::Access {
+                if let Type::Arrow { lhs: key_type, .. } = lhs_type.resolve(game)? {
+                    Self::Access {
                         lhs: Rc::new(lhs.add_explicit_casts(game, edge, &lhs_type)?),
                         rhs: Rc::new(rhs.add_explicit_casts(game, edge, key_type)?),
-                    },
-                    _ => return game.make_error(ErrorReason::ArrowTypeExpected { got: lhs_type }),
+                    }
+                } else {
+                    return game.make_error(ErrorReason::ArrowTypeExpected { got: lhs_type });
                 }
             }
             Self::Cast { ref lhs, rhs } => rhs
