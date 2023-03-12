@@ -20,6 +20,12 @@ impl<Id> From<(EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>)> for Edge<Id> {
     }
 }
 
+impl<Id> From<(EdgeName<Id>, EdgeName<Id>)> for EdgeLabel<Id> {
+    fn from((lhs, rhs): (EdgeName<Id>, EdgeName<Id>)) -> Self {
+        Self::Any { lhs, rhs }
+    }
+}
+
 impl<Id> From<(Rc<Expression<Id>>, Rc<Expression<Id>>)> for EdgeLabel<Id> {
     fn from((lhs, rhs): (Rc<Expression<Id>>, Rc<Expression<Id>>)) -> Self {
         Self::Assignment { lhs, rhs }

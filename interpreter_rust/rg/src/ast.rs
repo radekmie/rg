@@ -75,6 +75,10 @@ impl Edge<Rc<str>> {
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum EdgeLabel<Id> {
+    Any {
+        lhs: EdgeName<Id>,
+        rhs: EdgeName<Id>,
+    },
     Assignment {
         lhs: Rc<Expression<Id>>,
         rhs: Rc<Expression<Id>>,
@@ -598,7 +602,7 @@ impl<Id: PartialEq> Game<Id> {
     }
 
     pub fn is_reachability_target(&self, edge_name: &EdgeName<Id>) -> bool {
-        self.edges.iter().any(|edge| matches!(&edge.label, EdgeLabel::Reachability { lhs, rhs, .. } if lhs == edge_name || rhs == edge_name))
+        self.edges.iter().any(|edge| matches!(&edge.label, EdgeLabel::Any { lhs, rhs } | EdgeLabel::Reachability { lhs, rhs, .. } if lhs == edge_name || rhs == edge_name))
     }
 
     pub fn incoming_edges<'a>(

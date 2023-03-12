@@ -19,6 +19,10 @@ pub struct Edge<Id: Ord> {
 
 #[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
 pub enum EdgeLabel<Id: Ord> {
+    Any {
+        lhs: Id,
+        rhs: Id,
+    },
     Assignment {
         lhs: Expression<Id>,
         rhs: Expression<Id>,

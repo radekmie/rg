@@ -19,6 +19,10 @@ export function serializeEdge({ label, lhs, rhs }: ast.EdgeDeclaration) {
 
 export function serializeEdgeLabel(edgeLabel: ast.EdgeLabel): string {
   switch (edgeLabel.kind) {
+    case 'Any':
+      return `any ${serializeEdgeName(edgeLabel.lhs)} -> ${serializeEdgeName(
+        edgeLabel.rhs,
+      )};`;
     case 'Assignment':
       return `${serializeExpression(edgeLabel.lhs)} = ${serializeExpression(
         edgeLabel.rhs,

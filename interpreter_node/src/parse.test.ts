@@ -277,7 +277,7 @@ describe('--expandGeneratorNodes', () => {
       'type T2 = { 3, 4 };',
       'type T3 = { 5, 6 };',
       'type T4 = { 1, 2, 3, 4, 5, 6 };',
-      'const map: T4 -> T4 -> T4 = { :1 };',
+      'const map: T4 -> T4 -> T4 = { :{ :1 } };',
       'begin, end: ;',
     ],
   );

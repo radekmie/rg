@@ -25,6 +25,7 @@ impl<Id: Display> Display for Edge<Id> {
 impl<Id: Display> Display for EdgeLabel<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
+            Self::Any { lhs, rhs } => write!(f, "any {lhs} -> {rhs}"),
             Self::Assignment { lhs, rhs } => write!(f, "{lhs} = {rhs}"),
             Self::Comparison {
                 lhs,

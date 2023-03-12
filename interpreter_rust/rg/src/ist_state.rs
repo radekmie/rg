@@ -154,6 +154,16 @@ impl Iterator for StateNext<'_> {
                     for edge in edges {
                         let mut state = state.clone_at(edge.next);
                         match &edge.label {
+                            EdgeLabel::Any { lhs, rhs } => {
+                                state.position = *lhs;
+                                for mut next_state in state.next_states(game, false) {
+                                    if next_state.position == *rhs {
+                                        next_state.position = edge.next;
+                                        search_queue.push(next_state);
+                                        break;
+                                    }
+                                }
+                            }
                             EdgeLabel::Assignment { lhs, rhs } => {
                                 state.eval_set(game, lhs, state.eval(game, rhs).clone());
                                 if *break_on_player && lhs.is_player_reference() {
