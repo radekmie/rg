@@ -241,8 +241,15 @@ pub enum ErrorReason<Id> {
         lhs: Rc<Type<Id>>,
         rhs: Rc<Type<Id>>,
     },
+    DuplicatedMapKey {
+        key: Option<Id>,
+        value: Value<Id>,
+    },
     EmptySetType {
         identifier: Id,
+    },
+    MissingDefaultValue {
+        value: Value<Id>,
     },
     MultipleEdges {
         lhs: EdgeName<Id>,

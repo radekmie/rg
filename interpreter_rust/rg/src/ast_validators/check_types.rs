@@ -83,6 +83,7 @@ impl<Id: Clone + PartialEq> Value<Id> {
                                 value.check_type(game, value_type)?;
                             }
                             ValueEntry::NamedEntry { identifier, value } => {
+                                value.check_type(game, value_type)?;
                                 let rhs = game.infer(identifier, None);
                                 if !game.is_assignable_type(key_type, &rhs, false)? {
                                     return game.make_error(ErrorReason::AssignmentTypeMismatch {
@@ -90,7 +91,6 @@ impl<Id: Clone + PartialEq> Value<Id> {
                                         rhs,
                                     });
                                 }
-                                value.check_type(game, value_type)?;
                             }
                         }
                     }

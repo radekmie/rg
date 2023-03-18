@@ -127,9 +127,14 @@ impl<Id: Display> Display for ErrorReason<Id> {
             Self::ComparisonTypeMismatch { lhs, rhs } => {
                 write!(f, "{lhs} is not comparable to {rhs}")
             }
+            Self::DuplicatedMapKey { key, value } => match key {
+                Some(key) => write!(f, "Duplicated key {key} in map {value}."),
+                None => write!(f, "Duplicated default value in map {value}."),
+            },
             Self::EmptySetType { identifier } => {
                 write!(f, "Type {identifier} should not be empty.")
             }
+            Self::MissingDefaultValue { value } => write!(f, "Missing default value in {value}."),
             Self::MultipleEdges { lhs, rhs } => write!(
                 f,
                 "Multiple edges between two nodes are not allowed ({lhs} -> {rhs})."
