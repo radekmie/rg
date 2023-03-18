@@ -96,10 +96,7 @@ export function serializeValue(value: ast.Value): string {
 }
 
 export function serializeValueEntry(valueEntry: ast.ValueEntry) {
-  switch (valueEntry.kind) {
-    case 'DefaultEntry':
-      return `:${serializeValue(valueEntry.value)}`;
-    case 'NamedEntry':
-      return `${valueEntry.identifier}: ${serializeValue(valueEntry.value)}`;
-  }
+  return valueEntry.identifier
+    ? `${valueEntry.identifier}: ${serializeValue(valueEntry.value)}`
+    : `:${serializeValue(valueEntry.value)}`;
 }

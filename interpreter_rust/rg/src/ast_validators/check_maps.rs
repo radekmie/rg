@@ -25,26 +25,13 @@ impl<Id: Clone + Ord> Value<Id> {
     pub fn check_maps(&self, game: &Game<Id>) -> Result<(), Error<Id>> {
         if let Self::Map { entries } = self {
             let mut keys = BTreeSet::new();
-            for entry in entries {
-                match entry {
-                    ValueEntry::DefaultEntry { value } => {
-                        value.check_maps(game)?;
-                        if !keys.insert(None) {
-                            return game.make_error(ErrorReason::DuplicatedMapKey {
-                                key: None,
-                                value: self.clone(),
-                            });
-                        }
-                    }
-                    ValueEntry::NamedEntry { identifier, value } => {
-                        value.check_maps(game)?;
-                        if !keys.insert(Some(identifier)) {
-                            return game.make_error(ErrorReason::DuplicatedMapKey {
-                                key: Some(identifier.clone()),
-                                value: self.clone(),
-                            });
-                        }
-                    }
+            for ValueEntry { identifier, value } in entries {
+                value.check_maps(game)?;
+                if !keys.insert(identifier) {
+                    return game.make_error(ErrorReason::DuplicatedMapKey {
+                        key: identifier.clone(),
+                        value: self.clone(),
+                    });
                 }
             }
 

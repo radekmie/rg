@@ -251,9 +251,10 @@ impl<Id: Display> Display for Value<Id> {
 
 impl<Id: Display> Display for ValueEntry<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match self {
-            Self::DefaultEntry { value } => write!(f, ":{value}"),
-            Self::NamedEntry { identifier, value } => write!(f, "{identifier}: {value}"),
+        let Self { identifier, value } = self;
+        match identifier {
+            Some(identifier) => write!(f, "{identifier}: {value}"),
+            None => write!(f, ":{value}"),
         }
     }
 }

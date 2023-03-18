@@ -20,6 +20,7 @@ pub fn derive_map_id(input: TokenStream) -> TokenStream {
         match format!("{}", quote! { #ty }).as_str() {
             "bool" => quote! { #ident: *#target #ident },
             "Id" => quote! { #ident: map(&#target #ident) },
+            "Option < Id >" => quote! { #ident: #target #ident.as_ref().map(|x| map(x)) },
             "Vec < Id >" => quote! { #ident: #target #ident.iter().map(map).collect() },
             _ => quote! { #ident: #target #ident.map_id(map) },
         }

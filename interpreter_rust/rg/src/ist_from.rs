@@ -139,31 +139,27 @@ fn build_value<Id: Display + Ord>(
         }
         ast::Value::Map { entries } => match type_ {
             ist::Type::Arrow { rhs, .. } => {
-                let default_values = entries
-                    .iter()
-                    .flat_map(|entry| match entry {
-                        ast::ValueEntry::DefaultEntry { value } => Some(value),
-                        _ => None,
-                    })
-                    .collect::<Vec<_>>();
-
-                assert_eq!(
-                    default_values.len(),
-                    1,
-                    "Exactly one DefaultEntry required."
+                let default_value = entries.iter().find_map(
+                    |ast::ValueEntry { identifier, value }| match identifier {
+                        Some(_) => None,
+                        None => Some(value),
+                    },
                 );
 
+                assert!(default_value.is_some(), "Map is missing default value.");
+
                 Rc::new(ist::Value::Map {
-                    default: build_value(game, rhs, default_values.first().unwrap()),
+                    default: build_value(game, rhs, default_value.unwrap()),
                     values: Rc::new(
                         entries
                             .iter()
-                            .flat_map(|entry| match entry {
-                                ast::ValueEntry::NamedEntry { identifier, value } => Some((
-                                    Rc::from(identifier.to_string()),
-                                    build_value(game, rhs, value),
-                                )),
-                                _ => None,
+                            .flat_map(|ast::ValueEntry { identifier, value }| {
+                                identifier.as_ref().map(|identifier| {
+                                    (
+                                        Rc::from(identifier.to_string()),
+                                        build_value(game, rhs, value),
+                                    )
+                                })
                             })
                             .collect::<BTreeMap<_, _>>(),
                     ),

@@ -77,20 +77,15 @@ impl<Id: Clone + PartialEq> Value<Id> {
                     rhs: value_type,
                 } = type_.resolve(game)?
                 {
-                    for entry in entries {
-                        match entry {
-                            ValueEntry::DefaultEntry { value } => {
-                                value.check_type(game, value_type)?;
-                            }
-                            ValueEntry::NamedEntry { identifier, value } => {
-                                value.check_type(game, value_type)?;
-                                let rhs = game.infer(identifier, None);
-                                if !game.is_assignable_type(key_type, &rhs, false)? {
-                                    return game.make_error(ErrorReason::AssignmentTypeMismatch {
-                                        lhs: key_type.clone(),
-                                        rhs,
-                                    });
-                                }
+                    for ValueEntry { identifier, value } in entries {
+                        value.check_type(game, value_type)?;
+                        if let Some(identifier) = identifier {
+                            let rhs = game.infer(identifier, None);
+                            if !game.is_assignable_type(key_type, &rhs, false)? {
+                                return game.make_error(ErrorReason::AssignmentTypeMismatch {
+                                    lhs: key_type.clone(),
+                                    rhs,
+                                });
                             }
                         }
                     }

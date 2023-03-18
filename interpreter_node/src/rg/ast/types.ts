@@ -44,9 +44,6 @@ export type ConstantDeclaration = {
   value: Value;
 };
 
-export const DefaultEntry = creator<DefaultEntry>('DefaultEntry');
-export type DefaultEntry = { kind: 'DefaultEntry'; value: Value };
-
 export const Disjoint = creator<Disjoint>('Disjoint');
 export type Disjoint = { kind: 'Disjoint'; edgeName: EdgeName };
 
@@ -80,13 +77,6 @@ export type Literal = { kind: 'Literal'; identifier: string };
 export const Map = creator<Map>('Map');
 export type Map = { kind: 'Map'; entries: ValueEntry[] };
 
-export const NamedEntry = creator<NamedEntry>('NamedEntry');
-export type NamedEntry = {
-  kind: 'NamedEntry';
-  identifier: string;
-  value: Value;
-};
-
 export const Reachability = creator<Reachability>('Reachability');
 export type Reachability = {
   kind: 'Reachability';
@@ -114,6 +104,13 @@ export type TypeDeclaration = {
 export const TypeReference = creator<TypeReference>('TypeReference');
 export type TypeReference = { kind: 'TypeReference'; identifier: string };
 
+export const ValueEntry = creator<ValueEntry>('ValueEntry');
+export type ValueEntry = {
+  kind: 'ValueEntry';
+  identifier: null | string;
+  value: Value;
+};
+
 export const VariableDeclaration = creator<VariableDeclaration>(
   'VariableDeclaration',
 );
@@ -130,4 +127,3 @@ export type Expression = Access | Cast | Reference;
 export type Pragma = Disjoint;
 export type Type = Arrow | Set | TypeReference;
 export type Value = Map | Element;
-export type ValueEntry = DefaultEntry | NamedEntry;

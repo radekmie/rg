@@ -691,14 +691,9 @@ pub enum Value<Id> {
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
-pub enum ValueEntry<Id> {
-    DefaultEntry {
-        value: Rc<Value<Id>>,
-    },
-    NamedEntry {
-        identifier: Id,
-        value: Rc<Value<Id>>,
-    },
+pub struct ValueEntry<Id> {
+    pub identifier: Option<Id>,
+    pub value: Rc<Value<Id>>,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

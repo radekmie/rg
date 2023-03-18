@@ -55,7 +55,7 @@ function compareValues(lhs: hrg.Value, rhs: hrg.Value): Ord {
   }
 }
 
-function constructMap(entries: rg.NamedEntry[]) {
+function constructMap(entries: rg.ValueEntry[]) {
   utils.assert(entries.length > 0, 'At least one entry is required.');
 
   type Count = { count: number; value: rg.Value };
@@ -76,7 +76,7 @@ function constructMap(entries: rg.NamedEntry[]) {
 
   return rg.Map({
     entries: [
-      rg.DefaultEntry({ value: defaultValue }),
+      rg.ValueEntry({ identifier: null, value: defaultValue }),
       ...entries.filter(entry => !evaluateEquality(entry.value, defaultValue)),
     ],
   });
@@ -1363,7 +1363,7 @@ function translateFunctionDeclaration(
     });
     utils.assert(arm, `No FunctionCase found for "${value.identifier}".`);
     const { binding, functionCase } = arm;
-    return rg.NamedEntry({
+    return rg.ValueEntry({
       identifier: serializeValue(value),
       value: rg.Element({
         identifier: serializeValue(
@@ -1452,7 +1452,7 @@ function translateValue(value: hrg.Value): rg.Value {
       utils.assert(value.entries.length, 'At least one entry is required.');
       return constructMap(
         value.entries.map(entry =>
-          rg.NamedEntry({
+          rg.ValueEntry({
             identifier: serializeValue(entry.key),
             value: translateValue(entry.value),
           }),

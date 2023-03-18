@@ -70,7 +70,8 @@ impl Game<Rc<str>> {
             identifier: Rc::from("goals"),
             type_: Rc::new(Type::from(Rc::from("Goals"))),
             default_value: Rc::new(Value::Map {
-                entries: vec![ValueEntry::DefaultEntry {
+                entries: vec![ValueEntry {
+                    identifier: None,
                     value: Rc::new(Value::from(default_score)),
                 }],
             }),
@@ -90,7 +91,8 @@ impl Game<Rc<str>> {
             identifier: Rc::from("visible"),
             type_: Rc::new(Type::from(Rc::from("Visibility"))),
             default_value: Rc::new(Value::Map {
-                entries: vec![ValueEntry::DefaultEntry {
+                entries: vec![ValueEntry {
+                    identifier: None,
                     value: Rc::new(Value::from(Rc::from("1"))),
                 }],
             }),

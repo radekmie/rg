@@ -128,15 +128,8 @@ export function mangleSymbols(gameDeclaration: ast.GameDeclaration) {
   });
 
   const mangleSymbolsInValueEntry = memo((valueEntry: ast.ValueEntry) => {
-    switch (valueEntry.kind) {
-      case 'DefaultEntry':
-        mangleSymbolsInValue(valueEntry.value);
-        break;
-      case 'NamedEntry':
-        valueEntry.identifier = symbol(valueEntry.identifier);
-        mangleSymbolsInValue(valueEntry.value);
-        break;
-    }
+    valueEntry.identifier &&= symbol(valueEntry.identifier);
+    mangleSymbolsInValue(valueEntry.value);
   });
 
   for (const constantDeclaration of gameDeclaration.constants) {

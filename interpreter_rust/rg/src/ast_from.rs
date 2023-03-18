@@ -112,10 +112,7 @@ impl<Id> From<Vec<ValueEntry<Id>>> for Value<Id> {
 
 impl<Id> From<(Option<Id>, Rc<Value<Id>>)> for ValueEntry<Id> {
     fn from((identifier, value): (Option<Id>, Rc<Value<Id>>)) -> Self {
-        match identifier {
-            Some(identifier) => Self::NamedEntry { identifier, value },
-            None => Self::DefaultEntry { value },
-        }
+        Self { identifier, value }
     }
 }
 

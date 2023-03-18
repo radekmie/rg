@@ -526,25 +526,28 @@ function translateGame(context: Context) {
       }),
       value: rg.Map({
         entries: [
-          rg.DefaultEntry({
+          rg.ValueEntry({
+            identifier: null,
             value: rg.Map({
               entries: [
-                rg.DefaultEntry({
+                rg.ValueEntry({
+                  identifier: null,
                   value: rg.Element({ identifier: 'null' }),
                 }),
               ],
             }),
           }),
           ...context.rbg.board.map(node =>
-            rg.NamedEntry({
+            rg.ValueEntry({
               identifier: node.node,
               value: rg.Map({
                 entries: [
-                  rg.DefaultEntry({
+                  rg.ValueEntry({
+                    identifier: null,
                     value: rg.Element({ identifier: 'null' }),
                   }),
                   ...node.edges.map(edge =>
-                    rg.NamedEntry({
+                    rg.ValueEntry({
                       identifier: edge.label,
                       value: rg.Element({ identifier: edge.node }),
                     }),
@@ -576,7 +579,12 @@ function translateGame(context: Context) {
       identifier: 'goals',
       type: rg.TypeReference({ identifier: 'Goals' }),
       defaultValue: rg.Map({
-        entries: [rg.DefaultEntry({ value: rg.Element({ identifier: '0' }) })],
+        entries: [
+          rg.ValueEntry({
+            identifier: null,
+            value: rg.Element({ identifier: '0' }),
+          }),
+        ],
       }),
     }),
     rg.VariableDeclaration({
@@ -584,14 +592,15 @@ function translateGame(context: Context) {
       type: rg.TypeReference({ identifier: 'Board' }),
       defaultValue: rg.Map({
         entries: [
-          rg.DefaultEntry({
+          rg.ValueEntry({
+            identifier: null,
             value: rg.Element({ identifier: mostCommonPiece }),
           }),
           ...context.rbg.board.flatMap(node =>
             node.piece === mostCommonPiece
               ? []
               : [
-                  rg.NamedEntry({
+                  rg.ValueEntry({
                     identifier: node.node,
                     value: rg.Element({ identifier: node.piece }),
                   }),
@@ -610,9 +619,12 @@ function translateGame(context: Context) {
       type: rg.TypeReference({ identifier: 'Counters' }),
       defaultValue: rg.Map({
         entries: [
-          rg.DefaultEntry({ value: rg.Element({ identifier: '0' }) }),
+          rg.ValueEntry({
+            identifier: null,
+            value: rg.Element({ identifier: '0' }),
+          }),
           ...context.rbg.pieces.map(piece =>
-            rg.NamedEntry({
+            rg.ValueEntry({
               identifier: piece,
               value: rg.Element({
                 identifier: String(
@@ -891,12 +903,15 @@ export default function translate(game: rbg.Game) {
 
       const value = rg.Map({
         entries: [
-          rg.DefaultEntry({ value: rg.Element({ identifier: defaultValue }) }),
+          rg.ValueEntry({
+            identifier: null,
+            value: rg.Element({ identifier: defaultValue }),
+          }),
           ...pairs
             .filter(([, to]) => to !== defaultValue)
             .sort()
             .map(([from, to]) =>
-              rg.NamedEntry({
+              rg.ValueEntry({
                 identifier: from,
                 value: rg.Element({ identifier: to }),
               }),
@@ -947,7 +962,7 @@ export default function translate(game: rbg.Game) {
       if (!utils.find(this.rg.constants, { identifier: mathOperator })) {
         const nanSymbol = 'nan';
         const nanElement = rg.Element({ identifier: nanSymbol });
-        const nanEntry = rg.DefaultEntry({ value: nanElement });
+        const nanEntry = rg.ValueEntry({ identifier: null, value: nanElement });
 
         const numberType = this.$createTypeFromSet([
           nanSymbol,
@@ -963,9 +978,12 @@ export default function translate(game: rbg.Game) {
             }),
             value: rg.Map({
               entries: [
-                rg.DefaultEntry({ value: rg.Map({ entries: [nanEntry] }) }),
+                rg.ValueEntry({
+                  identifier: null,
+                  value: rg.Map({ entries: [nanEntry] }),
+                }),
                 ...utils.generate(limit, lhs =>
-                  rg.NamedEntry({
+                  rg.ValueEntry({
                     identifier: `${lhs}`,
                     value: rg.Map({
                       entries: [
@@ -1002,7 +1020,7 @@ export default function translate(game: rbg.Game) {
                               return null;
                             }
 
-                            return rg.NamedEntry({
+                            return rg.ValueEntry({
                               identifier: `${rhs}`,
                               value: rg.Element({ identifier: String(result) }),
                             });
