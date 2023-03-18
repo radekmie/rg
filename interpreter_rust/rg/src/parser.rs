@@ -5,7 +5,7 @@ use crate::ast::{
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};
 use nom::character::complete::char;
-use nom::combinator::{cut, into, map, opt, success};
+use nom::combinator::{cut, into, map, opt, success, verify};
 use nom::error::{context, VerboseError};
 use nom::multi::{fold_many0, many1, separated_list0};
 use nom::sequence::{delimited, preceded, separated_pair, terminated, tuple};
@@ -136,9 +136,13 @@ pub fn game(input: &str) -> Result<Game<&str>> {
 }
 
 pub fn identifier(input: &str) -> Result<&str> {
+    static KEYWORDS: [&str; 4] = ["any", "const", "type", "var"];
     context(
         "identifier",
-        take_while1(|c: char| c.is_alphanumeric() || c == '_'),
+        verify(
+            take_while1(|c: char| c.is_alphanumeric() || c == '_'),
+            |identifier: &str| !KEYWORDS.contains(&identifier),
+        ),
     )(input)
 }
 
