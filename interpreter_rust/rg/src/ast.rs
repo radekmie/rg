@@ -244,6 +244,10 @@ pub enum ErrorReason<Id> {
     EmptySetType {
         identifier: Id,
     },
+    MultipleEdges {
+        lhs: EdgeName<Id>,
+        rhs: EdgeName<Id>,
+    },
     SetTypeExpected {
         got: Rc<Type<Id>>,
     },

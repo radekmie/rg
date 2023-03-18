@@ -130,6 +130,10 @@ impl<Id: Display> Display for ErrorReason<Id> {
             Self::EmptySetType { identifier } => {
                 write!(f, "Type {identifier} should not be empty.")
             }
+            Self::MultipleEdges { lhs, rhs } => write!(
+                f,
+                "Multiple edges between two nodes are not allowed ({lhs} -> {rhs})."
+            ),
             Self::SetTypeExpected { got } => write!(f, "Expected Set type, got {got}."),
             Self::TypeDeclarationMismatch {
                 expected,
