@@ -649,6 +649,9 @@ function translateGame(context: Context) {
     rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
   );
 
+  removePowerSkipEdges(context);
+  wrapKeeperMovesInAny(context);
+
   return context.rg;
 }
 
@@ -877,6 +880,162 @@ function makeShiftPattern(context: Context, coord: string, rule: rbg.Rule) {
   }
 
   return context.$shiftPatternsCache[key];
+}
+
+function removePowerSkipEdges(context: Context) {
+  function isSkipToEnd(edge: rg.EdgeDeclaration) {
+    return (
+      edge.rhs.parts.length === 1 &&
+      edge.rhs.parts[0].kind === 'Literal' &&
+      edge.rhs.parts[0].identifier === 'end' &&
+      edge.label.kind === 'Skip'
+    );
+  }
+
+  let edgesCount = Infinity;
+  while (edgesCount !== context.rg.edges.length) {
+    edgesCount = context.rg.edges.length;
+    for (const x of context.rg.edges.slice()) {
+      if (isSkipToEnd(x)) {
+        for (const y of rg.lib.incoming(context.rg.edges, x.lhs)) {
+          y.rhs = x.rhs;
+        }
+      }
+    }
+
+    for (const x of context.rg.edges.slice()) {
+      if (isSkipToEnd(x)) {
+        utils.remove(context.rg.edges, x);
+      }
+    }
+  }
+}
+
+// eslint-disable-next-line complexity -- Simplify it later.
+function wrapKeeperMovesInAny(context: Context) {
+  // 1. For every `_, A: player = keeper`.
+  //   2. Find the furthest node B that is reachable from A without splits.
+  //   3. Find all paths from B ending in `C, _: player = *`.
+  //   4. For each node C.
+  //     5. Find the earliest node D that is reachable from C without splits.
+  //     6. If there's no edge from B to D.
+  //       7. Replace all nodes outgoing from B with E.
+  //       8. Add a new edge `B, D: any E -> D` where E is a fresh node.
+  //
+  // Note that steps 7 and 8 have to be executed after all of the edges were
+  // checked, as they can alter the reachabilities.
+  let edgesCount = Infinity;
+  while (edgesCount !== context.rg.edges.length) {
+    edgesCount = context.rg.edges.length;
+    for (const { rhs: A, label } of context.rg.edges) {
+      if (
+        label.kind !== 'Assignment' ||
+        label.lhs.kind !== 'Reference' ||
+        label.lhs.identifier !== 'player' ||
+        label.rhs.kind !== 'Reference' ||
+        label.rhs.identifier !== 'keeper'
+      ) {
+        continue;
+      }
+
+      let B = A;
+      for (let limit = 0; limit < context.rg.edges.length; ++limit) {
+        const outgoing = rg.lib.outgoing(context.rg.edges, B);
+        if (
+          outgoing.length === 1 &&
+          (outgoing[0].label.kind !== 'Assignment' ||
+            outgoing[0].label.lhs.kind !== 'Reference' ||
+            outgoing[0].label.lhs.identifier !== 'player')
+        ) {
+          B = outgoing[0].rhs;
+        } else {
+          break;
+        }
+      }
+
+      if (
+        B.parts.length === 1 &&
+        B.parts[0].kind === 'Literal' &&
+        B.parts[0].identifier === 'end'
+      ) {
+        continue;
+      }
+
+      const queue = [B];
+      const reachablePlayerAssignments: rg.EdgeName[] = [];
+      for (let node: rg.EdgeName | undefined; (node = queue.pop()); ) {
+        for (const edge of rg.lib.outgoing(context.rg.edges, node)) {
+          if (
+            edge.label.kind === 'Assignment' &&
+            edge.label.lhs.kind === 'Reference' &&
+            edge.label.lhs.identifier === 'player'
+          ) {
+            utils.unique(reachablePlayerAssignments, edge.lhs);
+          } else {
+            queue.push(edge.rhs);
+          }
+        }
+      }
+
+      for (const C of reachablePlayerAssignments) {
+        let D = C;
+        for (let limit = 0; limit < context.rg.edges.length; ++limit) {
+          const incoming = rg.lib
+            .incoming(context.rg.edges, D)
+            .filter(edge => rg.lib.incoming(context.rg.edges, edge.lhs));
+          if (incoming.length === 1 && !utils.isEqual(incoming[0].lhs, B)) {
+            D = incoming[0].lhs;
+          } else {
+            break;
+          }
+        }
+
+        if (utils.find(context.rg.edges, { lhs: B, rhs: D })) {
+          continue;
+        }
+
+        const pairs: [rg.EdgeDeclaration, rg.EdgeDeclaration][] = [];
+        for (const edgeX of rg.lib.outgoing(context.rg.edges, B)) {
+          const queue = [edgeX.rhs];
+          for (let node: rg.EdgeName | undefined; (node = queue.pop()); ) {
+            for (const edgeY of rg.lib.outgoing(context.rg.edges, node)) {
+              if (utils.isEqual(edgeY.rhs, D)) {
+                pairs.push([edgeX, edgeY]);
+                queue.length = 0;
+                break;
+              }
+
+              if (
+                edgeY.label.kind !== 'Assignment' ||
+                edgeY.label.lhs.kind !== 'Reference' ||
+                edgeY.label.lhs.identifier !== 'player'
+              ) {
+                queue.push(edgeY.rhs);
+              }
+            }
+          }
+        }
+
+        if (pairs.length) {
+          const E = context.$randomEdgeName();
+          const F = context.$randomEdgeName();
+
+          for (const [edgeX, edgeY] of pairs) {
+            edgeX.lhs = E;
+            edgeY.rhs = F;
+          }
+
+          context.rg.edges.push(
+            rg.EdgeDeclaration({
+              lhs: B,
+              rhs: D,
+              label: rg.Any({ lhs: E, rhs: F }),
+            }),
+          );
+        }
+      }
+    }
+  }
 }
 
 export default function translate(game: rbg.Game) {

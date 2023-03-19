@@ -96,7 +96,7 @@ impl State {
             game,
             return_queue: Vec::default(),
             search_queue: vec![self.clone()],
-            visited_states: BTreeSet::default(),
+            visited_states: (!break_on_player).then(BTreeSet::default),
         }
     }
 
@@ -119,7 +119,7 @@ pub struct StateNext<'a> {
     game: &'a Game<RuntimeId>,
     return_queue: Vec<State>,
     search_queue: Vec<State>,
-    visited_states: BTreeSet<State>,
+    visited_states: Option<BTreeSet<State>>,
 }
 
 impl Iterator for StateNext<'_> {
@@ -140,14 +140,16 @@ impl Iterator for StateNext<'_> {
             }
 
             if let Some(state) = search_queue.pop() {
-                // Check whether this state was already visited and if so, skip
-                // it. It could happen conditionally, only when a game requires
-                // that, but that'd require an additional analysis.
-                if visited_states.contains(&state) {
-                    continue;
-                }
+                if let Some(visited_states) = visited_states {
+                    // Check whether this state was already visited and if so,
+                    // skip it. It happens only when we evaluate the `any` or
+                    // `reachability` edge label.
+                    if visited_states.contains(&state) {
+                        continue;
+                    }
 
-                visited_states.insert(state.clone());
+                    visited_states.insert(state.clone());
+                }
 
                 if let Some(edges) = game.edges.get(&state.position) {
                     let mut reachables: Option<BTreeMap<(RuntimeId, RuntimeId), bool>> = None;
@@ -155,11 +157,24 @@ impl Iterator for StateNext<'_> {
                         let mut state = state.clone_at(edge.next);
                         match &edge.label {
                             EdgeLabel::Any { lhs, rhs } => {
+                                // Skip if `rhs` is not reachable from `lhs`.
+                                if let Some(false) = reachables
+                                    .as_ref()
+                                    .and_then(|reachables| reachables.get(&(*lhs, *rhs)))
+                                {
+                                    continue;
+                                }
+
                                 state.position = *lhs;
                                 for mut next_state in state.next_states(game, false) {
                                     if next_state.position == *rhs {
                                         next_state.position = edge.next;
                                         search_queue.push(next_state);
+
+                                        // If there's a path, it means it's reachable.
+                                        reachables
+                                            .get_or_insert_with(BTreeMap::new)
+                                            .insert((*lhs, *rhs), true);
                                         break;
                                     }
                                 }
