@@ -200,10 +200,8 @@ pub enum EdgeNamePart<Id> {
 
 impl<Id> EdgeNamePart<Id> {
     pub fn binding(&self) -> Option<Binding<Id>> {
-        match self {
-            Self::Binding { identifier, type_ } => Some((identifier, type_)),
-            _ => None,
-        }
+        let Self::Binding { identifier, type_ } = self else { return None };
+        Some((identifier, type_))
     }
 }
 
@@ -300,28 +298,26 @@ impl<Id: Clone + PartialEq> Expression<Id> {
         match self {
             Self::Access { lhs, rhs } => {
                 let accessed_type = lhs.infer(game, edge)?;
-                if let Type::Arrow {
+                let Type::Arrow {
                     lhs: key_type,
                     rhs: value_type,
-                } = accessed_type.resolve(game)?
-                {
-                    let accessor_type = rhs.infer(game, edge)?;
-                    if !accessor_type.resolve(game)?.is_set() {
-                        return game
-                            .make_error(ErrorReason::SetTypeExpected { got: accessor_type });
-                    }
+                } = accessed_type.resolve(game)? else {
+                    return game.make_error(ErrorReason::ArrowTypeExpected { got: accessed_type })
+                };
 
-                    if !game.is_assignable_type(key_type, &accessor_type, false)? {
-                        return game.make_error(ErrorReason::AssignmentTypeMismatch {
-                            lhs: key_type.clone(),
-                            rhs: accessor_type,
-                        });
-                    }
-
-                    Ok(value_type.clone())
-                } else {
-                    game.make_error(ErrorReason::ArrowTypeExpected { got: accessed_type })
+                let accessor_type = rhs.infer(game, edge)?;
+                if !accessor_type.resolve(game)?.is_set() {
+                    return game.make_error(ErrorReason::SetTypeExpected { got: accessor_type });
                 }
+
+                if !game.is_assignable_type(key_type, &accessor_type, false)? {
+                    return game.make_error(ErrorReason::AssignmentTypeMismatch {
+                        lhs: key_type.clone(),
+                        rhs: accessor_type,
+                    });
+                }
+
+                Ok(value_type.clone())
             }
             Self::Cast { lhs, rhs } => {
                 let rhs = rhs.infer(game, edge)?;
@@ -680,6 +676,12 @@ pub struct Typedef<Id> {
     pub identifier: Id,
     #[serde(rename = "type")]
     pub type_: Rc<Type<Id>>,
+}
+
+impl<Id: Clone> Typedef<Id> {
+    pub fn to_type(&self) -> Type<Id> {
+        Type::from(self.identifier.clone())
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

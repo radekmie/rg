@@ -31,18 +31,17 @@ impl Game<Rc<str>> {
 
         // Player ^ isSet(Player) |- PlayerOrKeeper
         let player_type = &self.resolve_typedef(&Rc::from("Player"))?.type_;
-        let players = if let Type::Set { identifiers } = &**player_type {
-            if identifiers.contains(&Rc::from("keeper")) {
-                identifiers.clone()
-            } else {
-                let mut identifiers = identifiers.clone();
-                identifiers.push(Rc::from("keeper"));
-                identifiers
-            }
-        } else {
+        let Type::Set { identifiers } = &**player_type else {
             return self.make_error(ErrorReason::SetTypeExpected {
                 got: player_type.clone(),
             });
+        };
+        let players = if identifiers.contains(&Rc::from("keeper")) {
+            identifiers.clone()
+        } else {
+            let mut identifiers = identifiers.clone();
+            identifiers.push(Rc::from("keeper"));
+            identifiers
         };
         self.add_builtin_type(Typedef {
             identifier: Rc::from("PlayerOrKeeper"),
@@ -52,18 +51,14 @@ impl Game<Rc<str>> {
         // Goals ^ Score ^ isSet(Score) |- goals
         self.resolve_typedef(&Rc::from("Goals"))?;
         let score_type = &self.resolve_typedef(&Rc::from("Score"))?.type_;
-        let default_score = if let Type::Set { identifiers } = &**score_type {
-            identifiers.first().cloned().map_or_else(
-                || {
-                    self.make_error(ErrorReason::EmptySetType {
-                        identifier: Rc::from("Score"),
-                    })
-                },
-                Ok,
-            )?
-        } else {
+        let Type::Set { identifiers } = &**score_type else {
             return self.make_error(ErrorReason::SetTypeExpected {
                 got: score_type.clone(),
+            });
+        };
+        let Some(default_score) = identifiers.first().cloned() else {
+            return self.make_error(ErrorReason::EmptySetType {
+                identifier: Rc::from("Score"),
             });
         };
         self.add_builtin_variable(Variable {

@@ -24,13 +24,15 @@ impl State {
         expression: &'a Expression<RuntimeId>,
     ) -> &'a Rc<Value<RuntimeId>> {
         match expression {
-            Expression::Access { lhs, rhs } => match &**self.eval(game, rhs) {
-                Value::Element { value } => match &**self.eval(game, lhs) {
-                    Value::Map { default, values } => values.get(value).unwrap_or(default),
-                    _ => panic!("Only Map can be accessed."),
-                },
-                _ => panic!("Only Element can be key."),
-            },
+            Expression::Access { lhs, rhs } => {
+                let Value::Element { value } = &**self.eval(game, rhs) else {
+                    panic!("Only Element can be key.")
+                };
+                let Value::Map { default, values } = &**self.eval(game, lhs) else {
+                    panic!("Only Map can be accessed.")
+                };
+                values.get(value).unwrap_or(default)
+            }
             Expression::ConstantReference { identifier } => game.constants.get(identifier).unwrap(),
             Expression::Literal { value } => value,
             Expression::VariableReference { identifier } => self.values.get(identifier).unwrap(),
@@ -44,23 +46,24 @@ impl State {
         set: Rc<Value<RuntimeId>>,
     ) {
         match expression {
-            Expression::Access { lhs, rhs } => match &**self.eval(game, rhs) {
-                Value::Element { value } => {
-                    let mut map = self.eval(game, lhs).clone();
-                    if let Value::Map { default, values } = Rc::make_mut(&mut map) {
-                        if &set == default {
-                            Rc::make_mut(values).remove(value);
-                        } else {
-                            Rc::make_mut(values).insert(*value, set);
-                        }
-                    } else {
-                        panic!("Only Map can be accessed.");
-                    }
+            Expression::Access { lhs, rhs } => {
+                let Value::Element { value } = &**self.eval(game, rhs) else {
+                    panic!("Only Element can be key.")
+                };
 
-                    self.eval_set(game, lhs, map);
+                let mut map = self.eval(game, lhs).clone();
+                let Value::Map { default, values } = Rc::make_mut(&mut map) else {
+                    panic!("Only Map can be accessed.");
+                };
+
+                if &set == default {
+                    Rc::make_mut(values).remove(value);
+                } else {
+                    Rc::make_mut(values).insert(*value, set);
                 }
-                _ => panic!("Only Element can be key."),
-            },
+
+                self.eval_set(game, lhs, map);
+            }
             Expression::ConstantReference { .. } => panic!("ConstantReference is immutable."),
             Expression::Literal { .. } => panic!("Literal is immutable."),
             Expression::VariableReference { identifier } => {

@@ -50,12 +50,8 @@ impl<Id: Clone + PartialEq> Expression<Id> {
     }
 
     fn add_explicit_cast(self, game: &Game<Id>, type_: &Type<Id>) -> Result<Self, Error<Id>> {
-        Ok(match game.resolve_typedef_by_type(type_)? {
-            Some(typedef) => self.add_explicit_cast_if_needed(&Rc::new(Type::TypeReference {
-                identifier: typedef.identifier.clone(),
-            })),
-            _ => self,
-        })
+        let Some(typedef) = game.resolve_typedef_by_type(type_)? else { return Ok(self) };
+        Ok(self.add_explicit_cast_if_needed(&Rc::new(typedef.to_type())))
     }
 
     fn add_explicit_cast_if_needed(self, type_: &Rc<Type<Id>>) -> Self {
@@ -77,13 +73,13 @@ impl<Id: Clone + PartialEq> Expression<Id> {
         Ok(match self {
             Self::Access { lhs, rhs } => {
                 let lhs_type = lhs.infer(game, edge)?;
-                if let Type::Arrow { lhs: key_type, .. } = lhs_type.resolve(game)? {
-                    Self::Access {
-                        lhs: Rc::new(lhs.add_explicit_casts(game, edge, &lhs_type)?),
-                        rhs: Rc::new(rhs.add_explicit_casts(game, edge, key_type)?),
-                    }
-                } else {
+                let Type::Arrow { lhs: key_type, .. } = lhs_type.resolve(game)? else {
                     return game.make_error(ErrorReason::ArrowTypeExpected { got: lhs_type });
+                };
+
+                Self::Access {
+                    lhs: Rc::new(lhs.add_explicit_casts(game, edge, &lhs_type)?),
+                    rhs: Rc::new(rhs.add_explicit_casts(game, edge, key_type)?),
                 }
             }
             Self::Cast { ref lhs, rhs } => rhs

@@ -72,25 +72,24 @@ impl<Id: Clone + PartialEq> Value<Id> {
                 }
             }
             Self::Map { entries } => {
-                if let Type::Arrow {
+                let Type::Arrow {
                     lhs: key_type,
                     rhs: value_type,
-                } = type_.resolve(game)?
-                {
-                    for ValueEntry { identifier, value } in entries {
-                        value.check_type(game, value_type)?;
-                        if let Some(identifier) = identifier {
-                            let rhs = game.infer(identifier, None);
-                            if !game.is_assignable_type(key_type, &rhs, false)? {
-                                return game.make_error(ErrorReason::AssignmentTypeMismatch {
-                                    lhs: key_type.clone(),
-                                    rhs,
-                                });
-                            }
+                } = type_.resolve(game)? else {
+                    return game.make_error(ErrorReason::ArrowTypeExpected { got: type_.clone() });
+                };
+
+                for ValueEntry { identifier, value } in entries {
+                    value.check_type(game, value_type)?;
+                    if let Some(identifier) = identifier {
+                        let rhs = game.infer(identifier, None);
+                        if !game.is_assignable_type(key_type, &rhs, false)? {
+                            return game.make_error(ErrorReason::AssignmentTypeMismatch {
+                                lhs: key_type.clone(),
+                                rhs,
+                            });
                         }
                     }
-                } else {
-                    return game.make_error(ErrorReason::ArrowTypeExpected { got: type_.clone() });
                 }
             }
         }

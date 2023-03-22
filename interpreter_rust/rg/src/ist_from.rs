@@ -64,10 +64,10 @@ fn build_edge_label<Id: Display>(
 }
 
 fn build_edge_name<Id: Display>(edge_name: ast::EdgeName<Id>) -> Rc<str> {
-    match &edge_name.parts[..] {
-        [ast::EdgeNamePart::Literal { identifier }] => Rc::from(identifier.to_string()),
-        _ => panic!("Only trivial EdgeName allowed."),
-    }
+    let [ast::EdgeNamePart::Literal { identifier }] = &edge_name.parts[..] else {
+        panic!("Only trivial EdgeName allowed.")
+    };
+    Rc::from(identifier.to_string())
 }
 
 fn build_edges<Id: Display>(game: &mut ist::Game<Rc<str>>, edges: Vec<ast::Edge<Id>>) {
@@ -137,36 +137,37 @@ fn build_value<Id: Display + Ord>(
                 .cloned()
                 .unwrap_or_else(|| Rc::new(ist::Value::Element { value: identifier }))
         }
-        ast::Value::Map { entries } => match type_ {
-            ist::Type::Arrow { rhs, .. } => {
-                let default_value = entries.iter().find_map(
-                    |ast::ValueEntry { identifier, value }| match identifier {
-                        Some(_) => None,
-                        None => Some(value),
-                    },
-                );
+        ast::Value::Map { entries } => {
+            let ist::Type::Arrow { rhs, .. } = type_ else {
+                panic!("Incorrect Map type found.")
+            };
 
-                assert!(default_value.is_some(), "Map is missing default value.");
+            let default_value = entries
+                .iter()
+                .find_map(|ast::ValueEntry { identifier, value }| match identifier {
+                    Some(_) => None,
+                    None => Some(value),
+                });
 
-                Rc::new(ist::Value::Map {
-                    default: build_value(game, rhs, default_value.unwrap()),
-                    values: Rc::new(
-                        entries
-                            .iter()
-                            .flat_map(|ast::ValueEntry { identifier, value }| {
-                                identifier.as_ref().map(|identifier| {
-                                    (
-                                        Rc::from(identifier.to_string()),
-                                        build_value(game, rhs, value),
-                                    )
-                                })
+            assert!(default_value.is_some(), "Map is missing default value.");
+
+            Rc::new(ist::Value::Map {
+                default: build_value(game, rhs, default_value.unwrap()),
+                values: Rc::new(
+                    entries
+                        .iter()
+                        .flat_map(|ast::ValueEntry { identifier, value }| {
+                            identifier.as_ref().map(|identifier| {
+                                (
+                                    Rc::from(identifier.to_string()),
+                                    build_value(game, rhs, value),
+                                )
                             })
-                            .collect::<BTreeMap<_, _>>(),
-                    ),
-                })
-            }
-            _ => panic!("Incorrect Map type found."),
-        },
+                        })
+                        .collect::<BTreeMap<_, _>>(),
+                ),
+            })
+        }
     }
 }
 
