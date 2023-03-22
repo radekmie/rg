@@ -44,7 +44,7 @@
       "context": "node",
       "distDir": "lib/cli",
       "engines": {
-        "node": ">= 18.13.0"
+        "node": ">= 18.15.0"
       },
       "optimize": false,
       "source": "src/cli/index.ts"

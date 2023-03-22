@@ -8,13 +8,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@v3.4.0
       - name: Install Node.js
         uses: actions/setup-node@v3.6.0
         with:
           cache: npm
           cache-dependency-path: interpreter_node/package-lock.json
-          node-version: "18.13.0"
+          node-version: "18.15.0"
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - name: Install
