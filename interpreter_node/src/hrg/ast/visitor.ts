@@ -49,21 +49,27 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
       });
     }
 
+    if ('KeywordAny' in context) {
+      return ast.AutomatonAny({
+        body: this.visitNodes(context.AutomatonStatement),
+      });
+    }
+
     if ('KeywordBranch' in context) {
       return ast.AutomatonBranch({
         arms: this.visitNodes(context.AutomatonBranch),
       });
     }
 
-    if ('KeywordWhen' in context) {
-      return ast.AutomatonWhen({
-        expression: this.visitNode(context.Expression[0]),
+    if ('KeywordLoop' in context) {
+      return ast.AutomatonLoop({
         body: this.visitNodes(context.AutomatonStatement),
       });
     }
 
-    if ('KeywordLoop' in context) {
-      return ast.AutomatonLoop({
+    if ('KeywordWhen' in context) {
+      return ast.AutomatonWhen({
+        expression: this.visitNode(context.Expression[0]),
         body: this.visitNodes(context.AutomatonStatement),
       });
     }

@@ -54,13 +54,21 @@ class Parser extends CstParser {
       },
       {
         ALT: () => {
+          this.CONSUME(tokens.KeywordAny);
+          this.CONSUME(tokens.BraceLeft);
+          this.MANY2(() => this.SUBRULE(this.AutomatonStatement));
+          this.CONSUME(tokens.BraceRight);
+        },
+      },
+      {
+        ALT: () => {
           this.CONSUME(tokens.KeywordBranch);
           this.MANY_SEP2({
             SEP: tokens.KeywordOr,
             DEF: () => {
-              this.CONSUME(tokens.BraceLeft);
+              this.CONSUME2(tokens.BraceLeft);
               this.SUBRULE(this.AutomatonBranch);
-              this.CONSUME(tokens.BraceRight);
+              this.CONSUME2(tokens.BraceRight);
             },
           });
         },
@@ -69,17 +77,17 @@ class Parser extends CstParser {
         ALT: () => {
           this.CONSUME(tokens.KeywordWhen);
           this.SUBRULE4(this.Expression);
-          this.CONSUME2(tokens.BraceLeft);
-          this.MANY2(() => this.SUBRULE(this.AutomatonStatement));
-          this.CONSUME2(tokens.BraceRight);
+          this.CONSUME3(tokens.BraceLeft);
+          this.MANY3(() => this.SUBRULE2(this.AutomatonStatement));
+          this.CONSUME3(tokens.BraceRight);
         },
       },
       {
         ALT: () => {
           this.CONSUME(tokens.KeywordLoop);
-          this.CONSUME3(tokens.BraceLeft);
-          this.MANY3(() => this.SUBRULE2(this.AutomatonStatement));
-          this.CONSUME3(tokens.BraceRight);
+          this.CONSUME4(tokens.BraceLeft);
+          this.MANY4(() => this.SUBRULE3(this.AutomatonStatement));
+          this.CONSUME4(tokens.BraceRight);
         },
       },
       {
@@ -88,9 +96,9 @@ class Parser extends CstParser {
           this.CONSUME3(tokens.ParenthesisLeft);
           this.SUBRULE5(this.Expression);
           this.CONSUME3(tokens.ParenthesisRight);
-          this.CONSUME4(tokens.BraceLeft);
-          this.MANY4(() => this.SUBRULE3(this.AutomatonStatement));
-          this.CONSUME4(tokens.BraceRight);
+          this.CONSUME5(tokens.BraceLeft);
+          this.MANY5(() => this.SUBRULE4(this.AutomatonStatement));
+          this.CONSUME5(tokens.BraceRight);
         },
       },
     ]);

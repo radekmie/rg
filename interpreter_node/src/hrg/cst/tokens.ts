@@ -21,6 +21,7 @@ function token(name: string, pattern: RegExp, extra?: TokenType | null) {
 export const Identifier = token('Identifier', /[_a-zA-Z0-9]+/);
 
 // Keywords.
+export const KeywordAny = token('KeywordAny', /any/, Identifier);
 export const KeywordBranch = token('KeywordBranch', /branch/, Identifier);
 export const KeywordDomain = token('KeywordDomain', /domain/, Identifier);
 export const KeywordElse = token('KeywordElse', /else/, Identifier);
