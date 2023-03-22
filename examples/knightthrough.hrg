@@ -1,0 +1,106 @@
+// Knightthrough in hrg
+
+// Domains
+domain Piece = blackknight | empty | whiteknight
+domain Player = black | white
+domain Score = 0 | 100
+domain Position = null | V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
+
+// Helpers
+left : Position -> Position
+left(null) = null
+left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
+
+right : Position -> Position
+right(null) = null
+right(V(X, Y)) = if X == 7 then null else V(X + 1, Y)
+
+up : Position -> Position
+up(null) = null
+up(V(_, 0)) = null
+up(V(X, Y)) = V(X, Y - 1)
+
+down : Position -> Position
+down(null) = null
+down(V(_, 7)) = null
+down(V(X, Y)) = V(X, Y + 1)
+
+direction : Player -> Position -> Position
+direction(white) = up
+direction(_) = down
+
+piece : Player -> Piece
+piece(white) = whiteknight
+piece(_) = blackknight
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(_) = white
+
+
+// Variables
+//   Special variables are defined implicitly (player, score, visibility)
+board : Position -> Piece
+board = {
+  V(X, Y) = if Y < 2
+    then blackknight
+    else if Y > 5
+      then whiteknight
+      else empty
+  where X in 0..7, Y in 0..7
+}
+
+me : Player
+me = white
+
+position : Position
+
+
+// Automaton
+graph move(me: Player) {
+  forall(position)
+  assert(position != null && board[position] == piece(me))
+  board[position] = empty
+  position = direction(me)(position)
+  branch {
+    position = direction(me)(position)
+    branch {
+      position = left(position)
+    } or {
+      position = right(position)
+    }
+  } or {
+    branch {
+      position = left(position)
+      position = left(position)
+    } or {
+      position = right(position)
+      position = right(position)
+    }
+  }
+  assert(position != null)
+  branch {
+    assert(board[position] == empty)
+  } or {
+    assert(board[position] == piece(opponent(me)))
+  }
+}
+
+graph turn() {
+  player = me
+  move(me)
+  board[position] = piece(me)
+  player = keeper
+  when direction(me)(position) == null || not(reachable(move(opponent(me)))) {
+    goals[me] = 100
+    goals[opponent(me)] = 0
+    end()
+  }
+  me = opponent(me)
+}
+
+graph rules() {
+  loop {
+    turn()
+  }
+}
