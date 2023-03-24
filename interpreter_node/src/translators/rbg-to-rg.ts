@@ -962,6 +962,7 @@ function wrapKeeperMovesInAny(context: Context) {
       }
 
       const queue = [B];
+      const visited = new Set<string>();
       const reachablePlayerAssignments: rg.EdgeName[] = [];
       for (let node: rg.EdgeName | undefined; (node = queue.pop()); ) {
         for (const edge of rg.lib.outgoing(context.rg.edges, node)) {
@@ -972,7 +973,11 @@ function wrapKeeperMovesInAny(context: Context) {
           ) {
             utils.unique(reachablePlayerAssignments, edge.lhs);
           } else {
-            queue.push(edge.rhs);
+            const hash = JSON.stringify(edge.rhs);
+            if (!visited.has(hash)) {
+              visited.add(hash);
+              queue.push(edge.rhs);
+            }
           }
         }
       }
@@ -997,6 +1002,7 @@ function wrapKeeperMovesInAny(context: Context) {
         const pairs: [rg.EdgeDeclaration, rg.EdgeDeclaration][] = [];
         for (const edgeX of rg.lib.outgoing(context.rg.edges, B)) {
           const queue = [edgeX.rhs];
+          const visited = new Set<string>();
           for (let node: rg.EdgeName | undefined; (node = queue.pop()); ) {
             for (const edgeY of rg.lib.outgoing(context.rg.edges, node)) {
               if (utils.isEqual(edgeY.rhs, D)) {
@@ -1010,7 +1016,11 @@ function wrapKeeperMovesInAny(context: Context) {
                 edgeY.label.lhs.kind !== 'Reference' ||
                 edgeY.label.lhs.identifier !== 'player'
               ) {
-                queue.push(edgeY.rhs);
+                const hash = JSON.stringify(edgeY.rhs);
+                if (!visited.has(hash)) {
+                  visited.add(hash);
+                  queue.push(edgeY.rhs);
+                }
               }
             }
           }
