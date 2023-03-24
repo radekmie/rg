@@ -36,7 +36,7 @@ impl Type<Rc<str>> {
         }
 
         let self_normalized = self.normalize_direct(game)?;
-        if let Some(typedef) = game.resolve_typedef_by_type(&self_normalized)? {
+        if let Some(typedef) = game.resolve_type_or_fail(&self_normalized)? {
             return Ok(Self::TypeReference {
                 identifier: typedef.identifier.clone(),
             });

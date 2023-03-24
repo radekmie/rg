@@ -480,19 +480,35 @@ impl<Id: Clone + Ord> Game<Id> {
 
 impl<Id: Clone + PartialEq> Game<Id> {
     pub fn infer(&self, identifier: &Id, edge: Option<&Edge<Id>>) -> Rc<Type<Id>> {
-        if let Some((_, type_)) = edge.and_then(|edge| edge.get_binding(identifier)) {
-            return type_.clone();
-        }
+        self.infer_or_none(identifier, edge)
+            .cloned()
+            .unwrap_or_else(|| Rc::new(Type::from(vec![identifier.clone()])))
+    }
 
-        if let Ok(constant) = self.resolve_constant(identifier) {
-            return constant.type_.clone();
-        }
+    pub fn infer_or_none<'a>(
+        &'a self,
+        identifier: &Id,
+        edge: Option<&'a Edge<Id>>,
+    ) -> Option<&'a Rc<Type<Id>>> {
+        edge.and_then(|edge| edge.get_binding(identifier))
+            .map(|(_, type_)| type_)
+            .or_else(|| self.resolve_constant(identifier).map(|x| &x.type_))
+            .or_else(|| self.resolve_variable(identifier).map(|x| &x.type_))
+    }
 
-        if let Ok(variable) = self.resolve_variable(identifier) {
-            return variable.type_.clone();
+    pub fn is_assignable_identifier(
+        &self,
+        lhs: &Type<Id>,
+        rhs: &Id,
+        is_strict: bool,
+    ) -> Result<bool, Error<Id>> {
+        if let Some(rhs) = self.infer_or_none(rhs, None) {
+            self.is_assignable_type(lhs, rhs, is_strict)
+        } else if let Type::Set { identifiers } = lhs.resolve(self)? {
+            Ok(identifiers.contains(rhs))
+        } else {
+            Ok(false)
         }
-
-        Rc::new(Type::from(vec![identifier.clone()]))
     }
 
     pub fn is_assignable_type(
@@ -538,35 +554,20 @@ impl<Id: Clone + PartialEq> Game<Id> {
             && self.is_assignable_type(rhs, lhs, is_strict)?)
     }
 
-    pub fn resolve_constant(&self, identifier: &Id) -> Result<&Constant<Id>, Error<Id>> {
-        self.constants
-            .iter()
-            .find(|constant| &constant.identifier == identifier)
-            .map_or_else(
-                || {
-                    self.make_error(ErrorReason::UnresolvedConstant {
-                        identifier: identifier.clone(),
-                    })
-                },
-                Ok,
-            )
+    pub fn resolve_constant(&self, identifier: &Id) -> Option<&Constant<Id>> {
+        self.constants.iter().find(|x| &x.identifier == identifier)
     }
 
-    pub fn resolve_typedef(&self, identifier: &Id) -> Result<&Typedef<Id>, Error<Id>> {
-        self.typedefs
-            .iter()
-            .find(|typedef| &typedef.identifier == identifier)
-            .map_or_else(
-                || {
-                    self.make_error(ErrorReason::UnresolvedType {
-                        identifier: identifier.clone(),
-                    })
-                },
-                Ok,
-            )
+    pub fn resolve_constant_or_fail(&self, identifier: &Id) -> Result<&Constant<Id>, Error<Id>> {
+        let Some(constant) = self.resolve_constant(identifier) else {
+            return self.make_error(ErrorReason::UnresolvedConstant {
+                identifier: identifier.clone(),
+            });
+        };
+        Ok(constant)
     }
 
-    pub fn resolve_typedef_by_type<'a>(
+    pub fn resolve_type_or_fail<'a>(
         &'a self,
         type_: &'a Type<Id>,
     ) -> Result<Option<&'a Typedef<Id>>, Error<Id>> {
@@ -586,18 +587,30 @@ impl<Id: Clone + PartialEq> Game<Id> {
             .transpose()
     }
 
-    pub fn resolve_variable(&self, identifier: &Id) -> Result<&Variable<Id>, Error<Id>> {
-        self.variables
-            .iter()
-            .find(|variable| &variable.identifier == identifier)
-            .map_or_else(
-                || {
-                    self.make_error(ErrorReason::UnresolvedVariable {
-                        identifier: identifier.clone(),
-                    })
-                },
-                Ok,
-            )
+    pub fn resolve_typedef(&self, identifier: &Id) -> Option<&Typedef<Id>> {
+        self.typedefs.iter().find(|x| &x.identifier == identifier)
+    }
+
+    pub fn resolve_typedef_or_fail(&self, identifier: &Id) -> Result<&Typedef<Id>, Error<Id>> {
+        let Some(typedef) = self.resolve_typedef(identifier) else {
+            return self.make_error(ErrorReason::UnresolvedType {
+                identifier: identifier.clone(),
+            });
+        };
+        Ok(typedef)
+    }
+
+    pub fn resolve_variable(&self, identifier: &Id) -> Option<&Variable<Id>> {
+        self.variables.iter().find(|x| &x.identifier == identifier)
+    }
+
+    pub fn resolve_variable_or_fail(&self, identifier: &Id) -> Result<&Variable<Id>, Error<Id>> {
+        let Some(variable) = self.resolve_variable(identifier) else {
+            return self.make_error(ErrorReason::UnresolvedVariable {
+                identifier: identifier.clone(),
+            });
+        };
+        Ok(variable)
     }
 }
 
@@ -653,7 +666,9 @@ impl<Id> Type<Id> {
 impl<Id: Clone + PartialEq> Type<Id> {
     pub fn resolve<'a>(&'a self, game: &'a Game<Id>) -> Result<&'a Self, Error<Id>> {
         if let Self::TypeReference { identifier } = self {
-            game.resolve_typedef(identifier)?.type_.resolve(game)
+            game.resolve_typedef_or_fail(identifier)?
+                .type_
+                .resolve(game)
         } else {
             Ok(self)
         }
@@ -664,7 +679,7 @@ impl<Id: Clone + PartialEq> Type<Id> {
             Self::Arrow { .. } => todo!(),
             Self::Set { identifiers } => Ok(identifiers.clone()),
             Self::TypeReference { identifier } => {
-                game.resolve_typedef(identifier)?.type_.values(game)
+                game.resolve_typedef_or_fail(identifier)?.type_.values(game)
             }
         }
     }

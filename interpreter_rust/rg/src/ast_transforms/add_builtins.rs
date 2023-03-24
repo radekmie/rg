@@ -10,7 +10,7 @@ impl Game<Rc<str>> {
         })?;
 
         // Player ^ Score |- Goals
-        self.resolve_typedef(&Rc::from("Score"))?;
+        self.resolve_typedef_or_fail(&Rc::from("Score"))?;
         self.add_builtin_type(Typedef {
             identifier: Rc::from("Goals"),
             type_: Rc::new(Type::Arrow {
@@ -20,7 +20,7 @@ impl Game<Rc<str>> {
         })?;
 
         // Player |- Visibility
-        self.resolve_typedef(&Rc::from("Player"))?;
+        self.resolve_typedef_or_fail(&Rc::from("Player"))?;
         self.add_builtin_type(Typedef {
             identifier: Rc::from("Visibility"),
             type_: Rc::new(Type::Arrow {
@@ -30,7 +30,7 @@ impl Game<Rc<str>> {
         })?;
 
         // Player ^ isSet(Player) |- PlayerOrKeeper
-        let player_type = &self.resolve_typedef(&Rc::from("Player"))?.type_;
+        let player_type = &self.resolve_typedef_or_fail(&Rc::from("Player"))?.type_;
         let Type::Set { identifiers } = &**player_type else {
             return self.make_error(ErrorReason::SetTypeExpected {
                 got: player_type.clone(),
@@ -49,8 +49,8 @@ impl Game<Rc<str>> {
         })?;
 
         // Goals ^ Score ^ isSet(Score) |- goals
-        self.resolve_typedef(&Rc::from("Goals"))?;
-        let score_type = &self.resolve_typedef(&Rc::from("Score"))?.type_;
+        self.resolve_typedef_or_fail(&Rc::from("Goals"))?;
+        let score_type = &self.resolve_typedef_or_fail(&Rc::from("Score"))?.type_;
         let Type::Set { identifiers } = &**score_type else {
             return self.make_error(ErrorReason::SetTypeExpected {
                 got: score_type.clone(),
@@ -73,7 +73,7 @@ impl Game<Rc<str>> {
         })?;
 
         // PlayerOrKeeper |- player
-        self.resolve_typedef(&Rc::from("PlayerOrKeeper"))?;
+        self.resolve_typedef_or_fail(&Rc::from("PlayerOrKeeper"))?;
         self.add_builtin_variable(Variable {
             identifier: Rc::from("player"),
             type_: Rc::new(Type::from(Rc::from("PlayerOrKeeper"))),
@@ -81,7 +81,7 @@ impl Game<Rc<str>> {
         })?;
 
         // Visibility |- visibility
-        self.resolve_typedef(&Rc::from("Visibility"))?;
+        self.resolve_typedef_or_fail(&Rc::from("Visibility"))?;
         self.add_builtin_variable(Variable {
             identifier: Rc::from("visible"),
             type_: Rc::new(Type::from(Rc::from("Visibility"))),
@@ -97,7 +97,7 @@ impl Game<Rc<str>> {
     }
 
     fn add_builtin_type(&mut self, builtin: Typedef<Rc<str>>) -> Result<(), Error<Rc<str>>> {
-        if let Ok(defined) = self.resolve_typedef(&builtin.identifier) {
+        if let Some(defined) = self.resolve_typedef(&builtin.identifier) {
             if !self.is_equal_type(&builtin.type_, &defined.type_, false)? {
                 return self.make_error(ErrorReason::TypeDeclarationMismatch {
                     identifier: builtin.identifier,
@@ -112,7 +112,7 @@ impl Game<Rc<str>> {
     }
 
     fn add_builtin_variable(&mut self, builtin: Variable<Rc<str>>) -> Result<(), Error<Rc<str>>> {
-        if let Ok(defined) = self.resolve_variable(&builtin.identifier) {
+        if let Some(defined) = self.resolve_variable(&builtin.identifier) {
             if !self.is_equal_type(&builtin.type_, &defined.type_, false)? {
                 return self.make_error(ErrorReason::VariableDeclarationMismatch {
                     identifier: builtin.identifier,

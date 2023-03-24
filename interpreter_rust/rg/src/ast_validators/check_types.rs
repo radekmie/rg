@@ -63,11 +63,10 @@ impl<Id: Clone + PartialEq> Value<Id> {
     pub fn check_type(&self, game: &Game<Id>, type_: &Rc<Type<Id>>) -> Result<(), Error<Id>> {
         match self {
             Self::Element { identifier } => {
-                let rhs = game.infer(identifier, None);
-                if !game.is_assignable_type(type_, &rhs, false)? {
+                if !game.is_assignable_identifier(type_, identifier, false)? {
                     return game.make_error(ErrorReason::AssignmentTypeMismatch {
                         lhs: type_.clone(),
-                        rhs,
+                        rhs: game.infer(identifier, None),
                     });
                 }
             }
@@ -82,11 +81,10 @@ impl<Id: Clone + PartialEq> Value<Id> {
                 for ValueEntry { identifier, value } in entries {
                     value.check_type(game, value_type)?;
                     if let Some(identifier) = identifier {
-                        let rhs = game.infer(identifier, None);
-                        if !game.is_assignable_type(key_type, &rhs, false)? {
+                        if !game.is_assignable_identifier(key_type, identifier, false)? {
                             return game.make_error(ErrorReason::AssignmentTypeMismatch {
                                 lhs: key_type.clone(),
-                                rhs,
+                                rhs: game.infer(identifier, None),
                             });
                         }
                     }
