@@ -4,6 +4,7 @@ domain Player = black | white
 domain Score = 0 | 100
 domain Position = null | V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
 
+
 // Helpers
 left : Position -> Position
 left(null) = null
@@ -37,7 +38,6 @@ opponent(_) = white
 
 
 // Variables
-//   Special variables are defined implicitly (player, score, visibility)
 board : Position -> Piece
 board = {
   V(X, Y) = if Y < 2

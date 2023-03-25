@@ -1,9 +1,11 @@
-// Connect4
+// Domains
 domain Piece = empty | red | yellow
 domain Player = red | yellow
 domain Position = null | V(X, Y) where X in 1..7, Y in 1..6
 domain Score = 50 | 0 | 100
 
+
+// Helpers
 up : Position -> Position
 up(V(X, Y)) = if Y == 6 then null else V(X, Y + 1)
 up(_) = null
@@ -20,11 +22,15 @@ left : Position -> Position
 left(V(X, Y)) = if X == 1 then null else V(X - 1, Y)
 left(_) = null
 
+
+// Variables
 board : Position -> Piece
 board = { V(X, Y) = empty where X in 1..7, Y in 1..6 }
 
 position : Position
 
+
+// Automaton
 graph win(piece: Piece) {
   branch {
     assert(board[up(left(position))] == piece)

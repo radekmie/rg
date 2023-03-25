@@ -7,6 +7,8 @@ import BreakthroughWithAnyRg from 'bundle-text:../../../../examples/breakthrough
 import Connect4Hrg from 'bundle-text:../../../../examples/connect4.hrg';
 import Hex2Rbg from 'bundle-text:../../../../examples/hex2.rbg';
 import Hex9Rbg from 'bundle-text:../../../../examples/hex9.rbg';
+import KnightthroughHrg from 'bundle-text:../../../../examples/knightthrough.hrg';
+import KnightthroughRbg from 'bundle-text:../../../../examples/knightthrough.rbg';
 import TicTacToeRbg from 'bundle-text:../../../../examples/ticTacToe.rbg';
 import TicTacToeRg from 'bundle-text:../../../../examples/ticTacToe.rg';
 
@@ -22,6 +24,8 @@ export const presets = [
   ['Connect4', Connect4Hrg, Extension.hrg] as const,
   ['Hex2', Hex2Rbg, Extension.rbg] as const,
   ['Hex9', Hex9Rbg, Extension.rbg] as const,
+  ['Knightthrough', KnightthroughHrg, Extension.hrg] as const,
+  ['Knightthrough', KnightthroughRbg, Extension.rbg] as const,
   ['TicTacToe', TicTacToeRbg, Extension.rbg] as const,
   ['TicTacToe', TicTacToeRg, Extension.rg] as const,
 ].map(([name, source, extension]) => ({

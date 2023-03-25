@@ -4,6 +4,8 @@ domain Player = black | white
 domain Score = 0 | 100
 domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
 
+
+// Helpers
 left : Position -> Position
 left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
 left(_) = null
@@ -61,6 +63,7 @@ me = white
 position : Position
 
 
+// Automaton
 graph followDirection(direction: Position -> Position) {
   position = direction(position) assert(position != null) assert(board[position] == empty)
   branch {} or {

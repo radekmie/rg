@@ -3,9 +3,10 @@ domain Piece = arrow | blackqueen | empty | whitequeen
 domain Player = black | white
 domain Score = 0 | 100
 domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
-
 domain DirIndex = upleft | up | upright | left | right | downleft | down | downright
 
+
+// Helpers
 leftdir : Position -> Position
 leftdir(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
 leftdir(_) = null
@@ -74,6 +75,8 @@ me = white
 
 position : Position
 
+
+// Automaton
 graph queenShift() {
   forall(di)
   position = direction(di)(position) assert(position != null) assert(board[position] == empty)
