@@ -651,6 +651,7 @@ function translateGame(context: Context) {
 
   removePowerSkipEdges(context);
   wrapKeeperMovesInAny(context);
+  addKeeperFailedMoves(context);
 
   return context.rg;
 }
@@ -1045,6 +1046,92 @@ function wrapKeeperMovesInAny(context: Context) {
         }
       }
     }
+  }
+}
+
+// eslint-disable-next-line complexity -- Simplify it later.
+function addKeeperFailedMoves(context: Context) {
+  // 1. For every `_, A: player = keeper`.
+  //   2. Find all paths from `A` to `C` ending in `D, _: player = *`.
+  //   3. Add new edges from `A` to `end` with all `! B -> D`, where `B` is a fresh node between `A` and `C`.
+  for (const { rhs: A, label } of context.rg.edges) {
+    if (
+      label.kind !== 'Assignment' ||
+      label.lhs.kind !== 'Reference' ||
+      label.lhs.identifier !== 'player' ||
+      label.rhs.kind !== 'Reference' ||
+      label.rhs.identifier !== 'keeper'
+    ) {
+      continue;
+    }
+
+    const visited = new Set<string>();
+    const reachablePlayerAssignments: [
+      rg.EdgeName,
+      rg.EdgeName,
+      rg.EdgeName,
+    ][] = [];
+
+    for (const { rhs: C } of rg.lib.outgoing(context.rg.edges, A)) {
+      const B = context.$randomEdgeName();
+      const queue = [C];
+      for (let node: rg.EdgeName | undefined; (node = queue.pop()); ) {
+        for (const edge of rg.lib.outgoing(context.rg.edges, node)) {
+          if (
+            edge.label.kind === 'Assignment' &&
+            edge.label.lhs.kind === 'Reference' &&
+            edge.label.lhs.identifier === 'player'
+          ) {
+            utils.unique(reachablePlayerAssignments, [B, C, edge.lhs]);
+          } else {
+            const hash = JSON.stringify(edge.rhs);
+            if (!visited.has(hash)) {
+              visited.add(hash);
+              queue.push(edge.rhs);
+            }
+          }
+        }
+      }
+    }
+
+    if (reachablePlayerAssignments.length === 0) {
+      continue;
+    }
+
+    let currentPrev = A;
+    let currentNext = context.$randomEdgeName();
+    for (const [B, C, D] of reachablePlayerAssignments) {
+      if (!utils.find(context.rg.edges, { lhs: A, rhs: B })) {
+        const edge = utils.find(context.rg.edges, { lhs: A, rhs: C });
+        if (edge) {
+          edge.lhs = B;
+          context.rg.edges.push(
+            rg.EdgeDeclaration({ lhs: A, rhs: B, label: rg.Skip({}) }),
+          );
+        }
+      }
+
+      context.rg.edges.push(
+        rg.EdgeDeclaration({
+          lhs: currentPrev,
+          rhs: currentNext,
+          label: rg.Reachability({ lhs: B, rhs: D, negated: true }),
+        }),
+      );
+      currentPrev = currentNext;
+      currentNext = context.$randomEdgeName();
+    }
+
+    context.rg.edges.push(
+      rg.EdgeDeclaration({
+        lhs: currentPrev,
+        rhs: rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
+        label: rg.Assignment({
+          lhs: rg.Reference({ identifier: 'player' }),
+          rhs: rg.Reference({ identifier: 'keeper' }),
+        }),
+      }),
+    );
   }
 }
 
