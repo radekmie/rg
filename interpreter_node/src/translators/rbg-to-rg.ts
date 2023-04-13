@@ -101,10 +101,9 @@ function translateAtomContent(
     }
     case 'Off': {
       const oneElement = rg.Reference({ identifier: '1' });
-      const nanElement = rg.Reference({ identifier: 'nan' });
 
+      // Decrease.
       const counterDec = context.$randomEdgeName();
-      const counterDecCheck = context.$randomEdgeName();
       const counterDecValue = rg.Access({
         lhs: rg.Reference({ identifier: 'counters' }),
         rhs: rg.Access({
@@ -113,25 +112,8 @@ function translateAtomContent(
         }),
       });
 
-      // Check for overflow.
       context.$connect(
         from,
-        counterDecCheck,
-        rg.Comparison({
-          lhs: context.$mathOperator(
-            context.rbg.board.length + 1,
-            counterDecValue,
-            oneElement,
-            '-',
-          ),
-          rhs: nanElement,
-          negated: true,
-        }),
-      );
-
-      // Decrease.
-      context.$connect(
-        counterDecCheck,
         counterDec,
         rg.Assignment({
           lhs: counterDecValue,
@@ -144,32 +126,15 @@ function translateAtomContent(
         }),
       );
 
+      // Increase.
       const counterInc = context.$randomEdgeName();
-      const counterIncCheck = context.$randomEdgeName();
       const counterIncValue = rg.Access({
         lhs: rg.Reference({ identifier: 'counters' }),
         rhs: rg.Reference({ identifier: content.piece }),
       });
 
-      // Check for overflow.
       context.$connect(
         counterDec,
-        counterIncCheck,
-        rg.Comparison({
-          lhs: context.$mathOperator(
-            context.rbg.board.length + 1,
-            counterIncValue,
-            oneElement,
-            '+',
-          ),
-          rhs: nanElement,
-          negated: true,
-        }),
-      );
-
-      // Increase.
-      context.$connect(
-        counterIncCheck,
         counterInc,
         rg.Assignment({
           lhs: counterIncValue,
@@ -1036,13 +1001,7 @@ function wrapKeeperMovesInAny(context: Context) {
             edgeY.rhs = F;
           }
 
-          context.rg.edges.push(
-            rg.EdgeDeclaration({
-              lhs: B,
-              rhs: D,
-              label: rg.Any({ lhs: E, rhs: F }),
-            }),
-          );
+          context.$connect(B, D, rg.Any({ lhs: E, rhs: F }));
         }
       }
     }
@@ -1105,31 +1064,25 @@ function addKeeperFailedMoves(context: Context) {
         const edge = utils.find(context.rg.edges, { lhs: A, rhs: C });
         if (edge) {
           edge.lhs = B;
-          context.rg.edges.push(
-            rg.EdgeDeclaration({ lhs: A, rhs: B, label: rg.Skip({}) }),
-          );
+          context.$connect(A, B, rg.Skip({}));
         }
       }
 
-      context.rg.edges.push(
-        rg.EdgeDeclaration({
-          lhs: currentPrev,
-          rhs: currentNext,
-          label: rg.Reachability({ lhs: B, rhs: D, negated: true }),
-        }),
+      context.$connect(
+        currentPrev,
+        currentNext,
+        rg.Reachability({ lhs: B, rhs: D, negated: true }),
       );
       currentPrev = currentNext;
       currentNext = context.$randomEdgeName();
     }
 
-    context.rg.edges.push(
-      rg.EdgeDeclaration({
-        lhs: currentPrev,
-        rhs: rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
-        label: rg.Assignment({
-          lhs: rg.Reference({ identifier: 'player' }),
-          rhs: rg.Reference({ identifier: 'keeper' }),
-        }),
+    context.$connect(
+      currentPrev,
+      rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
+      rg.Assignment({
+        lhs: rg.Reference({ identifier: 'player' }),
+        rhs: rg.Reference({ identifier: 'keeper' }),
       }),
     );
   }
