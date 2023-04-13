@@ -616,7 +616,7 @@ function translateGame(context: Context) {
 
   removePowerSkipEdges(context);
   wrapKeeperMovesInAny(context);
-  addKeeperFailedMoves(context);
+  terminateOnZeroMoves(context);
 
   return context.rg;
 }
@@ -1009,17 +1009,15 @@ function wrapKeeperMovesInAny(context: Context) {
 }
 
 // eslint-disable-next-line complexity -- Simplify it later.
-function addKeeperFailedMoves(context: Context) {
-  // 1. For every `_, A: player = keeper`.
+function terminateOnZeroMoves(context: Context) {
+  // 1. For every `_, A: player = *`.
   //   2. Find all paths from `A` to `C` ending in `D, _: player = *`.
   //   3. Add new edges from `A` to `end` with all `! B -> D`, where `B` is a fresh node between `A` and `C`.
   for (const { rhs: A, label } of context.rg.edges) {
     if (
       label.kind !== 'Assignment' ||
       label.lhs.kind !== 'Reference' ||
-      label.lhs.identifier !== 'player' ||
-      label.rhs.kind !== 'Reference' ||
-      label.rhs.identifier !== 'keeper'
+      label.lhs.identifier !== 'player'
     ) {
       continue;
     }
