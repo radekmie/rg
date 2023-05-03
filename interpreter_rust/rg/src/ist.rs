@@ -38,6 +38,9 @@ pub enum EdgeLabel<Id: Ord> {
         negated: bool,
     },
     Skip,
+    Tag {
+        symbols: Vec<Id>,
+    },
 }
 
 #[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]

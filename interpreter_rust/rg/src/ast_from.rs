@@ -50,6 +50,12 @@ impl<Id> From<()> for EdgeLabel<Id> {
     }
 }
 
+impl<Id> From<Vec<Id>> for EdgeLabel<Id> {
+    fn from(symbols: Vec<Id>) -> Self {
+        Self::Tag { symbols }
+    }
+}
+
 impl<Id> From<Vec<EdgeNamePart<Id>>> for EdgeName<Id> {
     fn from(parts: Vec<EdgeNamePart<Id>>) -> Self {
         Self { parts }

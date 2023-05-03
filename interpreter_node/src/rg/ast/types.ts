@@ -94,6 +94,9 @@ export type Set = { kind: 'Set'; identifiers: string[] };
 export const Skip = creator<Skip>('Skip');
 export type Skip = { kind: 'Skip' };
 
+export const Tag = creator<Tag>('Tag');
+export type Tag = { kind: 'Tag'; symbols: string[] };
+
 export const TypeDeclaration = creator<TypeDeclaration>('TypeDeclaration');
 export type TypeDeclaration = {
   kind: 'TypeDeclaration';
@@ -121,7 +124,13 @@ export type VariableDeclaration = {
   defaultValue: Value;
 };
 
-export type EdgeLabel = Any | Assignment | Comparison | Reachability | Skip;
+export type EdgeLabel =
+  | Any
+  | Assignment
+  | Comparison
+  | Reachability
+  | Skip
+  | Tag;
 export type EdgeNamePart = Binding | Literal;
 export type Expression = Access | Cast | Reference;
 export type Pragma = Disjoint;

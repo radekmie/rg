@@ -37,6 +37,8 @@ export function serializeEdgeLabel(edgeLabel: ast.EdgeLabel): string {
       )} -> ${serializeEdgeName(edgeLabel.rhs)};`;
     case 'Skip':
       return ';';
+    case 'Tag':
+      return `$ ${edgeLabel.symbols.join(' ')};`;
   }
 }
 

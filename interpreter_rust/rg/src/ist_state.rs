@@ -210,7 +210,7 @@ impl Iterator for StateNext<'_> {
                                     search_queue.push(state);
                                 }
                             }
-                            EdgeLabel::Skip => {
+                            EdgeLabel::Skip | EdgeLabel::Tag { .. } => {
                                 search_queue.push(state);
                             }
                         }
