@@ -68,8 +68,62 @@ pub fn edge_label(input: &str) -> Result<EdgeLabel<&str>> {
     )(input)
 }
 
+/// ```
+/// # use nom::IResult;
+/// # use rg::ast::{EdgeName, EdgeNamePart, Type};
+/// # use rg::parser::edge_name;
+/// # use std::rc::Rc;
+/// let part_x = || EdgeNamePart::Literal { identifier: "x" };
+/// let part_y = || EdgeNamePart::Binding { identifier: "y", type_: Rc::new(Type::TypeReference { identifier: "Y" }) };
+/// let ok = |x| Ok(("", x));
+///
+/// let x = || ok(EdgeName { parts: vec![part_x()] });
+/// assert_eq!(x(), edge_name("x"));
+///
+/// let y = || ok(EdgeName { parts: vec![part_y()] });
+/// assert_eq!(y(), edge_name("(y:Y)"));
+///
+/// let xy = || ok(EdgeName { parts: vec![part_x(), part_y()] });
+/// assert_eq!(xy(), edge_name("x(y:Y)"));
+/// assert_eq!(xy(), edge_name("x (y:Y)"));
+///
+/// let yx = || ok(EdgeName { parts: vec![part_y(), part_x()] });
+/// assert_eq!(yx(), edge_name("(y:Y)x"));
+/// assert_eq!(yx(), edge_name("(y:Y) x"));
+///
+/// let xyx = || ok(EdgeName { parts: vec![part_x(), part_y(), part_x()] });
+/// assert_eq!(xyx(), edge_name("x(y:Y)x"));
+/// assert_eq!(xyx(), edge_name("x (y:Y)x"));
+/// assert_eq!(xyx(), edge_name("x(y:Y) x"));
+///
+/// let xyy = || ok(EdgeName { parts: vec![part_x(), part_y(), part_y()] });
+/// assert_eq!(xyy(), edge_name("x(y:Y)(y:Y)"));
+/// assert_eq!(xyy(), edge_name("x(y:Y) (y:Y)"));
+/// assert_eq!(xyy(), edge_name("x (y:Y)(y:Y)"));
+/// assert_eq!(xyy(), edge_name("x (y:Y) (y:Y)"));
+///
+/// let xyxy = || ok(EdgeName { parts: vec![part_x(), part_y(), part_x(), part_y()] });
+/// assert_eq!(xyxy(), edge_name("x(y:Y)x(y:Y)"));
+/// assert_eq!(xyxy(), edge_name("x(y:Y)x (y:Y)"));
+/// assert_eq!(xyxy(), edge_name("x(y:Y) x(y:Y)"));
+/// assert_eq!(xyxy(), edge_name("x(y:Y) x (y:Y)"));
+/// assert_eq!(xyxy(), edge_name("x (y:Y)x(y:Y)"));
+/// assert_eq!(xyxy(), edge_name("x (y:Y)x (y:Y)"));
+/// assert_eq!(xyxy(), edge_name("x (y:Y) x(y:Y)"));
+/// assert_eq!(xyxy(), edge_name("x (y:Y) x (y:Y)"));
+///
+/// let xyyx = || ok(EdgeName { parts: vec![part_x(), part_y(), part_y(), part_x()] });
+/// assert_eq!(xyyx(), edge_name("x(y:Y)(y:Y)x"));
+/// assert_eq!(xyyx(), edge_name("x(y:Y)(y:Y) x"));
+/// assert_eq!(xyyx(), edge_name("x(y:Y) (y:Y)x"));
+/// assert_eq!(xyyx(), edge_name("x(y:Y) (y:Y) x"));
+/// assert_eq!(xyyx(), edge_name("x (y:Y)(y:Y)x"));
+/// assert_eq!(xyyx(), edge_name("x (y:Y)(y:Y) x"));
+/// assert_eq!(xyyx(), edge_name("x (y:Y) (y:Y)x"));
+/// assert_eq!(xyyx(), edge_name("x (y:Y) (y:Y) x"));
+/// ```
 pub fn edge_name(input: &str) -> Result<EdgeName<&str>> {
-    context("edge_name", into(many1(edge_name_part)))(input)
+    context("edge_name", into(many1(separated(edge_name_part))))(input)
 }
 
 pub fn edge_name_part(input: &str) -> Result<EdgeNamePart<&str>> {
@@ -89,10 +143,10 @@ pub fn edge_name_part(input: &str) -> Result<EdgeNamePart<&str>> {
 pub fn expression(input: &str) -> Result<Rc<Expression<&str>>> {
     // Eliminate direct left recursion.
     fn inner(input: &str) -> Result<Rc<Expression<&str>>> {
-        let (input, identifier) = identifier(input)?;
+        let (input, identifier) = separated(identifier)(input)?;
         let (input, maybe_cast) = opt(in_parens(cut(separated(expression))))(input)?;
         let (input, expression) = fold_many0(
-            in_brackets(cut(separated(expression))),
+            separated(in_brackets(cut(separated(expression)))),
             || match maybe_cast.clone() {
                 Some(rhs) => Rc::new(Expression::Cast {
                     lhs: Rc::new(Type::TypeReference { identifier }),

@@ -1,5 +1,5 @@
 use crate::ast::{Error, Game};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
 impl Game<Rc<str>> {
@@ -76,6 +76,7 @@ impl Game<Rc<str>> {
     ///   3. b has no bindings
     ///   4. b is not a reachability target
     ///   5. there's no other edge between a and c (multiedges are not allowed)
+    ///   6. y != Assignment of `player` OR a has no bindings
     fn compact_skip_edge_forward(&self) -> Option<(usize, usize)> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
@@ -85,6 +86,7 @@ impl Game<Rc<str>> {
             {
                 for (y_index, y) in self.edges.iter().enumerate() {
                     if x.rhs == y.lhs
+                        && (!x.lhs.has_bindings() || !y.label.is_player_assignment())
                         && !self.are_connected(&x.lhs, &y.rhs)
                         && self.outgoing_edges(&x.rhs).all(|z| z == y)
                     {
@@ -149,44 +151,51 @@ impl Game<Rc<str>> {
         true
     }
 
+    // TODO: Extract to a separate AST transform.
     fn make_bindings_unique(&mut self) {
         let mut index = 0;
+        let mut mapped = BTreeSet::new();
 
         // Iterate over indexes to eliminate multiple ownership.
         let edges = &mut self.edges;
         for x in 0..edges.len() {
-            let mapping = edges[x]
-                .rhs
-                .bindings()
-                .map(|(binding, _)| {
-                    index += 1;
-                    (binding.clone(), Rc::from(format!("bind_{index}")))
-                })
-                .collect::<BTreeMap<_, _>>();
+            for (binding, _) in edges[x].clone().bindings() {
+                if mapped.contains(&(x, binding.clone())) {
+                    continue;
+                }
 
-            if !mapping.is_empty() {
-                for y in 0..edges.len() {
-                    if x != y {
-                        let rebind_lhs =
-                            edges[x].rhs == edges[y].lhs || edges[x].lhs == edges[y].lhs;
-                        let rebind_rhs =
-                            edges[y].rhs == edges[x].lhs || edges[x].rhs == edges[y].rhs;
-
-                        if rebind_lhs || rebind_rhs {
-                            edges[y].label = edges[y].label.rename_variables(&mapping);
+                // TODO: This _may_ need to run in a fixpoint loop.
+                let mut edges_using_binding = BTreeSet::from([x]);
+                loop {
+                    let mut nothing_changed = true;
+                    for x in 0..edges.len() {
+                        if !edges_using_binding.contains(&x)
+                            && edges_using_binding.iter().any(|&y| {
+                                let x = &edges[x];
+                                let y = &edges[y];
+                                x.lhs.has_binding(binding) && (x.lhs == y.lhs || x.lhs == y.rhs)
+                                    || x.rhs.has_binding(binding) && (x.rhs == y.lhs || x.rhs == y.rhs)
+                            })
+                        {
+                            nothing_changed = false;
+                            edges_using_binding.insert(x);
                         }
+                    }
 
-                        if rebind_lhs {
-                            edges[y].lhs = edges[y].lhs.rename_variables(&mapping);
-                        }
-
-                        if rebind_rhs {
-                            edges[y].rhs = edges[y].rhs.rename_variables(&mapping);
-                        }
+                    if nothing_changed {
+                        break;
                     }
                 }
 
-                edges[x] = edges[x].rename_variables(&mapping);
+                index += 1;
+
+                // TODO: All `bind_*` bindings should be renamed before for safety.
+                let fresh: Rc<str> = Rc::from(format!("bind_{index}"));
+                let mapping = BTreeMap::from([(binding.clone(), fresh.clone())]);
+                for x in edges_using_binding {
+                    mapped.insert((x, fresh.clone()));
+                    edges[x] = edges[x].rename_variables(&mapping);
+                }
             }
         }
     }
@@ -243,6 +252,18 @@ mod test {
     );
 
     test!(
+        player_assignment_prefix
+        { begin, b: player = x; b, c(t:T): ; c(t:T), end: ; }
+        { begin, b: player = x; b, c(t:T): ; c(t:T), end: ; }
+    );
+
+    test!(
+        player_assignment_suffix
+        { begin, b(t:T): ; b(t:T), c: ; c, end: player = x; }
+        { begin, b(t:T): ; b(t:T), c: ; c, end: player = x; }
+    );
+
+    test!(
         simple_loop
         {
             begin, loop: ;
@@ -262,7 +283,7 @@ mod test {
     );
 
     test!(
-        simple_loop_with_binds
+        simple_loop_with_binds_single
         {
             type X = { x };
             begin, loop(x: X): ;
@@ -274,12 +295,38 @@ mod test {
         }
         {
             type X = { x };
-            begin, loop(bind_5: X): ;
-            loop(bind_5: X), cond(bind_2: X): ;
-            cond(bind_2: X), true(bind_3: X): 1 == 1;
-            cond(bind_2: X), false(bind_4: X): 1 != 1;
-            false(bind_4: X), loop(bind_5: X): ;
-            true(bind_3: X), end: player = keeper;
+            begin, loop(bind_1: X): ;
+            loop(bind_1: X), cond(bind_1: X): ;
+            cond(bind_1: X), true(bind_1: X): 1 == 1;
+            cond(bind_1: X), false(bind_1: X): 1 != 1;
+            false(bind_1: X), loop(bind_1: X): ;
+            true(bind_1: X), end: player = keeper;
+        }
+    );
+
+    test!(
+        simple_loop_with_binds_multiple
+        {
+            type X = { x };
+            type Y = { y };
+            type Z = { z };
+            begin, loop(x: X)(y: Y): ;
+            loop(x: X)(y: Y), cond(x: X)(z: Z): ;
+            cond(x: X)(z: Z), true(x: X)(y: Y): 1 == 1;
+            cond(x: X)(z: Z), false(x: X)(z: Z): 1 != 1;
+            false(x: X)(z: Z), loop(x: X)(y: Y): ;
+            true(x: X)(y: Y), end: player = keeper;
+        }
+        {
+            type X = { x };
+            type Y = { y };
+            type Z = { z };
+            begin, loop(bind_1: X)(bind_2: Y): ;
+            loop(bind_1: X)(bind_2: Y), cond(bind_1: X)(bind_3: Z): ;
+            cond(bind_1: X)(bind_3: Z), true(bind_1: X)(bind_4: Y): 1 == 1;
+            cond(bind_1: X)(bind_3: Z), false(bind_1: X)(bind_3: Z): 1 != 1;
+            false(bind_1: X)(bind_3: Z), loop(bind_1: X)(bind_2: Y): ;
+            true(bind_1: X)(bind_4: Y), end: player = keeper;
         }
     );
 
@@ -337,6 +384,42 @@ mod test {
             b, e: 1 == 1;
             b, d: 1 == 1;
             d, e: ;
+        }
+    );
+
+    test!(
+        linear_ordered
+        {
+            begin, x1(p: Position): 1 == 1;
+            x1(p: Position), x3(p: Position): p != null;
+            x3(p: Position), x4(p: Position): position = p;
+            x4(p: Position), x2(p: Position): 1 == 1;
+            x2(p: Position), end: 1 == 1;
+        }
+        {
+            begin, x1(bind_1: Position): 1 == 1;
+            x1(bind_1: Position), x3(bind_1: Position): bind_1 != null;
+            x3(bind_1: Position), x4(bind_1: Position): position = bind_1;
+            x4(bind_1: Position), x2(bind_1: Position): 1 == 1;
+            x2(bind_1: Position), end: 1 == 1;
+        }
+    );
+
+    test!(
+        linear_unordered
+        {
+            begin, x1(p: Position): 1 == 1;
+            x2(p: Position), end: 1 == 1;
+            x1(p: Position), x4(p: Position): p != null;
+            x4(p: Position), x5(p: Position): position = p;
+            x5(p: Position), x2(p: Position): 1 == 1;
+        }
+        {
+            begin, x1(bind_1: Position): 1 == 1;
+            x2(bind_1: Position), end: 1 == 1;
+            x1(bind_1: Position), x4(bind_1: Position): bind_1 != null;
+            x4(bind_1: Position), x5(bind_1: Position): position = bind_1;
+            x5(bind_1: Position), x2(bind_1: Position): 1 == 1;
         }
     );
 }

@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-pub type Mapping<Id> = BTreeMap<Id, Id>;
 pub type Binding<'a, Id> = (&'a Id, &'a Rc<Type<Id>>);
+pub type Mapping<Id> = BTreeMap<Id, Id>;
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename = "ConstantDeclaration", tag = "kind")]
@@ -42,8 +42,8 @@ impl<Id: Clone + Ord> Edge<Id> {
 
 impl<Id: PartialEq> Edge<Id> {
     pub fn bindings(&self) -> Vec<Binding<Id>> {
-        self.lhs.bindings().chain(self.rhs.bindings()).fold(
-            Vec::default(),
+        self.rhs.bindings().fold(
+            self.lhs.bindings().collect::<Vec<_>>(),
             |mut bindings, binding| {
                 if !bindings.contains(&binding) {
                     bindings.push(binding);
@@ -57,8 +57,8 @@ impl<Id: PartialEq> Edge<Id> {
     pub fn get_binding(&self, identifier: &Id) -> Option<Binding<Id>> {
         self.lhs
             .bindings()
+            .chain(self.rhs.bindings())
             .find(|binding| binding.0 == identifier)
-            .or_else(|| self.rhs.bindings().find(|binding| binding.0 == identifier))
     }
 }
 
@@ -137,7 +137,7 @@ impl<Id: PartialEq> EdgeLabel<Id> {
 
 impl EdgeLabel<Rc<str>> {
     pub fn is_player_assignment(&self) -> bool {
-        matches!(self, Self::Assignment { lhs, .. } if matches!(&**lhs, Expression::Reference { identifier } if &**identifier == "Player"))
+        matches!(self, Self::Assignment { lhs, .. } if matches!(&**lhs, Expression::Reference { identifier } if &**identifier == "player"))
     }
 }
 
@@ -156,6 +156,12 @@ impl<Id> EdgeName<Id> {
 
     pub fn has_bindings(&self) -> bool {
         self.bindings().next().is_some()
+    }
+}
+
+impl<Id: PartialEq> EdgeName<Id> {
+    pub fn has_binding(&self, identifier: &Id) -> bool {
+        self.bindings().any(|binding| binding.0 == identifier)
     }
 }
 
