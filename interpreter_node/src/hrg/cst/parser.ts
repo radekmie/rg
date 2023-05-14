@@ -101,6 +101,17 @@ class Parser extends CstParser {
           this.CONSUME5(tokens.BraceRight);
         },
       },
+      {
+        ALT: () => {
+          this.CONSUME(tokens.KeywordForall);
+          this.CONSUME3(tokens.Identifier);
+          this.CONSUME(tokens.Colon);
+          this.SUBRULE(this.Type);
+          this.CONSUME6(tokens.BraceLeft);
+          this.MANY6(() => this.SUBRULE5(this.AutomatonStatement));
+          this.CONSUME6(tokens.BraceRight);
+        },
+      },
     ]);
   });
 

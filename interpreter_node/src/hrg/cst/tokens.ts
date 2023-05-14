@@ -25,6 +25,7 @@ export const KeywordAny = token('KeywordAny', /any/, Identifier);
 export const KeywordBranch = token('KeywordBranch', /branch/, Identifier);
 export const KeywordDomain = token('KeywordDomain', /domain/, Identifier);
 export const KeywordElse = token('KeywordElse', /else/, Identifier);
+export const KeywordForall = token('KeywordForall', /forall/, Identifier);
 export const KeywordGraph = token('KeywordGraph', /graph/, Identifier);
 export const KeywordIf = token('KeywordIf', /if/, Identifier);
 export const KeywordIn = token('KeywordIn', /in/, Identifier);

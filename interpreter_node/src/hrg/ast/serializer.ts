@@ -21,6 +21,10 @@ export function serializeAutomatonStatement(
       return `${automatonStatement.identifier}(${automatonStatement.args
         .map(serializeExpression)
         .join(', ')})`;
+    case 'AutomatonForall':
+      return `forall ${automatonStatement.identifier}:${serializeType(
+        automatonStatement.type,
+      )} {\n${serializeAutomatonStatements(automatonStatement.body)}\n}`;
     case 'AutomatonLoop':
       return `loop {\n${serializeAutomatonStatements(
         automatonStatement.body,

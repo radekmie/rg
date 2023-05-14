@@ -29,6 +29,14 @@ export type AutomatonCall = {
   args: Expression[];
 };
 
+export const AutomatonForall = creator<AutomatonForall>('AutomatonForall');
+export type AutomatonForall = {
+  kind: 'AutomatonForall';
+  identifier: string;
+  type: Type;
+  body: AutomatonStatement[];
+};
+
 export const AutomatonFunction =
   creator<AutomatonFunction>('AutomatonFunction');
 export type AutomatonFunction = {
@@ -313,6 +321,7 @@ export type AutomatonStatement =
   | AutomatonAssignment
   | AutomatonBranch
   | AutomatonCall
+  | AutomatonForall
   | AutomatonLoop
   | AutomatonWhen
   | AutomatonWhile;

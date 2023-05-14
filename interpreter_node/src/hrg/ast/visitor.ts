@@ -42,13 +42,6 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
       });
     }
 
-    if ('Identifier' in context) {
-      return ast.AutomatonCall({
-        identifier: this.visitToken(context.Identifier[0]),
-        args: this.visitNodes(context.Expression),
-      });
-    }
-
     if ('KeywordAny' in context) {
       return ast.AutomatonAny({
         body: this.visitNodes(context.AutomatonStatement),
@@ -58,6 +51,14 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
     if ('KeywordBranch' in context) {
       return ast.AutomatonBranch({
         arms: this.visitNodes(context.AutomatonBranch),
+      });
+    }
+
+    if ('KeywordForall' in context) {
+      return ast.AutomatonForall({
+        identifier: this.visitToken(context.Identifier[0]),
+        type: this.visitNode(context.Type[0]),
+        body: this.visitNodes(context.AutomatonStatement),
       });
     }
 
@@ -78,6 +79,13 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
       return ast.AutomatonWhile({
         expression: this.visitNode(context.Expression[0]),
         body: this.visitNodes(context.AutomatonStatement),
+      });
+    }
+
+    if ('Identifier' in context) {
+      return ast.AutomatonCall({
+        identifier: this.visitToken(context.Identifier[0]),
+        args: this.visitNodes(context.Expression),
       });
     }
 

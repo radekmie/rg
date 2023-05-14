@@ -88,15 +88,18 @@ graph win(piece: Piece) {
 }
 
 graph findNonempty() {
-  forall(position)
-  assert(position != null && board[position] == empty)
+  forall p:Position {
+    assert(p != null && board[p] == empty)
+  }
 }
 
 graph turn(me: Player, op: Player, piece: Piece) {
   player = me
-  forall(position)
-  assert(position != null && board[position] == empty)
-  assert(down(position) == null || board[down(position)] != empty)
+  forall p:Position {
+    assert(p != null && board[p] == empty)
+    assert(down(p) == null || board[down(p)] != empty)
+    position = p
+  }
   board[position] = piece
   player = keeper
   when reachable(win()) {

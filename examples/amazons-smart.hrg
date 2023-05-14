@@ -68,8 +68,6 @@ V(X, Y) =
   where X in 0..9, Y in 0..9
 }
 
-di : DirIndex
-
 me : Player
 me = white
 
@@ -78,7 +76,7 @@ position : Position
 
 // Automaton
 graph queenShift() {
-  forall(di)
+  forall di:DirIndex {
   position = direction(di)(position) assert(position != null) assert(board[position] == empty)
   branch {} or {
   position = direction(di)(position) assert(position != null) assert(board[position] == empty)
@@ -96,12 +94,14 @@ graph queenShift() {
   position = direction(di)(position) assert(position != null) assert(board[position] == empty)
   branch {} or {
   position = direction(di)(position) assert(position != null) assert(board[position] == empty)
-  }}}}}}}}
+  }}}}}}}}}
 }
 
 graph move(me: Player) {
-  forall(position)
-  assert(position != null && board[position] == piece(me))
+  forall p:Position {
+    assert(p != null && board[p] == piece(me))
+    position = p
+  }
   board[position] = empty
   queenShift()
   //player = keeper // split2 option

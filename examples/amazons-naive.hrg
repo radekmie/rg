@@ -106,8 +106,10 @@ graph queenShift() {
 }
 
 graph move(me: Player) {
-  forall(position)
-  assert(position != null && board[position] == piece(me))
+  forall p:Position {
+    assert(p != null && board[p] == piece(me))
+    position = p
+  }
   board[position] = empty
   queenShift()
   //player = keeper // split2 option

@@ -56,10 +56,11 @@ position : Position
 
 // Automaton
 graph move(me: Player) {
-  forall(position)
-  assert(position != null && board[position] == piece(me))
-  board[position] = empty
-  position = direction(me)(position)
+  forall p:Position {
+    assert(p != null && board[p] == piece(me))
+    board[p] = empty
+    position = direction(me)(p)
+  }
   branch {
     assert(board[position] == empty)
   } or {
