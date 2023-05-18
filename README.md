@@ -36,6 +36,9 @@ Open a shell with all required dependencies:
 ```sh
 nix develop
 ```
+These dependencies are accessible only from the current shell*, they are not installed for any user. They will be removed during the next garbage collection (`nix-collect-garbage`) (unless the shell is still open or they are referenced in any other way). See [NixOS website](https://nixos.org/) for more information (you can also install it as a secondary package manager).
+
+*: Obviously you can access them by file paths as long as they are in the filesystem.
 
 ### Quick start
 
