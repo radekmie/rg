@@ -52,7 +52,7 @@ npm run build
 node lib/cli rg-source --compactSkipEdges ../examples/ticTacToe.rg > ../examples/ticTacToe.rg.ll
 
 # In interpreter_rust
-cargo run --release ../examples/ticTacToe.rg.ll run 1000
+cargo run --release ../examples/ticTacToe.rg run 1000
 ```
 
 ## Check everything before commit
