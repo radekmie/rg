@@ -52,7 +52,7 @@ node lib/cli rg-source --compactSkipEdges ../examples/ticTacToe.rg > ../examples
 cargo run --release ../examples/ticTacToe.rg.ll run 1000
 ```
 
-### Check everything before commit
+## Check everything before commit
 
 ```sh
 # In interpreter_rust
