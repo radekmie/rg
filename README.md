@@ -47,7 +47,7 @@ These dependencies are accessible only from the current shell*, they are not ins
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/module --out-name index --target web interpreter
 
 # In interpreter_node
-npm install
+npm clean-install
 npm run build
 node lib/cli rg-source --compactSkipEdges ../examples/ticTacToe.rg > ../examples/ticTacToe.rg.ll
 
