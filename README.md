@@ -3,14 +3,13 @@
 # Regular Games repo
 
 ## Setup
-
-Dependencies:
+### Dependencies
 
 - [Node.js](https://nodejs.org/en/) 18.15.0
 - [Rust](https://www.rust-lang.org) 1.68.0
 - [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) 0.10.3
 
-Install dependencies:
+#### Manual installation
 
 ```sh
 # System-wide tools on Debian-based systems
@@ -31,21 +30,32 @@ rustup install 1.68.0
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 ```
 
-Quick start:
+#### Nix
+
+Open a shell with all required dependencies:
+```sh
+nix develop
+```
+These dependencies are accessible only from the current shell*, they are not installed for any user. They will be removed during the next garbage collection (`nix-collect-garbage`) (unless the shell is still open or they are referenced in any other way). See [NixOS website](https://nixos.org/) for more information (you can also install it as a secondary package manager).
+
+*: Obviously you can access them by file paths as long as they are in the filesystem.
+
+### Quick start
 
 ```sh
 # In interpreter_rust
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/module --out-name index --target web interpreter
 
 # In interpreter_node
+npm clean-install
 npm run build
 node lib/cli rg-source --compactSkipEdges ../examples/ticTacToe.rg > ../examples/ticTacToe.rg.ll
 
 # In interpreter_rust
-cargo run --release ../examples/ticTacToe.rg.ll run 1000
+cargo run --release ../examples/ticTacToe.rg run 1000
 ```
 
-Check everything before commit:
+## Check everything before commit
 
 ```sh
 # In interpreter_rust
