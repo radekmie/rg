@@ -118,7 +118,16 @@ fn build_expression<Id: Display>(
 
 fn build_pragma<Id: Display>(pragma: ast::Pragma<Id>) -> ist::Pragma<Rc<str>> {
     match pragma {
+        ast::Pragma::Any { edge_name } => ist::Pragma::Any {
+            edge_name: Rc::from(edge_name.to_string()),
+        },
         ast::Pragma::Disjoint { edge_name } => ist::Pragma::Disjoint {
+            edge_name: Rc::from(edge_name.to_string()),
+        },
+        ast::Pragma::MultiAny { edge_name } => ist::Pragma::MultiAny {
+            edge_name: Rc::from(edge_name.to_string()),
+        },
+        ast::Pragma::Unique { edge_name } => ist::Pragma::Unique {
             edge_name: Rc::from(edge_name.to_string()),
         },
     }

@@ -659,7 +659,19 @@ impl<Id: PartialEq> Game<Id> {
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Pragma<Id> {
+    Any {
+        #[serde(rename = "edgeName")]
+        edge_name: EdgeName<Id>,
+    },
     Disjoint {
+        #[serde(rename = "edgeName")]
+        edge_name: EdgeName<Id>,
+    },
+    MultiAny {
+        #[serde(rename = "edgeName")]
+        edge_name: EdgeName<Id>,
+    },
+    Unique {
         #[serde(rename = "edgeName")]
         edge_name: EdgeName<Id>,
     },

@@ -68,7 +68,10 @@ pub struct Game<Id: Ord> {
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub enum Pragma<Id> {
+    Any { edge_name: Id },
     Disjoint { edge_name: Id },
+    MultiAny { edge_name: Id },
+    Unique { edge_name: Id },
 }
 
 #[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]

@@ -212,7 +212,10 @@ impl<Id: Display> Display for Game<Id> {
 impl<Id: Display> Display for Pragma<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
+            Self::Any { edge_name } => write!(f, "@any {edge_name};"),
             Self::Disjoint { edge_name } => write!(f, "@disjoint {edge_name};"),
+            Self::MultiAny { edge_name } => write!(f, "@multiAny {edge_name};"),
+            Self::Unique { edge_name } => write!(f, "@unique {edge_name};"),
         }
     }
 }

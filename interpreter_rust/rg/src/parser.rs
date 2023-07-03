@@ -202,12 +202,28 @@ pub fn identifier(input: &str) -> Result<&str> {
 }
 
 pub fn pragma(input: &str) -> Result<Pragma<&str>> {
+    macro_rules! edge_name {
+        ($tag:literal, $constructor:ident) => {
+            delimited(
+                tag("@"),
+                preceded(
+                    tag($tag),
+                    cut(map(separated(edge_name), |edge_name| {
+                        Pragma::$constructor { edge_name }
+                    })),
+                ),
+                cut(char(';')),
+            )
+        };
+    }
+
     context(
         "pragma",
-        into(delimited(
-            tag("@"),
-            cut(preceded(tag("disjoint "), separated(edge_name))),
-            cut(char(';')),
+        alt((
+            edge_name!("any ", Any),
+            edge_name!("disjoint ", Disjoint),
+            edge_name!("multiAny ", MultiAny),
+            edge_name!("unique ", Unique),
         )),
     )(input)
 }
