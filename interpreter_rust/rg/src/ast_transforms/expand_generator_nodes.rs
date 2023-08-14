@@ -3,18 +3,63 @@ use std::rc::Rc;
 
 impl Game<Rc<str>> {
     pub fn expand_generator_nodes(&mut self) -> Result<(), Error<Rc<str>>> {
-        for index in (0..self.edges.len()).rev() {
-            let mappings = self.create_mappings(self.edges[index].bindings())?;
-            if !mappings.is_empty() {
-                for mapping in &mappings {
-                    self.edges
-                        .push(self.edges[index].substitute_bindings(mapping));
-                }
+        macro_rules! substitute_bindings {
+            ($list:expr) => {
+                for index in (0..$list.len()).rev() {
+                    let mappings = self.create_mappings($list[index].bindings())?;
+                    if !mappings.is_empty() {
+                        for mapping in &mappings {
+                            $list.push($list[index].substitute_bindings(mapping));
+                        }
 
-                self.edges.remove(index);
-            }
+                        $list.remove(index);
+                    }
+                }
+            };
         }
+
+        substitute_bindings!(self.edges);
+        substitute_bindings!(self.pragmas);
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::ast::Game;
+    use crate::parser::game;
+    use map_id::MapId;
+    use nom::combinator::all_consuming;
+    use std::rc::Rc;
+
+    fn parse(input: &str) -> Game<Rc<str>> {
+        let (_, game) = all_consuming(game)(input).unwrap();
+        game.map_id(&mut |id| Rc::from(*id))
+    }
+
+    macro_rules! test {
+        ($name:ident { $($actual:tt)* } { $($expect:tt)* }) => {
+            #[test]
+            fn $name() {
+                let mut actual = parse(stringify!($($actual)*));
+                actual.expand_generator_nodes().unwrap();
+                let expect = parse(stringify!($($expect)*));
+
+                assert_eq!(actual, expect, "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n");
+            }
+        };
+    }
+
+    test!(
+        edge
+        { type T = { a, b }; x(t: T), y: ; }
+        { type T = { a, b }; x__bind__a, y: ; x__bind__b, y: ; }
+    );
+
+    test!(
+        pragma
+        { type T = { a, b }; @unique x(t: T); }
+        { type T = { a, b }; @unique x__bind__a; @unique x__bind__b; }
+    );
 }

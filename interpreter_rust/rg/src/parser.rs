@@ -207,7 +207,7 @@ pub fn pragma(input: &str) -> Result<Pragma<&str>> {
             delimited(
                 tag("@"),
                 preceded(
-                    tag($tag),
+                    separated(tag($tag)),
                     cut(map(separated(edge_name), |edge_name| {
                         Pragma::$constructor { edge_name }
                     })),
@@ -220,10 +220,10 @@ pub fn pragma(input: &str) -> Result<Pragma<&str>> {
     context(
         "pragma",
         alt((
-            edge_name!("any ", Any),
-            edge_name!("disjoint ", Disjoint),
-            edge_name!("multiAny ", MultiAny),
-            edge_name!("unique ", Unique),
+            edge_name!("any", Any),
+            edge_name!("disjoint", Disjoint),
+            edge_name!("multiAny", MultiAny),
+            edge_name!("unique", Unique),
         )),
     )(input)
 }

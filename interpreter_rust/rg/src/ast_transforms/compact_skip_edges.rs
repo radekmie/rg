@@ -174,7 +174,8 @@ impl Game<Rc<str>> {
                                 let x = &edges[x];
                                 let y = &edges[y];
                                 x.lhs.has_binding(binding) && (x.lhs == y.lhs || x.lhs == y.rhs)
-                                    || x.rhs.has_binding(binding) && (x.rhs == y.lhs || x.rhs == y.rhs)
+                                    || x.rhs.has_binding(binding)
+                                        && (x.rhs == y.lhs || x.rhs == y.rhs)
                             })
                         {
                             nothing_changed = false;

@@ -41,17 +41,20 @@ impl<Id: Clone + Ord> Edge<Id> {
 }
 
 impl<Id: PartialEq> Edge<Id> {
-    pub fn bindings(&self) -> Vec<Binding<Id>> {
-        self.rhs.bindings().fold(
-            self.lhs.bindings().collect::<Vec<_>>(),
-            |mut bindings, binding| {
-                if !bindings.contains(&binding) {
-                    bindings.push(binding);
-                }
+    pub fn bindings(&self) -> impl Iterator<Item = Binding<Id>> {
+        self.rhs
+            .bindings()
+            .fold(
+                self.lhs.bindings().collect::<Vec<_>>(),
+                |mut bindings, binding| {
+                    if !bindings.contains(&binding) {
+                        bindings.push(binding);
+                    }
 
-                bindings
-            },
-        )
+                    bindings
+                },
+            )
+            .into_iter()
     }
 
     pub fn get_binding(&self, identifier: &Id) -> Option<Binding<Id>> {
@@ -463,10 +466,10 @@ impl<Id: Clone> Game<Id> {
     }
 }
 
-impl<Id: Clone + Ord> Game<Id> {
+impl<'a, Id: Clone + Ord + 'a> Game<Id> {
     pub fn create_mappings(
         &self,
-        bindings: Vec<Binding<Id>>,
+        bindings: impl Iterator<Item = Binding<'a, Id>>,
     ) -> Result<Vec<Mapping<Id>>, Error<Id>> {
         let mut mappings = vec![];
         for (identifier, type_) in bindings {
@@ -675,6 +678,36 @@ pub enum Pragma<Id> {
         #[serde(rename = "edgeName")]
         edge_name: EdgeName<Id>,
     },
+}
+
+impl<Id: PartialEq> Pragma<Id> {
+    pub fn bindings(&self) -> impl Iterator<Item = Binding<Id>> {
+        match self {
+            Self::Any { edge_name }
+            | Self::Disjoint { edge_name }
+            | Self::MultiAny { edge_name }
+            | Self::Unique { edge_name } => edge_name.bindings(),
+        }
+    }
+}
+
+impl Pragma<Rc<str>> {
+    pub fn substitute_bindings(&self, mapping: &Mapping<Rc<str>>) -> Self {
+        match self {
+            Self::Any { edge_name } => Self::Any {
+                edge_name: edge_name.substitute_bindings(mapping),
+            },
+            Self::Disjoint { edge_name } => Self::Disjoint {
+                edge_name: edge_name.substitute_bindings(mapping),
+            },
+            Self::MultiAny { edge_name } => Self::MultiAny {
+                edge_name: edge_name.substitute_bindings(mapping),
+            },
+            Self::Unique { edge_name } => Self::Unique {
+                edge_name: edge_name.substitute_bindings(mapping),
+            },
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

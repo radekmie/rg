@@ -109,11 +109,11 @@ directionRightChecked, directionOK: pos = Position(right[pos]);
 directionOK, moved: opponentOrEmpty[turnPlayer][board[pos]] == Bool(1);
 
 // Unique path from the given state to the next semimove or player switch
-@unique: move;
-@unique: selectedPos(position:Position);
-@unique: directionForward;
-@unique: directionLeft;
-@unique: directionRight;
+@unique move;
+@unique selectedPos(position:Position);
+@unique directionForward;
+@unique directionLeft;
+@unique directionRight;
 
 moved, done: board[pos] = pieceOfPlayer[turnPlayer];
 done, wincheck: player = PlayerOrKeeper(keeper);
