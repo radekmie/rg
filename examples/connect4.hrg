@@ -1,9 +1,11 @@
+
+// Moves form: Position
+
 // Domains
 domain Piece = empty | red | yellow
 domain Player = red | yellow
 domain Position = null | V(X, Y) where X in 1..7, Y in 1..6
 domain Score = 50 | 0 | 100
-
 
 // Helpers
 up : Position -> Position
@@ -95,10 +97,11 @@ graph findNonempty() {
 
 graph turn(me: Player, op: Player, piece: Piece) {
   player = me
-  forall p:Position {
+  forall p:Position {// TODO Make it XPosition
     assert(p != null && board[p] == empty)
     assert(down(p) == null || board[down(p)] != empty)
     position = p
+    @ p
   }
   board[position] = piece
   player = keeper

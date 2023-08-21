@@ -1,10 +1,12 @@
+
+// Moves form: position position position
+
 // Domains
 domain Piece = arrow | blackqueen | empty | whitequeen
 domain Player = black | white
 domain Score = 0 | 100
 domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
 domain DirIndex = upleft | up | upright | left | right | downleft | down | downright
-
 
 // Helpers
 leftdir : Position -> Position
@@ -73,7 +75,6 @@ me = white
 
 position : Position
 
-
 // Automaton
 graph queenShift() {
   forall di:DirIndex {
@@ -101,13 +102,24 @@ graph move(me: Player) {
   forall p:Position {
     assert(p != null && board[p] == piece(me))
     position = p
+    @ p
   }
   board[position] = empty
+  
   queenShift()
+  forall p:Position {// An experimental way to emit the chosen position
+    assert(p == position)
+    @ p
+  }
   //player = keeper // split2 option
   board[position] = piece(me)
+  
   //player = me // split2 option
   queenShift()
+  forall p:Position {
+    assert(p == position)
+    @ p
+  }
   board[position] = arrow
 }
 

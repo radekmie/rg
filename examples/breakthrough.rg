@@ -1,3 +1,6 @@
+
+// Moves form: Position (F + L + R)
+
 type Player = {white, black};
 type Score = {0, 100};
 type Piece = {e, b, w};
@@ -84,8 +87,6 @@ begin, turn: ;
 
 turn, move: ? move -> moved;
 turn, lose: ! move -> moved;
-
-// Moves have form: position (L + R + F)
 
 move, selectPos: player = PlayerOrKeeper(turnPlayer);
 selectPos, selectedPos(position:Position): $ position;

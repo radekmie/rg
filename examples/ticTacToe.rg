@@ -1,3 +1,6 @@
+
+// Moves form: Coord Coord
+
 type Player = {X,O};
 type Score = {0,50,100};
 type Coord = {0,1,2};
