@@ -85,22 +85,41 @@ begin, turn: ;
 turn, move: ? move -> moved;
 turn, lose: ! move -> moved;
 
-move, setIn: player = PlayerOrKeeper(turnPlayer);
-setIn, set(position:Position): position != Position(null);
-set(position:Position), setOut: pos = Position(position);
-setOut, checkOwn: board[pos] == pieceOfPlayer[turnPlayer];
-checkOwn, forward: board[pos] = Piece(e);
-forward, direction: pos = Position(directionOfPlayer[turnPlayer][pos]);
+// Moves have form: position (L + R + F)
 
-direction, directionOK: board[pos] == Piece(e);
-direction, directionLeft: left[pos] != Position(null);
-directionLeft, directionOK: pos = Position(left[pos]);
-direction, directionRight: right[pos] != Position(null);
-directionRight, directionOK: pos = Position(right[pos]);
+move, selectPos: player = PlayerOrKeeper(turnPlayer);
+selectPos, selectedPos(position:Position): $ position;
+selectedPos(position:Position), setPos(position:Position): position != Position(null);
+setPos(position:Position), setFinished: pos = Position(position);
+setFinished, checkOwn: board[pos] == pieceOfPlayer[turnPlayer];
+checkOwn, forward: board[pos] = Piece(e);
+forward, selectDirection: pos = Position(directionOfPlayer[turnPlayer][pos]);
+
+selectDirection, directionForward: $ F;
+directionForward, directionOK: board[pos] == Piece(e);
+
+selectDirection, directionLeft: $ L;
+directionLeft, directionLeftChecked: left[pos] != Position(null);
+directionLeftChecked, directionOK: pos = Position(left[pos]);
+
+selectDirection, directionRight: $ R;
+directionRight, directionRightChecked: right[pos] != Position(null);
+directionRightChecked, directionOK: pos = Position(right[pos]);
+
 directionOK, moved: opponentOrEmpty[turnPlayer][board[pos]] == Bool(1);
+
+// Unique paths from the given state to each of the next semimoves and player switches
+@unique move;
+@unique selectedPos(position:Position);
+@unique directionForward;
+@unique directionLeft;
+@unique directionRight;
+@unique wincheck;
 
 moved, done: board[pos] = pieceOfPlayer[turnPlayer];
 done, wincheck: player = PlayerOrKeeper(keeper);
+
+@unique wincheck;
 
 wincheck, win: directionOfPlayer[turnPlayer][pos] == Position(null);
 wincheck, continue: directionOfPlayer[turnPlayer][pos] != Position(null);

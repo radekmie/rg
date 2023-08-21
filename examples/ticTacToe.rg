@@ -27,10 +27,10 @@ turn,preend: ! move -> set;
 preend,end: player = PlayerOrKeeper(keeper);
 
 move,chooseX: player = PlayerOrKeeper(playerTurn);
-chooseX,chooseX(coordX:Coord): posX = Coord(coordX);
-chooseX(coordX:Coord),chooseY: ;
-chooseY,chooseY(coordY:Coord): posY = Coord(coordY);
-chooseY(coordY:Coord),check: ;
+chooseX,chooseX(coordX:Coord): $ coordX;
+chooseX(coordX:Coord),chooseY: posX = Coord(coordX);
+chooseY,chooseY(coordY:Coord): $ coordY;
+chooseY(coordY:Coord),check: posY = Coord(coordY);
 check,set: board[posX][posY] == Piece(e);
 set,endmove: board[posX][posY] = Piece(playerTurn);
 
@@ -55,3 +55,9 @@ checklineRL2,endcheckline: board[otherInLine2[posX]][otherInLine1[posY]] == Piec
 win,win1: goals[playerTurn] = Score(100);
 win1,win2: goals[opponent[playerTurn]] = Score(0);
 win2,end: player = PlayerOrKeeper(keeper);
+
+// Unique paths from the given state to each of the next semimoves and player switches
+@unique chooseX;
+@unique chooseX(coordX:Coord);
+@unique chooseY(coordY:Coord);
+@unique checkwin;
