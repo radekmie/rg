@@ -101,7 +101,7 @@ graph turn(me: Player, op: Player, piece: Piece) {
     assert(p != null && board[p] == empty)
     assert(down(p) == null || board[down(p)] != empty)
     position = p
-    @ p
+    $ p
   }
   board[position] = piece
   player = keeper

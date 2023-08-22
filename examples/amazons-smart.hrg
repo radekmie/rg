@@ -102,14 +102,14 @@ graph move(me: Player) {
   forall p:Position {
     assert(p != null && board[p] == piece(me))
     position = p
-    @ p
+    $ p
   }
   board[position] = empty
   
   queenShift()
   forall p:Position {// An experimental way to emit the chosen position
     assert(p == position)
-    @ p
+    $ p
   }
   //player = keeper // split2 option
   board[position] = piece(me)
@@ -118,7 +118,7 @@ graph move(me: Player) {
   queenShift()
   forall p:Position {
     assert(p == position)
-    @ p
+    $ p
   }
   board[position] = arrow
 }

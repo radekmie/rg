@@ -62,18 +62,18 @@ graph move(me: Player) {
     assert(p != null && board[p] == piece(me))
     board[p] = empty
     position = direction(me)(p)
-    @ p
+    $ p
   }
   branch {
     assert(board[position] == empty)
-    @ F
+    $ F
   } or {
     branch {
       position = left(position)
-      @ L
+      $ L
     } or {
       position = right(position)
-      @ R
+      $ R
     }
     assert(position != null)
     branch {
