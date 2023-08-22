@@ -34,6 +34,12 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
   }
 
   AutomatonStatement(context: Context): ast.AutomatonStatement {
+    if ('Dollar' in context) {
+      return ast.AutomatonTag({
+        symbols: this.visitTokens(context.Identifier),
+      });
+    }
+
     if ('Equal' in context) {
       return ast.AutomatonAssignment({
         identifier: this.visitToken(context.Identifier[0]),

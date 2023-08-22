@@ -847,6 +847,17 @@ function translateAutomatonStatements(
         currentEdgeName = localEdgeName;
         continue;
       }
+      case 'AutomatonTag': {
+        const localEdgeName = context.$randomEdgeName(prefix);
+        context.$connect(
+          currentEdgeName,
+          localEdgeName,
+          rg.Tag({ symbols: automatonStatement.symbols }),
+          bindings,
+        );
+        currentEdgeName = localEdgeName;
+        continue;
+      }
       case 'AutomatonWhen': {
         const thenEdgeName = context.$randomEdgeName(prefix);
         const elseEdgeName = context.$randomEdgeName(prefix);

@@ -45,6 +45,7 @@ export const BracketLeft = token('BracketLeft', /\[/);
 export const BracketRight = token('BracketRight', /]/);
 export const Colon = token('Colon', /:/);
 export const Comma = token('Comma', /,/);
+export const Dollar = token('Dollar', /\$/);
 export const DotDot = token('DotDot', /\.\./);
 export const Equal = token('Equal', /=/);
 export const EqualEqual = token('EqualEqual', /==/);

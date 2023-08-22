@@ -112,6 +112,12 @@ class Parser extends CstParser {
           this.CONSUME6(tokens.BraceRight);
         },
       },
+      {
+        ALT: () => {
+          this.CONSUME(tokens.Dollar);
+          this.MANY7(() => this.CONSUME4(tokens.Identifier));
+        },
+      },
     ]);
   });
 

@@ -61,6 +61,12 @@ export type AutomatonLoop = {
   body: AutomatonStatement[];
 };
 
+export const AutomatonTag = creator<AutomatonTag>('AutomatonTag');
+export type AutomatonTag = {
+  kind: 'AutomatonTag';
+  symbols: string[];
+};
+
 export const AutomatonWhen = creator<AutomatonWhen>('AutomatonWhen');
 export type AutomatonWhen = {
   kind: 'AutomatonWhen';
@@ -323,6 +329,7 @@ export type AutomatonStatement =
   | AutomatonCall
   | AutomatonForall
   | AutomatonLoop
+  | AutomatonTag
   | AutomatonWhen
   | AutomatonWhile;
 export type DomainElement = DomainGenerator | DomainLiteral;

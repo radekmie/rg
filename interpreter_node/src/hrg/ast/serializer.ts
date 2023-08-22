@@ -29,6 +29,8 @@ export function serializeAutomatonStatement(
       return `loop {\n${serializeAutomatonStatements(
         automatonStatement.body,
       )}\n}`;
+    case 'AutomatonTag':
+      return `$ ${automatonStatement.symbols.join(' ')}`;
     case 'AutomatonWhen':
       return `when ${serializeExpression(
         automatonStatement.expression,
