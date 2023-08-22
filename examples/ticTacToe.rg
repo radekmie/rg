@@ -60,6 +60,7 @@ win1,win2: goals[opponent[playerTurn]] = Score(0);
 win2,end: player = PlayerOrKeeper(keeper);
 
 // Unique paths from the given state to each of the next semimoves and player switches
+@unique begin;
 @unique chooseX;
 @unique chooseX(coordX:Coord);
 @unique chooseY(coordY:Coord);

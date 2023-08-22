@@ -110,6 +110,7 @@ directionRightChecked, directionOK: pos = Position(right[pos]);
 directionOK, moved: opponentOrEmpty[turnPlayer][board[pos]] == Bool(1);
 
 // Unique paths from the given state to each of the next semimoves and player switches
+@unique begin;
 @unique move;
 @unique selectedPos(position:Position);
 @unique directionForward;
