@@ -118,6 +118,12 @@ class Parser extends CstParser {
           this.MANY7(() => this.CONSUME4(tokens.Identifier));
         },
       },
+      {
+        ALT: () => {
+          this.CONSUME(tokens.At);
+          this.CONSUME5(tokens.Identifier);
+        },
+      },
     ]);
   });
 

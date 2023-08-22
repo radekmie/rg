@@ -44,9 +44,6 @@ export type ConstantDeclaration = {
   value: Value;
 };
 
-export const Disjoint = creator<Disjoint>('Disjoint');
-export type Disjoint = { kind: 'Disjoint'; edgeName: EdgeName };
-
 export const EdgeDeclaration = creator<EdgeDeclaration>('EdgeDeclaration');
 export type EdgeDeclaration = {
   kind: 'EdgeDeclaration';
@@ -76,6 +73,18 @@ export type Literal = { kind: 'Literal'; identifier: string };
 
 export const Map = creator<Map>('Map');
 export type Map = { kind: 'Map'; entries: ValueEntry[] };
+
+export const PragmaAny = creator<PragmaAny>('Any');
+export type PragmaAny = { kind: 'Any'; edgeName: EdgeName };
+
+export const PragmaDisjoint = creator<PragmaDisjoint>('Disjoint');
+export type PragmaDisjoint = { kind: 'Disjoint'; edgeName: EdgeName };
+
+export const PragmaMultiAny = creator<PragmaMultiAny>('MultiAny');
+export type PragmaMultiAny = { kind: 'MultiAny'; edgeName: EdgeName };
+
+export const PragmaUnique = creator<PragmaUnique>('Unique');
+export type PragmaUnique = { kind: 'Unique'; edgeName: EdgeName };
 
 export const Reachability = creator<Reachability>('Reachability');
 export type Reachability = {
@@ -133,6 +142,6 @@ export type EdgeLabel =
   | Tag;
 export type EdgeNamePart = Binding | Literal;
 export type Expression = Access | Cast | Reference;
-export type Pragma = Disjoint;
+export type Pragma = PragmaAny | PragmaDisjoint | PragmaMultiAny | PragmaUnique;
 export type Type = Arrow | Set | TypeReference;
 export type Value = Map | Element;

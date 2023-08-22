@@ -39,6 +39,7 @@ export const KeywordWildcard = token('KeywordWildcard', /_/, Identifier);
 
 // Symbols.
 export const AndAnd = token('AndAnd', /&&/);
+export const At = token('At', /@/);
 export const BraceLeft = token('BraceLeft', /{/);
 export const BraceRight = token('BraceRight', /}/);
 export const BracketLeft = token('BracketLeft', /\[/);
