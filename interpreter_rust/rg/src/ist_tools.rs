@@ -65,6 +65,7 @@ impl Game<RuntimeId> {
     pub fn initial_state(&self) -> State {
         State {
             position: LABEL_BEGIN,
+            tags: Rc::default(),
             values: Rc::new(
                 self.variables
                     .iter()

@@ -7,6 +7,7 @@ use std::rc::Rc;
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct State {
     pub position: RuntimeId,
+    pub tags: Rc<Vec<RuntimeId>>,
     pub values: Rc<BTreeMap<RuntimeId, Rc<Value<RuntimeId>>>>,
 }
 
@@ -14,6 +15,7 @@ impl State {
     pub fn clone_at(&self, position: RuntimeId) -> Self {
         Self {
             position,
+            tags: self.tags.clone(),
             values: self.values.clone(),
         }
     }
@@ -210,7 +212,11 @@ impl Iterator for StateNext<'_> {
                                     search_queue.push(state);
                                 }
                             }
-                            EdgeLabel::Skip | EdgeLabel::Tag { .. } => {
+                            EdgeLabel::Skip => {
+                                search_queue.push(state);
+                            }
+                            EdgeLabel::Tag { symbols } => {
+                                state.tags = Rc::new([&state.tags[..], &symbols[..]].concat());
                                 search_queue.push(state);
                             }
                         }
@@ -250,10 +256,16 @@ impl Iterator for StateNextDepth<'_> {
 
             let prev = state.get_player();
             let skip = *ignore_keeper && prev.is_keeper();
-            for state in state.next_states(game, true) {
+            let mut tags_set = BTreeSet::default();
+            for mut state in state.next_states(game, true) {
+                if !tags_set.insert(state.tags.clone()) {
+                    continue;
+                }
+
                 let next = state.get_player();
                 let is_finish = next.is_keeper() && state.is_final() && !*ignore_keeper;
                 let is_switch = next != prev && !skip;
+                state.tags = Rc::default();
                 queue.push((state, depth - usize::from(is_finish || is_switch)));
             }
         }

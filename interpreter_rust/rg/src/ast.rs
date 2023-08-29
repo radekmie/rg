@@ -140,7 +140,7 @@ impl<Id: PartialEq> EdgeLabel<Id> {
 
 impl EdgeLabel<Rc<str>> {
     pub fn is_player_assignment(&self) -> bool {
-        matches!(self, Self::Assignment { lhs, .. } if matches!(&**lhs, Expression::Reference { identifier } if &**identifier == "player"))
+        matches!(self, Self::Assignment { lhs, .. } if matches!(lhs.uncast(), Expression::Reference { identifier } if &**identifier == "player"))
     }
 }
 
@@ -374,9 +374,7 @@ impl<Id: Clone + Ord> Expression<Id> {
 
 impl<Id: PartialEq> Expression<Id> {
     pub fn is_equal_reference(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Cast { rhs: x, .. }, y) => x.is_equal_reference(y),
-            (x, Self::Cast { rhs: y, .. }) => x.is_equal_reference(y),
+        match (self.uncast(), other.uncast()) {
             (
                 Self::Access {
                     lhs: x_lhs,
@@ -389,6 +387,13 @@ impl<Id: PartialEq> Expression<Id> {
             ) => x_lhs.is_equal_reference(y_lhs) && x_rhs.is_equal_reference(y_rhs),
             (Self::Reference { identifier: x }, Self::Reference { identifier: y }) => x == y,
             _ => false,
+        }
+    }
+
+    pub fn uncast(&self) -> &Self {
+        match self {
+            Self::Cast { rhs, .. } => rhs,
+            _ => self,
         }
     }
 }
