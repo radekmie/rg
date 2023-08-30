@@ -101,7 +101,7 @@ impl State {
             game,
             return_queue: Vec::default(),
             search_queue: vec![self.clone()],
-            visited_states: (!break_on_player).then(BTreeSet::default),
+            visited_states: BTreeSet::default(),
         }
     }
 
@@ -124,7 +124,7 @@ pub struct StateNext<'a> {
     game: &'a Game<RuntimeId>,
     return_queue: Vec<State>,
     search_queue: Vec<State>,
-    visited_states: Option<BTreeSet<State>>,
+    visited_states: BTreeSet<State>,
 }
 
 impl Iterator for StateNext<'_> {
@@ -145,15 +145,8 @@ impl Iterator for StateNext<'_> {
             }
 
             if let Some(state) = search_queue.pop() {
-                if let Some(visited_states) = visited_states {
-                    // Check whether this state was already visited and if so,
-                    // skip it. It happens only when we evaluate the `any` or
-                    // `reachability` edge label.
-                    if visited_states.contains(&state) {
-                        continue;
-                    }
-
-                    visited_states.insert(state.clone());
+                if !visited_states.insert(state.clone()) {
+                    continue;
                 }
 
                 if let Some(edges) = game.edges.get(&state.position) {
