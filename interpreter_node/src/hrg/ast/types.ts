@@ -61,9 +61,7 @@ export type AutomatonLoop = {
   body: AutomatonStatement[];
 };
 
-export const AutomatonPragma = creator<AutomatonPragma>(
-  'AutomatonPragma',
-);
+export const AutomatonPragma = creator<AutomatonPragma>('AutomatonPragma');
 export type AutomatonPragma = {
   kind: 'AutomatonPragma';
   identifier: string;
@@ -72,7 +70,7 @@ export type AutomatonPragma = {
 export const AutomatonTag = creator<AutomatonTag>('AutomatonTag');
 export type AutomatonTag = {
   kind: 'AutomatonTag';
-  symbols: string[];
+  symbol: string;
 };
 
 export const AutomatonWhen = creator<AutomatonWhen>('AutomatonWhen');

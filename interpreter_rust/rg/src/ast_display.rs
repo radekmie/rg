@@ -48,14 +48,7 @@ impl<Id: Display> Display for EdgeLabel<Id> {
                 negated: true,
             } => write!(f, "! {lhs} -> {rhs}"),
             Self::Skip => write!(f, ""),
-            Self::Tag { symbols } => {
-                write!(f, "$")?;
-                for symbol in symbols {
-                    write!(f, " {symbol}")?;
-                }
-
-                Ok(())
-            }
+            Self::Tag { symbol } => write!(f, "$ {symbol}")
         }
     }
 }

@@ -98,7 +98,7 @@ pub enum EdgeLabel<Id> {
     },
     Skip,
     Tag {
-        symbols: Vec<Id>,
+        symbol: Id,
     },
 }
 
@@ -120,12 +120,8 @@ impl<Id: Clone + Ord> EdgeLabel<Id> {
                 rhs: Rc::new(rhs.rename_variables(mapping)),
                 negated: *negated,
             },
-            Self::Tag { symbols } => Self::Tag {
-                symbols: symbols
-                    .iter()
-                    .map(|symbol| mapping.get(symbol).unwrap_or(symbol))
-                    .cloned()
-                    .collect(),
+            Self::Tag { symbol } => Self::Tag {
+                symbol: mapping.get(symbol).unwrap_or(symbol).clone(),
             },
             _ => self.clone(),
         }

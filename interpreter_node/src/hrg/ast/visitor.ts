@@ -42,7 +42,7 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
 
     if ('Dollar' in context) {
       return ast.AutomatonTag({
-        symbols: this.visitTokens(context.Identifier),
+        symbol: this.visitToken(context.Identifier[0]),
       });
     }
 

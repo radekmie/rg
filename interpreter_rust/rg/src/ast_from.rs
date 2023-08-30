@@ -44,15 +44,9 @@ impl<Id> From<(bool, EdgeName<Id>, EdgeName<Id>)> for EdgeLabel<Id> {
     }
 }
 
-impl<Id> From<()> for EdgeLabel<Id> {
-    fn from(_: ()) -> Self {
-        Self::Skip
-    }
-}
-
-impl<Id> From<Vec<Id>> for EdgeLabel<Id> {
-    fn from(symbols: Vec<Id>) -> Self {
-        Self::Tag { symbols }
+impl<Id> From<Id> for EdgeLabel<Id> {
+    fn from(symbol: Id) -> Self {
+        Self::Tag { symbol }
     }
 }
 

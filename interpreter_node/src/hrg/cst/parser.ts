@@ -115,7 +115,7 @@ class Parser extends CstParser {
       {
         ALT: () => {
           this.CONSUME(tokens.Dollar);
-          this.MANY7(() => this.CONSUME4(tokens.Identifier));
+          this.CONSUME4(tokens.Identifier);
         },
       },
       {

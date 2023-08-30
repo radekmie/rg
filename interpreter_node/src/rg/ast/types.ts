@@ -104,7 +104,7 @@ export const Skip = creator<Skip>('Skip');
 export type Skip = { kind: 'Skip' };
 
 export const Tag = creator<Tag>('Tag');
-export type Tag = { kind: 'Tag'; symbols: string[] };
+export type Tag = { kind: 'Tag'; symbol: string };
 
 export const TypeDeclaration = creator<TypeDeclaration>('TypeDeclaration');
 export type TypeDeclaration = {

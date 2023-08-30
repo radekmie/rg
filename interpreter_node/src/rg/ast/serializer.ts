@@ -38,7 +38,7 @@ export function serializeEdgeLabel(edgeLabel: ast.EdgeLabel): string {
     case 'Skip':
       return ';';
     case 'Tag':
-      return `$ ${edgeLabel.symbols.join(' ')};`;
+      return `$ ${edgeLabel.symbol};`;
   }
 }
 

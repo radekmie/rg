@@ -32,7 +32,7 @@ export function serializeAutomatonStatement(
     case 'AutomatonPragma':
       return `@${automatonStatement.identifier}`;
     case 'AutomatonTag':
-      return `$ ${automatonStatement.symbols.join(' ')}`;
+      return `$ ${automatonStatement.symbol}`;
     case 'AutomatonWhen':
       return `when ${serializeExpression(
         automatonStatement.expression,

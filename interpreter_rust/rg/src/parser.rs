@@ -42,7 +42,7 @@ pub fn edge_label(input: &str) -> Result<EdgeLabel<&str>> {
     context(
         "edge_label",
         alt((
-            into(preceded(tag("$"), cut(many1(separated(identifier))))),
+            into(preceded(tag("$"), cut(separated(identifier)))),
             into(separated_pair(
                 preceded(tag("any"), separated(edge_name)),
                 separated(tag("->")),
@@ -63,7 +63,7 @@ pub fn edge_label(input: &str) -> Result<EdgeLabel<&str>> {
                 cut(terminated(separated(edge_name), separated(tag("->")))),
                 edge_name,
             ))),
-            into(success::<_, _, VerboseError<_>>(())),
+            success::<_, _, VerboseError<_>>(EdgeLabel::Skip),
         )),
     )(input)
 }

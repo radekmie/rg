@@ -208,8 +208,8 @@ impl Iterator for StateNext<'_> {
                             EdgeLabel::Skip => {
                                 search_queue.push(state);
                             }
-                            EdgeLabel::Tag { symbols } => {
-                                state.tags = Rc::new([&state.tags[..], &symbols[..]].concat());
+                            EdgeLabel::Tag { symbol } => {
+                                state.tags = Rc::new([&state.tags[..], &[*symbol]].concat());
                                 search_queue.push(state);
                             }
                         }

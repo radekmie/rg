@@ -60,11 +60,8 @@ fn build_edge_label<Id: Display>(
             negated,
         },
         ast::EdgeLabel::Skip => ist::EdgeLabel::Skip,
-        ast::EdgeLabel::Tag { symbols } => ist::EdgeLabel::Tag {
-            symbols: symbols
-                .iter()
-                .map(|symbol| Rc::from(symbol.to_string()))
-                .collect(),
+        ast::EdgeLabel::Tag { symbol } => ist::EdgeLabel::Tag {
+            symbol: Rc::from(symbol.to_string()),
         },
     }
 }

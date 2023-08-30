@@ -880,7 +880,7 @@ function translateAutomatonStatements(
         context.$connect(
           currentEdgeName,
           localEdgeName,
-          rg.Tag({ symbols: automatonStatement.symbols }),
+          rg.Tag({ symbol: automatonStatement.symbol }),
           bindings,
         );
         currentEdgeName = localEdgeName;

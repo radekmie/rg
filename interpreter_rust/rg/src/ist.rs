@@ -39,7 +39,7 @@ pub enum EdgeLabel<Id: Ord> {
     },
     Skip,
     Tag {
-        symbols: Vec<Id>,
+        symbol: Id,
     },
 }
 
