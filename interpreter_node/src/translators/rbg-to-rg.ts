@@ -148,9 +148,10 @@ function translateAtomContent(
       );
 
       // Set piece.
+      const setPiece = context.$randomEdgeName();
       context.$connect(
         counterInc,
-        to,
+        setPiece,
         rg.Assignment({
           lhs: rg.Access({
             lhs: rg.Reference({ identifier: 'board' }),
@@ -159,6 +160,34 @@ function translateAtomContent(
           rhs: rg.Reference({ identifier: content.piece }),
         }),
       );
+
+      // Expose tag (position).
+      const tagPosition1 = context.$randomEdgeName();
+      tagPosition1.parts.push(
+        rg.Binding({
+          identifier: 'coordGenerator',
+          type: rg.TypeReference({ identifier: 'Coord' }),
+        }),
+      );
+      context.$connect(
+        setPiece,
+        tagPosition1,
+        rg.Comparison({
+          lhs: rg.Reference({ identifier: 'coordGenerator' }),
+          rhs: rg.Reference({ identifier: 'coord' }),
+          negated: false,
+        }),
+      );
+
+      const tagPosition2 = context.$randomEdgeName();
+      context.$connect(
+        tagPosition1,
+        tagPosition2,
+        rg.Tag({ symbol: 'coordGenerator' }),
+      );
+
+      // Expose tag (piece).
+      context.$connect(tagPosition2, to, rg.Tag({ symbol: content.piece }));
       return;
     }
     case 'On':
@@ -397,9 +426,63 @@ function translateAtomContent(
       );
       return;
     }
-    case 'Switch':
+    case 'Switch': {
+      // Expose tag (position).
+      const tagPosition1 = context.$randomEdgeName();
+      tagPosition1.parts.push(
+        rg.Binding({
+          identifier: 'coordGenerator',
+          type: rg.TypeReference({ identifier: 'Coord' }),
+        }),
+      );
       context.$connect(
         from,
+        tagPosition1,
+        rg.Comparison({
+          lhs: rg.Reference({ identifier: 'coordGenerator' }),
+          rhs: rg.Reference({ identifier: 'coord' }),
+          negated: false,
+        }),
+      );
+
+      const tagPosition2 = context.$randomEdgeName();
+      context.$connect(
+        tagPosition1,
+        tagPosition2,
+        rg.Tag({ symbol: 'coordGenerator' }),
+      );
+
+      // Expose tag (piece).
+      const tagPiece1 = context.$randomEdgeName();
+      tagPiece1.parts.push(
+        rg.Binding({
+          identifier: 'pieceGenerator',
+          type: rg.TypeReference({ identifier: 'Piece' }),
+        }),
+      );
+      context.$connect(
+        tagPosition2,
+        tagPiece1,
+        rg.Comparison({
+          lhs: rg.Reference({ identifier: 'pieceGenerator' }),
+          rhs: rg.Access({
+            lhs: rg.Reference({ identifier: 'board' }),
+            rhs: rg.Reference({ identifier: 'coord' }),
+          }),
+          negated: false,
+        }),
+      );
+
+      const tagPiece2 = context.$randomEdgeName();
+      context.$connect(
+        tagPiece1,
+        tagPiece2,
+        rg.Tag({ symbol: 'pieceGenerator' }),
+      );
+
+      // Switch player.
+      context.$connect(
+        tagPiece2,
         to,
         rg.Assignment({
           lhs: rg.Reference({ identifier: 'player' }),
@@ -407,6 +490,7 @@ function translateAtomContent(
         }),
       );
       return;
+    }
   }
 }
 
