@@ -54,14 +54,6 @@ class Parser extends CstParser {
       },
       {
         ALT: () => {
-          this.CONSUME(tokens.KeywordAny);
-          this.CONSUME(tokens.BraceLeft);
-          this.MANY2(() => this.SUBRULE(this.AutomatonStatement));
-          this.CONSUME(tokens.BraceRight);
-        },
-      },
-      {
-        ALT: () => {
           this.CONSUME(tokens.KeywordBranch);
           this.MANY_SEP2({
             SEP: tokens.KeywordOr,

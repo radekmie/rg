@@ -463,30 +463,6 @@ function translateAutomatonStatements(
   let currentEdgeName = entryEdgeName;
   for (const automatonStatement of automatonStatements) {
     switch (automatonStatement.kind) {
-      case 'AutomatonAny': {
-        const localEdgeName = context.$randomEdgeName(prefix);
-        const anyStartEdgeName = context.$randomEdgeName(prefix);
-        const anyEndEdgeName = context.$randomEdgeName(prefix);
-        context.$connect(
-          currentEdgeName,
-          localEdgeName,
-          rg.Any({ lhs: anyStartEdgeName, rhs: anyEndEdgeName }),
-          bindings,
-        );
-        currentEdgeName = localEdgeName;
-        translateAutomatonStatements(context, {
-          automatonStatements: automatonStatement.body,
-          bindings,
-          breakEdgeName: null,
-          continueEdgeName: null,
-          endEdgeName: null,
-          entryEdgeName: anyStartEdgeName,
-          nextEdgeName: anyEndEdgeName,
-          prefix,
-          returnEdgeName: null,
-        });
-        continue;
-      }
       case 'AutomatonAssignment': {
         const localEdgeName = context.$randomEdgeName(prefix);
         context.$connect(

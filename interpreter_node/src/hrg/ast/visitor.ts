@@ -54,12 +54,6 @@ class Visitor extends cst.parser.getBaseCstVisitorConstructor() {
       });
     }
 
-    if ('KeywordAny' in context) {
-      return ast.AutomatonAny({
-        body: this.visitNodes(context.AutomatonStatement),
-      });
-    }
-
     if ('KeywordBranch' in context) {
       return ast.AutomatonBranch({
         arms: this.visitNodes(context.AutomatonBranch),

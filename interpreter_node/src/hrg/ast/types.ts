@@ -1,11 +1,5 @@
 import { creator } from '../../utils';
 
-export const AutomatonAny = creator<AutomatonAny>('AutomatonAny');
-export type AutomatonAny = {
-  kind: 'AutomatonAny';
-  body: AutomatonStatement[];
-};
-
 export const AutomatonAssignment = creator<AutomatonAssignment>(
   'AutomatonAssignment',
 );
@@ -329,7 +323,6 @@ export type VariableDeclaration = {
 };
 
 export type AutomatonStatement =
-  | AutomatonAny
   | AutomatonAssignment
   | AutomatonBranch
   | AutomatonCall

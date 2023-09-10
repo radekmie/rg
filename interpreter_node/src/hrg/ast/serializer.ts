@@ -4,10 +4,6 @@ export function serializeAutomatonStatement(
   automatonStatement: ast.AutomatonStatement,
 ): string {
   switch (automatonStatement.kind) {
-    case 'AutomatonAny':
-      return `any {\n${serializeAutomatonStatements(
-        automatonStatement.body,
-      )}\n}`;
     case 'AutomatonAssignment':
       return `${automatonStatement.identifier}${automatonStatement.accessors
         .map(serializeExpression)

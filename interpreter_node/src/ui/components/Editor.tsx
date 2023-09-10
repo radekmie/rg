@@ -23,7 +23,6 @@ function extractName(object: { name: string }) {
 }
 
 const hrgKeywords = new Set([
-  'any',
   'branch',
   'domain',
   'else',
