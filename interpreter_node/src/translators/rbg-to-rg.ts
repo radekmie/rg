@@ -960,6 +960,73 @@ function removePowerSkipEdges(context: Context) {
   }
 }
 
+function copyPath(
+  context: Context,
+  originalFrom: rg.EdgeName,
+  originalTo: rg.EdgeName,
+) {
+  const error = 'Only simple nodes can be copied.';
+  utils.assert(originalFrom.parts.length === 1, error);
+  utils.assert(originalFrom.parts[0].kind === 'Literal', error);
+  utils.assert(originalTo.parts.length === 1, error);
+  utils.assert(originalTo.parts[0].kind === 'Literal', error);
+
+  const prefix = `${originalFrom.parts[0].identifier}_${originalTo.parts[0].identifier}`;
+  function prefixEdgeName({ parts }: rg.EdgeName) {
+    switch (parts[0].kind) {
+      case 'Binding':
+        return rg.EdgeName({
+          parts: [rg.Literal({ identifier: prefix }), ...parts],
+        });
+      case 'Literal':
+        return rg.EdgeName({
+          parts: [
+            rg.Literal({ identifier: `${prefix}_${parts[0].identifier}` }),
+            ...parts.slice(1),
+          ],
+        });
+    }
+  }
+
+  function copy(edge: rg.EdgeDeclaration) {
+    const lhs = prefixEdgeName(edge.lhs);
+    const rhs = prefixEdgeName(edge.rhs);
+    utils.unique(
+      context.rg.edges,
+      rg.EdgeDeclaration({ lhs, rhs, label: edge.label }),
+    );
+  }
+
+  function copyIfOnPath(edgeName: rg.EdgeName): boolean {
+    let any = utils.isEqual(edgeName, originalTo);
+    if (!any) {
+      for (const next of rg.lib.outgoing(context.rg.edges, edgeName)) {
+        if (
+          next.label.kind !== 'Assignment' ||
+          next.label.lhs.kind !== 'Reference' ||
+          next.label.lhs.identifier !== 'player'
+        ) {
+          const isOnPath = copyIfOnPath(next.rhs);
+          if (isOnPath) {
+            copy(next);
+          }
+
+          any ||= isOnPath;
+        }
+      }
+    }
+
+    return any;
+  }
+
+  copyIfOnPath(originalFrom);
+  return rg.Reachability({
+    lhs: prefixEdgeName(originalFrom),
+    rhs: prefixEdgeName(originalTo),
+    negated: true,
+  });
+}
+
 // eslint-disable-next-line complexity -- Simplify it later.
 function terminateOnZeroMoves(context: Context) {
   // 1. For every `_, A: player = *`.
@@ -1018,11 +1085,7 @@ function terminateOnZeroMoves(context: Context) {
         }
       }
 
-      context.$connect(
-        currentPrev,
-        currentNext,
-        rg.Reachability({ lhs: B, rhs: D, negated: true }),
-      );
+      context.$connect(currentPrev, currentNext, copyPath(context, B, D));
       currentPrev = currentNext;
       currentNext = context.$randomEdgeName();
     }
