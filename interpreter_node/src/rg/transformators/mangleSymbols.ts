@@ -46,10 +46,6 @@ export function mangleSymbols(gameDeclaration: ast.GameDeclaration) {
 
   const mangleSymbolsInEdgeLabel = memo((edgeLabel: ast.EdgeLabel) => {
     switch (edgeLabel.kind) {
-      case 'Any':
-        mangleSymbolsInEdgeName(edgeLabel.lhs);
-        mangleSymbolsInEdgeName(edgeLabel.rhs);
-        break;
       case 'Assignment':
         mangleSymbolsInExpression(edgeLabel.lhs);
         mangleSymbolsInExpression(edgeLabel.rhs);

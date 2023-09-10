@@ -41,10 +41,6 @@ fn build_edge_label<Id: Display>(
     edge_label: ast::EdgeLabel<Id>,
 ) -> ist::EdgeLabel<Rc<str>> {
     match edge_label {
-        ast::EdgeLabel::Any { lhs, rhs } => ist::EdgeLabel::Any {
-            lhs: build_edge_name(lhs),
-            rhs: build_edge_name(rhs),
-        },
         ast::EdgeLabel::Assignment { lhs, rhs } => ist::EdgeLabel::Assignment {
             lhs: build_expression(game, &lhs),
             rhs: build_expression(game, &rhs),

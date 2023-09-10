@@ -3,13 +3,6 @@ import { creator } from '../../utils';
 export const Access = creator<Access>('Access');
 export type Access = { kind: 'Access'; lhs: Expression; rhs: Expression };
 
-export const Any = creator<Any>('Any');
-export type Any = {
-  kind: 'Any';
-  lhs: EdgeName;
-  rhs: EdgeName;
-};
-
 export const Arrow = creator<Arrow>('Arrow');
 export type Arrow = { kind: 'Arrow'; lhs: Type; rhs: Type };
 
@@ -133,13 +126,7 @@ export type VariableDeclaration = {
   defaultValue: Value;
 };
 
-export type EdgeLabel =
-  | Any
-  | Assignment
-  | Comparison
-  | Reachability
-  | Skip
-  | Tag;
+export type EdgeLabel = Assignment | Comparison | Reachability | Skip | Tag;
 export type EdgeNamePart = Binding | Literal;
 export type Expression = Access | Cast | Reference;
 export type Pragma = PragmaAny | PragmaDisjoint | PragmaMultiAny | PragmaUnique;

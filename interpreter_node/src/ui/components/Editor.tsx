@@ -45,7 +45,7 @@ const rbgKeywords = new Set([
   'variables',
 ]);
 
-const rgKeywords = new Set(['$', 'any', 'const', 'type', 'var']);
+const rgKeywords = new Set(['$', 'const', 'type', 'var']);
 
 const modeToExtensions = {
   hrg: [

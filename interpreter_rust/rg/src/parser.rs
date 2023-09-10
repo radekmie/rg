@@ -43,11 +43,6 @@ pub fn edge_label(input: &str) -> Result<EdgeLabel<&str>> {
         "edge_label",
         alt((
             into(preceded(tag("$"), cut(separated(identifier)))),
-            into(separated_pair(
-                preceded(tag("any"), separated(edge_name)),
-                separated(tag("->")),
-                cut(edge_name),
-            )),
             into(tuple((
                 expression,
                 separated(map(alt((tag("=="), tag("!="))), |c| c == "!=")),

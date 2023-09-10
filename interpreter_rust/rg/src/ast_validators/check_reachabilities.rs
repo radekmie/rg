@@ -46,9 +46,7 @@ impl Game<Rc<str>> {
         }
 
         for edge in &self.edges {
-            if let EdgeLabel::Any { lhs, rhs } | EdgeLabel::Reachability { lhs, rhs, .. } =
-                &edge.label
-            {
+            if let EdgeLabel::Reachability { lhs, rhs, .. } = &edge.label {
                 if !is_reachable(lhs, rhs) {
                     return self.make_error(ErrorReason::Unreachable {
                         lhs: lhs.clone(),
