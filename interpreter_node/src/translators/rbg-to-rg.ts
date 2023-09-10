@@ -427,6 +427,10 @@ function translateAtomContent(
       return;
     }
     case 'Switch': {
+      // Expose tag (preamble).
+      const tagPosition0 = context.$randomEdgeName();
+      context.$connect(from, tagPosition0, rg.Skip({}));
+
       // Expose tag (position).
       const tagPosition1 = context.$randomEdgeName();
       tagPosition1.parts.push(
@@ -436,7 +440,7 @@ function translateAtomContent(
         }),
       );
       context.$connect(
-        from,
+        tagPosition0,
         tagPosition1,
         rg.Comparison({
           lhs: rg.Reference({ identifier: 'coordGenerator' }),
@@ -988,35 +992,44 @@ function copyPath(
     }
   }
 
-  function copy(edge: rg.EdgeDeclaration) {
-    const lhs = prefixEdgeName(edge.lhs);
-    const rhs = prefixEdgeName(edge.rhs);
-    utils.unique(
-      context.rg.edges,
-      rg.EdgeDeclaration({ lhs, rhs, label: edge.label }),
-    );
+  function copy(edge: rg.EdgeDeclaration, distance: number) {
+    if (!isFinite(distance)) {
+      return;
+    }
+
+    const copiedEdge = rg.EdgeDeclaration({
+      lhs: prefixEdgeName(edge.lhs),
+      rhs: prefixEdgeName(edge.rhs),
+      label: edge.label,
+    });
+
+    // Skip tags.
+    if (distance < 5) {
+      copiedEdge.lhs.parts.splice(1, Infinity);
+      copiedEdge.rhs.parts.splice(1, Infinity);
+      copiedEdge.label = rg.Skip({});
+    }
+
+    utils.unique(context.rg.edges, copiedEdge);
   }
 
-  function copyIfOnPath(edgeName: rg.EdgeName): boolean {
-    let any = utils.isEqual(edgeName, originalTo);
-    if (!any) {
+  function copyIfOnPath(edgeName: rg.EdgeName): number {
+    let minDistance = utils.isEqual(edgeName, originalTo) ? 0 : Infinity;
+    if (!isFinite(minDistance)) {
       for (const next of rg.lib.outgoing(context.rg.edges, edgeName)) {
         if (
           next.label.kind !== 'Assignment' ||
           next.label.lhs.kind !== 'Reference' ||
           next.label.lhs.identifier !== 'player'
         ) {
-          const isOnPath = copyIfOnPath(next.rhs);
-          if (isOnPath) {
-            copy(next);
-          }
-
-          any ||= isOnPath;
+          const distance = 1 + copyIfOnPath(next.rhs);
+          copy(next, distance);
+          minDistance = Math.min(minDistance, distance);
         }
       }
     }
 
-    return any;
+    return minDistance;
   }
 
   copyIfOnPath(originalFrom);
