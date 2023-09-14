@@ -17,6 +17,7 @@ type Context = {
       | rbg.Expression['operator']
       | Exclude<rbg.Comparison['operator'], '==' | '!='>,
   ) => rg.Expression;
+  $mathType: (limit: number) => rg.Type;
   $randomEdgeName: () => rg.EdgeName;
   $shiftPatternsCache: Record<string, string[]>;
   rbg: rbg.Game;
@@ -33,7 +34,7 @@ function translateAtomContent(
 ) {
   switch (content.kind) {
     case 'Assignment': {
-      const { lhs, rhs } = translateRValuePair(
+      const { limit, lhs, rhs } = translateRValuePair(
         context,
         content.variable,
         content.rvalue,
@@ -55,7 +56,25 @@ function translateAtomContent(
         from = local;
       }
 
-      context.$connect(from, to, rg.Assignment({ lhs, rhs }));
+      const local = context.$randomEdgeName();
+      context.$connect(from, local, rg.Assignment({ lhs, rhs }));
+
+      const tagVariable = context.$randomEdgeName();
+      context.$connect(
+        local,
+        tagVariable,
+        rg.Tag({ symbol: content.variable }),
+      );
+
+      const tagValue = exposeUsingGenerator({
+        bind: `${content.variable}Generator`,
+        context,
+        from: tagVariable,
+        type: context.$mathType(limit + 1),
+        value: rhs,
+      });
+      context.$connect(tagValue, to, rg.Skip({}));
+
       return;
     }
     case 'Check': {
@@ -162,32 +181,16 @@ function translateAtomContent(
       );
 
       // Expose tag (position).
-      const tagPosition1 = context.$randomEdgeName();
-      tagPosition1.parts.push(
-        rg.Binding({
-          identifier: 'coordGenerator',
-          type: rg.TypeReference({ identifier: 'Coord' }),
-        }),
-      );
-      context.$connect(
-        setPiece,
-        tagPosition1,
-        rg.Comparison({
-          lhs: rg.Reference({ identifier: 'coordGenerator' }),
-          rhs: rg.Reference({ identifier: 'coord' }),
-          negated: false,
-        }),
-      );
-
-      const tagPosition2 = context.$randomEdgeName();
-      context.$connect(
-        tagPosition1,
-        tagPosition2,
-        rg.Tag({ symbol: 'coordGenerator' }),
-      );
+      const tagPosition = exposeUsingGenerator({
+        context,
+        bind: 'coordGenerator',
+        from: setPiece,
+        type: rg.TypeReference({ identifier: 'Coord' }),
+        value: rg.Reference({ identifier: 'coord' }),
+      });
 
       // Expose tag (piece).
-      context.$connect(tagPosition2, to, rg.Tag({ symbol: content.piece }));
+      context.$connect(tagPosition, to, rg.Tag({ symbol: content.piece }));
       return;
     }
     case 'On':
@@ -428,65 +431,33 @@ function translateAtomContent(
     }
     case 'Switch': {
       // Expose tag (preamble).
-      const tagPosition0 = context.$randomEdgeName();
-      context.$connect(from, tagPosition0, rg.Skip({}));
+      const local = context.$randomEdgeName();
+      context.$connect(from, local, rg.Skip({}));
 
       // Expose tag (position).
-      const tagPosition1 = context.$randomEdgeName();
-      tagPosition1.parts.push(
-        rg.Binding({
-          identifier: 'coordGenerator',
-          type: rg.TypeReference({ identifier: 'Coord' }),
-        }),
-      );
-      context.$connect(
-        tagPosition0,
-        tagPosition1,
-        rg.Comparison({
-          lhs: rg.Reference({ identifier: 'coordGenerator' }),
-          rhs: rg.Reference({ identifier: 'coord' }),
-          negated: false,
-        }),
-      );
-
-      const tagPosition2 = context.$randomEdgeName();
-      context.$connect(
-        tagPosition1,
-        tagPosition2,
-        rg.Tag({ symbol: 'coordGenerator' }),
-      );
+      const tagPosition = exposeUsingGenerator({
+        context,
+        bind: 'coordGenerator',
+        from: local,
+        type: rg.TypeReference({ identifier: 'Coord' }),
+        value: rg.Reference({ identifier: 'coord' }),
+      });
 
       // Expose tag (piece).
-      const tagPiece1 = context.$randomEdgeName();
-      tagPiece1.parts.push(
-        rg.Binding({
-          identifier: 'pieceGenerator',
-          type: rg.TypeReference({ identifier: 'Piece' }),
+      const tagPiece = exposeUsingGenerator({
+        context,
+        bind: 'pieceGenerator',
+        from: tagPosition,
+        type: rg.TypeReference({ identifier: 'Piece' }),
+        value: rg.Access({
+          lhs: rg.Reference({ identifier: 'board' }),
+          rhs: rg.Reference({ identifier: 'coord' }),
         }),
-      );
-      context.$connect(
-        tagPosition2,
-        tagPiece1,
-        rg.Comparison({
-          lhs: rg.Reference({ identifier: 'pieceGenerator' }),
-          rhs: rg.Access({
-            lhs: rg.Reference({ identifier: 'board' }),
-            rhs: rg.Reference({ identifier: 'coord' }),
-          }),
-          negated: false,
-        }),
-      );
-
-      const tagPiece2 = context.$randomEdgeName();
-      context.$connect(
-        tagPiece1,
-        tagPiece2,
-        rg.Tag({ symbol: 'pieceGenerator' }),
-      );
+      });
 
       // Switch player.
       context.$connect(
-        tagPiece2,
+        tagPiece,
         to,
         rg.Assignment({
           lhs: rg.Reference({ identifier: 'player' }),
@@ -795,6 +766,36 @@ function boundRValue(context: Context, rvalue: rbg.RValue): number {
     boundRValue(context, rvalue.lhs),
     boundRValue(context, rvalue.rhs),
   );
+}
+
+function exposeUsingGenerator({
+  bind,
+  context,
+  from,
+  type,
+  value,
+}: {
+  bind: string;
+  context: Context;
+  from: rg.EdgeName;
+  type: rg.Type;
+  value: rg.Expression;
+}) {
+  const local = context.$randomEdgeName();
+  local.parts.push(rg.Binding({ identifier: bind, type }));
+  context.$connect(
+    from,
+    local,
+    rg.Comparison({
+      lhs: rg.Reference({ identifier: bind }),
+      rhs: value,
+      negated: false,
+    }),
+  );
+
+  const next = context.$randomEdgeName();
+  context.$connect(local, next, rg.Tag({ symbol: bind }));
+  return next;
 }
 
 function hasMathExpression(expression: rg.Expression): boolean {
@@ -1195,14 +1196,10 @@ export default function translate(game: rbg.Game) {
       ].join('_');
 
       if (!utils.find(this.rg.constants, { identifier: mathOperator })) {
-        const nanSymbol = 'nan';
-        const nanElement = rg.Element({ identifier: nanSymbol });
+        const nanElement = rg.Element({ identifier: 'nan' });
         const nanEntry = rg.ValueEntry({ identifier: null, value: nanElement });
 
-        const numberType = this.$createTypeFromSet([
-          nanSymbol,
-          ...utils.generate(limit, String),
-        ]);
+        const numberType = this.$mathType(limit);
 
         this.rg.constants.push(
           rg.ConstantDeclaration({
@@ -1278,6 +1275,9 @@ export default function translate(game: rbg.Game) {
         }),
         rhs,
       });
+    },
+    $mathType(limit: number) {
+      return this.$createTypeFromSet(['nan', ...utils.generate(limit, String)]);
     },
     $randomEdgeName() {
       const identifier = `${++counter}`;
