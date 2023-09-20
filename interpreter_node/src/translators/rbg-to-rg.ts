@@ -1056,15 +1056,10 @@ function terminateOnZeroMoves(context: Context) {
     }
 
     const visited = new Set<string>();
-    const reachablePlayerAssignments: [
-      rg.EdgeName,
-      rg.EdgeName,
-      rg.EdgeName,
-    ][] = [];
+    const reachablePlayerAssignments: rg.EdgeName[] = [];
 
-    for (const { rhs: C } of rg.lib.outgoing(context.rg.edges, A)) {
-      const B = context.$randomEdgeName();
-      const queue = [C];
+    for (const { rhs: B } of rg.lib.outgoing(context.rg.edges, A)) {
+      const queue = [B];
       for (let node: rg.EdgeName | undefined; (node = queue.pop()); ) {
         for (const edge of rg.lib.outgoing(context.rg.edges, node)) {
           if (
@@ -1072,7 +1067,7 @@ function terminateOnZeroMoves(context: Context) {
             edge.label.lhs.kind === 'Reference' &&
             edge.label.lhs.identifier === 'player'
           ) {
-            utils.unique(reachablePlayerAssignments, [B, C, edge.lhs]);
+            utils.unique(reachablePlayerAssignments, edge.lhs);
           } else {
             const hash = JSON.stringify(edge.rhs);
             if (!visited.has(hash)) {
@@ -1090,16 +1085,8 @@ function terminateOnZeroMoves(context: Context) {
 
     let currentPrev = A;
     let currentNext = context.$randomEdgeName();
-    for (const [B, C, D] of reachablePlayerAssignments) {
-      if (!utils.find(context.rg.edges, { lhs: A, rhs: B })) {
-        const edge = utils.find(context.rg.edges, { lhs: A, rhs: C });
-        if (edge) {
-          edge.lhs = B;
-          context.$connect(A, B, rg.Skip({}));
-        }
-      }
-
-      context.$connect(currentPrev, currentNext, copyPath(context, B, D));
+    for (const B of reachablePlayerAssignments) {
+      context.$connect(currentPrev, currentNext, copyPath(context, A, B));
       currentPrev = currentNext;
       currentNext = context.$randomEdgeName();
     }
