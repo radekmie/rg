@@ -1014,23 +1014,27 @@ function copyPath(
     utils.unique(context.rg.edges, copiedEdge);
   }
 
+  const distances: Record<string, number> = Object.create(null);
   function copyIfOnPath(edgeName: rg.EdgeName): number {
-    let minDistance = utils.isEqual(edgeName, originalTo) ? 0 : Infinity;
-    if (!isFinite(minDistance)) {
-      for (const next of rg.lib.outgoing(context.rg.edges, edgeName)) {
-        if (
-          next.label.kind !== 'Assignment' ||
-          next.label.lhs.kind !== 'Reference' ||
-          next.label.lhs.identifier !== 'player'
-        ) {
-          const distance = 1 + copyIfOnPath(next.rhs);
-          copy(next, distance);
-          minDistance = Math.min(minDistance, distance);
+    const hash = JSON.stringify(edgeName);
+    if (!(hash in distances)) {
+      distances[hash] = utils.isEqual(edgeName, originalTo) ? 0 : Infinity;
+      if (!isFinite(distances[hash])) {
+        for (const next of rg.lib.outgoing(context.rg.edges, edgeName)) {
+          if (
+            next.label.kind !== 'Assignment' ||
+            next.label.lhs.kind !== 'Reference' ||
+            next.label.lhs.identifier !== 'player'
+          ) {
+            const distance = 1 + copyIfOnPath(next.rhs);
+            copy(next, distance);
+            distances[hash] = Math.min(distances[hash], distance);
+          }
         }
       }
     }
 
-    return minDistance;
+    return distances[hash];
   }
 
   copyIfOnPath(originalFrom);
