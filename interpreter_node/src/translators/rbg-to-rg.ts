@@ -66,14 +66,19 @@ function translateAtomContent(
         rg.Tag({ symbol: content.variable }),
       );
 
-      const tagValue = exposeUsingGenerator({
-        bind: `${content.variable}Generator`,
-        context,
-        from: tagVariable,
-        type: context.$mathType(limit + 1),
-        value: rhs,
-      });
-      context.$connect(tagValue, to, rg.Skip({}));
+      if (typeof content.rvalue === 'number') {
+        const symbol = String(content.rvalue);
+        context.$connect(tagVariable, to, rg.Tag({ symbol }));
+      } else {
+        const tagValue = exposeUsingGenerator({
+          bind: `${content.variable}Generator`,
+          context,
+          from: tagVariable,
+          type: context.$mathType(limit + 1),
+          value: rhs,
+        });
+        context.$connect(tagValue, to, rg.Skip({}));
+      }
 
       return;
     }
