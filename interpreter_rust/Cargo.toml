@@ -8,4 +8,5 @@ members = [
   "map_id_macro",
   "parser_utils",
   "rg",
+  "rg_lsp",
 ]

@@ -1,0 +1,10 @@
+[package]
+name = "rg_lsp"
+version = "0.1.0"
+authors = ["Radosław Miernik <radekmie@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+nom = "7.1.3"
+nom_locate = "4.2.0"
+rand = "0.8.5"
