@@ -58,6 +58,21 @@ impl<'a, T> From<(LocatedSpan<&'a str, T>, LocatedSpan<&'a str, T>)> for Span {
     }
 }
 
+impl<'a, T> From<(&LocatedSpan<&'a str, T>, &LocatedSpan<&'a str, T>)> for Span {
+    fn from((start, end): (&LocatedSpan<&'a str, T>, &LocatedSpan<&'a str, T>)) -> Self {
+        Self {
+            start: Position {
+                line: start.location_line() as usize,
+                column: start.get_column() as usize,
+            },
+            end: Position {
+                line: end.location_line() as usize,
+                column: end.get_column() + end.fragment().len(),
+            },
+        }
+    }
+}
+
 impl Span {
     pub fn new(start: Position, end: Position) -> Self {
         Self { start, end }

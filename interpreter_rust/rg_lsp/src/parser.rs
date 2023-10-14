@@ -16,7 +16,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 #[derive(Debug)]
-struct Error(Position, String);
+pub struct Error(Position, String);
 #[derive(Clone, Debug)]
 pub struct State<'a>(&'a RefCell<Vec<Error>>);
 
@@ -26,15 +26,17 @@ pub type Result<'a, T> = IResult<Span<'a>, T>;
 fn constant(input: Span) -> Result<Constant> {
     context(
         "constant",
-        into(tuple((
-            tag("const"),
-            cut(tuple((
-                separated(identifier),
-                delimited(cut(char(':')), separated(type_), cut(char('='))),
-                separated(value),
-            ))),
-            cut(tag(";")),
-        ))),
+        into(terminated(
+            tuple((
+                tag("const"),
+                cut(tuple((
+                    separated(identifier),
+                    delimited(cut(char(':')), separated(type_), cut(char('='))),
+                    separated(value),
+                ))),
+            )),
+            cut(char(';')),
+        )),
     )(input)
 }
 
@@ -66,8 +68,7 @@ fn edge(input: Span) -> Result<Edge> {
         into(tuple((
             terminated(separated(edge_name), char(',')),
             terminated(separated(edge_name), cut(char(':'))),
-            separated(edge_label),
-            cut(tag(";")),
+            terminated(separated(edge_label), cut(char(';'))),
         ))),
     )(input)
 }
@@ -109,15 +110,15 @@ fn edge_name_part(input: Span) -> Result<EdgeNamePart> {
     context(
         "edge_name_part",
         alt((
-            into(tuple((
+            into(delimited(
                 tag("("),
-                (cut(separated_pair(
+                cut(separated_pair(
                     separated(identifier),
                     cut(char(':')),
                     separated(type_),
-                ))),
+                )),
                 tag(")"),
-            ))),
+            )),
             into(identifier),
         )),
     )(input)
@@ -162,11 +163,11 @@ fn type_(input: Span) -> Result<Rc<Type>> {
     // Eliminate direct left recursion.
     fn inner(input: Span) -> Result<Rc<Type>> {
         let (input, lhs): (Span, Rc<Type>) = alt((
-            into_rc(tuple((
+            into_rc(delimited(
                 tag("{"),
                 cut(separated(separated_list0(char(','), separated(identifier)))),
                 tag("}"),
-            ))),
+            )),
             into_rc(identifier),
         ))(input)?;
 
@@ -182,15 +183,17 @@ fn type_(input: Span) -> Result<Rc<Type>> {
 fn typedef(input: Span) -> Result<Typedef> {
     context(
         "typedef",
-        into(tuple((
-            tag("type"),
-            cut(separated_pair(
-                separated(identifier),
-                cut(char('=')),
-                separated(type_),
+        into(terminated(
+            tuple((
+                tag("type"),
+                cut(separated_pair(
+                    separated(identifier),
+                    cut(char('=')),
+                    separated(type_),
+                )),
             )),
             cut(tag(";")),
-        ))),
+        )),
     )(input)
 }
 
@@ -198,14 +201,14 @@ fn value(input: Span) -> Result<Rc<Value>> {
     context(
         "value",
         alt((
-            into_rc(tuple((
+            into_rc(delimited(
                 tag("{"),
                 cut(separated(separated_list0(
                     char(','),
                     separated(value_entry),
                 ))),
                 tag("}"),
-            ))),
+            )),
             into_rc(identifier),
         )),
     )(input)
@@ -335,4 +338,28 @@ fn into_rc<'a, O1, O2: From<O1>>(
     inner: impl FnMut(Span<'a>) -> Result<'a, O1>,
 ) -> impl FnMut(Span<'a>) -> Result<'a, Rc<O2>> {
     map(into(inner), Rc::new)
+}
+
+// ERROR HANDLIG
+
+impl<'a> State<'a> {
+    pub fn report_error(&self, error: Error) {
+        self.0.borrow_mut().push(error);
+    }
+}
+
+fn expect<'a, F, E, T>(parser: F, error_msg: E) -> impl Fn(Span<'a>) -> Result<Option<T>>
+where
+    F: Fn(Span<'a>) -> Result<T>,
+    E: ToString,
+{
+    move |input| match parser(input) {
+        Ok((remaining, out)) => Ok((remaining, Some(out))),
+        Err(nom::Err::Error(input)) | Err(nom::Err::Failure(input)) => {
+            let err = Error(Position::from(&input.input), error_msg.to_string());
+            input.input.extra.report_error(err);
+            Ok((input.input, None))
+        }
+        Err(err) => Err(err),
+    }
 }

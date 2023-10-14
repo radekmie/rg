@@ -4,11 +4,11 @@ use crate::position::{Span as Position, *};
 use nom_locate::LocatedSpan;
 use std::rc::Rc;
 
-impl From<(Span<'_>, (Identifier, Rc<Type>, Rc<Value>), Span<'_>)> for Constant {
+impl From<(Span<'_>, (Identifier, Rc<Type>, Rc<Value>))> for Constant {
     fn from(
-        (start, (identifier, type_, value), end): (Span, (Identifier, Rc<Type>, Rc<Value>), Span),
+        (start, (identifier, type_, value)): (Span, (Identifier, Rc<Type>, Rc<Value>)),
     ) -> Self {
-        let span = Position::from((start, end));
+        let span = Position::from(start).with_end(value.end());
         Self {
             span,
             identifier,
@@ -38,9 +38,9 @@ impl From<Identifier> for EdgeNamePart {
     }
 }
 
-impl From<(Span<'_>, (Identifier, Rc<Type>), Span<'_>)> for EdgeNamePart {
-    fn from((start, (identifier, type_), end): (Span, (Identifier, Rc<Type>), Span)) -> Self {
-        let span = Position::from((start, end));
+impl From<((Identifier, Rc<Type>))> for EdgeNamePart {
+    fn from((identifier, type_): (Identifier, Rc<Type>)) -> Self {
+        let span = Position::new(identifier.start(), type_.end());
         Self::Binding {
             span,
             identifier,
@@ -49,9 +49,9 @@ impl From<(Span<'_>, (Identifier, Rc<Type>), Span<'_>)> for EdgeNamePart {
     }
 }
 
-impl From<(EdgeName, EdgeName, EdgeLabel, Span<'_>)> for Edge {
-    fn from((lhs, rhs, label, end): (EdgeName, EdgeName, EdgeLabel, Span)) -> Self {
-        let span = Position::from(end).with_start(lhs.start().clone());
+impl From<(EdgeName, EdgeName, EdgeLabel)> for Edge {
+    fn from((lhs, rhs, label): (EdgeName, EdgeName, EdgeLabel)) -> Self {
+        let span = Position::new(lhs.start(), rhs.end());
         Self {
             span,
             label,
@@ -107,16 +107,17 @@ impl From<Identifier> for Type {
     }
 }
 
-impl From<(Span<'_>, Vec<Identifier>, Span<'_>)> for Type {
-    fn from((start, identifiers, end): (Span, Vec<Identifier>, Span)) -> Self {
-        let span = Position::from((start, end));
+impl From<(Vec<Identifier>)> for Type {
+    fn from(identifiers: Vec<Identifier>) -> Self {
+        let (first, last) = (identifiers.first().unwrap(), identifiers.last().unwrap());
+        let span = Position::new(first.start(), last.end());
         Self::Set { span, identifiers }
     }
 }
 
-impl From<(Span<'_>, (Identifier, Rc<Type>), Span<'_>)> for Typedef {
-    fn from((start, (identifier, type_), end): (Span, (Identifier, Rc<Type>), Span)) -> Self {
-        let span = Position::from((start, end));
+impl From<(Span<'_>, (Identifier, Rc<Type>))> for Typedef {
+    fn from((start, (identifier, type_)): (Span, (Identifier, Rc<Type>))) -> Self {
+        let span = Position::from(start).with_end(type_.span().end);
         Self {
             span,
             identifier,
@@ -125,9 +126,10 @@ impl From<(Span<'_>, (Identifier, Rc<Type>), Span<'_>)> for Typedef {
     }
 }
 
-impl From<(Span<'_>, Vec<ValueEntry>, Span<'_>)> for Value {
-    fn from((start, entries, end): (Span, Vec<ValueEntry>, Span)) -> Self {
-        let span = Position::from((start, end));
+impl From<(Vec<ValueEntry>)> for Value {
+    fn from(entries: Vec<ValueEntry>) -> Self {
+        let (first, last) = (entries.first().unwrap(), entries.last().unwrap());
+        let span = Position::new(first.start(), last.end());
         Self::Map { span, entries }
     }
 }
