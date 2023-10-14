@@ -28,7 +28,7 @@ impl<'a> From<LocatedSpan<&'a str>> for Span {
     }
 }
 
-impl <'a> From<(LocatedSpan<&'a str>, LocatedSpan<&'a str>)> for Span {
+impl<'a> From<(LocatedSpan<&'a str>, LocatedSpan<&'a str>)> for Span {
     fn from((start, end): (LocatedSpan<&'a str>, LocatedSpan<&'a str>)) -> Self {
         Self {
             start: Position {
@@ -64,13 +64,13 @@ impl Span {
 }
 
 pub trait Positioned {
-    fn span(&self) -> &Span;
+    fn span(&self) -> Span;
 
-    fn start(&self) -> &Position {
-        &self.span().start
+    fn start(&self) -> Position {
+        self.span().start
     }
 
-    fn end(&self) -> &Position {
-        &self.span().end
+    fn end(&self) -> Position {
+        self.span().end
     }
 }

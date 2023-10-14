@@ -20,12 +20,10 @@ pub struct Edge<'a> {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum EdgeLabel<'a> {
     Assignment {
-        span: Span,
         lhs: Rc<Expression<'a>>,
         rhs: Rc<Expression<'a>>,
     },
     Comparison {
-        span: Span,
         lhs: Rc<Expression<'a>>,
         rhs: Rc<Expression<'a>>,
         negated: bool,
@@ -40,7 +38,6 @@ pub enum EdgeLabel<'a> {
         span: Span
     },
     Tag {
-        span: Span,
         symbol: Identifier<'a>,
     },
 }
@@ -59,7 +56,6 @@ pub enum EdgeNamePart<'a> {
         type_: Rc<Type<'a>>,
     },
     Literal {
-        span: Span,
         identifier: Identifier<'a>,
     },
 }
@@ -67,7 +63,6 @@ pub enum EdgeNamePart<'a> {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Type<'a> {
     Arrow {
-        span: Span,
         lhs: Rc<Self>,
         rhs: Rc<Self>,
     },
@@ -76,7 +71,6 @@ pub enum Type<'a> {
         identifiers: Vec<Identifier<'a>>,
     },
     TypeReference {
-        span: Span,
         identifier: Identifier<'a>,
     },
 }
@@ -94,7 +88,6 @@ pub enum Expression<'a> {
         rhs: Rc<Self>,
     },
     Reference {
-        span: Span,
         identifier: Identifier<'a>,
     },
 }
@@ -102,7 +95,6 @@ pub enum Expression<'a> {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Value<'a> {
     Element {
-        span: Span,
         identifier: Identifier<'a>,
     },
     Map {

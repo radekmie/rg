@@ -6,7 +6,7 @@ use crate::position::{Span as Position, *};
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while, take_while1};
 use nom::character::complete::{char, multispace1};
-use nom::combinator::{cut, eof, into, map, opt, success, verify, all_consuming};
+use nom::combinator::{all_consuming, cut, eof, into, map, opt, success, verify};
 use nom::error::{context, ParseError, VerboseError};
 use nom::multi::{fold_many0, many1, separated_list0};
 use nom::sequence::{delimited, preceded, separated_pair, terminated, tuple};
@@ -63,7 +63,7 @@ pub fn edge_label<'a>(input: Span<'a>) -> Result<EdgeLabel<'a>> {
     context(
         "edge_label",
         alt((
-            into(tuple((tag("$"), cut(separated(identifier))))),
+            into(preceded(char('$'), cut(separated(identifier)))),
             into(tuple((
                 expression,
                 separated(map(alt((tag("=="), tag("!="))), |c: Span<'_>| {
@@ -114,26 +114,21 @@ pub fn expression<'a>(input: Span<'a>) -> Result<Rc<Expression<'a>>> {
     // Eliminate direct left recursion.
     fn inner<'a>(input: Span<'a>) -> Result<Rc<Expression<'a>>> {
         let (input, identifier) = separated(identifier)(input)?;
-        let (input, maybe_cast) = opt(in_parens(cut(separated(expression))))(input)?;
+        let (input, maybe_cast) =
+            opt(tuple((tag("("), cut(separated(expression)), tag(")"))))(input)?;
         let (input, expression) = fold_many0(
-            separated(in_brackets(cut(separated(expression)))),
+            tuple((tag("["), (cut(separated(expression))), tag("]"))),
             || match maybe_cast.clone() {
-                Some(rhs) => Rc::new(Expression::Cast {
-                    span: Position::new(identifier.span().start, rhs.span().end),
-                    lhs: Rc::new(Type::TypeReference {
-                        span: identifier.span().clone(),
-                        identifier,
-                    }),
+                Some((_, rhs, r_paren)) => Rc::new(Expression::Cast {
+                    span: Position::from((r_paren, r_paren)).with_start(identifier.span().start),
+                    lhs: Rc::new(Type::TypeReference { identifier }),
                     rhs,
                 }),
-                None => Rc::new(Expression::Reference {
-                    span: identifier.span().clone(),
-                    identifier,
-                }),
+                None => Rc::new(Expression::Reference { identifier }),
             },
-            |lhs, rhs| {
+            |lhs, (_, rhs, r_bracket)| {
                 Rc::new(Expression::Access {
-                    span: Position::new(lhs.span().start, rhs.span().end),
+                    span: Position::from((r_bracket, r_bracket)).with_start(lhs.start()),
                     lhs,
                     rhs,
                 })
@@ -159,14 +154,7 @@ pub fn type_<'a>(input: Span<'a>) -> Result<Rc<Type<'a>>> {
         ))(input)?;
 
         match opt(preceded(separated(tag("->")), type_))(input)? {
-            (input, Some(rhs)) => Ok((
-                input,
-                Rc::new(Type::Arrow {
-                    span: Position::new(lhs.as_ref().span().start, rhs.as_ref().span().end),
-                    lhs,
-                    rhs,
-                }),
-            )),
+            (input, Some(rhs)) => Ok((input, Rc::new(Type::Arrow { lhs, rhs }))),
             (input, None) => Ok((input, lhs)),
         }
     }
@@ -261,36 +249,32 @@ pub fn pragma<'a>(input: Span<'a>) -> Result<Pragma<'a>> {
     )(input)
 }
 
-
 pub fn game<'a>(input: Span<'a>) -> Result<Game<'a>> {
-  context(
-      "game",
-      fold_many0(
-          separated(alt((
-              map(constant, |x| (Some(x), None, None, None, None)),
-              map(typedef, |x| (None, Some(x), None, None, None)),
-              map(variable, |x| (None, None, Some(x), None, None)),
-              map(edge, |x| (None, None, None, Some(x), None)),
-              map(pragma, |x| (None, None, None, None, Some(x))),
-          ))),
-          Game::default,
-          |mut game, declaration| {
-              match declaration {
-                  (Some(x), _, _, _, _) => game.constants.push(x),
-                  (_, Some(x), _, _, _) => game.typedefs.push(x),
-                  (_, _, Some(x), _, _) => game.variables.push(x),
-                  (_, _, _, Some(x), _) => game.edges.push(x),
-                  (_, _, _, _, Some(x)) => game.pragmas.push(x),
-                  _ => unreachable!(),
-              }
-              game
-          },
-      ),
-  )(input)
+    context(
+        "game",
+        fold_many0(
+            separated(alt((
+                map(constant, |x| (Some(x), None, None, None, None)),
+                map(typedef, |x| (None, Some(x), None, None, None)),
+                map(variable, |x| (None, None, Some(x), None, None)),
+                map(edge, |x| (None, None, None, Some(x), None)),
+                map(pragma, |x| (None, None, None, None, Some(x))),
+            ))),
+            Game::default,
+            |mut game, declaration| {
+                match declaration {
+                    (Some(x), _, _, _, _) => game.constants.push(x),
+                    (_, Some(x), _, _, _) => game.typedefs.push(x),
+                    (_, _, Some(x), _, _) => game.variables.push(x),
+                    (_, _, _, Some(x), _) => game.edges.push(x),
+                    (_, _, _, _, Some(x)) => game.pragmas.push(x),
+                    _ => unreachable!(),
+                }
+                game
+            },
+        ),
+    )(input)
 }
-
-
-
 
 pub fn comment(input: Span) -> Result<Span> {
     delimited(
@@ -314,9 +298,6 @@ macro_rules! delimited {
     };
 }
 
-delimited!(in_braces, tag("{"), tag("}"));
-delimited!(in_brackets, tag("["), tag("]"));
-delimited!(in_parens, tag("("), tag(")"));
 delimited!(
     separated,
     comments_and_whitespaces,
@@ -328,7 +309,6 @@ pub fn into_rc<'a, O1, O2: From<O1>>(
 ) -> impl FnMut(Span<'a>) -> Result<'a, Rc<O2>> {
     map(into(inner), Rc::new)
 }
-
 
 pub fn parse(input: &str) -> Game {
     let input = nom_locate::LocatedSpan::new(input);

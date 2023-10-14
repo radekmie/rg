@@ -5,178 +5,6 @@ use std::rc::Rc;
 
 type Span<'a> = LocatedSpan<&'a str>;
 
-// impl<'a> From<(Span<'a>, EdgeLabel<'a>, EdgeName<'a>, EdgeName<'a>)> for Edge<'a> {
-//     fn from(
-//         (span, label, lhs, rhs): (Span<'a>, EdgeLabel<'a>, EdgeName<'a>, EdgeName<'a>),
-//     ) -> Self {
-//         Self {
-//             span: span.into(),
-//             label,
-//             lhs,
-//             rhs,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>, EdgeName<'a>, EdgeName<'a>, EdgeLabel<'a>)> for Edge<'a> {
-//     fn from(
-//         (span, lhs, rhs, label): (Span<'a>, EdgeName<'a>, EdgeName<'a>, EdgeLabel<'a>),
-//     ) -> Self {
-//         Self {
-//             span: span.into(),
-//             label,
-//             lhs,
-//             rhs,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>, Rc<Expression<'a>>, Rc<Expression<'a>>)> for EdgeLabel<'a> {
-//     fn from((span, lhs, rhs): (Span<'a>, Rc<Expression<'a>>, Rc<Expression<'a>>)) -> Self {
-//         Self::Assignment {
-//             span: span.into(),
-//             lhs,
-//             rhs,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>, Rc<Expression<'a>>, bool, Rc<Expression<'a>>)> for EdgeLabel<'a> {
-//     fn from(
-//         (span, lhs, negated, rhs): (Span<'a>, Rc<Expression<'a>>, bool, Rc<Expression<'a>>),
-//     ) -> Self {
-//         Self::Comparison {
-//             span: span.into(),
-//             lhs,
-//             rhs,
-//             negated,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>, bool, EdgeName<'a>, EdgeName<'a>)> for EdgeLabel<'a> {
-//     fn from((span, negated, lhs, rhs): (Span<'a>, bool, EdgeName<'a>, EdgeName<'a>)) -> Self {
-//         Self::Reachability {
-//             span: span.into(),
-//             lhs,
-//             rhs,
-//             negated,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>)> for EdgeLabel<'a> {
-//     fn from((span): Span<'a>) -> Self {
-//         Self::Tag {
-//             span: span.into(),
-//             symbol: span.fragment(),
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>, Vec<EdgeNamePart<'a>>)> for EdgeName<'a> {
-//     fn from((span, parts): (Span<'a>, Vec<EdgeNamePart<'a>>)) -> Self {
-//         Self {
-//             span: span.into(),
-//             parts,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>)> for EdgeName<'a> {
-//     fn from(span: Span<'a>) -> Self {
-//         Self::from((span, vec![EdgeNamePart::from(span)]))
-//     }
-// }
-
-// impl<'a> From<(Span<'a>, &'a str, Rc<Type<'a>>)> for EdgeNamePart<'a> {
-//     fn from((span, identifier, type_): (Span<'a>, &'a str, Rc<Type<'a>>)) -> Self {
-//         Self::Binding {
-//             span: span.into(),
-//             identifier,
-//             type_,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>)> for EdgeNamePart<'a> {
-//     fn from(span: Span<'a>) -> Self {
-//         Self::Literal {
-//             span: span.into(),
-//             identifier: span.fragment(),
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>, Vec<&'a str>)> for Type<'a> {
-//     fn from((span, identifiers): (Span<'a>, Vec<&'a str>)) -> Self {
-//         Self::Set {
-//             span: span.into(),
-//             identifiers,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>)> for Type<'a> {
-//     fn from(span: Span<'a>) -> Self {
-//         Self::TypeReference {
-//             span: span.into(),
-//             identifier: span.fragment(),
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>, &'a str, Rc<Type<'a>>)> for Typedef<'a> {
-//     fn from((span, identifier, type_): (Span<'a>, &'a str, Rc<Type<'a>>)) -> Self {
-//         Self {
-//             span: span.into(),
-//             identifier,
-//             type_,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>)> for Value<'a> {
-//     fn from((span, identifier): (Span<'a>, &'a str)) -> Self {
-//         Self::Element {
-//             span: span.into(),
-//             identifier,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>, Vec<ValueEntry<'a>>)> for Value<'a> {
-//     fn from((span, entries): (Span<'a>, Vec<ValueEntry<'a>>)) -> Self {
-//         Self::Map {
-//             span: span.into(),
-//             entries,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>, Option<&'a str>, Rc<Value<'a>>)> for ValueEntry<'a> {
-//     fn from((span, identifier, value): (Span<'a>, Option<&'a str>, Rc<Value<'a>>)) -> Self {
-//         Self {
-//             span: span.into(),
-//             identifier,
-//             value,
-//         }
-//     }
-// }
-
-// impl<'a> From<(Span<'a>, &'a str, Rc<Type<'a>>, Rc<Value<'a>>)> for Variable<'a> {
-//     fn from(
-//         (span, identifier, type_, default_value): (Span<'a>, &'a str, Rc<Type<'a>>, Rc<Value<'a>>),
-//     ) -> Self {
-//         Self {
-//             span: span.into(),
-//             default_value,
-//             identifier,
-//             type_,
-//         }
-//     }
-// }
-
 impl<'a>
     From<(
         Span<'a>,
@@ -217,10 +45,7 @@ impl<'a> From<Identifier<'a>> for EdgeName<'a> {
 
 impl<'a> From<Identifier<'a>> for EdgeNamePart<'a> {
     fn from(identifier: Identifier<'a>) -> Self {
-        Self::Literal {
-            span: identifier.span().clone(),
-            identifier,
-        }
+        Self::Literal { identifier }
     }
 }
 
@@ -249,29 +74,21 @@ impl<'a> From<(EdgeName<'a>, EdgeName<'a>, EdgeLabel<'a>, Span<'a>)> for Edge<'a
     }
 }
 
-impl<'a> From<(Span<'a>, Identifier<'a>)> for EdgeLabel<'a> {
-    fn from((start, symbol): (Span<'a>, Identifier<'a>)) -> Self {
-        let span = Position::from((start, start)).with_end(symbol.span().end);
-        EdgeLabel::Tag { span, symbol }
+impl<'a> From<(Identifier<'a>)> for EdgeLabel<'a> {
+    fn from(symbol: Identifier<'a>) -> Self {
+        EdgeLabel::Tag { symbol }
     }
 }
 
 impl<'a> From<(Rc<Expression<'a>>, Rc<Expression<'a>>)> for EdgeLabel<'a> {
     fn from((lhs, rhs): (Rc<Expression<'a>>, Rc<Expression<'a>>)) -> Self {
-        let span = Position::new(lhs.span().start, rhs.span().end);
-        Self::Assignment { span, lhs, rhs }
+        Self::Assignment { lhs, rhs }
     }
 }
 
 impl<'a> From<(Rc<Expression<'a>>, bool, Rc<Expression<'a>>)> for EdgeLabel<'a> {
     fn from((lhs, negated, rhs): (Rc<Expression<'a>>, bool, Rc<Expression<'a>>)) -> Self {
-        let span = Position::new(lhs.span().start, rhs.span().end);
-        Self::Comparison {
-            span,
-            lhs,
-            rhs,
-            negated,
-        }
+        Self::Comparison { lhs, rhs, negated }
     }
 }
 
@@ -299,10 +116,7 @@ impl<'a> From<Span<'a>> for Identifier<'a> {
 
 impl<'a> From<Identifier<'a>> for Type<'a> {
     fn from(identifier: Identifier<'a>) -> Self {
-        Self::TypeReference {
-            span: identifier.span,
-            identifier,
-        }
+        Self::TypeReference { identifier }
     }
 }
 
@@ -335,10 +149,7 @@ impl<'a> From<(Span<'a>, Vec<ValueEntry<'a>>, Span<'a>)> for Value<'a> {
 
 impl<'a> From<(Identifier<'a>)> for Value<'a> {
     fn from(identifier: Identifier<'a>) -> Self {
-        Self::Element {
-            span: identifier.span().clone(),
-            identifier,
-        }
+        Self::Element { identifier }
     }
 }
 
