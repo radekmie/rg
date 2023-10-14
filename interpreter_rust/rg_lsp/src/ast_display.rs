@@ -1,4 +1,4 @@
-use crate::position::{Positioned, Span};
+use crate::position::Span;
 use crate::{
     ast::{
         Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Game, Identifier, Pragma,
@@ -22,7 +22,7 @@ impl Display for Position {
     }
 }
 
-impl<'a> Display for Constant<'a> {
+impl Display for Constant {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
             span,
@@ -34,7 +34,7 @@ impl<'a> Display for Constant<'a> {
     }
 }
 
-impl<'a> Display for Edge<'a> {
+impl Display for Edge {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
             span,
@@ -46,14 +46,14 @@ impl<'a> Display for Edge<'a> {
     }
 }
 
-impl<'a> Display for Identifier<'a> {
+impl Display for Identifier {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { span, identifier } = self;
-        write!(f, "{span}{identifier}")
+        write!(f, "{identifier}")
     }
 }
 
-impl<'a> Display for EdgeLabel<'a> {
+impl Display for EdgeLabel {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Assignment { lhs, rhs } => write!(f, "{lhs} = {rhs}"),
@@ -85,7 +85,7 @@ impl<'a> Display for EdgeLabel<'a> {
     }
 }
 
-impl<'a> Display for EdgeName<'a> {
+impl Display for EdgeName {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         for part in &self.parts {
             write!(f, "{part}")?;
@@ -95,7 +95,7 @@ impl<'a> Display for EdgeName<'a> {
     }
 }
 
-impl<'a> Display for EdgeNamePart<'a> {
+impl Display for EdgeNamePart {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Binding {
@@ -108,7 +108,7 @@ impl<'a> Display for EdgeNamePart<'a> {
     }
 }
 
-impl<'a> Display for Expression<'a> {
+impl Display for Expression {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Access { span, lhs, rhs } => write!(f, "{lhs}[{rhs}]"),
@@ -118,7 +118,7 @@ impl<'a> Display for Expression<'a> {
     }
 }
 
-impl<'a> Display for Pragma<'a> {
+impl Display for Pragma {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Any { span, edge_name } => write!(f, "@any {edge_name};"),
@@ -129,7 +129,7 @@ impl<'a> Display for Pragma<'a> {
     }
 }
 
-impl<'a> Display for Type<'a> {
+impl Display for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Arrow { lhs, rhs } => write!(f, "{lhs} -> {rhs}"),
@@ -146,7 +146,7 @@ impl<'a> Display for Type<'a> {
     }
 }
 
-impl<'a> Display for Typedef<'a> {
+impl Display for Typedef {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
             span,
@@ -157,7 +157,7 @@ impl<'a> Display for Typedef<'a> {
     }
 }
 
-impl<'a> Display for Value<'a> {
+impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Element { identifier } => write!(f, "{identifier}"),
@@ -173,7 +173,7 @@ impl<'a> Display for Value<'a> {
     }
 }
 
-impl<'a> Display for ValueEntry<'a> {
+impl Display for ValueEntry {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
             span,
@@ -187,7 +187,7 @@ impl<'a> Display for ValueEntry<'a> {
     }
 }
 
-impl<'a> Display for Variable<'a> {
+impl Display for Variable {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
             span,
@@ -199,7 +199,7 @@ impl<'a> Display for Variable<'a> {
     }
 }
 
-impl<'a> Display for Game<'a> {
+impl Display for Game {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         for pragma in &self.pragmas {
             writeln!(f, "{pragma}")?;
@@ -220,7 +220,7 @@ impl<'a> Display for Game<'a> {
     }
 }
 
-// impl<'a> Display for Game<'a> {
+// impl Display for Game {
 //     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
 //         let Self {
 //             constants,

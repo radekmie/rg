@@ -13,8 +13,8 @@ pub struct Span {
     pub end: Position,
 }
 
-impl<'a> From<LocatedSpan<&'a str>> for Span {
-    fn from(span: LocatedSpan<&'a str>) -> Self {
+impl<'a, T> From<&LocatedSpan<&'a str, T>> for Span {
+    fn from(span: &LocatedSpan<&'a str, T>) -> Self {
         Self {
             start: Position {
                 line: span.location_line() as usize,
@@ -28,8 +28,23 @@ impl<'a> From<LocatedSpan<&'a str>> for Span {
     }
 }
 
-impl<'a> From<(LocatedSpan<&'a str>, LocatedSpan<&'a str>)> for Span {
-    fn from((start, end): (LocatedSpan<&'a str>, LocatedSpan<&'a str>)) -> Self {
+impl<'a, T> From<LocatedSpan<&'a str, T>> for Span {
+    fn from(span: LocatedSpan<&'a str, T>) -> Self {
+        Self {
+            start: Position {
+                line: span.location_line() as usize,
+                column: span.get_column() as usize,
+            },
+            end: Position {
+                line: span.location_line() as usize,
+                column: span.get_column() + span.fragment().len(),
+            },
+        }
+    }
+}
+
+impl<'a, T> From<(LocatedSpan<&'a str, T>, LocatedSpan<&'a str, T>)> for Span {
+    fn from((start, end): (LocatedSpan<&'a str, T>, LocatedSpan<&'a str, T>)) -> Self {
         Self {
             start: Position {
                 line: start.location_line() as usize,

@@ -3,80 +3,80 @@ use std::rc::Rc;
 use crate::position::Span;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Constant<'a> {
+pub struct Constant {
     pub span: Span,
-    pub identifier: Identifier<'a>,
-    pub type_: Rc<Type<'a>>,
-    pub value: Rc<Value<'a>>,
+    pub identifier: Identifier,
+    pub type_: Rc<Type>,
+    pub value: Rc<Value>,
 }
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Edge<'a> {
+pub struct Edge {
     pub span: Span,
-    pub label: EdgeLabel<'a>,
-    pub lhs: EdgeName<'a>,
-    pub rhs: EdgeName<'a>,
+    pub label: EdgeLabel,
+    pub lhs: EdgeName,
+    pub rhs: EdgeName,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum EdgeLabel<'a> {
+pub enum EdgeLabel {
     Assignment {
-        lhs: Rc<Expression<'a>>,
-        rhs: Rc<Expression<'a>>,
+        lhs: Rc<Expression>,
+        rhs: Rc<Expression>,
     },
     Comparison {
-        lhs: Rc<Expression<'a>>,
-        rhs: Rc<Expression<'a>>,
+        lhs: Rc<Expression>,
+        rhs: Rc<Expression>,
         negated: bool,
     },
     Reachability {
         span: Span,
-        lhs: EdgeName<'a>,
-        rhs: EdgeName<'a>,
+        lhs: EdgeName,
+        rhs: EdgeName,
         negated: bool,
     },
     Skip {
         span: Span
     },
     Tag {
-        symbol: Identifier<'a>,
+        symbol: Identifier,
     },
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct EdgeName<'a> {
+pub struct EdgeName {
     pub span: Span,
-    pub parts: Vec<EdgeNamePart<'a>>,
+    pub parts: Vec<EdgeNamePart>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum EdgeNamePart<'a> {
+pub enum EdgeNamePart {
     Binding {
         span: Span,
-        identifier: Identifier<'a>,
-        type_: Rc<Type<'a>>,
+        identifier: Identifier,
+        type_: Rc<Type>,
     },
     Literal {
-        identifier: Identifier<'a>,
+        identifier: Identifier,
     },
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum Type<'a> {
+pub enum Type {
     Arrow {
         lhs: Rc<Self>,
         rhs: Rc<Self>,
     },
     Set {
         span: Span,
-        identifiers: Vec<Identifier<'a>>,
+        identifiers: Vec<Identifier>,
     },
     TypeReference {
-        identifier: Identifier<'a>,
+        identifier: Identifier,
     },
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum Expression<'a> {
+pub enum Expression {
     Access {
         span: Span,
         lhs: Rc<Self>,
@@ -84,80 +84,80 @@ pub enum Expression<'a> {
     },
     Cast {
         span: Span,
-        lhs: Rc<Type<'a>>,
+        lhs: Rc<Type>,
         rhs: Rc<Self>,
     },
     Reference {
-        identifier: Identifier<'a>,
+        identifier: Identifier,
     },
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum Value<'a> {
+pub enum Value {
     Element {
-        identifier: Identifier<'a>,
+        identifier: Identifier,
     },
     Map {
         span: Span,
-        entries: Vec<ValueEntry<'a>>,
+        entries: Vec<ValueEntry>,
     },
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ValueEntry<'a> {
+pub struct ValueEntry {
     pub span: Span,
-    pub identifier: Option<Identifier<'a>>,
-    pub value: Rc<Value<'a>>,
+    pub identifier: Option<Identifier>,
+    pub value: Rc<Value>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Variable<'a> {
+pub struct Variable {
     pub span: Span,
-    pub default_value: Rc<Value<'a>>,
-    pub identifier: Identifier<'a>,
-    pub type_: Rc<Type<'a>>,
+    pub default_value: Rc<Value>,
+    pub identifier: Identifier,
+    pub type_: Rc<Type>,
 }
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Typedef<'a> {
+pub struct Typedef {
     pub span: Span,
-    pub identifier: Identifier<'a>,
-    pub type_: Rc<Type<'a>>,
+    pub identifier: Identifier,
+    pub type_: Rc<Type>,
 }
 
-
-
-#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Identifier<'a> {
-    pub span: Span,
-    pub identifier: &'a str,
-}
 
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum Pragma<'a> {
+pub struct Identifier {
+    pub span: Span,
+    pub identifier: String,
+}
+
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum Pragma {
     Any {
         span: Span,
-        edge_name: EdgeName<'a>,
+        edge_name: EdgeName,
     },
     Disjoint {
         span: Span,
-        edge_name: EdgeName<'a>,
+        edge_name: EdgeName,
     },
     MultiAny {
         span: Span,
-        edge_name: EdgeName<'a>,
+        edge_name: EdgeName,
     },
     Unique {
         span: Span,
-        edge_name: EdgeName<'a>,
+        edge_name: EdgeName,
     },
 }
 
 #[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Game<'a> {
-    pub constants: Vec<Constant<'a>>,
-    pub edges: Vec<Edge<'a>>,
-    pub pragmas: Vec<Pragma<'a>>,
-    pub typedefs: Vec<Typedef<'a>>,
-    pub variables: Vec<Variable<'a>>,
+pub struct Game {
+    pub constants: Vec<Constant>,
+    pub edges: Vec<Edge>,
+    pub pragmas: Vec<Pragma>,
+    pub typedefs: Vec<Typedef>,
+    pub variables: Vec<Variable>,
 }

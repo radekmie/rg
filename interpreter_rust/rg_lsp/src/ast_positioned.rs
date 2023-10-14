@@ -1,19 +1,19 @@
 use crate::ast::*;
 use crate::position::*;
 
-impl<'a> Positioned for Constant<'a> {
+impl Positioned for Constant {
     fn span(&self) -> Span {
         self.span
     }
 }
 
-impl<'a> Positioned for Edge<'a> {
+impl Positioned for Edge {
     fn span(&self) -> Span {
         self.span
     }
 }
 
-impl<'a> Positioned for EdgeLabel<'a> {
+impl Positioned for EdgeLabel {
     fn span(&self) -> Span {
         match self {
             EdgeLabel::Assignment { lhs, rhs } => lhs.span().with_end(rhs.span().end),
@@ -24,13 +24,13 @@ impl<'a> Positioned for EdgeLabel<'a> {
         }
     }
 }
-impl<'a> Positioned for EdgeName<'a> {
+impl Positioned for EdgeName {
     fn span(&self) -> Span {
         self.span
     }
 }
 
-impl<'a> Positioned for EdgeNamePart<'a> {
+impl Positioned for EdgeNamePart {
     fn span(&self) -> Span {
         match &self {
             EdgeNamePart::Binding { span, .. } => *span,
@@ -39,7 +39,7 @@ impl<'a> Positioned for EdgeNamePart<'a> {
     }
 }
 
-impl<'a> Positioned for Type<'a> {
+impl Positioned for Type {
     fn span(&self) -> Span {
         match &self {
             Type::Arrow { lhs, rhs } => lhs.span().with_end(rhs.span().end),
@@ -49,7 +49,7 @@ impl<'a> Positioned for Type<'a> {
     }
 }
 
-impl<'a> Positioned for Expression<'a> {
+impl Positioned for Expression {
     fn span(&self) -> Span {
         match &self {
             Expression::Access { span, .. } => *span,
@@ -59,7 +59,7 @@ impl<'a> Positioned for Expression<'a> {
     }
 }
 
-impl<'a> Positioned for Value<'a> {
+impl Positioned for Value {
     fn span(&self) -> Span {
         match &self {
             Value::Element { identifier } => identifier.span(),
@@ -68,31 +68,31 @@ impl<'a> Positioned for Value<'a> {
     }
 }
 
-impl<'a> Positioned for ValueEntry<'a> {
+impl Positioned for ValueEntry {
     fn span(&self) -> Span {
         self.span
     }
 }
 
-impl<'a> Positioned for Variable<'a> {
+impl Positioned for Variable {
     fn span(&self) -> Span {
         self.span
     }
 }
 
-impl<'a> Positioned for Typedef<'a> {
+impl Positioned for Typedef {
     fn span(&self) -> Span {
         self.span
     }
 }
 
-impl<'a> Positioned for Identifier<'a> {
+impl Positioned for Identifier {
     fn span(&self) -> Span {
         self.span
     }
 }
 
-impl<'a> Positioned for Pragma<'a> {
+impl Positioned for Pragma {
     fn span(&self) -> Span {
         match &self {
             Pragma::Any { span, .. } => *span,

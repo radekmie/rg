@@ -12,12 +12,18 @@ use nom::multi::{fold_many0, many1, separated_list0};
 use nom::sequence::{delimited, preceded, separated_pair, terminated, tuple};
 use nom::IResult;
 use nom_locate::LocatedSpan;
+use std::cell::RefCell;
 use std::rc::Rc;
 
-type Span<'a> = LocatedSpan<&'a str>;
-pub type Result<'a, T> = IResult<Span<'a>, T, VerboseError<Span<'a>>>;
+#[derive(Debug)]
+struct Error(Position, String);
+#[derive(Clone, Debug)]
+pub struct State<'a>(&'a RefCell<Vec<Error>>);
 
-pub fn constant(input: Span) -> Result<Constant> {
+pub type Span<'a> = LocatedSpan<&'a str, State<'a>>;
+pub type Result<'a, T> = IResult<Span<'a>, T>;
+
+fn constant(input: Span) -> Result<Constant> {
     context(
         "constant",
         into(tuple((
@@ -32,22 +38,29 @@ pub fn constant(input: Span) -> Result<Constant> {
     )(input)
 }
 
-pub fn identifier_(input: Span) -> Result<Span> {
+fn identifier_(input: Span) -> Result<Span> {
     static KEYWORDS: [&str; 4] = ["any", "const", "type", "var"];
     context(
         "identifier",
         verify(
             take_while1(|c: char| c.is_alphanumeric() || c == '_'),
-            |identifier: &LocatedSpan<&str>| !KEYWORDS.contains(identifier.fragment()),
+            |identifier: &Span| !KEYWORDS.contains(identifier.fragment()),
         ),
     )(input)
 }
 
-pub fn identifier(input: Span) -> Result<Identifier> {
-    into(identifier_)(input)
+fn identifier(input: Span) -> Result<Identifier> {
+    map(identifier_, |identifier| {
+        let span: Position = Position::from(&identifier);
+        Identifier {
+            span,
+            identifier: identifier.fragment().to_string(),
+        }
+    })(input)
+    // into(identifier_)(input)
 }
 
-pub fn edge<'a>(input: Span<'a>) -> Result<Edge<'a>> {
+fn edge(input: Span) -> Result<Edge> {
     context(
         "edge",
         into(tuple((
@@ -59,14 +72,14 @@ pub fn edge<'a>(input: Span<'a>) -> Result<Edge<'a>> {
     )(input)
 }
 
-pub fn edge_label<'a>(input: Span<'a>) -> Result<EdgeLabel<'a>> {
+fn edge_label(input: Span) -> Result<EdgeLabel> {
     context(
         "edge_label",
         alt((
             into(preceded(char('$'), cut(separated(identifier)))),
             into(tuple((
                 expression,
-                separated(map(alt((tag("=="), tag("!="))), |c: Span<'_>| {
+                separated(map(alt((tag("=="), tag("!="))), |c: Span| {
                     *c.fragment() == "!="
                 })),
                 cut(expression),
@@ -81,18 +94,18 @@ pub fn edge_label<'a>(input: Span<'a>) -> Result<EdgeLabel<'a>> {
                 cut(terminated(separated(edge_name), separated(tag("->")))),
                 edge_name,
             ))),
-            success::<_, _, VerboseError<_>>(EdgeLabel::Skip {
-                span: Position::from((input, input)),
+            success::<_, _, _>(EdgeLabel::Skip {
+                span: Position::from(&input),
             }),
         )),
     )(input)
 }
 
-pub fn edge_name<'a>(input: Span<'a>) -> Result<EdgeName<'a>> {
+fn edge_name(input: Span) -> Result<EdgeName> {
     context("edge_name", into(many1(separated(edge_name_part))))(input)
 }
 
-pub fn edge_name_part<'a>(input: Span<'a>) -> Result<EdgeNamePart<'a>> {
+fn edge_name_part(input: Span) -> Result<EdgeNamePart> {
     context(
         "edge_name_part",
         alt((
@@ -110,9 +123,9 @@ pub fn edge_name_part<'a>(input: Span<'a>) -> Result<EdgeNamePart<'a>> {
     )(input)
 }
 
-pub fn expression<'a>(input: Span<'a>) -> Result<Rc<Expression<'a>>> {
+fn expression(input: Span) -> Result<Rc<Expression>> {
     // Eliminate direct left recursion.
-    fn inner<'a>(input: Span<'a>) -> Result<Rc<Expression<'a>>> {
+    fn inner(input: Span) -> Result<Rc<Expression>> {
         let (input, identifier) = separated(identifier)(input)?;
         let (input, maybe_cast) =
             opt(tuple((tag("("), cut(separated(expression)), tag(")"))))(input)?;
@@ -120,15 +133,19 @@ pub fn expression<'a>(input: Span<'a>) -> Result<Rc<Expression<'a>>> {
             tuple((tag("["), (cut(separated(expression))), tag("]"))),
             || match maybe_cast.clone() {
                 Some((_, rhs, r_paren)) => Rc::new(Expression::Cast {
-                    span: Position::from((r_paren, r_paren)).with_start(identifier.span().start),
-                    lhs: Rc::new(Type::TypeReference { identifier }),
+                    span: Position::from(r_paren).with_start(identifier.span().start),
+                    lhs: Rc::new(Type::TypeReference {
+                        identifier: identifier.clone(),
+                    }),
                     rhs,
                 }),
-                None => Rc::new(Expression::Reference { identifier }),
+                None => Rc::new(Expression::Reference {
+                    identifier: identifier.clone(),
+                }),
             },
             |lhs, (_, rhs, r_bracket)| {
                 Rc::new(Expression::Access {
-                    span: Position::from((r_bracket, r_bracket)).with_start(lhs.start()),
+                    span: Position::from(r_bracket).with_start(lhs.start()),
                     lhs,
                     rhs,
                 })
@@ -141,10 +158,10 @@ pub fn expression<'a>(input: Span<'a>) -> Result<Rc<Expression<'a>>> {
     context("expression", inner)(input)
 }
 
-pub fn type_<'a>(input: Span<'a>) -> Result<Rc<Type<'a>>> {
+fn type_(input: Span) -> Result<Rc<Type>> {
     // Eliminate direct left recursion.
-    fn inner<'a>(input: Span<'a>) -> Result<Rc<Type<'a>>> {
-        let (input, lhs): (LocatedSpan<&str>, Rc<Type<'_>>) = alt((
+    fn inner(input: Span) -> Result<Rc<Type>> {
+        let (input, lhs): (Span, Rc<Type>) = alt((
             into_rc(tuple((
                 tag("{"),
                 cut(separated(separated_list0(char(','), separated(identifier)))),
@@ -162,7 +179,7 @@ pub fn type_<'a>(input: Span<'a>) -> Result<Rc<Type<'a>>> {
     context("type", inner)(input)
 }
 
-pub fn typedef<'a>(input: Span<'a>) -> Result<Typedef<'a>> {
+fn typedef(input: Span) -> Result<Typedef> {
     context(
         "typedef",
         into(tuple((
@@ -177,7 +194,7 @@ pub fn typedef<'a>(input: Span<'a>) -> Result<Typedef<'a>> {
     )(input)
 }
 
-pub fn value<'a>(input: Span<'a>) -> Result<Rc<Value<'a>>> {
+fn value(input: Span) -> Result<Rc<Value>> {
     context(
         "value",
         alt((
@@ -194,7 +211,7 @@ pub fn value<'a>(input: Span<'a>) -> Result<Rc<Value<'a>>> {
     )(input)
 }
 
-pub fn value_entry(input: Span) -> Result<ValueEntry> {
+fn value_entry(input: Span) -> Result<ValueEntry> {
     context(
         "value_entry",
         into(separated_pair(
@@ -205,7 +222,7 @@ pub fn value_entry(input: Span) -> Result<ValueEntry> {
     )(input)
 }
 
-pub fn variable<'a>(input: Span<'a>) -> Result<Variable<'a>> {
+fn variable(input: Span) -> Result<Variable> {
     context(
         "variable",
         into(tuple((
@@ -220,7 +237,7 @@ pub fn variable<'a>(input: Span<'a>) -> Result<Variable<'a>> {
     )(input)
 }
 
-pub fn pragma<'a>(input: Span<'a>) -> Result<Pragma<'a>> {
+fn pragma(input: Span) -> Result<Pragma> {
     macro_rules! edge_name {
         ($tag:literal, $constructor:ident) => {
             map(
@@ -249,7 +266,7 @@ pub fn pragma<'a>(input: Span<'a>) -> Result<Pragma<'a>> {
     )(input)
 }
 
-pub fn game<'a>(input: Span<'a>) -> Result<Game<'a>> {
+pub fn game(input: Span) -> Result<Game> {
     context(
         "game",
         fold_many0(
@@ -276,7 +293,17 @@ pub fn game<'a>(input: Span<'a>) -> Result<Game<'a>> {
     )(input)
 }
 
-pub fn comment(input: Span) -> Result<Span> {
+pub fn parse(input: &str) -> Game {
+    let errors = RefCell::new(Vec::new());
+    let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
+    let (errors, game) = all_consuming(game)(input).unwrap();
+    // errors.extra.to_owned();
+    game
+}
+
+// Util functions
+
+fn comment(input: Span) -> Result<Span> {
     delimited(
         tag("//"),
         cut(take_while(|c| c != '\n')),
@@ -284,7 +311,7 @@ pub fn comment(input: Span) -> Result<Span> {
     )(input)
 }
 
-pub fn comments_and_whitespaces(input: Span) -> Result<()> {
+fn comments_and_whitespaces(input: Span) -> Result<()> {
     fold_many0(alt((comment, multispace1)), || (), |_, _| ())(input)
 }
 
@@ -304,14 +331,8 @@ delimited!(
     comments_and_whitespaces
 );
 
-pub fn into_rc<'a, O1, O2: From<O1>>(
+fn into_rc<'a, O1, O2: From<O1>>(
     inner: impl FnMut(Span<'a>) -> Result<'a, O1>,
 ) -> impl FnMut(Span<'a>) -> Result<'a, Rc<O2>> {
     map(into(inner), Rc::new)
-}
-
-pub fn parse(input: &str) -> Game {
-    let input = nom_locate::LocatedSpan::new(input);
-    let (_, game) = all_consuming(game)(input).unwrap();
-    game
 }
