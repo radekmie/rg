@@ -107,16 +107,24 @@ impl From<Identifier> for Type {
     }
 }
 
-impl From<(Vec<Identifier>)> for Type {
-    fn from(identifiers: Vec<Identifier>) -> Self {
-        let (first, last) = (identifiers.first().unwrap(), identifiers.last().unwrap());
-        let span = Position::new(first.start(), last.end());
-        Self::Set { span, identifiers }
+impl From<(Option<Vec<Identifier>>)> for Type {
+    fn from(identifiers: Option<Vec<Identifier>>) -> Self {
+        match identifiers {
+            Some(identifiers) => {
+                let (first, last) = (identifiers.first().unwrap(), identifiers.last().unwrap());
+                let span = Position::new(first.start(), last.end());
+                Self::Set { span, identifiers }
+            }
+            None => Self::Set {
+                span: Position::none(),
+                identifiers: vec![],
+            },
+        }
     }
 }
 
-impl From<(Span<'_>, (Identifier, Rc<Type>))> for Typedef {
-    fn from((start, (identifier, type_)): (Span, (Identifier, Rc<Type>))) -> Self {
+impl From<(Span<'_>, Identifier, Rc<Type>)> for Typedef {
+    fn from((start, identifier, type_): (Span, Identifier, Rc<Type>)) -> Self {
         let span = Position::from(start).with_end(type_.span().end);
         Self {
             span,
@@ -126,11 +134,19 @@ impl From<(Span<'_>, (Identifier, Rc<Type>))> for Typedef {
     }
 }
 
-impl From<(Vec<ValueEntry>)> for Value {
-    fn from(entries: Vec<ValueEntry>) -> Self {
-        let (first, last) = (entries.first().unwrap(), entries.last().unwrap());
-        let span = Position::new(first.start(), last.end());
-        Self::Map { span, entries }
+impl From<(Option<Vec<ValueEntry>>)> for Value {
+    fn from(entries: Option<Vec<ValueEntry>>) -> Self {
+        match entries {
+            Some(entries) => {
+                let (first, last) = (entries.first().unwrap(), entries.last().unwrap());
+                let span = Position::new(first.start(), last.end());
+                Self::Map { span, entries }
+            }
+            None => Self::Map {
+                span: Position::none(),
+                entries: vec![],
+            },
+        }
     }
 }
 
@@ -154,11 +170,9 @@ impl From<(Option<Identifier>, Rc<Value>)> for ValueEntry {
     }
 }
 
-impl From<(Span<'_>, (Identifier, Rc<Type>, Rc<Value>), Span<'_>)> for Variable {
-    fn from(
-        (start, (identifier, type_, value), end): (Span, (Identifier, Rc<Type>, Rc<Value>), Span),
-    ) -> Self {
-        let span = Position::from((start, end));
+impl From<(Span<'_>, Identifier, Rc<Type>, Rc<Value>)> for Variable {
+    fn from((start, identifier, type_, value): (Span, Identifier, Rc<Type>, Rc<Value>)) -> Self {
+        let span = Position::from(start).with_end(value.end());
         Self {
             span,
             identifier,

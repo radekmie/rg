@@ -9,7 +9,7 @@ use nom::character::complete::{char, multispace1};
 use nom::combinator::{all_consuming, cut, eof, into, map, opt, success, verify};
 use nom::error::{context, ParseError, VerboseError};
 use nom::multi::{fold_many0, many1, separated_list0};
-use nom::sequence::{delimited, preceded, separated_pair, terminated, tuple};
+use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
 use nom::IResult;
 use nom_locate::LocatedSpan;
 use std::cell::RefCell;
@@ -23,20 +23,21 @@ pub struct State<'a>(&'a RefCell<Vec<Error>>);
 pub type Span<'a> = LocatedSpan<&'a str, State<'a>>;
 pub type Result<'a, T> = IResult<Span<'a>, T>;
 
-fn constant(input: Span) -> Result<Constant> {
+fn constant(input: Span) -> Result<Option<Constant>> {
     context(
         "constant",
-        into(terminated(
-            tuple((
+        map(
+            with_semicolon(
                 tag("const"),
                 cut(tuple((
                     separated(identifier),
                     delimited(cut(char(':')), separated(type_), cut(char('='))),
                     separated(value),
                 ))),
-            )),
-            cut(char(';')),
-        )),
+                "expected constant",
+            ),
+            |(tag_span, res)| res.map(|res| (tag_span, res).into()),
+        ),
     )(input)
 }
 
@@ -62,14 +63,20 @@ fn identifier(input: Span) -> Result<Identifier> {
     // into(identifier_)(input)
 }
 
-fn edge(input: Span) -> Result<Edge> {
+fn edge(input: Span) -> Result<Option<Edge>> {
     context(
         "edge",
-        into(tuple((
-            terminated(separated(edge_name), char(',')),
-            terminated(separated(edge_name), cut(char(':'))),
-            terminated(separated(edge_label), cut(char(';'))),
-        ))),
+        map(
+            with_semicolon(
+                terminated(separated(edge_name), char(',')),
+                tuple((
+                    terminated(separated(edge_name), cut(char(':'))),
+                    separated(edge_label),
+                )),
+                "expected edge",
+            ),
+            |(lhs, res)| res.map(|(rhs, label)| (lhs, rhs, label).into()),
+        ),
     )(input)
 }
 
@@ -129,12 +136,12 @@ fn expression(input: Span) -> Result<Rc<Expression>> {
     fn inner(input: Span) -> Result<Rc<Expression>> {
         let (input, identifier) = separated(identifier)(input)?;
         let (input, maybe_cast) =
-            opt(tuple((tag("("), cut(separated(expression)), tag(")"))))(input)?;
+            opt(delimited(tag("("), cut(separated(expression)), tag(")")))(input)?;
         let (input, expression) = fold_many0(
-            tuple((tag("["), (cut(separated(expression))), tag("]"))),
+            delimited(tag("["), cut(separated(expression)), tag("]")),
             || match maybe_cast.clone() {
-                Some((_, rhs, r_paren)) => Rc::new(Expression::Cast {
-                    span: Position::from(r_paren).with_start(identifier.span().start),
+                Some(rhs) => Rc::new(Expression::Cast {
+                    span: rhs.span().with_start(identifier.span().start),
                     lhs: Rc::new(Type::TypeReference {
                         identifier: identifier.clone(),
                     }),
@@ -144,9 +151,9 @@ fn expression(input: Span) -> Result<Rc<Expression>> {
                     identifier: identifier.clone(),
                 }),
             },
-            |lhs, (_, rhs, r_bracket)| {
+            |lhs, rhs| {
                 Rc::new(Expression::Access {
-                    span: Position::from(r_bracket).with_start(lhs.start()),
+                    span: rhs.span().with_start(lhs.start()),
                     lhs,
                     rhs,
                 })
@@ -163,10 +170,9 @@ fn type_(input: Span) -> Result<Rc<Type>> {
     // Eliminate direct left recursion.
     fn inner(input: Span) -> Result<Rc<Type>> {
         let (input, lhs): (Span, Rc<Type>) = alt((
-            into_rc(delimited(
-                tag("{"),
+            into_rc(in_braces(
                 cut(separated(separated_list0(char(','), separated(identifier)))),
-                tag("}"),
+                "expected type entries",
             )),
             into_rc(identifier),
         ))(input)?;
@@ -180,20 +186,21 @@ fn type_(input: Span) -> Result<Rc<Type>> {
     context("type", inner)(input)
 }
 
-fn typedef(input: Span) -> Result<Typedef> {
+fn typedef(input: Span) -> Result<Option<Typedef>> {
     context(
         "typedef",
-        into(terminated(
-            tuple((
+        map(
+            with_semicolon(
                 tag("type"),
                 cut(separated_pair(
                     separated(identifier),
                     cut(char('=')),
                     separated(type_),
                 )),
-            )),
-            cut(tag(";")),
-        )),
+                "expected edge",
+            ),
+            |(tag_span, res)| res.map(|(ident, tpe)| (tag_span, ident, tpe).into()),
+        ),
     )(input)
 }
 
@@ -201,13 +208,12 @@ fn value(input: Span) -> Result<Rc<Value>> {
     context(
         "value",
         alt((
-            into_rc(delimited(
-                tag("{"),
+            into_rc(in_braces(
                 cut(separated(separated_list0(
                     char(','),
                     separated(value_entry),
                 ))),
-                tag("}"),
+                "expected value entries",
             )),
             into_rc(identifier),
         )),
@@ -225,18 +231,21 @@ fn value_entry(input: Span) -> Result<ValueEntry> {
     )(input)
 }
 
-fn variable(input: Span) -> Result<Variable> {
+fn variable(input: Span) -> Result<Option<Variable>> {
     context(
         "variable",
-        into(tuple((
-            tag("var"),
-            cut(tuple((
-                separated(identifier),
-                delimited(cut(char(':')), separated(type_), cut(char('='))),
-                separated(value),
-            ))),
-            cut(tag(";")),
-        ))),
+        map(
+            with_semicolon(
+                tag("var"),
+                cut(tuple((
+                    separated(identifier),
+                    delimited(cut(char(':')), separated(type_), cut(char('='))),
+                    separated(value),
+                ))),
+                "expected variable",
+            ),
+            |(tag_span, res)| res.map(|(ident, tpe, value)| (tag_span, ident, tpe, value).into()),
+        ),
     )(input)
 }
 
@@ -283,10 +292,10 @@ pub fn game(input: Span) -> Result<Game> {
             Game::default,
             |mut game, declaration| {
                 match declaration {
-                    (Some(x), _, _, _, _) => game.constants.push(x),
-                    (_, Some(x), _, _, _) => game.typedefs.push(x),
-                    (_, _, Some(x), _, _) => game.variables.push(x),
-                    (_, _, _, Some(x), _) => game.edges.push(x),
+                    (Some(x), _, _, _, _) => x.into_iter().for_each(|x| game.constants.push(x)),
+                    (_, Some(x), _, _, _) => x.into_iter().for_each(|x| game.typedefs.push(x)),
+                    (_, _, Some(x), _, _) => x.into_iter().for_each(|x| game.variables.push(x)),
+                    (_, _, _, Some(x), _) => x.into_iter().for_each(|x| game.edges.push(x)),
                     (_, _, _, _, Some(x)) => game.pragmas.push(x),
                     _ => unreachable!(),
                 }
@@ -300,7 +309,13 @@ pub fn parse(input: &str) -> Game {
     let errors = RefCell::new(Vec::new());
     let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
     let (errors, game) = all_consuming(game)(input).unwrap();
-    // errors.extra.to_owned();
+    let errors = errors.extra.0.borrow();
+    if !errors.is_empty() {
+        eprintln!("Errors:");
+        for error in errors.iter() {
+            eprintln!(" {} {}", error.0, error.1);
+        }
+    }
     game
 }
 
@@ -348,9 +363,9 @@ impl<'a> State<'a> {
     }
 }
 
-fn expect<'a, F, E, T>(parser: F, error_msg: E) -> impl Fn(Span<'a>) -> Result<Option<T>>
+fn expect<'a, F, E, T>(mut parser: F, error_msg: E) -> impl FnMut(Span<'a>) -> Result<Option<T>>
 where
-    F: Fn(Span<'a>) -> Result<T>,
+    F: FnMut(Span<'a>) -> Result<T>,
     E: ToString,
 {
     move |input| match parser(input) {
@@ -362,4 +377,56 @@ where
         }
         Err(err) => Err(err),
     }
+}
+
+fn in_paren<'a, F, T, E>(parser: F, error_msg: E) -> impl FnMut(Span<'a>) -> Result<Option<T>>
+where
+    F: FnMut(Span<'a>) -> Result<T>,
+    E: ToString,
+{
+    delimited(
+        tag("("),
+        expect(parser, error_msg),
+        expect(tag(")"), "missing `)`"),
+    )
+}
+
+fn in_braces<'a, F, T, E>(parser: F, error_msg: E) -> impl FnMut(Span<'a>) -> Result<Option<T>>
+where
+    F: FnMut(Span<'a>) -> Result<T>,
+    E: ToString,
+{
+    delimited(
+        tag("{"),
+        expect(parser, error_msg),
+        expect(tag("}"), "missing `}`"),
+    )
+}
+
+fn in_brackets<'a, F, T, E>(parser: F, error_msg: E) -> impl FnMut(Span<'a>) -> Result<Option<T>>
+where
+    F: FnMut(Span<'a>) -> Result<T>,
+    E: ToString,
+{
+    delimited(
+        tag("["),
+        expect(parser, error_msg),
+        expect(tag("]"), "missing `]`"),
+    )
+}
+
+fn with_semicolon<'a, F, G, T, U, E>(
+    first: G,
+    parser: F,
+    error_msg: E,
+) -> impl FnMut(Span<'a>) -> Result<(U, Option<T>)>
+where
+    G: FnMut(Span<'a>) -> Result<U>,
+    F: FnMut(Span<'a>) -> Result<T>,
+    E: ToString,
+{
+    terminated(
+        tuple((first, expect(parser, error_msg))),
+        expect(cut(tag(";")), "missing `;`"),
+    )
 }

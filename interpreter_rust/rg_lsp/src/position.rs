@@ -91,6 +91,13 @@ impl Span {
             end,
         }
     }
+
+    pub fn none() -> Self {
+        Self {
+            start: Position { line: 0, column: 0 },
+            end: Position { line: 0, column: 0 },
+        }
+    }
 }
 
 pub trait Positioned {
