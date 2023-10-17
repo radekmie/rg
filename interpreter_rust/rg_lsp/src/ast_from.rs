@@ -2,11 +2,10 @@ use crate::ast::*;
 use crate::parser::Span;
 use crate::position::{Span as Position, *};
 use nom_locate::LocatedSpan;
-use std::rc::Rc;
 
-impl From<(Span<'_>, (Identifier, Rc<Type>, Rc<Value>))> for Constant {
+impl From<(Span<'_>, (Identifier, Box<Type>, Box<Value>))> for Constant {
     fn from(
-        (start, (identifier, type_, value)): (Span, (Identifier, Rc<Type>, Rc<Value>)),
+        (start, (identifier, type_, value)): (Span, (Identifier, Box<Type>, Box<Value>)),
     ) -> Self {
         let span = Position::from(start).with_end(value.end());
         Self {
@@ -38,8 +37,8 @@ impl From<Identifier> for EdgeNamePart {
     }
 }
 
-impl From<((Identifier, Rc<Type>))> for EdgeNamePart {
-    fn from((identifier, type_): (Identifier, Rc<Type>)) -> Self {
+impl From<((Identifier, Box<Type>))> for EdgeNamePart {
+    fn from((identifier, type_): (Identifier, Box<Type>)) -> Self {
         let span = Position::new(identifier.start(), type_.end());
         Self::Binding {
             span,
@@ -67,14 +66,14 @@ impl From<(Identifier)> for EdgeLabel {
     }
 }
 
-impl From<(Rc<Expression>, Rc<Expression>)> for EdgeLabel {
-    fn from((lhs, rhs): (Rc<Expression>, Rc<Expression>)) -> Self {
+impl From<(Box<Expression>, Box<Expression>)> for EdgeLabel {
+    fn from((lhs, rhs): (Box<Expression>, Box<Expression>)) -> Self {
         Self::Assignment { lhs, rhs }
     }
 }
 
-impl From<(Rc<Expression>, bool, Rc<Expression>)> for EdgeLabel {
-    fn from((lhs, negated, rhs): (Rc<Expression>, bool, Rc<Expression>)) -> Self {
+impl From<(Box<Expression>, bool, Box<Expression>)> for EdgeLabel {
+    fn from((lhs, negated, rhs): (Box<Expression>, bool, Box<Expression>)) -> Self {
         Self::Comparison { lhs, rhs, negated }
     }
 }
@@ -123,8 +122,8 @@ impl From<(Option<Vec<Identifier>>)> for Type {
     }
 }
 
-impl From<(Span<'_>, Identifier, Rc<Type>)> for Typedef {
-    fn from((start, identifier, type_): (Span, Identifier, Rc<Type>)) -> Self {
+impl From<(Span<'_>, Identifier, Box<Type>)> for Typedef {
+    fn from((start, identifier, type_): (Span, Identifier, Box<Type>)) -> Self {
         let span = Position::from(start).with_end(type_.span().end);
         Self {
             span,
@@ -156,8 +155,8 @@ impl From<(Identifier)> for Value {
     }
 }
 
-impl From<(Option<Identifier>, Rc<Value>)> for ValueEntry {
-    fn from((identifier, value): (Option<Identifier>, Rc<Value>)) -> Self {
+impl From<(Option<Identifier>, Box<Value>)> for ValueEntry {
+    fn from((identifier, value): (Option<Identifier>, Box<Value>)) -> Self {
         let span = match &identifier {
             Some(identifier) => Position::new(identifier.span.start, value.as_ref().span().end),
             None => value.as_ref().span().clone(),
@@ -170,8 +169,8 @@ impl From<(Option<Identifier>, Rc<Value>)> for ValueEntry {
     }
 }
 
-impl From<(Span<'_>, Identifier, Rc<Type>, Rc<Value>)> for Variable {
-    fn from((start, identifier, type_, value): (Span, Identifier, Rc<Type>, Rc<Value>)) -> Self {
+impl From<(Span<'_>, Identifier, Box<Type>, Box<Value>)> for Variable {
+    fn from((start, identifier, type_, value): (Span, Identifier, Box<Type>, Box<Value>)) -> Self {
         let span = Position::from(start).with_end(value.end());
         Self {
             span,

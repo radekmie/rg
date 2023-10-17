@@ -13,7 +13,6 @@ use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple
 use nom::IResult;
 use nom_locate::LocatedSpan;
 use std::cell::RefCell;
-use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Error(Position, String);
@@ -131,28 +130,28 @@ fn edge_name_part(input: Span) -> Result<EdgeNamePart> {
     )(input)
 }
 
-fn expression(input: Span) -> Result<Rc<Expression>> {
+fn expression(input: Span) -> Result<Box<Expression>> {
     // Eliminate direct left recursion.
-    fn inner(input: Span) -> Result<Rc<Expression>> {
+    fn inner(input: Span) -> Result<Box<Expression>> {
         let (input, identifier) = separated(identifier)(input)?;
         let (input, maybe_cast) =
             opt(delimited(tag("("), cut(separated(expression)), tag(")")))(input)?;
         let (input, expression) = fold_many0(
             delimited(tag("["), cut(separated(expression)), tag("]")),
             || match maybe_cast.clone() {
-                Some(rhs) => Rc::new(Expression::Cast {
+                Some(rhs) => Box::new(Expression::Cast {
                     span: rhs.span().with_start(identifier.span().start),
-                    lhs: Rc::new(Type::TypeReference {
+                    lhs: Box::new(Type::TypeReference {
                         identifier: identifier.clone(),
                     }),
                     rhs,
                 }),
-                None => Rc::new(Expression::Reference {
+                None => Box::new(Expression::Reference {
                     identifier: identifier.clone(),
                 }),
             },
             |lhs, rhs| {
-                Rc::new(Expression::Access {
+                Box::new(Expression::Access {
                     span: rhs.span().with_start(lhs.start()),
                     lhs,
                     rhs,
@@ -166,19 +165,19 @@ fn expression(input: Span) -> Result<Rc<Expression>> {
     context("expression", inner)(input)
 }
 
-fn type_(input: Span) -> Result<Rc<Type>> {
+fn type_(input: Span) -> Result<Box<Type>> {
     // Eliminate direct left recursion.
-    fn inner(input: Span) -> Result<Rc<Type>> {
-        let (input, lhs): (Span, Rc<Type>) = alt((
-            into_rc(in_braces(
+    fn inner(input: Span) -> Result<Box<Type>> {
+        let (input, lhs): (Span, Box<Type>) = alt((
+            into_box(in_braces(
                 cut(separated(separated_list0(char(','), separated(identifier)))),
                 "expected type entries",
             )),
-            into_rc(identifier),
+            into_box(identifier),
         ))(input)?;
 
         match opt(preceded(separated(tag("->")), type_))(input)? {
-            (input, Some(rhs)) => Ok((input, Rc::new(Type::Arrow { lhs, rhs }))),
+            (input, Some(rhs)) => Ok((input, Box::new(Type::Arrow { lhs, rhs }))),
             (input, None) => Ok((input, lhs)),
         }
     }
@@ -204,18 +203,18 @@ fn typedef(input: Span) -> Result<Option<Typedef>> {
     )(input)
 }
 
-fn value(input: Span) -> Result<Rc<Value>> {
+fn value(input: Span) -> Result<Box<Value>> {
     context(
         "value",
         alt((
-            into_rc(in_braces(
+            into_box(in_braces(
                 cut(separated(separated_list0(
                     char(','),
                     separated(value_entry),
                 ))),
                 "expected value entries",
             )),
-            into_rc(identifier),
+            into_box(identifier),
         )),
     )(input)
 }
@@ -349,10 +348,10 @@ delimited!(
     comments_and_whitespaces
 );
 
-fn into_rc<'a, O1, O2: From<O1>>(
+fn into_box<'a, O1, O2: From<O1>>(
     inner: impl FnMut(Span<'a>) -> Result<'a, O1>,
-) -> impl FnMut(Span<'a>) -> Result<'a, Rc<O2>> {
-    map(into(inner), Rc::new)
+) -> impl FnMut(Span<'a>) -> Result<'a, Box<O2>> {
+    map(into(inner), Box::new)
 }
 
 // ERROR HANDLIG

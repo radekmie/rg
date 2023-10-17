@@ -1,31 +1,29 @@
-use std::rc::Rc;
-
 use crate::position::Span;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Constant {
     pub span: Span,
     pub identifier: Identifier,
-    pub type_: Rc<Type>,
-    pub value: Rc<Value>,
+    pub type_: Box<Type>,
+    pub value: Box<Value>,
 }
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Edge {
     pub span: Span,
-    pub label: EdgeLabel,
     pub lhs: EdgeName,
     pub rhs: EdgeName,
+    pub label: EdgeLabel,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum EdgeLabel {
     Assignment {
-        lhs: Rc<Expression>,
-        rhs: Rc<Expression>,
+        lhs: Box<Expression>,
+        rhs: Box<Expression>,
     },
     Comparison {
-        lhs: Rc<Expression>,
-        rhs: Rc<Expression>,
+        lhs: Box<Expression>,
+        rhs: Box<Expression>,
         negated: bool,
     },
     Reachability {
@@ -53,7 +51,7 @@ pub enum EdgeNamePart {
     Binding {
         span: Span,
         identifier: Identifier,
-        type_: Rc<Type>,
+        type_: Box<Type>,
     },
     Literal {
         identifier: Identifier,
@@ -63,8 +61,8 @@ pub enum EdgeNamePart {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Type {
     Arrow {
-        lhs: Rc<Self>,
-        rhs: Rc<Self>,
+        lhs: Box<Self>,
+        rhs: Box<Self>,
     },
     Set {
         span: Span,
@@ -79,13 +77,13 @@ pub enum Type {
 pub enum Expression {
     Access {
         span: Span,
-        lhs: Rc<Self>,
-        rhs: Rc<Self>,
+        lhs: Box<Self>,
+        rhs: Box<Self>,
     },
     Cast {
         span: Span,
-        lhs: Rc<Type>,
-        rhs: Rc<Self>,
+        lhs: Box<Type>,
+        rhs: Box<Self>,
     },
     Reference {
         identifier: Identifier,
@@ -107,21 +105,21 @@ pub enum Value {
 pub struct ValueEntry {
     pub span: Span,
     pub identifier: Option<Identifier>,
-    pub value: Rc<Value>,
+    pub value: Box<Value>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Variable {
     pub span: Span,
-    pub default_value: Rc<Value>,
+    pub default_value: Box<Value>,
     pub identifier: Identifier,
-    pub type_: Rc<Type>,
+    pub type_: Box<Type>,
 }
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Typedef {
     pub span: Span,
     pub identifier: Identifier,
-    pub type_: Rc<Type>,
+    pub type_: Box<Type>,
 }
 
 
