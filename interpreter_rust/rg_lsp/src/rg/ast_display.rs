@@ -1,6 +1,6 @@
 use crate::rg::{
     ast::*,
-    position::{Position, Span},
+    position::*,
 };
 use std::fmt::{Display, Formatter, Result};
 
@@ -42,6 +42,8 @@ impl Display for Edge {
 impl Display for Identifier {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { identifier, .. } = self;
+        // let span = self.span();
+        // write!(f, "{span}{identifier}")
         write!(f, "{identifier}")
     }
 }
@@ -61,18 +63,18 @@ impl Display for EdgeLabel {
                 negated: true,
             } => write!(f, "{lhs} != {rhs}"),
             Self::Reachability {
-                span,
                 lhs,
                 rhs,
                 negated: false,
+                ..
             } => write!(f, "? {lhs} -> {rhs}"),
             Self::Reachability {
-                span,
                 lhs,
                 rhs,
                 negated: true,
+                ..
             } => write!(f, "! {lhs} -> {rhs}"),
-            Self::Skip { span } => write!(f, ""),
+            Self::Skip { .. } => write!(f, ""),
             Self::Tag { symbol } => write!(f, "$ {symbol}"),
         }
     }
@@ -92,9 +94,9 @@ impl Display for EdgeNamePart {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Binding {
-                span,
                 identifier,
                 type_,
+                ..
             } => write!(f, "({identifier}: {type_})"),
             Self::Literal { identifier } => write!(f, "{identifier}"),
         }
@@ -104,8 +106,8 @@ impl Display for EdgeNamePart {
 impl Display for Expression {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::Access { span, lhs, rhs } => write!(f, "{lhs}[{rhs}]"),
-            Self::Cast { span, lhs, rhs } => write!(f, "{lhs}({rhs})"),
+            Self::Access { lhs, rhs, .. } => write!(f, "{lhs}[{rhs}]"),
+            Self::Cast { lhs, rhs, .. } => write!(f, "{lhs}({rhs})"),
             Self::Reference { identifier } => write!(f, "{identifier}"),
         }
     }
@@ -127,7 +129,7 @@ impl Display for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Arrow { lhs, rhs } => write!(f, "{lhs} -> {rhs}"),
-            Self::Set { span, identifiers } => {
+            Self::Set { identifiers, .. } => {
                 write!(f, "{{ ")?;
                 for (index, entry) in identifiers.iter().enumerate() {
                     let separator = if index == 0 { "" } else { ", " };
@@ -189,48 +191,23 @@ impl Display for Variable {
     }
 }
 
+impl Display for Stat {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Self::Constant(constant) => write!(f, "{constant}"),
+            Self::Edge(edge) => write!(f, "{edge}"),
+            Self::Typedef(typedef) => write!(f, "{typedef}"),
+            Self::Variable(variable) => write!(f, "{variable}"),
+            Self::Pragma(pragma) => write!(f, "{pragma}"),
+        }
+    }
+}
+
 impl Display for Game {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        for pragma in &self.pragmas {
-            writeln!(f, "{pragma}")?;
-        }
-        for typedef in &self.typedefs {
-            writeln!(f, "{typedef}")?;
-        }
-        for constant in &self.constants {
-            writeln!(f, "{constant}")?;
-        }
-        for variable in &self.variables {
-            writeln!(f, "{variable}")?;
-        }
-        for edge in &self.edges {
-            writeln!(f, "{edge}")?;
+        for stat in &self.stats {
+            writeln!(f, "{stat}")?;
         }
         Ok(())
     }
 }
-
-// impl Display for Game {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-//         let Self {
-//             constants,
-//             edges,
-//             typedefs,
-//             variables,
-//             pragmas
-//         } = self;
-
-//         let mut stats: Vec<Box<dyn PositionedDisplay>> = Vec::new();
-//         stats.extend(constants.iter().map(|x| Box::new(x.clone()) as Box<dyn PositionedDisplay>));
-//         stats.extend(edges.iter().map(|x| Box::new(x.clone()) as Box<dyn PositionedDisplay>));
-//         stats.extend(typedefs.iter().map(|x| Box::new(x.clone()) as Box<dyn PositionedDisplay>));
-//         stats.extend(variables.iter().map(|x| Box::new(x.clone()) as Box<dyn PositionedDisplay>));
-//         stats.extend(pragmas.iter().map(|x| Box::new(x.clone()) as Box<dyn PositionedDisplay>));
-//         stats.sort_by(|a, b| a.span().cmp(&b.span()));
-
-//         for stat in stats {
-//             write!(f, "{stat}")?;
-//         }
-//         Ok(())
-//     }
-// }

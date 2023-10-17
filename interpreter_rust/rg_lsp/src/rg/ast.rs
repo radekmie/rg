@@ -224,13 +224,19 @@ pub enum PragmaKind {
     Unique,
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum Stat {
+    Constant(Constant),
+    Edge(Edge),
+    Pragma(Pragma),
+    Typedef(Typedef),
+    Variable(Variable),
+}
+
+
 #[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Game {
-    pub constants: Vec<Constant>,
-    pub edges: Vec<Edge>,
-    pub pragmas: Vec<Pragma>,
-    pub typedefs: Vec<Typedef>,
-    pub variables: Vec<Variable>,
+    pub stats: Vec<Stat>,
 }
 
 impl Positioned for Constant {
@@ -327,5 +333,17 @@ impl Positioned for Identifier {
 impl Positioned for Pragma {
     fn span(&self) -> Span {
         self.span
+    }
+}
+
+impl Positioned for Stat {
+    fn span(&self) -> Span {
+        match self {
+            Stat::Constant(constant) => constant.span(),
+            Stat::Edge(edge) => edge.span(),
+            Stat::Pragma(pragma) => pragma.span(),
+            Stat::Typedef(typedef) => typedef.span(),
+            Stat::Variable(variable) => variable.span(),
+        }
     }
 }

@@ -1,7 +1,4 @@
-use crate::rg::ast::{
-    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Game, Identifier, Pragma,
-    PragmaKind, Type, Typedef, Value, ValueEntry, Variable,
-};
+use crate::rg::ast::*;
 use crate::rg::position::{Span as Position, *};
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while, take_while1};
@@ -288,11 +285,19 @@ pub fn game(input: Span) -> Result<Game> {
             Game::default,
             |mut game, declaration| {
                 match declaration {
-                    (Some(x), _, _, _, _) => x.into_iter().for_each(|x| game.constants.push(x)),
-                    (_, Some(x), _, _, _) => x.into_iter().for_each(|x| game.typedefs.push(x)),
-                    (_, _, Some(x), _, _) => x.into_iter().for_each(|x| game.variables.push(x)),
-                    (_, _, _, Some(x), _) => x.into_iter().for_each(|x| game.edges.push(x)),
-                    (_, _, _, _, Some(x)) => game.pragmas.push(x),
+                    (Some(x), _, _, _, _) => x
+                        .into_iter()
+                        .for_each(|x| game.stats.push(Stat::Constant(x))),
+                    (_, Some(x), _, _, _) => x
+                        .into_iter()
+                        .for_each(|x| game.stats.push(Stat::Typedef(x))),
+                    (_, _, Some(x), _, _) => x
+                        .into_iter()
+                        .for_each(|x| game.stats.push(Stat::Variable(x))),
+                    (_, _, _, Some(x), _) => {
+                        x.into_iter().for_each(|x| game.stats.push(Stat::Edge(x)))
+                    }
+                    (_, _, _, _, Some(x)) => game.stats.push(Stat::Pragma(x)),
                     _ => unreachable!(),
                 }
                 game

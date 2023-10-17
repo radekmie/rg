@@ -1,7 +1,7 @@
 use crate::rg::{
     ast::*,
     parser::Span,
-    position::{*, Span as Position},
+    position::{Span as Position, *},
 };
 
 impl From<(Span<'_>, (Identifier, Box<Type>, Box<Value>))> for Constant {
@@ -33,7 +33,7 @@ impl From<Identifier> for EdgeNamePart {
     }
 }
 
-impl From<((Identifier, Box<Type>))> for EdgeNamePart {
+impl From<(Identifier, Box<Type>)> for EdgeNamePart {
     fn from((identifier, type_): (Identifier, Box<Type>)) -> Self {
         let span = Position::new(identifier.start(), type_.end());
         Self::Binding {
@@ -51,7 +51,7 @@ impl From<(EdgeName, EdgeName, EdgeLabel)> for Edge {
     }
 }
 
-impl From<(Identifier)> for EdgeLabel {
+impl From<Identifier> for EdgeLabel {
     fn from(symbol: Identifier) -> Self {
         EdgeLabel::Tag { symbol }
     }
@@ -94,7 +94,7 @@ impl From<Identifier> for Type {
     }
 }
 
-impl From<(Option<Vec<Identifier>>)> for Type {
+impl From<Option<Vec<Identifier>>> for Type {
     fn from(identifiers: Option<Vec<Identifier>>) -> Self {
         match identifiers {
             Some(identifiers) => {
@@ -117,7 +117,7 @@ impl From<(Span<'_>, Identifier, Box<Type>)> for Typedef {
     }
 }
 
-impl From<(Option<Vec<ValueEntry>>)> for Value {
+impl From<Option<Vec<ValueEntry>>> for Value {
     fn from(entries: Option<Vec<ValueEntry>>) -> Self {
         match entries {
             Some(entries) => {
@@ -133,7 +133,7 @@ impl From<(Option<Vec<ValueEntry>>)> for Value {
     }
 }
 
-impl From<(Identifier)> for Value {
+impl From<Identifier> for Value {
     fn from(identifier: Identifier) -> Self {
         Self::Element { identifier }
     }

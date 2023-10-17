@@ -1,7 +1,6 @@
 use crate::rg::ast::*;
 use crate::rg::position::{Positioned, Span};
 
-
 pub struct Symbol {
     pub id: String,
     pub pos: Span,
@@ -19,34 +18,32 @@ impl Symbol {
         }
     }
 
-    fn from_id(identifier: &Identifier) -> Self {
+    fn from_id(identifier: &Identifier, flags: u32, owner: Option<String>) -> Self {
         let id = identifier.identifier.clone();
         let pos = identifier.span().clone();
-        let flags = 0;
-        let owner = None;
         Self::new(id, pos, flags, owner)
     }
 
-    fn from_type(type_: &Type) -> Vec<Self> {
+    fn from_type(type_: &Type, owner: &str) -> Vec<Self> {
         match type_ {
             Type::Arrow { lhs, rhs } => {
-                let mut symbols = Self::from_type(lhs);
-                symbols.append(&mut Self::from_type(rhs));
+                let mut symbols = Self::from_type(lhs, owner);
+                symbols.append(&mut Self::from_type(rhs, owner));
                 symbols
             }
             Type::TypeReference { .. } => vec![],
             Type::Set { identifiers, .. } => identifiers
                 .iter()
-                .map(|id| Self::from_id(id))
+                .map(|id| Self::from_id(id, Flag::to_u32(&Flag::Member), None))
                 .collect::<Vec<Self>>(),
         }
     }
 
     fn from_edge_name(edge_name: &EdgeName) -> Vec<Self> {
         match edge_name.parts.as_slice() {
-            [EdgeNamePart::Literal { identifier }] => vec![Self::from_id(identifier)],
+            [EdgeNamePart::Literal { identifier }] => vec![Self::from_id(identifier, 0, None)],
             [EdgeNamePart::Literal { identifier }, bindings @ ..] => {
-                let symbol = Self::from_id(identifier);
+                let symbol = Self::from_id(identifier, 0, None);
                 let mut bindings = bindings
                     .iter()
                     .map(|binding| Self::from_name_part(binding, &symbol.id))
@@ -62,38 +59,46 @@ impl Symbol {
     fn from_name_part(name_part: &EdgeNamePart, owner: &str) -> Self {
         match name_part {
             EdgeNamePart::Binding { identifier, .. } => {
-                let mut symbol = Symbol::from_id(identifier);
-                symbol.owner = Some(owner.to_string());
+                let flag = Flag::to_u32(&Flag::Param);
+                let symbol = Symbol::from_id(identifier, flag, Some(owner.to_string()));
                 symbol
             }
-            EdgeNamePart::Literal { identifier } => Symbol::from_id(identifier),
+            EdgeNamePart::Literal { identifier } => Symbol::from_id(identifier, 0, None),
         }
     }
 
     pub fn from_game(game: &Game) -> Vec<Symbol> {
         let mut symbols: Vec<Symbol> = Vec::new();
-        for typedef in game.typedefs.iter() {
-            let id = &typedef.identifier;
-            let symbol = Symbol::from_id(id);
-            symbols.push(symbol);
-            symbols.append(&mut Symbol::from_type(&typedef.type_));
-        }
-        for constant in game.constants.iter() {
-            let id = &constant.identifier;
-            let symbol = Symbol::from_id(id);
-            symbols.push(symbol);
-        }
-        for variable in game.variables.iter() {
-            let id = &variable.identifier;
-            let symbol = Symbol::from_id(id);
-            symbols.push(symbol);
-        }
+        for stat in game.stats.iter() {
+            match stat {
+                Stat::Constant(constant) => {
+                    let id = &constant.identifier;
+                    let flag = Flag::to_u32(&Flag::Constant);
+                    let symbol = Symbol::from_id(id, flag, None);
+                    symbols.push(symbol);
+                }
+                Stat::Variable(variable) => {
+                    let id = &variable.identifier;
+                    let flag = Flag::to_u32(&Flag::Variable);
+                    let symbol = Symbol::from_id(id, flag, None);
+                    symbols.push(symbol);
+                }
 
-        for edge in game.edges.iter() {
-            let mut l_symbols = Symbol::from_edge_name(&edge.lhs);
-            let mut r_symbols = Symbol::from_edge_name(&edge.rhs);
-            symbols.append(&mut l_symbols);
-            symbols.append(&mut r_symbols);
+                Stat::Edge(edge) => {
+                    let mut l_symbols = Symbol::from_edge_name(&edge.lhs);
+                    let mut r_symbols = Symbol::from_edge_name(&edge.rhs);
+                    symbols.append(&mut l_symbols);
+                    symbols.append(&mut r_symbols);
+                }
+                Stat::Typedef(typedef) => {
+                    let id = &typedef.identifier;
+                    let flag = Flag::to_u32(&Flag::Type);
+                    let symbol = Symbol::from_id(id, flag, None);
+                    symbols.push(symbol);
+                    symbols.append(&mut Symbol::from_type(&typedef.type_, &id.identifier));
+                }
+                Stat::Pragma(_) => (),
+            }
         }
         symbols
     }
@@ -201,28 +206,101 @@ impl Occurrence {
 
     pub fn from_game(game: &Game) -> Vec<Occurrence> {
         let mut occurrences: Vec<Occurrence> = Vec::new();
-        for typedef in game.typedefs.iter() {
-            let id = &typedef.identifier;
-            let occ = Occurrence::from_id(id);
-            occurrences.push(occ);
-            occurrences.append(&mut Occurrence::from_type(&typedef.type_));
-        }
-        for constant in game.constants.iter() {
-            let id = &constant.identifier;
-            let symbol = Occurrence::from_id(id);
-            occurrences.push(symbol);
-        }
-        for variable in game.variables.iter() {
-            let id = &variable.identifier;
-            let symbol = Occurrence::from_id(id);
-            occurrences.push(symbol);
-        }
-        for edge in game.edges.iter() {
-            occurrences.append(&mut Occurrence::from_edge(edge));
-        }
-        for pragma in game.pragmas.iter() {
-            occurrences.append(&mut Occurrence::from_edge_name(&pragma.edge_name))
+        for stat in game.stats.iter() {
+            match stat {
+                Stat::Constant(constant) => {
+                    let id = &constant.identifier;
+                    let symbol = Occurrence::from_id(id);
+                    occurrences.push(symbol);
+                }
+                Stat::Variable(variable) => {
+                    let id = &variable.identifier;
+                    let symbol = Occurrence::from_id(id);
+                    occurrences.push(symbol);
+                }
+                Stat::Pragma(pragma) => {
+                    occurrences.append(&mut Occurrence::from_edge_name(&pragma.edge_name))
+                }
+                Stat::Edge(edge) => {
+                    occurrences.append(&mut Occurrence::from_edge(edge));
+                }
+                Stat::Typedef(typedef) => {
+                    let id = &typedef.identifier;
+                    let symbol = Occurrence::from_id(id);
+                    occurrences.push(symbol);
+                    occurrences.append(&mut Occurrence::from_type(&typedef.type_));
+                }
+            }
         }
         occurrences
+    }
+}
+
+pub enum Flag {
+    Type,
+    Member,
+    Constant,
+    Variable,
+    Edge,
+    Param,
+}
+
+impl Flag {
+    pub fn to_u32(&self) -> u32 {
+        match self {
+            Flag::Type => 1,
+            Flag::Member => 2,
+            Flag::Constant => 4,
+            Flag::Variable => 8,
+            Flag::Edge => 16,
+            Flag::Param => 32,
+        }
+    }
+
+    fn is_type(flag: u32) -> bool {
+        flag & Flag::Type.to_u32() != 0
+    }
+
+    fn is_member(flag: u32) -> bool {
+        flag & Flag::Member.to_u32() != 0
+    }
+
+    fn is_constant(flag: u32) -> bool {
+        flag & Flag::Constant.to_u32() != 0
+    }
+
+    fn is_variable(flag: u32) -> bool {
+        flag & Flag::Variable.to_u32() != 0
+    }
+
+    fn is_edge(flag: u32) -> bool {
+        flag & Flag::Edge.to_u32() != 0
+    }
+
+    fn is_param(flag: u32) -> bool {
+        flag & Flag::Param.to_u32() != 0
+    }
+
+    pub fn from_u32(flag_set: u32) -> Vec<Flag> {
+        let mut flags = Vec::new();
+        if Self::is_type(flag_set) {
+            flags.push(Flag::Type);
+        }
+        if Self::is_member(flag_set) {
+            flags.push(Flag::Member);
+        }
+        if Self::is_constant(flag_set) {
+            flags.push(Flag::Constant);
+        }
+        if Self::is_variable(flag_set) {
+            flags.push(Flag::Variable);
+        }
+        if Self::is_edge(flag_set) {
+            flags.push(Flag::Edge);
+        }
+        if Self::is_param(flag_set) {
+            flags.push(Flag::Param);
+        }
+        flags
     }
 }
