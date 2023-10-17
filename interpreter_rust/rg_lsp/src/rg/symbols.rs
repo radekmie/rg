@@ -1,10 +1,6 @@
-use crate::ast::*;
-use crate::position::{Positioned, Span};
+use crate::rg::ast::*;
+use crate::rg::position::{Positioned, Span};
 
-pub struct DocumentSymbols {
-    pub symbols: Vec<Symbol>,
-    pub occurences: Vec<Occurrence>,
-}
 
 pub struct Symbol {
     pub id: String,
@@ -72,6 +68,34 @@ impl Symbol {
             }
             EdgeNamePart::Literal { identifier } => Symbol::from_id(identifier),
         }
+    }
+
+    pub fn from_game(game: &Game) -> Vec<Symbol> {
+        let mut symbols: Vec<Symbol> = Vec::new();
+        for typedef in game.typedefs.iter() {
+            let id = &typedef.identifier;
+            let symbol = Symbol::from_id(id);
+            symbols.push(symbol);
+            symbols.append(&mut Symbol::from_type(&typedef.type_));
+        }
+        for constant in game.constants.iter() {
+            let id = &constant.identifier;
+            let symbol = Symbol::from_id(id);
+            symbols.push(symbol);
+        }
+        for variable in game.variables.iter() {
+            let id = &variable.identifier;
+            let symbol = Symbol::from_id(id);
+            symbols.push(symbol);
+        }
+
+        for edge in game.edges.iter() {
+            let mut l_symbols = Symbol::from_edge_name(&edge.lhs);
+            let mut r_symbols = Symbol::from_edge_name(&edge.rhs);
+            symbols.append(&mut l_symbols);
+            symbols.append(&mut r_symbols);
+        }
+        symbols
     }
 }
 
@@ -174,47 +198,8 @@ impl Occurrence {
             EdgeNamePart::Literal { identifier } => Self::from_id(identifier),
         }
     }
-}
 
-impl DocumentSymbols {
-    pub fn new(game: &Game) -> Self {
-        let symbols = Self::get_definitions(game);
-        let occurences = Self::get_occurences(game);
-        Self {
-            symbols,
-            occurences,
-        }
-    }
-
-    pub fn get_definitions(game: &Game) -> Vec<Symbol> {
-        let mut symbols: Vec<Symbol> = Vec::new();
-        for typedef in game.typedefs.iter() {
-            let id = &typedef.identifier;
-            let symbol = Symbol::from_id(id);
-            symbols.push(symbol);
-            symbols.append(&mut Symbol::from_type(&typedef.type_));
-        }
-        for constant in game.constants.iter() {
-            let id = &constant.identifier;
-            let symbol = Symbol::from_id(id);
-            symbols.push(symbol);
-        }
-        for variable in game.variables.iter() {
-            let id = &variable.identifier;
-            let symbol = Symbol::from_id(id);
-            symbols.push(symbol);
-        }
-
-        for edge in game.edges.iter() {
-            let mut l_symbols = Symbol::from_edge_name(&edge.lhs);
-            let mut r_symbols = Symbol::from_edge_name(&edge.rhs);
-            symbols.append(&mut l_symbols);
-            symbols.append(&mut r_symbols);
-        }
-        symbols
-    }
-
-    pub fn get_occurences(game: &Game) -> Vec<Occurrence> {
+    pub fn from_game(game: &Game) -> Vec<Occurrence> {
         let mut occurrences: Vec<Occurrence> = Vec::new();
         for typedef in game.typedefs.iter() {
             let id = &typedef.identifier;
@@ -236,9 +221,7 @@ impl DocumentSymbols {
             occurrences.append(&mut Occurrence::from_edge(edge));
         }
         for pragma in game.pragmas.iter() {
-            //TODO: Impl accessor methods on pragmas (and everything else actually)
-            // At least `identifier` would be nice
-            todo!()
+            occurrences.append(&mut Occurrence::from_edge_name(&pragma.edge_name))
         }
         occurrences
     }

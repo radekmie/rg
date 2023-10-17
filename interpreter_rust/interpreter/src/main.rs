@@ -1,5 +1,5 @@
 use interpreter::{prepare_ist, safe_parse_source};
-use rg_lsp::parser::parse;
+use rg_lsp::rg::parser::parse;
 use map_id::MapId;
 use rand::thread_rng;
 use std::env::args;

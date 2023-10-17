@@ -1,8 +1,8 @@
-use crate::ast::{
+use crate::rg::ast::{
     Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Game, Identifier, Pragma,
     PragmaKind, Type, Typedef, Value, ValueEntry, Variable,
 };
-use crate::position::{Span as Position, *};
+use crate::rg::position::{Span as Position, *};
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while, take_while1};
 use nom::character::complete::{char, multispace1};

@@ -1,7 +1,8 @@
-use crate::ast::*;
-use crate::parser::Span;
-use crate::position::{Span as Position, *};
-use nom_locate::LocatedSpan;
+use crate::rg::{
+    ast::*,
+    parser::Span,
+    position::{*, Span as Position},
+};
 
 impl From<(Span<'_>, (Identifier, Box<Type>, Box<Value>))> for Constant {
     fn from(

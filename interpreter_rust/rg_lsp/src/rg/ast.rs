@@ -1,4 +1,4 @@
-use crate::position::*;
+use crate::rg::position::*;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Constant {

@@ -1,8 +1,7 @@
-use crate::ast::Game;
-use crate::parser::parse;
+use crate::rg::ast::Game;
+use crate::rg::parser::parse;
+use crate::rg::symbols::*;
 use ropey::Rope;
-
-use super::symbols::DocumentSymbols;
 
 pub struct Document {
     pub text: Rope,
@@ -19,6 +18,22 @@ impl Document {
             text,
             game,
             document_symbols,
+        }
+    }
+}
+
+pub struct DocumentSymbols {
+    pub symbols: Vec<Symbol>,
+    pub occurences: Vec<Occurrence>,
+}
+
+impl DocumentSymbols {
+    pub fn new(game: &Game) -> Self {
+        let symbols = Symbol::from_game(game);
+        let occurences = Occurrence::from_game(game);
+        Self {
+            symbols,
+            occurences,
         }
     }
 }
