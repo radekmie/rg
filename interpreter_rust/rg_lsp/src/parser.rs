@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Game, Identifier, Pragma, Type,
-    Typedef, Value, ValueEntry, Variable,
+    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Game, Identifier, Pragma,
+    PragmaKind, Type, Typedef, Value, ValueEntry, Variable,
 };
 use crate::position::{Span as Position, *};
 use nom::branch::alt;
@@ -54,10 +54,7 @@ fn identifier_(input: Span) -> Result<Span> {
 fn identifier(input: Span) -> Result<Identifier> {
     map(identifier_, |identifier| {
         let span: Position = Position::from(&identifier);
-        Identifier {
-            span,
-            identifier: identifier.fragment().to_string(),
-        }
+        Identifier::new(span, identifier.fragment().to_string())
     })(input)
     // into(identifier_)(input)
 }
@@ -260,7 +257,7 @@ fn pragma(input: Span) -> Result<Pragma> {
                 )),
                 |(start, _, edge_name, end)| {
                     let span = Position::from((start, end));
-                    Pragma::$constructor { span, edge_name }
+                    Pragma::new(span, PragmaKind::$constructor, edge_name)
                 },
             )
         };

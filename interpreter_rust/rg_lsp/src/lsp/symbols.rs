@@ -1,5 +1,5 @@
 use crate::ast::*;
-use crate::position::Span;
+use crate::position::{Positioned, Span};
 
 pub struct DocumentSymbols {
     pub symbols: Vec<Symbol>,
@@ -25,7 +25,7 @@ impl Symbol {
 
     fn from_id(identifier: &Identifier) -> Self {
         let id = identifier.identifier.clone();
-        let pos = identifier.span.clone();
+        let pos = identifier.span().clone();
         let flags = 0;
         let owner = None;
         Self::new(id, pos, flags, owner)
@@ -87,7 +87,7 @@ impl Occurrence {
 
     fn from_id(identifier: &Identifier) -> Self {
         let id = identifier.identifier.clone();
-        let pos = identifier.span.clone();
+        let pos = identifier.span().clone();
         Self::new(id, pos)
     }
 

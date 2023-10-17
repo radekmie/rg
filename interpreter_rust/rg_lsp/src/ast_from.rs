@@ -8,12 +8,7 @@ impl From<(Span<'_>, (Identifier, Box<Type>, Box<Value>))> for Constant {
         (start, (identifier, type_, value)): (Span, (Identifier, Box<Type>, Box<Value>)),
     ) -> Self {
         let span = Position::from(start).with_end(value.end());
-        Self {
-            span,
-            identifier,
-            type_,
-            value,
-        }
+        Self::new(span, identifier, type_, value)
     }
 }
 
@@ -21,7 +16,7 @@ impl From<Vec<EdgeNamePart>> for EdgeName {
     fn from(parts: Vec<EdgeNamePart>) -> Self {
         let (first, last) = (parts.first().unwrap(), parts.last().unwrap());
         let span = Position::new(first.start().clone(), last.end().clone());
-        Self { span, parts }
+        Self::new(span, parts)
     }
 }
 
@@ -51,12 +46,7 @@ impl From<((Identifier, Box<Type>))> for EdgeNamePart {
 impl From<(EdgeName, EdgeName, EdgeLabel)> for Edge {
     fn from((lhs, rhs, label): (EdgeName, EdgeName, EdgeLabel)) -> Self {
         let span = Position::new(lhs.start(), rhs.end());
-        Self {
-            span,
-            label,
-            lhs,
-            rhs,
-        }
+        Self::new(span, lhs, rhs, label)
     }
 }
 
@@ -93,10 +83,7 @@ impl From<(Span<'_>, EdgeName, EdgeName)> for EdgeLabel {
 
 impl From<Span<'_>> for Identifier {
     fn from(value: Span) -> Self {
-        Identifier {
-            span: Position::from(&value),
-            identifier: value.fragment().to_string(),
-        }
+        Self::new(Position::from(&value), value.fragment().to_string())
     }
 }
 
@@ -125,11 +112,7 @@ impl From<(Option<Vec<Identifier>>)> for Type {
 impl From<(Span<'_>, Identifier, Box<Type>)> for Typedef {
     fn from((start, identifier, type_): (Span, Identifier, Box<Type>)) -> Self {
         let span = Position::from(start).with_end(type_.span().end);
-        Self {
-            span,
-            identifier,
-            type_,
-        }
+        Self::new(span, identifier, type_)
     }
 }
 
@@ -158,25 +141,16 @@ impl From<(Identifier)> for Value {
 impl From<(Option<Identifier>, Box<Value>)> for ValueEntry {
     fn from((identifier, value): (Option<Identifier>, Box<Value>)) -> Self {
         let span = match &identifier {
-            Some(identifier) => Position::new(identifier.span.start, value.as_ref().span().end),
+            Some(identifier) => Position::new(identifier.span().start, value.as_ref().span().end),
             None => value.as_ref().span().clone(),
         };
-        Self {
-            span,
-            identifier,
-            value,
-        }
+        Self::new(span, identifier, value)
     }
 }
 
 impl From<(Span<'_>, Identifier, Box<Type>, Box<Value>)> for Variable {
     fn from((start, identifier, type_, value): (Span, Identifier, Box<Type>, Box<Value>)) -> Self {
         let span = Position::from(start).with_end(value.end());
-        Self {
-            span,
-            identifier,
-            default_value: value,
-            type_,
-        }
+        Self::new(span, value, identifier, type_)
     }
 }

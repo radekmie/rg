@@ -1,18 +1,41 @@
-use crate::position::Span;
+use crate::position::*;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Constant {
-    pub span: Span,
+    span: Span,
     pub identifier: Identifier,
     pub type_: Box<Type>,
     pub value: Box<Value>,
 }
+
+impl Constant {
+    pub fn new(span: Span, identifier: Identifier, type_: Box<Type>, value: Box<Value>) -> Self {
+        Self {
+            span,
+            identifier,
+            type_,
+            value,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Edge {
-    pub span: Span,
+    span: Span,
     pub lhs: EdgeName,
     pub rhs: EdgeName,
     pub label: EdgeLabel,
+}
+
+impl Edge {
+    pub fn new(span: Span, lhs: EdgeName, rhs: EdgeName, label: EdgeLabel) -> Self {
+        Self {
+            span,
+            lhs,
+            rhs,
+            label,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -33,7 +56,7 @@ pub enum EdgeLabel {
         negated: bool,
     },
     Skip {
-        span: Span
+        span: Span,
     },
     Tag {
         symbol: Identifier,
@@ -42,8 +65,14 @@ pub enum EdgeLabel {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct EdgeName {
-    pub span: Span,
+    span: Span,
     pub parts: Vec<EdgeNamePart>,
+}
+
+impl EdgeName {
+    pub fn new(span: Span, parts: Vec<EdgeNamePart>) -> Self {
+        Self { span, parts }
+    }
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -103,52 +132,96 @@ pub enum Value {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ValueEntry {
-    pub span: Span,
+    span: Span,
     pub identifier: Option<Identifier>,
     pub value: Box<Value>,
 }
 
+impl ValueEntry {
+    pub fn new(span: Span, identifier: Option<Identifier>, value: Box<Value>) -> Self {
+        Self {
+            span,
+            identifier,
+            value,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Variable {
-    pub span: Span,
+    span: Span,
     pub default_value: Box<Value>,
     pub identifier: Identifier,
     pub type_: Box<Type>,
 }
+
+impl Variable {
+    pub fn new(
+        span: Span,
+        default_value: Box<Value>,
+        identifier: Identifier,
+        type_: Box<Type>,
+    ) -> Self {
+        Self {
+            span,
+            default_value,
+            identifier,
+            type_,
+        }
+    }
+}
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Typedef {
-    pub span: Span,
+    span: Span,
     pub identifier: Identifier,
     pub type_: Box<Type>,
 }
 
-
+impl Typedef {
+    pub fn new(span: Span, identifier: Identifier, type_: Box<Type>) -> Self {
+        Self {
+            span,
+            identifier,
+            type_,
+        }
+    }
+}
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Identifier {
-    pub span: Span,
+    span: Span,
     pub identifier: String,
 }
 
+impl Identifier {
+    pub fn new(span: Span, identifier: String) -> Self {
+        Self { span, identifier }
+    }
+}
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum Pragma {
-    Any {
-        span: Span,
-        edge_name: EdgeName,
-    },
-    Disjoint {
-        span: Span,
-        edge_name: EdgeName,
-    },
-    MultiAny {
-        span: Span,
-        edge_name: EdgeName,
-    },
-    Unique {
-        span: Span,
-        edge_name: EdgeName,
-    },
+pub struct Pragma {
+    span: Span,
+    pub kind: PragmaKind,
+    pub edge_name: EdgeName,
+}
+
+impl Pragma {
+    pub fn new(span: Span, kind: PragmaKind, edge_name: EdgeName) -> Self {
+        Self {
+            span,
+            kind,
+            edge_name,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum PragmaKind {
+    Any,
+    Disjoint,
+    MultiAny,
+    Unique,
 }
 
 #[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
@@ -158,4 +231,101 @@ pub struct Game {
     pub pragmas: Vec<Pragma>,
     pub typedefs: Vec<Typedef>,
     pub variables: Vec<Variable>,
+}
+
+impl Positioned for Constant {
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+impl Positioned for Edge {
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+impl Positioned for EdgeLabel {
+    fn span(&self) -> Span {
+        match self {
+            EdgeLabel::Assignment { lhs, rhs } => lhs.span().with_end(rhs.span().end),
+            EdgeLabel::Comparison { lhs, rhs, .. } => lhs.span().with_end(rhs.span().end),
+            EdgeLabel::Reachability { span, .. } => *span,
+            EdgeLabel::Tag { symbol } => symbol.span(),
+            EdgeLabel::Skip { span } => *span,
+        }
+    }
+}
+impl Positioned for EdgeName {
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+impl Positioned for EdgeNamePart {
+    fn span(&self) -> Span {
+        match &self {
+            EdgeNamePart::Binding { span, .. } => *span,
+            EdgeNamePart::Literal { identifier } => identifier.span(),
+        }
+    }
+}
+
+impl Positioned for Type {
+    fn span(&self) -> Span {
+        match &self {
+            Type::Arrow { lhs, rhs } => lhs.span().with_end(rhs.span().end),
+            Type::Set { span, .. } => *span,
+            Type::TypeReference { identifier } => identifier.span(),
+        }
+    }
+}
+
+impl Positioned for Expression {
+    fn span(&self) -> Span {
+        match &self {
+            Expression::Access { span, .. } => *span,
+            Expression::Cast { span, .. } => *span,
+            Expression::Reference { identifier } => identifier.span(),
+        }
+    }
+}
+
+impl Positioned for Value {
+    fn span(&self) -> Span {
+        match &self {
+            Value::Element { identifier } => identifier.span(),
+            Value::Map { span, .. } => *span,
+        }
+    }
+}
+
+impl Positioned for ValueEntry {
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+impl Positioned for Variable {
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+impl Positioned for Typedef {
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+impl Positioned for Identifier {
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+impl Positioned for Pragma {
+    fn span(&self) -> Span {
+        self.span
+    }
 }

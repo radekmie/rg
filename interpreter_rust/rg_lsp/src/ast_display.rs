@@ -1,3 +1,4 @@
+use crate::ast::PragmaKind;
 use crate::position::Span;
 use crate::{
     ast::{
@@ -25,10 +26,10 @@ impl Display for Position {
 impl Display for Constant {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
-            span,
             identifier,
             type_,
             value,
+            ..
         } = self;
         write!(f, "const {identifier}: {type_} = {value};")
     }
@@ -37,10 +38,7 @@ impl Display for Constant {
 impl Display for Edge {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
-            span,
-            label,
-            lhs,
-            rhs,
+            label, lhs, rhs, ..
         } = self;
         write!(f, "{lhs}, {rhs}: {label};")
     }
@@ -48,7 +46,7 @@ impl Display for Edge {
 
 impl Display for Identifier {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let Self { span, identifier } = self;
+        let Self { identifier, .. } = self;
         write!(f, "{identifier}")
     }
 }
@@ -120,11 +118,12 @@ impl Display for Expression {
 
 impl Display for Pragma {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match self {
-            Self::Any { span, edge_name } => write!(f, "@any {edge_name};"),
-            Self::Disjoint { span, edge_name } => write!(f, "@disjoint {edge_name};"),
-            Self::MultiAny { span, edge_name } => write!(f, "@multiAny {edge_name};"),
-            Self::Unique { span, edge_name } => write!(f, "@unique {edge_name};"),
+        let edge_name = &self.edge_name;
+        match self.kind {
+            PragmaKind::Any => write!(f, "@any {edge_name};"),
+            PragmaKind::Disjoint => write!(f, "@disjoint {edge_name};"),
+            PragmaKind::MultiAny => write!(f, "@multiAny {edge_name};"),
+            PragmaKind::Unique => write!(f, "@unique {edge_name};"),
         }
     }
 }
@@ -149,9 +148,7 @@ impl Display for Type {
 impl Display for Typedef {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
-            span,
-            identifier,
-            type_,
+            identifier, type_, ..
         } = self;
         write!(f, "type {identifier} = {type_};")
     }
@@ -161,7 +158,7 @@ impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Element { identifier } => write!(f, "{identifier}"),
-            Self::Map { span, entries } => {
+            Self::Map { entries, .. } => {
                 write!(f, "{{ ")?;
                 for (index, entry) in entries.iter().enumerate() {
                     let separator = if index == 0 { "" } else { ", " };
@@ -176,9 +173,7 @@ impl Display for Value {
 impl Display for ValueEntry {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
-            span,
-            identifier,
-            value,
+            identifier, value, ..
         } = self;
         match identifier {
             Some(identifier) => write!(f, "{identifier}: {value}"),
@@ -190,10 +185,10 @@ impl Display for ValueEntry {
 impl Display for Variable {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self {
-            span,
             default_value,
             identifier,
             type_,
+            ..
         } = self;
         write!(f, "var {identifier}: {type_} = {default_value};",)
     }

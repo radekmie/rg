@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use super::document::Document;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -8,7 +9,6 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::notification::Notification;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
-use super::document::Document;
 
 struct Backend {
     client: Client,
@@ -16,7 +16,6 @@ struct Backend {
     // ast_map: DashMap<String, HashMap<String, Func>>,
     // semantic_token_map: DashMap<String, Vec<ImCompleteSemanticToken>>,
 }
-
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
