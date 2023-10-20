@@ -94,9 +94,31 @@ impl Span {
 
     pub fn none() -> Self {
         Self {
-            start: Position { line: 0, column: 0 },
-            end: Position { line: 0, column: 0 },
+            start: Position::none(),
+            end: Position::none(),
         }
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.start.is_none() || self.end.is_none()
+    }
+
+    pub fn encloses_pos(&self, other: &Position) -> bool {
+        self.start <= *other && *other <= self.end
+    }
+
+    pub fn encloses_span(&self, other: &Span) -> bool {
+        self.start <= other.start && other.end <= self.end
+    }
+}
+
+impl Position {
+    pub fn none() -> Self {
+        Self { line: 0, column: 0 }
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.line == 0 && self.column == 0
     }
 }
 

@@ -1,27 +1,30 @@
 use crate::rg::ast::*;
 use crate::rg::position::{Positioned, Span};
 
+use super::position::Position;
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Symbol {
     pub id: String,
     pub pos: Span,
-    pub flags: u32,
-    pub owner: Option<usize>,
+    pub flag: u32,
+    owner: Option<usize>,
 }
 
 impl Symbol {
-    fn new(id: String, pos: Span, flags: u32, owner: Option<usize>) -> Self {
+    fn new(id: String, pos: Span, flag: u32, owner: Option<usize>) -> Self {
         Self {
             id,
             pos,
-            flags,
+            flag,
             owner,
         }
     }
 
-    fn from_id(identifier: &Identifier, flags: u32, owner: Option<usize>) -> Self {
+    fn from_id(identifier: &Identifier, flag: u32, owner: Option<usize>) -> Self {
         let id = identifier.identifier.clone();
         let pos = identifier.span().clone();
-        Self::new(id, pos, flags, owner)
+        Self::new(id, pos, flag, owner)
     }
 
     fn from_type(type_: &Type, owner: usize, mut acc: Vec<Self>) -> Vec<Self> {
@@ -70,6 +73,17 @@ impl Symbol {
         }
     }
 
+    fn from_edge(edge: &Edge, mut acc: Vec<Self>) -> Vec<Self> {
+        let mut left_defined: Vec<Self> = Self::from_edge_name(&edge.lhs, Vec::new());
+        let mut right_defined: Vec<Self> = Self::from_edge_name(&edge.rhs, Vec::new())
+            .into_iter()
+            .filter(|right| !left_defined.iter().any(|left| left.id == right.id))
+            .collect();
+        acc.append(&mut left_defined);
+        acc.append(&mut right_defined);
+        acc
+    }
+
     pub fn from_game(game: &Game) -> Vec<Symbol> {
         let mut symbols: Vec<Symbol> = Vec::new();
         for stat in game.stats.iter() {
@@ -88,8 +102,7 @@ impl Symbol {
                 }
 
                 Stat::Edge(edge) => {
-                    symbols = Symbol::from_edge_name(&edge.lhs, symbols);
-                    symbols = Symbol::from_edge_name(&edge.rhs, symbols);
+                    symbols = Self::from_edge(&edge, symbols);
                 }
                 Stat::Typedef(typedef) => {
                     let id = &typedef.identifier;
@@ -106,9 +119,10 @@ impl Symbol {
     }
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Occurrence {
     pub pos: Span,
-    symbol: Option<usize>,
+    pub symbol: Option<usize>,
 }
 
 impl Occurrence {
@@ -118,8 +132,8 @@ impl Occurrence {
 }
 
 pub struct SymbolTable {
-    symbols: Vec<Symbol>,
-    occurrences: Vec<Occurrence>,
+    pub symbols: Vec<Symbol>,
+    pub occurrences: Vec<Occurrence>,
 }
 
 impl SymbolTable {
@@ -282,9 +296,18 @@ impl SymbolTable {
         table
     }
 
-    pub fn get_occ_at(&self, pos: &Span) -> Option<&Occurrence> {
+    pub fn get_occ_at(&self, pos: &Position) -> Option<&Occurrence> {
         for occurrence in self.occurrences.iter() {
-            if occurrence.pos == *pos {
+            if occurrence.pos.encloses_pos(pos) {
+                return Some(occurrence);
+            }
+        }
+        None
+    }
+
+    pub fn get_occ_at_span(&self, span: &Span) -> Option<&Occurrence> {
+        for occurrence in self.occurrences.iter() {
+            if occurrence.pos.encloses_span(span) {
                 return Some(occurrence);
             }
         }
@@ -298,8 +321,15 @@ impl SymbolTable {
         }
     }
 
-    pub fn get_symbol_at(&self, pos: &Span) -> Option<&Symbol> {
+    pub fn get_symbol_at(&self, pos: &Position) -> Option<&Symbol> {
         match self.get_occ_at(pos) {
+            Some(occ) => self.get_occ_symbol(occ),
+            None => None,
+        }
+    }
+
+    pub fn get_symbol_at_span(&self, span: &Span) -> Option<&Symbol> {
+        match self.get_occ_at_span(span) {
             Some(occ) => self.get_occ_symbol(occ),
             None => None,
         }
@@ -310,6 +340,15 @@ impl SymbolTable {
             Some(idx) => self.symbols.get(idx),
             None => None,
         }
+    }
+
+    pub fn sym_idx(&self, symbol: &Symbol) -> Option<usize> {
+        for (idx, sym) in self.symbols.iter().enumerate() {
+            if sym == symbol {
+                return Some(idx);
+            }
+        }
+        None
     }
 }
 
@@ -334,50 +373,49 @@ impl Flag {
         }
     }
 
-    fn is_type(flag: u32) -> bool {
+    pub fn is_type(flag: u32) -> bool {
         flag & Flag::Type.to_u32() != 0
     }
 
-    fn is_member(flag: u32) -> bool {
+    pub fn is_member(flag: u32) -> bool {
         flag & Flag::Member.to_u32() != 0
     }
 
-    fn is_constant(flag: u32) -> bool {
+    pub fn is_constant(flag: u32) -> bool {
         flag & Flag::Constant.to_u32() != 0
     }
 
-    fn is_variable(flag: u32) -> bool {
+    pub fn is_variable(flag: u32) -> bool {
         flag & Flag::Variable.to_u32() != 0
     }
 
-    fn is_edge(flag: u32) -> bool {
+    pub fn is_edge(flag: u32) -> bool {
         flag & Flag::Edge.to_u32() != 0
     }
 
-    fn is_param(flag: u32) -> bool {
+    pub fn is_param(flag: u32) -> bool {
         flag & Flag::Param.to_u32() != 0
     }
 
-    pub fn from_u32(flag_set: u32) -> Vec<Flag> {
-        let mut flags = Vec::new();
+    pub fn from_u32(flag_set: u32) -> Flag {
         if Self::is_type(flag_set) {
-            flags.push(Flag::Type);
+            return Flag::Type;
         }
         if Self::is_member(flag_set) {
-            flags.push(Flag::Member);
+            return Flag::Member;
         }
         if Self::is_constant(flag_set) {
-            flags.push(Flag::Constant);
+            return Flag::Constant;
         }
         if Self::is_variable(flag_set) {
-            flags.push(Flag::Variable);
+            return Flag::Variable;
         }
         if Self::is_edge(flag_set) {
-            flags.push(Flag::Edge);
+            return Flag::Edge;
         }
         if Self::is_param(flag_set) {
-            flags.push(Flag::Param);
+            return Flag::Param;
         }
-        flags
+        panic!("Invalid flag set: {}", flag_set);
     }
 }
