@@ -1,39 +1,44 @@
 use crate::rg::ast::Game;
 use crate::rg::parser::parse;
 use crate::rg::symbols::*;
-use ropey::Rope;
 
 pub struct Document {
-    pub text: Rope,
-    pub game: Game,
-    pub document_symbols: DocumentSymbols,
+    pub text: String,
+    game: Option<Game>,
+    symbol_table: Option<SymbolTable>,
 }
 
 impl Document {
     pub fn new(content: String) -> Self {
-        let text = Rope::from_str(&content);
-        let game = parse(&content);
-        let document_symbols = DocumentSymbols::new(&game);
-        Self {
-            text,
-            game,
-            document_symbols,
+        Document {
+            text: content,
+            game: None,
+            symbol_table: None,
         }
     }
-}
 
-pub struct DocumentSymbols {
-    pub symbols: Vec<Symbol>,
-    pub occurences: Vec<Occurrence>,
-}
+    fn parse(&mut self) {
+        let game = parse(&self.text);
+        self.game = Some(game);
+    }
 
-impl DocumentSymbols {
-    pub fn new(game: &Game) -> Self {
-        let symbols = Symbol::from_game(game);
-        let occurences = Occurrence::from_game(game);
-        Self {
-            symbols,
-            occurences,
+    pub fn get_game(&mut self) -> &Game {
+        if self.game.is_none() {
+            self.parse();
         }
+        self.game.as_ref().unwrap()
+    }
+
+    fn make_symbol_table(&mut self) {
+        let game = self.get_game();
+        let symbol_table = SymbolTable::from_game(game);
+        self.symbol_table = Some(symbol_table);
+    }
+
+    pub fn get_symbol_table(&mut self) -> &SymbolTable {
+        if self.symbol_table.is_none() {
+            self.make_symbol_table();
+        }
+        self.symbol_table.as_ref().unwrap()
     }
 }
