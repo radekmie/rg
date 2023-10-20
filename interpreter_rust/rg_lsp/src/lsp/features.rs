@@ -2,7 +2,7 @@ use tower_lsp::lsp_types::{self as l, GotoDefinitionResponse, Location};
 use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
 
 use crate::rg::position::Positioned;
-use crate::rg::symbols::*;
+use crate::rg::symbol_table::*;
 
 use super::utils::*;
 

@@ -1,6 +1,6 @@
 use crate::rg::ast::Game;
 use crate::rg::parser::parse;
-use crate::rg::symbols::*;
+use crate::rg::symbol_table::*;
 
 pub struct Document {
     pub text: String,

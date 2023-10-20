@@ -2,7 +2,7 @@ use tower_lsp::lsp_types::SymbolKind;
 use tower_lsp::lsp_types::{self as l, Location, Url};
 
 use crate::rg::position::*;
-use crate::rg::symbols::Flag;
+use crate::rg::symbol::Flag;
 
 pub fn flag_to_kind(flag: u32) -> SymbolKind {
     match Flag::from_u32(flag) {
