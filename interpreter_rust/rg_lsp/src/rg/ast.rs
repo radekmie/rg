@@ -1,15 +1,17 @@
+use std::sync::Arc;
+
 use crate::rg::position::*;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Constant {
     span: Span,
     pub identifier: Identifier,
-    pub type_: Box<Type>,
-    pub value: Box<Value>,
+    pub type_: Arc<Type>,
+    pub value: Arc<Value>,
 }
 
 impl Constant {
-    pub fn new(span: Span, identifier: Identifier, type_: Box<Type>, value: Box<Value>) -> Self {
+    pub fn new(span: Span, identifier: Identifier, type_: Arc<Type>, value: Arc<Value>) -> Self {
         Self {
             span,
             identifier,
@@ -41,12 +43,12 @@ impl Edge {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum EdgeLabel {
     Assignment {
-        lhs: Box<Expression>,
-        rhs: Box<Expression>,
+        lhs: Arc<Expression>,
+        rhs: Arc<Expression>,
     },
     Comparison {
-        lhs: Box<Expression>,
-        rhs: Box<Expression>,
+        lhs: Arc<Expression>,
+        rhs: Arc<Expression>,
         negated: bool,
     },
     Reachability {
@@ -80,7 +82,7 @@ pub enum EdgeNamePart {
     Binding {
         span: Span,
         identifier: Identifier,
-        type_: Box<Type>,
+        type_: Arc<Type>,
     },
     Literal {
         identifier: Identifier,
@@ -90,8 +92,8 @@ pub enum EdgeNamePart {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Type {
     Arrow {
-        lhs: Box<Self>,
-        rhs: Box<Self>,
+        lhs: Arc<Self>,
+        rhs: Arc<Self>,
     },
     Set {
         span: Span,
@@ -106,13 +108,13 @@ pub enum Type {
 pub enum Expression {
     Access {
         span: Span,
-        lhs: Box<Self>,
-        rhs: Box<Self>,
+        lhs: Arc<Self>,
+        rhs: Arc<Self>,
     },
     Cast {
         span: Span,
-        lhs: Box<Type>,
-        rhs: Box<Self>,
+        lhs: Arc<Type>,
+        rhs: Arc<Self>,
     },
     Reference {
         identifier: Identifier,
@@ -134,11 +136,11 @@ pub enum Value {
 pub struct ValueEntry {
     span: Span,
     pub identifier: Option<Identifier>,
-    pub value: Box<Value>,
+    pub value: Arc<Value>,
 }
 
 impl ValueEntry {
-    pub fn new(span: Span, identifier: Option<Identifier>, value: Box<Value>) -> Self {
+    pub fn new(span: Span, identifier: Option<Identifier>, value: Arc<Value>) -> Self {
         Self {
             span,
             identifier,
@@ -150,17 +152,17 @@ impl ValueEntry {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Variable {
     span: Span,
-    pub default_value: Box<Value>,
+    pub default_value: Arc<Value>,
     pub identifier: Identifier,
-    pub type_: Box<Type>,
+    pub type_: Arc<Type>,
 }
 
 impl Variable {
     pub fn new(
         span: Span,
-        default_value: Box<Value>,
+        default_value: Arc<Value>,
         identifier: Identifier,
-        type_: Box<Type>,
+        type_: Arc<Type>,
     ) -> Self {
         Self {
             span,
@@ -174,11 +176,11 @@ impl Variable {
 pub struct Typedef {
     span: Span,
     pub identifier: Identifier,
-    pub type_: Box<Type>,
+    pub type_: Arc<Type>,
 }
 
 impl Typedef {
-    pub fn new(span: Span, identifier: Identifier, type_: Box<Type>) -> Self {
+    pub fn new(span: Span, identifier: Identifier, type_: Arc<Type>) -> Self {
         Self {
             span,
             identifier,

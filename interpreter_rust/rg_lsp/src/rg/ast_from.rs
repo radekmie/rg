@@ -1,12 +1,16 @@
+use std::sync::Arc;
+
 use crate::rg::{
     ast::*,
     parser::Span,
     position::{Span as Position, *},
 };
 
-impl From<(Span<'_>, (Identifier, Box<Type>, Box<Value>))> for Constant {
+
+
+impl From<(Span<'_>, (Identifier, Arc<Type>, Arc<Value>))> for Constant {
     fn from(
-        (start, (identifier, type_, value)): (Span, (Identifier, Box<Type>, Box<Value>)),
+        (start, (identifier, type_, value)): (Span, (Identifier, Arc<Type>, Arc<Value>)),
     ) -> Self {
         let span = Position::from(start).with_end(value.end());
         Self::new(span, identifier, type_, value)
@@ -33,8 +37,8 @@ impl From<Identifier> for EdgeNamePart {
     }
 }
 
-impl From<(Identifier, Box<Type>)> for EdgeNamePart {
-    fn from((identifier, type_): (Identifier, Box<Type>)) -> Self {
+impl From<(Identifier, Arc<Type>)> for EdgeNamePart {
+    fn from((identifier, type_): (Identifier, Arc<Type>)) -> Self {
         let span = Position::new(identifier.start(), type_.end());
         Self::Binding {
             span,
@@ -57,14 +61,14 @@ impl From<Identifier> for EdgeLabel {
     }
 }
 
-impl From<(Box<Expression>, Box<Expression>)> for EdgeLabel {
-    fn from((lhs, rhs): (Box<Expression>, Box<Expression>)) -> Self {
+impl From<(Arc<Expression>, Arc<Expression>)> for EdgeLabel {
+    fn from((lhs, rhs): (Arc<Expression>, Arc<Expression>)) -> Self {
         Self::Assignment { lhs, rhs }
     }
 }
 
-impl From<(Box<Expression>, bool, Box<Expression>)> for EdgeLabel {
-    fn from((lhs, negated, rhs): (Box<Expression>, bool, Box<Expression>)) -> Self {
+impl From<(Arc<Expression>, bool, Arc<Expression>)> for EdgeLabel {
+    fn from((lhs, negated, rhs): (Arc<Expression>, bool, Arc<Expression>)) -> Self {
         Self::Comparison { lhs, rhs, negated }
     }
 }
@@ -110,8 +114,8 @@ impl From<Option<Vec<Identifier>>> for Type {
     }
 }
 
-impl From<(Span<'_>, Identifier, Box<Type>)> for Typedef {
-    fn from((start, identifier, type_): (Span, Identifier, Box<Type>)) -> Self {
+impl From<(Span<'_>, Identifier, Arc<Type>)> for Typedef {
+    fn from((start, identifier, type_): (Span, Identifier, Arc<Type>)) -> Self {
         let span = Position::from(start).with_end(type_.span().end);
         Self::new(span, identifier, type_)
     }
@@ -139,8 +143,8 @@ impl From<Identifier> for Value {
     }
 }
 
-impl From<(Option<Identifier>, Box<Value>)> for ValueEntry {
-    fn from((identifier, value): (Option<Identifier>, Box<Value>)) -> Self {
+impl From<(Option<Identifier>, Arc<Value>)> for ValueEntry {
+    fn from((identifier, value): (Option<Identifier>, Arc<Value>)) -> Self {
         let span = match &identifier {
             Some(identifier) => Position::new(identifier.span().start, value.as_ref().span().end),
             None => value.as_ref().span().clone(),
@@ -149,8 +153,8 @@ impl From<(Option<Identifier>, Box<Value>)> for ValueEntry {
     }
 }
 
-impl From<(Span<'_>, Identifier, Box<Type>, Box<Value>)> for Variable {
-    fn from((start, identifier, type_, value): (Span, Identifier, Box<Type>, Box<Value>)) -> Self {
+impl From<(Span<'_>, Identifier, Arc<Type>, Arc<Value>)> for Variable {
+    fn from((start, identifier, type_, value): (Span, Identifier, Arc<Type>, Arc<Value>)) -> Self {
         let span = Position::from(start).with_end(value.end());
         Self::new(span, value, identifier, type_)
     }

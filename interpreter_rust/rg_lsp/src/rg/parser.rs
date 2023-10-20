@@ -10,6 +10,7 @@ use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple
 use nom::IResult;
 use nom_locate::LocatedSpan;
 use std::cell::RefCell;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Error(Position, String);
@@ -124,28 +125,28 @@ fn edge_name_part(input: Span) -> Result<EdgeNamePart> {
     )(input)
 }
 
-fn expression(input: Span) -> Result<Box<Expression>> {
+fn expression(input: Span) -> Result<Arc<Expression>> {
     // Eliminate direct left recursion.
-    fn inner(input: Span) -> Result<Box<Expression>> {
+    fn inner(input: Span) -> Result<Arc<Expression>> {
         let (input, identifier) = separated(identifier)(input)?;
         let (input, maybe_cast) =
             opt(delimited(tag("("), cut(separated(expression)), tag(")")))(input)?;
         let (input, expression) = fold_many0(
             delimited(tag("["), cut(separated(expression)), tag("]")),
             || match maybe_cast.clone() {
-                Some(rhs) => Box::new(Expression::Cast {
+                Some(rhs) => Arc::new(Expression::Cast {
                     span: rhs.span().with_start(identifier.span().start),
-                    lhs: Box::new(Type::TypeReference {
+                    lhs: Arc::new(Type::TypeReference {
                         identifier: identifier.clone(),
                     }),
                     rhs,
                 }),
-                None => Box::new(Expression::Reference {
+                None => Arc::new(Expression::Reference {
                     identifier: identifier.clone(),
                 }),
             },
             |lhs, rhs| {
-                Box::new(Expression::Access {
+                Arc::new(Expression::Access {
                     span: rhs.span().with_start(lhs.start()),
                     lhs,
                     rhs,
@@ -159,10 +160,10 @@ fn expression(input: Span) -> Result<Box<Expression>> {
     context("expression", inner)(input)
 }
 
-fn type_(input: Span) -> Result<Box<Type>> {
+fn type_(input: Span) -> Result<Arc<Type>> {
     // Eliminate direct left recursion.
-    fn inner(input: Span) -> Result<Box<Type>> {
-        let (input, lhs): (Span, Box<Type>) = alt((
+    fn inner(input: Span) -> Result<Arc<Type>> {
+        let (input, lhs): (Span, Arc<Type>) = alt((
             into_box(in_braces(
                 cut(separated(separated_list0(char(','), separated(identifier)))),
                 "expected type entries",
@@ -171,7 +172,7 @@ fn type_(input: Span) -> Result<Box<Type>> {
         ))(input)?;
 
         match opt(preceded(separated(tag("->")), type_))(input)? {
-            (input, Some(rhs)) => Ok((input, Box::new(Type::Arrow { lhs, rhs }))),
+            (input, Some(rhs)) => Ok((input, Arc::new(Type::Arrow { lhs, rhs }))),
             (input, None) => Ok((input, lhs)),
         }
     }
@@ -197,7 +198,7 @@ fn typedef(input: Span) -> Result<Option<Typedef>> {
     )(input)
 }
 
-fn value(input: Span) -> Result<Box<Value>> {
+fn value(input: Span) -> Result<Arc<Value>> {
     context(
         "value",
         alt((
@@ -352,8 +353,8 @@ delimited!(
 
 fn into_box<'a, O1, O2: From<O1>>(
     inner: impl FnMut(Span<'a>) -> Result<'a, O1>,
-) -> impl FnMut(Span<'a>) -> Result<'a, Box<O2>> {
-    map(into(inner), Box::new)
+) -> impl FnMut(Span<'a>) -> Result<'a, Arc<O2>> {
+    map(into(inner), Arc::new)
 }
 
 // ERROR HANDLIG
