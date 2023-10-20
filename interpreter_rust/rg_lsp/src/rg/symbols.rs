@@ -269,6 +269,7 @@ impl SymbolTable {
             symbols: Symbol::from_game(game),
             occurrences: Vec::new(),
         };
+        table.add_builtin_symbols();
         for stat in game.stats.iter() {
             match stat {
                 Stat::Constant(constant) => {
@@ -294,6 +295,65 @@ impl SymbolTable {
             }
         }
         table
+    }
+
+    fn is_defined(&self, symbol: &str) -> bool {
+        self.symbols.iter().any(|sym| sym.id == symbol)
+    }
+
+    fn make_builtin_type(symbol: &str) -> Symbol {
+        Symbol::new(
+            symbol.to_string(),
+            Span::none(),
+            Flag::to_u32(&Flag::Type),
+            None,
+        )
+    }
+
+    fn make_builtin_variable(symbol: &str) -> Symbol {
+        Symbol::new(
+            symbol.to_string(),
+            Span::none(),
+            Flag::to_u32(&Flag::Variable),
+            None,
+        )
+    }
+
+    fn add_builtin_symbols(&mut self) {
+        if !self.is_defined("Bool") {
+            self.symbols.push(Self::make_builtin_type("Bool"));
+            let bool_idx = self.symbols.len() - 1;
+            self.symbols.push(Symbol::new(
+                "0".to_string(),
+                Span::none(),
+                Flag::to_u32(&Flag::Member),
+                Some(bool_idx),
+            ));
+            self.symbols.push(Symbol::new(
+                "1".to_string(),
+                Span::none(),
+                Flag::to_u32(&Flag::Member),
+                Some(bool_idx),
+            ));
+        }
+        if !self.is_defined("Goals") {
+            self.symbols.push(Self::make_builtin_type("Goals"));
+        }
+        if !self.is_defined("Visibility") {
+            self.symbols.push(Self::make_builtin_type("Visibility"));
+        }
+        if !self.is_defined("PlayerOrKeeper") {
+            self.symbols.push(Self::make_builtin_type("PlayerOrKeeper"));
+        }
+        if !self.is_defined("goals") {
+            self.symbols.push(Self::make_builtin_variable("goals"));
+        }
+        if !self.is_defined("player") {
+            self.symbols.push(Self::make_builtin_variable("player"));
+        }
+        if !self.is_defined("visible") {
+            self.symbols.push(Self::make_builtin_variable("visible"));
+        }
     }
 
     pub fn get_occ_at(&self, pos: &Position) -> Option<&Occurrence> {
