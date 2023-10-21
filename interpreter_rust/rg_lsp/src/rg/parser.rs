@@ -12,7 +12,7 @@ use nom_locate::LocatedSpan;
 use std::cell::RefCell;
 use std::sync::Arc;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Error(Position, String);
 #[derive(Clone, Debug)]
 pub struct State<'a>(&'a RefCell<Vec<Error>>);
@@ -307,20 +307,6 @@ pub fn game(input: Span) -> Result<Game> {
     )(input)
 }
 
-pub fn parse(input: &str) -> Game {
-    let errors = RefCell::new(Vec::new());
-    let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
-    let (errors, game) = all_consuming(game)(input).unwrap();
-    let errors = errors.extra.0.borrow();
-    if !errors.is_empty() {
-        eprintln!("Errors:");
-        for error in errors.iter() {
-            eprintln!(" {} {}", error.0, error.1);
-        }
-    }
-    game
-}
-
 // Util functions
 
 fn comment(input: Span) -> Result<Span> {
@@ -431,4 +417,135 @@ where
         tuple((first, expect(parser, error_msg))),
         expect(cut(tag(";")), "missing `;`"),
     )
+}
+
+pub fn parse(input: &str) -> Game {
+    let errors = RefCell::new(Vec::new());
+    let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
+    let (errors, game) = all_consuming(game)(input).unwrap();
+    let errors = errors.extra.0.borrow();
+    if !errors.is_empty() {
+        eprintln!("Errors:");
+        for error in errors.iter() {
+            eprintln!(" {} {}", error.0, error.1);
+        }
+    }
+    game
+}
+
+fn parsed(input: &str) -> Option<Game> {
+    let errors = RefCell::new(Vec::new());
+    let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
+    let res = all_consuming(game)(input);
+    let is_parsed = res.is_ok();
+    if !is_parsed {
+        return None;
+    } else {
+        let (errors, game) = res.unwrap();
+        let errors = errors.extra.0.borrow();
+        if !errors.is_empty() {
+            return None;
+        }
+        return Some(game);
+    }
+}
+
+fn errors(input: &str) -> Option<Vec<Error>> {
+    let errors = RefCell::new(Vec::new());
+    let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
+    let res = all_consuming(game)(input);
+    let is_parsed = res.is_ok();
+    if !is_parsed {
+        return None;
+    } else {
+        let (errors, _) = res.unwrap();
+        let mut err_vec = Vec::new();
+        for error in errors.extra.0.borrow().iter() {
+            err_vec.push(error.clone());
+        }
+        Some(err_vec)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{game, parse, parsed};
+
+    fn check_parse(input: &str) {
+        let game = parsed(input);
+        assert!(game.is_some(), "Failed to parse:\n{}", input);
+        let game = game.unwrap().to_string();
+        let game_str = game.strip_suffix("\n").unwrap();
+        assert!(
+            game_str == input,
+            "Failed to parse:\n{}\nExpected:\n{}",
+            game_str,
+            input
+        );
+    }
+
+    #[test]
+    fn simple_type() {
+        check_parse("type A = B;");
+    }
+
+    #[test]
+    fn map_type() {
+        check_parse("type Foo = { foo, bar, goo };");
+    }
+
+    #[test]
+    fn arrow_type() {
+        check_parse("type Foo = Bar -> Baz -> Goo;");
+    }
+
+    #[test]
+    fn simple_variable() {
+        check_parse("var foo: Foo = { foo: 1, :bar, :goo };");
+    }
+
+    #[test]
+    fn simple_constant() {
+        check_parse("const foo: Foo = { foo: 1, :bar, goo: 3 };");
+    }
+
+    #[test]
+    fn skip_edge() {
+        check_parse("foo, bar: $ F;");
+    }
+
+    #[test]
+    fn comparison_edge() {
+        check_parse("foo, bar: x == y;");
+    }
+
+    #[test]
+    fn reachability_edge() {
+        check_parse("foo, bar: ? move -> move;");
+    }
+
+    fn check_errors(input: &str, expected_msg: &str, expected_pos: &str) {
+        let errors = super::errors(input);
+        assert!(errors.is_some(), "Failed to parse:\n{}", input);
+        let errors = errors.unwrap();
+        assert!(
+            errors.len() == 1,
+            "Expected 1 error, got {}:\n{}",
+            errors.len(),
+            input
+        );
+        let error = &errors[0];
+        assert!(
+            error.1 == expected_msg,
+            "Expected error message:\n{}\nGot:\n{}",
+            expected_msg,
+            error.1
+        );
+        assert!(
+            error.0.to_string() == expected_pos,
+            "Expected error position:\n{}\nGot:\n{}",
+            expected_pos,
+            error.0.to_string()
+        );
+    }
 }
