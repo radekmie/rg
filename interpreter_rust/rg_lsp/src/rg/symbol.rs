@@ -120,73 +120,72 @@ impl Symbol {
 }
 
 pub enum Flag {
-  Type,
-  Member,
-  Constant,
-  Variable,
-  Edge,
-  Param,
+    Type,
+    Member,
+    Constant,
+    Variable,
+    Edge,
+    Param,
 }
 
 impl Flag {
-  pub fn to_u32(&self) -> u32 {
-      match self {
-          Flag::Type => 1,
-          Flag::Member => 2,
-          Flag::Constant => 4,
-          Flag::Variable => 8,
-          Flag::Edge => 16,
-          Flag::Param => 32,
-      }
-  }
+    pub fn to_u32(&self) -> u32 {
+        match self {
+            Flag::Type => 1,
+            Flag::Member => 2,
+            Flag::Constant => 4,
+            Flag::Variable => 8,
+            Flag::Edge => 16,
+            Flag::Param => 32,
+        }
+    }
 
-  pub fn is_type(flag: u32) -> bool {
-      flag & Flag::Type.to_u32() != 0
-  }
+    pub fn is_type(flag: u32) -> bool {
+        flag & Flag::Type.to_u32() != 0
+    }
 
-  pub fn is_member(flag: u32) -> bool {
-      flag & Flag::Member.to_u32() != 0
-  }
+    pub fn is_member(flag: u32) -> bool {
+        flag & Flag::Member.to_u32() != 0
+    }
 
-  pub fn is_constant(flag: u32) -> bool {
-      flag & Flag::Constant.to_u32() != 0
-  }
+    pub fn is_constant(flag: u32) -> bool {
+        flag & Flag::Constant.to_u32() != 0
+    }
 
-  pub fn is_variable(flag: u32) -> bool {
-      flag & Flag::Variable.to_u32() != 0
-  }
+    pub fn is_variable(flag: u32) -> bool {
+        flag & Flag::Variable.to_u32() != 0
+    }
 
-  pub fn is_edge(flag: u32) -> bool {
-      flag & Flag::Edge.to_u32() != 0
-  }
+    pub fn is_edge(flag: u32) -> bool {
+        flag & Flag::Edge.to_u32() != 0
+    }
 
-  pub fn is_param(flag: u32) -> bool {
-      flag & Flag::Param.to_u32() != 0
-  }
+    pub fn is_param(flag: u32) -> bool {
+        flag & Flag::Param.to_u32() != 0
+    }
 
-  pub fn from_u32(flag_set: u32) -> Flag {
-      if Self::is_type(flag_set) {
-          return Flag::Type;
-      }
-      if Self::is_member(flag_set) {
-          return Flag::Member;
-      }
-      if Self::is_constant(flag_set) {
-          return Flag::Constant;
-      }
-      if Self::is_variable(flag_set) {
-          return Flag::Variable;
-      }
-      if Self::is_edge(flag_set) {
-          return Flag::Edge;
-      }
-      if Self::is_param(flag_set) {
-          return Flag::Param;
-      }
-      panic!("Invalid flag set: {}", flag_set);
-  }
+    pub fn from_u32(flag_set: u32) -> Flag {
+        if Self::is_type(flag_set) {
+            return Flag::Type;
+        }
+        if Self::is_member(flag_set) {
+            return Flag::Member;
+        }
+        if Self::is_constant(flag_set) {
+            return Flag::Constant;
+        }
+        if Self::is_variable(flag_set) {
+            return Flag::Variable;
+        }
+        if Self::is_edge(flag_set) {
+            return Flag::Edge;
+        }
+        if Self::is_param(flag_set) {
+            return Flag::Param;
+        }
+        panic!("Invalid flag set: {}", flag_set);
+    }
 }
-
 
 impl Positioned for Symbol {
     fn span(&self) -> Span {

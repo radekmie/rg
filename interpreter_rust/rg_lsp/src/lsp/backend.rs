@@ -32,12 +32,18 @@ impl LanguageServer for Backend {
                     },
                 )),
                 document_symbol_provider: Some(OneOf::Left(true)),
+                document_highlight_provider: Some(OneOf::Left(true)),
                 completion_provider: None,
                 execute_command_provider: None,
                 semantic_tokens_provider: Some(semantic_tokens::semantic_tokens_capabilities()),
                 definition_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
-                rename_provider: None,
+                rename_provider: Some(OneOf::Right(RenameOptions {
+                    prepare_provider: Some(true),
+                    work_done_progress_options: WorkDoneProgressOptions {
+                        work_done_progress: None,
+                    },
+                })),
                 ..ServerCapabilities::default()
             },
         })
@@ -113,5 +119,41 @@ impl LanguageServer for Backend {
             result_id: None,
             data: semantic_tokens,
         })))
+    }
+
+    async fn document_highlight(
+        &self,
+        params: DocumentHighlightParams,
+    ) -> Result<Option<Vec<DocumentHighlight>>> {
+        let uri = params.text_document_position_params.text_document.uri;
+        let position = params.text_document_position_params.position;
+        let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
+        let symbol_table = document.get_symbol_table();
+        let document_highlights = features::document_highlight(position, symbol_table);
+        Ok(document_highlights)
+    }
+
+    async fn prepare_rename(
+        &self,
+        params: TextDocumentPositionParams,
+    ) -> Result<Option<PrepareRenameResponse>> {
+        let uri = params.text_document.uri;
+        let position = params.position;
+        let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
+        let symbol_table = document.get_symbol_table();
+        let prepare_rename_response = features::prepare_rename(position, symbol_table);
+        Ok(prepare_rename_response)
+    }
+
+    async fn rename(
+        &self,
+        params: RenameParams,
+    ) -> Result<Option<WorkspaceEdit>> {
+        let uri = params.text_document_position.text_document.uri;
+        let position = params.text_document_position.position;
+        let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
+        let symbol_table = document.get_symbol_table();
+        let rename_response = features::rename(&uri, position, symbol_table, params.new_name);
+        Ok(rename_response)
     }
 }
