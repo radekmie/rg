@@ -186,3 +186,10 @@ impl Flag {
       panic!("Invalid flag set: {}", flag_set);
   }
 }
+
+
+impl Positioned for Symbol {
+    fn span(&self) -> Span {
+        self.pos.clone()
+    }
+}

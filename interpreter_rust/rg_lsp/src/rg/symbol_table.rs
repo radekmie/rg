@@ -16,6 +16,12 @@ impl Occurrence {
     }
 }
 
+impl Positioned for Occurrence {
+    fn span(&self) -> Span {
+        self.pos.clone()
+    }
+}
+
 pub struct SymbolTable {
     pub symbols: Vec<Symbol>,
     pub occurrences: Vec<Occurrence>,

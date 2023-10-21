@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use super::document::Document;
-use super::features;
+use super::{features, semantic_tokens};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -34,7 +34,7 @@ impl LanguageServer for Backend {
                 document_symbol_provider: Some(OneOf::Left(true)),
                 completion_provider: None,
                 execute_command_provider: None,
-                semantic_tokens_provider: None,
+                semantic_tokens_provider: Some(semantic_tokens::semantic_tokens_capabilities()),
                 definition_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
                 rename_provider: None,
@@ -100,5 +100,18 @@ impl LanguageServer for Backend {
         let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
         let definition = features::definitions(&uri, position, document.get_symbol_table());
         Ok(definition)
+    }
+
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>> {
+        let uri = params.text_document.uri;
+        let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
+        let semantic_tokens = semantic_tokens::semantic_tokens_full(&mut document);
+        Ok(Some(SemanticTokensResult::Tokens(SemanticTokens {
+            result_id: None,
+            data: semantic_tokens,
+        })))
     }
 }
