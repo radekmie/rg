@@ -173,7 +173,7 @@ fn symbol_table_tokens(symbol_table: &SymbolTable) -> Vec<Token> {
         } else {
             0
         };
-        let token_type = match Flag::from_u32(symbol.flag) {
+        let token_type = match symbol.flag {
             Flag::Constant => semantic_token_type(SemanticTokenType::VARIABLE),
             Flag::Edge => semantic_token_type(SemanticTokenType::METHOD),
             Flag::Type => semantic_token_type(SemanticTokenType::TYPE),
@@ -181,7 +181,7 @@ fn symbol_table_tokens(symbol_table: &SymbolTable) -> Vec<Token> {
             Flag::Member => semantic_token_type(SemanticTokenType::VARIABLE),
             Flag::Param => semantic_token_type(SemanticTokenType::PARAMETER),
         };
-        let const_mod = if symbol.flag == Flag::to_u32(&Flag::Constant) {
+        let const_mod = if symbol.flag == Flag::Constant {
             semantic_token_modifier(SemanticTokenModifier::READONLY)
         } else {
             0

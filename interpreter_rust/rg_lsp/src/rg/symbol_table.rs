@@ -197,7 +197,7 @@ impl SymbolTable {
         Symbol::new(
             symbol.to_string(),
             Span::none(),
-            Flag::to_u32(&Flag::Type),
+            Flag::Type,
             None,
         )
     }
@@ -206,7 +206,7 @@ impl SymbolTable {
         Symbol::new(
             symbol.to_string(),
             Span::none(),
-            Flag::to_u32(&Flag::Variable),
+            Flag::Variable,
             None,
         )
     }
@@ -218,13 +218,13 @@ impl SymbolTable {
             self.symbols.push(Symbol::new(
                 "0".to_string(),
                 Span::none(),
-                Flag::to_u32(&Flag::Member),
+                Flag::Member,
                 Some(bool_idx),
             ));
             self.symbols.push(Symbol::new(
                 "1".to_string(),
                 Span::none(),
-                Flag::to_u32(&Flag::Member),
+                Flag::Member,
                 Some(bool_idx),
             ));
         }

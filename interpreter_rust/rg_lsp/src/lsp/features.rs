@@ -16,7 +16,7 @@ pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<Document
         .iter()
         .map(|symbol| SymbolInformation {
             name: symbol.id.clone(),
-            kind: flag_to_kind(symbol.flag),
+            kind: flag_to_kind(&symbol.flag),
             location: l::Location {
                 uri: uri.clone(),
                 range: symbol.pos.into(),
