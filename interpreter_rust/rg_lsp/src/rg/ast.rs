@@ -89,6 +89,15 @@ pub enum EdgeNamePart {
     },
 }
 
+impl EdgeNamePart {
+    pub fn identifier(&self) -> &Identifier {
+        match self {
+            EdgeNamePart::Binding { identifier, .. } => identifier,
+            EdgeNamePart::Literal { identifier } => identifier,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Type {
     Arrow {

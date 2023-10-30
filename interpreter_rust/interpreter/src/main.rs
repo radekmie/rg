@@ -2,6 +2,7 @@ use interpreter::{prepare_ist, safe_parse_source};
 use rg_lsp::rg::parser::parse;
 use map_id::MapId;
 use rand::thread_rng;
+use rg_lsp::rg::symbol_table::SymbolTable;
 use std::env::args;
 use std::fs::read_to_string;
 use std::time::Instant;
@@ -16,13 +17,13 @@ fn main() -> Result<(), String> {
     println!("");
     println!("");
     let parsed_lsp = parse(source.as_str());
+    let symbol_table = SymbolTable::from_game(&parsed_lsp);
     let (game, interner) = prepare_ist(game)?;
-
     
     println!(" LSP TREE ");
     println!("{}",parsed_lsp);
-    
-    
+    println!("SYMBOL TABLE");
+    println!("{}",symbol_table);    
 
 
 

@@ -1,8 +1,10 @@
+use std::fmt::Display;
+
 use crate::rg::ast::*;
 use crate::rg::position::{Positioned, Span};
 
 use super::position::Position;
-use super::symbol::{Flag, Symbol};
+use super::symbol::{Flag, Symbol, from_game as symbols_from_game};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Occurrence {
@@ -28,12 +30,16 @@ pub struct SymbolTable {
 }
 
 impl SymbolTable {
+    /*
+     * The last symbol with matching id defined before this position is used.
+     * TODO: We can also check flag.
+     */
     fn find_symbol(&self, pos: &Span, id: &str) -> Option<usize> {
         let mut sym = None;
         for (idx, symbol) in self.symbols.iter().enumerate() {
-            if symbol.id == id && symbol.pos <= *pos {
+            if symbol.id == id {
                 sym = Some(idx);
-            } else if symbol.pos > *pos {
+            } else if symbol.pos > *pos && sym.is_some() {
                 return sym;
             }
         }
@@ -85,7 +91,7 @@ impl SymbolTable {
             }
             EdgeLabel::Skip { .. } => (),
             EdgeLabel::Tag { symbol } => {
-                self.add_occ_from_id(symbol);
+                // self.add_occ_from_id(symbol);
             }
             EdgeLabel::Reachability { lhs, rhs, .. } => {
                 self.add_from_edge_name(lhs);
@@ -158,7 +164,7 @@ impl SymbolTable {
 
     pub fn from_game(game: &Game) -> Self {
         let mut table: Self = Self {
-            symbols: Symbol::from_game(game),
+            symbols: symbols_from_game(game),
             occurrences: Vec::new(),
         };
         table.add_builtin_symbols();
@@ -194,21 +200,11 @@ impl SymbolTable {
     }
 
     fn make_builtin_type(symbol: &str) -> Symbol {
-        Symbol::new(
-            symbol.to_string(),
-            Span::none(),
-            Flag::Type,
-            None,
-        )
+        Symbol::new(symbol.to_string(), Span::none(), Flag::Type, None)
     }
 
     fn make_builtin_variable(symbol: &str) -> Symbol {
-        Symbol::new(
-            symbol.to_string(),
-            Span::none(),
-            Flag::Variable,
-            None,
-        )
+        Symbol::new(symbol.to_string(), Span::none(), Flag::Variable, None)
     }
 
     fn add_builtin_symbols(&mut self) {
@@ -233,6 +229,9 @@ impl SymbolTable {
         }
         if !self.is_defined("Visibility") {
             self.symbols.push(Self::make_builtin_type("Visibility"));
+        }
+        if !self.is_defined("keeper") {
+            self.symbols.push(Self::make_builtin_variable("keeper"));
         }
         if !self.is_defined("PlayerOrKeeper") {
             self.symbols.push(Self::make_builtin_type("PlayerOrKeeper"));
@@ -301,5 +300,20 @@ impl SymbolTable {
             }
         }
         None
+    }
+}
+
+impl Display for SymbolTable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Symbols:\n")?;
+        for (idx, symbol) in self.symbols.iter().enumerate() {
+            writeln!(f, "{}. {}  {}", idx, symbol.pos, symbol)?;
+        }
+        writeln!(f, "Occurrences:\n")?;
+        for occ in self.occurrences.iter() {
+            let symbol = self.get_occ_symbol(occ).unwrap();
+            writeln!(f, "{}  {}", occ.pos, symbol)?;
+        }
+        Ok(())
     }
 }

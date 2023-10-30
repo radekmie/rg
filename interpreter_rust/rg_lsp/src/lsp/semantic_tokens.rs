@@ -192,6 +192,7 @@ fn symbol_table_tokens(symbol_table: &SymbolTable) -> Vec<Token> {
             token_type,
             token_modifier: definition_mod | const_mod,
         };
+        tokens.push(token);
     }
     tokens
 }
