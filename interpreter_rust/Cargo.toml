@@ -9,4 +9,5 @@ members = [
   "parser_utils",
   "rg",
   "rg_lsp",
+  "browser",
 ]

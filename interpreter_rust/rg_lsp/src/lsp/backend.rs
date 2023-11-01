@@ -11,11 +11,18 @@ use tower_lsp::lsp_types::notification::Notification;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
-struct Backend {
+pub struct Backend {
     client: Client,
     document_map: DashMap<String, Document>,
-    // ast_map: DashMap<String, HashMap<String, Func>>,
-    // semantic_token_map: DashMap<String, Vec<ImCompleteSemanticToken>>,
+}
+
+impl Backend {
+    pub fn new(client: Client) -> Self {
+        Self {
+            client,
+            document_map: DashMap::new(),
+        }
+    }
 }
 
 #[tower_lsp::async_trait]

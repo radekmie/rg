@@ -2,6 +2,7 @@ import { Intent } from '@blueprintjs/core';
 
 import { Bench } from './Bench';
 import { Editor } from './Editor';
+import { ReactMonacoEditor } from '../new_editor/Editor';
 import { Graphviz } from './Graphviz';
 import { Loader } from './Loader';
 import { PrettyPrint } from './PrettyPrint';
@@ -53,10 +54,9 @@ export function Application() {
   return (
     <>
       <section className={styles.panel}>
-        <Editor
-          onChange={setSource}
-          mode={extensionToMode[settings.extension]}
-          value={source}
+        <ReactMonacoEditor
+          defaultCode={'abc'}
+          path={'/sampleServer'}
         />
       </section>
       <section className={styles.panel}>
@@ -65,8 +65,8 @@ export function Application() {
             game.loading
               ? Intent.NONE
               : game.error
-              ? Intent.DANGER
-              : Intent.SUCCESS
+                ? Intent.DANGER
+                : Intent.SUCCESS
           }
           setPreset={setPreset}
           setSettings={setSettings}

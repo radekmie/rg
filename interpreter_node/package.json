@@ -25,7 +25,11 @@
     "buffer": "5.7.1",
     "chevrotain": "10.4.2",
     "commander": "9.4.1",
+    "debounce": "^1.2.1",
     "eslint-config-vazco": "7.1.0",
+    "json-rpc-2.0": "^1.6.0",
+    "monaco-editor": "^0.44.0",
+    "monaco-languageclient": "^6.6.1",
     "normalize.css": "8.0.1",
     "p-limit": "3.1.0",
     "parcel": "2.8.3",
@@ -37,6 +41,8 @@
     "typescript": "4.9.3",
     "util": "0.12.5",
     "vitest": "0.28.4",
+    "vscode": "npm:@codingame/monaco-vscode-api@^1.83.5",
+    "vscode-languageserver-protocol": "^3.17.5",
     "web-worker": "1.2.0"
   },
   "targets": {
@@ -59,5 +65,10 @@
       "source": "src/ui/index.html",
       "sourceMap": false
     }
+  },
+  "devDependencies": {
+    "@types/debounce": "^1.2.3",
+    "@types/vscode": "^1.83.1",
+    "path-browserify": "^1.0.1"
   }
 }
