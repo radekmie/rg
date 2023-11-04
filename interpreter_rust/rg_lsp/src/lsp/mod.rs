@@ -5,3 +5,4 @@ mod features;
 mod utils;
 mod symbol_features;
 mod semantic_tokens;
+mod logger;

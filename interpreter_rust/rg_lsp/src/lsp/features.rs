@@ -14,6 +14,7 @@ pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<Document
     let symbols = symbol_table
         .symbols
         .iter()
+        .filter(|symbol| !symbol.pos.is_none())
         .map(|symbol| SymbolInformation {
             name: symbol.id.clone(),
             kind: flag_to_kind(&symbol.flag),
@@ -55,8 +56,12 @@ pub fn definitions(
     symbol_table: &SymbolTable,
 ) -> Option<GotoDefinitionResponse> {
     let enclosing_symbol = symbol_table.symbol_enclosing_pos(position)?;
-    let location = to_location(uri, enclosing_symbol.pos);
-    Some(GotoDefinitionResponse::Scalar(location))
+    if enclosing_symbol.pos.is_none() {
+        None
+    } else {
+        let location = to_location(uri, enclosing_symbol.pos);
+        Some(GotoDefinitionResponse::Scalar(location))
+    }
 }
 
 pub fn document_highlight(
@@ -65,7 +70,7 @@ pub fn document_highlight(
 ) -> Option<Vec<l::DocumentHighlight>> {
     let enclosing_symbol = symbol_table.symbol_enclosing_pos(position)?;
     let sym_idx = symbol_table.sym_idx(enclosing_symbol)?;
-    let mut all_occurrences = symbol_table.all_symbol_occurences(sym_idx);
+    let all_occurrences = symbol_table.all_symbol_occurences(sym_idx);
     Some(
         all_occurrences
             .iter()

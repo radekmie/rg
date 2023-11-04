@@ -74,7 +74,7 @@ impl SymbolTable {
     }
 
     fn add_from_edge(&mut self, edge: &Edge) {
-        self.add_from_edge_name(&edge.rhs);
+        self.add_from_edge_name(&edge.lhs);
         self.add_from_edge_name(&edge.rhs);
         self.add_from_edge_label(&edge.label);
     }
@@ -133,8 +133,9 @@ impl SymbolTable {
 
     fn add_from_name_part(&mut self, name_part: &EdgeNamePart) {
         match name_part {
-            EdgeNamePart::Binding { identifier, .. } => {
+            EdgeNamePart::Binding { identifier, type_, .. } => {
                 self.add_occ_from_id(identifier);
+                self.add_from_type(type_);
             }
             EdgeNamePart::Literal { identifier } => {
                 self.add_occ_from_id(identifier);

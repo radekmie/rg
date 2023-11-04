@@ -10,13 +10,19 @@ use crate::rg::{
     symbol_table::*,
 };
 
+use tower_lsp::lsp_types::Position as LPos;
+
 use super::document::Document;
 
 pub fn semantic_tokens_capabilities() -> SemanticTokensServerCapabilities {
     SemanticTokensServerCapabilities::SemanticTokensOptions(SemanticTokensOptions {
         work_done_progress_options: WorkDoneProgressOptions::default(),
         legend: SemanticTokensLegend {
-            token_types: SEMANTIC_TOKENS_TYPES.to_vec(),
+            token_types: SEMANTIC_TOKENS_TYPES
+                .to_vec()
+                .into_iter()
+                .map(SemanticTokenType::new)
+                .collect(),
             token_modifiers: SEMANTIC_TOKENS_MODIFIERS.to_vec(),
         },
         range: None,
@@ -24,18 +30,20 @@ pub fn semantic_tokens_capabilities() -> SemanticTokensServerCapabilities {
     })
 }
 
-pub const SEMANTIC_TOKENS_TYPES: &[SemanticTokenType] = &[
-    SemanticTokenType::KEYWORD,
-    SemanticTokenType::TYPE,
-    SemanticTokenType::PARAMETER,
-    SemanticTokenType::VARIABLE,
-    SemanticTokenType::METHOD,
-    SemanticTokenType::COMMENT,
-    SemanticTokenType::OPERATOR,
-    SemanticTokenType::MACRO,
+pub const SEMANTIC_TOKENS_TYPES: &[&str] = &[
+    "keyword",
+    "type",
+    "parameter",
+    "variable",
+    "function",
+    "comment",
+    "operator",
+    "macro",
+    "member",
+    "constant",
 ];
 
-fn semantic_token_type(token_type: SemanticTokenType) -> u32 {
+fn semantic_token_type(token_type: &str) -> u32 {
     SEMANTIC_TOKENS_TYPES
         .iter()
         .position(|t| t == &token_type)
@@ -56,7 +64,7 @@ fn semantic_token_modifier(token_modifier: SemanticTokenModifier) -> u32 {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct Token {
-    pos: Position,
+    pos: LPos,
     len: u32,
     token_type: u32,
     token_modifier: u32,
@@ -71,17 +79,19 @@ pub fn semantic_tokens_full(document: &mut Document) -> Vec<SemanticToken> {
     let mut semantic_tokens = Vec::new();
     let mut last_line = 0;
     let mut last_col_end = 0;
+    let mut last_len = 0;
     for token in tokens.iter() {
         let (d_line, d_column) = if token.pos.line == last_line {
-            (0, token.pos.column - last_col_end)
+            (0, token.pos.character - last_col_end + last_len)
         } else {
-            (token.pos.line - last_line, token.pos.column)
+            (token.pos.line - last_line, token.pos.character)
         };
         last_line = token.pos.line;
-        last_col_end = token.pos.column + (token.len as usize);
+        last_col_end = token.pos.character + token.len;
+        last_len = token.len;
         let semantic_token = SemanticToken {
-            delta_line: d_line as u32,
-            delta_start: d_column as u32,
+            delta_line: d_line,
+            delta_start: d_column,
             length: token.len,
             token_type: token.token_type,
             token_modifiers_bitset: token.token_modifier,
@@ -98,27 +108,27 @@ fn ast_tokens(ast: &Game) -> Vec<Token> {
         match stat {
             Stat::Typedef(typedef) => {
                 let token = Token {
-                    pos: typedef.start(),
+                    pos: typedef.start().into(),
                     len: 4, // "type".len()
-                    token_type: semantic_token_type(SemanticTokenType::KEYWORD),
+                    token_type: semantic_token_type("keyword"),
                     token_modifier: 0,
                 };
                 tokens.push(token);
             }
             Stat::Variable(variable) => {
                 let token = Token {
-                    pos: variable.start(),
+                    pos: variable.start().into(),
                     len: 3, // "var".len()
-                    token_type: semantic_token_type(SemanticTokenType::KEYWORD),
+                    token_type: semantic_token_type("keyword"),
                     token_modifier: 0,
                 };
                 tokens.push(token);
             }
             Stat::Constant(constant) => {
                 let token = Token {
-                    pos: constant.start(),
-                    len: 8, // "constant".len()
-                    token_type: semantic_token_type(SemanticTokenType::KEYWORD),
+                    pos: constant.start().into(),
+                    len: 5, // "const".len()
+                    token_type: semantic_token_type("keyword"),
                     token_modifier: 0,
                 };
                 tokens.push(token);
@@ -129,11 +139,11 @@ fn ast_tokens(ast: &Game) -> Vec<Token> {
                     PragmaKind::Disjoint => 8, // "disjoint".len()
                     PragmaKind::MultiAny => 9, // "multi_any".len()
                     PragmaKind::Unique => 6,   // "unique".len()
-                };
+                } + 1 ; // +1 for `@
                 let token = Token {
-                    pos: pragma.start(),
+                    pos: pragma.start().into(),
                     len,
-                    token_type: semantic_token_type(SemanticTokenType::MACRO),
+                    token_type: semantic_token_type("macro"),
                     token_modifier: 0,
                 };
                 tokens.push(token);
@@ -150,11 +160,12 @@ fn comment_tokens(text: &str) -> Vec<Token> {
         if let Some(col) = line.find("//") {
             let token = Token {
                 pos: Position {
-                    line: line_idx,
-                    column: col,
-                },
-                len: line.len() as u32 - col as u32,
-                token_type: semantic_token_type(SemanticTokenType::COMMENT),
+                    line: line_idx + 1,
+                    column: col + 1,
+                }
+                .into(),
+                len: (line.len() - col) as u32,
+                token_type: semantic_token_type("comment"),
                 token_modifier: 0,
             };
             tokens.push(token);
@@ -167,32 +178,35 @@ fn comment_tokens(text: &str) -> Vec<Token> {
 fn symbol_table_tokens(symbol_table: &SymbolTable) -> Vec<Token> {
     let mut tokens = Vec::new();
     for occ in symbol_table.occurrences.iter() {
-        let symbol = symbol_table.get_occ_symbol(occ).unwrap();
-        let definition_mod = if symbol.pos == occ.pos {
-            semantic_token_modifier(SemanticTokenModifier::DEFINITION)
-        } else {
-            0
-        };
-        let token_type = match symbol.flag {
-            Flag::Constant => semantic_token_type(SemanticTokenType::VARIABLE),
-            Flag::Edge => semantic_token_type(SemanticTokenType::METHOD),
-            Flag::Type => semantic_token_type(SemanticTokenType::TYPE),
-            Flag::Variable => semantic_token_type(SemanticTokenType::VARIABLE),
-            Flag::Member => semantic_token_type(SemanticTokenType::VARIABLE),
-            Flag::Param => semantic_token_type(SemanticTokenType::PARAMETER),
-        };
-        let const_mod = if symbol.flag == Flag::Constant {
-            semantic_token_modifier(SemanticTokenModifier::READONLY)
-        } else {
-            0
-        };
-        let token = Token {
-            pos: occ.start(),
-            len: symbol.id.len() as u32,
-            token_type,
-            token_modifier: definition_mod | const_mod,
-        };
-        tokens.push(token);
+        let symbol = symbol_table.get_occ_symbol(occ);
+        if let Some(symbol) = symbol {
+            let definition_mod = if symbol.pos == occ.pos {
+                semantic_token_modifier(SemanticTokenModifier::DEFINITION)
+            } else {
+                0
+            };
+            let token_type = match symbol.flag {
+                Flag::Constant => semantic_token_type("constant"),
+                Flag::Edge => semantic_token_type("function"),
+                Flag::Type => semantic_token_type("type"),
+                Flag::Variable => semantic_token_type("variable"),
+                Flag::Member => semantic_token_type("member"),
+                Flag::Param => semantic_token_type("parameter"),
+            };
+            let const_mod = if symbol.flag == Flag::Constant {
+                semantic_token_modifier(SemanticTokenModifier::READONLY)
+            } else {
+                0
+            };
+            // web_sys::console::log_1(&format!("{}: {}", symbol.id, occ.pos).into());
+            let token = Token {
+                pos: occ.start().into(),
+                len: symbol.id.len() as u32,
+                token_type,
+                token_modifier: definition_mod | const_mod,
+            };
+            tokens.push(token);
+        }
     }
     tokens
 }

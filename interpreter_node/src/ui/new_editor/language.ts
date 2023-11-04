@@ -33,7 +33,6 @@ export default class Language implements monaco.languages.ILanguageExtensionPoin
     return { id, extensions, aliases, mimetypes };
   }
 
-
   private registerLanguage(client: Client): void {
     monaco.languages.register(Language.extensionPoint());
 
@@ -57,54 +56,65 @@ export default class Language implements monaco.languages.ILanguageExtensionPoin
     });
 
     languages.registerDocumentSymbolProvider(this.id, {
-      // eslint-disable-next-line
       async provideDocumentSymbols(document, token): Promise<vscode.SymbolInformation[]> {
         void token;
-        const result = await (client.request(proto.DocumentSymbolRequest.type.method, {
+        let result = await (client.request(proto.DocumentSymbolRequest.type.method, {
           textDocument: { uri: document.uri.toString() },
         } as proto.DocumentSymbolParams) as Promise<vscode.SymbolInformation[]>);
+        result.forEach(elem => elem.location.uri = vscode.Uri.parse(elem.location.uri.toString()));
         return result;
       },
     });
 
     languages.registerDefinitionProvider(this.id, {
-      async provideDefinition(document, position, token): Promise<vscode.Definition | null> {
+      async provideDefinition(document, position, token): Promise<vscode.Definition | vscode.DefinitionLink[]> {
         void token;
-        const result = await (client.request(proto.DefinitionRequest.type.method, {
+        let result = await (client.request(proto.DefinitionRequest.type.method, {
           textDocument: { uri: document.uri.toString() },
           position: position,
-        } as proto.DefinitionParams) as Promise<vscode.Definition | null>);
+        } as proto.DefinitionParams) as Promise<vscode.Location | null>);
+        if (result == null) {
+          return [];
+        }
+        result.uri = vscode.Uri.parse(result.uri.toString());
         return result;
       },
     })
 
     languages.registerReferenceProvider(this.id, {
-      // eslint-disable-next-line
       async provideReferences(document, position, context, token): Promise<vscode.Location[]> {
         void context;
         void token;
-        const result = await (client.request(proto.ReferencesRequest.type.method, {
+        let result = await (client.request(proto.ReferencesRequest.type.method, {
           textDocument: { uri: document.uri.toString() },
           position: position,
           context: { includeDeclaration: true },
-        } as proto.ReferenceParams) as Promise<vscode.Location[]>);
+        } as proto.ReferenceParams) as Promise<vscode.Location[] | null>);
+        if (result == null) {
+          return [];
+        }
+        result.forEach(elem => elem.uri = vscode.Uri.parse(elem.uri.toString()));
         return result;
       },
     });
 
 
 
-
     languages.registerRenameProvider(this.id, {
-      // eslint-disable-next-line
       async provideRenameEdits(document, position, newName, token): Promise<vscode.WorkspaceEdit> {
         void token;
-        const result = await (client.request(proto.RenameRequest.type.method, {
+        let result = await (client.request(proto.RenameRequest.type.method, {
           textDocument: { uri: document.uri.toString() },
           position: position,
           newName,
-        } as proto.RenameParams) as Promise<vscode.WorkspaceEdit>);
-        return result;
+        } as proto.RenameParams) as Promise<{
+          changes: {
+            [uri: string]: vscode.TextEdit[];
+          }
+        }>);
+        let new_result = new vscode.WorkspaceEdit();
+        new_result.set(document.uri, result.changes[document.uri.toString()]);
+        return new_result;
       },
 
       async prepareRename(document, position, token): Promise<{
@@ -118,13 +128,15 @@ export default class Language implements monaco.languages.ILanguageExtensionPoin
         } as proto.PrepareRenameParams) as Promise<{
           range: vscode.Range;
           placeholder: string;
-        }>);
+        } | null >);
+        if (result == null) {
+          throw new Error("This element can't be renamed");
+        }
         return result;
       }
     });
 
     languages.registerDocumentHighlightProvider(this.id, {
-      // eslint-disable-next-line
       async provideDocumentHighlights(document, position, token): Promise<vscode.DocumentHighlight[]> {
         void token;
         const result = await (client.request(proto.DocumentHighlightRequest.type.method, {
@@ -134,6 +146,21 @@ export default class Language implements monaco.languages.ILanguageExtensionPoin
         return result;
       },
     });
+
+    languages.registerDocumentSemanticTokensProvider(this.id, {
+      async provideDocumentSemanticTokens(document, token): Promise<vscode.SemanticTokens> {
+        void token;
+        const result = await (client.request(proto.SemanticTokensRequest.type.method, {
+          textDocument: { uri: document.uri.toString() },
+        } as proto.SemanticTokensParams) as Promise<vscode.SemanticTokens>);
+        return result;
+      },
+    },
+      new vscode.SemanticTokensLegend(
+        ["keyword", "type", "parameter", "variable", "function", "comment", "operator", "macro", "member", "constant"],
+        ["definition", "readonly"],
+      )
+    );
 
 
   }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use super::document::Document;
-use super::{features, semantic_tokens};
+use super::{features, semantic_tokens, logger};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -57,7 +57,7 @@ impl LanguageServer for Backend {
     }
     async fn initialized(&self, _: InitializedParams) {
         self.client
-            .log_message(MessageType::INFO, "initialized!")
+            .log_message(MessageType::INFO, "initialized XD!")
             .await;
     }
 
@@ -66,6 +66,7 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
+        self.client.log_message(MessageType::INFO, "did open XD").await;
         let uri = params.text_document.uri.to_string();
         let text = params.text_document.text;
         let document = Document::new(text);
@@ -73,6 +74,7 @@ impl LanguageServer for Backend {
     }
 
     async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
+        self.client.log_message(MessageType::INFO, "did change").await;
         let uri = params.text_document.uri.to_string();
         let text = params.content_changes.pop().unwrap().text;
         let document = Document::new(text);
@@ -80,6 +82,7 @@ impl LanguageServer for Backend {
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
+        self.client.log_message(MessageType::INFO, "did close").await;
         let uri = params.text_document.uri;
         self.document_map.remove(&uri.to_string());
     }
@@ -90,6 +93,7 @@ impl LanguageServer for Backend {
         &self,
         params: DocumentSymbolParams,
     ) -> Result<Option<DocumentSymbolResponse>> {
+        logger::log(&"document symbol".into());
         let uri = params.text_document.uri;
         let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
         let document_symbols = features::document_symbol(&uri, document.get_symbol_table());
@@ -97,6 +101,7 @@ impl LanguageServer for Backend {
     }
 
     async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+        logger::log(&"references".into());
         let uri = params.text_document_position.text_document.uri;
         let position = params.text_document_position.position;
         let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
@@ -108,6 +113,7 @@ impl LanguageServer for Backend {
         &self,
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
+        logger::log(&"goto definition".into());
         let uri = params.text_document_position_params.text_document.uri;
         let position = params.text_document_position_params.position;
         let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
@@ -119,6 +125,7 @@ impl LanguageServer for Backend {
         &self,
         params: SemanticTokensParams,
     ) -> Result<Option<SemanticTokensResult>> {
+        logger::log(&"semantic tokens full".into());
         let uri = params.text_document.uri;
         let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
         let semantic_tokens = semantic_tokens::semantic_tokens_full(&mut document);
@@ -132,6 +139,7 @@ impl LanguageServer for Backend {
         &self,
         params: DocumentHighlightParams,
     ) -> Result<Option<Vec<DocumentHighlight>>> {
+        logger::log(&"document highlight".into());
         let uri = params.text_document_position_params.text_document.uri;
         let position = params.text_document_position_params.position;
         let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
@@ -144,6 +152,7 @@ impl LanguageServer for Backend {
         &self,
         params: TextDocumentPositionParams,
     ) -> Result<Option<PrepareRenameResponse>> {
+        logger::log(&"prepare rename".into());
         let uri = params.text_document.uri;
         let position = params.position;
         let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
@@ -156,6 +165,7 @@ impl LanguageServer for Backend {
         &self,
         params: RenameParams,
     ) -> Result<Option<WorkspaceEdit>> {
+        logger::log(&"rename".into());
         let uri = params.text_document_position.text_document.uri;
         let position = params.text_document_position.position;
         let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
