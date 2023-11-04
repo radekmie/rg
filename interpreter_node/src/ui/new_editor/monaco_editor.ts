@@ -1,7 +1,7 @@
 import debounce from "debounce";
 import * as monaco from "monaco-editor";
-import { MonacoToProtocolConverter } from "monaco-languageclient";
 import * as proto from "vscode-languageserver-protocol";
+import * as vscode from "vscode";
 
 import Client from "./client";
 import { FromServer, IntoServer } from "./codec";
@@ -16,8 +16,6 @@ class Environment implements monaco.Environment {
     throw new Error(`getWorkerUrl: unexpected ${JSON.stringify({ moduleId, label })}`);
   }
 }
-
-const monacoToProtocol = new MonacoToProtocolConverter(monaco);
 
 export default class MonacoEditor {
   readonly #window: Window & monaco.Window & typeof globalThis = self;
@@ -44,7 +42,7 @@ export default class MonacoEditor {
           },
           contentChanges: [
             {
-              range: monacoToProtocol.asRange(model.getFullModelRange()),
+              range: this.asRange(model.getFullModelRange()),
               text,
             },
           ],
@@ -65,6 +63,13 @@ export default class MonacoEditor {
     });
 
     return model;
+  }
+
+  private asRange(range: monaco.IRange): proto.Range {
+    return {
+      start: { line: range.startLineNumber - 1, character: range.startColumn - 1 },
+      end: { line: range.endLineNumber - 1, character: range.endColumn - 1 },
+    };
   }
 
   createEditor(client: Client, container: HTMLElement, content: string): void {

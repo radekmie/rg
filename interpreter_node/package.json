@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "postinstall": "monaco-treemending",
     "build": "parcel build --cache-dir node_modules/.cache/parcel",
     "check": "tsc --build",
     "lint": "eslint --ext ts,tsx --fix src",
@@ -28,8 +29,8 @@
     "debounce": "^1.2.1",
     "eslint-config-vazco": "7.1.0",
     "json-rpc-2.0": "^1.6.0",
-    "monaco-editor": "^0.44.0",
-    "monaco-languageclient": "^6.6.1",
+    "monaco-editor": "npm:@codingame/monaco-editor-treemended@>=1.83.5 <1.84.0",
+    "monaco-languageclient": "~7.0.0",
     "normalize.css": "8.0.1",
     "p-limit": "3.1.0",
     "parcel": "2.8.3",
@@ -68,7 +69,15 @@
   },
   "devDependencies": {
     "@types/debounce": "^1.2.3",
-    "@types/vscode": "^1.83.1",
+    "@types/vscode": "^1.83.2",
     "path-browserify": "^1.0.1"
+  },
+  "overrides": {
+    "monaco-editor": "$monaco-editor",
+    "vscode": "$vscode"
+  },
+  "resolutions": {
+    "monaco-editor": "npm:@codingame/monaco-editor-treemended@>=1.83.5 <1.84.0",
+    "vscode": "npm:@codingame/monaco-vscode-api@>=1.83.5 <1.84.0"
   }
 }

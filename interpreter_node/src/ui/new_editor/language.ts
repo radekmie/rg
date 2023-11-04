@@ -1,6 +1,7 @@
 import * as monaco from "monaco-editor";
 import * as proto from "vscode-languageserver-protocol";
-import { languages } from "vscode";
+import { ProviderResult, languages } from "vscode";
+import * as vscode from "vscode";
 import Client from "./client";
 
 let language: null | Language;
@@ -32,103 +33,108 @@ export default class Language implements monaco.languages.ILanguageExtensionPoin
     return { id, extensions, aliases, mimetypes };
   }
 
+
   private registerLanguage(client: Client): void {
-    void client;
     monaco.languages.register(Language.extensionPoint());
-    monaco.languages.registerDocumentSymbolProvider(this.id, {
+
+
+    languages.setLanguageConfiguration(this.id, {
+      brackets: [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+      ],
+      comments: {
+        lineComment: "//",
+      },
+      autoClosingPairs: [
+        { open: "{", close: "}" },
+        { open: "[", close: "]" },
+        { open: "(", close: ")" },
+        { open: '"', close: '"', notIn: [vscode.SyntaxTokenType.String] },
+        { open: "'", close: "'", notIn: [vscode.SyntaxTokenType.String] },
+      ],
+    });
+
+    languages.registerDocumentSymbolProvider(this.id, {
       // eslint-disable-next-line
-      async provideDocumentSymbols(model, token): Promise<monaco.languages.DocumentSymbol[]> {
+      async provideDocumentSymbols(document, token): Promise<vscode.SymbolInformation[]> {
         void token;
-        const response = await (client.request(proto.DocumentSymbolRequest.type.method, {
-          textDocument: monacoToProtocol.asTextDocumentIdentifier(model),
-        } as proto.DocumentSymbolParams) as Promise<proto.SymbolInformation[]>);
-
-        const uri = model.uri;
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const result: monaco.languages.DocumentSymbol[] = protocolToMonaco.asSymbolInformations(response, uri);
-
+        const result = await (client.request(proto.DocumentSymbolRequest.type.method, {
+          textDocument: { uri: document.uri.toString() },
+        } as proto.DocumentSymbolParams) as Promise<vscode.SymbolInformation[]>);
         return result;
       },
     });
 
-    monaco.languages.registerReferenceProvider(this.id, {
+    languages.registerDefinitionProvider(this.id, {
+      async provideDefinition(document, position, token): Promise<vscode.Definition | null> {
+        void token;
+        const result = await (client.request(proto.DefinitionRequest.type.method, {
+          textDocument: { uri: document.uri.toString() },
+          position: position,
+        } as proto.DefinitionParams) as Promise<vscode.Definition | null>);
+        return result;
+      },
+    })
+
+    languages.registerReferenceProvider(this.id, {
       // eslint-disable-next-line
-      async provideReferences(model, position, context, token): Promise<monaco.languages.Location[]> {
+      async provideReferences(document, position, context, token): Promise<vscode.Location[]> {
         void context;
         void token;
-        const response = await (client.request(proto.ReferencesRequest.type.method, {
-          textDocument: monacoToProtocol.asTextDocumentIdentifier(model),
-          position: monacoToProtocol.asPosition(position.lineNumber, position.column),
+        const result = await (client.request(proto.ReferencesRequest.type.method, {
+          textDocument: { uri: document.uri.toString() },
+          position: position,
           context: { includeDeclaration: true },
-        } as proto.ReferenceParams) as Promise<proto.Location[]>);
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const result: monaco.languages.Location[] = protocolToMonaco.asReferences(response);
+        } as proto.ReferenceParams) as Promise<vscode.Location[]>);
         return result;
       },
     });
 
-    monaco.languages.registerDefinitionProvider(this.id, {
-      // eslint-disable-next-line
-      async provideDefinition(model, position, token): Promise<monaco.languages.Definition> {
-        void token;
-        const response = await (client.request(proto.DefinitionRequest.type.method, {
-          textDocument: monacoToProtocol.asTextDocumentIdentifier(model),
-          position: monacoToProtocol.asPosition(position.lineNumber, position.column),
-        } as proto.DefinitionParams) as Promise<proto.Location[]>);
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const result: monaco.languages.Definition = protocolToMonaco.asDefinitionResult(response);
-        return result;
-      },
-    });
 
-    monaco.languages.registerRenameProvider(this.id, {
+
+    languages.registerRenameProvider(this.id, {
       // eslint-disable-next-line
-      async provideRenameEdits(model, position, newName, token): Promise<monaco.languages.WorkspaceEdit> {
+      async provideRenameEdits(document, position, newName, token): Promise<vscode.WorkspaceEdit> {
         void token;
-        const response = await (client.request(proto.RenameRequest.type.method, {
-          textDocument: monacoToProtocol.asTextDocumentIdentifier(model),
-          position: monacoToProtocol.asPosition(position.lineNumber, position.column),
+        const result = await (client.request(proto.RenameRequest.type.method, {
+          textDocument: { uri: document.uri.toString() },
+          position: position,
           newName,
-        } as proto.RenameParams) as Promise<proto.WorkspaceEdit>);
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const result: monaco.languages.WorkspaceEdit = protocolToMonaco.asWorkspaceEdit(response);
+        } as proto.RenameParams) as Promise<vscode.WorkspaceEdit>);
         return result;
       },
 
-      async resolveRenameLocation(model, position, token): Promise<monaco.languages.RenameLocation | null> {
+      async prepareRename(document, position, token): Promise<{
+        range: vscode.Range;
+        placeholder: string;
+      }> {
         void token;
-        const response = await (client.request(proto.PrepareRenameRequest.type.method, {
-          textDocument: monacoToProtocol.asTextDocumentIdentifier(model),
-          position: monacoToProtocol.asPosition(position.lineNumber, position.column),
+        const result = await (client.request(proto.PrepareRenameRequest.type.method, {
+          textDocument: { uri: document.uri.toString() },
+          position: position,
         } as proto.PrepareRenameParams) as Promise<{
-          range: proto.Range;
+          range: vscode.Range;
           placeholder: string;
         }>);
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const result: monaco.languages.RenameLocation | null = { range: protocolToMonaco.asRange(response.range), text: response.placeholder };
         return result;
       }
     });
 
-    monaco.languages.registerDocumentHighlightProvider(this.id, {
+    languages.registerDocumentHighlightProvider(this.id, {
       // eslint-disable-next-line
-      async provideDocumentHighlights(model, position, token): Promise<monaco.languages.DocumentHighlight[]> {
+      async provideDocumentHighlights(document, position, token): Promise<vscode.DocumentHighlight[]> {
         void token;
-        const response = await (client.request(proto.DocumentHighlightRequest.type.method, {
-          textDocument: monacoToProtocol.asTextDocumentIdentifier(model),
-          position: monacoToProtocol.asPosition(position.lineNumber, position.column),
-        } as proto.DocumentHighlightParams) as Promise<proto.DocumentHighlight[]>);
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const result: monaco.languages.DocumentHighlight[] = response.map(protocolToMonaco.asDocumentHighlight);
+        const result = await (client.request(proto.DocumentHighlightRequest.type.method, {
+          textDocument: { uri: document.uri.toString() },
+          position: position,
+        } as proto.DocumentHighlightParams) as Promise<vscode.DocumentHighlight[]>);
         return result;
       },
     });
+
 
   }
 

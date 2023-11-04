@@ -1,10 +1,11 @@
 import React, { createRef, useEffect, useMemo, useRef } from 'react';
-import { editor } from 'monaco-editor';
+import { Uri, editor } from 'monaco-editor';
 import Client from "./client";
 import { FromServer, IntoServer } from "./codec";
 import Language from "./language";
 import Server from "./server";
 import MonacoEditor from './monaco_editor';
+import { initialize } from 'vscode/extensions';
 
 let init = true;
 
@@ -35,6 +36,7 @@ export const ReactMonacoEditor: React.FC<EditorProps> = ({
       const start = async () => {
         const client = new Client(fromServer, intoServer);
         const server = await Server.initialize(intoServer, fromServer);
+        await initialize();
         await new MonacoEditor().createEditor(
           client,
           ref.current!,
