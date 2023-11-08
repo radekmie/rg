@@ -4,29 +4,20 @@ import { createConfiguredEditor, createModelReference } from 'vscode/monaco'
 import { RegisteredFileSystemProvider, registerFileSystemOverlay, RegisteredMemoryFile } from '@codingame/monaco-vscode-files-service-override';
 import * as proto from "vscode-languageserver-protocol";
 import * as vscode from "vscode";
-
 import Client from "./client";
-import { FromServer, IntoServer } from "./codec";
 import Language from "./language";
-import Server from "./server";
-import { buildWorkerDefinition } from 'monaco-editor-workers';
-buildWorkerDefinition('../../../node_modules/monaco-editor-workers/dist/workers', new URL('', window.location.href).href, false);
-
-// class Environment implements monaco.Environment {
-//   getWorkerUrl(moduleId: string, label: string) {
-//     if (label === "editorWorkerService") {
-//       return "./editor.worker.bundle.js";
-//     }
-//     throw new Error(`getWorkerUrl: unexpected ${JSON.stringify({ moduleId, label })}`);
-//   }
-// }
+import EditorWorker from 'url:monaco-editor/esm/vs/editor/editor.worker.js';
 
 export default class MonacoEditor {
-  // readonly #window: Window & monaco.Window & typeof globalThis = self;
+  readonly #window: Window & monaco.Window & typeof globalThis = self;
 
-  // initializeMonaco(): void {
-  //   this.#window.MonacoEnvironment = new Environment();
-  // }
+  initializeMonaco(): void {
+    this.#window.MonacoEnvironment = {
+      getWorkerUrl: function (moduleId, label) {
+        return EditorWorker;
+      }
+    }
+  }
 
   async createModel(client: Client, content: string): Promise<monaco.editor.ITextModel> {
     const language = Language.initialize(client);
@@ -154,7 +145,7 @@ export default class MonacoEditor {
 
   async createEditor(client: Client, container: HTMLElement, content: string): Promise<void> {
     console.log("initialize monaco");
-    // this.initializeMonaco();
+    this.initializeMonaco();
     const model = await this.createModel(client, content);
     createConfiguredEditor(container, {
       model: model,

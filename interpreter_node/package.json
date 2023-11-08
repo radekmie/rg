@@ -31,7 +31,6 @@
     "eslint-config-vazco": "7.1.0",
     "json-rpc-2.0": "^1.6.0",
     "monaco-editor": "npm:@codingame/monaco-editor-treemended@>=1.83.5 <1.84.0",
-    "monaco-editor-workers": "^0.44.0",
     "monaco-languageclient": "~7.0.0",
     "normalize.css": "8.0.1",
     "p-limit": "3.1.0",
