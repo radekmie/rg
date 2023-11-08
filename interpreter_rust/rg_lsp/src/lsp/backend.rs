@@ -1,13 +1,7 @@
-use std::collections::HashMap;
-use std::rc::Rc;
-
 use super::document::Document;
-use super::{features, semantic_tokens, logger};
+use super::{features, logger, semantic_tokens};
 use dashmap::DashMap;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tower_lsp::jsonrpc::Result;
-use tower_lsp::lsp_types::notification::Notification;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
@@ -51,6 +45,16 @@ impl LanguageServer for Backend {
                         work_done_progress: None,
                     },
                 })),
+                diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
+                    DiagnosticOptions {
+                        identifier: Some("rg-lsp".to_string()),
+                        inter_file_dependencies: false,
+                        workspace_diagnostics: false,
+                        work_done_progress_options: WorkDoneProgressOptions {
+                            work_done_progress: None,
+                        },
+                    },
+                )),
                 ..ServerCapabilities::default()
             },
         })
@@ -66,23 +70,33 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        self.client.log_message(MessageType::INFO, "did open XD").await;
-        let uri = params.text_document.uri.to_string();
+        // self.client.log_message(MessageType::INFO, "did open").await;
+        let uri = params.text_document.uri;
         let text = params.text_document.text;
-        let document = Document::new(text);
-        self.document_map.insert(uri, document);
+        let mut document = Document::new(text);
+        let errors = document.parse();
+        self.document_map.insert(uri.to_string(), document);
+        let diags = features::diagnostics(errors);
+        self.client.publish_diagnostics(uri, diags, None).await;
     }
 
     async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
-        self.client.log_message(MessageType::INFO, "did change").await;
-        let uri = params.text_document.uri.to_string();
+        // self.client
+        //     .log_message(MessageType::INFO, "did change")
+        //     .await;
+        let uri = params.text_document.uri;
         let text = params.content_changes.pop().unwrap().text;
-        let document = Document::new(text);
-        self.document_map.insert(uri, document);
+        let mut document = Document::new(text);
+        let errors = document.parse();
+        self.document_map.insert(uri.to_string(), document);
+        let diags = features::diagnostics(errors);
+        self.client.publish_diagnostics(uri, diags, None).await;
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        self.client.log_message(MessageType::INFO, "did close").await;
+        self.client
+            .log_message(MessageType::INFO, "did close")
+            .await;
         let uri = params.text_document.uri;
         self.document_map.remove(&uri.to_string());
     }
@@ -161,10 +175,7 @@ impl LanguageServer for Backend {
         Ok(prepare_rename_response)
     }
 
-    async fn rename(
-        &self,
-        params: RenameParams,
-    ) -> Result<Option<WorkspaceEdit>> {
+    async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
         logger::log(&"rename".into());
         let uri = params.text_document_position.text_document.uri;
         let position = params.text_document_position.position;

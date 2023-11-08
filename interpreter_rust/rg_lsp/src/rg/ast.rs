@@ -208,6 +208,17 @@ impl Identifier {
     pub fn new(span: Span, identifier: String) -> Self {
         Self { span, identifier }
     }
+
+    pub fn none() -> Self {
+        Self {
+            span: Span::none(),
+            identifier: String::from("<none>"),
+        }
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.identifier == "<none>"
+    }
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

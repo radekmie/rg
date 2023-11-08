@@ -2,18 +2,25 @@ use crate::rg::ast::*;
 use crate::rg::position::{Span as Position, *};
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while, take_while1};
-use nom::character::complete::{char, multispace1};
+use nom::character::complete::{anychar, char, multispace1};
 use nom::combinator::{all_consuming, cut, eof, into, map, opt, success, verify};
-use nom::error::{context, ParseError, VerboseError};
-use nom::multi::{fold_many0, many1, separated_list0};
+use nom::error::context;
+use nom::multi::{fold_many0, many0, many1, separated_list0};
 use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
 use nom::IResult;
 use nom_locate::LocatedSpan;
 use std::cell::RefCell;
+use std::fmt::Display;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
-pub struct Error(Position, String);
+pub struct Error(pub Position, pub String);
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{}): {}", self.0.start, self.0.end, self.1)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct State<'a>(&'a RefCell<Vec<Error>>);
 
@@ -27,11 +34,11 @@ fn constant(input: Span) -> Result<Option<Constant>> {
             with_semicolon(
                 tag("const"),
                 cut(tuple((
-                    separated(identifier),
-                    delimited(cut(char(':')), separated(type_), cut(char('='))),
-                    separated(value),
+                    preceded_opt_id("const"),
+                    terminated(preceded_type_, expect(preceded_whitespace(cut(char('='))), "expected `=`")),
+                    value,
                 ))),
-                "expected constant",
+                "syntax error: expected `const <identifier> : <type> = <value>;`",
             ),
             |(tag_span, res)| res.map(|res| (tag_span, res).into()),
         ),
@@ -54,7 +61,29 @@ fn identifier(input: Span) -> Result<Identifier> {
         let span: Position = Position::from(&identifier);
         Identifier::new(span, identifier.fragment().to_string())
     })(input)
-    // into(identifier_)(input)
+}
+
+fn preceded_opt_id<'a>(context: &'a str) -> impl FnMut(Span<'a>) -> Result<Identifier> {
+    move |input| {
+        expect(
+            preceded_whitespace(identifier),
+            format!("{}: expected identifier", context),
+        )(input)
+        .map(|(input, res)| {
+            if let Some(res) = res {
+                (input, res)
+            } else {
+                (input, Identifier::none())
+            }
+        })
+    }
+}
+
+fn preceded_type_(input: Span) -> Result<Arc<Type>> {
+    expect(preceded_whitespace(char(':')), "expected `:`")(input).and_then(|(input, _)| {
+        let (input, res) = type_(input)?;
+        Ok((input, res))
+    })
 }
 
 fn edge(input: Span) -> Result<Option<Edge>> {
@@ -62,12 +91,18 @@ fn edge(input: Span) -> Result<Option<Edge>> {
         "edge",
         map(
             with_semicolon(
-                terminated(separated(edge_name), char(',')),
+                terminated(
+                    preceded_whitespace(edge_name),
+                    expect(preceded_whitespace(char(',')), "expected `,`"),
+                ),
                 tuple((
-                    terminated(separated(edge_name), cut(char(':'))),
-                    separated(edge_label),
+                    terminated(
+                        preceded_whitespace(expect_edge_name),
+                        expect(preceded_whitespace(cut(char(':'))), "expected `:`"),
+                    ),
+                    preceded_whitespace(edge_label),
                 )),
-                "expected edge",
+                "syntax error: expected `<edge_name>, <edge_name> : <edge_label>;",
             ),
             |(lhs, res)| res.map(|(rhs, label)| (lhs, rhs, label).into()),
         ),
@@ -78,22 +113,22 @@ fn edge_label(input: Span) -> Result<EdgeLabel> {
     context(
         "edge_label",
         alt((
-            into(preceded(char('$'), cut(separated(identifier)))),
+            into(preceded(char('$'), cut(preceded_opt_id("edge_label")))),
             into(tuple((
                 expression,
-                separated(map(alt((tag("=="), tag("!="))), |c: Span| {
+                preceded_whitespace(map(alt((tag("=="), tag("!="))), |c: Span| {
                     *c.fragment() == "!="
                 })),
                 cut(expression),
             ))),
             into(separated_pair(
                 expression,
-                separated(char('=')),
-                cut(expression),
+                preceded_whitespace(char('=')),
+                expression,
             )),
             into(tuple((
                 alt((tag("!"), tag("?"))),
-                cut(terminated(separated(edge_name), separated(tag("->")))),
+                cut(terminated(edge_name, preceded_whitespace(tag("->")))),
                 edge_name,
             ))),
             success::<_, _, _>(EdgeLabel::Skip {
@@ -104,7 +139,29 @@ fn edge_label(input: Span) -> Result<EdgeLabel> {
 }
 
 fn edge_name(input: Span) -> Result<EdgeName> {
-    context("edge_name", into(many1(separated(edge_name_part))))(input)
+    context(
+        "edge_name",
+        into(many1(preceded_whitespace(edge_name_part))),
+    )(input)
+}
+
+fn expect_edge_name(input: Span) -> Result<EdgeName> {
+    let (input, first) = expect(edge_name_part, "expected edge name")(input)?;
+    match first {
+        Some(name) => {
+            let (input, rest) = many0(preceded_whitespace(edge_name_part))(input)?;
+            let mut parts = vec![name];
+            parts.extend(rest);
+            Ok((input, parts.into()))
+        }
+        None => Ok((
+            input,
+            vec![EdgeNamePart::Literal {
+                identifier: Identifier::none(),
+            }]
+            .into(),
+        )),
+    }
 }
 
 fn edge_name_part(input: Span) -> Result<EdgeNamePart> {
@@ -113,26 +170,45 @@ fn edge_name_part(input: Span) -> Result<EdgeNamePart> {
         alt((
             into(delimited(
                 tag("("),
-                cut(separated_pair(
-                    separated(identifier),
-                    cut(char(':')),
-                    separated(type_),
-                )),
-                tag(")"),
+                cut(pair(preceded_opt_id("edge_name_part"), preceded_type_)),
+                preceded_whitespace(tag(")")),
             )),
             into(identifier),
         )),
     )(input)
 }
 
+// HERE: THIS CAN BE ERROR PRONE
+fn expect_expression(input: Span) -> Result<Arc<Expression>> {
+    expect(expression, "expected expression")(input).map(|(input, res)| {
+        if let Some(res) = res {
+            (input, res)
+        } else {
+            (
+                input,
+                Arc::new(Expression::Reference {
+                    identifier: Identifier::none(),
+                }),
+            )
+        }
+    })
+}
+
 fn expression(input: Span) -> Result<Arc<Expression>> {
     // Eliminate direct left recursion.
     fn inner(input: Span) -> Result<Arc<Expression>> {
-        let (input, identifier) = separated(identifier)(input)?;
-        let (input, maybe_cast) =
-            opt(delimited(tag("("), cut(separated(expression)), tag(")")))(input)?;
+        let (input, identifier) = preceded_whitespace(identifier)(input)?;
+        let (input, maybe_cast) = opt(preceded_whitespace(delimited(
+            tag("("),
+            cut(expect_expression),
+            preceded_whitespace(tag(")")),
+        )))(input)?;
         let (input, expression) = fold_many0(
-            delimited(tag("["), cut(separated(expression)), tag("]")),
+            delimited(
+                tag("["),
+                cut(expect_expression),
+                preceded_whitespace(tag("]")),
+            ),
             || match maybe_cast.clone() {
                 Some(rhs) => Arc::new(Expression::Cast {
                     span: rhs.span().with_start(identifier.span().start),
@@ -164,14 +240,18 @@ fn type_(input: Span) -> Result<Arc<Type>> {
     // Eliminate direct left recursion.
     fn inner(input: Span) -> Result<Arc<Type>> {
         let (input, lhs): (Span, Arc<Type>) = alt((
-            into_box(in_braces(
-                cut(separated(separated_list0(char(','), separated(identifier)))),
-                "expected type entries",
+            into_arc(delimited(
+                preceded_whitespace(tag("{")),
+                preceded_whitespace(cut(separated_list0(
+                    preceded_whitespace(char(',')),
+                    preceded_opt_id("type_member"),
+                ))),
+                preceded_whitespace(tag("}")),
             )),
-            into_box(identifier),
+            into_arc(preceded_opt_id("type")),
         ))(input)?;
 
-        match opt(preceded(separated(tag("->")), type_))(input)? {
+        match opt(preceded(preceded_whitespace(tag("->")), type_))(input)? {
             (input, Some(rhs)) => Ok((input, Arc::new(Type::Arrow { lhs, rhs }))),
             (input, None) => Ok((input, lhs)),
         }
@@ -187,11 +267,11 @@ fn typedef(input: Span) -> Result<Option<Typedef>> {
             with_semicolon(
                 tag("type"),
                 cut(separated_pair(
-                    separated(identifier),
-                    cut(char('=')),
-                    separated(type_),
+                    preceded_opt_id("typedef"),
+                    expect(preceded_whitespace(cut(char('='))), "expected `=`"),
+                    type_,
                 )),
-                "expected edge",
+                "syntax error: expected `type <identifier> = <type>;`",
             ),
             |(tag_span, res)| res.map(|(ident, tpe)| (tag_span, ident, tpe).into()),
         ),
@@ -202,14 +282,15 @@ fn value(input: Span) -> Result<Arc<Value>> {
     context(
         "value",
         alt((
-            into_box(in_braces(
-                cut(separated(separated_list0(
-                    char(','),
-                    separated(value_entry),
-                ))),
-                "expected value entries",
+            into_arc(delimited(
+                preceded_whitespace(tag("{")),
+                cut(separated_list0(
+                    preceded_whitespace(char(',')),
+                    preceded_whitespace(value_entry),
+                )),
+                preceded_whitespace(tag("}")),
             )),
-            into_box(identifier),
+            into_arc(preceded_opt_id("value")),
         )),
     )(input)
 }
@@ -219,27 +300,24 @@ fn value_entry(input: Span) -> Result<ValueEntry> {
         "value_entry",
         into(separated_pair(
             opt(identifier),
-            cut(separated(char(':'))),
+            cut(preceded_whitespace(char(':'))),
             cut(value),
         )),
     )(input)
 }
 
 fn variable(input: Span) -> Result<Option<Variable>> {
-    context(
-        "variable",
-        map(
-            with_semicolon(
-                tag("var"),
-                cut(tuple((
-                    separated(identifier),
-                    delimited(cut(char(':')), separated(type_), cut(char('='))),
-                    separated(value),
-                ))),
-                "expected variable",
-            ),
-            |(tag_span, res)| res.map(|(ident, tpe, value)| (tag_span, ident, tpe, value).into()),
+    map(
+        with_semicolon(
+            tag("var"),
+            cut(tuple((
+                preceded_opt_id("variable"),
+                terminated(preceded_type_, expect(preceded_whitespace(cut(char('='))), "expected `=`")),
+                value,
+            ))),
+            "syntax error: expected `var <identifier> : <type> = <value>;`",
         ),
+        |(tag_span, res)| res.map(|(ident, tpe, value)| (tag_span, ident, tpe, value).into()),
     )(input)
 }
 
@@ -249,12 +327,13 @@ fn pragma(input: Span) -> Result<Pragma> {
             map(
                 tuple((
                     tag("@"),
-                    separated(tag($tag)),
-                    cut(separated(edge_name)),
-                    cut(tag(";")),
+                    preceded_whitespace(tag($tag)),
+                    cut(preceded_whitespace(expect_edge_name)),
+                    expect(preceded_whitespace(cut(tag(";"))), "missing `;`"),
                 )),
                 |(start, _, edge_name, end)| {
-                    let span = Position::from((start, end));
+                    let start = Position::from(&start);
+                    let span = Position { start: start.start, end: edge_name.end()};
                     Pragma::new(span, PragmaKind::$constructor, edge_name)
                 },
             )
@@ -272,34 +351,50 @@ fn pragma(input: Span) -> Result<Pragma> {
     )(input)
 }
 
+fn parse_error_line(input: Span) -> Result<()> {
+    let error_pos = Position::from(&input);
+    let (input, unexpected) = anychar(input)?;
+    let error_msg = format!("unexpected character: `{}`", unexpected);
+    let err = Error(error_pos, error_msg.to_string());
+    println!("Error: {}", err);
+    input.extra.report_error(err);
+    let (input, _) = take_while(|c| c != '\n')(input)?;
+    Ok((input, ()))
+}
+
 pub fn game(input: Span) -> Result<Game> {
     context(
         "game",
         fold_many0(
-            separated(alt((
-                map(constant, |x| (Some(x), None, None, None, None)),
-                map(typedef, |x| (None, Some(x), None, None, None)),
-                map(variable, |x| (None, None, Some(x), None, None)),
-                map(edge, |x| (None, None, None, Some(x), None)),
-                map(pragma, |x| (None, None, None, None, Some(x))),
-            ))),
+            delimited(
+                comments_and_whitespaces,
+                alt((
+                    map(constant, |x| (Some(x), None, None, None, None)),
+                    map(typedef, |x| (None, Some(x), None, None, None)),
+                    map(variable, |x| (None, None, Some(x), None, None)),
+                    map(edge, |x| (None, None, None, Some(x), None)),
+                    map(pragma, |x| (None, None, None, None, Some(x))),
+                    map(parse_error_line, |_| (None, None, None, None, None)),
+                )),
+                comments_and_whitespaces,
+            ),
             Game::default,
             |mut game, declaration| {
                 match declaration {
-                    (Some(x), _, _, _, _) => x
+                    (Some(constant), _, _, _, _) => constant
                         .into_iter()
-                        .for_each(|x| game.stats.push(Stat::Constant(x))),
-                    (_, Some(x), _, _, _) => x
+                        .for_each(|constant| game.stats.push(Stat::Constant(constant))),
+                    (_, Some(typedef), _, _, _) => typedef
                         .into_iter()
-                        .for_each(|x| game.stats.push(Stat::Typedef(x))),
-                    (_, _, Some(x), _, _) => x
+                        .for_each(|typedef| game.stats.push(Stat::Typedef(typedef))),
+                    (_, _, Some(variable), _, _) => variable
                         .into_iter()
-                        .for_each(|x| game.stats.push(Stat::Variable(x))),
-                    (_, _, _, Some(x), _) => {
-                        x.into_iter().for_each(|x| game.stats.push(Stat::Edge(x)))
-                    }
-                    (_, _, _, _, Some(x)) => game.stats.push(Stat::Pragma(x)),
-                    _ => unreachable!(),
+                        .for_each(|variable| game.stats.push(Stat::Variable(variable))),
+                    (_, _, _, Some(edge), _) => edge
+                        .into_iter()
+                        .for_each(|edge| game.stats.push(Stat::Edge(edge))),
+                    (_, _, _, _, Some(pragma)) => game.stats.push(Stat::Pragma(pragma)),
+                    _ => (),
                 }
                 game
             },
@@ -321,23 +416,19 @@ fn comments_and_whitespaces(input: Span) -> Result<()> {
     fold_many0(alt((comment, multispace1)), || (), |_, _| ())(input)
 }
 
-macro_rules! delimited {
-    ($name:ident, $prefix:expr, $suffix:expr) => {
+macro_rules! preceded {
+    ($name:ident, $prefix:expr) => {
         pub fn $name<'a, O>(
             inner: impl FnMut(Span<'a>) -> Result<O>,
         ) -> impl FnMut(Span<'a>) -> Result<O> {
-            delimited($prefix, inner, $suffix)
+            preceded($prefix, inner)
         }
     };
 }
 
-delimited!(
-    separated,
-    comments_and_whitespaces,
-    comments_and_whitespaces
-);
+preceded!(preceded_whitespace, comments_and_whitespaces);
 
-fn into_box<'a, O1, O2: From<O1>>(
+fn into_arc<'a, O1, O2: From<O1>>(
     inner: impl FnMut(Span<'a>) -> Result<'a, O1>,
 ) -> impl FnMut(Span<'a>) -> Result<'a, Arc<O2>> {
     map(into(inner), Arc::new)
@@ -356,51 +447,28 @@ where
     F: FnMut(Span<'a>) -> Result<T>,
     E: ToString,
 {
-    move |input| match parser(input) {
-        Ok((remaining, out)) => Ok((remaining, Some(out))),
-        Err(nom::Err::Error(input)) | Err(nom::Err::Failure(input)) => {
-            let err = Error(Position::from(&input.input), error_msg.to_string());
-            input.input.extra.report_error(err);
-            Ok((input.input, None))
+    move |input| {
+        let error_pos = Position::from(&input);
+        match parser(input) {
+            Ok((remaining, out)) => Ok((remaining, Some(out))),
+            Err(nom::Err::Error(input)) | Err(nom::Err::Failure(input)) => {
+                if error_msg.to_string() == "" {
+                    return Ok((input.input, None));
+                } else {
+                    println!(
+                        "Error position: {} {}",
+                        input.input.location_line(),
+                        input.input.get_column()
+                    );
+                    let err = Error(error_pos, error_msg.to_string());
+                    println!("Error: {}", err);
+                    input.input.extra.report_error(err);
+                    Ok((input.input, None))
+                }
+            }
+            Err(err) => Err(err),
         }
-        Err(err) => Err(err),
     }
-}
-
-fn in_paren<'a, F, T, E>(parser: F, error_msg: E) -> impl FnMut(Span<'a>) -> Result<Option<T>>
-where
-    F: FnMut(Span<'a>) -> Result<T>,
-    E: ToString,
-{
-    delimited(
-        tag("("),
-        expect(parser, error_msg),
-        expect(tag(")"), "missing `)`"),
-    )
-}
-
-fn in_braces<'a, F, T, E>(parser: F, error_msg: E) -> impl FnMut(Span<'a>) -> Result<Option<T>>
-where
-    F: FnMut(Span<'a>) -> Result<T>,
-    E: ToString,
-{
-    delimited(
-        tag("{"),
-        expect(parser, error_msg),
-        expect(tag("}"), "missing `}`"),
-    )
-}
-
-fn in_brackets<'a, F, T, E>(parser: F, error_msg: E) -> impl FnMut(Span<'a>) -> Result<Option<T>>
-where
-    F: FnMut(Span<'a>) -> Result<T>,
-    E: ToString,
-{
-    delimited(
-        tag("["),
-        expect(parser, error_msg),
-        expect(tag("]"), "missing `]`"),
-    )
 }
 
 fn with_semicolon<'a, F, G, T, U, E>(
@@ -415,7 +483,7 @@ where
 {
     terminated(
         tuple((first, expect(parser, error_msg))),
-        expect(cut(tag(";")), "missing `;`"),
+        expect(preceded_whitespace(cut(tag(";"))), "missing `;`"),
     )
 }
 
@@ -433,48 +501,21 @@ pub fn parse(input: &str) -> Game {
     game
 }
 
-fn parsed(input: &str) -> Option<Game> {
+pub fn parse_with_errors(input: &str) -> (Game, Vec<Error>) {
     let errors = RefCell::new(Vec::new());
     let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
-    let res = all_consuming(game)(input);
-    let is_parsed = res.is_ok();
-    if !is_parsed {
-        return None;
-    } else {
-        let (errors, game) = res.unwrap();
-        let errors = errors.extra.0.borrow();
-        if !errors.is_empty() {
-            return None;
-        }
-        return Some(game);
-    }
-}
-
-fn errors(input: &str) -> Option<Vec<Error>> {
-    let errors = RefCell::new(Vec::new());
-    let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
-    let res = all_consuming(game)(input);
-    let is_parsed = res.is_ok();
-    if !is_parsed {
-        return None;
-    } else {
-        let (errors, _) = res.unwrap();
-        let mut err_vec = Vec::new();
-        for error in errors.extra.0.borrow().iter() {
-            err_vec.push(error.clone());
-        }
-        Some(err_vec)
-    }
+    let (_, game) = all_consuming(game)(input).expect("Parser cannot fail");
+    (game, errors.into_inner())
 }
 
 #[cfg(test)]
 mod test {
-    use super::{game, parse, parsed};
+    use super::parse_with_errors;
 
     fn check_parse(input: &str) {
-        let game = parsed(input);
-        assert!(game.is_some(), "Failed to parse:\n{}", input);
-        let game = game.unwrap().to_string();
+        let (game, errors) = parse_with_errors(input);
+        assert!(errors.is_empty(), "Failed to parse:\n{}", input);
+        let game = game.to_string();
         let game_str = game.strip_suffix("\n").unwrap();
         assert!(
             game_str == input,
@@ -525,9 +566,8 @@ mod test {
     }
 
     fn check_errors(input: &str, expected_msg: &str, expected_pos: &str) {
-        let errors = super::errors(input);
-        assert!(errors.is_some(), "Failed to parse:\n{}", input);
-        let errors = errors.unwrap();
+        let (_, errors) = parse_with_errors(input);
+        assert!(!errors.is_empty(), "No errors produced for:\n{}", input);
         assert!(
             errors.len() == 1,
             "Expected 1 error, got {}:\n{}",

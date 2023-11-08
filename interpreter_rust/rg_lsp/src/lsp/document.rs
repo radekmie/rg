@@ -1,5 +1,5 @@
 use crate::rg::ast::Game;
-use crate::rg::parser::parse;
+use crate::rg::parser::{parse, parse_with_errors};
 use crate::rg::symbol_table::*;
 
 pub struct Document {
@@ -17,9 +17,10 @@ impl Document {
         }
     }
 
-    fn parse(&mut self) {
-        let game = parse(&self.text);
+    pub fn parse(&mut self) -> Vec<crate::rg::parser::Error> {
+        let (game, errors) = parse_with_errors(&self.text);
         self.game = Some(game);
+        errors
     }
 
     pub fn get_game(&mut self) -> &Game {

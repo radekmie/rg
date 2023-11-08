@@ -37,6 +37,20 @@ impl From<Position> for l::Position {
     }
 }
 
+impl From<Position> for l::Range {
+    fn from(position: Position) -> Self {
+        if position.is_none() {
+            panic!("Called toLsp on a none position")
+        } else {
+            l::Range {
+                start: position.clone().into(),
+                end: position.into(),
+            }
+        }
+    }
+}
+
+
 impl From<l::Position> for Position {
     fn from(position: l::Position) -> Self {
         Position {

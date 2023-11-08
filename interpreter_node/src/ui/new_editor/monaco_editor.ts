@@ -107,6 +107,29 @@ export default class MonacoEditor {
       }, 200),
     );
 
+    client.addMethod(proto.PublishDiagnosticsNotification.type.method, (params) => {
+      const { uri, diagnostics } = params as proto.PublishDiagnosticsParams;
+      console.log(`[diagnostics] ${uri}`);
+      diagnostics.forEach((diagnostic) => {
+        console.log(`  ${diagnostic.message}`);
+      });
+      const diags = diagnostics.map((diagnostic) => {
+        // We have to map range to Monaco editor
+        return {
+          severity: monaco.MarkerSeverity.Error,
+          message: diagnostic.message,
+          startLineNumber: diagnostic.range.start.line + 1,
+          startColumn: diagnostic.range.start.character + 1,
+          endLineNumber: diagnostic.range.end.line + 1,
+          endColumn: diagnostic.range.end.character + 1,
+        };
+      })
+      monaco.editor.setModelMarkers(model, "rg", diags)
+
+      return;
+    });
+
+
     // eslint-disable-next-line @typescript-eslint/require-await
     client.pushAfterInitializeHook(async () => {
       client.notify(proto.DidOpenTextDocumentNotification.type.method, {

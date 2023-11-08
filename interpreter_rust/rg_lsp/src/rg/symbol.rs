@@ -4,8 +4,6 @@ use std::fmt::Display;
 use crate::rg::ast::*;
 use crate::rg::position::{Positioned, Span};
 
-use super::position::Position;
-
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Symbol {
     pub id: String,
@@ -24,10 +22,14 @@ impl Symbol {
         }
     }
 
-    fn from_id(identifier: &Identifier, flag: Flag, owner: Option<usize>) -> Self {
-        let id = identifier.identifier.clone();
-        let pos = identifier.span().clone();
-        Self::new(id, pos, flag, owner)
+    fn from_id(identifier: &Identifier, flag: Flag, owner: Option<usize>) -> Option<Self> {
+        if identifier.is_none() {
+            None
+        } else {
+            let id = identifier.identifier.clone();
+            let pos = identifier.span().clone();
+            Some(Self::new(id, pos, flag, owner))
+        }
     }
 }
 
@@ -99,19 +101,25 @@ impl Symbols {
             Type::Set { identifiers, .. } => {
                 for identifier in identifiers.iter() {
                     let symbol = Symbol::from_id(identifier, Flag::Member, None);
-                    self.symbols.push(symbol);
+                    if let Some(symbol) = symbol {
+                        self.symbols.push(symbol);
+                    }
                 }
             }
         }
     }
 
-    fn add_if_not_defined(&mut self, symbol: Symbol) -> usize {
-        match defined(&self.symbols, &symbol.id, &symbol.flag) {
-            Some(idx) => idx,
-            None => {
-                self.symbols.push(symbol);
-                self.symbols.len() - 1
+    fn add_if_not_defined(&mut self, symbol: Option<Symbol>) -> Option<usize> {
+        if let Some(symbol) = symbol {
+            match defined(&self.symbols, &symbol.id, &symbol.flag) {
+                Some(idx) => Some(idx),
+                None => {
+                    self.symbols.push(symbol);
+                    Some(self.symbols.len() - 1)
+                }
             }
+        } else {
+            None
         }
     }
 
@@ -169,51 +177,60 @@ impl Symbols {
                             .any(|common| common.identifier == right.identifier)
                     })
                     .collect::<Vec<&&Identifier>>();
-                for bind in left_binds.iter() {
-                    if self
-                        .is_defined_param(bind.identifier.as_str(), left_idx)
-                        .is_none()
-                    {
-                        self.edge_params.push(EdgeParam {
-                            param: (**bind).clone(),
-                            owners: HashSet::from([left_idx]),
-                        });
-                    }
-                }
-                for bind in right_bind.iter() {
-                    if self
-                        .is_defined_param(bind.identifier.as_str(), right_idx)
-                        .is_none()
-                    {
-                        self.edge_params.push(EdgeParam {
-                            param: (**bind).clone(),
-                            owners: HashSet::from([right_idx]),
-                        });
-                    }
-                }
-                for bind in common_binds.iter() {
-                    let left_param_idx = self.is_defined_param(bind.identifier.as_str(), left_idx);
-                    let right_param_idx =
-                        self.is_defined_param(bind.identifier.as_str(), right_idx);
-                    match (left_param_idx, right_param_idx) {
-                        (Some(left_param_idx), Some(right_param_idx)) => {
-                            if left_param_idx != right_param_idx {
-                                let right_params = self.edge_params[right_param_idx].owners.clone();
-                                self.edge_params[left_param_idx].owners.extend(right_params);
-                                self.edge_params.remove(right_param_idx);
-                            }
-                        }
-                        (Some(left_param_idx), None) => {
-                            self.edge_params[left_param_idx].owners.extend([right_idx]);
-                        }
-                        (None, Some(right_param_idx)) => {
-                            self.edge_params[right_param_idx].owners.extend([left_idx]);
-                        }
-                        (None, None) => {
+                if let Some(left_idx) = left_idx {
+                    for bind in left_binds.iter() {
+                        if self
+                            .is_defined_param(bind.identifier.as_str(), left_idx)
+                            .is_none()
+                        {
                             self.edge_params.push(EdgeParam {
                                 param: (**bind).clone(),
-                                owners: HashSet::from([left_idx, right_idx]),
+                                owners: HashSet::from([left_idx]),
                             });
+                        }
+                    }
+                }
+                if let Some(right_idx) = right_idx {
+                    for bind in right_bind.iter() {
+                        if self
+                            .is_defined_param(bind.identifier.as_str(), right_idx)
+                            .is_none()
+                        {
+                            self.edge_params.push(EdgeParam {
+                                param: (**bind).clone(),
+                                owners: HashSet::from([right_idx]),
+                            });
+                        }
+                    }
+                }
+
+                if let (Some(left_idx), Some(right_idx)) = (left_idx, right_idx) {
+                    for bind in common_binds.iter() {
+                        let left_param_idx =
+                            self.is_defined_param(bind.identifier.as_str(), left_idx);
+                        let right_param_idx =
+                            self.is_defined_param(bind.identifier.as_str(), right_idx);
+                        match (left_param_idx, right_param_idx) {
+                            (Some(left_param_idx), Some(right_param_idx)) => {
+                                if left_param_idx != right_param_idx {
+                                    let right_params =
+                                        self.edge_params[right_param_idx].owners.clone();
+                                    self.edge_params[left_param_idx].owners.extend(right_params);
+                                    self.edge_params.remove(right_param_idx);
+                                }
+                            }
+                            (Some(left_param_idx), None) => {
+                                self.edge_params[left_param_idx].owners.extend([right_idx]);
+                            }
+                            (None, Some(right_param_idx)) => {
+                                self.edge_params[right_param_idx].owners.extend([left_idx]);
+                            }
+                            (None, None) => {
+                                self.edge_params.push(EdgeParam {
+                                    param: (**bind).clone(),
+                                    owners: HashSet::from([left_idx, right_idx]),
+                                });
+                            }
                         }
                     }
                 }
@@ -232,13 +249,17 @@ impl Symbols {
                     let id = &constant.identifier;
                     let flag = Flag::Constant;
                     let symbol = Symbol::from_id(id, flag, None);
-                    symbols.symbols.push(symbol);
+                    if let Some(symbol) = symbol {
+                        symbols.symbols.push(symbol);
+                    }
                 }
                 Stat::Variable(variable) => {
                     let id = &variable.identifier;
                     let flag = Flag::Variable;
                     let symbol = Symbol::from_id(id, flag, None);
-                    symbols.symbols.push(symbol);
+                    if let Some(symbol) = symbol {
+                        symbols.symbols.push(symbol);
+                    }
                 }
 
                 Stat::Edge(edge) => {
@@ -248,9 +269,13 @@ impl Symbols {
                     let id = &typedef.identifier;
                     let flag = Flag::Type;
                     let symbol = Symbol::from_id(id, flag, None);
-                    symbols.symbols.push(symbol);
-                    let symbol_idx = symbols.symbols.len() - 1;
-                    symbols.add_from_type(&typedef.type_, symbol_idx);
+                    if let Some(symbol) = symbol {
+                        symbols.symbols.push(symbol);
+                        let symbol_idx = symbols.symbols.len() - 1;
+                        symbols.add_from_type(&typedef.type_, symbol_idx);
+                    } else {
+                        symbols.add_from_type(&typedef.type_, 0);
+                    }
                 }
                 Stat::Pragma(_) => (),
             }
@@ -260,7 +285,9 @@ impl Symbols {
             let owner = bind.owners.iter().next().unwrap();
             let flag = Flag::Param;
             let symbol = Symbol::from_id(id, flag, Some(*owner));
-            symbols.symbols.push(symbol);
+            if let Some(symbol) = symbol {
+                symbols.symbols.push(symbol);
+            }
         }
         symbols.symbols
     }

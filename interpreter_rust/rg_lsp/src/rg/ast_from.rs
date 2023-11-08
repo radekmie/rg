@@ -6,8 +6,6 @@ use crate::rg::{
     position::{Span as Position, *},
 };
 
-
-
 impl From<(Span<'_>, (Identifier, Arc<Type>, Arc<Value>))> for Constant {
     fn from(
         (start, (identifier, type_, value)): (Span, (Identifier, Arc<Type>, Arc<Value>)),
@@ -98,19 +96,11 @@ impl From<Identifier> for Type {
     }
 }
 
-impl From<Option<Vec<Identifier>>> for Type {
-    fn from(identifiers: Option<Vec<Identifier>>) -> Self {
-        match identifiers {
-            Some(identifiers) => {
-                let (first, last) = (identifiers.first().unwrap(), identifiers.last().unwrap());
-                let span = Position::new(first.start(), last.end());
-                Self::Set { span, identifiers }
-            }
-            None => Self::Set {
-                span: Position::none(),
-                identifiers: vec![],
-            },
-        }
+impl From<Vec<Identifier>> for Type {
+    fn from(identifiers: Vec<Identifier>) -> Self {
+        let (first, last) = (identifiers.first().unwrap(), identifiers.last().unwrap());
+        let span = Position::new(first.start(), last.end());
+        Self::Set { span, identifiers }
     }
 }
 
@@ -121,19 +111,11 @@ impl From<(Span<'_>, Identifier, Arc<Type>)> for Typedef {
     }
 }
 
-impl From<Option<Vec<ValueEntry>>> for Value {
-    fn from(entries: Option<Vec<ValueEntry>>) -> Self {
-        match entries {
-            Some(entries) => {
-                let (first, last) = (entries.first().unwrap(), entries.last().unwrap());
-                let span = Position::new(first.start(), last.end());
-                Self::Map { span, entries }
-            }
-            None => Self::Map {
-                span: Position::none(),
-                entries: vec![],
-            },
-        }
+impl From<Vec<ValueEntry>> for Value {
+    fn from(entries: Vec<ValueEntry>) -> Self {
+        let (first, last) = (entries.first().unwrap(), entries.last().unwrap());
+        let span = Position::new(first.start(), last.end());
+        Self::Map { span, entries }
     }
 }
 

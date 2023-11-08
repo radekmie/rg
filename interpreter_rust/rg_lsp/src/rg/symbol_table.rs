@@ -47,7 +47,9 @@ impl SymbolTable {
     }
 
     fn add_occ_from_id(&mut self, identifier: &Identifier) {
-        self.occurrences.push(self.occ_from_id(identifier));
+        if !identifier.is_none() {
+            self.occurrences.push(self.occ_from_id(identifier));
+        }
     }
 
     fn occ_from_id(&self, identifier: &Identifier) -> Occurrence {

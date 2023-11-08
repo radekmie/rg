@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
 use tower_lsp::lsp_types::{
-    self as l, GotoDefinitionResponse, Location, PrepareRenameResponse, TextEdit, WorkspaceEdit,
+    self as l, Diagnostic, GotoDefinitionResponse, Location, PrepareRenameResponse, TextEdit,
+    WorkspaceEdit,
 };
 use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
 
-use crate::rg::position::Positioned;
+use crate::rg::parser::Error;
 use crate::rg::symbol_table::*;
 
 use super::utils::*;
@@ -123,4 +124,21 @@ pub fn rename(
         document_changes: None,
         change_annotations: None,
     })
+}
+
+pub fn diagnostics(errors: Vec<Error>) -> Vec<Diagnostic> {
+    errors
+        .iter()
+        .map(|Error(pos, err)| l::Diagnostic {
+            range: pos.start.into(),
+            severity: Some(l::DiagnosticSeverity::ERROR),
+            code: None,
+            code_description: None,
+            source: Some("rg-lsp".into()),
+            message: err.clone(),
+            related_information: None,
+            tags: None,
+            data: None,
+        })
+        .collect()
 }
