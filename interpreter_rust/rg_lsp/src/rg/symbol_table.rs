@@ -4,7 +4,7 @@ use crate::rg::ast::*;
 use crate::rg::position::{Positioned, Span};
 
 use super::position::Position;
-use super::symbol::{Flag, Symbol, from_game as symbols_from_game};
+use super::symbol::{from_game as symbols_from_game, Flag, Symbol};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Occurrence {
@@ -32,12 +32,20 @@ pub struct SymbolTable {
 impl SymbolTable {
     /*
      * The last symbol with matching id defined before this position is used.
-     * TODO: We can also check flag.
      */
-    fn find_symbol(&self, pos: &Span, id: &str) -> Option<usize> {
+    fn find_symbol(
+        &self,
+        pos: &Span,
+        id: &str,
+        flag: Option<Flag>,
+        owner: &Option<usize>,
+    ) -> Option<usize> {
         let mut sym = None;
         for (idx, symbol) in self.symbols.iter().enumerate() {
-            if symbol.id == id {
+            if symbol.id == id
+                && flag.as_ref().map_or(true, |f| symbol.flag == *f)
+                && owner.as_ref().map_or(true, |o| symbol.is_owned_by(*o))
+            {
                 sym = Some(idx);
             } else if symbol.pos > *pos && sym.is_some() {
                 return sym;
@@ -46,16 +54,41 @@ impl SymbolTable {
         sym
     }
 
-    fn add_occ_from_id(&mut self, identifier: &Identifier) {
+    fn occ_from_id(&self, identifier: &Identifier) -> Occurrence {
+        let span = identifier.span();
+        let symbol_idx = self.find_symbol(&span, &identifier.identifier, None, &None);
+        Occurrence::new(span, symbol_idx)
+    }
+
+    fn occ_with_flag(&self, identifier: &Identifier, flag: Flag) -> Occurrence {
+        let span = identifier.span();
+        let symbol_idx = self.find_symbol(&span, &identifier.identifier, Some(flag), &None);
+        Occurrence::new(span, symbol_idx)
+    }
+
+    fn add_occ(&mut self, identifier: &Identifier) {
         if !identifier.is_none() {
             self.occurrences.push(self.occ_from_id(identifier));
         }
     }
 
-    fn occ_from_id(&self, identifier: &Identifier) -> Occurrence {
-        let span = identifier.span();
-        let symbol_idx = self.find_symbol(&span, &identifier.identifier);
-        Occurrence::new(span, symbol_idx)
+    fn add_occ_with_flag(&mut self, identifier: &Identifier, flag: Flag) {
+        if !identifier.is_none() {
+            self.occurrences.push(self.occ_with_flag(identifier, flag));
+        }
+    }
+
+    fn add_occ_with_flag_and_owner(
+        &mut self,
+        identifier: &Identifier,
+        flag: Flag,
+        owner: &Option<usize>,
+    ) {
+        if !identifier.is_none() {
+            let span = identifier.span();
+            let symbol_idx = self.find_symbol(&span, &identifier.identifier, Some(flag), owner);
+            self.occurrences.push(Occurrence::new(span, symbol_idx));
+        }
     }
 
     fn add_from_type(&mut self, type_: &Type) {
@@ -65,36 +98,47 @@ impl SymbolTable {
                 self.add_from_type(rhs);
             }
             Type::TypeReference { identifier } => {
-                self.add_occ_from_id(identifier);
+                self.add_occ_with_flag(identifier, Flag::Type);
             }
             Type::Set { identifiers, .. } => {
                 for identifier in identifiers.iter() {
-                    self.add_occ_from_id(identifier);
+                    self.add_occ_with_flag(identifier, Flag::Member);
                 }
             }
         }
     }
 
     fn add_from_edge(&mut self, edge: &Edge) {
-        self.add_from_edge_name(&edge.lhs);
-        self.add_from_edge_name(&edge.rhs);
-        self.add_from_edge_label(&edge.label);
+        let left_owner = self.add_from_edge_name(&edge.lhs);
+        let right_owner = self.add_from_edge_name(&edge.rhs);
+        let owner = left_owner.or_else(|| right_owner);
+        self.add_from_edge_label(&edge.label, &owner);
     }
 
-    fn add_from_edge_label(&mut self, label: &EdgeLabel) {
+    fn add_maybe_edge_param(&mut self, identifier: &Identifier, owner: &Option<usize>) {
+        if !identifier.is_none() {
+            let span = identifier.span();
+            let sym_idx =
+                match self.find_symbol(&span, &identifier.identifier, Some(Flag::Param), owner) {
+                    Some(idx) => Some(idx),
+                    None => self.find_symbol(&span, &identifier.identifier, None, &None),
+                };
+            self.occurrences.push(Occurrence::new(span, sym_idx));
+        }
+    }
+
+    fn add_from_edge_label(&mut self, label: &EdgeLabel, owner: &Option<usize>) {
         match label {
             EdgeLabel::Assignment { lhs, rhs } => {
-                self.add_from_expression(lhs);
-                self.add_from_expression(rhs);
+                self.add_from_expression(lhs, owner);
+                self.add_from_expression(rhs, owner);
             }
             EdgeLabel::Comparison { lhs, rhs, .. } => {
-                self.add_from_expression(lhs);
-                self.add_from_expression(rhs);
+                self.add_from_expression(lhs, owner);
+                self.add_from_expression(rhs, owner);
             }
             EdgeLabel::Skip { .. } => (),
-            EdgeLabel::Tag { symbol } => {
-                // self.add_occ_from_id(symbol);
-            }
+            EdgeLabel::Tag { symbol } => self.add_maybe_edge_param(symbol, owner),
             EdgeLabel::Reachability { lhs, rhs, .. } => {
                 self.add_from_edge_name(lhs);
                 self.add_from_edge_name(rhs);
@@ -102,45 +146,50 @@ impl SymbolTable {
         }
     }
 
-    fn add_from_expression(&mut self, expr: &Expression) {
+    fn add_from_expression(&mut self, expr: &Expression, owner: &Option<usize>) {
         match expr {
-            Expression::Reference { identifier } => {
-                self.add_occ_from_id(identifier);
-            }
+            Expression::Reference { identifier } => self.add_maybe_edge_param(identifier, owner),
             Expression::Access { lhs, rhs, .. } => {
-                self.add_from_expression(lhs);
-                self.add_from_expression(rhs);
+                self.add_from_expression(lhs, owner);
+                self.add_from_expression(rhs, owner);
             }
             Expression::Cast { lhs, rhs, .. } => {
                 self.add_from_type(lhs);
-                self.add_from_expression(rhs);
+                self.add_from_expression(rhs, owner);
             }
         }
     }
 
-    fn add_from_edge_name(&mut self, edge_name: &EdgeName) {
+    // Returns symbol idx for edge name if it has parameters
+    fn add_from_edge_name(&mut self, edge_name: &EdgeName) -> Option<usize> {
         match edge_name.parts.as_slice() {
             [EdgeNamePart::Literal { identifier }] => {
-                self.add_occ_from_id(identifier);
+                self.add_occ_with_flag(identifier, Flag::Edge);
+                None
             }
             [EdgeNamePart::Literal { identifier }, bindings @ ..] => {
-                self.add_occ_from_id(identifier);
+                let occ = self.occ_with_flag(identifier, Flag::Edge);
+                let sym_idx = occ.symbol;
+                self.occurrences.push(occ);
                 for binding in bindings.iter() {
-                    self.add_from_name_part(binding);
+                    self.add_from_name_part(binding, &sym_idx);
                 }
+                sym_idx
             }
-            _ => (),
+            _ => None,
         }
     }
 
-    fn add_from_name_part(&mut self, name_part: &EdgeNamePart) {
+    fn add_from_name_part(&mut self, name_part: &EdgeNamePart, owner: &Option<usize>) {
         match name_part {
-            EdgeNamePart::Binding { identifier, type_, .. } => {
-                self.add_occ_from_id(identifier);
+            EdgeNamePart::Binding {
+                identifier, type_, ..
+            } => {
+                self.add_occ_with_flag_and_owner(identifier, Flag::Param, owner);
                 self.add_from_type(type_);
             }
             EdgeNamePart::Literal { identifier } => {
-                self.add_occ_from_id(identifier);
+                self.add_occ_with_flag_and_owner(identifier, Flag::Param, owner);
             }
         }
     }
@@ -148,7 +197,7 @@ impl SymbolTable {
     fn add_from_value(&mut self, value: &Value) {
         match value {
             Value::Element { identifier } => {
-                self.add_occ_from_id(identifier);
+                self.add_occ(identifier);
             }
             Value::Map { entries, .. } => {
                 for entry in entries.iter() {
@@ -160,7 +209,7 @@ impl SymbolTable {
 
     fn add_from_value_entry(&mut self, entry: &ValueEntry) {
         if let Some(identifier) = entry.identifier.as_ref() {
-            self.add_occ_from_id(identifier);
+            self.add_occ(identifier);
         }
         self.add_from_value(&entry.value);
     }
@@ -174,12 +223,12 @@ impl SymbolTable {
         for stat in game.stats.iter() {
             match stat {
                 Stat::Constant(constant) => {
-                    table.add_occ_from_id(&constant.identifier);
+                    table.add_occ_with_flag(&constant.identifier, Flag::Constant);
                     table.add_from_type(&constant.type_);
                     table.add_from_value(&constant.value);
                 }
                 Stat::Variable(variable) => {
-                    table.add_occ_from_id(&variable.identifier);
+                    table.add_occ_with_flag(&variable.identifier, Flag::Variable);
                     table.add_from_type(&variable.type_);
                     table.add_from_value(&variable.default_value);
                 }
@@ -190,7 +239,7 @@ impl SymbolTable {
                     table.add_from_edge(edge);
                 }
                 Stat::Typedef(typedef) => {
-                    table.add_occ_from_id(&typedef.identifier);
+                    table.add_occ_with_flag(&typedef.identifier, Flag::Type);
                     table.add_from_type(&typedef.type_);
                 }
             }
@@ -213,18 +262,17 @@ impl SymbolTable {
     fn add_builtin_symbols(&mut self) {
         if !self.is_defined("Bool") {
             self.symbols.push(Self::make_builtin_type("Bool"));
-            let bool_idx = self.symbols.len() - 1;
             self.symbols.push(Symbol::new(
                 "0".to_string(),
                 Span::none(),
                 Flag::Member,
-                Some(bool_idx),
+                None,
             ));
             self.symbols.push(Symbol::new(
                 "1".to_string(),
                 Span::none(),
                 Flag::Member,
-                Some(bool_idx),
+                None,
             ));
         }
         if !self.is_defined("Goals") {
@@ -285,13 +333,6 @@ impl SymbolTable {
     pub fn get_symbol_at_span(&self, span: &Span) -> Option<&Symbol> {
         match self.get_occ_at_span(span) {
             Some(occ) => self.get_occ_symbol(occ),
-            None => None,
-        }
-    }
-
-    pub fn get_symbol_owner(&self, symbol: &Symbol) -> Option<&Symbol> {
-        match symbol.owner {
-            Some(idx) => self.symbols.get(idx),
             None => None,
         }
     }

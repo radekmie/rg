@@ -9,26 +9,34 @@ pub struct Symbol {
     pub id: String,
     pub pos: Span,
     pub flag: Flag,
-    pub owner: Option<usize>,
+    pub owners: Option<Vec<usize>>,
 }
 
 impl Symbol {
-    pub fn new(id: String, pos: Span, flag: Flag, owner: Option<usize>) -> Self {
+    pub fn new(id: String, pos: Span, flag: Flag, owners: Option<Vec<usize>>) -> Self {
         Self {
             id,
             pos,
             flag,
-            owner,
+            owners,
         }
     }
 
-    fn from_id(identifier: &Identifier, flag: Flag, owner: Option<usize>) -> Option<Self> {
+    fn from_id(identifier: &Identifier, flag: Flag, owners: Option<Vec<usize>>) -> Option<Self> {
         if identifier.is_none() {
             None
         } else {
             let id = identifier.identifier.clone();
             let pos = identifier.span().clone();
-            Some(Self::new(id, pos, flag, owner))
+            Some(Self::new(id, pos, flag, owners))
+        }
+    }
+
+    pub fn is_owned_by(&self, owner: usize) -> bool {
+        if let Some(owners) = &self.owners {
+            owners.contains(&owner)
+        } else {
+            false
         }
     }
 }
@@ -43,11 +51,7 @@ fn defined(symbols: &Vec<Symbol>, name: &str, flag: &Flag) -> Option<usize> {
 
 impl Display for Symbol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(owner) = self.owner {
-            write!(f, "{}/{}{}", owner, self.id, self.flag)
-        } else {
-            write!(f, "{}{}", self.id, self.flag)
-        }
+        write!(f, "{}{}", self.id, self.flag)
     }
 }
 
@@ -282,9 +286,9 @@ impl Symbols {
         }
         for bind in symbols.edge_params.iter() {
             let id = &bind.param;
-            let owner = bind.owners.iter().next().unwrap();
+            let owners = bind.owners.iter().map(|idx| *idx).collect::<Vec<usize>>();
             let flag = Flag::Param;
-            let symbol = Symbol::from_id(id, flag, Some(*owner));
+            let symbol = Symbol::from_id(id, flag, Some(owners));
             if let Some(symbol) = symbol {
                 symbols.symbols.push(symbol);
             }
