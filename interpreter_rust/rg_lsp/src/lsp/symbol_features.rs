@@ -1,4 +1,3 @@
-use crate::rg::position::*;
 use crate::rg::symbol::Symbol;
 use crate::rg::symbol_table::*;
 use tower_lsp::lsp_types as l;

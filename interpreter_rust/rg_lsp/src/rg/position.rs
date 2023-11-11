@@ -1,4 +1,3 @@
-use nom::{AsBytes, AsChar};
 use nom_locate::LocatedSpan;
 
 #[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

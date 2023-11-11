@@ -10,16 +10,9 @@ use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple
 use nom::IResult;
 use nom_locate::LocatedSpan;
 use std::cell::RefCell;
-use std::fmt::Display;
 use std::sync::Arc;
 
-#[derive(Debug, Clone)]
-pub struct Error(pub Position, pub String);
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({},{}): {}", self.0.start, self.0.end, self.1)
-    }
-}
+use super::error::Error;
 
 #[derive(Clone, Debug)]
 pub struct State<'a>(&'a RefCell<Vec<Error>>);
@@ -35,7 +28,10 @@ fn constant(input: Span) -> Result<Option<Constant>> {
                 tag("const"),
                 cut(tuple((
                     preceded_opt_id("const"),
-                    terminated(preceded_type_, expect(preceded_whitespace(cut(char('='))), "expected `=`")),
+                    terminated(
+                        preceded_type_,
+                        expect(preceded_whitespace(cut(char('='))), "expected `=`"),
+                    ),
                     value,
                 ))),
                 "syntax error: expected `const <identifier> : <type> = <value>;`",
@@ -312,7 +308,10 @@ fn variable(input: Span) -> Result<Option<Variable>> {
             tag("var"),
             cut(tuple((
                 preceded_opt_id("variable"),
-                terminated(preceded_type_, expect(preceded_whitespace(cut(char('='))), "expected `=`")),
+                terminated(
+                    preceded_type_,
+                    expect(preceded_whitespace(cut(char('='))), "expected `=`"),
+                ),
                 value,
             ))),
             "syntax error: expected `var <identifier> : <type> = <value>;`",
@@ -331,9 +330,12 @@ fn pragma(input: Span) -> Result<Pragma> {
                     cut(preceded_whitespace(expect_edge_name)),
                     expect(preceded_whitespace(cut(tag(";"))), "missing `;`"),
                 )),
-                |(start, _, edge_name, end)| {
+                |(start, _, edge_name, _)| {
                     let start = Position::from(&start);
-                    let span = Position { start: start.start, end: edge_name.end()};
+                    let span = Position {
+                        start: start.start,
+                        end: edge_name.end(),
+                    };
                     Pragma::new(span, PragmaKind::$constructor, edge_name)
                 },
             )
@@ -355,7 +357,7 @@ fn parse_error_line(input: Span) -> Result<()> {
     let error_pos = Position::from(&input);
     let (input, unexpected) = anychar(input)?;
     let error_msg = format!("unexpected character: `{}`", unexpected);
-    let err = Error(error_pos, error_msg.to_string());
+    let err = Error::parser_error(error_pos, error_msg.to_string());
     println!("Error: {}", err);
     input.extra.report_error(err);
     let (input, _) = take_while(|c| c != '\n')(input)?;
@@ -460,7 +462,7 @@ where
                         input.input.location_line(),
                         input.input.get_column()
                     );
-                    let err = Error(error_pos, error_msg.to_string());
+                    let err = Error::parser_error(error_pos, error_msg.to_string());
                     println!("Error: {}", err);
                     input.input.extra.report_error(err);
                     Ok((input.input, None))
@@ -485,20 +487,6 @@ where
         tuple((first, expect(parser, error_msg))),
         expect(preceded_whitespace(cut(tag(";"))), "missing `;`"),
     )
-}
-
-pub fn parse(input: &str) -> Game {
-    let errors = RefCell::new(Vec::new());
-    let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
-    let (errors, game) = all_consuming(game)(input).unwrap();
-    let errors = errors.extra.0.borrow();
-    if !errors.is_empty() {
-        eprintln!("Errors:");
-        for error in errors.iter() {
-            eprintln!(" {} {}", error.0, error.1);
-        }
-    }
-    game
 }
 
 pub fn parse_with_errors(input: &str) -> (Game, Vec<Error>) {
@@ -576,16 +564,16 @@ mod test {
         );
         let error = &errors[0];
         assert!(
-            error.1 == expected_msg,
+            error.message == expected_msg,
             "Expected error message:\n{}\nGot:\n{}",
             expected_msg,
-            error.1
+            error.message
         );
         assert!(
-            error.0.to_string() == expected_pos,
+            error.span.to_string() == expected_pos,
             "Expected error position:\n{}\nGot:\n{}",
             expected_pos,
-            error.0.to_string()
+            error.span.to_string()
         );
     }
 }

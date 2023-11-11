@@ -3,7 +3,7 @@ use super::{features, logger, semantic_tokens};
 use dashmap::DashMap;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
-use tower_lsp::{Client, LanguageServer, LspService, Server};
+use tower_lsp::{Client, LanguageServer};
 
 pub struct Backend {
     client: Client,
@@ -87,9 +87,11 @@ impl LanguageServer for Backend {
         let uri = params.text_document.uri;
         let text = params.content_changes.pop().unwrap().text;
         let mut document = Document::new(text);
-        let errors = document.parse();
+        let mut parse_errors = document.parse();
+        let mut symbol_table_errors = document.make_symbol_table();
+        parse_errors.append(&mut symbol_table_errors);
         self.document_map.insert(uri.to_string(), document);
-        let diags = features::diagnostics(errors);
+        let diags = features::diagnostics(parse_errors);
         self.client.publish_diagnostics(uri, diags, None).await;
     }
 

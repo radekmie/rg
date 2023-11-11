@@ -1,5 +1,6 @@
 use crate::rg::ast::Game;
-use crate::rg::parser::{parse, parse_with_errors};
+use crate::rg::error::Error;
+use crate::rg::parser::parse_with_errors;
 use crate::rg::symbol_table::*;
 
 pub struct Document {
@@ -17,7 +18,7 @@ impl Document {
         }
     }
 
-    pub fn parse(&mut self) -> Vec<crate::rg::parser::Error> {
+    pub fn parse(&mut self) -> Vec<crate::rg::error::Error> {
         let (game, errors) = parse_with_errors(&self.text);
         self.game = Some(game);
         errors
@@ -30,10 +31,11 @@ impl Document {
         self.game.as_ref().unwrap()
     }
 
-    fn make_symbol_table(&mut self) {
+    pub fn make_symbol_table(&mut self)  -> Vec<Error> {
         let game = self.get_game();
-        let symbol_table = SymbolTable::from_game(game);
+        let (symbol_table, errors) = SymbolTable::from_game(game);
         self.symbol_table = Some(symbol_table);
+        errors
     }
 
     pub fn get_symbol_table(&mut self) -> &SymbolTable {

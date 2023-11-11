@@ -5,3 +5,4 @@ pub mod symbol_table;
 pub mod symbol;
 pub mod parser;
 pub mod position;
+pub mod error;

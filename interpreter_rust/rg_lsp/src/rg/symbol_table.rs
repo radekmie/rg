@@ -3,6 +3,7 @@ use std::fmt::Display;
 use crate::rg::ast::*;
 use crate::rg::position::{Positioned, Span};
 
+use super::error::Error;
 use super::position::Position;
 use super::symbol::{from_game as symbols_from_game, Flag, Symbol};
 
@@ -29,7 +30,13 @@ pub struct SymbolTable {
     pub occurrences: Vec<Occurrence>,
 }
 
-impl SymbolTable {
+struct SymbolTableWithErrors {
+    symbols: Vec<Symbol>,
+    occurrences: Vec<Occurrence>,
+    errors: Vec<Error>,
+}
+
+impl SymbolTableWithErrors {
     /*
      * The last symbol with matching id defined before this position is used.
      */
@@ -68,13 +75,23 @@ impl SymbolTable {
 
     fn add_occ(&mut self, identifier: &Identifier) {
         if !identifier.is_none() {
-            self.occurrences.push(self.occ_from_id(identifier));
+            let occ = self.occ_from_id(identifier);
+            if occ.symbol.is_none() {
+                self.errors.push(Error::symbol_table_error(identifier));
+            } else {
+                self.occurrences.push(occ);
+            }
         }
     }
 
     fn add_occ_with_flag(&mut self, identifier: &Identifier, flag: Flag) {
         if !identifier.is_none() {
-            self.occurrences.push(self.occ_with_flag(identifier, flag));
+            let occ = self.occ_with_flag(identifier, flag);
+            if occ.symbol.is_none() {
+                self.errors.push(Error::symbol_table_error(identifier));
+            } else {
+                self.occurrences.push(occ);
+            }
         }
     }
 
@@ -87,7 +104,11 @@ impl SymbolTable {
         if !identifier.is_none() {
             let span = identifier.span();
             let symbol_idx = self.find_symbol(&span, &identifier.identifier, Some(flag), owner);
-            self.occurrences.push(Occurrence::new(span, symbol_idx));
+            if symbol_idx.is_none() {
+                self.errors.push(Error::symbol_table_error(identifier));
+            } else {
+                self.occurrences.push(Occurrence::new(span, symbol_idx));
+            }
         }
     }
 
@@ -115,7 +136,12 @@ impl SymbolTable {
         self.add_from_edge_label(&edge.label, &owner);
     }
 
-    fn add_maybe_edge_param(&mut self, identifier: &Identifier, owner: &Option<usize>) {
+    fn add_maybe_edge_param(
+        &mut self,
+        identifier: &Identifier,
+        owner: &Option<usize>,
+        create_error: bool,
+    ) {
         if !identifier.is_none() {
             let span = identifier.span();
             let sym_idx =
@@ -123,7 +149,11 @@ impl SymbolTable {
                     Some(idx) => Some(idx),
                     None => self.find_symbol(&span, &identifier.identifier, None, &None),
                 };
-            self.occurrences.push(Occurrence::new(span, sym_idx));
+            if sym_idx.is_none() && create_error {
+                self.errors.push(Error::symbol_table_error(identifier));
+            } else if sym_idx.is_some() {
+                self.occurrences.push(Occurrence::new(span, sym_idx));
+            }
         }
     }
 
@@ -138,7 +168,7 @@ impl SymbolTable {
                 self.add_from_expression(rhs, owner);
             }
             EdgeLabel::Skip { .. } => (),
-            EdgeLabel::Tag { symbol } => self.add_maybe_edge_param(symbol, owner),
+            EdgeLabel::Tag { symbol } => self.add_maybe_edge_param(symbol, owner, false),
             EdgeLabel::Reachability { lhs, rhs, .. } => {
                 self.add_from_edge_name(lhs);
                 self.add_from_edge_name(rhs);
@@ -148,7 +178,9 @@ impl SymbolTable {
 
     fn add_from_expression(&mut self, expr: &Expression, owner: &Option<usize>) {
         match expr {
-            Expression::Reference { identifier } => self.add_maybe_edge_param(identifier, owner),
+            Expression::Reference { identifier } => {
+                self.add_maybe_edge_param(identifier, owner, true)
+            }
             Expression::Access { lhs, rhs, .. } => {
                 self.add_from_expression(lhs, owner);
                 self.add_from_expression(rhs, owner);
@@ -218,6 +250,7 @@ impl SymbolTable {
         let mut table: Self = Self {
             symbols: symbols_from_game(game),
             occurrences: Vec::new(),
+            errors: Vec::new(),
         };
         table.add_builtin_symbols();
         for stat in game.stats.iter() {
@@ -297,7 +330,9 @@ impl SymbolTable {
             self.symbols.push(Self::make_builtin_variable("visible"));
         }
     }
+}
 
+impl SymbolTable {
     pub fn get_occ_at(&self, pos: &Position) -> Option<&Occurrence> {
         for occurrence in self.occurrences.iter() {
             if occurrence.pos.encloses_pos(pos) {
@@ -344,6 +379,17 @@ impl SymbolTable {
             }
         }
         None
+    }
+
+    pub fn from_game(game: &Game) -> (Self, Vec<Error>) {
+        let table = SymbolTableWithErrors::from_game(game);
+        (
+            Self {
+                symbols: table.symbols,
+                occurrences: table.occurrences,
+            },
+            table.errors,
+        )
     }
 }
 

@@ -6,7 +6,7 @@ use tower_lsp::lsp_types::{
 };
 use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
 
-use crate::rg::parser::Error;
+use crate::rg::error::Error;
 use crate::rg::symbol_table::*;
 
 use super::utils::*;
@@ -129,13 +129,13 @@ pub fn rename(
 pub fn diagnostics(errors: Vec<Error>) -> Vec<Diagnostic> {
     errors
         .iter()
-        .map(|Error(pos, err)| l::Diagnostic {
-            range: pos.start.into(),
+        .map(|Error { span, message, .. }| l::Diagnostic {
+            range: span.start.into(),
             severity: Some(l::DiagnosticSeverity::ERROR),
             code: None,
             code_description: None,
             source: Some("rg-lsp".into()),
-            message: err.clone(),
+            message: message.clone(),
             related_information: None,
             tags: None,
             data: None,
