@@ -14,7 +14,7 @@ use tower_lsp::lsp_types::Position as LPos;
 
 use super::document::Document;
 
-pub fn semantic_tokens_capabilities() -> SemanticTokensServerCapabilities {
+pub fn capabilities() -> SemanticTokensServerCapabilities {
     SemanticTokensServerCapabilities::SemanticTokensOptions(SemanticTokensOptions {
         work_done_progress_options: WorkDoneProgressOptions::default(),
         legend: SemanticTokensLegend {
@@ -70,10 +70,10 @@ struct Token {
     token_modifier: u32,
 }
 
-pub fn semantic_tokens_full(document: &mut Document) -> Vec<SemanticToken> {
+pub fn semantic_tokens_full(document: &Document) -> Vec<SemanticToken> {
     let comments = comment_tokens(&document.text.as_str());
-    let keywords = ast_tokens(document.get_game());
-    let symbols = symbol_table_tokens(document.get_symbol_table());
+    let keywords = ast_tokens(&document.game);
+    let symbols = symbol_table_tokens(&document.symbol_table);
     let mut tokens = [&comments[..], &keywords[..], &symbols[..]].concat();
     tokens.sort_by(|a, b| a.pos.cmp(&b.pos));
     let mut semantic_tokens = Vec::new();

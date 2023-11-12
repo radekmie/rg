@@ -128,7 +128,7 @@ export default class Language implements monaco.languages.ILanguageExtensionPoin
         } as proto.PrepareRenameParams) as Promise<{
           range: vscode.Range;
           placeholder: string;
-        } | null >);
+        } | null>);
         if (result == null) {
           throw new Error("This element can't be renamed");
         }
@@ -161,6 +161,33 @@ export default class Language implements monaco.languages.ILanguageExtensionPoin
         ["definition", "readonly"],
       )
     );
+
+    languages.registerHoverProvider(this.id, {
+      async provideHover(document, position, token): Promise<vscode.Hover | null> {
+        void token;
+        const result = await (client.request(proto.HoverRequest.type.method, {
+          textDocument: { uri: document.uri.toString() },
+          position: position,
+        } as proto.HoverParams) as Promise<vscode.Hover | null>);
+        return result;
+      },
+    });
+
+    languages.registerCompletionItemProvider(this.id, {
+      async provideCompletionItems(document, position, token, context): Promise<vscode.CompletionItem[]> {
+        void token;
+        const result = await (client.request(proto.CompletionRequest.type.method, {
+          textDocument: { uri: document.uri.toString() },
+          position: position,
+          context: {
+            triggerKind: context.triggerKind,
+            triggerCharacter: context.triggerCharacter,
+          },
+        } as proto.CompletionParams) as Promise<vscode.CompletionItem[]>);
+
+        return result;
+      },
+    });
 
 
   }

@@ -81,7 +81,6 @@ export default class MonacoEditor {
 
     model.onDidChangeContent(
       debounce(() => {
-        console.log("onDidChangeContent");
         const text = model.getValue();
         client.notify(proto.DidChangeTextDocumentNotification.type.method, {
           textDocument: {
@@ -100,10 +99,6 @@ export default class MonacoEditor {
 
     client.addMethod(proto.PublishDiagnosticsNotification.type.method, (params) => {
       const { uri, diagnostics } = params as proto.PublishDiagnosticsParams;
-      console.log(`[diagnostics] ${uri}`);
-      diagnostics.forEach((diagnostic) => {
-        console.log(`  ${diagnostic.message}`);
-      });
       const diags = diagnostics.map((diagnostic) => {
         // We have to map range to Monaco editor
         return {

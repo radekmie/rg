@@ -5,4 +5,6 @@ mod features;
 mod utils;
 mod symbol_features;
 mod semantic_tokens;
+mod ast_features;
 mod logger;
+mod completions;

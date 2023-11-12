@@ -1,16 +1,18 @@
 use std::collections::HashMap;
 
 use tower_lsp::lsp_types::{
-    self as l, Diagnostic, GotoDefinitionResponse, Location, PrepareRenameResponse, TextEdit,
-    WorkspaceEdit,
+    self as l, Diagnostic, GotoDefinitionResponse, Hover, Location, PrepareRenameResponse,
+    TextEdit, WorkspaceEdit,
 };
 use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
 
+use crate::rg::ast::Game;
 use crate::rg::error::Error;
 use crate::rg::symbol_table::*;
 
 use super::utils::*;
 
+#[allow(deprecated)]
 pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<DocumentSymbolResponse> {
     let symbols = symbol_table
         .symbols
@@ -141,4 +143,19 @@ pub fn diagnostics(errors: Vec<Error>) -> Vec<Diagnostic> {
             data: None,
         })
         .collect()
+}
+
+pub fn hover(position: l::Position, symbol_table: &SymbolTable, game: &Game) -> Option<l::Hover> {
+    let occ = symbol_table.occ_enclosing_pos(position)?;
+    let pos = occ.pos;
+    let enclosing_symbol = symbol_table.get_occ_symbol(occ)?;
+    let str = game.hover_signature(enclosing_symbol)?;
+    let contents = l::HoverContents::Array(vec![l::MarkedString::from_language_code(
+        "rg".to_string(),
+        str,
+    )]);
+    Some(Hover {
+        contents,
+        range: Some(pos.into()),
+    })
 }

@@ -1,5 +1,5 @@
 use super::document::Document;
-use super::{features, logger, semantic_tokens};
+use super::{completions, features, logger, semantic_tokens};
 use dashmap::DashMap;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
@@ -34,9 +34,8 @@ impl LanguageServer for Backend {
                 )),
                 document_symbol_provider: Some(OneOf::Left(true)),
                 document_highlight_provider: Some(OneOf::Left(true)),
-                completion_provider: None,
                 execute_command_provider: None,
-                semantic_tokens_provider: Some(semantic_tokens::semantic_tokens_capabilities()),
+                semantic_tokens_provider: Some(semantic_tokens::capabilities()),
                 definition_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
                 rename_provider: Some(OneOf::Right(RenameOptions {
@@ -55,6 +54,8 @@ impl LanguageServer for Backend {
                         },
                     },
                 )),
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
+                completion_provider: Some(completions::capabilities()),
                 ..ServerCapabilities::default()
             },
         })
@@ -70,28 +71,20 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        // self.client.log_message(MessageType::INFO, "did open").await;
         let uri = params.text_document.uri;
         let text = params.text_document.text;
-        let mut document = Document::new(text);
-        let errors = document.parse();
+        let (document, errors) = Document::new(text);
         self.document_map.insert(uri.to_string(), document);
         let diags = features::diagnostics(errors);
         self.client.publish_diagnostics(uri, diags, None).await;
     }
 
     async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
-        // self.client
-        //     .log_message(MessageType::INFO, "did change")
-        //     .await;
         let uri = params.text_document.uri;
         let text = params.content_changes.pop().unwrap().text;
-        let mut document = Document::new(text);
-        let mut parse_errors = document.parse();
-        let mut symbol_table_errors = document.make_symbol_table();
-        parse_errors.append(&mut symbol_table_errors);
+        let (document, errors) = Document::new(text);
         self.document_map.insert(uri.to_string(), document);
-        let diags = features::diagnostics(parse_errors);
+        let diags = features::diagnostics(errors);
         self.client.publish_diagnostics(uri, diags, None).await;
     }
 
@@ -111,8 +104,8 @@ impl LanguageServer for Backend {
     ) -> Result<Option<DocumentSymbolResponse>> {
         logger::log(&"document symbol".into());
         let uri = params.text_document.uri;
-        let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
-        let document_symbols = features::document_symbol(&uri, document.get_symbol_table());
+        let document = self.document_map.get(&uri.to_string()).unwrap();
+        let document_symbols = features::document_symbol(&uri, &document.symbol_table);
         Ok(document_symbols)
     }
 
@@ -120,8 +113,8 @@ impl LanguageServer for Backend {
         logger::log(&"references".into());
         let uri = params.text_document_position.text_document.uri;
         let position = params.text_document_position.position;
-        let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
-        let locations = features::references(&uri, position, document.get_symbol_table());
+        let document = self.document_map.get(&uri.to_string()).unwrap();
+        let locations = features::references(&uri, position, &document.symbol_table);
         Ok(locations)
     }
 
@@ -132,8 +125,8 @@ impl LanguageServer for Backend {
         logger::log(&"goto definition".into());
         let uri = params.text_document_position_params.text_document.uri;
         let position = params.text_document_position_params.position;
-        let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
-        let definition = features::definitions(&uri, position, document.get_symbol_table());
+        let document = self.document_map.get(&uri.to_string()).unwrap();
+        let definition = features::definitions(&uri, position, &document.symbol_table);
         Ok(definition)
     }
 
@@ -143,8 +136,8 @@ impl LanguageServer for Backend {
     ) -> Result<Option<SemanticTokensResult>> {
         logger::log(&"semantic tokens full".into());
         let uri = params.text_document.uri;
-        let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
-        let semantic_tokens = semantic_tokens::semantic_tokens_full(&mut document);
+        let document = self.document_map.get(&uri.to_string()).unwrap();
+        let semantic_tokens = semantic_tokens::semantic_tokens_full(&document);
         Ok(Some(SemanticTokensResult::Tokens(SemanticTokens {
             result_id: None,
             data: semantic_tokens,
@@ -158,8 +151,8 @@ impl LanguageServer for Backend {
         logger::log(&"document highlight".into());
         let uri = params.text_document_position_params.text_document.uri;
         let position = params.text_document_position_params.position;
-        let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
-        let symbol_table = document.get_symbol_table();
+        let document = self.document_map.get(&uri.to_string()).unwrap();
+        let symbol_table = &document.symbol_table;
         let document_highlights = features::document_highlight(position, symbol_table);
         Ok(document_highlights)
     }
@@ -171,8 +164,8 @@ impl LanguageServer for Backend {
         logger::log(&"prepare rename".into());
         let uri = params.text_document.uri;
         let position = params.position;
-        let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
-        let symbol_table = document.get_symbol_table();
+        let document = self.document_map.get(&uri.to_string()).unwrap();
+        let symbol_table = &document.symbol_table;
         let prepare_rename_response = features::prepare_rename(position, symbol_table);
         Ok(prepare_rename_response)
     }
@@ -181,9 +174,31 @@ impl LanguageServer for Backend {
         logger::log(&"rename".into());
         let uri = params.text_document_position.text_document.uri;
         let position = params.text_document_position.position;
-        let mut document = self.document_map.get_mut(&uri.to_string()).unwrap();
-        let symbol_table = document.get_symbol_table();
+        let document = self.document_map.get(&uri.to_string()).unwrap();
+        let symbol_table = &document.symbol_table;
         let rename_response = features::rename(&uri, position, symbol_table, params.new_name);
         Ok(rename_response)
+    }
+
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        logger::log(&"hover".into());
+        let uri = params.text_document_position_params.text_document.uri;
+        let position = params.text_document_position_params.position;
+        let document = self.document_map.get(&uri.to_string()).unwrap();
+        let symbol_table = &document.symbol_table;
+        let game = &document.game;
+        let hover_response = features::hover(position, symbol_table, game);
+        Ok(hover_response)
+    }
+
+    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+        logger::log(&"completion".into());
+        let uri = params.text_document_position.text_document.uri;
+        let position = params.text_document_position.position;
+        let document = self.document_map.get(&uri.to_string()).unwrap();
+        let symbol_table = &document.symbol_table;
+        let game = &document.game;
+        let completion_response = completions::completions(position.into(), game, symbol_table);
+        Ok(completion_response)
     }
 }
