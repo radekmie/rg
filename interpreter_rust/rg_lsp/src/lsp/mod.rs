@@ -1,10 +1,9 @@
-pub mod backend;
-mod document;
-mod lsp_service;
-mod features;
-mod utils;
-mod symbol_features;
-mod semantic_tokens;
 mod ast_features;
-mod logger;
+pub mod backend;
 mod completions;
+mod document;
+mod features;
+mod lsp_service;
+mod semantic_tokens;
+mod symbol_features;
+mod utils;

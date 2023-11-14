@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
-use super::{position::{Span, Positioned}, ast::Identifier};
+use super::{
+    ast::Identifier,
+    position::{Positioned, Span},
+};
 
 #[derive(Debug, Clone)]
 pub struct Error {

@@ -149,71 +149,87 @@ impl Symbols {
                 let left_idx = self.add_if_not_defined(Symbol::from_id(left_id, Flag::Edge, None));
                 let right_idx =
                     self.add_if_not_defined(Symbol::from_id(right_id, Flag::Edge, None));
-                let left_binds = left_binds
+
+                // Split binds into literals and bindings
+                let (left_binds, left_literals) = left_binds
                     .iter()
-                    .map(|bind| bind.identifier())
-                    .collect::<Vec<&Identifier>>();
-                let right_bind = right_binds
+                    .partition::<Vec<&EdgeNamePart>, _>(|bind| match bind {
+                        EdgeNamePart::Binding { .. } => true,
+                        _ => false,
+                    });
+                let (right_binds, right_literals) = right_binds
                     .iter()
-                    .map(|bind| bind.identifier())
-                    .collect::<Vec<&Identifier>>();
-                let common_binds = left_binds
+                    .partition::<Vec<&EdgeNamePart>, _>(|bind| match bind {
+                        EdgeNamePart::Binding { .. } => true,
+                        _ => false,
+                    });
+
+                // Maybe add literals as edge symbols
+                left_literals.iter().for_each(|literal| {
+                    self.add_if_not_defined(Symbol::from_id(
+                        literal.identifier(),
+                        Flag::Edge,
+                        None,
+                    ));
+                });
+                right_literals.iter().for_each(|literal| {
+                    self.add_if_not_defined(Symbol::from_id(
+                        literal.identifier(),
+                        Flag::Edge,
+                        None,
+                    ));
+                });
+
+                // Splits bindings into common, left and right
+                let (common_binds, left_binds) = left_binds
                     .iter()
-                    .filter(|left| {
-                        right_bind
-                            .iter()
-                            .any(|right| right.identifier == left.identifier)
+                    .partition::<Vec<&EdgeNamePart>, _>(|bind| {
+                        let id = bind.identifier().identifier.as_str();
+                        right_binds.iter().any(|right| right.identifier().identifier == id)
+                    });
+                let right_binds: Vec<&EdgeNamePart> = right_binds
+                    .into_iter()
+                    .filter(|bind| {
+                        let id = bind.identifier().identifier.as_str();
+                        !common_binds.iter().any(|common| common.identifier().identifier == id)
                     })
-                    .collect::<Vec<&&Identifier>>();
-                let left_binds = left_binds
-                    .iter()
-                    .filter(|left| {
-                        !common_binds
-                            .iter()
-                            .any(|common| common.identifier == left.identifier)
-                    })
-                    .collect::<Vec<&&Identifier>>();
-                let right_bind = right_bind
-                    .iter()
-                    .filter(|right| {
-                        !common_binds
-                            .iter()
-                            .any(|common| common.identifier == right.identifier)
-                    })
-                    .collect::<Vec<&&Identifier>>();
+                    .collect();
+                // Maybe add left bindings as param symbols
                 if let Some(left_idx) = left_idx {
                     for bind in left_binds.iter() {
                         if self
-                            .is_defined_param(bind.identifier.as_str(), left_idx)
+                            .is_defined_param(bind.identifier().identifier.as_str(), left_idx)
                             .is_none()
                         {
                             self.edge_params.push(EdgeParam {
-                                param: (**bind).clone(),
+                                param: bind.identifier().clone(),
                                 owners: HashSet::from([left_idx]),
                             });
                         }
                     }
                 }
+                // Maybe add right bindings as param symbols
                 if let Some(right_idx) = right_idx {
-                    for bind in right_bind.iter() {
+                    for bind in right_binds.iter() {
                         if self
-                            .is_defined_param(bind.identifier.as_str(), right_idx)
+                            .is_defined_param(bind.identifier().identifier.as_str(), right_idx)
                             .is_none()
                         {
                             self.edge_params.push(EdgeParam {
-                                param: (**bind).clone(),
+                                param: bind.identifier().clone(),
                                 owners: HashSet::from([right_idx]),
                             });
                         }
                     }
                 }
 
+                // Merge common bindings
                 if let (Some(left_idx), Some(right_idx)) = (left_idx, right_idx) {
                     for bind in common_binds.iter() {
                         let left_param_idx =
-                            self.is_defined_param(bind.identifier.as_str(), left_idx);
+                            self.is_defined_param(bind.identifier().identifier.as_str(), left_idx);
                         let right_param_idx =
-                            self.is_defined_param(bind.identifier.as_str(), right_idx);
+                            self.is_defined_param(bind.identifier().identifier.as_str(), right_idx);
                         match (left_param_idx, right_param_idx) {
                             (Some(left_param_idx), Some(right_param_idx)) => {
                                 if left_param_idx != right_param_idx {
@@ -231,7 +247,7 @@ impl Symbols {
                             }
                             (None, None) => {
                                 self.edge_params.push(EdgeParam {
-                                    param: (**bind).clone(),
+                                    param: bind.identifier().clone(),
                                     owners: HashSet::from([left_idx, right_idx]),
                                 });
                             }

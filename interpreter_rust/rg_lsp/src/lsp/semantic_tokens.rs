@@ -139,7 +139,7 @@ fn ast_tokens(ast: &Game) -> Vec<Token> {
                     PragmaKind::Disjoint => 8, // "disjoint".len()
                     PragmaKind::MultiAny => 9, // "multi_any".len()
                     PragmaKind::Unique => 6,   // "unique".len()
-                } + 1 ; // +1 for `@
+                } + 1; // +1 for `@
                 let token = Token {
                     pos: pragma.start().into(),
                     len,

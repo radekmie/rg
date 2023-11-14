@@ -50,7 +50,6 @@ impl From<Position> for l::Range {
     }
 }
 
-
 impl From<l::Position> for Position {
     fn from(position: l::Position) -> Self {
         Position {

@@ -211,7 +211,9 @@ pub enum EdgeNamePart<Id> {
 
 impl<Id> EdgeNamePart<Id> {
     pub fn binding(&self) -> Option<Binding<Id>> {
-        let Self::Binding { identifier, type_ } = self else { return None };
+        let Self::Binding { identifier, type_ } = self else {
+            return None;
+        };
         Some((identifier, type_))
     }
 }
@@ -312,8 +314,9 @@ impl<Id: Clone + PartialEq> Expression<Id> {
                 let Type::Arrow {
                     lhs: key_type,
                     rhs: value_type,
-                } = accessed_type.resolve(game)? else {
-                    return game.make_error(ErrorReason::ArrowTypeExpected { got: accessed_type })
+                } = accessed_type.resolve(game)?
+                else {
+                    return game.make_error(ErrorReason::ArrowTypeExpected { got: accessed_type });
                 };
 
                 let accessor_type = rhs.infer(game, edge)?;

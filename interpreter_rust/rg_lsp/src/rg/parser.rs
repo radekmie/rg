@@ -61,6 +61,7 @@ fn identifier(input: Span) -> Result<Identifier> {
 
 fn preceded_opt_id<'a>(context: &'a str) -> impl FnMut(Span<'a>) -> Result<Identifier> {
     move |input| {
+        let start = Position::from(&input).start;
         expect(
             preceded_whitespace(identifier),
             format!("{}: expected identifier", context),
@@ -69,7 +70,9 @@ fn preceded_opt_id<'a>(context: &'a str) -> impl FnMut(Span<'a>) -> Result<Ident
             if let Some(res) = res {
                 (input, res)
             } else {
-                (input, Identifier::none())
+                let span = Position::from(&input).focus_start();
+                let span = span.with_start(start);
+                (input, Identifier::none(span))
             }
         })
     }
@@ -96,7 +99,7 @@ fn edge(input: Span) -> Result<Option<Edge>> {
                         preceded_whitespace(expect_edge_name),
                         expect(preceded_whitespace(cut(char(':'))), "expected `:`"),
                     ),
-                    preceded_whitespace(edge_label),
+                    edge_label,
                 )),
                 "syntax error: expected `<edge_name>, <edge_name> : <edge_label>;",
             ),
@@ -109,24 +112,27 @@ fn edge_label(input: Span) -> Result<EdgeLabel> {
     context(
         "edge_label",
         alt((
-            into(preceded(char('$'), cut(preceded_opt_id("edge_label")))),
+            into(preceded(
+                preceded_whitespace(char('$')),
+                cut(preceded_opt_id("edge_label")),
+            )),
             into(tuple((
                 expression,
                 preceded_whitespace(map(alt((tag("=="), tag("!="))), |c: Span| {
                     *c.fragment() == "!="
                 })),
-                cut(expression),
+                cut(expect_expression),
             ))),
-            into(separated_pair(
-                expression,
-                preceded_whitespace(char('=')),
-                expression,
-            )),
             into(tuple((
-                alt((tag("!"), tag("?"))),
+                preceded_whitespace(alt((tag("!"), tag("?")))),
                 cut(terminated(edge_name, preceded_whitespace(tag("->")))),
                 edge_name,
             ))),
+            into(separated_pair(
+                expression,
+                expect(preceded_whitespace(cut(char('='))), "expected `=`"),
+                cut(expect_expression),
+            )),
             success::<_, _, _>(EdgeLabel::Skip {
                 span: Position::from(&input),
             }),
@@ -150,13 +156,16 @@ fn expect_edge_name(input: Span) -> Result<EdgeName> {
             parts.extend(rest);
             Ok((input, parts.into()))
         }
-        None => Ok((
-            input,
-            vec![EdgeNamePart::Literal {
-                identifier: Identifier::none(),
-            }]
-            .into(),
-        )),
+        None => {
+            let span = Position::from(&input).focus_start();
+            Ok((
+                input,
+                vec![EdgeNamePart::Literal {
+                    identifier: Identifier::none(span),
+                }]
+                .into(),
+            ))
+        }
     }
 }
 
@@ -174,16 +183,18 @@ fn edge_name_part(input: Span) -> Result<EdgeNamePart> {
     )(input)
 }
 
-// HERE: THIS CAN BE ERROR PRONE
 fn expect_expression(input: Span) -> Result<Arc<Expression>> {
+    let start = Position::from(&input).start;
     expect(expression, "expected expression")(input).map(|(input, res)| {
         if let Some(res) = res {
             (input, res)
         } else {
+            let span = Position::from(&input).focus_start();
+            let span = span.with_start(start);
             (
                 input,
                 Arc::new(Expression::Reference {
-                    identifier: Identifier::none(),
+                    identifier: Identifier::none(span),
                 }),
             )
         }
@@ -277,18 +288,25 @@ fn typedef(input: Span) -> Result<Option<Typedef>> {
 fn value(input: Span) -> Result<Arc<Value>> {
     context(
         "value",
-        alt((
-            into_arc(delimited(
-                preceded_whitespace(tag("{")),
-                cut(separated_list0(
-                    preceded_whitespace(char(',')),
-                    preceded_whitespace(value_entry),
-                )),
-                preceded_whitespace(tag("}")),
-            )),
-            into_arc(preceded_opt_id("value")),
-        )),
+        alt((value_entries, into_arc(preceded_opt_id("value")))),
     )(input)
+}
+
+fn value_entries(input: Span) -> Result<Arc<Value>> {
+    alt((
+        into_arc(tuple((
+            preceded_whitespace(tag("{")),
+            preceded_whitespace(tag("}")),
+        ))),
+        into_arc(tuple((
+            preceded_whitespace(tag("{")),
+            cut(separated_list0(
+                preceded_whitespace(char(',')),
+                expect(preceded_whitespace(value_entry), "expected value entry"),
+            )),
+            preceded_whitespace(tag("}")),
+        ))),
+    ))(input)
 }
 
 fn value_entry(input: Span) -> Result<ValueEntry> {
@@ -296,8 +314,8 @@ fn value_entry(input: Span) -> Result<ValueEntry> {
         "value_entry",
         into(separated_pair(
             opt(identifier),
-            cut(preceded_whitespace(char(':'))),
-            cut(value),
+            preceded_whitespace(char(':')),
+            expect(value, "expected value"),
         )),
     )(input)
 }
@@ -358,7 +376,6 @@ fn parse_error_line(input: Span) -> Result<()> {
     let (input, unexpected) = anychar(input)?;
     let error_msg = format!("unexpected character: `{}`", unexpected);
     let err = Error::parser_error(error_pos, error_msg.to_string());
-    println!("Error: {}", err);
     input.extra.report_error(err);
     let (input, _) = take_while(|c| c != '\n')(input)?;
     Ok((input, ()))
@@ -457,13 +474,7 @@ where
                 if error_msg.to_string() == "" {
                     return Ok((input.input, None));
                 } else {
-                    println!(
-                        "Error position: {} {}",
-                        input.input.location_line(),
-                        input.input.get_column()
-                    );
                     let err = Error::parser_error(error_pos, error_msg.to_string());
-                    println!("Error: {}", err);
                     input.input.extra.report_error(err);
                     Ok((input.input, None))
                 }
@@ -502,7 +513,13 @@ mod test {
 
     fn check_parse(input: &str) {
         let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Failed to parse:\n{}", input);
+        println!("Game:\n{}", game);
+        assert!(
+            errors.is_empty(),
+            "Failed to parse:\n{}\nErrors: {:#?}",
+            input,
+            errors
+        );
         let game = game.to_string();
         let game_str = game.strip_suffix("\n").unwrap();
         assert!(
@@ -553,27 +570,18 @@ mod test {
         check_parse("foo, bar: ? move -> move;");
     }
 
-    fn check_errors(input: &str, expected_msg: &str, expected_pos: &str) {
-        let (_, errors) = parse_with_errors(input);
-        assert!(!errors.is_empty(), "No errors produced for:\n{}", input);
-        assert!(
-            errors.len() == 1,
-            "Expected 1 error, got {}:\n{}",
-            errors.len(),
-            input
-        );
-        let error = &errors[0];
-        assert!(
-            error.message == expected_msg,
-            "Expected error message:\n{}\nGot:\n{}",
-            expected_msg,
-            error.message
-        );
-        assert!(
-            error.span.to_string() == expected_pos,
-            "Expected error position:\n{}\nGot:\n{}",
-            expected_pos,
-            error.span.to_string()
-        );
+    #[test]
+    fn empty_value() {
+        check_parse("var foo: Foo = {  };");
+    }
+
+    #[test]
+    fn empty_value1() {
+        check_parse("var foo: Foo = { :null };");
+    }
+
+    #[test]
+    fn empty_value2() {
+        check_parse("var foo: Foo = { :null, :null };");
     }
 }

@@ -1,7 +1,4 @@
-use crate::rg::{
-    ast::*,
-    position::*,
-};
+use crate::rg::{ast::*, position::*};
 use std::fmt::{Display, Formatter, Result};
 
 impl Display for Span {
@@ -94,9 +91,7 @@ impl Display for EdgeNamePart {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Binding {
-                identifier,
-                type_,
-                ..
+                identifier, type_, ..
             } => write!(f, "({identifier}: {type_})"),
             Self::Literal { identifier } => write!(f, "{identifier}"),
         }

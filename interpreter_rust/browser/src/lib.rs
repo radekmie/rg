@@ -1,10 +1,10 @@
 #![deny(unsafe_code)]
 
 use futures::stream::TryStreamExt;
+use rg_lsp::lsp::backend::Backend;
 use tower_lsp::{LspService, Server};
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_bindgen_futures::stream::JsStream;
-use rg_lsp::lsp::backend::Backend;
 
 #[wasm_bindgen]
 pub struct ServerConfig {
@@ -38,7 +38,6 @@ pub async fn serve(config: ServerConfig) -> Result<(), JsValue> {
         into_server,
         from_server,
     } = config;
-
 
     let input = JsStream::from(into_server);
     let input = input

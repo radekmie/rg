@@ -209,9 +209,9 @@ impl Identifier {
         Self { span, identifier }
     }
 
-    pub fn none() -> Self {
+    pub fn none(span: Span) -> Self {
         Self {
-            span: Span::none(),
+            span,
             identifier: String::from("<none>"),
         }
     }
@@ -254,7 +254,6 @@ pub enum Stat {
     Typedef(Typedef),
     Variable(Variable),
 }
-
 
 #[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Game {

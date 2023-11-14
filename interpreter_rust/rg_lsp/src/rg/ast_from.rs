@@ -48,7 +48,7 @@ impl From<(Identifier, Arc<Type>)> for EdgeNamePart {
 
 impl From<(EdgeName, EdgeName, EdgeLabel)> for Edge {
     fn from((lhs, rhs, label): (EdgeName, EdgeName, EdgeLabel)) -> Self {
-        let span = Position::new(lhs.start(), rhs.end());
+        let span = Position::new(lhs.start(), label.end());
         Self::new(span, lhs, rhs, label)
     }
 }
@@ -111,11 +111,25 @@ impl From<(Span<'_>, Identifier, Arc<Type>)> for Typedef {
     }
 }
 
-impl From<Vec<ValueEntry>> for Value {
-    fn from(entries: Vec<ValueEntry>) -> Self {
-        let (first, last) = (entries.first().unwrap(), entries.last().unwrap());
-        let span = Position::new(first.start(), last.end());
+impl From<(Span<'_>, Vec<Option<ValueEntry>>, Span<'_>)> for Value {
+    fn from((start, entries, end): (Span<'_>, Vec<Option<ValueEntry>>, Span<'_>)) -> Self {
+        let start = Position::from(start);
+        let end = Position::from(end);
+        let span = Position::new(start.start, end.end);
+        let entries = entries.into_iter().flatten().collect();
         Self::Map { span, entries }
+    }
+}
+
+impl From<(Span<'_>, Span<'_>)> for Value {
+    fn from((start, end): (Span<'_>, Span<'_>)) -> Self {
+        let start = Position::from(start);
+        let end = Position::from(end);
+        let span = Position::new(start.start, end.end);
+        Self::Map {
+            span,
+            entries: vec![],
+        }
     }
 }
 
@@ -125,13 +139,32 @@ impl From<Identifier> for Value {
     }
 }
 
-impl From<(Option<Identifier>, Arc<Value>)> for ValueEntry {
-    fn from((identifier, value): (Option<Identifier>, Arc<Value>)) -> Self {
-        let span = match &identifier {
-            Some(identifier) => Position::new(identifier.span().start, value.as_ref().span().end),
-            None => value.as_ref().span().clone(),
-        };
-        Self::new(span, identifier, value)
+impl From<(Option<Identifier>, Option<Arc<Value>>)> for ValueEntry {
+    fn from((identifier, value): (Option<Identifier>, Option<Arc<Value>>)) -> Self {
+        match value {
+            Some(value) => {
+                let span = match &identifier {
+                    Some(identifier) => {
+                        Position::new(identifier.span().start, value.as_ref().span().end)
+                    }
+                    None => value.as_ref().span().clone(),
+                };
+                Self::new(span, identifier, value)
+            }
+            None => {
+                let span = match &identifier {
+                    Some(identifier) => identifier.span().clone(),
+                    None => Position::none(),
+                };
+                Self::new(
+                    span,
+                    identifier,
+                    Arc::new(Value::Element {
+                        identifier: Identifier::none(Position::none()),
+                    }),
+                )
+            }
+        }
     }
 }
 

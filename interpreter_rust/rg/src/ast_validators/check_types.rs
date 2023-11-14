@@ -74,7 +74,8 @@ impl<Id: Clone + PartialEq> Value<Id> {
                 let Type::Arrow {
                     lhs: key_type,
                     rhs: value_type,
-                } = type_.resolve(game)? else {
+                } = type_.resolve(game)?
+                else {
                     return game.make_error(ErrorReason::ArrowTypeExpected { got: type_.clone() });
                 };
 

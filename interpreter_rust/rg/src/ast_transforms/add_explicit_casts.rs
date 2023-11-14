@@ -50,7 +50,9 @@ impl<Id: Clone + PartialEq> Expression<Id> {
     }
 
     fn add_explicit_cast(self, game: &Game<Id>, type_: &Type<Id>) -> Result<Self, Error<Id>> {
-        let Some(typedef) = game.resolve_type_or_fail(type_)? else { return Ok(self) };
+        let Some(typedef) = game.resolve_type_or_fail(type_)? else {
+            return Ok(self);
+        };
         Ok(self.add_explicit_cast_if_needed(&Rc::new(typedef.to_type())))
     }
 

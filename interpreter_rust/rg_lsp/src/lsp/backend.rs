@@ -1,5 +1,5 @@
 use super::document::Document;
-use super::{completions, features, logger, semantic_tokens};
+use super::{completions, features, semantic_tokens};
 use dashmap::DashMap;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
@@ -102,7 +102,6 @@ impl LanguageServer for Backend {
         &self,
         params: DocumentSymbolParams,
     ) -> Result<Option<DocumentSymbolResponse>> {
-        logger::log(&"document symbol".into());
         let uri = params.text_document.uri;
         let document = self.document_map.get(&uri.to_string()).unwrap();
         let document_symbols = features::document_symbol(&uri, &document.symbol_table);
@@ -110,7 +109,6 @@ impl LanguageServer for Backend {
     }
 
     async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
-        logger::log(&"references".into());
         let uri = params.text_document_position.text_document.uri;
         let position = params.text_document_position.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
@@ -122,7 +120,6 @@ impl LanguageServer for Backend {
         &self,
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
-        logger::log(&"goto definition".into());
         let uri = params.text_document_position_params.text_document.uri;
         let position = params.text_document_position_params.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
@@ -134,7 +131,6 @@ impl LanguageServer for Backend {
         &self,
         params: SemanticTokensParams,
     ) -> Result<Option<SemanticTokensResult>> {
-        logger::log(&"semantic tokens full".into());
         let uri = params.text_document.uri;
         let document = self.document_map.get(&uri.to_string()).unwrap();
         let semantic_tokens = semantic_tokens::semantic_tokens_full(&document);
@@ -148,7 +144,6 @@ impl LanguageServer for Backend {
         &self,
         params: DocumentHighlightParams,
     ) -> Result<Option<Vec<DocumentHighlight>>> {
-        logger::log(&"document highlight".into());
         let uri = params.text_document_position_params.text_document.uri;
         let position = params.text_document_position_params.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
@@ -161,7 +156,6 @@ impl LanguageServer for Backend {
         &self,
         params: TextDocumentPositionParams,
     ) -> Result<Option<PrepareRenameResponse>> {
-        logger::log(&"prepare rename".into());
         let uri = params.text_document.uri;
         let position = params.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
@@ -171,7 +165,6 @@ impl LanguageServer for Backend {
     }
 
     async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
-        logger::log(&"rename".into());
         let uri = params.text_document_position.text_document.uri;
         let position = params.text_document_position.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
@@ -181,7 +174,6 @@ impl LanguageServer for Backend {
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
-        logger::log(&"hover".into());
         let uri = params.text_document_position_params.text_document.uri;
         let position = params.text_document_position_params.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
@@ -192,7 +184,6 @@ impl LanguageServer for Backend {
     }
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
-        logger::log(&"completion".into());
         let uri = params.text_document_position.text_document.uri;
         let position = params.text_document_position.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();

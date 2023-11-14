@@ -109,9 +109,27 @@ impl Span {
     pub fn encloses_span(&self, other: &Span) -> bool {
         self.start <= other.start && other.end <= self.end
     }
+
+    pub fn focus_start(&self) -> Self {
+        Self {
+            start: self.start,
+            end: self.start,
+        }
+    }
+
+    pub fn focus_end(&self) -> Self {
+        Self {
+            start: self.end,
+            end: self.end,
+        }
+    }
 }
 
 impl Position {
+    pub fn new(line: usize, column: usize) -> Self {
+        Self { line, column }
+    }
+
     pub fn none() -> Self {
         Self { line: 0, column: 0 }
     }

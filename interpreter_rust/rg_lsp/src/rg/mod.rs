@@ -1,8 +1,8 @@
+pub mod ast;
 mod ast_display;
 mod ast_from;
-pub mod ast;
-pub mod symbol_table;
-pub mod symbol;
+pub mod error;
 pub mod parser;
 pub mod position;
-pub mod error;
+pub mod symbol;
+pub mod symbol_table;

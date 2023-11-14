@@ -65,7 +65,9 @@ impl Type<Rc<str>> {
     }
 
     fn normalize_direct(&self, game: &mut Game<Rc<str>>) -> Result<Self, Error<Rc<str>>> {
-        let Self::Arrow { lhs, rhs } = self else { return Ok(self.clone()) };
+        let Self::Arrow { lhs, rhs } = self else {
+            return Ok(self.clone());
+        };
         Ok(Self::Arrow {
             lhs: Rc::new(lhs.normalize(game)?),
             rhs: Rc::new(rhs.normalize(game)?),

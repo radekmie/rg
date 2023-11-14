@@ -221,7 +221,7 @@ impl SymbolTableWithErrors {
                 self.add_from_type(type_);
             }
             EdgeNamePart::Literal { identifier } => {
-                self.add_occ_with_flag_and_owner(identifier, Flag::Param, owner);
+                self.add_occ_with_flag(identifier, Flag::Edge);
             }
         }
     }
