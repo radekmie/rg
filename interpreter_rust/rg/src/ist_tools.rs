@@ -9,7 +9,6 @@ use std::fmt::Debug;
 use std::rc::Rc;
 
 pub struct Interner<Id: Ord> {
-    id_to_string: BTreeMap<Id, Rc<str>>,
     string_to_id: BTreeMap<Rc<str>, Id>,
 }
 
@@ -34,22 +33,22 @@ impl<Id: Copy + Ord + TryFrom<usize>> Interner<Id> {
     }
 
     pub fn intern_as(&mut self, string: &Rc<str>, id: Id) -> Id {
-        assert!(!self.id_to_string.contains_key(&id));
         assert!(!self.string_to_id.contains_key(string));
-        self.id_to_string.insert(id, string.clone());
         self.string_to_id.insert(string.clone(), id);
         id
     }
 
     pub fn recall(&self, id: &Id) -> Option<&Rc<str>> {
-        self.id_to_string.get(id)
+        self.string_to_id
+            .iter()
+            .find(|pair| pair.1 == id)
+            .map(|pair| pair.0)
     }
 }
 
 impl Default for Interner<RuntimeId> {
     fn default() -> Self {
         let mut interner = Self {
-            id_to_string: BTreeMap::default(),
             string_to_id: BTreeMap::default(),
         };
         interner.intern_as(&Rc::from("begin"), LABEL_BEGIN);

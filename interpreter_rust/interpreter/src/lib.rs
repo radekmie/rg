@@ -67,12 +67,11 @@ pub fn analyze_rg(
     flags: &str,
     join_fork_suffixes: &Function,
     inline_reachability: &Function,
-    mangle_symbols: &Function,
 ) -> Result<Array, String> {
     let flags = from_str::<Flags>(flags).map_err(|error| error.to_string())?;
 
     let mut game = safe_parse_source(source)?;
-    'check: loop {
+    loop {
         game.check_maps()?;
         game.check_multiple_edges()?;
         game.check_reachabilities()?;
@@ -85,7 +84,7 @@ pub fn analyze_rg(
                 if flags.$fn {
                     $block
                     if game != copy {
-                        continue 'check;
+                        continue;
                     }
                 }
             };
@@ -110,7 +109,7 @@ pub fn analyze_rg(
         pass!(rust expand_generator_nodes);
         pass!(node join_fork_suffixes);
         pass!(node inline_reachability);
-        pass!(node mangle_symbols);
+        pass!(rust mangle_symbols);
 
         break;
     }

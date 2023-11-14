@@ -63,13 +63,11 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
 export async function analyzeRg(source: string, flags: Settings['flags']) {
   const [ast, formattedSource] = await workerMethod(
     'analyzeRg',
-    // @ts-expect-error: Workaround for passing functions to Web Worker.
     [
       source,
       JSON.stringify(flags),
       '$$TRANSFORMATOR$$joinForkSuffixes' as unknown as () => unknown,
       '$$TRANSFORMATOR$$inlineReachability' as unknown as () => unknown,
-      '$$TRANSFORMATOR$$mangleSymbols' as unknown as () => unknown,
     ],
     utils.noop,
   );

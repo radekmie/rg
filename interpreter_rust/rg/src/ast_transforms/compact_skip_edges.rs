@@ -1,4 +1,4 @@
-use crate::ast::{Error, Game};
+use crate::ast::{Edge, Error, Game};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
@@ -130,19 +130,15 @@ impl Game<Rc<str>> {
         None
     }
 
-    // TODO: This could be less restrictive and consider edges sharing the same
-    // binding unique (e.g., "a(x: X), b(x: X): ;").
     fn are_bindings_unique(&self) -> bool {
-        let mut binding_to_edge_name = BTreeMap::default();
-        for edge in &self.edges {
-            for edge_name in [&edge.lhs, &edge.rhs] {
-                for (identifier, _) in edge_name.bindings() {
-                    if let Some(other) = binding_to_edge_name.get(identifier) {
-                        if other != &edge_name {
-                            return false;
-                        }
-                    } else {
-                        binding_to_edge_name.insert(identifier, edge_name);
+        for edge_index in 0..self.edges.len() {
+            for (binding, _) in self.edges[edge_index].bindings() {
+                let edges_using_binding = get_edges_using_binding(&self.edges, edge_index, binding);
+                for edge_index in 0..self.edges.len() {
+                    if !edges_using_binding.contains(&edge_index)
+                        && self.edges[edge_index].get_binding(binding).is_some()
+                    {
+                        return false;
                     }
                 }
             }
@@ -164,42 +160,48 @@ impl Game<Rc<str>> {
                     continue;
                 }
 
-                // TODO: This _may_ need to run in a fixpoint loop.
-                let mut edges_using_binding = BTreeSet::from([x]);
-                loop {
-                    let mut nothing_changed = true;
-                    for x in 0..edges.len() {
-                        if !edges_using_binding.contains(&x)
-                            && edges_using_binding.iter().any(|&y| {
-                                let x = &edges[x];
-                                let y = &edges[y];
-                                x.lhs.has_binding(binding) && (x.lhs == y.lhs || x.lhs == y.rhs)
-                                    || x.rhs.has_binding(binding)
-                                        && (x.rhs == y.lhs || x.rhs == y.rhs)
-                            })
-                        {
-                            nothing_changed = false;
-                            edges_using_binding.insert(x);
-                        }
-                    }
-
-                    if nothing_changed {
-                        break;
-                    }
-                }
-
                 index += 1;
 
                 // TODO: All `bind_*` bindings should be renamed before for safety.
                 let fresh: Rc<str> = Rc::from(format!("bind_{index}"));
                 let mapping = BTreeMap::from([(binding.clone(), fresh.clone())]);
-                for x in edges_using_binding {
-                    mapped.insert((x, fresh.clone()));
-                    edges[x] = edges[x].rename_variables(&mapping);
+                for y in get_edges_using_binding(edges, x, binding) {
+                    mapped.insert((y, fresh.clone()));
+                    edges[y] = edges[y].rename_variables(&mapping);
                 }
             }
         }
     }
+}
+
+fn get_edges_using_binding(
+    edges: &Vec<Edge<Rc<str>>>,
+    starting_edge_index: usize,
+    binding: &Rc<str>,
+) -> BTreeSet<usize> {
+    let mut edges_using_binding = BTreeSet::from([starting_edge_index]);
+    loop {
+        let mut nothing_changed = true;
+        for x in 0..edges.len() {
+            if !edges_using_binding.contains(&x)
+                && edges_using_binding.iter().any(|&y| {
+                    let x = &edges[x];
+                    let y = &edges[y];
+                    x.lhs.has_binding(binding) && (x.lhs == y.lhs || x.lhs == y.rhs)
+                        || x.rhs.has_binding(binding) && (x.rhs == y.lhs || x.rhs == y.rhs)
+                })
+            {
+                nothing_changed = false;
+                edges_using_binding.insert(x);
+            }
+        }
+
+        if nothing_changed {
+            break;
+        }
+    }
+
+    edges_using_binding
 }
 
 #[cfg(test)]
@@ -296,12 +298,12 @@ mod test {
         }
         {
             type X = { x };
-            begin, loop(bind_1: X): ;
-            loop(bind_1: X), cond(bind_1: X): ;
-            cond(bind_1: X), true(bind_1: X): 1 == 1;
-            cond(bind_1: X), false(bind_1: X): 1 != 1;
-            false(bind_1: X), loop(bind_1: X): ;
-            true(bind_1: X), end: player = keeper;
+            begin, loop(x: X): ;
+            loop(x: X), cond(x: X): ;
+            cond(x: X), true(x: X): 1 == 1;
+            cond(x: X), false(x: X): 1 != 1;
+            false(x: X), loop(x: X): ;
+            true(x: X), end: player = keeper;
         }
     );
 
@@ -398,11 +400,11 @@ mod test {
             x2(p: Position), end: 1 == 1;
         }
         {
-            begin, x1(bind_1: Position): 1 == 1;
-            x1(bind_1: Position), x3(bind_1: Position): bind_1 != null;
-            x3(bind_1: Position), x4(bind_1: Position): position = bind_1;
-            x4(bind_1: Position), x2(bind_1: Position): 1 == 1;
-            x2(bind_1: Position), end: 1 == 1;
+            begin, x1(p: Position): 1 == 1;
+            x1(p: Position), x3(p: Position): p != null;
+            x3(p: Position), x4(p: Position): position = p;
+            x4(p: Position), x2(p: Position): 1 == 1;
+            x2(p: Position), end: 1 == 1;
         }
     );
 
@@ -416,11 +418,11 @@ mod test {
             x5(p: Position), x2(p: Position): 1 == 1;
         }
         {
-            begin, x1(bind_1: Position): 1 == 1;
-            x2(bind_1: Position), end: 1 == 1;
-            x1(bind_1: Position), x4(bind_1: Position): bind_1 != null;
-            x4(bind_1: Position), x5(bind_1: Position): position = bind_1;
-            x5(bind_1: Position), x2(bind_1: Position): 1 == 1;
+            begin, x1(p: Position): 1 == 1;
+            x2(p: Position), end: 1 == 1;
+            x1(p: Position), x4(p: Position): p != null;
+            x4(p: Position), x5(p: Position): position = p;
+            x5(p: Position), x2(p: Position): 1 == 1;
         }
     );
 }
