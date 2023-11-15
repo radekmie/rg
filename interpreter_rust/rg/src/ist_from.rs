@@ -50,12 +50,14 @@ fn build_edge_label<Id: Display>(
             rhs: build_expression(game, &rhs),
             negated,
         },
-        ast::EdgeLabel::Reachability { lhs, rhs, negated } => ist::EdgeLabel::Reachability {
+        ast::EdgeLabel::Reachability {
+            lhs, rhs, negated, ..
+        } => ist::EdgeLabel::Reachability {
             lhs: build_edge_name(lhs),
             rhs: build_edge_name(rhs),
             negated,
         },
-        ast::EdgeLabel::Skip => ist::EdgeLabel::Skip,
+        ast::EdgeLabel::Skip { .. } => ist::EdgeLabel::Skip,
         ast::EdgeLabel::Tag { symbol } => ist::EdgeLabel::Tag {
             symbol: Rc::from(symbol.to_string()),
         },
@@ -87,7 +89,7 @@ fn build_expression<Id: Display>(
     expression: &ast::Expression<Id>,
 ) -> ist::Expression<Rc<str>> {
     match expression {
-        ast::Expression::Access { lhs, rhs } => ist::Expression::Access {
+        ast::Expression::Access { lhs, rhs, .. } => ist::Expression::Access {
             lhs: Rc::new(build_expression(game, lhs)),
             rhs: Rc::new(build_expression(game, rhs)),
         },
@@ -111,16 +113,16 @@ fn build_expression<Id: Display>(
 
 fn build_pragma<Id: Display>(pragma: ast::Pragma<Id>) -> ist::Pragma<Rc<str>> {
     match pragma {
-        ast::Pragma::Any { edge_name } => ist::Pragma::Any {
+        ast::Pragma::Any { edge_name, .. } => ist::Pragma::Any {
             edge_name: Rc::from(edge_name.to_string()),
         },
-        ast::Pragma::Disjoint { edge_name } => ist::Pragma::Disjoint {
+        ast::Pragma::Disjoint { edge_name, .. } => ist::Pragma::Disjoint {
             edge_name: Rc::from(edge_name.to_string()),
         },
-        ast::Pragma::MultiAny { edge_name } => ist::Pragma::MultiAny {
+        ast::Pragma::MultiAny { edge_name, .. } => ist::Pragma::MultiAny {
             edge_name: Rc::from(edge_name.to_string()),
         },
-        ast::Pragma::Unique { edge_name } => ist::Pragma::Unique {
+        ast::Pragma::Unique { edge_name, .. } => ist::Pragma::Unique {
             edge_name: Rc::from(edge_name.to_string()),
         },
     }
@@ -145,17 +147,19 @@ fn build_value<Id: Display + Ord>(
                 .cloned()
                 .unwrap_or_else(|| Rc::new(ist::Value::Element { value: identifier }))
         }
-        ast::Value::Map { entries } => {
+        ast::Value::Map { entries, .. } => {
             let ist::Type::Arrow { rhs, .. } = type_ else {
                 panic!("Incorrect Map type found.")
             };
 
-            let default_value = entries
-                .iter()
-                .find_map(|ast::ValueEntry { identifier, value }| match identifier {
+            let default_value = entries.iter().find_map(
+                |ast::ValueEntry {
+                     identifier, value, ..
+                 }| match identifier {
                     Some(_) => None,
                     None => Some(value),
-                });
+                },
+            );
 
             assert!(default_value.is_some(), "Map is missing default value.");
 
@@ -164,14 +168,18 @@ fn build_value<Id: Display + Ord>(
                 values: Rc::new(
                     entries
                         .iter()
-                        .flat_map(|ast::ValueEntry { identifier, value }| {
-                            identifier.as_ref().map(|identifier| {
-                                (
-                                    Rc::from(identifier.to_string()),
-                                    build_value(game, rhs, value),
-                                )
-                            })
-                        })
+                        .flat_map(
+                            |ast::ValueEntry {
+                                 identifier, value, ..
+                             }| {
+                                identifier.as_ref().map(|identifier| {
+                                    (
+                                        Rc::from(identifier.to_string()),
+                                        build_value(game, rhs, value),
+                                    )
+                                })
+                            },
+                        )
                         .collect::<BTreeMap<_, _>>(),
                 ),
             })
@@ -192,7 +200,7 @@ fn build_type<Id: Display>(
                     build_type(game, rhs).map(|rhs| Rc::new(ist::Type::Arrow { lhs, rhs }))
                 })
         }
-        ast::Type::Set { identifiers } => Some(Rc::new(ist::Type::Set {
+        ast::Type::Set { identifiers, .. } => Some(Rc::new(ist::Type::Set {
             values: identifiers
                 .iter()
                 .map(|identifier| {

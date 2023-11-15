@@ -54,7 +54,7 @@ pub async fn serve(config: ServerConfig) -> Result<(), JsValue> {
     let output = wasm_streams::WritableStream::from_raw(output);
     let output = output.try_into_async_write().map_err(|err| err.0)?;
 
-    let (service, messages) = LspService::new(|client| Backend::new(client));
+    let (service, messages) = LspService::new(Backend::new);
     Server::new(input, output, messages).serve(service).await;
 
     Ok(())

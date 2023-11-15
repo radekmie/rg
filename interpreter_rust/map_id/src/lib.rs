@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::rc::Rc;
+use std::sync::Arc;
 
 pub trait MapId<ToType, OldId, NewId> {
     fn map_id(&self, map: &mut impl FnMut(&OldId) -> NewId) -> ToType;
@@ -10,6 +11,14 @@ impl<FromType: MapId<ToType, OldId, NewId>, ToType, OldId, NewId: Ord>
 {
     fn map_id(&self, map: &mut impl FnMut(&OldId) -> NewId) -> BTreeMap<NewId, ToType> {
         self.iter().map(|(k, v)| (map(k), v.map_id(map))).collect()
+    }
+}
+
+impl<FromType: MapId<ToType, OldId, NewId>, ToType, OldId, NewId> MapId<Arc<ToType>, OldId, NewId>
+    for Arc<FromType>
+{
+    fn map_id(&self, map: &mut impl FnMut(&OldId) -> NewId) -> Arc<ToType> {
+        Arc::new((**self).map_id(map))
     }
 }
 

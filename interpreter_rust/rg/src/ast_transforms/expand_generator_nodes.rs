@@ -28,14 +28,14 @@ impl Game<Rc<str>> {
 #[cfg(test)]
 mod test {
     use crate::ast::Game;
-    use crate::parser::game;
+    use crate::parser::parse_with_errors;
     use map_id::MapId;
-    use nom::combinator::all_consuming;
     use std::rc::Rc;
 
     fn parse(input: &str) -> Game<Rc<str>> {
-        let (_, game) = all_consuming(game)(input).unwrap();
-        game.map_id(&mut |id| Rc::from(*id))
+        let (game, errors) = parse_with_errors(input);
+        assert!(errors.is_empty(), "Parse errors: {:?}", errors);
+        game.map_id(&mut |id| Rc::from(id.identifier.as_str()))
     }
 
     macro_rules! test {

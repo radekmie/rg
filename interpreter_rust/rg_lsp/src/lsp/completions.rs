@@ -2,12 +2,15 @@ use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, CompletionOptions, CompletionResponse,
 };
 
+use rg::{ast::*, position::*};
+
 use crate::rg::{
-    ast::*,
-    position::*,
+    stat::Stat,
     symbol::{Flag, Symbol},
     symbol_table::SymbolTable,
 };
+
+use super::ast_features::AstFeatures;
 
 #[derive(Debug, PartialEq)]
 enum CompletionKind {
@@ -48,7 +51,7 @@ pub fn capabilities() -> CompletionOptions {
 
 pub fn completions(
     pos: Position,
-    game: &Game,
+    game: &Game<Identifier>,
     symbol_table: &SymbolTable,
 ) -> Option<CompletionResponse> {
     let items = completion_items(pos, game, symbol_table);
@@ -59,7 +62,11 @@ pub fn completions(
     }
 }
 
-fn completion_items(pos: Position, game: &Game, symbol_table: &SymbolTable) -> Vec<CompletionItem> {
+fn completion_items(
+    pos: Position,
+    game: &Game<Identifier>,
+    symbol_table: &SymbolTable,
+) -> Vec<CompletionItem> {
     match CompletionKind::from_game(pos, game) {
         CompletionKind::None => vec![],
         CompletionKind::Toplevel => {
@@ -122,7 +129,7 @@ impl From<Flag> for CompletionItemKind {
 }
 
 impl CompletionKind {
-    fn from_game(pos: Position, game: &Game) -> Self {
+    fn from_game(pos: Position, game: &Game<Identifier>) -> Self {
         let enclosing_stat = game.enclosing_stat_pos(pos);
         if let Some(stat) = enclosing_stat {
             match stat {
@@ -198,7 +205,7 @@ impl CompletionKind {
         }
     }
 
-    fn from_edge_name(pos: Position, edge_name: &EdgeName) -> Self {
+    fn from_edge_name(pos: Position, edge_name: &EdgeName<Identifier>) -> Self {
         edge_name
             .parts
             .iter()
@@ -225,10 +232,7 @@ impl CompletionKind {
 
 #[cfg(test)]
 mod test {
-    use crate::rg::{
-        parser::parse_with_errors,
-        position::{Position, Positioned},
-    };
+    use rg::{parser::parse_with_errors, position::Position};
 
     use super::CompletionKind;
 
@@ -248,15 +252,8 @@ mod test {
 
     fn completion_kind(input: &str, expected: CompletionKind) {
         let (pos, input) = find_cursor(input);
-        println!("input: {}", input);
-        println!("pos: {}", pos);
         let (game, _) = parse_with_errors(input.as_str());
-        println!("game: {}", game);
-        game.stats
-            .iter()
-            .for_each(|stat| println!("{} {}", stat.span(), stat));
         let obtained = CompletionKind::from_game(pos, &game);
-        println!("expected: {:?}, obtained: {:?}", expected, obtained);
         assert!(
             obtained == expected,
             "expected: {:?}, obtained: {:?}",

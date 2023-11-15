@@ -1,13 +1,9 @@
 use js_sys::{Array, Function};
 use map_id::MapId;
-use nom::combinator::all_consuming;
-use nom::error::convert_error;
-use nom::Finish;
 use rand::thread_rng;
-use rg::ast::Game;
 use rg::ist;
 use rg::ist_tools::Interner;
-use rg::parser::game;
+use rg::{ast::Game, parser::parse_with_errors};
 use serde::Deserialize;
 use serde_json::{from_str, to_string};
 use std::rc::Rc;
@@ -27,13 +23,17 @@ pub fn safe_parse_ast(ast: &str) -> Result<Game<Rc<str>>, String> {
 }
 
 pub fn safe_parse_source(source: &str) -> Result<Game<Rc<str>>, String> {
-    match all_consuming(game)(source).finish() {
-        Ok((_, game)) => {
-            let mut game = game.map_id(&mut |id| Rc::from(*id));
-            game.add_builtins()?;
-            Ok(game)
-        }
-        Err(error) => Err(convert_error(source, error)),
+    let (game, errors) = parse_with_errors(source);
+    if errors.is_empty() {
+        let mut game = game.map_id(&mut |id| Rc::from(id.identifier.as_str()));
+        game.add_builtins()?;
+        Ok(game)
+    } else {
+        Err(errors
+            .into_iter()
+            .map(|error| format!("{}", error))
+            .collect::<Vec<_>>()
+            .join("\n"))
     }
 }
 

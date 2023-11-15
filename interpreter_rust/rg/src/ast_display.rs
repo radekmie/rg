@@ -1,8 +1,14 @@
-use crate::ast::{
-    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Error, ErrorReason, Expression, Game,
-    Pragma, Type, Typedef, Value, ValueEntry, Variable,
-};
+use crate::{ast::*, position::*};
 use std::fmt::{Display, Formatter, Result};
+
+impl Display for Identifier {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let Self { identifier, .. } = self;
+        // let span = self.span();
+        // write!(f, "{span}{identifier}")
+        write!(f, "{identifier}")
+    }
+}
 
 impl<Id: Display> Display for Constant<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
@@ -10,6 +16,7 @@ impl<Id: Display> Display for Constant<Id> {
             identifier,
             type_,
             value,
+            ..
         } = self;
         write!(f, "const {identifier}: {type_} = {value};")
     }
@@ -17,7 +24,9 @@ impl<Id: Display> Display for Constant<Id> {
 
 impl<Id: Display> Display for Edge<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let Self { label, lhs, rhs } = self;
+        let Self {
+            label, lhs, rhs, ..
+        } = self;
         write!(f, "{lhs}, {rhs}: {label};")
     }
 }
@@ -40,13 +49,15 @@ impl<Id: Display> Display for EdgeLabel<Id> {
                 lhs,
                 rhs,
                 negated: false,
+                ..
             } => write!(f, "? {lhs} -> {rhs}"),
             Self::Reachability {
                 lhs,
                 rhs,
                 negated: true,
+                ..
             } => write!(f, "! {lhs} -> {rhs}"),
-            Self::Skip => write!(f, ""),
+            Self::Skip { .. } => write!(f, ""),
             Self::Tag { symbol } => write!(f, "$ {symbol}"),
         }
     }
@@ -65,7 +76,9 @@ impl<Id: Display> Display for EdgeName<Id> {
 impl<Id: Display> Display for EdgeNamePart<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::Binding { identifier, type_ } => write!(f, "({identifier}: {type_})"),
+            Self::Binding {
+                identifier, type_, ..
+            } => write!(f, "({identifier}: {type_})"),
             Self::Literal { identifier } => write!(f, "{identifier}"),
         }
     }
@@ -80,7 +93,9 @@ impl<Id: Display> Display for Error<Id> {
         if !game.typedefs.is_empty() {
             writeln!(f, "  Type definitions:")?;
             for typedef in &game.typedefs {
-                let Typedef { identifier, type_ } = typedef;
+                let Typedef {
+                    identifier, type_, ..
+                } = typedef;
                 writeln!(f, "    {identifier}: {type_}")?;
             }
         }
@@ -173,8 +188,8 @@ impl<Id: Display> Display for ErrorReason<Id> {
 impl<Id: Display> Display for Expression<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::Access { lhs, rhs } => write!(f, "{lhs}[{rhs}]"),
-            Self::Cast { lhs, rhs } => write!(f, "{lhs}({rhs})"),
+            Self::Access { lhs, rhs, .. } => write!(f, "{lhs}[{rhs}]"),
+            Self::Cast { lhs, rhs, .. } => write!(f, "{lhs}({rhs})"),
             Self::Reference { identifier } => write!(f, "{identifier}"),
         }
     }
@@ -204,10 +219,10 @@ impl<Id: Display> Display for Game<Id> {
 impl<Id: Display> Display for Pragma<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::Any { edge_name } => write!(f, "@any {edge_name};"),
-            Self::Disjoint { edge_name } => write!(f, "@disjoint {edge_name};"),
-            Self::MultiAny { edge_name } => write!(f, "@multiAny {edge_name};"),
-            Self::Unique { edge_name } => write!(f, "@unique {edge_name};"),
+            Self::Any { edge_name, .. } => write!(f, "@any {edge_name};"),
+            Self::Disjoint { edge_name, .. } => write!(f, "@disjoint {edge_name};"),
+            Self::MultiAny { edge_name, .. } => write!(f, "@multiAny {edge_name};"),
+            Self::Unique { edge_name, .. } => write!(f, "@unique {edge_name};"),
         }
     }
 }
@@ -216,7 +231,7 @@ impl<Id: Display> Display for Type<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Arrow { lhs, rhs } => write!(f, "{lhs} -> {rhs}"),
-            Self::Set { identifiers } => {
+            Self::Set { identifiers, .. } => {
                 write!(f, "{{ ")?;
                 for (index, entry) in identifiers.iter().enumerate() {
                     let separator = if index == 0 { "" } else { ", " };
@@ -231,7 +246,9 @@ impl<Id: Display> Display for Type<Id> {
 
 impl<Id: Display> Display for Typedef<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let Self { identifier, type_ } = self;
+        let Self {
+            identifier, type_, ..
+        } = self;
         write!(f, "type {identifier} = {type_};")
     }
 }
@@ -240,7 +257,7 @@ impl<Id: Display> Display for Value<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Element { identifier } => write!(f, "{identifier}"),
-            Self::Map { entries } => {
+            Self::Map { entries, .. } => {
                 write!(f, "{{ ")?;
                 for (index, entry) in entries.iter().enumerate() {
                     let separator = if index == 0 { "" } else { ", " };
@@ -254,7 +271,9 @@ impl<Id: Display> Display for Value<Id> {
 
 impl<Id: Display> Display for ValueEntry<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let Self { identifier, value } = self;
+        let Self {
+            identifier, value, ..
+        } = self;
         match identifier {
             Some(identifier) => write!(f, "{identifier}: {value}"),
             None => write!(f, ":{value}"),
@@ -268,7 +287,22 @@ impl<Id: Display> Display for Variable<Id> {
             default_value,
             identifier,
             type_,
+            ..
         } = self;
         write!(f, "var {identifier}: {type_} = {default_value};",)
+    }
+}
+
+impl Display for Span {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let Self { start, end } = self;
+        write!(f, "({},{})", start, end)
+    }
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let Self { line, column } = self;
+        write!(f, "{}:{}", line, column)
     }
 }

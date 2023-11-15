@@ -1,15 +1,17 @@
 use std::collections::HashMap;
 
+use rg::position::Positioned;
 use tower_lsp::lsp_types::{
     self as l, Diagnostic, GotoDefinitionResponse, Hover, Location, PrepareRenameResponse,
     TextEdit, WorkspaceEdit,
 };
 use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
 
-use crate::rg::ast::Game;
-use crate::rg::error::Error;
 use crate::rg::symbol_table::*;
+use rg::ast::{Game, Identifier};
+use rg::error::Error;
 
+use super::ast_features::AstFeatures;
 use super::utils::*;
 
 #[allow(deprecated)]
@@ -23,7 +25,7 @@ pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<Document
             kind: flag_to_kind(&symbol.flag),
             location: l::Location {
                 uri: uri.clone(),
-                range: symbol.pos.into(),
+                range: span_to_lsp(symbol.pos),
             },
             deprecated: None,
             container_name: None,
@@ -40,17 +42,13 @@ pub fn references(
 ) -> Option<Vec<Location>> {
     let enclosing_symbol = symbol_table.symbol_enclosing_pos(position)?;
     let sym_idx = symbol_table.sym_idx(enclosing_symbol)?;
-    let mut all_occurrences = symbol_table.all_symbol_occurences(sym_idx);
-    if !all_occurrences.is_empty() && all_occurrences[0].pos == enclosing_symbol.pos {
-        // first occurrence is the definition
-        all_occurrences.remove(0);
-    }
-    Some(
-        all_occurrences
-            .iter()
-            .map(|occ| to_location(uri, occ.pos))
-            .collect(),
-    )
+    let all_occurrences = symbol_table.all_symbol_occurences(sym_idx);
+    let all_occurrences: Vec<Location> = all_occurrences
+        .into_iter()
+        .filter(|occ| !occ.span().equal_span(&enclosing_symbol.span()))
+        .map(|occ| to_location(uri, occ.pos))
+        .collect();
+    Some(all_occurrences)
 }
 
 pub fn definitions(
@@ -78,7 +76,7 @@ pub fn document_highlight(
         all_occurrences
             .iter()
             .map(|occ| l::DocumentHighlight {
-                range: occ.pos.into(),
+                range: span_to_lsp(occ.pos),
                 kind: None,
             })
             .collect(),
@@ -95,7 +93,7 @@ pub fn prepare_rename(
         return None;
     }
     Some(PrepareRenameResponse::RangeWithPlaceholder {
-        range: enclosing_occ.pos.into(),
+        range: span_to_lsp(enclosing_occ.pos),
         placeholder: symbol.id.clone(),
     })
 }
@@ -115,7 +113,7 @@ pub fn rename(
         .all_symbol_occurences(sym_idx)
         .iter()
         .map(|occ| TextEdit {
-            range: occ.pos.into(),
+            range: span_to_lsp(occ.pos),
             new_text: new_name.clone(),
         })
         .collect();
@@ -132,7 +130,7 @@ pub fn diagnostics(errors: Vec<Error>) -> Vec<Diagnostic> {
     errors
         .iter()
         .map(|Error { span, message, .. }| l::Diagnostic {
-            range: span.start.into(),
+            range: pos_to_lsp_range(span.start),
             severity: Some(l::DiagnosticSeverity::ERROR),
             code: None,
             code_description: None,
@@ -145,7 +143,11 @@ pub fn diagnostics(errors: Vec<Error>) -> Vec<Diagnostic> {
         .collect()
 }
 
-pub fn hover(position: l::Position, symbol_table: &SymbolTable, game: &Game) -> Option<l::Hover> {
+pub fn hover(
+    position: l::Position,
+    symbol_table: &SymbolTable,
+    game: &Game<Identifier>,
+) -> Option<l::Hover> {
     let occ = symbol_table.occ_enclosing_pos(position)?;
     let pos = occ.pos;
     let enclosing_symbol = symbol_table.get_occ_symbol(occ)?;
@@ -156,6 +158,6 @@ pub fn hover(position: l::Position, symbol_table: &SymbolTable, game: &Game) -> 
     )]);
     Some(Hover {
         contents,
-        range: Some(pos.into()),
+        range: Some(span_to_lsp(pos)),
     })
 }

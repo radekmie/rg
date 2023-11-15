@@ -36,8 +36,8 @@ impl Game<Rc<str>> {
             false
         };
 
-        let begin = EdgeName::from(Rc::from("begin"));
-        let end = EdgeName::from(Rc::from("end"));
+        let begin = EdgeName::new(Rc::from("begin"));
+        let end = EdgeName::new(Rc::from("end"));
         if !is_reachable(&begin, &end) {
             return self.make_error(ErrorReason::Unreachable {
                 lhs: begin,

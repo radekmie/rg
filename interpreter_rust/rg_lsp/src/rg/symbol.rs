@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 use std::fmt::Display;
 
-use crate::rg::ast::*;
-use crate::rg::position::{Positioned, Span};
+use rg::ast::*;
+use rg::position::{Positioned, Span};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Symbol {
@@ -95,7 +95,7 @@ struct Symbols {
 }
 
 impl Symbols {
-    fn add_from_type(&mut self, type_: &Type, owner: usize) {
+    fn add_from_type(&mut self, type_: &Type<Identifier>, owner: usize) {
         match type_ {
             Type::Arrow { lhs, rhs } => {
                 self.add_from_type(lhs, owner);
@@ -137,7 +137,7 @@ impl Symbols {
             .map(|(idx, _)| idx)
     }
 
-    fn add_from_edge(&mut self, edge: &Edge) {
+    fn add_from_edge(&mut self, edge: &Edge<Identifier>) {
         if let [EdgeNamePart::Literal {
             identifier: left_id,
         }, left_binds @ ..] = edge.lhs.parts.as_slice()
@@ -153,16 +153,17 @@ impl Symbols {
                 // Split binds into literals and bindings
                 let (left_binds, left_literals) = left_binds
                     .iter()
-                    .partition::<Vec<&EdgeNamePart>, _>(|bind| match bind {
+                    .partition::<Vec<&EdgeNamePart<Identifier>>, _>(|bind| match bind {
                         EdgeNamePart::Binding { .. } => true,
                         _ => false,
                     });
-                let (right_binds, right_literals) = right_binds
-                    .iter()
-                    .partition::<Vec<&EdgeNamePart>, _>(|bind| match bind {
-                        EdgeNamePart::Binding { .. } => true,
-                        _ => false,
-                    });
+                let (right_binds, right_literals) =
+                    right_binds
+                        .iter()
+                        .partition::<Vec<&EdgeNamePart<Identifier>>, _>(|bind| match bind {
+                            EdgeNamePart::Binding { .. } => true,
+                            _ => false,
+                        });
 
                 // Maybe add literals as edge symbols
                 left_literals.iter().for_each(|literal| {
@@ -183,15 +184,19 @@ impl Symbols {
                 // Splits bindings into common, left and right
                 let (common_binds, left_binds) = left_binds
                     .iter()
-                    .partition::<Vec<&EdgeNamePart>, _>(|bind| {
+                    .partition::<Vec<&EdgeNamePart<Identifier>>, _>(|bind| {
                         let id = bind.identifier().identifier.as_str();
-                        right_binds.iter().any(|right| right.identifier().identifier == id)
+                        right_binds
+                            .iter()
+                            .any(|right| right.identifier().identifier == id)
                     });
-                let right_binds: Vec<&EdgeNamePart> = right_binds
+                let right_binds: Vec<&EdgeNamePart<Identifier>> = right_binds
                     .into_iter()
                     .filter(|bind| {
                         let id = bind.identifier().identifier.as_str();
-                        !common_binds.iter().any(|common| common.identifier().identifier == id)
+                        !common_binds
+                            .iter()
+                            .any(|common| common.identifier().identifier == id)
                     })
                     .collect();
                 // Maybe add left bindings as param symbols
@@ -258,47 +263,42 @@ impl Symbols {
         }
     }
 
-    pub fn from_game(game: &Game) -> Vec<Symbol> {
+    pub fn from_game(game: &Game<Identifier>) -> Vec<Symbol> {
         let mut symbols: Self = Self {
             symbols: vec![],
             edge_params: vec![],
         };
-        for stat in game.stats.iter() {
-            match stat {
-                Stat::Constant(constant) => {
-                    let id = &constant.identifier;
-                    let flag = Flag::Constant;
-                    let symbol = Symbol::from_id(id, flag, None);
-                    if let Some(symbol) = symbol {
-                        symbols.symbols.push(symbol);
-                    }
-                }
-                Stat::Variable(variable) => {
-                    let id = &variable.identifier;
-                    let flag = Flag::Variable;
-                    let symbol = Symbol::from_id(id, flag, None);
-                    if let Some(symbol) = symbol {
-                        symbols.symbols.push(symbol);
-                    }
-                }
-
-                Stat::Edge(edge) => {
-                    symbols.add_from_edge(edge);
-                }
-                Stat::Typedef(typedef) => {
-                    let id = &typedef.identifier;
-                    let flag = Flag::Type;
-                    let symbol = Symbol::from_id(id, flag, None);
-                    if let Some(symbol) = symbol {
-                        symbols.symbols.push(symbol);
-                        let symbol_idx = symbols.symbols.len() - 1;
-                        symbols.add_from_type(&typedef.type_, symbol_idx);
-                    } else {
-                        symbols.add_from_type(&typedef.type_, 0);
-                    }
-                }
-                Stat::Pragma(_) => (),
+        for constant in game.constants.iter() {
+            let id = &constant.identifier;
+            let flag = Flag::Constant;
+            let symbol = Symbol::from_id(id, flag, None);
+            if let Some(symbol) = symbol {
+                symbols.symbols.push(symbol);
             }
+        }
+
+        for variable in game.variables.iter() {
+            let id = &variable.identifier;
+            let flag = Flag::Variable;
+            let symbol = Symbol::from_id(id, flag, None);
+            if let Some(symbol) = symbol {
+                symbols.symbols.push(symbol);
+            }
+        }
+        for typedef in game.typedefs.iter() {
+            let id = &typedef.identifier;
+            let flag = Flag::Type;
+            let symbol = Symbol::from_id(id, flag, None);
+            if let Some(symbol) = symbol {
+                symbols.symbols.push(symbol);
+                let symbol_idx = symbols.symbols.len() - 1;
+                symbols.add_from_type(&typedef.type_, symbol_idx);
+            } else {
+                symbols.add_from_type(&typedef.type_, 0);
+            }
+        }
+        for edge in game.edges.iter() {
+            symbols.add_from_edge(edge);
         }
         for bind in symbols.edge_params.iter() {
             let id = &bind.param;
@@ -313,6 +313,6 @@ impl Symbols {
     }
 }
 
-pub fn from_game(game: &Game) -> Vec<Symbol> {
+pub fn from_game(game: &Game<Identifier>) -> Vec<Symbol> {
     Symbols::from_game(game)
 }

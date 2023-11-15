@@ -1,37 +1,46 @@
-use crate::ast::{Error, ErrorReason, Game, Type, Typedef, Value, ValueEntry, Variable};
-use std::rc::Rc;
+use crate::{
+    ast::{Error, ErrorReason, Game, Type, Typedef, Value, ValueEntry, Variable},
+    position::Span,
+};
+use std::{rc::Rc, sync::Arc};
 
 impl Game<Rc<str>> {
     pub fn add_builtins(&mut self) -> Result<(), Error<Rc<str>>> {
         // |- Bool
         self.add_builtin_type(Typedef {
+            span: Span::none(),
             identifier: Rc::from("Bool"),
-            type_: Rc::new(Type::from(vec![Rc::from("0"), Rc::from("1")])),
+            type_: Arc::new(Type::Set {
+                span: Span::none(),
+                identifiers: vec![Rc::from("0"), Rc::from("1")],
+            }),
         })?;
 
         // Player ^ Score |- Goals
         self.resolve_typedef_or_fail(&Rc::from("Score"))?;
         self.add_builtin_type(Typedef {
+            span: Span::none(),
             identifier: Rc::from("Goals"),
-            type_: Rc::new(Type::Arrow {
-                lhs: Rc::new(Type::from(Rc::from("Player"))),
-                rhs: Rc::new(Type::from(Rc::from("Score"))),
+            type_: Arc::new(Type::Arrow {
+                lhs: Arc::new(Type::from(Rc::from("Player"))),
+                rhs: Arc::new(Type::from(Rc::from("Score"))),
             }),
         })?;
 
         // Player |- Visibility
         self.resolve_typedef_or_fail(&Rc::from("Player"))?;
         self.add_builtin_type(Typedef {
+            span: Span::none(),
             identifier: Rc::from("Visibility"),
-            type_: Rc::new(Type::Arrow {
-                lhs: Rc::new(Type::from(Rc::from("Player"))),
-                rhs: Rc::new(Type::from(Rc::from("Bool"))),
+            type_: Arc::new(Type::Arrow {
+                lhs: Arc::new(Type::from(Rc::from("Player"))),
+                rhs: Arc::new(Type::from(Rc::from("Bool"))),
             }),
         })?;
 
         // Player ^ isSet(Player) |- PlayerOrKeeper
         let player_type = &self.resolve_typedef_or_fail(&Rc::from("Player"))?.type_;
-        let Type::Set { identifiers } = &**player_type else {
+        let Type::Set { identifiers, .. } = &**player_type else {
             return self.make_error(ErrorReason::SetTypeExpected {
                 got: player_type.clone(),
             });
@@ -44,14 +53,18 @@ impl Game<Rc<str>> {
             identifiers
         };
         self.add_builtin_type(Typedef {
+            span: Span::none(),
             identifier: Rc::from("PlayerOrKeeper"),
-            type_: Rc::new(Type::from(players)),
+            type_: Arc::new(Type::Set {
+                span: Span::none(),
+                identifiers: players,
+            }),
         })?;
 
         // Goals ^ Score ^ isSet(Score) |- goals
         self.resolve_typedef_or_fail(&Rc::from("Goals"))?;
         let score_type = &self.resolve_typedef_or_fail(&Rc::from("Score"))?.type_;
-        let Type::Set { identifiers } = &**score_type else {
+        let Type::Set { identifiers, .. } = &**score_type else {
             return self.make_error(ErrorReason::SetTypeExpected {
                 got: score_type.clone(),
             });
@@ -62,12 +75,15 @@ impl Game<Rc<str>> {
             });
         };
         self.add_builtin_variable(Variable {
+            span: Span::none(),
             identifier: Rc::from("goals"),
-            type_: Rc::new(Type::from(Rc::from("Goals"))),
-            default_value: Rc::new(Value::Map {
+            type_: Arc::new(Type::from(Rc::from("Goals"))),
+            default_value: Arc::new(Value::Map {
+                span: Span::none(),
                 entries: vec![ValueEntry {
+                    span: Span::none(),
                     identifier: None,
-                    value: Rc::new(Value::from(default_score)),
+                    value: Arc::new(Value::from(default_score)),
                 }],
             }),
         })?;
@@ -75,20 +91,24 @@ impl Game<Rc<str>> {
         // PlayerOrKeeper |- player
         self.resolve_typedef_or_fail(&Rc::from("PlayerOrKeeper"))?;
         self.add_builtin_variable(Variable {
+            span: Span::none(),
             identifier: Rc::from("player"),
-            type_: Rc::new(Type::from(Rc::from("PlayerOrKeeper"))),
-            default_value: Rc::new(Value::from(Rc::from("keeper"))),
+            type_: Arc::new(Type::from(Rc::from("PlayerOrKeeper"))),
+            default_value: Arc::new(Value::from(Rc::from("keeper"))),
         })?;
 
         // Visibility |- visibility
         self.resolve_typedef_or_fail(&Rc::from("Visibility"))?;
         self.add_builtin_variable(Variable {
+            span: Span::none(),
             identifier: Rc::from("visible"),
-            type_: Rc::new(Type::from(Rc::from("Visibility"))),
-            default_value: Rc::new(Value::Map {
+            type_: Arc::new(Type::from(Rc::from("Visibility"))),
+            default_value: Arc::new(Value::Map {
+                span: Span::none(),
                 entries: vec![ValueEntry {
+                    span: Span::none(),
                     identifier: None,
-                    value: Rc::new(Value::from(Rc::from("1"))),
+                    value: Arc::new(Value::from(Rc::from("1"))),
                 }],
             }),
         })?;

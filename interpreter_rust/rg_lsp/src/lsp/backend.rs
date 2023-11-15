@@ -1,4 +1,5 @@
 use super::document::Document;
+use super::utils::lsp_to_pos;
 use super::{completions, features, semantic_tokens};
 use dashmap::DashMap;
 use tower_lsp::jsonrpc::Result;
@@ -62,7 +63,7 @@ impl LanguageServer for Backend {
     }
     async fn initialized(&self, _: InitializedParams) {
         self.client
-            .log_message(MessageType::INFO, "initialized XD!")
+            .log_message(MessageType::INFO, "initialized")
             .await;
     }
 
@@ -189,7 +190,8 @@ impl LanguageServer for Backend {
         let document = self.document_map.get(&uri.to_string()).unwrap();
         let symbol_table = &document.symbol_table;
         let game = &document.game;
-        let completion_response = completions::completions(position.into(), game, symbol_table);
+        let completion_response =
+            completions::completions(lsp_to_pos(position), game, symbol_table);
         Ok(completion_response)
     }
 }

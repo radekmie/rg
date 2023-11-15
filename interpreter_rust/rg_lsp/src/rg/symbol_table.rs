@@ -1,10 +1,9 @@
 use std::fmt::Display;
 
-use crate::rg::ast::*;
-use crate::rg::position::{Positioned, Span};
+use rg::ast::*;
+use rg::error::Error;
+use rg::position::*;
 
-use super::error::Error;
-use super::position::Position;
 use super::symbol::{from_game as symbols_from_game, Flag, Symbol};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -54,7 +53,7 @@ impl SymbolTableWithErrors {
                 && owner.as_ref().map_or(true, |o| symbol.is_owned_by(*o))
             {
                 sym = Some(idx);
-            } else if symbol.pos > *pos && sym.is_some() {
+            } else if symbol.pos.is_after(pos) && sym.is_some() {
                 return sym;
             }
         }
@@ -112,7 +111,7 @@ impl SymbolTableWithErrors {
         }
     }
 
-    fn add_from_type(&mut self, type_: &Type) {
+    fn add_from_type(&mut self, type_: &Type<Identifier>) {
         match type_ {
             Type::Arrow { lhs, rhs } => {
                 self.add_from_type(lhs);
@@ -129,7 +128,7 @@ impl SymbolTableWithErrors {
         }
     }
 
-    fn add_from_edge(&mut self, edge: &Edge) {
+    fn add_from_edge(&mut self, edge: &Edge<Identifier>) {
         let left_owner = self.add_from_edge_name(&edge.lhs);
         let right_owner = self.add_from_edge_name(&edge.rhs);
         let owner = left_owner.or_else(|| right_owner);
@@ -157,7 +156,7 @@ impl SymbolTableWithErrors {
         }
     }
 
-    fn add_from_edge_label(&mut self, label: &EdgeLabel, owner: &Option<usize>) {
+    fn add_from_edge_label(&mut self, label: &EdgeLabel<Identifier>, owner: &Option<usize>) {
         match label {
             EdgeLabel::Assignment { lhs, rhs } => {
                 self.add_from_expression(lhs, owner);
@@ -176,7 +175,7 @@ impl SymbolTableWithErrors {
         }
     }
 
-    fn add_from_expression(&mut self, expr: &Expression, owner: &Option<usize>) {
+    fn add_from_expression(&mut self, expr: &Expression<Identifier>, owner: &Option<usize>) {
         match expr {
             Expression::Reference { identifier } => {
                 self.add_maybe_edge_param(identifier, owner, true)
@@ -193,7 +192,7 @@ impl SymbolTableWithErrors {
     }
 
     // Returns symbol idx for edge name if it has parameters
-    fn add_from_edge_name(&mut self, edge_name: &EdgeName) -> Option<usize> {
+    fn add_from_edge_name(&mut self, edge_name: &EdgeName<Identifier>) -> Option<usize> {
         match edge_name.parts.as_slice() {
             [EdgeNamePart::Literal { identifier }] => {
                 self.add_occ_with_flag(identifier, Flag::Edge);
@@ -212,7 +211,7 @@ impl SymbolTableWithErrors {
         }
     }
 
-    fn add_from_name_part(&mut self, name_part: &EdgeNamePart, owner: &Option<usize>) {
+    fn add_from_name_part(&mut self, name_part: &EdgeNamePart<Identifier>, owner: &Option<usize>) {
         match name_part {
             EdgeNamePart::Binding {
                 identifier, type_, ..
@@ -226,7 +225,7 @@ impl SymbolTableWithErrors {
         }
     }
 
-    fn add_from_value(&mut self, value: &Value) {
+    fn add_from_value(&mut self, value: &Value<Identifier>) {
         match value {
             Value::Element { identifier } => {
                 self.add_occ(identifier);
@@ -239,43 +238,40 @@ impl SymbolTableWithErrors {
         }
     }
 
-    fn add_from_value_entry(&mut self, entry: &ValueEntry) {
+    fn add_from_value_entry(&mut self, entry: &ValueEntry<Identifier>) {
         if let Some(identifier) = entry.identifier.as_ref() {
             self.add_occ(identifier);
         }
         self.add_from_value(&entry.value);
     }
 
-    pub fn from_game(game: &Game) -> Self {
+    pub fn from_game(game: &Game<Identifier>) -> Self {
         let mut table: Self = Self {
             symbols: symbols_from_game(game),
             occurrences: Vec::new(),
             errors: Vec::new(),
         };
         table.add_builtin_symbols();
-        for stat in game.stats.iter() {
-            match stat {
-                Stat::Constant(constant) => {
-                    table.add_occ_with_flag(&constant.identifier, Flag::Constant);
-                    table.add_from_type(&constant.type_);
-                    table.add_from_value(&constant.value);
-                }
-                Stat::Variable(variable) => {
-                    table.add_occ_with_flag(&variable.identifier, Flag::Variable);
-                    table.add_from_type(&variable.type_);
-                    table.add_from_value(&variable.default_value);
-                }
-                Stat::Pragma(pragma) => {
-                    table.add_from_edge_name(&pragma.edge_name);
-                }
-                Stat::Edge(edge) => {
-                    table.add_from_edge(edge);
-                }
-                Stat::Typedef(typedef) => {
-                    table.add_occ_with_flag(&typedef.identifier, Flag::Type);
-                    table.add_from_type(&typedef.type_);
-                }
-            }
+        for constant in game.constants.iter() {
+            table.add_occ_with_flag(&constant.identifier, Flag::Constant);
+            table.add_from_type(&constant.type_);
+            table.add_from_value(&constant.value);
+        }
+
+        for variable in game.variables.iter() {
+            table.add_occ_with_flag(&variable.identifier, Flag::Variable);
+            table.add_from_type(&variable.type_);
+            table.add_from_value(&variable.default_value);
+        }
+        for typedef in game.typedefs.iter() {
+            table.add_occ_with_flag(&typedef.identifier, Flag::Type);
+            table.add_from_type(&typedef.type_);
+        }
+        for edge in game.edges.iter() {
+            table.add_from_edge(edge);
+        }
+        for pragma in game.pragmas.iter() {
+            table.add_from_edge_name(&pragma.edge_name());
         }
         table
     }
@@ -381,7 +377,7 @@ impl SymbolTable {
         None
     }
 
-    pub fn from_game(game: &Game) -> (Self, Vec<Error>) {
+    pub fn from_game(game: &Game<Identifier>) -> (Self, Vec<Error>) {
         let table = SymbolTableWithErrors::from_game(game);
         (
             Self {

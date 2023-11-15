@@ -1,12 +1,17 @@
-use crate::ast::{
-    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Type, Typedef, Value,
-    ValueEntry, Variable,
+use crate::{
+    ast::*,
+    parser::Span,
+    position::{Span as Position, *},
 };
-use std::rc::Rc;
+use std::sync::Arc;
 
-impl<Id> From<(Id, Rc<Type<Id>>, Rc<Value<Id>>)> for Constant<Id> {
-    fn from((identifier, type_, value): (Id, Rc<Type<Id>>, Rc<Value<Id>>)) -> Self {
+impl<Id: Positioned> From<(Span<'_>, (Id, Arc<Type<Id>>, Arc<Value<Id>>))> for Constant<Id> {
+    fn from(
+        (start, (identifier, type_, value)): (Span, (Id, Arc<Type<Id>>, Arc<Value<Id>>)),
+    ) -> Self {
+        let span = Position::from(start).with_end(value.end());
         Self {
+            span,
             identifier,
             type_,
             value,
@@ -14,27 +19,15 @@ impl<Id> From<(Id, Rc<Type<Id>>, Rc<Value<Id>>)> for Constant<Id> {
     }
 }
 
-impl<Id> From<(EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>)> for Edge<Id> {
+impl<Id: Positioned> From<(EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>)> for Edge<Id> {
     fn from((lhs, rhs, label): (EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>)) -> Self {
-        Self { label, lhs, rhs }
-    }
-}
-
-impl<Id> From<(Rc<Expression<Id>>, Rc<Expression<Id>>)> for EdgeLabel<Id> {
-    fn from((lhs, rhs): (Rc<Expression<Id>>, Rc<Expression<Id>>)) -> Self {
-        Self::Assignment { lhs, rhs }
-    }
-}
-
-impl<Id> From<(Rc<Expression<Id>>, bool, Rc<Expression<Id>>)> for EdgeLabel<Id> {
-    fn from((lhs, negated, rhs): (Rc<Expression<Id>>, bool, Rc<Expression<Id>>)) -> Self {
-        Self::Comparison { lhs, rhs, negated }
-    }
-}
-
-impl<Id> From<(bool, EdgeName<Id>, EdgeName<Id>)> for EdgeLabel<Id> {
-    fn from((negated, lhs, rhs): (bool, EdgeName<Id>, EdgeName<Id>)) -> Self {
-        Self::Reachability { lhs, rhs, negated }
+        let span = Position::new(lhs.start(), label.end());
+        Self {
+            span,
+            label,
+            lhs,
+            rhs,
+        }
     }
 }
 
@@ -44,21 +37,53 @@ impl<Id> From<Id> for EdgeLabel<Id> {
     }
 }
 
-impl<Id> From<Vec<EdgeNamePart<Id>>> for EdgeName<Id> {
-    fn from(parts: Vec<EdgeNamePart<Id>>) -> Self {
-        Self { parts }
+impl<Id> From<(Arc<Expression<Id>>, Arc<Expression<Id>>)> for EdgeLabel<Id> {
+    fn from((lhs, rhs): (Arc<Expression<Id>>, Arc<Expression<Id>>)) -> Self {
+        Self::Assignment { lhs, rhs }
     }
 }
 
-impl<Id> From<Id> for EdgeName<Id> {
+impl<Id> From<(Arc<Expression<Id>>, bool, Arc<Expression<Id>>)> for EdgeLabel<Id> {
+    fn from((lhs, negated, rhs): (Arc<Expression<Id>>, bool, Arc<Expression<Id>>)) -> Self {
+        Self::Comparison { lhs, rhs, negated }
+    }
+}
+
+impl<Id: Positioned> From<(Span<'_>, EdgeName<Id>, EdgeName<Id>)> for EdgeLabel<Id> {
+    fn from((tag, lhs, rhs): (Span, EdgeName<Id>, EdgeName<Id>)) -> Self {
+        let negated = *tag.fragment() == "!";
+        let span = Position::from(tag).with_end(rhs.span().end);
+        Self::Reachability {
+            span,
+            lhs,
+            rhs,
+            negated,
+        }
+    }
+}
+
+impl<Id: Positioned> From<Vec<EdgeNamePart<Id>>> for EdgeName<Id> {
+    fn from(parts: Vec<EdgeNamePart<Id>>) -> Self {
+        let (first, last) = (parts.first().unwrap(), parts.last().unwrap());
+        let span = Position::new(first.start().clone(), last.end().clone());
+        Self { span, parts }
+    }
+}
+
+impl<Id: Positioned> From<Id> for EdgeName<Id> {
     fn from(identifier: Id) -> Self {
         Self::from(vec![EdgeNamePart::from(identifier)])
     }
 }
 
-impl<Id> From<(Id, Rc<Type<Id>>)> for EdgeNamePart<Id> {
-    fn from((identifier, type_): (Id, Rc<Type<Id>>)) -> Self {
-        Self::Binding { identifier, type_ }
+impl<Id: Positioned> From<(Id, Arc<Type<Id>>)> for EdgeNamePart<Id> {
+    fn from((identifier, type_): (Id, Arc<Type<Id>>)) -> Self {
+        let span = Position::new(identifier.start(), type_.end());
+        Self::Binding {
+            span,
+            identifier,
+            type_,
+        }
     }
 }
 
@@ -68,9 +93,17 @@ impl<Id> From<Id> for EdgeNamePart<Id> {
     }
 }
 
-impl<Id> From<Vec<Id>> for Type<Id> {
+impl From<Span<'_>> for Identifier {
+    fn from(value: Span) -> Self {
+        Self::new(Position::from(&value), value.fragment().to_string())
+    }
+}
+
+impl<Id: Positioned> From<Vec<Id>> for Type<Id> {
     fn from(identifiers: Vec<Id>) -> Self {
-        Self::Set { identifiers }
+        let (first, last) = (identifiers.first().unwrap(), identifiers.last().unwrap());
+        let span = Position::new(first.start(), last.end());
+        Self::Set { span, identifiers }
     }
 }
 
@@ -80,9 +113,26 @@ impl<Id> From<Id> for Type<Id> {
     }
 }
 
-impl<Id> From<(Id, Rc<Type<Id>>)> for Typedef<Id> {
-    fn from((identifier, type_): (Id, Rc<Type<Id>>)) -> Self {
-        Self { identifier, type_ }
+impl<Id: Positioned> From<(Span<'_>, Id, Arc<Type<Id>>)> for Typedef<Id> {
+    fn from((start, identifier, type_): (Span, Id, Arc<Type<Id>>)) -> Self {
+        let span = Position::from(start).with_end(type_.span().end);
+        Self {
+            span,
+            identifier,
+            type_,
+        }
+    }
+}
+
+impl From<(Span<'_>, Span<'_>)> for Value<Identifier> {
+    fn from((start, end): (Span<'_>, Span<'_>)) -> Self {
+        let start = Position::from(start);
+        let end = Position::from(end);
+        let span = Position::new(start.start, end.end);
+        Self::Map {
+            span,
+            entries: vec![],
+        }
     }
 }
 
@@ -92,21 +142,33 @@ impl<Id> From<Id> for Value<Id> {
     }
 }
 
-impl<Id> From<Vec<ValueEntry<Id>>> for Value<Id> {
-    fn from(entries: Vec<ValueEntry<Id>>) -> Self {
-        Self::Map { entries }
+impl<Id> From<(Span<'_>, Vec<Option<ValueEntry<Id>>>, Span<'_>)> for Value<Id> {
+    fn from((start, entries, end): (Span<'_>, Vec<Option<ValueEntry<Id>>>, Span<'_>)) -> Self {
+        let start = Position::from(start);
+        let end = Position::from(end);
+        let span = Position::new(start.start, end.end);
+        let entries = entries.into_iter().flatten().collect();
+        Self::Map { span, entries }
     }
 }
 
-impl<Id> From<(Option<Id>, Rc<Value<Id>>)> for ValueEntry<Id> {
-    fn from((identifier, value): (Option<Id>, Rc<Value<Id>>)) -> Self {
-        Self { identifier, value }
-    }
-}
-
-impl<Id> From<(Id, Rc<Type<Id>>, Rc<Value<Id>>)> for Variable<Id> {
-    fn from((identifier, type_, default_value): (Id, Rc<Type<Id>>, Rc<Value<Id>>)) -> Self {
+impl<Id> From<(Position, Option<Id>, Arc<Value<Id>>)> for ValueEntry<Id> {
+    fn from((span, identifier, value): (Position, Option<Id>, Arc<Value<Id>>)) -> Self {
         Self {
+            span,
+            identifier,
+            value,
+        }
+    }
+}
+
+impl<Id: Positioned> From<(Span<'_>, Id, Arc<Type<Id>>, Arc<Value<Id>>)> for Variable<Id> {
+    fn from(
+        (start, identifier, type_, default_value): (Span, Id, Arc<Type<Id>>, Arc<Value<Id>>),
+    ) -> Self {
+        let span = Position::from(start).with_end(default_value.end());
+        Self {
+            span,
             default_value,
             identifier,
             type_,

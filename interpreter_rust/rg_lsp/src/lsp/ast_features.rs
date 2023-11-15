@@ -1,19 +1,26 @@
-use crate::rg::{ast::*, position::*, symbol::Symbol};
+use crate::rg::{stat::Stat, symbol::Symbol};
+use rg::{ast::*, position::*};
 
-impl Game {
-    pub fn enclosing_stat(&self, span: Span) -> Option<&Stat> {
-        self.stats
-            .iter()
+pub trait AstFeatures {
+    fn enclosing_stat(&self, span: Span) -> Option<Stat>;
+    fn enclosing_stat_pos(&self, pos: Position) -> Option<Stat>;
+    fn hover_signature(&self, symbol: &Symbol) -> Option<String>;
+}
+
+impl AstFeatures for Game<Identifier> {
+    fn enclosing_stat(&self, span: Span) -> Option<Stat> {
+        Stat::from_game(self)
+            .into_iter()
             .find(|stat| stat.span().encloses_span(&span))
     }
 
-    pub fn enclosing_stat_pos(&self, pos: Position) -> Option<&Stat> {
-        self.stats
-            .iter()
+    fn enclosing_stat_pos(&self, pos: Position) -> Option<Stat> {
+        Stat::from_game(self)
+            .into_iter()
             .find(|stat| stat.span().encloses_pos(&pos))
     }
 
-    pub fn hover_signature(&self, symbol: &Symbol) -> Option<String> {
+    fn hover_signature(&self, symbol: &Symbol) -> Option<String> {
         self.enclosing_stat(symbol.span())
             .and_then(|stat| match stat {
                 Stat::Constant(Constant { type_, .. }) => {
@@ -40,7 +47,7 @@ impl Game {
     }
 }
 
-fn hover_sig_edge_name(edge_name: &EdgeName, symbol: &Symbol) -> Option<String> {
+fn hover_sig_edge_name(edge_name: &EdgeName<Identifier>, symbol: &Symbol) -> Option<String> {
     match edge_name.parts.as_slice() {
         [_, bindings @ ..] => bindings.iter().find_map(|binding| match binding {
             EdgeNamePart::Binding { type_, .. } => {

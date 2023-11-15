@@ -1,11 +1,11 @@
-use crate::rg::ast::Game;
-use crate::rg::error::Error;
-use crate::rg::parser::parse_with_errors;
 use crate::rg::symbol_table::*;
+use rg::ast::{Game, Identifier};
+use rg::error::Error;
+use rg::parser::parse_with_errors;
 
 pub struct Document {
     pub text: String,
-    pub game: Game,
+    pub game: Game<Identifier>,
     pub symbol_table: SymbolTable,
 }
 
