@@ -173,11 +173,12 @@ fn edge_name_part(input: Span) -> Result<EdgeNamePart<Identifier>> {
     context(
         "edge_name_part",
         alt((
-            into(delimited(
+            into(tuple((
                 tag("("),
-                cut(pair(preceded_opt_id("edge_name_part"), preceded_type_)),
+                cut(preceded_opt_id("edge_name_part")),
+                preceded_type_,
                 preceded_whitespace(tag(")")),
-            )),
+            ))),
             into(identifier),
         )),
     )(input)
@@ -205,35 +206,33 @@ fn expression(input: Span) -> Result<Arc<Expression<Identifier>>> {
     // Eliminate direct left recursion.
     fn inner(input: Span) -> Result<Arc<Expression<Identifier>>> {
         let (input, identifier) = preceded_whitespace(identifier)(input)?;
-        let (input, maybe_cast) = opt(preceded_whitespace(delimited(
+        let (input, maybe_cast) = opt(preceded_whitespace(preceded(
             tag("("),
-            cut(expect_expression),
-            preceded_whitespace(tag(")")),
+            pair(cut(expect_expression), preceded_whitespace(tag(")"))),
         )))(input)?;
         let (input, expression) = fold_many0(
-            delimited(
+            preceded(
                 tag("["),
-                cut(expect_expression),
-                preceded_whitespace(tag("]")),
+                pair(cut(expect_expression), preceded_whitespace(tag("]"))),
             ),
             || match maybe_cast.clone() {
-                Some(rhs) => Arc::new(Expression::Cast {
-                    span: rhs.span().with_start(identifier.span().start),
-                    lhs: Arc::new(Type::TypeReference {
-                        identifier: identifier.clone(),
-                    }),
-                    rhs,
-                }),
+                Some((rhs, end)) => {
+                    let span = Position::from(end).with_start(identifier.span().start);
+                    Arc::new(Expression::Cast {
+                        span,
+                        lhs: Arc::new(Type::TypeReference {
+                            identifier: identifier.clone(),
+                        }),
+                        rhs,
+                    })
+                }
                 None => Arc::new(Expression::Reference {
                     identifier: identifier.clone(),
                 }),
             },
-            |lhs, rhs| {
-                Arc::new(Expression::Access {
-                    span: rhs.span().with_start(lhs.start()),
-                    lhs,
-                    rhs,
-                })
+            |lhs, (rhs, end)| {
+                let span = Position::from(end).with_start(lhs.start());
+                Arc::new(Expression::Access { span, lhs, rhs })
             },
         )(input)?;
 
@@ -247,14 +246,14 @@ fn type_(input: Span) -> Result<Arc<Type<Identifier>>> {
     // Eliminate direct left recursion.
     fn inner(input: Span) -> Result<Arc<Type<Identifier>>> {
         let (input, lhs): (Span, Arc<Type<Identifier>>) = alt((
-            into_arc(delimited(
+            into_arc(tuple((
                 preceded_whitespace(tag("{")),
                 preceded_whitespace(cut(separated_list0(
                     preceded_whitespace(char(',')),
                     preceded_opt_id("type_member"),
                 ))),
                 preceded_whitespace(tag("}")),
-            )),
+            ))),
             into_arc(preceded_opt_id("type")),
         ))(input)?;
 

@@ -67,7 +67,8 @@ fn completion_items(
     game: &Game<Identifier>,
     symbol_table: &SymbolTable,
 ) -> Vec<CompletionItem> {
-    match CompletionKind::from_game(pos, game) {
+    let completion_kind = CompletionKind::from_game(pos, game);
+    match completion_kind {
         CompletionKind::None => vec![],
         CompletionKind::Toplevel => {
             let symbols = get_symbols(symbol_table, &CompletionKind::Toplevel.predicate());
@@ -198,7 +199,7 @@ impl CompletionKind {
                         CompletionKind::Any
                     }
                 }
-                Stat::Pragma(_) => CompletionKind::Edge,
+                Stat::Pragma(pragma) => Self::from_edge_name(pos, pragma.edge_name()),
             }
         } else {
             CompletionKind::Toplevel
@@ -213,8 +214,12 @@ impl CompletionKind {
                 if part.span().encloses_pos(&pos) {
                     match part {
                         EdgeNamePart::Literal { .. } => Some(CompletionKind::Edge),
-                        EdgeNamePart::Binding { identifier, .. } => {
-                            if identifier.span().encloses_pos(&pos) {
+                        EdgeNamePart::Binding {
+                            type_, identifier, ..
+                        } => {
+                            if identifier.span().encloses_pos(&pos)
+                                || !type_.span().start.is_after(&identifier.span().end)
+                            {
                                 Some(CompletionKind::Param)
                             } else {
                                 Some(CompletionKind::Type)

@@ -76,9 +76,9 @@ impl<Id: Positioned> From<Id> for EdgeName<Id> {
     }
 }
 
-impl<Id: Positioned> From<(Id, Arc<Type<Id>>)> for EdgeNamePart<Id> {
-    fn from((identifier, type_): (Id, Arc<Type<Id>>)) -> Self {
-        let span = Position::new(identifier.start(), type_.end());
+impl<Id: Positioned> From<(Span<'_>, Id, Arc<Type<Id>>, Span<'_>)> for EdgeNamePart<Id> {
+    fn from((start, identifier, type_, end): (Span, Id, Arc<Type<Id>>, Span)) -> Self {
+        let span = Position::from((start, end));
         Self::Binding {
             span,
             identifier,
@@ -99,10 +99,9 @@ impl From<Span<'_>> for Identifier {
     }
 }
 
-impl<Id: Positioned> From<Vec<Id>> for Type<Id> {
-    fn from(identifiers: Vec<Id>) -> Self {
-        let (first, last) = (identifiers.first().unwrap(), identifiers.last().unwrap());
-        let span = Position::new(first.start(), last.end());
+impl<Id: Positioned> From<(Span<'_>, Vec<Id>, Span<'_>)> for Type<Id> {
+    fn from((start, identifiers, end): (Span, Vec<Id>, Span)) -> Self {
+        let span = Position::from((start, end));
         Self::Set { span, identifiers }
     }
 }
