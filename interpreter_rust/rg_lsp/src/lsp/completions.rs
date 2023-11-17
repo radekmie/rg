@@ -1,5 +1,6 @@
 use tower_lsp::lsp_types::{
-    CompletionItem, CompletionItemKind, CompletionOptions, CompletionResponse,
+    CompletionItem, CompletionItemKind, CompletionItemLabelDetails, CompletionOptions,
+    CompletionOptionsCompletionItem, CompletionResponse,
 };
 
 use rg::{ast::*, position::*};
@@ -45,7 +46,9 @@ pub fn capabilities() -> CompletionOptions {
         trigger_characters: None,
         all_commit_characters: None,
         work_done_progress_options: Default::default(),
-        completion_item: None,
+        completion_item: Some(CompletionOptionsCompletionItem {
+            label_details_support: Some(true),
+        }),
     }
 }
 
@@ -68,13 +71,13 @@ fn completion_items(
     symbol_table: &SymbolTable,
 ) -> Vec<CompletionItem> {
     let completion_kind = CompletionKind::from_game(pos, game);
-    match completion_kind {
+    let mut items = match completion_kind {
         CompletionKind::None => vec![],
         CompletionKind::Toplevel => {
             let symbols = get_symbols(symbol_table, &CompletionKind::Toplevel.predicate());
             let mut items: Vec<CompletionItem> = symbols
-                .iter()
-                .map(|sym| completion_item(sym.id.clone(), Some(sym.flag.clone().into())))
+                .into_iter()
+                .map(|sym| completion_item(game, sym))
                 .collect();
             items.extend(keyword_completions());
             items
@@ -82,11 +85,13 @@ fn completion_items(
         kind => {
             let symbols = get_symbols(symbol_table, &kind.predicate());
             symbols
-                .iter()
-                .map(|sym| completion_item(sym.id.clone(), Some(sym.flag.clone().into())))
+                .into_iter()
+                .map(|sym| completion_item(game, sym))
                 .collect()
         }
-    }
+    };
+    items.dedup();
+    items
 }
 
 fn get_symbols<'a>(
@@ -98,21 +103,37 @@ fn get_symbols<'a>(
 
 fn keyword_completions() -> Vec<CompletionItem> {
     vec![
-        completion_item("const".into(), Some(CompletionItemKind::KEYWORD)),
-        completion_item("var".into(), Some(CompletionItemKind::KEYWORD)),
-        completion_item("type".into(), Some(CompletionItemKind::KEYWORD)),
-        completion_item("@any".into(), Some(CompletionItemKind::KEYWORD)),
-        completion_item("@disjoint".into(), Some(CompletionItemKind::KEYWORD)),
-        completion_item("@multiAny".into(), Some(CompletionItemKind::KEYWORD)),
-        completion_item("@unique".into(), Some(CompletionItemKind::KEYWORD)),
+        ("const", Some(CompletionItemKind::KEYWORD)),
+        ("var", Some(CompletionItemKind::KEYWORD)),
+        ("type", Some(CompletionItemKind::KEYWORD)),
+        ("@any", Some(CompletionItemKind::KEYWORD)),
+        ("@disjoint", Some(CompletionItemKind::KEYWORD)),
+        ("@multiAny", Some(CompletionItemKind::KEYWORD)),
+        ("@unique", Some(CompletionItemKind::KEYWORD)),
     ]
+    .into_iter()
+    .map(|(label, kind)| CompletionItem {
+        label: label.to_string(),
+        kind,
+        ..Default::default()
+    })
+    .collect()
 }
 
-fn completion_item(label: String, kind: Option<CompletionItemKind>) -> CompletionItem {
+fn completion_item(game: &Game<Identifier>, symbol: &Symbol) -> CompletionItem {
+    let type_ = if symbol.flag == Flag::Type {
+        None
+    } else {
+        game.symbol_type(symbol)
+    };
     CompletionItem {
-        label,
-        kind,
-        ..CompletionItem::default()
+        label: symbol.id.clone(),
+        kind: Some(symbol.flag.clone().into()),
+        label_details: type_.map(|t| CompletionItemLabelDetails {
+            detail: Some(format!(" : {}", t)),
+            ..Default::default()
+        }),
+        ..Default::default()
     }
 }
 

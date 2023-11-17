@@ -11,7 +11,7 @@ use crate::rg::symbol_table::*;
 use rg::ast::{Game, Identifier};
 use rg::error::Error;
 
-use super::ast_features::AstFeatures;
+use super::ast_features::hover_signature;
 use super::utils::*;
 
 #[allow(deprecated)]
@@ -151,7 +151,7 @@ pub fn hover(
     let occ = symbol_table.occ_enclosing_pos(position)?;
     let pos = occ.pos;
     let enclosing_symbol = symbol_table.get_occ_symbol(occ)?;
-    let str = game.hover_signature(enclosing_symbol)?;
+    let str = hover_signature(game, enclosing_symbol)?;
     let contents = l::HoverContents::Array(vec![l::MarkedString::from_language_code(
         "rg".to_string(),
         str,

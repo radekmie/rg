@@ -183,9 +183,23 @@ export default class Language implements monaco.languages.ILanguageExtensionPoin
             triggerKind: context.triggerKind,
             triggerCharacter: context.triggerCharacter,
           },
-        } as proto.CompletionParams) as Promise<vscode.CompletionItem[]>);
-
-        return result;
+        } as proto.CompletionParams) as Promise<{
+          label: string,
+          kind: vscode.CompletionItemKind,
+          labelDetails?: {
+            detail?: string
+          }
+        }[] | null>);
+        if (result == null) {
+          return [];
+        }
+        return result.map(elem => {
+          const label = {
+            label: elem.label,
+            detail: elem.labelDetails?.detail,
+          }
+          return new vscode.CompletionItem(label, elem.kind);
+        });
       },
     });
 

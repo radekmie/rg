@@ -390,13 +390,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "parser_utils"
-version = "0.1.0"
-dependencies = [
- "nom",
-]
-
-[[package]]
 name = "percent-encoding"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -529,7 +522,6 @@ dependencies = [
  "map_id_macro",
  "nom",
  "nom_locate",
- "parser_utils",
  "rand",
  "serde",
 ]
