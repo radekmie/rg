@@ -282,7 +282,7 @@ mod test {
         let obtained = CompletionKind::from_game(pos, &game);
         assert!(
             obtained == expected,
-            "expected: {:?}, obtained: {:?}",
+            "\nexpected: {:?}, obtained: {:?}\n",
             expected,
             obtained
         );
@@ -337,6 +337,65 @@ mod test {
     fn edge_label3() {
         completion_kind(
             "begin, e1(param: Foo): Cast(^) == a",
+            CompletionKind::Variable,
+        );
+    }
+
+    #[test]
+    fn edge_label4() {
+        completion_kind(
+            "begin, e1(param: Foo): Cast(a) == ^",
+            CompletionKind::Variable,
+        );
+    }
+
+    #[test]
+    fn edge_label5() {
+        completion_kind(
+            "begin, e1(param: Foo): Cast(a) == a^",
+            CompletionKind::Variable,
+        );
+    }
+
+    #[test]
+    fn edge_label6() {
+        completion_kind("begin, e1(param: Foo): ^ == a", CompletionKind::Variable);
+    }
+
+    #[test]
+    fn edge_label7() {
+        completion_kind("begin, e1(param: Foo): ^ != a", CompletionKind::Variable);
+    }
+
+    #[test]
+    fn edge_label8() {
+        completion_kind("begin, e1(param: Foo): ^ != ;", CompletionKind::Variable);
+    }
+
+    #[test]
+    fn edge_label9() {
+        completion_kind("begin, e1(param: Foo): ! ^ ;", CompletionKind::Edge);
+    }
+
+    #[test]
+    fn edge_label10() {
+        completion_kind("begin, e1(param: Foo): ! foo -> ^ ;", CompletionKind::Edge);
+    }
+
+    #[test]
+    fn edge_label11() {
+        completion_kind("begin, e1(param: Foo): ! ^ -> foo ;", CompletionKind::Edge);
+    }
+
+    #[test]
+    fn edge_label12() {
+        completion_kind("begin, e1(param: Foo): a = ^ ;", CompletionKind::Variable);
+    }
+
+    #[test]
+    fn edge_label13() {
+        completion_kind(
+            "begin, e1(param: Foo): a = foo^ ;",
             CompletionKind::Variable,
         );
     }

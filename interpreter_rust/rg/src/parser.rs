@@ -116,23 +116,16 @@ fn edge_label(input: Span) -> Result<EdgeLabel<Identifier>> {
                 preceded_whitespace(char('$')),
                 cut(preceded_opt_id("edge_label")),
             )),
-            into(tuple((
-                expression,
-                preceded_whitespace(map(alt((tag("=="), tag("!="))), |c: Span| {
-                    *c.fragment() == "!="
-                })),
-                cut(expect_expression),
-            ))),
+            compare_label,
             into(tuple((
                 preceded_whitespace(alt((tag("!"), tag("?")))),
-                cut(terminated(edge_name, preceded_whitespace(tag("->")))),
-                edge_name,
+                cut(terminated(
+                    preceded_whitespace(expect_edge_name),
+                    expect(preceded_whitespace(tag("->")), "expected `->`"),
+                )),
+                preceded_whitespace(expect_edge_name),
             ))),
-            into(separated_pair(
-                expression,
-                expect(preceded_whitespace(cut(char('='))), "expected `=`"),
-                cut(expect_expression),
-            )),
+            assign_label,
             success::<_, _, _>(EdgeLabel::Skip {
                 span: Position::from(&input),
             }),
@@ -527,6 +520,42 @@ where
     )
 }
 
+fn compare_label(input: Span) -> Result<EdgeLabel<Identifier>> {
+    let error_pos = Position::from(&input).focus_start();
+    let (input, maybe_expr) = opt(preceded_whitespace(expression))(input)?;
+    let (input, comparison) = preceded_whitespace(map(alt((tag("=="), tag("!="))), |c: Span| {
+        *c.fragment() == "!="
+    }))(input)?;
+    let (input, rhs) = expect_expression(input)?;
+    if let Some(lhs) = maybe_expr {
+        Ok((input, (lhs, comparison, rhs).into()))
+    } else {
+        let err = Error::parser_error(error_pos, "expected expression".to_string());
+        input.extra.report_error(err);
+        let lhs = Arc::new(Expression::Reference {
+            identifier: Identifier::none(error_pos),
+        });
+        Ok((input, (lhs, comparison, rhs).into()))
+    }
+}
+
+fn assign_label(input: Span) -> Result<EdgeLabel<Identifier>> {
+    let error_pos = Position::from(&input).focus_start();
+    let (input, maybe_expr) = opt(preceded_whitespace(expression))(input)?;
+    let (input, _) = preceded_whitespace(char('='))(input)?;
+    let (input, rhs) = expect_expression(input)?;
+    if let Some(lhs) = maybe_expr {
+        Ok((input, (lhs, rhs).into()))
+    } else {
+        let err = Error::parser_error(error_pos, "expected expression".to_string());
+        input.extra.report_error(err);
+        let lhs = Arc::new(Expression::Reference {
+            identifier: Identifier::none(error_pos),
+        });
+        Ok((input, (lhs, rhs).into()))
+    }
+}
+
 pub fn parse_with_errors(input: &str) -> (Game<Identifier>, Vec<Error>) {
     let errors = RefCell::new(Vec::new());
     let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
@@ -590,8 +619,13 @@ mod test {
     }
 
     #[test]
-    fn skip_edge() {
+    fn tag_edge() {
         check_parse("foo, bar: $ F;");
+    }
+
+    #[test]
+    fn skip_edge() {
+        check_parse("foo, bar: ;");
     }
 
     #[test]
