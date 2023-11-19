@@ -165,7 +165,7 @@ impl CompletionKind {
                         CompletionKind::None
                     } else if type_.span().encloses_pos(&pos) {
                         CompletionKind::Type
-                    } else if value.span().encloses_pos(&pos) {
+                    } else if value.span().encloses_pos(&pos) || pos.is_after(&value.end()) {
                         CompletionKind::Value
                     } else {
                         CompletionKind::Any
@@ -181,7 +181,9 @@ impl CompletionKind {
                         CompletionKind::None
                     } else if type_.span().encloses_pos(&pos) {
                         CompletionKind::Type
-                    } else if default_value.span().encloses_pos(&pos) {
+                    } else if default_value.span().encloses_pos(&pos)
+                        || pos.is_after(&default_value.end())
+                    {
                         CompletionKind::Value
                     } else {
                         CompletionKind::Any
@@ -194,7 +196,7 @@ impl CompletionKind {
                         Self::from_edge_name(pos, lhs)
                     } else if rhs.span().encloses_pos(&pos) {
                         Self::from_edge_name(pos, rhs)
-                    } else if label.span().encloses_pos(&pos) {
+                    } else if label.span().encloses_pos(&pos) || pos.is_after(&label.end()) {
                         match label {
                             EdgeLabel::Assignment { .. } => CompletionKind::Variable,
                             EdgeLabel::Comparison { .. } => CompletionKind::Variable,
@@ -211,7 +213,7 @@ impl CompletionKind {
                 }) => {
                     if identifier.span().encloses_pos(&pos) {
                         CompletionKind::None
-                    } else if type_.span().encloses_pos(&pos) {
+                    } else if type_.span().encloses_pos(&pos) || pos.is_after(&type_.end()) {
                         match type_.as_ref() {
                             Type::Set { .. } => CompletionKind::None,
                             _ => CompletionKind::Type,
@@ -427,7 +429,7 @@ mod test {
 
     #[test]
     fn toplevel1() {
-        completion_kind("const foo: Bar = {:null}\n^", CompletionKind::Toplevel);
+        completion_kind("const foo: Bar = {:null};\n^", CompletionKind::Toplevel);
     }
 
     #[test]
@@ -453,5 +455,10 @@ mod test {
     #[test]
     fn type_def4() {
         completion_kind("type Foo = {null, ^ }", CompletionKind::None);
+    }
+
+    #[test]
+    fn type_def5() {
+        completion_kind("type Foo = Bar ^ ;", CompletionKind::Type);
     }
 }

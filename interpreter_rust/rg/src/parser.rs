@@ -26,17 +26,23 @@ fn constant(input: Span) -> Result<Option<Constant<Identifier>>> {
         map(
             with_semicolon(
                 tag("const"),
-                cut(tuple((
-                    preceded_opt_id("const"),
-                    terminated(
-                        preceded_type_,
-                        expect(preceded_whitespace(cut(char('='))), "expected `=`"),
-                    ),
-                    value,
-                ))),
-                "syntax error: expected `const <identifier> : <type> = <value>;`",
+                expect(
+                    tuple((
+                        preceded_opt_id("const"),
+                        terminated(
+                            preceded_type_,
+                            expect(preceded_whitespace(cut(char('='))), "expected `=`"),
+                        ),
+                        value,
+                    )),
+                    "syntax error: expected `const <identifier> : <type> = <value>;`",
+                ),
             ),
-            |(tag_span, res)| res.map(|res| (tag_span, res).into()),
+            |(tag_span, res, end)| {
+                res.map(|(identifier, type_, value)| {
+                    (tag_span, identifier, type_, value, end).into()
+                })
+            },
         ),
     )(input)
 }
@@ -94,16 +100,18 @@ fn edge(input: Span) -> Result<Option<Edge<Identifier>>> {
                     preceded_whitespace(edge_name),
                     expect(preceded_whitespace(char(',')), "expected `,`"),
                 ),
-                tuple((
-                    terminated(
-                        preceded_whitespace(expect_edge_name),
-                        expect(preceded_whitespace(cut(char(':'))), "expected `:`"),
-                    ),
-                    edge_label,
-                )),
-                "syntax error: expected `<edge_name>, <edge_name> : <edge_label>;",
+                expect(
+                    tuple((
+                        terminated(
+                            preceded_whitespace(expect_edge_name),
+                            expect(preceded_whitespace(cut(char(':'))), "expected `:`"),
+                        ),
+                        edge_label,
+                    )),
+                    "syntax error: expected `<edge_name>, <edge_name> : <edge_label>;",
+                ),
             ),
-            |(lhs, res)| res.map(|(rhs, label)| (lhs, rhs, label).into()),
+            |(lhs, res, end)| res.map(|(rhs, label)| (lhs, rhs, label, end).into()),
         ),
     )(input)
 }
@@ -126,6 +134,7 @@ fn edge_label(input: Span) -> Result<EdgeLabel<Identifier>> {
                 preceded_whitespace(expect_edge_name),
             ))),
             assign_label,
+            expr_label,
             success::<_, _, _>(EdgeLabel::Skip {
                 span: Position::from(&input),
             }),
@@ -265,14 +274,16 @@ fn typedef(input: Span) -> Result<Option<Typedef<Identifier>>> {
         map(
             with_semicolon(
                 tag("type"),
-                cut(separated_pair(
-                    preceded_opt_id("typedef"),
-                    expect(preceded_whitespace(cut(char('='))), "expected `=`"),
-                    type_,
-                )),
-                "syntax error: expected `type <identifier> = <type>;`",
+                expect(
+                    separated_pair(
+                        preceded_opt_id("typedef"),
+                        expect(preceded_whitespace(cut(char('='))), "expected `=`"),
+                        type_,
+                    ),
+                    "syntax error: expected `type <identifier> = <type>;`",
+                ),
             ),
-            |(tag_span, res)| res.map(|(ident, tpe)| (tag_span, ident, tpe).into()),
+            |(tag_span, res, end)| res.map(|(ident, tpe)| (tag_span, ident, tpe, end).into()),
         ),
     )(input)
 }
@@ -344,17 +355,21 @@ fn variable(input: Span) -> Result<Option<Variable<Identifier>>> {
     map(
         with_semicolon(
             tag("var"),
-            cut(tuple((
-                preceded_opt_id("variable"),
-                terminated(
-                    preceded_type_,
-                    expect(preceded_whitespace(cut(char('='))), "expected `=`"),
-                ),
-                value,
-            ))),
-            "syntax error: expected `var <identifier> : <type> = <value>;`",
+            expect(
+                tuple((
+                    preceded_opt_id("variable"),
+                    terminated(
+                        preceded_type_,
+                        expect(preceded_whitespace(cut(char('='))), "expected `=`"),
+                    ),
+                    value,
+                )),
+                "syntax error: expected `var <identifier> : <type> = <value>;`",
+            ),
         ),
-        |(tag_span, res)| res.map(|(ident, tpe, value)| (tag_span, ident, tpe, value).into()),
+        |(tag_span, res, end)| {
+            res.map(|(ident, tpe, value)| (tag_span, ident, tpe, value, end).into())
+        },
     )(input)
 }
 
@@ -504,20 +519,26 @@ where
     }
 }
 
-fn with_semicolon<'a, F, G, T, U, E>(
-    first: G,
-    parser: F,
-    error_msg: E,
-) -> impl FnMut(Span<'a>) -> Result<(U, Option<T>)>
+fn with_semicolon<'a, F, G, T, U>(
+    mut first: G,
+    mut parser: F,
+) -> impl FnMut(Span<'a>) -> Result<(U, Option<T>, Position)>
 where
     G: FnMut(Span<'a>) -> Result<U>,
-    F: FnMut(Span<'a>) -> Result<T>,
-    E: ToString,
+    F: FnMut(Span<'a>) -> Result<Option<T>>,
 {
-    terminated(
-        tuple((first, expect(parser, error_msg))),
-        expect(preceded_whitespace(cut(tag(";"))), "missing `;`"),
-    )
+    move |input| {
+        let (input, first) = first(input)?;
+        let (input, second) = parser(input)?;
+        let (input, end) = preceded_whitespace(opt(tag(";")))(input)?;
+        let semicolon_pos = Position::from(&input).focus_start();
+        if end.is_none() && second.is_some() {
+            let err = Error::parser_error(semicolon_pos, "expected `;`".to_string());
+            input.extra.report_error(err);
+        }
+        let end_pos = end.map_or(semicolon_pos, |end| Position::from(&end).focus_end());
+        Ok((input, (first, second, end_pos)))
+    }
 }
 
 fn compare_label(input: Span) -> Result<EdgeLabel<Identifier>> {
@@ -556,6 +577,17 @@ fn assign_label(input: Span) -> Result<EdgeLabel<Identifier>> {
     }
 }
 
+// Additional parser for cases like `foo, bar: abc^`
+// It always returns an error or fails, so it's used only in LSP
+fn expr_label(input: Span) -> Result<EdgeLabel<Identifier>> {
+    let (input, lhs) = preceded_whitespace(expression)(input)?;
+    let error_pos = Position::from(&input).focus_start();
+    let err = Error::parser_error(error_pos, "expected `=`, `==` or `!=`".to_string());
+    input.extra.report_error(err);
+    let (input, rhs) = expect_expression(input)?;
+    Ok((input, (lhs, rhs).into()))
+}
+
 pub fn parse_with_errors(input: &str) -> (Game<Identifier>, Vec<Error>) {
     let errors = RefCell::new(Vec::new());
     let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
@@ -576,7 +608,6 @@ mod test {
 
     fn check_parse(input: &str) {
         let (game, errors) = parse_with_errors(input);
-        println!("Game:\n{}", game);
         assert!(
             errors.is_empty(),
             "Failed to parse:\n{}\nErrors: {:#?}",

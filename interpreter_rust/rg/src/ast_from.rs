@@ -5,11 +5,13 @@ use crate::{
 };
 use std::sync::Arc;
 
-impl<Id: Positioned> From<(Span<'_>, (Id, Arc<Type<Id>>, Arc<Value<Id>>))> for Constant<Id> {
+impl<Id: Positioned> From<(Span<'_>, Id, Arc<Type<Id>>, Arc<Value<Id>>, Position)>
+    for Constant<Id>
+{
     fn from(
-        (start, (identifier, type_, value)): (Span, (Id, Arc<Type<Id>>, Arc<Value<Id>>)),
+        (start, identifier, type_, value, end): (Span, Id, Arc<Type<Id>>, Arc<Value<Id>>, Position),
     ) -> Self {
-        let span = Position::from(start).with_end(value.end());
+        let span = Position::from(start).with_end(end.end);
         Self {
             span,
             identifier,
@@ -19,9 +21,9 @@ impl<Id: Positioned> From<(Span<'_>, (Id, Arc<Type<Id>>, Arc<Value<Id>>))> for C
     }
 }
 
-impl<Id: Positioned> From<(EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>)> for Edge<Id> {
-    fn from((lhs, rhs, label): (EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>)) -> Self {
-        let span = Position::new(lhs.start(), label.end());
+impl<Id: Positioned> From<(EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>, Position)> for Edge<Id> {
+    fn from((lhs, rhs, label, end): (EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>, Position)) -> Self {
+        let span = Position::new(lhs.start(), end.end);
         Self {
             span,
             label,
@@ -112,9 +114,9 @@ impl<Id> From<Id> for Type<Id> {
     }
 }
 
-impl<Id: Positioned> From<(Span<'_>, Id, Arc<Type<Id>>)> for Typedef<Id> {
-    fn from((start, identifier, type_): (Span, Id, Arc<Type<Id>>)) -> Self {
-        let span = Position::from(start).with_end(type_.span().end);
+impl<Id: Positioned> From<(Span<'_>, Id, Arc<Type<Id>>, Position)> for Typedef<Id> {
+    fn from((start, identifier, type_, end): (Span, Id, Arc<Type<Id>>, Position)) -> Self {
+        let span = Position::from(start).with_end(end.end);
         Self {
             span,
             identifier,
@@ -161,11 +163,19 @@ impl<Id> From<(Position, Option<Id>, Arc<Value<Id>>)> for ValueEntry<Id> {
     }
 }
 
-impl<Id: Positioned> From<(Span<'_>, Id, Arc<Type<Id>>, Arc<Value<Id>>)> for Variable<Id> {
+impl<Id: Positioned> From<(Span<'_>, Id, Arc<Type<Id>>, Arc<Value<Id>>, Position)>
+    for Variable<Id>
+{
     fn from(
-        (start, identifier, type_, default_value): (Span, Id, Arc<Type<Id>>, Arc<Value<Id>>),
+        (start, identifier, type_, default_value, end): (
+            Span,
+            Id,
+            Arc<Type<Id>>,
+            Arc<Value<Id>>,
+            Position,
+        ),
     ) -> Self {
-        let span = Position::from(start).with_end(default_value.end());
+        let span = Position::from(start).with_end(end.end);
         Self {
             span,
             default_value,
