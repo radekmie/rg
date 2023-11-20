@@ -9,6 +9,7 @@ import { presets } from '../const/presets';
 export type State = {
   settings: Settings;
   source: string;
+  path: string,
   view: View;
 };
 
@@ -40,11 +41,12 @@ const initialState: State = {
     },
   },
   source: initialPreset.source,
+  path: initialPreset.name,
   view: 'Automaton',
 };
 
 export function useApplicationState() {
-  const [{ settings, source, view }, setState] = useState(initialState);
+  const [{ settings, source, path, view }, setState] = useState(initialState);
   const game = usePromise(() => parse(source, settings), [settings, source]);
   const actions = useMemo(
     () => ({
@@ -55,6 +57,7 @@ export function useApplicationState() {
           ...state,
           settings: { ...state.settings, extension: preset.extension },
           source: preset.source,
+          path: preset.name,
         }));
       },
       setSettings(modifier: (prev: Settings) => Settings) {
@@ -70,5 +73,5 @@ export function useApplicationState() {
     [],
   );
 
-  return { actions, game, settings, source, view };
+  return { actions, game, settings, source, path, view };
 }

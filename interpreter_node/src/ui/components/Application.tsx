@@ -48,15 +48,16 @@ export function Application() {
     game,
     settings,
     source,
+    path,
     view,
   } = useApplicationState();
-
   return (
     <>
       <section className={styles.panel}>
         <ReactMonacoEditor
-          defaultCode={'abc'}
-          path={'/sampleServer'}
+          path={path}
+          source={source}
+          onChange={setSource}
         />
       </section>
       <section className={styles.panel}>

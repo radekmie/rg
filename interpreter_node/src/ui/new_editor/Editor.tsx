@@ -1,73 +1,74 @@
-import React, { createRef, useEffect, useMemo, useRef } from 'react';
-import { Uri, editor } from 'monaco-editor';
+import { createRef, useEffect, useRef } from 'react';
+import { editor } from 'monaco-editor';
 import Client from "./client";
 import { FromServer, IntoServer } from "./codec";
-import Language from "./language";
 import Server from "./server";
 import MonacoEditor from './monaco_editor';
 import { LogLevel, initialize as initializeService } from 'vscode/services';
 import { initialize as initializeExtenstion } from 'vscode/extensions';
-import * as fsp from 'fs/promises'
-import * as styles from '../index.module.css';
 import { Autosize } from '../components/Autosize';
-import {presets} from '../const/presets';
 
 
 let init = true;
 
 export type EditorProps = {
-  defaultCode: string;
   path: string;
+  source: string;
+  onChange: (source: string) => void;
   className?: string;
 }
 
 
-export const ReactMonacoEditor: React.FC<EditorProps> = ({
-  defaultCode,
+export function ReactMonacoEditor({
   path,
+  source,
+  onChange,
   className
-}) => {
+}: EditorProps) {
 
-
+  const intoServer: IntoServer = new IntoServer();
+  const fromServer: FromServer = FromServer.create();
+  const client = new Client(fromServer, intoServer);
+  const server = new Server(intoServer, fromServer);
 
   const editorRef = useRef<editor.IStandaloneCodeEditor>();
   const ref = createRef<HTMLDivElement>();
 
   useEffect(() => {
-    const currentEditor = editorRef.current;
-    const intoServer: IntoServer = new IntoServer();
-    const fromServer: FromServer = FromServer.create();
-
     if (ref.current != null) {
       const start = async () => {
-        const crr = ref.current!;
-        const client = new Client(fromServer, intoServer);
-        const server = await Server.initialize(intoServer, fromServer);
+        const crr = ref.current!; 
         if (init) {
           init = false;
           await initializeService({
             debugLogging: true,
-            logLevel: LogLevel.Debug
+            logLevel: LogLevel.Debug       
           });
           await initializeExtenstion();
+          await server.initialize();
+          Promise.all([server.start(), client.start()]);
         }
-        const preset = presets.find(game => game.name == 'Breakthrough.rg')!.source;
-        await new MonacoEditor().createEditor(
+        editorRef.current = await new MonacoEditor().createEditor(
           client,
           crr,
-          preset,
+          path,
+          source,
+          onChange
         );
-        await Promise.all([server.start(), client.start()]);
-        
       };
       start();
 
       return () => {
+        const currentEditor = editorRef.current;
+        const model = currentEditor?.getModel();
+        if (model) {
+          model.dispose();
+        }
         currentEditor?.dispose();
       };
     }
 
-  }, []);
+  }, [path]);
 
   return (
     // <Autosize>
@@ -83,7 +84,7 @@ export const ReactMonacoEditor: React.FC<EditorProps> = ({
     // </Autosize>
     <div
       ref={ref}
-      style={{height: `100vh`}}
+      style={{ height: `100vh` }}
       className={className}
     />
   );

@@ -2,29 +2,32 @@ import init, { InitOutput, serve, ServerConfig } from "../../wasm/lsp_module";
 import { FromServer, IntoServer } from "./codec";
 
 let server: null | Server;
+let initialized = false;
 
 export default class Server {
-  readonly initOutput: InitOutput;
   readonly #intoServer: IntoServer;
   readonly #fromServer: FromServer;
 
-  private constructor(initOutput: InitOutput, intoServer: IntoServer, fromServer: FromServer) {
-    this.initOutput = initOutput;
+  constructor(intoServer: IntoServer, fromServer: FromServer) {
     this.#intoServer = intoServer;
     this.#fromServer = fromServer;
   }
 
-  static async initialize(intoServer: IntoServer, fromServer: FromServer): Promise<Server> {
+  async initialize(): Promise<void> {
     if (null == server) {
-      const initOutput = await init();
-      server = new Server(initOutput, intoServer, fromServer);
+      await init();
+      server = this;
     } else {
       console.warn("Server already initialized; ignoring");
     }
-    return server;
   }
 
   async start(): Promise<void> {
+    if (initialized) {
+      console.warn("Server already started; ignoring");
+      return;
+    }
+    initialized = true;
     const config = new ServerConfig(this.#intoServer, this.#fromServer);
     await serve(config);
   }

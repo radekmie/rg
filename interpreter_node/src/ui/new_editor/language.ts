@@ -202,12 +202,13 @@ export default class Language implements monaco.languages.ILanguageExtensionPoin
         });
       },
     });
-
-
   }
 
-  static initialize(client: Client): Language {
-    if (null == language) {
+  static initialize(client: Client, extension: string): Language | null {
+    if (extension !== "rg") {
+      console.warn("Language not supported; ignoring");
+    } else if (null == language) {
+      console.log("Language initialized");
       language = new Language(client);
     } else {
       console.warn("Language already initialized; ignoring");

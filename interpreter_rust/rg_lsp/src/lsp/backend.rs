@@ -72,7 +72,9 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
+        web_sys::console::log_1(&"did open".into());
         let uri = params.text_document.uri;
+        web_sys::console::log_1(&uri.to_string().into());
         let text = params.text_document.text;
         let (document, errors) = Document::new(text);
         self.document_map.insert(uri.to_string(), document);
@@ -81,7 +83,10 @@ impl LanguageServer for Backend {
     }
 
     async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
+        web_sys::console::log_1(&"did change".into());
+
         let uri = params.text_document.uri;
+        web_sys::console::log_1(&uri.to_string().into());
         let text = params.content_changes.pop().unwrap().text;
         let (document, errors) = Document::new(text);
         self.document_map.insert(uri.to_string(), document);
@@ -90,9 +95,7 @@ impl LanguageServer for Backend {
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        self.client
-            .log_message(MessageType::INFO, "did close")
-            .await;
+        web_sys::console::log_1(&"did close".into());
         let uri = params.text_document.uri;
         self.document_map.remove(&uri.to_string());
     }
@@ -132,6 +135,7 @@ impl LanguageServer for Backend {
         &self,
         params: SemanticTokensParams,
     ) -> Result<Option<SemanticTokensResult>> {
+        web_sys::console::log_1(&"semantic tokens full".into());
         let uri = params.text_document.uri;
         let document = self.document_map.get(&uri.to_string()).unwrap();
         let semantic_tokens = semantic_tokens::semantic_tokens_full(&document);
