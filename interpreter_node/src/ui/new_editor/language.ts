@@ -19,6 +19,14 @@ const registerLanguage = (client: Client) => {
 
   });
 
+  monaco.languages.register({
+    id: 'json',
+    extensions: ['.json', '.jsonc'],
+    aliases: ['JSON', 'json'],
+    mimetypes: ['application/json']
+  });
+  monaco.languages.register({ id: 'javascript' });
+
   languages.registerDocumentSymbolProvider(LanguageID.rg, {
     async provideDocumentSymbols(document, token): Promise<vscode.SymbolInformation[]> {
       void token;

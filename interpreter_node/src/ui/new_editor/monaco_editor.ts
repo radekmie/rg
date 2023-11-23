@@ -18,6 +18,8 @@ window.MonacoEnvironment = {
   },
 };
 
+
+
 export async function createModel(
   path: string,
   content: string,
@@ -28,11 +30,8 @@ export async function createModel(
     new RegisteredMemoryFile(vscode.Uri.file('/workspace/' + path), ''),
   );
   registerFileSystemOverlay(1, fileSystemProvider);
-
   const uri = monaco.Uri.parse('/workspace/' + path);
-
   const model = monaco.editor.createModel(content, lang, uri);
-  console.log('Model created', model.getLanguageId());
   return model;
 }
 
@@ -46,8 +45,9 @@ const asRange = (range: monaco.IRange): proto.Range => {
   };
 };
 
-const pathToLang = (path: string): LanguageID => {
-  switch (path.split('.').pop()) {
+const pathToLang = (path: string): string | undefined => {
+  const extension = path.split('.').pop();
+  switch (extension) {
     case 'rg':
       return LanguageID.rg;
     case 'rbg':
@@ -55,7 +55,7 @@ const pathToLang = (path: string): LanguageID => {
     case 'hrg':
       return LanguageID.hrg;
     default:
-      throw new Error('Unknown extension');
+      return extension;
   }
 };
 
@@ -63,16 +63,17 @@ export async function createEditor(
   client: Client,
   container: HTMLElement,
   onChange: (source: string) => void,
+  readonly: boolean,
 ): Promise<monaco.editor.IStandaloneCodeEditor> {
   const editor = createConfiguredEditor(container, {
     automaticLayout: true,
     'semanticHighlighting.enabled': true,
     theme: 'rgTheme',
+    readOnly: readonly,
   });
 
   editor.onDidChangeModelContent(e => {
     const model = editor.getModel();
-    console.log('Model changed ', model?.uri.toString());
     if (!model || model.getLanguageId() !== LanguageID.rg) {
       return;
     }
@@ -107,7 +108,7 @@ export async function createEditor(
         },
       } as proto.DidOpenTextDocumentParams);
     }
-    if (e.oldModelUrl) {
+    if (e.oldModelUrl && e.oldModelUrl.path.endsWith('rg')) {
       client.notify(proto.DidCloseTextDocumentNotification.type.method, {
         textDocument: {
           uri: e.oldModelUrl.toString(),
@@ -118,7 +119,6 @@ export async function createEditor(
 
   client.addMethod(proto.PublishDiagnosticsNotification.type.method, params => {
     const { uri, diagnostics } = params as proto.PublishDiagnosticsParams;
-    console.log('Diagnostics received', uri);
     const diags = diagnostics.map(diagnostic => {
       // We have to map range to Monaco editor
       return {
@@ -131,7 +131,6 @@ export async function createEditor(
       };
     });
     const model = monaco.editor.getModel(monaco.Uri.parse(uri));
-    console.log('Model uri', model?.uri.toString());
     if (model && model.getLanguageId() === LanguageID.rg) {
       monaco.editor.setModelMarkers(model, LanguageID.rg, diags);
     }

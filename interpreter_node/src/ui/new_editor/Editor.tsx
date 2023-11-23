@@ -8,6 +8,8 @@ import { LogLevel, initialize as initializeService } from 'vscode/services';
 import { initialize as initializeExtenstion } from 'vscode/extensions';
 import { Autosize } from '../components/Autosize';
 import { initialize as initializeLanguage } from './language';
+// import * as styles from '../index.module.css';
+
 
 let init = true;
 
@@ -20,21 +22,21 @@ export type EditorProps = {
   path: string;
   source: string;
   onChange: (source: string) => void;
+  readonly: boolean;
   className?: string;
 };
 
-export function ReactMonacoEditor({
+export function Editor({
   path,
   source,
   onChange,
+  readonly,
   className,
 }: EditorProps) {
-
   const editorRef = useRef<editor.IStandaloneCodeEditor>();
   const ref = createRef<HTMLDivElement>();
-
   useEffect(() => {
-    if (ref.current != null) {
+    if (ref.current) {
       const start = async () => {
         const crr = ref.current!;
         if (init) {
@@ -46,14 +48,20 @@ export function ReactMonacoEditor({
           await initializeExtenstion();
           await server.initialize();
           initializeLanguage(client);
-          editorRef.current = await createEditor(client, crr, onChange);
           Promise.all([server.start(), client.start()]);
+        }
+        if (!editorRef.current) {
+          editorRef.current = await createEditor(
+            client,
+            crr,
+            onChange,
+            readonly,
+          );
         }
         const model = await createModel(path, source);
         editorRef.current?.setModel(model);
       };
       start();
-
       return () => {
         const currentEditor = editorRef.current;
         const model = currentEditor?.getModel();
@@ -63,6 +71,27 @@ export function ReactMonacoEditor({
       };
     }
   }, [path]);
+
+  useEffect(
+    () => {
+      if (ref.current && editorRef.current) {
+        const model = editorRef.current?.getModel();
+        if (model) {
+          model.setValue(source);
+        }
+      }
+    },
+    readonly ? [source] : [],
+  );
+
+  useEffect(() => {
+    return () => {
+      const currentEditor = editorRef.current;
+      if (currentEditor) {
+        currentEditor.dispose();
+      }
+    };
+  }, []);
 
   return (
     // <Autosize>

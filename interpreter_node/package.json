@@ -15,7 +15,7 @@
     "@blueprintjs/core": "4.12.0",
     "@codemirror/lang-javascript": "6.1.1",
     "@codemirror/lang-json": "6.0.1",
-    "@codingame/monaco-vscode-files-service-override": "^1.83.5",
+    "@codingame/monaco-vscode-files-service-override": "1.83.5",
     "@hpcc-js/wasm": "2.2.0",
     "@parcel/transformer-inline-string": "2.8.3",
     "@types/node": "18.11.10",
@@ -30,7 +30,7 @@
     "debounce": "^1.2.1",
     "eslint-config-vazco": "7.1.0",
     "json-rpc-2.0": "^1.6.0",
-    "monaco-editor": "npm:@codingame/monaco-editor-treemended@>=1.83.5 <1.84.0",
+    "monaco-editor": "npm:@codingame/monaco-editor-treemended@1.83.5",
     "monaco-languageclient": "~7.0.0",
     "normalize.css": "8.0.1",
     "p-limit": "3.1.0",
@@ -43,7 +43,7 @@
     "typescript": "4.9.3",
     "util": "0.12.5",
     "vitest": "0.28.4",
-    "vscode": "npm:@codingame/monaco-vscode-api@^1.83.5",
+    "vscode": "npm:@codingame/monaco-vscode-api@1.83.5",
     "vscode-languageserver-protocol": "^3.17.5",
     "web-worker": "1.2.0"
   },
@@ -78,7 +78,7 @@
     "vscode": "$vscode"
   },
   "resolutions": {
-    "monaco-editor": "npm:@codingame/monaco-editor-treemended@>=1.83.5 <1.84.0",
-    "vscode": "npm:@codingame/monaco-vscode-api@>=1.83.5 <1.84.0"
+    "monaco-editor": "npm:@codingame/monaco-editor-treemended@1.83.5",
+    "vscode": "npm:@codingame/monaco-vscode-api@1.83.5"
   }
 }

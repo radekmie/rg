@@ -1,22 +1,14 @@
 import { Intent } from '@blueprintjs/core';
 
 import { Bench } from './Bench';
-import { Editor } from './Editor';
-import { ReactMonacoEditor } from '../new_editor/Editor';
+import { Editor } from '../new_editor/Editor';
 import { Graphviz } from './Graphviz';
 import { Loader } from './Loader';
 import { PrettyPrint } from './PrettyPrint';
 import { Settings } from './Settings';
 import { AnalyzedGame } from '../../parse';
-import { Extension } from '../../types';
 import { useApplicationState } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
-
-const extensionToMode = {
-  [Extension.hrg]: 'hrg',
-  [Extension.rbg]: 'rbg',
-  [Extension.rg]: 'rg',
-} as const;
 
 const valueForView = {
   Automaton: (game: AnalyzedGame) => game.graphvizRg,
@@ -42,6 +34,29 @@ const valueForView = {
     ({ mode: 'rg', value: game.sourceRg } as const),
 };
 
+const switchExtension = (path: string, extension: string) => {
+  const parts = path.split('.');
+  parts[parts.length - 1] = extension;
+  return parts.join('.');
+};
+
+const pathForView = {
+  Automaton: (path: string) => switchExtension(path, 'automaton'),
+  Bench: (path: string) => switchExtension(path, 'bench'),
+  Graphviz: (path: string) => switchExtension(path, 'gv'),
+  'AST.hrg': (path: string) => switchExtension(path, 'ast.hrg.json'),
+  'AST.rbg': (path: string) => switchExtension(path, 'ast.rbg.json'),
+  'AST.rg': (path: string) => switchExtension(path, 'ast.rg.json'),
+  'CST.hrg': (path: string) => switchExtension(path, 'cst.hrg.json'),
+  'CST.rbg': (path: string) => switchExtension(path, 'cst.rbg.json'),
+  'Source (result).hrg': (path: string) => switchExtension(path, 'result.hrg'),
+  'Source (source).hrg': (path: string) => switchExtension(path, 'source.hrg'),
+  'Source (result).rbg': (path: string) => switchExtension(path, 'result.rbg'),
+  'Source (source).rbg': (path: string) => switchExtension(path, 'source.rbg'),
+  'Source (result).rg': (path: string) => switchExtension(path, 'result.rg'),
+  'Source (source).rg': (path: string) => switchExtension(path, 'source.rg'),
+};
+
 export function Application() {
   const {
     actions: { setPreset, setSettings, setSource, setView },
@@ -54,10 +69,11 @@ export function Application() {
   return (
     <>
       <section className={styles.panel}>
-        <ReactMonacoEditor
+        <Editor
           path={path}
           source={source}
           onChange={setSource}
+          readonly={false}
         />
       </section>
       <section className={styles.panel}>
@@ -66,8 +82,8 @@ export function Application() {
             game.loading
               ? Intent.NONE
               : game.error
-                ? Intent.DANGER
-                : Intent.SUCCESS
+              ? Intent.DANGER
+              : Intent.SUCCESS
           }
           setPreset={setPreset}
           setSettings={setSettings}
@@ -93,7 +109,14 @@ export function Application() {
               case 'Source (source).hrg':
               case 'Source (source).rbg':
               case 'Source (source).rg':
-                return <Editor {...valueForView[view](game.value)} />;
+                return (
+                  <Editor
+                    path={pathForView[view](path)}
+                    source={valueForView[view](game.value).value}
+                    onChange={() => {}}
+                    readonly={true}
+                  />
+                );
               default:
                 return <PrettyPrint value={valueForView[view](game.value)} />;
             }
