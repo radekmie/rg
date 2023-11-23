@@ -1,166 +1,142 @@
-import debounce from "debounce";
-import * as monaco from "monaco-editor";
-import { createConfiguredEditor, createModelReference } from 'vscode/monaco'
-import { RegisteredFileSystemProvider, registerFileSystemOverlay, RegisteredMemoryFile } from '@codingame/monaco-vscode-files-service-override';
-import * as proto from "vscode-languageserver-protocol";
-import * as vscode from "vscode";
-import Client from "./client";
-import Language from "./language";
+import debounce from 'debounce';
+import * as monaco from 'monaco-editor';
+import { createConfiguredEditor, createModelReference } from 'vscode/monaco';
+import {
+  RegisteredFileSystemProvider,
+  registerFileSystemOverlay,
+  RegisteredMemoryFile,
+} from '@codingame/monaco-vscode-files-service-override';
+import * as proto from 'vscode-languageserver-protocol';
+import * as vscode from 'vscode';
+import Client from './client';
 import EditorWorker from 'url:monaco-editor/esm/vs/editor/editor.worker.js';
+import { LanguageID } from '../../types';
 
-export default class MonacoEditor {
-  readonly #window: Window & monaco.Window & typeof globalThis = self;
+window.MonacoEnvironment = {
+  getWorkerUrl: function (moduleId, label) {
+    return EditorWorker;
+  },
+};
 
-  initializeMonaco(): void {
-    this.#window.MonacoEnvironment = {
-      getWorkerUrl: function (moduleId, label) {
-        return EditorWorker;
-      }
-    }
+export async function createModel(
+  path: string,
+  content: string,
+): Promise<monaco.editor.ITextModel> {
+  const lang = pathToLang(path);
+  const fileSystemProvider = new RegisteredFileSystemProvider(false);
+  fileSystemProvider.registerFile(
+    new RegisteredMemoryFile(vscode.Uri.file('/workspace/' + path), ''),
+  );
+  registerFileSystemOverlay(1, fileSystemProvider);
+
+  const uri = monaco.Uri.parse('/workspace/' + path);
+
+  const model = monaco.editor.createModel(content, lang, uri);
+  console.log('Model created', model.getLanguageId());
+  return model;
+}
+
+const asRange = (range: monaco.IRange): proto.Range => {
+  return {
+    start: {
+      line: range.startLineNumber - 1,
+      character: range.startColumn - 1,
+    },
+    end: { line: range.endLineNumber - 1, character: range.endColumn - 1 },
+  };
+};
+
+const pathToLang = (path: string): LanguageID => {
+  switch (path.split('.').pop()) {
+    case 'rg':
+      return LanguageID.rg;
+    case 'rbg':
+      return LanguageID.rbg;
+    case 'hrg':
+      return LanguageID.hrg;
+    default:
+      throw new Error('Unknown extension');
   }
+};
 
-  async createModel(client: Client, path: string, content: string, onChange: (source: string) => void): Promise<monaco.editor.ITextModel> {
-    const extension = this.pathToExtension(path);
-    const language = Language.initialize(client, extension);
+export async function createEditor(
+  client: Client,
+  container: HTMLElement,
+  onChange: (source: string) => void,
+): Promise<monaco.editor.IStandaloneCodeEditor> {
+  const editor = createConfiguredEditor(container, {
+    automaticLayout: true,
+    'semanticHighlighting.enabled': true,
+    theme: 'rgTheme',
+  });
 
-    const fileSystemProvider = new RegisteredFileSystemProvider(false);
-    fileSystemProvider.registerFile(new RegisteredMemoryFile(vscode.Uri.file('/workspace/' + path), ''));
-    registerFileSystemOverlay(1, fileSystemProvider);
-
-    const uri = monaco.Uri.parse("/workspace/" + path);
-    const model = monaco.editor.createModel(content, extension, uri);
-    monaco.editor.defineTheme('myCustomTheme', {
-      base: 'vs',
-      inherit: true,
-      colors: {},
-      rules: [
+  editor.onDidChangeModelContent(e => {
+    const model = editor.getModel();
+    console.log('Model changed ', model?.uri.toString());
+    if (!model || model.getLanguageId() !== LanguageID.rg) {
+      return;
+    }
+    const text = model.getValue();
+    onChange(text);
+    client.notify(proto.DidChangeTextDocumentNotification.type.method, {
+      textDocument: {
+        version: model.getVersionId(),
+        uri: model.uri.toString(),
+      },
+      contentChanges: [
         {
-          token: "comment",
-          foreground: "6a737d",
-          fontStyle: "italic"
+          range: asRange(model.getFullModelRange()),
+          text,
         },
-        {
-          token: "keyword",
-          foreground: "0000ff",
-          fontStyle: "bold"
-        },
-        {
-          token: "type",
-          foreground: "2b91af"
-        },
-        {
-          token: "member",
-          foreground: "000000"
-        },
-        {
-          token: "constant",
-          foreground: "c5060b",
-        },
-        {
-          token: "variable",
-          foreground: "005cc5"
-        },
-        {
-          token: "function",
-          foreground: "986801"
-        },
-        {
-          token: "macro",
-          // dark red foreground
-          foreground: "ff0000"
-        }
-
       ],
+    } as proto.DidChangeTextDocumentParams);
+  });
 
-    });
-
-    if (extension === "rg") {
-      // eslint-disable-next-line @typescript-eslint/require-await
+  editor.onDidChangeModel(e => {
+    if (e.newModelUrl) {
+      const model = editor.getModel();
+      if (!model || model.getLanguageId() !== LanguageID.rg) {
+        return;
+      }
       client.notify(proto.DidOpenTextDocumentNotification.type.method, {
         textDocument: {
           uri: model.uri.toString(),
-          languageId: extension,
-          version: 0,
+          languageId: model.getLanguageId(),
+          version: model.getVersionId(),
           text: model.getValue(),
         },
       } as proto.DidOpenTextDocumentParams);
-
-      model.onDidChangeContent(
-        debounce(() => {
-          const text = model.getValue();
-          onChange(text);
-          client.notify(proto.DidChangeTextDocumentNotification.type.method, {
-            textDocument: {
-              version: 0,
-              uri: model.uri.toString(),
-            },
-            contentChanges: [
-              {
-                range: this.asRange(model.getFullModelRange()),
-                text,
-              },
-            ],
-          } as proto.DidChangeTextDocumentParams);
-        }, 300),
-      );
-
-      client.addMethod(proto.PublishDiagnosticsNotification.type.method, (params) => {
-        const { uri, diagnostics } = params as proto.PublishDiagnosticsParams;
-        const diags = diagnostics.map((diagnostic) => {
-          // We have to map range to Monaco editor
-          return {
-            severity: monaco.MarkerSeverity.Error,
-            message: diagnostic.message,
-            startLineNumber: diagnostic.range.start.line + 1,
-            startColumn: diagnostic.range.start.character + 1,
-            endLineNumber: diagnostic.range.end.line + 1,
-            endColumn: diagnostic.range.end.character + 1,
-          };
-        })
-        monaco.editor.setModelMarkers(model, "rg", diags)
-
-        return;
-      });
-
-
-      model.onWillDispose(() =>
-        client.notify(proto.DidCloseTextDocumentNotification.type.method, {
-          textDocument: {
-            uri: model.uri.toString(),
-          },
-        } as proto.DidCloseTextDocumentParams),
-      )
-
-    } else {
-      model.onDidChangeContent(
-        debounce(() => onChange(model.getValue()), 300)
-      )
     }
-    return model;
-  }
+    if (e.oldModelUrl) {
+      client.notify(proto.DidCloseTextDocumentNotification.type.method, {
+        textDocument: {
+          uri: e.oldModelUrl.toString(),
+        },
+      } as proto.DidCloseTextDocumentParams);
+    }
+  });
 
-  private asRange(range: monaco.IRange): proto.Range {
-    return {
-      start: { line: range.startLineNumber - 1, character: range.startColumn - 1 },
-      end: { line: range.endLineNumber - 1, character: range.endColumn - 1 },
-    };
-  }
+  client.addMethod(proto.PublishDiagnosticsNotification.type.method, params => {
+    const { uri, diagnostics } = params as proto.PublishDiagnosticsParams;
+    console.log('Diagnostics received', uri);
+    const diags = diagnostics.map(diagnostic => {
+      // We have to map range to Monaco editor
+      return {
+        severity: monaco.MarkerSeverity.Error,
+        message: diagnostic.message,
+        startLineNumber: diagnostic.range.start.line + 1,
+        startColumn: diagnostic.range.start.character + 1,
+        endLineNumber: diagnostic.range.end.line + 1,
+        endColumn: diagnostic.range.end.character + 1,
+      };
+    });
+    const model = monaco.editor.getModel(monaco.Uri.parse(uri));
+    console.log('Model uri', model?.uri.toString());
+    if (model && model.getLanguageId() === LanguageID.rg) {
+      monaco.editor.setModelMarkers(model, LanguageID.rg, diags);
+    }
+    return;
+  });
 
-  private pathToExtension(path: string): string {
-    const parts = path.split(".");
-    return parts[parts.length - 1];
-  }
-
-  async createEditor(client: Client, container: HTMLElement, path: string, content: string, onChange: (source: string) => void): Promise<monaco.editor.IStandaloneCodeEditor> {
-    this.initializeMonaco();
-    const model = await this.createModel(client, path, content, onChange);
-    const editor = createConfiguredEditor(container, {
-      model: model,
-      automaticLayout: true,
-      "semanticHighlighting.enabled": true,
-      theme: 'myCustomTheme',
-    })
-    return editor;
-  }
-
+  return editor;
 }

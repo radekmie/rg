@@ -1,5 +1,5 @@
-import init, { InitOutput, serve, ServerConfig } from "../../wasm/lsp_module";
-import { FromServer, IntoServer } from "./codec";
+import init, { InitOutput, serve, ServerConfig } from '../../wasm/lsp_module';
+import { FromServer, IntoServer } from './codec';
 
 let server: null | Server;
 let initialized = false;
@@ -18,13 +18,13 @@ export default class Server {
       await init();
       server = this;
     } else {
-      console.warn("Server already initialized; ignoring");
+      console.warn('Server already initialized; ignoring');
     }
   }
 
   async start(): Promise<void> {
     if (initialized) {
-      console.warn("Server already started; ignoring");
+      console.warn('Server already started; ignoring');
       return;
     }
     initialized = true;

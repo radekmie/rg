@@ -220,13 +220,10 @@ fn expression(input: Span) -> Result<Arc<Expression<Identifier>>> {
             || match maybe_cast.clone() {
                 Some((rhs, end)) => {
                     let span = Position::from(end).with_start(identifier.span().start);
-                    Arc::new(Expression::Cast {
-                        span,
-                        lhs: Arc::new(Type::TypeReference {
-                            identifier: identifier.clone(),
-                        }),
-                        rhs,
-                    })
+                    let lhs = Arc::new(Type::TypeReference {
+                        identifier: identifier.clone(),
+                    });
+                    Arc::new(Expression::Cast { span, lhs, rhs })
                 }
                 None => Arc::new(Expression::Reference {
                     identifier: identifier.clone(),
@@ -340,15 +337,6 @@ fn value_entry(input: Span) -> Result<ValueEntry<Identifier>> {
         }
     };
     Ok((input, ValueEntry::from((span, identifier, value))))
-
-    // context(
-    //     "value_entry",
-    //     into(separated_pair(
-    //         opt(identifier),
-    //         preceded_whitespace(char(':')),
-    //         expect(value, "expected value"),
-    //     )),
-    // )(input)
 }
 
 fn variable(input: Span) -> Result<Option<Variable<Identifier>>> {

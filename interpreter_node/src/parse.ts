@@ -31,7 +31,7 @@ async function analyzeHrg(source: string, settings: Settings) {
   const sourceRg = await wasm.serializeRg(astRg);
 
   const sourceHrgFormatted = hrg.ast.serializeGameDeclaration(astHrg);
-  const cstHrgFormatted = hrg.cst.parse(sourceHrgFormatted).cstNode;
+  const cstHrgFormatted = hrg.cst.parse(sourceHrgFormatted).cstNode; 
   const astHrgFormatted = hrg.ast.visit(cstHrgFormatted);
   if (!utils.isEqual(astHrg, astHrgFormatted)) {
     throw new Error('HrgFormattingError (AST mismatch)');

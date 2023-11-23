@@ -1,8 +1,7 @@
-import * as jsrpc from "json-rpc-2.0";
-import * as proto from "vscode-languageserver-protocol";
+import * as jsrpc from 'json-rpc-2.0';
+import * as proto from 'vscode-languageserver-protocol';
 
-import { Codec, FromServer, IntoServer } from "./codec";
-
+import { Codec, FromServer, IntoServer } from './codec';
 
 export default class Client extends jsrpc.JSONRPCServerAndClient {
   afterInitializedHooks: (() => Promise<void>)[] = [];
@@ -25,44 +24,49 @@ export default class Client extends jsrpc.JSONRPCServerAndClient {
   }
 
   async start(): Promise<void> {
-    // process "window/logMessage": client <- server
-    this.addMethod(proto.LogMessageNotification.type.method, (params) => {
-      const { type, message } = params as { type: proto.MessageType; message: string };
+    // process 'window/logMessage': client <- server
+    this.addMethod(proto.LogMessageNotification.type.method, params => {
+      const { type, message } = params as {
+        type: proto.MessageType;
+        message: string;
+      };
       switch (type) {
         case proto.MessageType.Error: {
-          console.log("[error] " + message);
+          console.log('[error] ' + message);
           break;
         }
         case proto.MessageType.Warning: {
-          console.log("[warn] " + message);
+          console.log('[warn] ' + message);
           break;
         }
         case proto.MessageType.Info: {
-          console.log("[info] " + message);
+          console.log('[info] ' + message);
           break;
         }
         case proto.MessageType.Log: {
-          console.log("[log] " + message);
+          console.log('[log] ' + message);
           break;
         }
       }
       return;
     });
 
-    // request "initialize": client <-> server
+    // request 'initialize': client <-> server
     await (this.request(proto.InitializeRequest.type.method, {
       processId: null,
       clientInfo: {
-        name: "demo-language-client",
+        name: 'demo-language-client',
       },
       capabilities: {},
       rootUri: null,
     } as proto.InitializeParams) as Promise<jsrpc.JSONRPCResponse>);
 
-    // notify "initialized": client --> server
+    // notify 'initialized': client --> server
     this.notify(proto.InitializedNotification.type.method, {});
 
-    await Promise.all(this.afterInitializedHooks.map((f: () => Promise<void>) => f()));
+    await Promise.all(
+      this.afterInitializedHooks.map((f: () => Promise<void>) => f()),
+    );
     await Promise.all([this.processNotifications(), this.processRequests()]);
   }
 

@@ -72,9 +72,8 @@ impl LanguageServer for Backend {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
-        web_sys::console::log_1(&"did open".into());
         let uri = params.text_document.uri;
-        web_sys::console::log_1(&uri.to_string().into());
+        web_sys::console::log_1(&format!("did open {}", uri).into());
         let text = params.text_document.text;
         let (document, errors) = Document::new(text);
         self.document_map.insert(uri.to_string(), document);
@@ -83,10 +82,8 @@ impl LanguageServer for Backend {
     }
 
     async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
-        web_sys::console::log_1(&"did change".into());
-
         let uri = params.text_document.uri;
-        web_sys::console::log_1(&uri.to_string().into());
+        web_sys::console::log_1(&format!("did change {}", uri).into());
         let text = params.content_changes.pop().unwrap().text;
         let (document, errors) = Document::new(text);
         self.document_map.insert(uri.to_string(), document);
@@ -95,8 +92,8 @@ impl LanguageServer for Backend {
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
-        web_sys::console::log_1(&"did close".into());
         let uri = params.text_document.uri;
+        web_sys::console::log_1(&format!("did close {}", uri).into());
         self.document_map.remove(&uri.to_string());
     }
 
