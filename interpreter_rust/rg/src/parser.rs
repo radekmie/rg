@@ -613,62 +613,30 @@ mod test {
     }
 
     #[test]
-    fn simple_type() {
+    fn typedef() {
         check_parse("type A = B;");
-    }
-
-    #[test]
-    fn map_type() {
         check_parse("type Foo = { foo, bar, goo };");
-    }
-
-    #[test]
-    fn arrow_type() {
         check_parse("type Foo = Bar -> Baz -> Goo;");
     }
 
     #[test]
-    fn simple_variable() {
+    fn variable() {
         check_parse("var foo: Foo = { foo: 1, :bar, :goo };");
+        check_parse("var foo: Foo = {  };");
+        check_parse("var foo: Foo = { :null };");
+        check_parse("var foo: Foo = { :null, :null };");
     }
 
     #[test]
-    fn simple_constant() {
+    fn constant() {
         check_parse("const foo: Foo = { foo: 1, :bar, goo: 3 };");
     }
 
     #[test]
-    fn tag_edge() {
+    fn edge() {
         check_parse("foo, bar: $ F;");
-    }
-
-    #[test]
-    fn skip_edge() {
         check_parse("foo, bar: ;");
-    }
-
-    #[test]
-    fn comparison_edge() {
         check_parse("foo, bar: x == y;");
-    }
-
-    #[test]
-    fn reachability_edge() {
         check_parse("foo, bar: ? move -> move;");
-    }
-
-    #[test]
-    fn empty_value() {
-        check_parse("var foo: Foo = {  };");
-    }
-
-    #[test]
-    fn empty_value1() {
-        check_parse("var foo: Foo = { :null };");
-    }
-
-    #[test]
-    fn empty_value2() {
-        check_parse("var foo: Foo = { :null, :null };");
     }
 }

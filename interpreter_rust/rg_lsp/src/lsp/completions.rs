@@ -284,7 +284,8 @@ mod test {
         let obtained = CompletionKind::from_game(pos, &game);
         assert!(
             obtained == expected,
-            "\nexpected: {:?}, obtained: {:?}\n",
+            "Failed on \n{}\nexpected: {:?}, obtained: {:?}\n",
+            input,
             expected,
             obtained
         );
@@ -293,109 +294,37 @@ mod test {
     #[test]
     fn const_def() {
         completion_kind("const ^", CompletionKind::None);
-    }
-
-    #[test]
-    fn const_def1() {
         completion_kind("const foo: ^", CompletionKind::Type);
-    }
-
-    #[test]
-    fn const_def2() {
         completion_kind("const foo: ^ = 1;", CompletionKind::Type);
-    }
-
-    #[test]
-    fn const_def3() {
         completion_kind("const foo: Bar = ^  ", CompletionKind::Value);
-    }
-
-    #[test]
-    fn const_def4() {
         completion_kind("const foo: Bar = {:null, ^}", CompletionKind::Value);
-    }
-
-    #[test]
-    fn const_def5() {
         completion_kind("const foo: Bar = {:null, e1:^}", CompletionKind::Value);
     }
 
     #[test]
     fn edge_label() {
         completion_kind("begin, e1: ^", CompletionKind::Variable);
-    }
-
-    #[test]
-    fn edge_label1() {
         completion_kind("begin, e1(param: Foo): ^", CompletionKind::Variable);
-    }
-
-    #[test]
-    fn edge_label2() {
         completion_kind("begin, e1(param: Foo): foo[^]", CompletionKind::Variable);
-    }
-
-    #[test]
-    fn edge_label3() {
         completion_kind(
             "begin, e1(param: Foo): Cast(^) == a",
             CompletionKind::Variable,
         );
-    }
-
-    #[test]
-    fn edge_label4() {
         completion_kind(
             "begin, e1(param: Foo): Cast(a) == ^",
             CompletionKind::Variable,
         );
-    }
-
-    #[test]
-    fn edge_label5() {
         completion_kind(
             "begin, e1(param: Foo): Cast(a) == a^",
             CompletionKind::Variable,
         );
-    }
-
-    #[test]
-    fn edge_label6() {
         completion_kind("begin, e1(param: Foo): ^ == a", CompletionKind::Variable);
-    }
-
-    #[test]
-    fn edge_label7() {
         completion_kind("begin, e1(param: Foo): ^ != a", CompletionKind::Variable);
-    }
-
-    #[test]
-    fn edge_label8() {
         completion_kind("begin, e1(param: Foo): ^ != ;", CompletionKind::Variable);
-    }
-
-    #[test]
-    fn edge_label9() {
         completion_kind("begin, e1(param: Foo): ! ^ ;", CompletionKind::Edge);
-    }
-
-    #[test]
-    fn edge_label10() {
         completion_kind("begin, e1(param: Foo): ! foo -> ^ ;", CompletionKind::Edge);
-    }
-
-    #[test]
-    fn edge_label11() {
         completion_kind("begin, e1(param: Foo): ! ^ -> foo ;", CompletionKind::Edge);
-    }
-
-    #[test]
-    fn edge_label12() {
         completion_kind("begin, e1(param: Foo): a = ^ ;", CompletionKind::Variable);
-    }
-
-    #[test]
-    fn edge_label13() {
         completion_kind(
             "begin, e1(param: Foo): a = foo^ ;",
             CompletionKind::Variable,
@@ -405,60 +334,24 @@ mod test {
     #[test]
     fn edge_name() {
         completion_kind("begin, ^", CompletionKind::Edge);
-    }
-
-    #[test]
-    fn edge_name1() {
-        completion_kind("begin ^, e1", CompletionKind::Edge)
-    }
-
-    #[test]
-    fn edge_name2() {
+        completion_kind("begin ^, e1", CompletionKind::Edge);
         completion_kind("begin(^), e1", CompletionKind::Param);
-    }
-
-    #[test]
-    fn edge_name3() {
         completion_kind("begin(param: ^), ", CompletionKind::Type);
     }
 
     #[test]
     fn toplevel() {
         completion_kind("^", CompletionKind::Toplevel);
-    }
-
-    #[test]
-    fn toplevel1() {
         completion_kind("const foo: Bar = {:null};\n^", CompletionKind::Toplevel);
     }
 
     #[test]
     fn type_def() {
         completion_kind("type ^ = Bar", CompletionKind::None);
-    }
-
-    #[test]
-    fn type_def1() {
         completion_kind("type Foo = ^", CompletionKind::Type);
-    }
-
-    #[test]
-    fn type_def2() {
         completion_kind("type Foo = ^ -> Bar;", CompletionKind::Type);
-    }
-
-    #[test]
-    fn type_def3() {
         completion_kind("type Foo = -> ^", CompletionKind::Type);
-    }
-
-    #[test]
-    fn type_def4() {
         completion_kind("type Foo = {null, ^ }", CompletionKind::None);
-    }
-
-    #[test]
-    fn type_def5() {
         completion_kind("type Foo = Bar ^ ;", CompletionKind::Type);
     }
 }
