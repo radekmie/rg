@@ -152,7 +152,7 @@ impl From<Flag> for CompletionItemKind {
 
 impl CompletionKind {
     fn from_game(pos: Position, game: &Game<Identifier>) -> Self {
-        let enclosing_stat = game.enclosing_stat_pos(pos);
+        let enclosing_stat = game.enclosing_stat_pos(&pos);
         if let Some(stat) = enclosing_stat {
             match stat {
                 Stat::Constant(Constant {
@@ -253,8 +253,7 @@ impl CompletionKind {
                     None
                 }
             })
-            .or_else(|| Some(CompletionKind::Edge))
-            .unwrap()
+            .unwrap_or(CompletionKind::Edge)
     }
 }
 

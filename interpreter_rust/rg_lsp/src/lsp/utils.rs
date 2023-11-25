@@ -15,14 +15,14 @@ pub fn flag_to_kind(flag: &Flag) -> SymbolKind {
     }
 }
 
-pub fn span_to_lsp(span: Span) -> l::Range {
+pub fn span_to_lsp(span: &Span) -> l::Range {
     l::Range {
-        start: pos_to_lsp(span.start),
-        end: pos_to_lsp(span.end),
+        start: pos_to_lsp(&span.start),
+        end: pos_to_lsp(&span.end),
     }
 }
 
-pub fn pos_to_lsp(position: Position) -> l::Position {
+pub fn pos_to_lsp(position: &Position) -> l::Position {
     if position.is_none() {
         panic!("Called toLsp on a none position")
     } else {
@@ -33,28 +33,28 @@ pub fn pos_to_lsp(position: Position) -> l::Position {
     }
 }
 
-pub fn pos_to_lsp_range(position: Position) -> l::Range {
+pub fn pos_to_lsp_range(position: &Position) -> l::Range {
     l::Range {
-        start: pos_to_lsp(position.clone()),
+        start: pos_to_lsp(position),
         end: pos_to_lsp(position),
     }
 }
 
-pub fn lsp_to_pos(position: l::Position) -> Position {
+pub fn lsp_to_pos(position: &l::Position) -> Position {
     Position {
         line: (position.line + 1) as usize,
         column: (position.character + 1) as usize,
     }
 }
 
-pub fn lsp_to_span(range: l::Range) -> Span {
+pub fn lsp_to_span(range: &l::Range) -> Span {
     Span {
-        start: lsp_to_pos(range.start),
-        end: lsp_to_pos(range.end),
+        start: lsp_to_pos(&range.start),
+        end: lsp_to_pos(&range.end),
     }
 }
 
-pub fn to_location(url: &Url, span: Span) -> Location {
+pub fn to_location(url: &Url, span: &Span) -> Location {
     Location {
         uri: url.clone(),
         range: span_to_lsp(span),

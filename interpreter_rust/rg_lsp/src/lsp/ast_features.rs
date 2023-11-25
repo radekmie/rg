@@ -5,26 +5,26 @@ use crate::rg::{
 use rg::{ast::*, position::*};
 
 pub trait AstFeatures {
-    fn enclosing_stat(&self, span: Span) -> Option<Stat>;
-    fn enclosing_stat_pos(&self, pos: Position) -> Option<Stat>;
+    fn enclosing_stat(&self, span: &Span) -> Option<Stat>;
+    fn enclosing_stat_pos(&self, pos: &Position) -> Option<Stat>;
     fn symbol_type(&self, symbol: &Symbol) -> Option<String>;
 }
 
 impl AstFeatures for Game<Identifier> {
-    fn enclosing_stat(&self, span: Span) -> Option<Stat> {
+    fn enclosing_stat(&self, span: &Span) -> Option<Stat> {
         Stat::from_game(self)
             .into_iter()
-            .find(|stat| stat.span().encloses_span(&span))
+            .find(|stat| stat.span().encloses_span(span))
     }
 
-    fn enclosing_stat_pos(&self, pos: Position) -> Option<Stat> {
+    fn enclosing_stat_pos(&self, pos: &Position) -> Option<Stat> {
         Stat::from_game(self)
             .into_iter()
-            .find(|stat| stat.span().encloses_pos(&pos))
+            .find(|stat| stat.span().encloses_pos(pos))
     }
 
     fn symbol_type(&self, symbol: &Symbol) -> Option<String> {
-        self.enclosing_stat(symbol.span())
+        self.enclosing_stat(&symbol.span())
             .and_then(|stat| match stat {
                 Stat::Constant(Constant { type_, .. }) => Some(format!("{}", type_)),
                 Stat::Variable(Variable { type_, .. }) => Some(format!("{}", type_)),

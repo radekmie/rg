@@ -82,7 +82,7 @@ impl<Id> Edge<Id> {
 impl<Id: Clone + Ord> Edge<Id> {
     pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
         Self {
-            span: self.span.clone(),
+            span: self.span,
             label: self.label.rename_variables(mapping),
             lhs: self.lhs.rename_variables(mapping),
             rhs: self.rhs.rename_variables(mapping),
@@ -118,7 +118,7 @@ impl<Id: PartialEq> Edge<Id> {
 impl Edge<Rc<str>> {
     pub fn substitute_bindings(&self, mapping: &Mapping<Rc<str>>) -> Self {
         Self {
-            span: self.span.clone(),
+            span: self.span,
             label: self.label.rename_variables(mapping),
             lhs: self.lhs.substitute_bindings(mapping),
             rhs: self.rhs.substitute_bindings(mapping),
@@ -228,7 +228,7 @@ impl<Id: PartialEq> EdgeName<Id> {
 impl<Id: Clone + Ord> EdgeName<Id> {
     pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
         Self {
-            span: self.span.clone(),
+            span: self.span,
             parts: self
                 .parts
                 .iter()
@@ -255,7 +255,7 @@ impl EdgeName<Rc<str>> {
             .collect::<Vec<_>>()
             .join("__bind__");
         Self {
-            span: self.span.clone(),
+            span: self.span,
             parts: vec![EdgeNamePart::Literal {
                 identifier: Rc::from(identifier),
             }],
@@ -823,19 +823,19 @@ impl Pragma<Rc<str>> {
     pub fn substitute_bindings(&self, mapping: &Mapping<Rc<str>>) -> Self {
         match self {
             Self::Any { edge_name, span } => Self::Any {
-                span: span.clone(),
+                span: *span,
                 edge_name: edge_name.substitute_bindings(mapping),
             },
             Self::Disjoint { edge_name, span } => Self::Disjoint {
-                span: span.clone(),
+                span: *span,
                 edge_name: edge_name.substitute_bindings(mapping),
             },
             Self::MultiAny { edge_name, span } => Self::MultiAny {
-                span: span.clone(),
+                span: *span,
                 edge_name: edge_name.substitute_bindings(mapping),
             },
             Self::Unique { edge_name, span } => Self::Unique {
-                span: span.clone(),
+                span: *span,
                 edge_name: edge_name.substitute_bindings(mapping),
             },
         }

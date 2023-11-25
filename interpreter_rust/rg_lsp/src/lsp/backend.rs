@@ -113,7 +113,7 @@ impl LanguageServer for Backend {
         let uri = params.text_document_position.text_document.uri;
         let position = params.text_document_position.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
-        let locations = features::references(&uri, position, &document.symbol_table);
+        let locations = features::references(&uri, &position, &document.symbol_table);
         Ok(locations)
     }
 
@@ -124,7 +124,7 @@ impl LanguageServer for Backend {
         let uri = params.text_document_position_params.text_document.uri;
         let position = params.text_document_position_params.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
-        let definition = features::definitions(&uri, position, &document.symbol_table);
+        let definition = features::definitions(&uri, &position, &document.symbol_table);
         Ok(definition)
     }
 
@@ -150,7 +150,7 @@ impl LanguageServer for Backend {
         let position = params.text_document_position_params.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
         let symbol_table = &document.symbol_table;
-        let document_highlights = features::document_highlight(position, symbol_table);
+        let document_highlights = features::document_highlight(&position, symbol_table);
         Ok(document_highlights)
     }
 
@@ -162,7 +162,7 @@ impl LanguageServer for Backend {
         let position = params.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
         let symbol_table = &document.symbol_table;
-        let prepare_rename_response = features::prepare_rename(position, symbol_table);
+        let prepare_rename_response = features::prepare_rename(&position, symbol_table);
         Ok(prepare_rename_response)
     }
 
@@ -171,7 +171,7 @@ impl LanguageServer for Backend {
         let position = params.text_document_position.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
         let symbol_table = &document.symbol_table;
-        let rename_response = features::rename(&uri, position, symbol_table, params.new_name);
+        let rename_response = features::rename(&uri, &position, symbol_table, params.new_name);
         Ok(rename_response)
     }
 
@@ -181,7 +181,7 @@ impl LanguageServer for Backend {
         let document = self.document_map.get(&uri.to_string()).unwrap();
         let symbol_table = &document.symbol_table;
         let game = &document.game;
-        let hover_response = features::hover(position, symbol_table, game);
+        let hover_response = features::hover(&position, symbol_table, game);
         Ok(hover_response)
     }
 
@@ -192,7 +192,7 @@ impl LanguageServer for Backend {
         let symbol_table = &document.symbol_table;
         let game = &document.game;
         let completion_response =
-            completions::completions(lsp_to_pos(position), game, symbol_table);
+            completions::completions(lsp_to_pos(&position), game, symbol_table);
         Ok(completion_response)
     }
 }

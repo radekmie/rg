@@ -21,40 +21,32 @@ pub type Span<'a> = LocatedSpan<&'a str, State<'a>>;
 pub type Result<'a, T> = IResult<Span<'a>, T>;
 
 fn constant(input: Span) -> Result<Option<Constant<Identifier>>> {
-    context(
-        "constant",
-        map(
-            with_semicolon(
-                tag("const"),
-                expect(
-                    tuple((
-                        preceded_opt_id("const"),
-                        terminated(
-                            preceded_type_,
-                            expect(preceded_whitespace(cut(char('='))), "expected `=`"),
-                        ),
-                        value,
-                    )),
-                    "syntax error: expected `const <identifier> : <type> = <value>;`",
-                ),
+    map(
+        with_semicolon(
+            tag("const"),
+            expect(
+                tuple((
+                    preceded_opt_id("const"),
+                    terminated(
+                        preceded_type_,
+                        expect(preceded_whitespace(cut(char('='))), "expected `=`"),
+                    ),
+                    value,
+                )),
+                "syntax error: expected `const <identifier> : <type> = <value>;`",
             ),
-            |(tag_span, res, end)| {
-                res.map(|(identifier, type_, value)| {
-                    (tag_span, identifier, type_, value, end).into()
-                })
-            },
         ),
+        |(tag_span, res, end)| {
+            res.map(|(identifier, type_, value)| (tag_span, identifier, type_, value, end).into())
+        },
     )(input)
 }
 
 fn identifier_(input: Span) -> Result<Span> {
     static KEYWORDS: [&str; 4] = ["any", "const", "type", "var"];
-    context(
-        "identifier",
-        verify(
-            take_while1(|c: char| c.is_alphanumeric() || c == '_'),
-            |identifier: &Span| !KEYWORDS.contains(identifier.fragment()),
-        ),
+    verify(
+        take_while1(|c: char| c.is_alphanumeric() || c == '_'),
+        |identifier: &Span| !KEYWORDS.contains(identifier.fragment()),
     )(input)
 }
 
@@ -92,61 +84,52 @@ fn preceded_type_(input: Span) -> Result<Arc<Type<Identifier>>> {
 }
 
 fn edge(input: Span) -> Result<Option<Edge<Identifier>>> {
-    context(
-        "edge",
-        map(
-            with_semicolon(
-                terminated(
-                    preceded_whitespace(edge_name),
-                    expect(preceded_whitespace(char(',')), "expected `,`"),
-                ),
-                expect(
-                    tuple((
-                        terminated(
-                            preceded_whitespace(expect_edge_name),
-                            expect(preceded_whitespace(cut(char(':'))), "expected `:`"),
-                        ),
-                        edge_label,
-                    )),
-                    "syntax error: expected `<edge_name>, <edge_name> : <edge_label>;",
-                ),
+    map(
+        with_semicolon(
+            terminated(
+                preceded_whitespace(edge_name),
+                expect(preceded_whitespace(char(',')), "expected `,`"),
             ),
-            |(lhs, res, end)| res.map(|(rhs, label)| (lhs, rhs, label, end).into()),
+            expect(
+                tuple((
+                    terminated(
+                        preceded_whitespace(expect_edge_name),
+                        expect(preceded_whitespace(cut(char(':'))), "expected `:`"),
+                    ),
+                    edge_label,
+                )),
+                "syntax error: expected `<edge_name>, <edge_name> : <edge_label>;",
+            ),
         ),
+        |(lhs, res, end)| res.map(|(rhs, label)| (lhs, rhs, label, end).into()),
     )(input)
 }
 
 fn edge_label(input: Span) -> Result<EdgeLabel<Identifier>> {
-    context(
-        "edge_label",
-        alt((
-            into(preceded(
-                preceded_whitespace(char('$')),
-                cut(preceded_opt_id("edge_label")),
-            )),
-            compare_label,
-            into(tuple((
-                preceded_whitespace(alt((tag("!"), tag("?")))),
-                cut(terminated(
-                    preceded_whitespace(expect_edge_name),
-                    expect(preceded_whitespace(tag("->")), "expected `->`"),
-                )),
-                preceded_whitespace(expect_edge_name),
-            ))),
-            assign_label,
-            expr_label,
-            success::<_, _, _>(EdgeLabel::Skip {
-                span: Position::from(&input),
-            }),
+    alt((
+        into(preceded(
+            preceded_whitespace(char('$')),
+            cut(preceded_opt_id("edge_label")),
         )),
-    )(input)
+        compare_label,
+        into(tuple((
+            preceded_whitespace(alt((tag("!"), tag("?")))),
+            cut(terminated(
+                preceded_whitespace(expect_edge_name),
+                expect(preceded_whitespace(tag("->")), "expected `->`"),
+            )),
+            preceded_whitespace(expect_edge_name),
+        ))),
+        assign_label,
+        expr_label,
+        success::<_, _, _>(EdgeLabel::Skip {
+            span: Position::from(&input),
+        }),
+    ))(input)
 }
 
 fn edge_name(input: Span) -> Result<EdgeName<Identifier>> {
-    context(
-        "edge_name",
-        into(many1(preceded_whitespace(edge_name_part))),
-    )(input)
+    into(many1(preceded_whitespace(edge_name_part)))(input)
 }
 
 fn expect_edge_name(input: Span) -> Result<EdgeName<Identifier>> {
@@ -172,18 +155,15 @@ fn expect_edge_name(input: Span) -> Result<EdgeName<Identifier>> {
 }
 
 fn edge_name_part(input: Span) -> Result<EdgeNamePart<Identifier>> {
-    context(
-        "edge_name_part",
-        alt((
-            into(tuple((
-                tag("("),
-                cut(preceded_opt_id("edge_name_part")),
-                preceded_type_,
-                preceded_whitespace(tag(")")),
-            ))),
-            into(identifier),
-        )),
-    )(input)
+    alt((
+        into(tuple((
+            tag("("),
+            cut(preceded_opt_id("edge_name_part")),
+            preceded_type_,
+            preceded_whitespace(tag(")")),
+        ))),
+        into(identifier),
+    ))(input)
 }
 
 fn expect_expression(input: Span) -> Result<Arc<Expression<Identifier>>> {
@@ -319,13 +299,13 @@ fn value_entry(input: Span) -> Result<ValueEntry<Identifier>> {
                 Some(identifier) => {
                     Position::new(identifier.span().start, value.as_ref().span().end)
                 }
-                None => value.as_ref().span().clone(),
+                None => value.as_ref().span(),
             };
             (span, value)
         }
         None => {
             let span = match &identifier {
-                Some(identifier) => identifier.span().clone(),
+                Some(identifier) => identifier.span(),
                 None => Position::none(),
             };
             (
@@ -495,7 +475,7 @@ where
             Ok((remaining, out)) => Ok((remaining, Some(out))),
             Err(nom::Err::Error(input)) | Err(nom::Err::Failure(input)) => {
                 if error_msg.to_string() == "" {
-                    return Ok((input.input, None));
+                    Ok((input.input, None))
                 } else {
                     let err = Error::parser_error(error_pos, error_msg.to_string());
                     input.input.extra.report_error(err);

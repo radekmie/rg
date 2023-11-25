@@ -67,7 +67,7 @@ impl<Id: Positioned> From<(Span<'_>, EdgeName<Id>, EdgeName<Id>)> for EdgeLabel<
 impl<Id: Positioned> From<Vec<EdgeNamePart<Id>>> for EdgeName<Id> {
     fn from(parts: Vec<EdgeNamePart<Id>>) -> Self {
         let (first, last) = (parts.first().unwrap(), parts.last().unwrap());
-        let span = Position::new(first.start().clone(), last.end().clone());
+        let span = first.span().with_end(last.end());
         Self { span, parts }
     }
 }

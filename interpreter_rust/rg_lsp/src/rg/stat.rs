@@ -15,22 +15,35 @@ pub enum Stat<'a> {
 impl Stat<'_> {
     pub fn from_game(game: &Game<Identifier>) -> Vec<Stat> {
         let mut stats = Vec::new();
-        for typedef in game.typedefs.iter() {
+        game.typedefs.iter().for_each(|typedef| {
             stats.push(Stat::Typedef(typedef));
-        }
-        for variable in game.variables.iter() {
-            stats.push(Stat::Variable(variable));
-        }
-        for constant in game.constants.iter() {
+        });
+        game.constants.iter().for_each(|constant| {
             stats.push(Stat::Constant(constant));
-        }
-        for edge in game.edges.iter() {
+        });
+        game.variables.iter().for_each(|variable| {
+            stats.push(Stat::Variable(variable));
+        });
+        game.edges.iter().for_each(|edge| {
             stats.push(Stat::Edge(edge));
-        }
-        for pragma in game.pragmas.iter() {
+        });
+        game.pragmas.iter().for_each(|pragma| {
             stats.push(Stat::Pragma(pragma));
-        }
+        });
         stats
+    }
+
+    pub fn keyword(&self) -> &'static str {
+        match self {
+            Stat::Constant(_) => "const",
+            Stat::Edge(_) => "",
+            Stat::Typedef(_) => "typ",
+            Stat::Variable(_) => "var",
+            Stat::Pragma(Pragma::Any { .. }) => "@any",
+            Stat::Pragma(Pragma::Disjoint { .. }) => "@disjoint",
+            Stat::Pragma(Pragma::MultiAny { .. }) => "@multiAny",
+            Stat::Pragma(Pragma::Unique { .. }) => "@unique",
+        }
     }
 }
 

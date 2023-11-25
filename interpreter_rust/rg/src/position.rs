@@ -24,7 +24,7 @@ impl PartialEq for Span {
 
 impl PartialOrd for Span {
     fn partial_cmp(&self, _other: &Self) -> Option<std::cmp::Ordering> {
-        Some(std::cmp::Ordering::Equal)
+        Some(self.cmp(_other))
     }
 }
 
@@ -37,7 +37,7 @@ impl Ord for Span {
 
 impl<OldId, NewId> MapId<Span, OldId, NewId> for Span {
     fn map_id(&self, _map: &mut impl FnMut(&OldId) -> NewId) -> Span {
-        self.clone()
+        *self
     }
 }
 
@@ -46,7 +46,7 @@ impl<'a, T> From<&LocatedSpan<&'a str, T>> for Span {
         Self {
             start: Position {
                 line: span.location_line() as usize,
-                column: span.get_column() as usize,
+                column: span.get_column(),
             },
             end: Position {
                 line: span.location_line() as usize,
@@ -61,7 +61,7 @@ impl<'a, T> From<LocatedSpan<&'a str, T>> for Span {
         Self {
             start: Position {
                 line: span.location_line() as usize,
-                column: span.get_column() as usize,
+                column: span.get_column(),
             },
             end: Position {
                 line: span.location_line() as usize,
@@ -76,7 +76,7 @@ impl<'a, T> From<(LocatedSpan<&'a str, T>, LocatedSpan<&'a str, T>)> for Span {
         Self {
             start: Position {
                 line: start.location_line() as usize,
-                column: start.get_column() as usize,
+                column: start.get_column(),
             },
             end: Position {
                 line: end.location_line() as usize,
@@ -91,7 +91,7 @@ impl<'a, T> From<(&LocatedSpan<&'a str, T>, &LocatedSpan<&'a str, T>)> for Span 
         Self {
             start: Position {
                 line: start.location_line() as usize,
-                column: start.get_column() as usize,
+                column: start.get_column(),
             },
             end: Position {
                 line: end.location_line() as usize,
@@ -142,14 +142,14 @@ impl Span {
         self.encloses_pos(&other.start) && self.encloses_pos(&other.end)
     }
 
-    pub fn focus_start(&self) -> Self {
+    pub fn focus_start(self) -> Self {
         Self {
             start: self.start,
             end: self.start,
         }
     }
 
-    pub fn focus_end(&self) -> Self {
+    pub fn focus_end(self) -> Self {
         Self {
             start: self.end,
             end: self.end,
@@ -214,11 +214,11 @@ impl<Id> Positioned for Edge<Id> {
 impl<Id: Positioned> Positioned for EdgeLabel<Id> {
     fn span(&self) -> Span {
         match self {
-            EdgeLabel::Assignment { lhs, rhs } => lhs.span().with_end(rhs.span().end),
-            EdgeLabel::Comparison { lhs, rhs, .. } => lhs.span().with_end(rhs.span().end),
-            EdgeLabel::Reachability { span, .. } => *span,
+            EdgeLabel::Assignment { lhs, rhs } | EdgeLabel::Comparison { lhs, rhs, .. } => {
+                lhs.span().with_end(rhs.span().end)
+            }
+            EdgeLabel::Reachability { span, .. } | EdgeLabel::Skip { span } => *span,
             EdgeLabel::Tag { symbol } => symbol.span(),
-            EdgeLabel::Skip { span } => *span,
         }
     }
 }
@@ -250,8 +250,7 @@ impl<Id: Positioned> Positioned for Type<Id> {
 impl<Id: Positioned> Positioned for Expression<Id> {
     fn span(&self) -> Span {
         match &self {
-            Expression::Access { span, .. } => *span,
-            Expression::Cast { span, .. } => *span,
+            Expression::Access { span, .. } | Expression::Cast { span, .. } => *span,
             Expression::Reference { identifier } => identifier.span(),
         }
     }

@@ -79,7 +79,7 @@ fn build_edges<Id: Display>(game: &mut ist::Game<Rc<str>>, edges: Vec<ast::Edge<
 
         game.edges
             .entry(lhs)
-            .or_insert_with(Vec::default)
+            .or_default()
             .push(ist::Edge { label, next: rhs });
     }
 }

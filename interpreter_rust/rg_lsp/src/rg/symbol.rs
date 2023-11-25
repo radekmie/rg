@@ -22,26 +22,24 @@ impl Symbol {
         }
     }
 
-    fn from_id(identifier: &Identifier, flag: Flag, owners: Option<Vec<usize>>) -> Option<Self> {
+    fn from_id(identifier: &Identifier, flag: Flag) -> Option<Self> {
         if identifier.is_none() {
             None
         } else {
             let id = identifier.identifier.clone();
-            let pos = identifier.span().clone();
-            Some(Self::new(id, pos, flag, owners))
+            let pos = identifier.span();
+            Some(Self::new(id, pos, flag, None))
         }
     }
 
     pub fn is_owned_by(&self, owner: usize) -> bool {
-        if let Some(owners) = &self.owners {
-            owners.contains(&owner)
-        } else {
-            false
-        }
+        self.owners
+            .as_ref()
+            .is_some_and(|owners| owners.contains(&owner))
     }
 }
 
-fn defined(symbols: &Vec<Symbol>, name: &str, flag: &Flag) -> Option<usize> {
+fn defined(symbols: &[Symbol], name: &str, flag: &Flag) -> Option<usize> {
     symbols
         .iter()
         .enumerate()
@@ -57,7 +55,7 @@ impl Display for Symbol {
 
 impl Positioned for Symbol {
     fn span(&self) -> Span {
-        self.pos.clone()
+        self.pos
     }
 }
 
@@ -95,17 +93,16 @@ struct Symbols {
 }
 
 impl Symbols {
-    fn add_from_type(&mut self, type_: &Type<Identifier>, owner: usize) {
+    fn add_from_type(&mut self, type_: &Type<Identifier>) {
         match type_ {
             Type::Arrow { lhs, rhs } => {
-                self.add_from_type(lhs, owner);
-                self.add_from_type(rhs, owner);
+                self.add_from_type(lhs);
+                self.add_from_type(rhs);
             }
             Type::TypeReference { .. } => (),
             Type::Set { identifiers, .. } => {
                 for identifier in identifiers.iter() {
-                    let symbol = Symbol::from_id(identifier, Flag::Member, None);
-                    if let Some(symbol) = symbol {
+                    if let Some(symbol) = Symbol::from_id(identifier, Flag::Member) {
                         self.symbols.push(symbol);
                     }
                 }
@@ -127,6 +124,12 @@ impl Symbols {
         }
     }
 
+    fn sym_from_param(param: &Identifier, owners: Vec<usize>) -> Symbol {
+        let id = param.identifier.clone();
+        let pos = param.span();
+        Symbol::new(id, pos, Flag::Param, Some(owners))
+    }
+
     fn is_defined_param(&self, identifier: &str, owner: usize) -> Option<usize> {
         self.edge_params
             .iter()
@@ -146,39 +149,27 @@ impl Symbols {
                 identifier: right_id,
             }, right_binds @ ..] = edge.rhs.parts.as_slice()
             {
-                let left_idx = self.add_if_not_defined(Symbol::from_id(left_id, Flag::Edge, None));
-                let right_idx =
-                    self.add_if_not_defined(Symbol::from_id(right_id, Flag::Edge, None));
+                let left_idx = self.add_if_not_defined(Symbol::from_id(left_id, Flag::Edge));
+                let right_idx = self.add_if_not_defined(Symbol::from_id(right_id, Flag::Edge));
 
                 // Split binds into literals and bindings
                 let (left_binds, left_literals) = left_binds
                     .iter()
-                    .partition::<Vec<&EdgeNamePart<Identifier>>, _>(|bind| match bind {
-                        EdgeNamePart::Binding { .. } => true,
-                        _ => false,
+                    .partition::<Vec<&EdgeNamePart<Identifier>>, _>(|bind| {
+                        matches!(bind, EdgeNamePart::Binding { .. })
                     });
-                let (right_binds, right_literals) =
-                    right_binds
-                        .iter()
-                        .partition::<Vec<&EdgeNamePart<Identifier>>, _>(|bind| match bind {
-                            EdgeNamePart::Binding { .. } => true,
-                            _ => false,
-                        });
+                let (right_binds, right_literals) = right_binds.iter().partition::<Vec<
+                    &EdgeNamePart<Identifier>,
+                >, _>(
+                    |bind| matches!(bind, EdgeNamePart::Binding { .. }),
+                );
 
                 // Maybe add literals as edge symbols
                 left_literals.iter().for_each(|literal| {
-                    self.add_if_not_defined(Symbol::from_id(
-                        literal.identifier(),
-                        Flag::Edge,
-                        None,
-                    ));
+                    self.add_if_not_defined(Symbol::from_id(literal.identifier(), Flag::Edge));
                 });
                 right_literals.iter().for_each(|literal| {
-                    self.add_if_not_defined(Symbol::from_id(
-                        literal.identifier(),
-                        Flag::Edge,
-                        None,
-                    ));
+                    self.add_if_not_defined(Symbol::from_id(literal.identifier(), Flag::Edge));
                 });
 
                 // Splits bindings into common, left and right
@@ -268,46 +259,33 @@ impl Symbols {
             symbols: vec![],
             edge_params: vec![],
         };
-        for constant in game.constants.iter() {
+        game.constants.iter().for_each(|constant| {
             let id = &constant.identifier;
-            let flag = Flag::Constant;
-            let symbol = Symbol::from_id(id, flag, None);
-            if let Some(symbol) = symbol {
+            if let Some(symbol) = Symbol::from_id(id, Flag::Constant) {
                 symbols.symbols.push(symbol);
             }
-        }
+        });
 
-        for variable in game.variables.iter() {
+        game.variables.iter().for_each(|variable| {
             let id = &variable.identifier;
-            let flag = Flag::Variable;
-            let symbol = Symbol::from_id(id, flag, None);
-            if let Some(symbol) = symbol {
+            if let Some(symbol) = Symbol::from_id(id, Flag::Variable) {
                 symbols.symbols.push(symbol);
             }
-        }
-        for typedef in game.typedefs.iter() {
+        });
+        game.typedefs.iter().for_each(|typedef| {
             let id = &typedef.identifier;
-            let flag = Flag::Type;
-            let symbol = Symbol::from_id(id, flag, None);
-            if let Some(symbol) = symbol {
+            if let Some(symbol) = Symbol::from_id(id, Flag::Type) {
                 symbols.symbols.push(symbol);
-                let symbol_idx = symbols.symbols.len() - 1;
-                symbols.add_from_type(&typedef.type_, symbol_idx);
-            } else {
-                symbols.add_from_type(&typedef.type_, 0);
             }
-        }
-        for edge in game.edges.iter() {
-            symbols.add_from_edge(edge);
-        }
+            symbols.add_from_type(&typedef.type_);
+        });
+        game.edges
+            .iter()
+            .for_each(|edge| symbols.add_from_edge(edge));
         for bind in symbols.edge_params.iter() {
             let id = &bind.param;
-            let owners = bind.owners.iter().map(|idx| *idx).collect::<Vec<usize>>();
-            let flag = Flag::Param;
-            let symbol = Symbol::from_id(id, flag, Some(owners));
-            if let Some(symbol) = symbol {
-                symbols.symbols.push(symbol);
-            }
+            let owners = bind.owners.iter().copied().collect();
+            symbols.symbols.push(Self::sym_from_param(id, owners));
         }
         symbols.symbols
     }

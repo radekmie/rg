@@ -20,7 +20,7 @@ impl Occurrence {
 
 impl Positioned for Occurrence {
     fn span(&self) -> Span {
-        self.pos.clone()
+        self.pos
     }
 }
 
@@ -39,36 +39,23 @@ impl SymbolTableWithErrors {
     /*
      * The last symbol with matching id defined before this position is used.
      */
-    fn find_symbol(
-        &self,
-        pos: &Span,
-        id: &str,
-        flag: Option<Flag>,
-        owner: &Option<usize>,
-    ) -> Option<usize> {
-        let mut sym = None;
-        for (idx, symbol) in self.symbols.iter().enumerate() {
-            if symbol.id == id
+    fn find_symbol(&self, id: &str, flag: Option<Flag>, owner: &Option<usize>) -> Option<usize> {
+        self.symbols.iter().position(|symbol| {
+            symbol.id == id
                 && flag.as_ref().map_or(true, |f| symbol.flag == *f)
                 && owner.as_ref().map_or(true, |o| symbol.is_owned_by(*o))
-            {
-                sym = Some(idx);
-            } else if symbol.pos.is_after(pos) && sym.is_some() {
-                return sym;
-            }
-        }
-        sym
+        })
     }
 
     fn occ_from_id(&self, identifier: &Identifier) -> Occurrence {
         let span = identifier.span();
-        let symbol_idx = self.find_symbol(&span, &identifier.identifier, None, &None);
+        let symbol_idx = self.find_symbol(&identifier.identifier, None, &None);
         Occurrence::new(span, symbol_idx)
     }
 
     fn occ_with_flag(&self, identifier: &Identifier, flag: Flag) -> Occurrence {
         let span = identifier.span();
-        let symbol_idx = self.find_symbol(&span, &identifier.identifier, Some(flag), &None);
+        let symbol_idx = self.find_symbol(&identifier.identifier, Some(flag), &None);
         Occurrence::new(span, symbol_idx)
     }
 
@@ -102,7 +89,7 @@ impl SymbolTableWithErrors {
     ) {
         if !identifier.is_none() {
             let span = identifier.span();
-            let symbol_idx = self.find_symbol(&span, &identifier.identifier, Some(flag), owner);
+            let symbol_idx = self.find_symbol(&identifier.identifier, Some(flag), owner);
             if symbol_idx.is_none() {
                 self.errors.push(Error::symbol_table_error(identifier));
             } else {
@@ -131,7 +118,7 @@ impl SymbolTableWithErrors {
     fn add_from_edge(&mut self, edge: &Edge<Identifier>) {
         let left_owner = self.add_from_edge_name(&edge.lhs);
         let right_owner = self.add_from_edge_name(&edge.rhs);
-        let owner = left_owner.or_else(|| right_owner);
+        let owner = left_owner.or(right_owner);
         self.add_from_edge_label(&edge.label, &owner);
     }
 
@@ -143,11 +130,10 @@ impl SymbolTableWithErrors {
     ) {
         if !identifier.is_none() {
             let span = identifier.span();
-            let sym_idx =
-                match self.find_symbol(&span, &identifier.identifier, Some(Flag::Param), owner) {
-                    Some(idx) => Some(idx),
-                    None => self.find_symbol(&span, &identifier.identifier, None, &None),
-                };
+            let sym_idx = match self.find_symbol(&identifier.identifier, Some(Flag::Param), owner) {
+                Some(idx) => Some(idx),
+                None => self.find_symbol(&identifier.identifier, None, &None),
+            };
             if sym_idx.is_none() && create_error {
                 self.errors.push(Error::symbol_table_error(identifier));
             } else if sym_idx.is_some() {
@@ -202,9 +188,9 @@ impl SymbolTableWithErrors {
                 let occ = self.occ_with_flag(identifier, Flag::Edge);
                 let sym_idx = occ.symbol;
                 self.occurrences.push(occ);
-                for binding in bindings.iter() {
+                bindings.iter().for_each(|binding| {
                     self.add_from_name_part(binding, &sym_idx);
-                }
+                });
                 sym_idx
             }
             _ => None,
@@ -231,9 +217,9 @@ impl SymbolTableWithErrors {
                 self.add_occ(identifier);
             }
             Value::Map { entries, .. } => {
-                for entry in entries.iter() {
+                entries.iter().for_each(|entry| {
                     self.add_from_value_entry(entry);
-                }
+                });
             }
         }
     }
@@ -252,27 +238,27 @@ impl SymbolTableWithErrors {
             errors: Vec::new(),
         };
         table.add_builtin_symbols();
-        for constant in game.constants.iter() {
+        game.constants.iter().for_each(|constant| {
             table.add_occ_with_flag(&constant.identifier, Flag::Constant);
             table.add_from_type(&constant.type_);
             table.add_from_value(&constant.value);
-        }
+        });
 
-        for variable in game.variables.iter() {
+        game.variables.iter().for_each(|variable| {
             table.add_occ_with_flag(&variable.identifier, Flag::Variable);
             table.add_from_type(&variable.type_);
             table.add_from_value(&variable.default_value);
-        }
-        for typedef in game.typedefs.iter() {
+        });
+        game.typedefs.iter().for_each(|typedef| {
             table.add_occ_with_flag(&typedef.identifier, Flag::Type);
             table.add_from_type(&typedef.type_);
-        }
-        for edge in game.edges.iter() {
+        });
+        game.edges.iter().for_each(|edge| {
             table.add_from_edge(edge);
-        }
-        for pragma in game.pragmas.iter() {
-            table.add_from_edge_name(&pragma.edge_name());
-        }
+        });
+        game.pragmas.iter().for_each(|pragma| {
+            table.add_from_edge_name(pragma.edge_name());
+        });
         table
     }
 
@@ -330,21 +316,15 @@ impl SymbolTableWithErrors {
 
 impl SymbolTable {
     pub fn get_occ_at(&self, pos: &Position) -> Option<&Occurrence> {
-        for occurrence in self.occurrences.iter() {
-            if occurrence.pos.encloses_pos(pos) {
-                return Some(occurrence);
-            }
-        }
-        None
+        self.occurrences
+            .iter()
+            .find(|occ| occ.pos.encloses_pos(pos))
     }
 
     pub fn get_occ_at_span(&self, span: &Span) -> Option<&Occurrence> {
-        for occurrence in self.occurrences.iter() {
-            if occurrence.pos.encloses_span(span) {
-                return Some(occurrence);
-            }
-        }
-        None
+        self.occurrences
+            .iter()
+            .find(|occ| occ.pos.encloses_span(span))
     }
 
     pub fn get_occ_symbol(&self, occ: &Occurrence) -> Option<&Symbol> {
@@ -369,12 +349,7 @@ impl SymbolTable {
     }
 
     pub fn sym_idx(&self, symbol: &Symbol) -> Option<usize> {
-        for (idx, sym) in self.symbols.iter().enumerate() {
-            if sym == symbol {
-                return Some(idx);
-            }
-        }
-        None
+        self.symbols.iter().position(|sym| sym == symbol)
     }
 
     pub fn from_game(game: &Game<Identifier>) -> (Self, Vec<Error>) {
