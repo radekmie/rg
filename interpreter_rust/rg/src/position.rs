@@ -9,6 +9,15 @@ pub struct Position {
     pub column: usize,
 }
 
+impl<'a, T> From<&LocatedSpan<&'a str, T>> for Position {
+    fn from(span: &LocatedSpan<&'a str, T>) -> Self {
+        Self {
+            line: span.location_line() as usize,
+            column: span.get_column(),
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Span {
     pub start: Position,
@@ -44,43 +53,10 @@ impl<OldId, NewId> MapId<Span, OldId, NewId> for Span {
 impl<'a, T> From<&LocatedSpan<&'a str, T>> for Span {
     fn from(span: &LocatedSpan<&'a str, T>) -> Self {
         Self {
-            start: Position {
-                line: span.location_line() as usize,
-                column: span.get_column(),
-            },
+            start: span.into(),
             end: Position {
                 line: span.location_line() as usize,
                 column: span.get_column() + span.fragment().len(),
-            },
-        }
-    }
-}
-
-impl<'a, T> From<LocatedSpan<&'a str, T>> for Span {
-    fn from(span: LocatedSpan<&'a str, T>) -> Self {
-        Self {
-            start: Position {
-                line: span.location_line() as usize,
-                column: span.get_column(),
-            },
-            end: Position {
-                line: span.location_line() as usize,
-                column: span.get_column() + span.fragment().len(),
-            },
-        }
-    }
-}
-
-impl<'a, T> From<(LocatedSpan<&'a str, T>, LocatedSpan<&'a str, T>)> for Span {
-    fn from((start, end): (LocatedSpan<&'a str, T>, LocatedSpan<&'a str, T>)) -> Self {
-        Self {
-            start: Position {
-                line: start.location_line() as usize,
-                column: start.get_column(),
-            },
-            end: Position {
-                line: end.location_line() as usize,
-                column: end.get_column() + end.fragment().len(),
             },
         }
     }
@@ -104,6 +80,14 @@ impl<'a, T> From<(&LocatedSpan<&'a str, T>, &LocatedSpan<&'a str, T>)> for Span 
 impl Span {
     pub fn new(start: Position, end: Position) -> Self {
         Self { start, end }
+    }
+
+    pub fn at<T>(input: &LocatedSpan<&str, T>) -> Self {
+        let start = Position {
+            line: input.location_line() as usize,
+            column: input.get_column(),
+        };
+        Self::new(start, start)
     }
 
     pub fn with_start(self, start: Position) -> Self {
@@ -176,6 +160,14 @@ impl Position {
 
     pub fn is_none(&self) -> bool {
         self.line == 0 && self.column == 0
+    }
+
+    pub fn with_start(self, start: Self) -> Span {
+        Span::new(start, self)
+    }
+
+    pub fn with_end(self, end: Self) -> Span {
+        Span::new(self, end)
     }
 
     pub fn equal_pos(&self, other: &Position) -> bool {

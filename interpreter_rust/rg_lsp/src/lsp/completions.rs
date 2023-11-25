@@ -236,7 +236,8 @@ impl CompletionKind {
             .find_map(|part| {
                 if part.span().encloses_pos(&pos) {
                     match part {
-                        EdgeNamePart::Literal { .. } => Some(CompletionKind::Edge),
+                        // We can been on toplevel before an edge
+                        EdgeNamePart::Literal { .. } => Some(CompletionKind::Toplevel),
                         EdgeNamePart::Binding {
                             type_, identifier, ..
                         } => {
