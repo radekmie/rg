@@ -10,7 +10,6 @@ import KnightthroughHrg from 'bundle-text:../../../../examples/knightthrough.hrg
 import KnightthroughRbg from 'bundle-text:../../../../examples/knightthrough.rbg';
 import TicTacToeRbg from 'bundle-text:../../../../examples/ticTacToe.rbg';
 import TicTacToeRg from 'bundle-text:../../../../examples/ticTacToe.rg';
-import MinimalRg from 'bundle-text:../../../../examples/minimal.rg';
 
 import { Extension } from '../../types';
 
@@ -27,7 +26,6 @@ export const presets = [
   ['Knightthrough', KnightthroughRbg, Extension.rbg] as const,
   ['TicTacToe', TicTacToeRbg, Extension.rbg] as const,
   ['TicTacToe', TicTacToeRg, Extension.rg] as const,
-  ['Minimal', MinimalRg, Extension.rg] as const,
 ].map(([name, source, extension]) => ({
   name: `${name}${extension}`,
   source,
