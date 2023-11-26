@@ -1,9 +1,13 @@
-use crate::{ast::*, parser::Input, position::*};
+use crate::{ast::*, parsing::parser::Input, position::*};
 use std::sync::Arc;
 
-impl<Id: Positioned> From<(Input<'_>, Id, Arc<Type<Id>>, Arc<Value<Id>>, Span)> for Constant<Id> {
+impl<Id: Positioned> From<(Input<'_>, (Id, Arc<Type<Id>>, Arc<Value<Id>>), Span)> for Constant<Id> {
     fn from(
-        (start, identifier, type_, value, end): (Input, Id, Arc<Type<Id>>, Arc<Value<Id>>, Span),
+        (start, (identifier, type_, value), end): (
+            Input,
+            (Id, Arc<Type<Id>>, Arc<Value<Id>>),
+            Span,
+        ),
     ) -> Self {
         let span = end.with_start((&start).into());
         Self {
@@ -15,8 +19,8 @@ impl<Id: Positioned> From<(Input<'_>, Id, Arc<Type<Id>>, Arc<Value<Id>>, Span)> 
     }
 }
 
-impl<Id: Positioned> From<(EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>, Span)> for Edge<Id> {
-    fn from((lhs, rhs, label, end): (EdgeName<Id>, EdgeName<Id>, EdgeLabel<Id>, Span)) -> Self {
+impl<Id: Positioned> From<(EdgeName<Id>, (EdgeName<Id>, EdgeLabel<Id>), Span)> for Edge<Id> {
+    fn from((lhs, (rhs, label), end): (EdgeName<Id>, (EdgeName<Id>, EdgeLabel<Id>), Span)) -> Self {
         let span = end.with_start(lhs.start());
         Self {
             span,
@@ -39,9 +43,22 @@ impl<Id> From<(Arc<Expression<Id>>, Arc<Expression<Id>>)> for EdgeLabel<Id> {
     }
 }
 
-impl<Id> From<(Arc<Expression<Id>>, bool, Arc<Expression<Id>>)> for EdgeLabel<Id> {
-    fn from((lhs, negated, rhs): (Arc<Expression<Id>>, bool, Arc<Expression<Id>>)) -> Self {
-        Self::Comparison { lhs, rhs, negated }
+impl<Id> From<(Arc<Expression<Id>>, &str, Arc<Expression<Id>>)> for EdgeLabel<Id> {
+    fn from((lhs, separator, rhs): (Arc<Expression<Id>>, &str, Arc<Expression<Id>>)) -> Self {
+        match separator {
+            "!=" => Self::Comparison {
+                lhs,
+                rhs,
+                negated: true,
+            },
+            "==" => Self::Comparison {
+                lhs,
+                rhs,
+                negated: false,
+            },
+            "=" => Self::Assignment { lhs, rhs },
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -55,6 +72,12 @@ impl<Id: Positioned> From<(Input<'_>, EdgeName<Id>, EdgeName<Id>)> for EdgeLabel
             rhs,
             negated,
         }
+    }
+}
+
+impl<Id: Positioned> From<Id> for Expression<Id> {
+    fn from(identifier: Id) -> Self {
+        Self::Reference { identifier }
     }
 }
 
@@ -108,8 +131,8 @@ impl<Id> From<Id> for Type<Id> {
     }
 }
 
-impl<Id: Positioned> From<(Input<'_>, Id, Arc<Type<Id>>, Span)> for Typedef<Id> {
-    fn from((start, identifier, type_, end): (Input, Id, Arc<Type<Id>>, Span)) -> Self {
+impl<Id: Positioned> From<(Input<'_>, (Id, Arc<Type<Id>>), Span)> for Typedef<Id> {
+    fn from((start, (identifier, type_), end): (Input, (Id, Arc<Type<Id>>), Span)) -> Self {
         let span = end.with_start((&start).into());
         Self {
             span,
@@ -153,13 +176,11 @@ impl<Id> From<(Span, Option<Id>, Arc<Value<Id>>)> for ValueEntry<Id> {
     }
 }
 
-impl<Id: Positioned> From<(Input<'_>, Id, Arc<Type<Id>>, Arc<Value<Id>>, Span)> for Variable<Id> {
+impl<Id: Positioned> From<(Input<'_>, (Id, Arc<Type<Id>>, Arc<Value<Id>>), Span)> for Variable<Id> {
     fn from(
-        (start, identifier, type_, default_value, end): (
+        (start, (identifier, type_, default_value), end): (
             Input,
-            Id,
-            Arc<Type<Id>>,
-            Arc<Value<Id>>,
+            (Id, Arc<Type<Id>>, Arc<Value<Id>>),
             Span,
         ),
     ) -> Self {

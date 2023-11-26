@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::{
+use crate::{
     ast::Identifier,
     position::{Positioned, Span},
 };

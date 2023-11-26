@@ -205,7 +205,7 @@ impl Game<Rc<str>> {
 #[cfg(test)]
 mod test {
     use crate::ast::Game;
-    use crate::parser::parse_with_errors;
+    use crate::parsing::parser::parse_with_errors;
     use map_id::MapId;
     use std::rc::Rc;
 

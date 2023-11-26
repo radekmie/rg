@@ -1,7 +1,7 @@
 use crate::rg::symbol_table::*;
 use rg::ast::{Game, Identifier};
-use rg::error::Error;
-use rg::parser::parse_with_errors;
+use rg::parsing::error::Error;
+use rg::parsing::parser::parse_with_errors;
 
 pub struct Document {
     pub text: String,

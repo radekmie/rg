@@ -3,7 +3,7 @@ use map_id::MapId;
 use rand::thread_rng;
 use rg::ist;
 use rg::ist_tools::Interner;
-use rg::{ast::Game, parser::parse_with_errors};
+use rg::{ast::Game, parsing::parser::parse_with_errors};
 use serde::Deserialize;
 use serde_json::{from_str, to_string};
 use std::rc::Rc;

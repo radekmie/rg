@@ -260,7 +260,7 @@ impl CompletionKind {
 
 #[cfg(test)]
 mod test {
-    use rg::{parser::parse_with_errors, position::Position};
+    use rg::{parsing::parser::parse_with_errors, position::Position};
 
     use super::CompletionKind;
 

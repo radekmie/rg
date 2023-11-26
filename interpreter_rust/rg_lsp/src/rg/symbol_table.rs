@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use rg::ast::*;
-use rg::error::Error;
+use rg::parsing::error::Error;
 use rg::position::*;
 
 use super::symbol::{from_game as symbols_from_game, Flag, Symbol};

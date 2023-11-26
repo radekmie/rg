@@ -494,7 +494,7 @@ impl<Id: PartialEq> Expression<Id> {
 #[cfg(test)]
 mod expression {
     mod is_equal_reference {
-        use crate::parser::parse_expression;
+        use crate::parsing::parser::parse_expression;
 
         fn check(lhs: &str, rhs: &str, expected: bool) {
             let lhs = parse_expression(lhs);
