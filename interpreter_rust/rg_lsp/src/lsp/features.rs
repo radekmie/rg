@@ -57,12 +57,10 @@ pub fn definitions(
     symbol_table: &SymbolTable,
 ) -> Option<GotoDefinitionResponse> {
     let enclosing_symbol = symbol_table.symbol_enclosing_pos(position)?;
-    if enclosing_symbol.pos.is_none() {
-        None
-    } else {
-        let location = to_location(uri, &enclosing_symbol.pos);
-        Some(GotoDefinitionResponse::Scalar(location))
-    }
+    enclosing_symbol.safe_pos().map(|pos| {
+        let location = to_location(uri, &pos);
+        GotoDefinitionResponse::Scalar(location)
+    })
 }
 
 pub fn document_highlight(
@@ -89,13 +87,12 @@ pub fn prepare_rename(
 ) -> Option<PrepareRenameResponse> {
     let enclosing_occ = symbol_table.occ_enclosing_pos(position)?;
     let symbol = symbol_table.get_occ_symbol(enclosing_occ)?;
-    if symbol.pos.is_none() {
-        return None;
-    }
-    Some(PrepareRenameResponse::RangeWithPlaceholder {
-        range: span_to_lsp(&enclosing_occ.pos),
-        placeholder: symbol.id.clone(),
-    })
+    symbol
+        .safe_pos()
+        .map(|_| PrepareRenameResponse::RangeWithPlaceholder {
+            range: span_to_lsp(&enclosing_occ.pos),
+            placeholder: symbol.id.clone(),
+        })
 }
 
 pub fn rename(
@@ -106,23 +103,21 @@ pub fn rename(
 ) -> Option<WorkspaceEdit> {
     let symbol = symbol_table.symbol_enclosing_pos(position)?;
     let sym_idx = symbol_table.sym_idx(symbol)?;
-    if symbol.pos.is_none() {
-        return None;
-    }
-    let text_edits = symbol_table
-        .all_symbol_occurences(sym_idx)
-        .iter()
-        .map(|occ| TextEdit {
-            range: span_to_lsp(&occ.pos),
-            new_text: new_name.clone(),
-        })
-        .collect();
-    let mut changes = HashMap::new();
-    changes.insert(uri.clone(), text_edits);
-    Some(WorkspaceEdit {
-        changes: Some(changes),
-        document_changes: None,
-        change_annotations: None,
+    symbol.safe_pos().map(|_| {
+        let text_edits = symbol_table
+            .all_symbol_occurences(sym_idx)
+            .iter()
+            .map(|occ| TextEdit {
+                range: span_to_lsp(&occ.pos),
+                new_text: new_name.clone(),
+            })
+            .collect();
+        let changes = HashMap::from([(uri.clone(), text_edits)]);
+        WorkspaceEdit {
+            changes: Some(changes),
+            document_changes: None,
+            change_annotations: None,
+        }
     })
 }
 
@@ -132,13 +127,9 @@ pub fn diagnostics(errors: Vec<Error>) -> Vec<Diagnostic> {
         .map(|Error { span, message, .. }| l::Diagnostic {
             range: pos_to_lsp_range(&span.start),
             severity: Some(l::DiagnosticSeverity::ERROR),
-            code: None,
-            code_description: None,
             source: Some("rg-lsp".into()),
             message: message.clone(),
-            related_information: None,
-            tags: None,
-            data: None,
+            ..Diagnostic::default()
         })
         .collect()
 }

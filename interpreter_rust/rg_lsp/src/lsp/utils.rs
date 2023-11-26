@@ -4,14 +4,15 @@ use tower_lsp::lsp_types::{self as l, Location, Url};
 use crate::rg::symbol::Flag;
 use rg::position::*;
 
+// https://microsoft.github.io/monaco-editor/typedoc/enums/languages.SymbolKind.html
 pub fn flag_to_kind(flag: &Flag) -> SymbolKind {
     match flag {
-        Flag::Constant => SymbolKind::CONSTANT,
-        Flag::Variable => SymbolKind::VARIABLE,
-        Flag::Edge => SymbolKind::METHOD,
-        Flag::Param => SymbolKind::PROPERTY,
-        Flag::Type => SymbolKind::CLASS,
-        Flag::Member => SymbolKind::FIELD,
+        Flag::Constant => SymbolKind::VARIABLE,
+        Flag::Variable => SymbolKind::FUNCTION,
+        Flag::Edge => SymbolKind::CLASS,
+        Flag::Param => SymbolKind::ARRAY,
+        Flag::Type => SymbolKind::PACKAGE,
+        Flag::Member => SymbolKind::NULL,
     }
 }
 

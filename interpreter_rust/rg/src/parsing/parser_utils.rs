@@ -35,7 +35,7 @@ pub fn with_semicolon<'a, O1, O2, O3: From<(O1, O2, Span)>>(
             let err = Error::parser_error(semicolon_pos, "expected `;`".to_string());
             input.extra.report_error(err);
         }
-        let end_pos = end.map_or(semicolon_pos, |end| Span::from(&end).focus_end());
+        let end_pos = end.map_or(Span::at(&input), |end| Span::from(&end).focus_end());
         Ok((input, second.map(|second| (first, second, end_pos).into())))
     }
 }

@@ -279,8 +279,8 @@ mod test {
     }
 
     fn completion_kind(input: &str, expected: CompletionKind) {
-        let (pos, input) = find_cursor(input);
-        let (game, _) = parse_with_errors(input.as_str());
+        let (pos, game) = find_cursor(input);
+        let (game, _) = parse_with_errors(game.as_str());
         let obtained = CompletionKind::from_game(pos, &game);
         assert!(
             obtained == expected,
@@ -333,7 +333,7 @@ mod test {
 
     #[test]
     fn edge_name() {
-        completion_kind("begin, ^", CompletionKind::Edge);
+        completion_kind("begin, ^", CompletionKind::Toplevel);
         completion_kind("begin ^, e1", CompletionKind::Edge);
         completion_kind("begin(^), e1", CompletionKind::Param);
         completion_kind("begin(param: ^), ", CompletionKind::Type);

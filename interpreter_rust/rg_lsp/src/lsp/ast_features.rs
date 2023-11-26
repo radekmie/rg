@@ -26,9 +26,9 @@ impl AstFeatures for Game<Identifier> {
     fn symbol_type(&self, symbol: &Symbol) -> Option<String> {
         self.enclosing_stat(&symbol.span())
             .and_then(|stat| match stat {
-                Stat::Constant(Constant { type_, .. }) => Some(format!("{}", type_)),
-                Stat::Variable(Variable { type_, .. }) => Some(format!("{}", type_)),
-                Stat::Typedef(Typedef { identifier, .. }) => Some(format!("{}", identifier)),
+                Stat::Constant(Constant { type_, .. }) => Some(type_.to_string()),
+                Stat::Variable(Variable { type_, .. }) => Some(type_.to_string()),
+                Stat::Typedef(Typedef { identifier, .. }) => Some(identifier.to_string()),
                 Stat::Edge(Edge { lhs, rhs, .. }) => {
                     let left = edge_name_label(lhs, symbol);
                     left.or(edge_name_label(rhs, symbol))
@@ -51,17 +51,10 @@ pub fn hover_signature(game: &Game<Identifier>, symbol: &Symbol) -> Option<Strin
 }
 
 fn edge_name_label(edge_name: &EdgeName<Identifier>, symbol: &Symbol) -> Option<String> {
-    match edge_name.parts.as_slice() {
-        [_, bindings @ ..] => bindings.iter().find_map(|binding| match binding {
-            EdgeNamePart::Binding { type_, .. } => {
-                if binding.span().encloses_span(&symbol.pos) {
-                    Some(format!("{}", type_))
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        }),
+    edge_name.parts.iter().find_map(|part| match part {
+        EdgeNamePart::Binding { span, type_, .. } if span.encloses_span(&symbol.pos) => {
+            Some(format!("{}", type_))
+        }
         _ => None,
-    }
+    })
 }

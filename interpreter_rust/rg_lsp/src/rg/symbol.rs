@@ -37,6 +37,14 @@ impl Symbol {
             .as_ref()
             .is_some_and(|owners| owners.contains(&owner))
     }
+
+    pub fn safe_pos(&self) -> Option<Span> {
+        if self.pos.is_none() {
+            None
+        } else {
+            Some(self.pos)
+        }
+    }
 }
 
 fn defined(symbols: &[Symbol], name: &str, flag: &Flag) -> Option<usize> {
@@ -124,10 +132,14 @@ impl Symbols {
         }
     }
 
-    fn sym_from_param(param: &Identifier, owners: Vec<usize>) -> Symbol {
-        let id = param.identifier.clone();
-        let pos = param.span();
-        Symbol::new(id, pos, Flag::Param, Some(owners))
+    fn sym_from_param(param: &Identifier, owners: Vec<usize>) -> Option<Symbol> {
+        if param.is_none() {
+            None
+        } else {
+            let id = param.identifier.clone();
+            let pos = param.span();
+            Some(Symbol::new(id, pos, Flag::Param, Some(owners)))
+        }
     }
 
     fn is_defined_param(&self, identifier: &str, owner: usize) -> Option<usize> {
@@ -285,7 +297,9 @@ impl Symbols {
         for bind in symbols.edge_params.iter() {
             let id = &bind.param;
             let owners = bind.owners.iter().copied().collect();
-            symbols.symbols.push(Self::sym_from_param(id, owners));
+            if let Some(symbol) = Self::sym_from_param(id, owners) {
+                symbols.symbols.push(symbol);
+            }
         }
         symbols.symbols
     }

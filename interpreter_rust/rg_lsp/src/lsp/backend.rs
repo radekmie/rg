@@ -11,15 +11,6 @@ pub struct Backend {
     document_map: DashMap<String, Document>,
 }
 
-impl Backend {
-    pub fn new(client: Client) -> Self {
-        Self {
-            client,
-            document_map: DashMap::new(),
-        }
-    }
-}
-
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
@@ -48,11 +39,7 @@ impl LanguageServer for Backend {
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
                         identifier: Some("rg-lsp".to_string()),
-                        inter_file_dependencies: false,
-                        workspace_diagnostics: false,
-                        work_done_progress_options: WorkDoneProgressOptions {
-                            work_done_progress: None,
-                        },
+                        ..DiagnosticOptions::default()
                     },
                 )),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
@@ -73,27 +60,24 @@ impl LanguageServer for Backend {
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let uri = params.text_document.uri;
-        web_sys::console::log_1(&format!("did open {}", uri).into());
         let text = params.text_document.text;
-        let (document, errors) = Document::new(text);
-        self.document_map.insert(uri.to_string(), document);
-        let diags = features::diagnostics(errors);
-        self.client.publish_diagnostics(uri, diags, None).await;
+        let diagnostics = self.add_document(&uri, text);
+        self.client
+            .publish_diagnostics(uri, diagnostics, None)
+            .await;
     }
 
     async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
-        web_sys::console::log_1(&format!("did change {}", uri).into());
         let text = params.content_changes.pop().unwrap().text;
-        let (document, errors) = Document::new(text);
-        self.document_map.insert(uri.to_string(), document);
-        let diags = features::diagnostics(errors);
-        self.client.publish_diagnostics(uri, diags, None).await;
+        let diagnostics = self.add_document(&uri, text);
+        self.client
+            .publish_diagnostics(uri, diagnostics, None)
+            .await;
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let uri = params.text_document.uri;
-        web_sys::console::log_1(&format!("did close {}", uri).into());
         self.document_map.remove(&uri.to_string());
     }
 
@@ -103,96 +87,107 @@ impl LanguageServer for Backend {
         &self,
         params: DocumentSymbolParams,
     ) -> Result<Option<DocumentSymbolResponse>> {
-        let uri = params.text_document.uri;
-        let document = self.document_map.get(&uri.to_string()).unwrap();
-        let document_symbols = features::document_symbol(&uri, &document.symbol_table);
-        Ok(document_symbols)
+        self.with_document(&params.text_document.uri, |uri, document| {
+            features::document_symbol(uri, &document.symbol_table)
+        })
     }
 
     async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
-        let uri = params.text_document_position.text_document.uri;
-        let position = params.text_document_position.position;
-        let document = self.document_map.get(&uri.to_string()).unwrap();
-        let locations = features::references(&uri, &position, &document.symbol_table);
-        Ok(locations)
+        self.with_document_positioned(&params.text_document_position, |uri, position, document| {
+            features::references(uri, position, &document.symbol_table)
+        })
     }
 
     async fn goto_definition(
         &self,
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
-        let uri = params.text_document_position_params.text_document.uri;
-        let position = params.text_document_position_params.position;
-        let document = self.document_map.get(&uri.to_string()).unwrap();
-        let definition = features::definitions(&uri, &position, &document.symbol_table);
-        Ok(definition)
+        self.with_document_positioned(
+            &params.text_document_position_params,
+            |uri, position, document| features::definitions(uri, position, &document.symbol_table),
+        )
     }
 
     async fn semantic_tokens_full(
         &self,
         params: SemanticTokensParams,
     ) -> Result<Option<SemanticTokensResult>> {
-        web_sys::console::log_1(&"semantic tokens full".into());
-        let uri = params.text_document.uri;
-        let document = self.document_map.get(&uri.to_string()).unwrap();
-        let semantic_tokens = semantic_tokens::semantic_tokens_full(&document);
-        Ok(Some(SemanticTokensResult::Tokens(SemanticTokens {
-            result_id: None,
-            data: semantic_tokens,
-        })))
+        self.with_document(&params.text_document.uri, |_, document| {
+            Some(SemanticTokensResult::Tokens(SemanticTokens {
+                result_id: None,
+                data: semantic_tokens::semantic_tokens_full(document),
+            }))
+        })
     }
 
     async fn document_highlight(
         &self,
         params: DocumentHighlightParams,
     ) -> Result<Option<Vec<DocumentHighlight>>> {
-        let uri = params.text_document_position_params.text_document.uri;
-        let position = params.text_document_position_params.position;
-        let document = self.document_map.get(&uri.to_string()).unwrap();
-        let symbol_table = &document.symbol_table;
-        let document_highlights = features::document_highlight(&position, symbol_table);
-        Ok(document_highlights)
+        self.with_document_positioned(
+            &params.text_document_position_params,
+            |_, position, document| features::document_highlight(position, &document.symbol_table),
+        )
     }
 
     async fn prepare_rename(
         &self,
         params: TextDocumentPositionParams,
     ) -> Result<Option<PrepareRenameResponse>> {
-        let uri = params.text_document.uri;
-        let position = params.position;
-        let document = self.document_map.get(&uri.to_string()).unwrap();
-        let symbol_table = &document.symbol_table;
-        let prepare_rename_response = features::prepare_rename(&position, symbol_table);
-        Ok(prepare_rename_response)
+        self.with_document_positioned(&params, |_, position, document| {
+            features::prepare_rename(position, &document.symbol_table)
+        })
     }
 
     async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
-        let uri = params.text_document_position.text_document.uri;
-        let position = params.text_document_position.position;
-        let document = self.document_map.get(&uri.to_string()).unwrap();
-        let symbol_table = &document.symbol_table;
-        let rename_response = features::rename(&uri, &position, symbol_table, params.new_name);
-        Ok(rename_response)
+        self.with_document_positioned(&params.text_document_position, |uri, position, document| {
+            features::rename(uri, position, &document.symbol_table, params.new_name)
+        })
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
-        let uri = params.text_document_position_params.text_document.uri;
-        let position = params.text_document_position_params.position;
-        let document = self.document_map.get(&uri.to_string()).unwrap();
-        let symbol_table = &document.symbol_table;
-        let game = &document.game;
-        let hover_response = features::hover(&position, symbol_table, game);
-        Ok(hover_response)
+        self.with_document_positioned(
+            &params.text_document_position_params,
+            |_, position, document| {
+                features::hover(position, &document.symbol_table, &document.game)
+            },
+        )
     }
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
-        let uri = params.text_document_position.text_document.uri;
-        let position = params.text_document_position.position;
+        self.with_document_positioned(&params.text_document_position, |_, position, document| {
+            completions::completions(lsp_to_pos(position), &document.game, &document.symbol_table)
+        })
+    }
+}
+
+impl Backend {
+    pub fn new(client: Client) -> Self {
+        Self {
+            client,
+            document_map: DashMap::new(),
+        }
+    }
+
+    fn with_document_positioned<T>(
+        &self,
+        params: &TextDocumentPositionParams,
+        f: impl FnOnce(&Url, &Position, &Document) -> T,
+    ) -> Result<T> {
+        let uri = &params.text_document.uri;
+        let position = &params.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
-        let symbol_table = &document.symbol_table;
-        let game = &document.game;
-        let completion_response =
-            completions::completions(lsp_to_pos(&position), game, symbol_table);
-        Ok(completion_response)
+        Ok(f(uri, position, &document))
+    }
+
+    fn with_document<T>(&self, uri: &Url, f: impl FnOnce(&Url, &Document) -> T) -> Result<T> {
+        let document = self.document_map.get(&uri.to_string()).unwrap();
+        Ok(f(uri, &document))
+    }
+
+    fn add_document(&self, uri: &Url, text: String) -> Vec<Diagnostic> {
+        let (document, errors) = Document::new(text);
+        self.document_map.insert(uri.to_string(), document);
+        features::diagnostics(errors)
     }
 }
