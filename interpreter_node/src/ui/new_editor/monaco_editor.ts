@@ -70,6 +70,9 @@ export async function createEditor(
     'semanticHighlighting.enabled': true,
     theme: 'rgTheme',
     readOnly: readonly,
+    lightbulb: {
+      enabled: false,
+    }
   });
 
   editor.onDidChangeModelContent(e => {

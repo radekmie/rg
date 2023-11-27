@@ -1,6 +1,6 @@
 use super::document::Document;
-use super::utils::lsp_to_pos;
-use super::{completions, features, semantic_tokens};
+use super::utils::{lsp_to_pos, lsp_to_span};
+use super::{code_actions, completions, features, semantic_tokens};
 use dashmap::DashMap;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
@@ -26,7 +26,6 @@ impl LanguageServer for Backend {
                 )),
                 document_symbol_provider: Some(OneOf::Left(true)),
                 document_highlight_provider: Some(OneOf::Left(true)),
-                execute_command_provider: None,
                 semantic_tokens_provider: Some(semantic_tokens::capabilities()),
                 definition_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
@@ -43,6 +42,7 @@ impl LanguageServer for Backend {
                     },
                 )),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
+                code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
                 completion_provider: Some(completions::capabilities()),
                 ..ServerCapabilities::default()
             },
@@ -152,6 +152,17 @@ impl LanguageServer for Backend {
                 features::hover(position, &document.symbol_table, &document.game)
             },
         )
+    }
+
+    async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
+        self.with_document(&params.text_document.uri, |uri, document| {
+            code_actions::provide(
+                uri,
+                &lsp_to_span(&params.range),
+                &document.game,
+                document.text.as_str(),
+            )
+        })
     }
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {

@@ -211,6 +211,37 @@ const registerLanguage = (client: Client) => {
     },
   });
 
+  languages.registerCodeActionsProvider(LanguageID.rg, {
+    async provideCodeActions(document, range, context, token) {
+      void token;
+      const result = await (client.request(
+        proto.CodeActionRequest.type.method,
+        {
+          textDocument: { uri: document.uri.toString() },
+          range: range,
+          context: { diagnostics: [] },
+        } as proto.CodeActionParams,
+      ) as Promise<
+        {
+          edit: {
+            changes: {
+              [uri: string]: vscode.TextEdit[];
+            };
+          };
+          kind: vscode.CodeActionKind;
+          title: string;
+        }[]
+      >);
+      return result.map(elem => {
+        const changes = new vscode.WorkspaceEdit();
+        changes.set(document.uri, elem.edit.changes[document.uri.toString()]);
+        const code_action = new vscode.CodeAction(elem.title, elem.kind);
+        code_action.edit = changes;
+        return code_action;
+      });
+    },
+  });
+
   languages.registerCompletionItemProvider(LanguageID.rg, {
     async provideCompletionItems(
       document,

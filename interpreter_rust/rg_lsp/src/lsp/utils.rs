@@ -61,3 +61,12 @@ pub fn to_location(url: &Url, span: &Span) -> Location {
         range: span_to_lsp(span),
     }
 }
+
+pub fn line_at_span<'a>(span: &Span, text: &'a str) -> Option<&'a str> {
+    if !span.start.line == span.end.line {
+        None
+    } else {
+        let line = text.lines().nth(span.start.line - 1)?;
+        Some(&line[(span.start.column - 1)..(span.end.column - 1)])
+    }
+}
