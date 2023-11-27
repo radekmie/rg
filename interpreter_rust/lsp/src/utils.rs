@@ -63,7 +63,7 @@ pub fn to_location(url: &Url, span: &Span) -> Location {
 }
 
 pub fn line_at_span<'a>(span: &Span, text: &'a str) -> Option<&'a str> {
-    if !span.start.line == span.end.line {
+    if span.start.line != span.end.line {
         None
     } else {
         let line = text.lines().nth(span.start.line - 1)?;
