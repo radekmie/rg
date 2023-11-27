@@ -176,7 +176,6 @@ fn symbol_table_tokens(symbol_table: &SymbolTable) -> Vec<Token> {
             } else {
                 0
             };
-            // web_sys::console::log_1(&format!("{}: {}", symbol.id, occ.pos).into());
             let token = Token {
                 pos: pos_to_lsp(&occ.start()),
                 len: symbol.id.len() as u32,

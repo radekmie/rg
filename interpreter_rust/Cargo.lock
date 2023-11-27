@@ -63,11 +63,10 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 name = "browser"
 version = "0.1.0"
 dependencies = [
- "console_error_panic_hook",
  "futures",
  "getrandom",
  "js-sys",
- "rg_lsp",
+ "lsp",
  "tower-lsp",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -266,7 +265,6 @@ dependencies = [
  "nom",
  "rand",
  "rg",
- "rg_lsp",
  "serde",
  "serde_json",
  "wasm-bindgen",
@@ -310,6 +308,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "lsp"
+version = "0.1.0"
+dependencies = [
+ "dashmap",
+ "rand",
+ "rg",
+ "serde",
+ "serde_json",
+ "tower-lsp",
 ]
 
 [[package]]
@@ -527,32 +537,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rg_lsp"
-version = "0.1.0"
-dependencies = [
- "dashmap",
- "nom",
- "nom_locate",
- "rand",
- "rg",
- "ropey",
- "serde",
- "serde_json",
- "tower-lsp",
- "web-sys",
-]
-
-[[package]]
-name = "ropey"
-version = "1.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53ce7a2c43a32e50d666e33c5a80251b31147bb4b49024bcab11fb6f20c671ed"
-dependencies = [
- "smallvec",
- "str_indices",
-]
-
-[[package]]
 name = "ryu"
 version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -620,12 +604,6 @@ name = "smallvec"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "942b4a808e05215192e39f4ab80813e599068285906cc91aa64f923db842bd5a"
-
-[[package]]
-name = "str_indices"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f026164926842ec52deb1938fae44f83dfdb82d0a5b0270c5bd5935ab74d6dd"
 
 [[package]]
 name = "syn"

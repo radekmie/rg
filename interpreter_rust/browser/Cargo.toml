@@ -1,14 +1,13 @@
 [package]
 name = "browser"
 version = "0.1.0"
-authors = ["Radosław Miernik <radekmie@gmail.com>"]
+authors = ["Jakub Cieśluk <323892@uwr.edu.pl>"]
 edition = "2021"
 
 [dependencies]
-rg_lsp = { path = "../rg_lsp" }
+lsp = { path = "../lsp" }
 getrandom = { version = "0.2.8", features = ["js"] }
 futures = "0.3.21"
-console_error_panic_hook = "0.1.7"
 js-sys = "0.3.57"
 tower-lsp = { version = "0.20.0", default-features = false, features = ["runtime-agnostic"] }
 wasm-bindgen = "0.2.85"
@@ -18,7 +17,6 @@ wasm-streams = "0.3.0"
 [dependencies.web-sys]
 version = "0.3.65"
 features = [
-  "console",
   "HtmlTextAreaElement",
   "ReadableStream",
   "WritableStream",

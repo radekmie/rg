@@ -7,11 +7,11 @@ use tower_lsp::lsp_types::{
 };
 use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
 
+use crate::rg::ast_features::hover_signature;
 use crate::rg::symbol_table::*;
 use rg::ast::{Game, Identifier};
 use rg::parsing::error::Error;
 
-use super::ast_features::hover_signature;
 use super::utils::*;
 
 #[allow(deprecated)]

@@ -6,12 +6,11 @@ use tower_lsp::lsp_types::{
 use rg::{ast::*, position::*};
 
 use crate::rg::{
+    ast_features::AstFeatures,
     stat::Stat,
     symbol::{Flag, Symbol},
     symbol_table::SymbolTable,
 };
-
-use super::ast_features::AstFeatures;
 
 #[derive(Debug, PartialEq)]
 enum CompletionKind {

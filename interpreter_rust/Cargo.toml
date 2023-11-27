@@ -7,6 +7,6 @@ members = [
   "map_id",
   "map_id_macro",
   "rg",
-  "rg_lsp",
+  "lsp",
   "browser",
 ]
