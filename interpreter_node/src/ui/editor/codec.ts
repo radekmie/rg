@@ -1,16 +1,18 @@
-import * as jsrpc from "json-rpc-2.0";
-import * as vsrpc from "vscode-jsonrpc";
+import * as jsrpc from 'json-rpc-2.0';
+import * as vsrpc from 'vscode-jsonrpc';
 
-import Bytes from "../../codec/bytes";
-import StreamDemuxer from "../../codec/demuxer";
-import Headers from "../../codec/headers";
-import Queue from "../../codec/queue";
+import Bytes from '../../codec/bytes';
+import StreamDemuxer from '../../codec/demuxer';
+import Headers from '../../codec/headers';
+import Queue from '../../codec/queue';
 
 export const encoder = new TextEncoder();
 export const decoder = new TextDecoder();
 
 export class Codec {
-  static encode(json: jsrpc.JSONRPCRequest | jsrpc.JSONRPCResponse): Uint8Array {
+  static encode(
+    json: jsrpc.JSONRPCRequest | jsrpc.JSONRPCResponse,
+  ): Uint8Array {
     const message = JSON.stringify(json);
     const delimited = Headers.add(message);
     return Bytes.encode(delimited);
@@ -24,15 +26,24 @@ export class Codec {
 }
 
 // FIXME: tracing effiency
-export class IntoServer extends Queue<Uint8Array> implements AsyncGenerator<Uint8Array, never, void> {
+export class IntoServer
+  extends Queue<Uint8Array>
+  implements AsyncGenerator<Uint8Array, never, void>
+{
   enqueue(item: Uint8Array): void {
     super.enqueue(item);
   }
 }
 
 export interface FromServer extends WritableStream<Uint8Array> {
-  readonly responses: { get(key: number | string): null | Promise<vsrpc.ResponseMessage> };
-  readonly notifications: AsyncGenerator<vsrpc.NotificationMessage, never, void>;
+  readonly responses: {
+    get(key: number | string): null | Promise<vsrpc.ResponseMessage>;
+  };
+  readonly notifications: AsyncGenerator<
+    vsrpc.NotificationMessage,
+    never,
+    void
+  >;
   readonly requests: AsyncGenerator<vsrpc.RequestMessage, never, void>;
 }
 

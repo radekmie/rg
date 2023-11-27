@@ -1,15 +1,15 @@
-import { createRef, useEffect, useRef } from 'react';
 import { editor } from 'monaco-editor';
+import { createRef, useEffect, useRef } from 'react';
+import { initialize as initializeExtenstion } from 'vscode/extensions';
+import { LogLevel, initialize as initializeService } from 'vscode/services';
+
 import Client from './client';
 import { FromServer, IntoServer } from './codec';
-import Server from './server';
-import { createEditor, createModel } from './monaco_editor';
-import { LogLevel, initialize as initializeService } from 'vscode/services';
-import { initialize as initializeExtenstion } from 'vscode/extensions';
-import { Autosize } from '../components/Autosize';
 import { initialize as initializeLanguage } from './language';
-// import * as styles from '../index.module.css';
-
+import { createEditor, createModel } from './monaco_editor';
+import Server from './server';
+import { Autosize } from '../components/Autosize';
+import * as styles from '../index.module.css';
 
 let init = true;
 
@@ -36,8 +36,9 @@ export function Editor({
   const editorRef = useRef<editor.IStandaloneCodeEditor>();
   const ref = createRef<HTMLDivElement>();
   useEffect(() => {
-    if (ref.current) {
+    if (ref.current !== null) {
       const start = async () => {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const crr = ref.current!;
         if (init) {
           init = false;
@@ -48,17 +49,14 @@ export function Editor({
           await initializeExtenstion();
           await server.initialize();
           initializeLanguage(client);
-          Promise.all([server.start(), client.start()]);
+          Promise.all([server.start(), client.start()]).catch(e => {
+            console.error(e);
+          });
         }
         if (!editorRef.current) {
-          editorRef.current = await createEditor(
-            client,
-            crr,
-            onChange,
-            readonly,
-          );
+          editorRef.current = createEditor(client, crr, onChange, readonly);
         }
-        const model = await createModel(path, source);
+        const model = createModel(path, source);
         editorRef.current?.setModel(model);
       };
       start();
@@ -72,17 +70,14 @@ export function Editor({
     }
   }, [path]);
 
-  useEffect(
-    () => {
-      if (ref.current && editorRef.current) {
-        const model = editorRef.current?.getModel();
-        if (model) {
-          model.setValue(source);
-        }
+  useEffect(() => {
+    if (readonly && ref.current && editorRef.current) {
+      const model = editorRef.current?.getModel();
+      if (model) {
+        model.setValue(source);
       }
-    },
-    readonly ? [source] : [],
-  );
+    }
+  }, [readonly, ref, source]);
 
   useEffect(() => {
     return () => {
@@ -94,17 +89,16 @@ export function Editor({
   }, []);
 
   return (
-    // <Autosize>
-    //   {({ height }) => (
-    //     <section className={styles.wrapHidden}>
-    //       <div
-    //         ref={ref}
-    //         style={{height: `${height}px`}}
-    //         className={className}
-    //       />
-    //     </section>
-    //   )}
-    // </Autosize>
-    <div ref={ref} style={{ height: `100vh` }} className={className} />
+    <Autosize>
+      {({ height }) => (
+        <section className={styles.wrapHidden}>
+          <div
+            ref={ref}
+            style={{ height: `${height}px` }}
+            className={className}
+          />
+        </section>
+      )}
+    </Autosize>
   );
 }

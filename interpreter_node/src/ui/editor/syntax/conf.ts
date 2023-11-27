@@ -1,8 +1,9 @@
 import * as monaco from 'monaco-editor';
-import { LanguageID } from '../../../types';
-import * as rg from './rg';
-import * as rbg from './rbg';
+
 import * as hrg from './hrg';
+import * as rbg from './rbg';
+import * as rg from './rg';
+import { LanguageID } from '../../../types';
 
 export const conf: monaco.languages.LanguageConfiguration = {
   comments: {
@@ -14,16 +15,15 @@ export const conf: monaco.languages.LanguageConfiguration = {
     ['(', ')'],
   ],
   autoClosingPairs: [
-    { open: "{", close: "}" },
-    { open: "[", close: "]" },
-    { open: "(", close: ")" },
+    { open: '{', close: '}' },
+    { open: '[', close: ']' },
+    { open: '(', close: ')' },
     { open: '"', close: '"' },
     { open: "'", close: "'" },
   ],
-}
+};
 
-export const theme: monaco.editor.IStandaloneThemeData =
-{
+export const theme: monaco.editor.IStandaloneThemeData = {
   base: 'vs',
   inherit: true,
   colors: {},
@@ -31,25 +31,24 @@ export const theme: monaco.editor.IStandaloneThemeData =
     {
       token: 'comment',
       foreground: '6a737d',
-      fontStyle: 'italic'
+      fontStyle: 'italic',
     },
     {
       token: 'declarationKeyword',
       foreground: '0000ff',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
     },
     {
       token: 'keyword',
-      // some light purple
       foreground: 'a626a4',
     },
     {
       token: 'type',
-      foreground: '2b91af'
+      foreground: '2b91af',
     },
     {
       token: 'member',
-      foreground: '000000'
+      foreground: '000000',
     },
     {
       token: 'constant',
@@ -57,20 +56,18 @@ export const theme: monaco.editor.IStandaloneThemeData =
     },
     {
       token: 'variable',
-      foreground: '005cc5'
+      foreground: '005cc5',
     },
     {
       token: 'function',
-      foreground: '986801'
+      foreground: '986801',
     },
     {
       token: 'macro',
-      // dark red foreground
-      foreground: 'ff0000'
-    }
-
+      foreground: 'ff0000',
+    },
   ],
-}
+};
 
 export const monarch = (id: LanguageID) => {
   switch (id) {
@@ -81,4 +78,4 @@ export const monarch = (id: LanguageID) => {
     case LanguageID.hrg:
       return hrg.language;
   }
-}
+};

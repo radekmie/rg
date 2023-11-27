@@ -13,8 +13,6 @@
   },
   "dependencies": {
     "@blueprintjs/core": "4.12.0",
-    "@codemirror/lang-javascript": "6.1.1",
-    "@codemirror/lang-json": "6.0.1",
     "@codingame/monaco-vscode-files-service-override": "1.83.5",
     "@hpcc-js/wasm": "2.2.0",
     "@parcel/transformer-inline-string": "2.8.3",
@@ -22,16 +20,13 @@
     "@types/react": "18.0.25",
     "@types/react-dom": "18.0.9",
     "@types/react-svg-pan-zoom": "3.3.5",
-    "@uiw/react-codemirror": "4.15.1",
     "@vitest/web-worker": "0.28.4",
     "buffer": "5.7.1",
     "chevrotain": "10.4.2",
     "commander": "9.4.1",
-    "debounce": "^1.2.1",
     "eslint-config-vazco": "7.1.0",
     "json-rpc-2.0": "^1.6.0",
     "monaco-editor": "npm:@codingame/monaco-editor-treemended@1.83.5",
-    "monaco-languageclient": "~7.0.0",
     "normalize.css": "8.0.1",
     "p-limit": "3.1.0",
     "parcel": "2.8.3",
@@ -44,6 +39,7 @@
     "util": "0.12.5",
     "vitest": "0.28.4",
     "vscode": "npm:@codingame/monaco-vscode-api@1.83.5",
+    "vscode-jsonrpc": "^8.2.0",
     "vscode-languageserver-protocol": "^3.17.5",
     "web-worker": "1.2.0"
   },
@@ -69,7 +65,6 @@
     }
   },
   "devDependencies": {
-    "@types/debounce": "^1.2.3",
     "@types/vscode": "^1.83.2",
     "path-browserify": "^1.0.1"
   },

@@ -1,35 +1,36 @@
-import debounce from 'debounce';
-import * as monaco from 'monaco-editor';
-import { createConfiguredEditor, createModelReference } from 'vscode/monaco';
 import {
   RegisteredFileSystemProvider,
   registerFileSystemOverlay,
   RegisteredMemoryFile,
 } from '@codingame/monaco-vscode-files-service-override';
-import * as proto from 'vscode-languageserver-protocol';
-import * as vscode from 'vscode';
-import Client from './client';
+import * as monaco from 'monaco-editor';
 import EditorWorker from 'url:monaco-editor/esm/vs/editor/editor.worker.js';
+import * as vscode from 'vscode';
+import { createConfiguredEditor } from 'vscode/monaco';
+import * as proto from 'vscode-languageserver-protocol';
+
+import Client from './client';
 import { LanguageID } from '../../types';
 
 window.MonacoEnvironment = {
-  getWorkerUrl: function (moduleId, label) {
+  getWorkerUrl(moduleId, label) {
+    moduleId;
+    label;
     return EditorWorker;
   },
 };
 
+const fileSystemProvider = new RegisteredFileSystemProvider(false);
+registerFileSystemOverlay(1, fileSystemProvider);
 
-
-export async function createModel(
+export function createModel(
   path: string,
   content: string,
-): Promise<monaco.editor.ITextModel> {
+): monaco.editor.ITextModel {
   const lang = pathToLang(path);
-  const fileSystemProvider = new RegisteredFileSystemProvider(false);
   fileSystemProvider.registerFile(
     new RegisteredMemoryFile(vscode.Uri.file('/workspace/' + path), ''),
   );
-  registerFileSystemOverlay(1, fileSystemProvider);
   const uri = monaco.Uri.parse('/workspace/' + path);
   const model = monaco.editor.createModel(content, lang, uri);
   return model;
@@ -59,12 +60,12 @@ const pathToLang = (path: string): string | undefined => {
   }
 };
 
-export async function createEditor(
+export function createEditor(
   client: Client,
   container: HTMLElement,
   onChange: (source: string) => void,
   readonly: boolean,
-): Promise<monaco.editor.IStandaloneCodeEditor> {
+): monaco.editor.IStandaloneCodeEditor {
   const editor = createConfiguredEditor(container, {
     automaticLayout: true,
     'semanticHighlighting.enabled': true,
@@ -72,10 +73,11 @@ export async function createEditor(
     readOnly: readonly,
     lightbulb: {
       enabled: false,
-    }
+    },
   });
 
   editor.onDidChangeModelContent(e => {
+    e;
     const model = editor.getModel();
     if (!model || model.getLanguageId() !== LanguageID.rg) {
       return;

@@ -1,13 +1,16 @@
-import * as vsrpc from "vscode-jsonrpc";
+import * as vsrpc from 'vscode-jsonrpc';
 
-import Bytes from "./bytes";
-import PromiseMap from "./map";
-import Queue from "./queue";
+import Bytes from './bytes';
+import PromiseMap from './map';
+import Queue from './queue';
 
 export default class StreamDemuxer extends Queue<Uint8Array> {
-  readonly responses: PromiseMap<number | string, vsrpc.ResponseMessage> = new PromiseMap();
-  readonly notifications: Queue<vsrpc.NotificationMessage> = new Queue<vsrpc.NotificationMessage>();
-  readonly requests: Queue<vsrpc.RequestMessage> = new Queue<vsrpc.RequestMessage>();
+  readonly responses: PromiseMap<number | string, vsrpc.ResponseMessage> =
+    new PromiseMap();
+  readonly notifications: Queue<vsrpc.NotificationMessage> =
+    new Queue<vsrpc.NotificationMessage>();
+  readonly requests: Queue<vsrpc.RequestMessage> =
+    new Queue<vsrpc.RequestMessage>();
 
   readonly #start: Promise<void>;
 
@@ -24,14 +27,18 @@ export default class StreamDemuxer extends Queue<Uint8Array> {
       buffer = Bytes.append(Uint8Array, buffer, bytes);
 
       // check if the content length is known
-      if (null == contentLength) {
+      if (contentLength === null) {
         // if not, try to match the prefixed headers
         const match = Bytes.decode(buffer).match(/^Content-Length:\s*(\d+)\s*/);
-        if (null == match) continue;
+        if (match === null) {
+          continue;
+        }
 
         // try to parse the content-length from the headers
         const length = parseInt(match[1]);
-        if (isNaN(length)) throw new Error("invalid content length");
+        if (isNaN(length)) {
+          throw new Error('invalid content length');
+        }
 
         // slice the headers since we now have the content length
         buffer = buffer.slice(match[0].length);
@@ -41,7 +48,9 @@ export default class StreamDemuxer extends Queue<Uint8Array> {
       }
 
       // if the buffer doesn't contain a full message; await another iteration
-      if (buffer.length < contentLength) continue;
+      if (buffer.length < contentLength) {
+        continue;
+      }
 
       // decode buffer to a string
       const delimited = Bytes.decode(buffer);
@@ -54,7 +63,7 @@ export default class StreamDemuxer extends Queue<Uint8Array> {
       const message = JSON.parse(delimited) as vsrpc.Message;
 
       // demux the message stream
-      if (vsrpc.Message.isResponse(message) && null != message.id) {
+      if (vsrpc.Message.isResponse(message) && message.id !== null) {
         this.responses.set(message.id, message);
         continue;
       }

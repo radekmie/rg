@@ -9,7 +9,7 @@ import { presets } from '../const/presets';
 export type State = {
   settings: Settings;
   source: string;
-  path: string,
+  path: string;
   view: View;
 };
 

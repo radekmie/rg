@@ -1,11 +1,11 @@
 import * as monaco from 'monaco-editor';
-import * as proto from 'vscode-languageserver-protocol';
-import { ProviderResult, languages } from 'vscode';
-
+import { languages } from 'vscode';
 import * as vscode from 'vscode';
+import * as proto from 'vscode-languageserver-protocol';
+
 import Client from './client';
-import { LanguageID } from '../../types';
 import { conf, theme, monarch } from './syntax/conf';
+import { LanguageID } from '../../types';
 
 let initialized: boolean;
 
@@ -31,8 +31,8 @@ const registerLanguage = (client: Client) => {
       document,
       token,
     ): Promise<vscode.SymbolInformation[]> {
-      void token;
-      let result = await (client.request(
+      token;
+      const result = await (client.request(
         proto.DocumentSymbolRequest.type.method,
         {
           textDocument: { uri: document.uri.toString() },
@@ -42,11 +42,10 @@ const registerLanguage = (client: Client) => {
         elem.location.uri = vscode.Uri.parse(elem.location.uri.toString());
         const start = elem.location.range.start;
         elem.location.range.start.compareTo = (other: vscode.Position) => {
-          if (start.line == other.line) {
+          if (start.line === other.line) {
             return start.character - other.character;
-          } else {
-            return start.line - other.line;
           }
+          return start.line - other.line;
         };
       });
       return result;
@@ -59,12 +58,15 @@ const registerLanguage = (client: Client) => {
       position,
       token,
     ): Promise<vscode.Definition | vscode.DefinitionLink[]> {
-      void token;
-      let result = await (client.request(proto.DefinitionRequest.type.method, {
-        textDocument: { uri: document.uri.toString() },
-        position: position,
-      } as proto.DefinitionParams) as Promise<vscode.Location | null>);
-      if (result == null) {
+      token;
+      const result = await (client.request(
+        proto.DefinitionRequest.type.method,
+        {
+          textDocument: { uri: document.uri.toString() },
+          position,
+        } as proto.DefinitionParams,
+      ) as Promise<vscode.Location | null>);
+      if (result === null) {
         return [];
       }
       result.uri = vscode.Uri.parse(result.uri.toString());
@@ -79,14 +81,17 @@ const registerLanguage = (client: Client) => {
       context,
       token,
     ): Promise<vscode.Location[]> {
-      void context;
-      void token;
-      let result = await (client.request(proto.ReferencesRequest.type.method, {
-        textDocument: { uri: document.uri.toString() },
-        position: position,
-        context: { includeDeclaration: true },
-      } as proto.ReferenceParams) as Promise<vscode.Location[] | null>);
-      if (result == null) {
+      context;
+      token;
+      const result = await (client.request(
+        proto.ReferencesRequest.type.method,
+        {
+          textDocument: { uri: document.uri.toString() },
+          position,
+          context: { includeDeclaration: true },
+        } as proto.ReferenceParams,
+      ) as Promise<vscode.Location[] | null>);
+      if (result === null) {
         return [];
       }
       result.forEach(
@@ -103,19 +108,19 @@ const registerLanguage = (client: Client) => {
       newName,
       token,
     ): Promise<vscode.WorkspaceEdit> {
-      void token;
-      let result = await (client.request(proto.RenameRequest.type.method, {
+      token;
+      const result = await (client.request(proto.RenameRequest.type.method, {
         textDocument: { uri: document.uri.toString() },
-        position: position,
+        position,
         newName,
       } as proto.RenameParams) as Promise<{
         changes: {
           [uri: string]: vscode.TextEdit[];
         };
       }>);
-      let new_result = new vscode.WorkspaceEdit();
-      new_result.set(document.uri, result.changes[document.uri.toString()]);
-      return new_result;
+      const edit = new vscode.WorkspaceEdit();
+      edit.set(document.uri, result.changes[document.uri.toString()]);
+      return edit;
     },
 
     async prepareRename(
@@ -126,18 +131,18 @@ const registerLanguage = (client: Client) => {
       range: vscode.Range;
       placeholder: string;
     }> {
-      void token;
+      token;
       const result = await (client.request(
         proto.PrepareRenameRequest.type.method,
         {
           textDocument: { uri: document.uri.toString() },
-          position: position,
+          position,
         } as proto.PrepareRenameParams,
       ) as Promise<{
         range: vscode.Range;
         placeholder: string;
       } | null>);
-      if (result == null) {
+      if (result === null) {
         throw new Error("This element can't be renamed");
       }
       return result;
@@ -150,12 +155,12 @@ const registerLanguage = (client: Client) => {
       position,
       token,
     ): Promise<vscode.DocumentHighlight[]> {
-      void token;
+      token;
       const result = await (client.request(
         proto.DocumentHighlightRequest.type.method,
         {
           textDocument: { uri: document.uri.toString() },
-          position: position,
+          position,
         } as proto.DocumentHighlightParams,
       ) as Promise<vscode.DocumentHighlight[]>);
       return result;
@@ -169,7 +174,7 @@ const registerLanguage = (client: Client) => {
         document,
         token,
       ): Promise<vscode.SemanticTokens> {
-        void token;
+        token;
         const result = await (client.request(
           proto.SemanticTokensRequest.type.method,
           {
@@ -202,10 +207,10 @@ const registerLanguage = (client: Client) => {
       position,
       token,
     ): Promise<vscode.Hover | null> {
-      void token;
+      token;
       const result = await (client.request(proto.HoverRequest.type.method, {
         textDocument: { uri: document.uri.toString() },
-        position: position,
+        position,
       } as proto.HoverParams) as Promise<vscode.Hover | null>);
       return result;
     },
@@ -213,12 +218,12 @@ const registerLanguage = (client: Client) => {
 
   languages.registerCodeActionsProvider(LanguageID.rg, {
     async provideCodeActions(document, range, context, token) {
-      void token;
+      token;
       const result = await (client.request(
         proto.CodeActionRequest.type.method,
         {
           textDocument: { uri: document.uri.toString() },
-          range: range,
+          range,
           context: { diagnostics: [] },
         } as proto.CodeActionParams,
       ) as Promise<
@@ -235,9 +240,9 @@ const registerLanguage = (client: Client) => {
       return result.map(elem => {
         const changes = new vscode.WorkspaceEdit();
         changes.set(document.uri, elem.edit.changes[document.uri.toString()]);
-        const code_action = new vscode.CodeAction(elem.title, elem.kind);
-        code_action.edit = changes;
-        return code_action;
+        const action = new vscode.CodeAction(elem.title, elem.kind);
+        action.edit = changes;
+        return action;
       });
     },
   });
@@ -249,16 +254,14 @@ const registerLanguage = (client: Client) => {
       token,
       context,
     ): Promise<vscode.CompletionItem[]> {
-      void token;
+      token;
+      context;
       const result = await (client.request(
         proto.CompletionRequest.type.method,
         {
           textDocument: { uri: document.uri.toString() },
-          position: position,
-          context: {
-            triggerKind: context.triggerKind,
-            triggerCharacter: context.triggerCharacter,
-          },
+          position,
+          context: undefined,
         } as proto.CompletionParams,
       ) as Promise<
         | {
@@ -270,7 +273,7 @@ const registerLanguage = (client: Client) => {
           }[]
         | null
       >);
-      if (result == null) {
+      if (result === null) {
         return [];
       }
       return result.map(elem => {

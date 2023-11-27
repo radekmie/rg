@@ -1,7 +1,6 @@
-import init, { InitOutput, serve, ServerConfig } from '../../wasm/lsp_module';
 import { FromServer, IntoServer } from './codec';
+import init, { serve, ServerConfig } from '../../wasm/lsp_module';
 
-let server: null | Server;
 let initialized = false;
 
 export default class Server {
@@ -14,12 +13,7 @@ export default class Server {
   }
 
   async initialize(): Promise<void> {
-    if (null == server) {
-      await init();
-      server = this;
-    } else {
-      console.warn('Server already initialized; ignoring');
-    }
+    await init();
   }
 
   async start(): Promise<void> {

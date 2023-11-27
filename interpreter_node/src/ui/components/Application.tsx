@@ -1,12 +1,12 @@
 import { Intent } from '@blueprintjs/core';
 
 import { Bench } from './Bench';
-import { Editor } from '../new_editor/Editor';
 import { Graphviz } from './Graphviz';
 import { Loader } from './Loader';
 import { PrettyPrint } from './PrettyPrint';
 import { Settings } from './Settings';
 import { AnalyzedGame } from '../../parse';
+import { Editor } from '../editor/Editor';
 import { useApplicationState } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
 
@@ -113,8 +113,8 @@ export function Application() {
                   <Editor
                     path={pathForView[view](path)}
                     source={valueForView[view](game.value).value}
-                    onChange={() => {}}
-                    readonly={true}
+                    onChange={() => undefined}
+                    readonly
                   />
                 );
               default:

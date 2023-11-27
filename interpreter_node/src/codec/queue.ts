@@ -1,4 +1,6 @@
-export default class Queue<T> implements WritableStream<T>, AsyncGenerator<T, never, void> {
+export default class Queue<T>
+  implements WritableStream<T>, AsyncGenerator<T, never, void>
+{
   readonly #promises: Promise<T>[] = [];
   readonly #resolvers: ((item: T) => void)[] = [];
   readonly #observers: ((item: T) => void)[] = [];
@@ -7,17 +9,27 @@ export default class Queue<T> implements WritableStream<T>, AsyncGenerator<T, ne
   #locked = false;
   readonly #stream: WritableStream<T>;
 
-  static #__add<X>(promises: Promise<X>[], resolvers: ((item: X) => void)[]): void {
+  static #__add<X>(
+    promises: Promise<X>[],
+    resolvers: ((item: X) => void)[],
+  ): void {
     promises.push(
-      new Promise((resolve) => {
+      new Promise(resolve => {
         resolvers.push(resolve);
       }),
     );
   }
 
-  static #__enqueue<X>(closed: boolean, promises: Promise<X>[], resolvers: ((item: X) => void)[], item: X): void {
+  static #__enqueue<X>(
+    closed: boolean,
+    promises: Promise<X>[],
+    resolvers: ((item: X) => void)[],
+    item: X,
+  ): void {
     if (!closed) {
-      if (!resolvers.length) Queue.#__add(promises, resolvers);
+      if (!resolvers.length) {
+        Queue.#__add(promises, resolvers);
+      }
       const resolve = resolvers.shift()!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
       resolve(item);
     }
@@ -39,11 +51,18 @@ export default class Queue<T> implements WritableStream<T>, AsyncGenerator<T, ne
   }
 
   enqueue(item: T): void {
-    return Queue.#__enqueue(this.#closed, this.#promises, this.#resolvers, item);
+    return Queue.#__enqueue(
+      this.#closed,
+      this.#promises,
+      this.#resolvers,
+      item,
+    );
   }
 
   dequeue(): Promise<T> {
-    if (!this.#promises.length) this.#add();
+    if (!this.#promises.length) {
+      this.#add();
+    }
     const item = this.#promises.shift()!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
     return item;
   }

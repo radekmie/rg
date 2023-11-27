@@ -1,4 +1,4 @@
-import { encoder, decoder } from "../ui/new_editor/codec";
+import { encoder, decoder } from '../ui/editor/codec';
 
 export default class Bytes {
   static encode(input: string): Uint8Array {
@@ -9,10 +9,9 @@ export default class Bytes {
     return decoder.decode(input);
   }
 
-  static append<T extends { length: number; set(arr: T, offset: number): void }>(
-    constructor: { new (length: number): T },
-    ...arrays: T[]
-  ) {
+  static append<
+    T extends { length: number; set(arr: T, offset: number): void },
+  >(constructor: { new (length: number): T }, ...arrays: T[]) {
     let totalLength = 0;
     for (const arr of arrays) {
       totalLength += arr.length;

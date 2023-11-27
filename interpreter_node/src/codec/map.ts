@@ -12,12 +12,11 @@ export default class PromiseMap<K, V extends { toString(): string }> {
       initialized = this.#map.get(key)!;
     }
     // if the entry is a pending promise, return it
-    if (initialized.status === "pending") {
+    if (initialized.status === 'pending') {
       return initialized.promise;
-    } else {
-      // otherwise return null
-      return null;
     }
+    // otherwise return null
+    return null;
   }
 
   #set(key: K, value?: V): PromiseMap.Entry<V> {
@@ -27,15 +26,20 @@ export default class PromiseMap<K, V extends { toString(): string }> {
     }
     // placeholder resolver for entry
     let resolve = (item: V) => {
-      void item;
+      item;
+      undefined;
     };
     // promise for entry (which assigns the resolver
-    const promise = new Promise<V>((resolver) => {
+    const promise = new Promise<V>(resolver => {
       resolve = resolver;
     });
     // the initialized entry
-    const initialized: PromiseMap.Entry<V> = { status: "pending", resolve, promise };
-    if (null != value) {
+    const initialized: PromiseMap.Entry<V> = {
+      status: 'pending',
+      resolve,
+      promise,
+    };
+    if (value !== undefined) {
       initialized.resolve(value);
     }
     // set the entry
@@ -46,9 +50,9 @@ export default class PromiseMap<K, V extends { toString(): string }> {
   set(key: K & { toString(): string }, value: V): this {
     const initialized = this.#set(key, value);
     // if the promise is pending ...
-    if (initialized.status === "pending") {
+    if (initialized.status === 'pending') {
       // ... set the entry status to resolved to free the promise
-      this.#map.set(key, { status: "resolved" });
+      this.#map.set(key, { status: 'resolved' });
       // ... and resolve the promise with the given value
       initialized.resolve(value);
     }
@@ -63,6 +67,6 @@ export default class PromiseMap<K, V extends { toString(): string }> {
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace PromiseMap {
   export type Entry<V> =
-    | { status: "pending"; resolve: (item: V) => void; promise: Promise<V> }
-    | { status: "resolved" };
+    | { status: 'pending'; resolve: (item: V) => void; promise: Promise<V> }
+    | { status: 'resolved' };
 }

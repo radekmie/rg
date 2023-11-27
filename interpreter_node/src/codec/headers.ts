@@ -4,6 +4,6 @@ export default class Headers {
   }
 
   static remove(delimited: string): string {
-    return delimited.replace(/^Content-Length:\s*\d+\s*/, "");
+    return delimited.replace(/^Content-Length:\s*\d+\s*/, '');
   }
 }
