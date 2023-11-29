@@ -26,6 +26,7 @@
     "commander": "9.4.1",
     "eslint-config-vazco": "7.1.0",
     "json-rpc-2.0": "^1.6.0",
+    "lodash": "4.17.21",
     "monaco-editor": "npm:@codingame/monaco-editor-treemended@1.83.5",
     "normalize.css": "8.0.1",
     "p-limit": "3.1.0",
@@ -65,6 +66,7 @@
     }
   },
   "devDependencies": {
+    "@types/lodash": "4.14.202",
     "@types/vscode": "^1.83.2",
     "path-browserify": "^1.0.1"
   },

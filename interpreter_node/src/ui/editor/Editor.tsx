@@ -1,3 +1,4 @@
+import memoize from 'lodash/memoize';
 import { editor } from 'monaco-editor';
 import { createRef, useEffect, useRef } from 'react';
 import { initialize as initializeExtenstion } from 'vscode/extensions';
@@ -11,12 +12,19 @@ import Server from './server';
 import { Autosize } from '../components/Autosize';
 import * as styles from '../index.module.css';
 
-let init = true;
-
-const intoServer: IntoServer = new IntoServer();
-const fromServer: FromServer = FromServer.create();
-const client = new Client(fromServer, intoServer);
-const server = new Server(intoServer, fromServer);
+const startLSP = memoize(async () => {
+  const intoServer: IntoServer = new IntoServer();
+  const fromServer: FromServer = FromServer.create();
+  const client = new Client(fromServer, intoServer);
+  const server = new Server(intoServer, fromServer);
+  await initializeService({ debugLogging: true, logLevel: LogLevel.Debug });
+  await initializeExtenstion();
+  await server.initialize();
+  initializeLanguage(client);
+  client.start();
+  server.start();
+  return client;
+});
 
 export type EditorProps = {
   path: string;
@@ -40,19 +48,7 @@ export function Editor({
       const start = async () => {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const crr = ref.current!;
-        if (init) {
-          init = false;
-          await initializeService({
-            debugLogging: true,
-            logLevel: LogLevel.Debug,
-          });
-          await initializeExtenstion();
-          await server.initialize();
-          initializeLanguage(client);
-          Promise.all([server.start(), client.start()]).catch(e => {
-            console.error(e);
-          });
-        }
+        const client = await startLSP();
         if (!editorRef.current) {
           editorRef.current = createEditor(client, crr, onChange, readonly);
         }

@@ -76,12 +76,12 @@ export function createEditor(
     },
   });
 
-  editor.onDidChangeModelContent(e => {
-    e;
+  editor.onDidChangeModelContent(() => {
     const model = editor.getModel();
-    if (!model || model.getLanguageId() !== LanguageID.rg) {
+    if (model?.getLanguageId() !== LanguageID.rg) {
       return;
     }
+
     const text = model.getValue();
     onChange(text);
     client.notify(proto.DidChangeTextDocumentNotification.type.method, {
@@ -89,13 +89,8 @@ export function createEditor(
         version: model.getVersionId(),
         uri: model.uri.toString(),
       },
-      contentChanges: [
-        {
-          range: asRange(model.getFullModelRange()),
-          text,
-        },
-      ],
-    } as proto.DidChangeTextDocumentParams);
+      contentChanges: [{ range: asRange(model.getFullModelRange()), text }],
+    });
   });
 
   editor.onDidChangeModel(e => {
@@ -111,14 +106,14 @@ export function createEditor(
           version: model.getVersionId(),
           text: model.getValue(),
         },
-      } as proto.DidOpenTextDocumentParams);
+      });
     }
     if (e.oldModelUrl && e.oldModelUrl.path.endsWith('rg')) {
       client.notify(proto.DidCloseTextDocumentNotification.type.method, {
         textDocument: {
           uri: e.oldModelUrl.toString(),
         },
-      } as proto.DidCloseTextDocumentParams);
+      });
     }
   });
 

@@ -53,24 +53,30 @@ const registerLanguage = (client: Client) => {
   });
 
   languages.registerDefinitionProvider(LanguageID.rg, {
-    async provideDefinition(
-      document,
-      position,
-      token,
-    ): Promise<vscode.Definition | vscode.DefinitionLink[]> {
-      token;
-      const result = await (client.request(
+    async provideDefinition(document, position) {
+      // type WasmLocation = never; // We don't have to show the exact transported object.
+      type WasmLocation = { uri: WasmUri; range: WasmRange };
+      type WasmUri = string;
+      type WasmRange = { start: WasmPosition; end: WasmPosition };
+      type WasmPosition = { character: number; line: number };
+      const wasmLocationToVscodeLocation = (x: WasmLocation) =>
+        new vscode.Location(
+          wasmUriToVscodeUri(x.uri),
+          wasmRangeToVscodeRange(x.range),
+        );
+      const wasmUriToVscodeUri = (x: WasmUri) => vscode.Uri.parse(x);
+      const wasmRangeToVscodeRange = (x: WasmRange) =>
+        new vscode.Range(
+          wasmPositionToVscodePosition(x.start),
+          wasmPositionToVscodePosition(x.end),
+        );
+      const wasmPositionToVscodePosition = (x: WasmPosition) =>
+        new vscode.Position(x.character, x.line);
+      const result: WasmLocation | null = await client.request(
         proto.DefinitionRequest.type.method,
-        {
-          textDocument: { uri: document.uri.toString() },
-          position,
-        } as proto.DefinitionParams,
-      ) as Promise<vscode.Location | null>);
-      if (result === null) {
-        return [];
-      }
-      result.uri = vscode.Uri.parse(result.uri.toString());
-      return result;
+        { position, textDocument: { uri: document.uri.toString() } },
+      );
+      return result && wasmLocationToLocation(result);
     },
   });
 
@@ -202,41 +208,32 @@ const registerLanguage = (client: Client) => {
   );
 
   languages.registerHoverProvider(LanguageID.rg, {
-    async provideHover(
-      document,
-      position,
-      token,
-    ): Promise<vscode.Hover | null> {
-      token;
-      const result = await (client.request(proto.HoverRequest.type.method, {
+    provideHover(document, position) {
+      return client.request(proto.HoverRequest.type.method, {
+        // TODO: vscodeUriToWasmUri
         textDocument: { uri: document.uri.toString() },
         position,
-      } as proto.HoverParams) as Promise<vscode.Hover | null>);
-      return result;
+      });
     },
   });
 
   languages.registerCodeActionsProvider(LanguageID.rg, {
-    async provideCodeActions(document, range, context, token) {
-      token;
-      const result = await (client.request(
+    async provideCodeActions(document, range) {
+      type CodeAction = {
+        edit: { changes: { [uri: string]: vscode.TextEdit[] } };
+        kind: vscode.CodeActionKind;
+        title: string;
+      };
+
+      const result: CodeAction[] = await client.request(
         proto.CodeActionRequest.type.method,
         {
           textDocument: { uri: document.uri.toString() },
           range,
           context: { diagnostics: [] },
-        } as proto.CodeActionParams,
-      ) as Promise<
-        {
-          edit: {
-            changes: {
-              [uri: string]: vscode.TextEdit[];
-            };
-          };
-          kind: vscode.CodeActionKind;
-          title: string;
-        }[]
-      >);
+        },
+      );
+
       return result.map(elem => {
         const changes = new vscode.WorkspaceEdit();
         changes.set(document.uri, elem.edit.changes[document.uri.toString()]);
