@@ -22,7 +22,7 @@ pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<Document
         .filter(|symbol| !symbol.pos.is_none())
         .map(|symbol| SymbolInformation {
             name: symbol.id.clone(),
-            kind: flag_to_kind(&symbol.flag),
+            kind: (&symbol.flag).into(),
             location: l::Location {
                 uri: uri.clone(),
                 range: span_to_lsp(&symbol.pos),

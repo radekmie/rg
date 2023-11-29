@@ -147,6 +147,15 @@ impl Span {
     pub fn is_after(&self, other: &Span) -> bool {
         self.start.is_after(&other.start)
     }
+
+    pub fn line_at<'a>(&self, text: &'a str) -> Option<&'a str> {
+        if self.start.line != self.end.line {
+            None
+        } else {
+            let line = text.lines().nth(self.start.line - 1)?;
+            Some(&line[(self.start.column - 1)..(self.end.column - 1)])
+        }
+    }
 }
 
 impl Position {

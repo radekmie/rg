@@ -5,14 +5,16 @@ use crate::rg::symbol::Flag;
 use rg::position::*;
 
 // https://microsoft.github.io/monaco-editor/typedoc/enums/languages.SymbolKind.html
-pub fn flag_to_kind(flag: &Flag) -> SymbolKind {
-    match flag {
-        Flag::Constant => SymbolKind::VARIABLE,
-        Flag::Variable => SymbolKind::FUNCTION,
-        Flag::Edge => SymbolKind::CLASS,
-        Flag::Param => SymbolKind::ARRAY,
-        Flag::Type => SymbolKind::PACKAGE,
-        Flag::Member => SymbolKind::NULL,
+impl From<&Flag> for SymbolKind {
+    fn from(flag: &Flag) -> Self {
+        match flag {
+            Flag::Constant => SymbolKind::VARIABLE,
+            Flag::Variable => SymbolKind::FUNCTION,
+            Flag::Edge => SymbolKind::CLASS,
+            Flag::Param => SymbolKind::ARRAY,
+            Flag::Type => SymbolKind::PACKAGE,
+            Flag::Member => SymbolKind::NULL,
+        }
     }
 }
 
@@ -59,14 +61,5 @@ pub fn to_location(url: &Url, span: &Span) -> Location {
     Location {
         uri: url.clone(),
         range: span_to_lsp(span),
-    }
-}
-
-pub fn line_at_span<'a>(span: &Span, text: &'a str) -> Option<&'a str> {
-    if span.start.line != span.end.line {
-        None
-    } else {
-        let line = text.lines().nth(span.start.line - 1)?;
-        Some(&line[(span.start.column - 1)..(span.end.column - 1)])
     }
 }
