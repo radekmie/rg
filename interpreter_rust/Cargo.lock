@@ -60,21 +60,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
-name = "browser"
-version = "0.1.0"
-dependencies = [
- "futures",
- "getrandom",
- "js-sys",
- "lsp",
- "tower-lsp",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-streams",
- "web-sys",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -333,6 +318,21 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "url",
+]
+
+[[package]]
+name = "lsp_browser"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "getrandom",
+ "js-sys",
+ "lsp",
+ "tower-lsp",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-streams",
+ "web-sys",
 ]
 
 [[package]]

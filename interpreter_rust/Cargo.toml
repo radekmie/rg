@@ -8,5 +8,5 @@ members = [
   "map_id_macro",
   "rg",
   "lsp",
-  "browser",
+  "lsp_browser",
 ]

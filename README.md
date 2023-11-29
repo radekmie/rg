@@ -45,7 +45,7 @@ These dependencies are accessible only from the current shell*, they are not ins
 ```sh
 # In interpreter_rust
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/module --out-name index --target web interpreter
-wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp_module --out-name index --target web browser
+wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp_module --out-name index --target web lsp_browser
 
 # In interpreter_node
 npm clean-install
@@ -105,7 +105,7 @@ cargo clippy
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/module --out-name index --target web interpreter
 
 # Build WASM for LSP module
-wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp_module --out-name index --target web browser
+wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp_module --out-name index --target web lsp_browser
 ```
 
 ### Usage
