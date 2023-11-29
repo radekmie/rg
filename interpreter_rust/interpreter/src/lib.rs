@@ -6,11 +6,11 @@ use rg::ist_tools::Interner;
 use rg::{ast::Game, parsing::parser::parse_with_errors};
 use serde::Deserialize;
 use serde_json::{from_str, to_string};
-use std::rc::Rc;
+use std::sync::Arc;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 pub fn prepare_ist(
-    mut game: Game<Rc<str>>,
+    mut game: Game<Arc<str>>,
 ) -> Result<(ist::Game<ist::RuntimeId>, Interner<ist::RuntimeId>), String> {
     game.expand_generator_nodes()?;
     let mut interner = Interner::default();
@@ -18,14 +18,14 @@ pub fn prepare_ist(
     Ok((game, interner))
 }
 
-pub fn safe_parse_ast(ast: &str) -> Result<Game<Rc<str>>, String> {
-    from_str::<Game<Rc<str>>>(ast).map_err(|error| error.to_string())
+pub fn safe_parse_ast(ast: &str) -> Result<Game<Arc<str>>, String> {
+    from_str::<Game<Arc<str>>>(ast).map_err(|error| error.to_string())
 }
 
-pub fn safe_parse_source(source: &str) -> Result<Game<Rc<str>>, String> {
+pub fn safe_parse_source(source: &str) -> Result<Game<Arc<str>>, String> {
     let (game, errors) = parse_with_errors(source);
     if errors.is_empty() {
-        let mut game = game.map_id(&mut |id| Rc::from(id.identifier.as_str()));
+        let mut game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
         game.add_builtins()?;
         Ok(game)
     } else {
@@ -37,7 +37,7 @@ pub fn safe_parse_source(source: &str) -> Result<Game<Rc<str>>, String> {
     }
 }
 
-pub fn safe_serialize_ast(game: Game<Rc<str>>) -> Result<String, String> {
+pub fn safe_serialize_ast(game: Game<Arc<str>>) -> Result<String, String> {
     to_string(&game).map_err(|error| error.to_string())
 }
 

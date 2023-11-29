@@ -2,10 +2,10 @@ use crate::{
     ast::{Constant, Error, Game, Type, Typedef, Variable},
     position::Span,
 };
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
-impl Constant<Rc<str>> {
-    pub fn normalize_type(&self, game: &mut Game<Rc<str>>) -> Result<Self, Error<Rc<str>>> {
+impl Constant<Arc<str>> {
+    pub fn normalize_type(&self, game: &mut Game<Arc<str>>) -> Result<Self, Error<Arc<str>>> {
         Ok(Self {
             span: Span::none(),
             identifier: self.identifier.clone(),
@@ -15,8 +15,8 @@ impl Constant<Rc<str>> {
     }
 }
 
-impl Game<Rc<str>> {
-    pub fn normalize_types(&mut self) -> Result<(), Error<Rc<str>>> {
+impl Game<Arc<str>> {
+    pub fn normalize_types(&mut self) -> Result<(), Error<Arc<str>>> {
         for (index, typedef) in self.typedefs.clone().into_iter().enumerate() {
             self.typedefs[index] = typedef.normalize_type(self)?;
         }
@@ -33,8 +33,8 @@ impl Game<Rc<str>> {
     }
 }
 
-impl Type<Rc<str>> {
-    pub fn normalize(&self, game: &mut Game<Rc<str>>) -> Result<Self, Error<Rc<str>>> {
+impl Type<Arc<str>> {
+    pub fn normalize(&self, game: &mut Game<Arc<str>>) -> Result<Self, Error<Arc<str>>> {
         if matches!(self, Self::TypeReference { .. }) {
             return Ok(self.clone());
         }
@@ -48,7 +48,7 @@ impl Type<Rc<str>> {
 
         let mut index = 1;
         let identifier = loop {
-            let identifier = Rc::from(format!("Type{}", index));
+            let identifier = Arc::from(format!("Type{}", index));
             if !game
                 .typedefs
                 .iter()
@@ -69,7 +69,7 @@ impl Type<Rc<str>> {
         Ok(Self::TypeReference { identifier })
     }
 
-    fn normalize_direct(&self, game: &mut Game<Rc<str>>) -> Result<Self, Error<Rc<str>>> {
+    fn normalize_direct(&self, game: &mut Game<Arc<str>>) -> Result<Self, Error<Arc<str>>> {
         let Self::Arrow { lhs, rhs } = self else {
             return Ok(self.clone());
         };
@@ -80,8 +80,8 @@ impl Type<Rc<str>> {
     }
 }
 
-impl Typedef<Rc<str>> {
-    pub fn normalize_type(&self, game: &mut Game<Rc<str>>) -> Result<Self, Error<Rc<str>>> {
+impl Typedef<Arc<str>> {
+    pub fn normalize_type(&self, game: &mut Game<Arc<str>>) -> Result<Self, Error<Arc<str>>> {
         Ok(Self {
             span: Span::none(),
             identifier: self.identifier.clone(),
@@ -90,8 +90,8 @@ impl Typedef<Rc<str>> {
     }
 }
 
-impl Variable<Rc<str>> {
-    pub fn normalize_type(&self, game: &mut Game<Rc<str>>) -> Result<Self, Error<Rc<str>>> {
+impl Variable<Arc<str>> {
+    pub fn normalize_type(&self, game: &mut Game<Arc<str>>) -> Result<Self, Error<Arc<str>>> {
         Ok(Self {
             span: Span::none(),
             default_value: self.default_value.clone(),
@@ -106,12 +106,12 @@ mod test {
     use crate::ast::Game;
     use crate::parsing::parser::parse_with_errors;
     use map_id::MapId;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
-    fn parse(input: &str) -> Game<Rc<str>> {
+    fn parse(input: &str) -> Game<Arc<str>> {
         let (game, errors) = parse_with_errors(input);
         assert!(errors.is_empty(), "Parse errors: {:?}", errors);
-        game.map_id(&mut |id| Rc::from(id.identifier.as_str()))
+        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
     }
 
     macro_rules! test {

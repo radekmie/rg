@@ -1,21 +1,18 @@
 use crate::ast::{EdgeLabel, EdgeName, Error, ErrorReason, Game};
 use std::collections::{BTreeMap, BTreeSet};
-use std::rc::Rc;
+use std::sync::Arc;
 
-impl Game<Rc<str>> {
-    pub fn check_reachabilities(&self) -> Result<(), Error<Rc<str>>> {
-        let next_edges = self
+impl Game<Arc<str>> {
+    pub fn check_reachabilities(&self) -> Result<(), Error<Arc<str>>> {
+        let next_edges: BTreeMap<&EdgeName<Arc<str>>, BTreeSet<&EdgeName<Arc<str>>>> = self
             .edges
             .iter()
             .fold(BTreeMap::default(), |mut next_edges, edge| {
-                next_edges
-                    .entry(&edge.lhs)
-                    .or_insert_with(BTreeSet::default)
-                    .insert(&edge.rhs);
+                next_edges.entry(&edge.lhs).or_default().insert(&edge.rhs);
                 next_edges
             });
 
-        let is_reachable = |a: &EdgeName<Rc<str>>, b: &EdgeName<Rc<str>>| -> bool {
+        let is_reachable = |a: &EdgeName<Arc<str>>, b: &EdgeName<Arc<str>>| -> bool {
             let mut seen = BTreeSet::default();
             let mut queue = vec![a];
             while let Some(lhs) = queue.pop() {
@@ -36,8 +33,8 @@ impl Game<Rc<str>> {
             false
         };
 
-        let begin = EdgeName::new(Rc::from("begin"));
-        let end = EdgeName::new(Rc::from("end"));
+        let begin = EdgeName::new(Arc::from("begin"));
+        let end = EdgeName::new(Arc::from("end"));
         if !is_reachable(&begin, &end) {
             return self.make_error(ErrorReason::Unreachable {
                 lhs: begin,

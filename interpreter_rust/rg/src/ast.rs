@@ -3,7 +3,6 @@ use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::rc::Rc;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
@@ -115,8 +114,8 @@ impl<Id: PartialEq> Edge<Id> {
     }
 }
 
-impl Edge<Rc<str>> {
-    pub fn substitute_bindings(&self, mapping: &Mapping<Rc<str>>) -> Self {
+impl Edge<Arc<str>> {
+    pub fn substitute_bindings(&self, mapping: &Mapping<Arc<str>>) -> Self {
         Self {
             span: self.span,
             label: self.label.rename_variables(mapping),
@@ -186,7 +185,7 @@ impl<Id: PartialEq> EdgeLabel<Id> {
     }
 }
 
-impl EdgeLabel<Rc<str>> {
+impl EdgeLabel<Arc<str>> {
     pub fn is_player_assignment(&self) -> bool {
         matches!(self, Self::Assignment { lhs, .. } if matches!(lhs.uncast(), Expression::Reference { identifier } if &**identifier == "player"))
     }
@@ -238,12 +237,12 @@ impl<Id: Clone + Ord> EdgeName<Id> {
     }
 }
 
-impl EdgeName<Rc<str>> {
+impl EdgeName<Arc<str>> {
     pub fn is_begin(&self) -> bool {
         matches!(&self.parts[..], [EdgeNamePart::Literal { identifier }] if &**identifier == "begin")
     }
 
-    pub fn substitute_bindings(&self, mapping: &Mapping<Rc<str>>) -> Self {
+    pub fn substitute_bindings(&self, mapping: &Mapping<Arc<str>>) -> Self {
         let identifier = self
             .parts
             .iter()
@@ -257,7 +256,7 @@ impl EdgeName<Rc<str>> {
         Self {
             span: self.span,
             parts: vec![EdgeNamePart::Literal {
-                identifier: Rc::from(identifier),
+                identifier: Arc::from(identifier),
             }],
         }
     }
@@ -819,8 +818,8 @@ impl<Id: PartialEq> Pragma<Id> {
     }
 }
 
-impl Pragma<Rc<str>> {
-    pub fn substitute_bindings(&self, mapping: &Mapping<Rc<str>>) -> Self {
+impl Pragma<Arc<str>> {
+    pub fn substitute_bindings(&self, mapping: &Mapping<Arc<str>>) -> Self {
         match self {
             Self::Any { edge_name, span } => Self::Any {
                 span: *span,
