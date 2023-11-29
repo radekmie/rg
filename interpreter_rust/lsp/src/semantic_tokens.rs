@@ -114,7 +114,7 @@ pub fn semantic_tokens_full(document: &Document) -> Vec<SemanticToken> {
 
 fn ast_tokens(game: &Game<Identifier>) -> Vec<Token> {
     let mut tokens = Vec::new();
-    game.stats().iter().for_each(|stat| {
+    game.stats().into_iter().for_each(|stat| {
         let keyword = stat.keyword();
         if !keyword.is_empty() {
             let token_type = semantic_token_type(stat.token_type());
