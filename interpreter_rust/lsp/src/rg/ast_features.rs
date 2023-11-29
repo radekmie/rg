@@ -5,36 +5,47 @@ use crate::rg::{
 use rg::{ast::*, position::*};
 
 pub trait AstFeatures {
-    fn enclosing_stat(&self, span: &Span) -> Option<Stat>;
-    fn enclosing_stat_pos(&self, pos: &Position) -> Option<Stat>;
+    fn stats(&self) -> Vec<&dyn Stat>;
+    fn find_stat(&self, predicate: impl Fn(&&dyn Stat) -> bool) -> Option<&dyn Stat>;
+    fn stat_enclosing_span(&self, span: &Span) -> Option<&dyn Stat>;
+    fn stat_enclosing_pos(&self, pos: &Position) -> Option<&dyn Stat>;
     fn symbol_type(&self, symbol: &Symbol) -> Option<String>;
 }
 
 impl AstFeatures for Game<Identifier> {
-    fn enclosing_stat(&self, span: &Span) -> Option<Stat> {
-        Stat::from_game(self)
-            .into_iter()
-            .find(|stat| stat.span().encloses_span(span))
+    fn stats(&self) -> Vec<&dyn Stat> {
+        self.typedefs
+            .iter()
+            .map(|typedef| typedef as &dyn Stat)
+            .chain(self.constants.iter().map(|constant| constant as &dyn Stat))
+            .chain(self.variables.iter().map(|variable| variable as &dyn Stat))
+            .chain(self.edges.iter().map(|edge| edge as &dyn Stat))
+            .chain(self.pragmas.iter().map(|pragma| pragma as &dyn Stat))
+            .collect()
     }
 
-    fn enclosing_stat_pos(&self, pos: &Position) -> Option<Stat> {
-        Stat::from_game(self)
-            .into_iter()
-            .find(|stat| stat.span().encloses_pos(pos))
+    fn find_stat(&self, predicate: impl Fn(&&dyn Stat) -> bool) -> Option<&dyn Stat> {
+        self.typedefs
+            .iter()
+            .map(|typedef| typedef as &dyn Stat)
+            .chain(self.constants.iter().map(|constant| constant as &dyn Stat))
+            .chain(self.variables.iter().map(|variable| variable as &dyn Stat))
+            .chain(self.edges.iter().map(|edge| edge as &dyn Stat))
+            .chain(self.pragmas.iter().map(|pragma| pragma as &dyn Stat))
+            .find(|stat| predicate(stat))
+    }
+
+    fn stat_enclosing_span(&self, span: &Span) -> Option<&dyn Stat> {
+        self.find_stat(|stat| stat.span().encloses_span(span))
+    }
+
+    fn stat_enclosing_pos(&self, pos: &Position) -> Option<&dyn Stat> {
+        self.find_stat(|stat| stat.span().encloses_pos(pos))
     }
 
     fn symbol_type(&self, symbol: &Symbol) -> Option<String> {
-        self.enclosing_stat(&symbol.span())
-            .and_then(|stat| match stat {
-                Stat::Constant(Constant { type_, .. }) => Some(type_.to_string()),
-                Stat::Variable(Variable { type_, .. }) => Some(type_.to_string()),
-                Stat::Typedef(Typedef { identifier, .. }) => Some(identifier.to_string()),
-                Stat::Edge(Edge { lhs, rhs, .. }) => {
-                    let left = edge_name_label(lhs, symbol);
-                    left.or(edge_name_label(rhs, symbol))
-                }
-                _ => None,
-            })
+        self.stat_enclosing_span(&symbol.span())
+            .and_then(|stat| stat.symbol_type(symbol))
     }
 }
 
@@ -48,13 +59,4 @@ pub fn hover_signature(game: &Game<Identifier>, symbol: &Symbol) -> Option<Strin
         Flag::Param => Some(format!("{}: {}", symbol.id, type_)),
         Flag::Edge => None,
     }
-}
-
-fn edge_name_label(edge_name: &EdgeName<Identifier>, symbol: &Symbol) -> Option<String> {
-    edge_name.parts.iter().find_map(|part| match part {
-        EdgeNamePart::Binding { span, type_, .. } if span.encloses_span(&symbol.pos) => {
-            Some(format!("{}", type_))
-        }
-        _ => None,
-    })
 }

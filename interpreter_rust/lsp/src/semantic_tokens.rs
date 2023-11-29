@@ -8,7 +8,7 @@ use rg::{
     position::*,
 };
 
-use crate::rg::{stat::Stat, symbol::Flag, symbol_table::*};
+use crate::rg::{ast_features::AstFeatures, symbol::Flag, symbol_table::*};
 
 use tower_lsp::lsp_types::Position as LPos;
 
@@ -114,13 +114,10 @@ pub fn semantic_tokens_full(document: &Document) -> Vec<SemanticToken> {
 
 fn ast_tokens(game: &Game<Identifier>) -> Vec<Token> {
     let mut tokens = Vec::new();
-    Stat::from_game(game).iter().for_each(|stat| {
+    game.stats().iter().for_each(|stat| {
         let keyword = stat.keyword();
         if !keyword.is_empty() {
-            let token_type = match stat {
-                Stat::Pragma(_) => semantic_token_type("macro"),
-                _ => semantic_token_type("keyword"),
-            };
+            let token_type = semantic_token_type(stat.token_type());
             let token = Token {
                 pos: pos_to_lsp(&stat.span().start),
                 len: keyword.len() as u32,

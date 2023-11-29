@@ -7,13 +7,12 @@ use rg::{ast::*, position::*};
 
 use crate::rg::{
     ast_features::AstFeatures,
-    stat::Stat,
     symbol::{Flag, Symbol},
     symbol_table::SymbolTable,
 };
 
 #[derive(Debug, PartialEq)]
-enum CompletionKind {
+pub enum CompletionKind {
     Type,
     Variable, // const/var/member/param
     Value,    // type member
@@ -69,7 +68,10 @@ fn completion_items(
     game: &Game<Identifier>,
     symbol_table: &SymbolTable,
 ) -> Vec<CompletionItem> {
-    let completion_kind = CompletionKind::from_game(pos, game);
+    let completion_kind = game
+        .stat_enclosing_pos(&pos)
+        .map(|stat| stat.completion_kind(&pos))
+        .unwrap_or(CompletionKind::Toplevel);
     let mut items = match completion_kind {
         CompletionKind::None => vec![],
         CompletionKind::Toplevel => {
@@ -101,22 +103,23 @@ fn get_symbols<'a>(
 }
 
 fn keyword_completions() -> Vec<CompletionItem> {
-    vec![
-        ("const", Some(CompletionItemKind::KEYWORD)),
-        ("var", Some(CompletionItemKind::KEYWORD)),
-        ("type", Some(CompletionItemKind::KEYWORD)),
-        ("@any", Some(CompletionItemKind::KEYWORD)),
-        ("@disjoint", Some(CompletionItemKind::KEYWORD)),
-        ("@multiAny", Some(CompletionItemKind::KEYWORD)),
-        ("@unique", Some(CompletionItemKind::KEYWORD)),
-    ]
-    .into_iter()
-    .map(|(label, kind)| CompletionItem {
-        label: label.to_string(),
-        kind,
-        ..Default::default()
-    })
-    .collect()
+    static KEYWORDS: [&str; 7] = [
+        "constr",
+        "var",
+        "type",
+        "@any",
+        "@unique",
+        "@multiAny",
+        "@disjoint",
+    ];
+    KEYWORDS
+        .into_iter()
+        .map(|label| CompletionItem {
+            label: label.to_string(),
+            kind: Some(CompletionItemKind::KEYWORD),
+            ..Default::default()
+        })
+        .collect()
 }
 
 fn completion_item(game: &Game<Identifier>, symbol: &Symbol) -> CompletionItem {
@@ -149,117 +152,11 @@ impl From<Flag> for CompletionItemKind {
     }
 }
 
-impl CompletionKind {
-    fn from_game(pos: Position, game: &Game<Identifier>) -> Self {
-        let enclosing_stat = game.enclosing_stat_pos(&pos);
-        if let Some(stat) = enclosing_stat {
-            match stat {
-                Stat::Constant(Constant {
-                    identifier,
-                    type_,
-                    value,
-                    ..
-                }) => {
-                    if identifier.span().encloses_pos(&pos) {
-                        CompletionKind::None
-                    } else if type_.span().encloses_pos(&pos) {
-                        CompletionKind::Type
-                    } else if value.span().encloses_pos(&pos) || pos.is_after(&value.end()) {
-                        CompletionKind::Value
-                    } else {
-                        CompletionKind::Any
-                    }
-                }
-                Stat::Variable(Variable {
-                    default_value,
-                    identifier,
-                    type_,
-                    ..
-                }) => {
-                    if identifier.span().encloses_pos(&pos) {
-                        CompletionKind::None
-                    } else if type_.span().encloses_pos(&pos) {
-                        CompletionKind::Type
-                    } else if default_value.span().encloses_pos(&pos)
-                        || pos.is_after(&default_value.end())
-                    {
-                        CompletionKind::Value
-                    } else {
-                        CompletionKind::Any
-                    }
-                }
-                Stat::Edge(Edge {
-                    lhs, rhs, label, ..
-                }) => {
-                    if lhs.span().encloses_pos(&pos) {
-                        Self::from_edge_name(pos, lhs)
-                    } else if rhs.span().encloses_pos(&pos) {
-                        Self::from_edge_name(pos, rhs)
-                    } else if label.span().encloses_pos(&pos) || pos.is_after(&label.end()) {
-                        match label {
-                            EdgeLabel::Assignment { .. } => CompletionKind::Variable,
-                            EdgeLabel::Comparison { .. } => CompletionKind::Variable,
-                            EdgeLabel::Reachability { .. } => CompletionKind::Edge,
-                            EdgeLabel::Skip { .. } => CompletionKind::Variable,
-                            EdgeLabel::Tag { .. } => CompletionKind::Param,
-                        }
-                    } else {
-                        CompletionKind::Edge
-                    }
-                }
-                Stat::Typedef(Typedef {
-                    identifier, type_, ..
-                }) => {
-                    if identifier.span().encloses_pos(&pos) {
-                        CompletionKind::None
-                    } else if type_.span().encloses_pos(&pos) || pos.is_after(&type_.end()) {
-                        match type_.as_ref() {
-                            Type::Set { .. } => CompletionKind::None,
-                            _ => CompletionKind::Type,
-                        }
-                    } else {
-                        CompletionKind::Any
-                    }
-                }
-                Stat::Pragma(pragma) => Self::from_edge_name(pos, pragma.edge_name()),
-            }
-        } else {
-            CompletionKind::Toplevel
-        }
-    }
-
-    fn from_edge_name(pos: Position, edge_name: &EdgeName<Identifier>) -> Self {
-        edge_name
-            .parts
-            .iter()
-            .find_map(|part| {
-                if part.span().encloses_pos(&pos) {
-                    match part {
-                        // We can been on toplevel before an edge
-                        EdgeNamePart::Literal { .. } => Some(CompletionKind::Toplevel),
-                        EdgeNamePart::Binding {
-                            type_, identifier, ..
-                        } => {
-                            if identifier.span().encloses_pos(&pos)
-                                || !type_.span().start.is_after(&identifier.span().end)
-                            {
-                                Some(CompletionKind::Param)
-                            } else {
-                                Some(CompletionKind::Type)
-                            }
-                        }
-                    }
-                } else {
-                    None
-                }
-            })
-            .unwrap_or(CompletionKind::Edge)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use rg::{parsing::parser::parse_with_errors, position::Position};
+
+    use crate::rg::ast_features::AstFeatures;
 
     use super::CompletionKind;
 
@@ -280,7 +177,10 @@ mod test {
     fn completion_kind(input: &str, expected: CompletionKind) {
         let (pos, game) = find_cursor(input);
         let (game, _) = parse_with_errors(game.as_str());
-        let obtained = CompletionKind::from_game(pos, &game);
+        let obtained = game
+            .stat_enclosing_pos(&pos)
+            .map(|stat| stat.completion_kind(&pos))
+            .unwrap_or(CompletionKind::Toplevel);
         assert!(
             obtained == expected,
             "Failed on \n{}\nexpected: {:?}, obtained: {:?}\n",

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::utils::{line_at_span, span_to_lsp};
+use super::utils::span_to_lsp;
 use rg::{
     ast::{Game, Identifier},
     position::{Positioned, Span},
@@ -33,7 +33,7 @@ fn split_edge(
         .edges
         .iter()
         .find(|edge| edge.span().encloses_span(span))?;
-    let line = line_at_span(&edge.span(), text)?;
+    let line = edge.span().line_at(text)?;
     let left_split = edge.rhs.span().start.is_after(&span.end);
     let comma_pos = line.find(',')?;
     let (lhs, rhs_with_label) = line.split_at(comma_pos);
