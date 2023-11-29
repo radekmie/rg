@@ -12,7 +12,7 @@ use crate::rg::{ast_features::AstFeatures, symbol::Flag, symbol_table::*};
 
 use tower_lsp::lsp_types::Position as LPos;
 
-use super::{document::Document, utils::pos_to_lsp};
+use super::{document::Document, utils::ToLspPosition};
 
 pub fn capabilities() -> SemanticTokensServerCapabilities {
     SemanticTokensServerCapabilities::SemanticTokensOptions(SemanticTokensOptions {
@@ -119,7 +119,7 @@ fn ast_tokens(game: &Game<Identifier>) -> Vec<Token> {
         if !keyword.is_empty() {
             let token_type = semantic_token_type(stat.token_type());
             let token = Token {
-                pos: pos_to_lsp(&stat.span().start),
+                pos: stat.span().start.to_lsp(),
                 len: keyword.len() as u32,
                 token_type,
                 token_modifier: 0,
@@ -135,10 +135,11 @@ fn comment_tokens(text: &str) -> Vec<Token> {
     for (line_idx, line) in text.lines().enumerate() {
         if let Some(col) = line.find("//") {
             let token = Token {
-                pos: pos_to_lsp(&Position {
+                pos: Position {
                     line: line_idx + 1,
                     column: col + 1,
-                }),
+                }
+                .to_lsp(),
                 len: (line.len() - col) as u32,
                 token_type: semantic_token_type("comment"),
                 token_modifier: 0,
@@ -174,7 +175,7 @@ fn symbol_table_tokens(symbol_table: &SymbolTable) -> Vec<Token> {
                 0
             };
             let token = Token {
-                pos: pos_to_lsp(&occ.start()),
+                pos: occ.start().to_lsp(),
                 len: symbol.id.len() as u32,
                 token_type,
                 token_modifier: definition_mod | const_mod,

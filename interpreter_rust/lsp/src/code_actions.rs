@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::utils::span_to_lsp;
+use super::utils::ToLspRange;
 use rg::{
     ast::{Game, Identifier},
     position::{Positioned, Span},
@@ -45,7 +45,7 @@ fn split_edge(
         format!("{}, new_edge{}\nnew_edge{}: ;", lhs, label, rhs)
     };
     let text_edits = vec![TextEdit {
-        range: span_to_lsp(&edge.span()),
+        range: edge.span().to_lsp(),
         new_text,
     }];
     let changes = HashMap::from([(uri.clone(), text_edits)]);

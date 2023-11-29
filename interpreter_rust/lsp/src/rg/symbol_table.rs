@@ -321,12 +321,6 @@ impl SymbolTable {
             .find(|occ| occ.pos.encloses_pos(pos))
     }
 
-    pub fn get_occ_at_span(&self, span: &Span) -> Option<&Occurrence> {
-        self.occurrences
-            .iter()
-            .find(|occ| occ.pos.encloses_span(span))
-    }
-
     pub fn get_occ_symbol(&self, occ: &Occurrence) -> Option<&Symbol> {
         match occ.symbol {
             Some(idx) => self.symbols.get(idx),
@@ -336,13 +330,6 @@ impl SymbolTable {
 
     pub fn get_symbol_at(&self, pos: &Position) -> Option<&Symbol> {
         match self.get_occ_at(pos) {
-            Some(occ) => self.get_occ_symbol(occ),
-            None => None,
-        }
-    }
-
-    pub fn get_symbol_at_span(&self, span: &Span) -> Option<&Symbol> {
-        match self.get_occ_at_span(span) {
             Some(occ) => self.get_occ_symbol(occ),
             None => None,
         }
@@ -361,6 +348,14 @@ impl SymbolTable {
             },
             table.errors,
         )
+    }
+
+    pub fn all_symbol_occurences(&self, symbol_idx: usize) -> Vec<Occurrence> {
+        self.occurrences
+            .iter()
+            .filter(|occ| occ.symbol.is_some_and(|sym| sym == symbol_idx))
+            .cloned()
+            .collect()
     }
 }
 

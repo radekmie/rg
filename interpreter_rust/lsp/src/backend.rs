@@ -1,5 +1,6 @@
+use crate::utils::{ToRgPosition, ToRgSpan};
+
 use super::document::Document;
-use super::utils::{lsp_to_pos, lsp_to_span};
 use super::{code_actions, completions, features, semantic_tokens};
 use dashmap::DashMap;
 use tower_lsp::jsonrpc::Result;
@@ -158,7 +159,7 @@ impl LanguageServer for Backend {
         self.with_document(&params.text_document.uri, |uri, document| {
             code_actions::provide(
                 uri,
-                &lsp_to_span(&params.range),
+                &params.range.to_rg(),
                 &document.game,
                 document.text.as_str(),
             )
@@ -167,7 +168,7 @@ impl LanguageServer for Backend {
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
         self.with_document_positioned(&params.text_document_position, |_, position, document| {
-            completions::completions(lsp_to_pos(position), &document.game, &document.symbol_table)
+            completions::completions(position.to_rg(), &document.game, &document.symbol_table)
         })
     }
 }

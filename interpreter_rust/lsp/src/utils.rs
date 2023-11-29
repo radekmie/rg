@@ -18,48 +18,64 @@ impl From<&Flag> for SymbolKind {
     }
 }
 
-pub fn span_to_lsp(span: &Span) -> l::Range {
-    l::Range {
-        start: pos_to_lsp(&span.start),
-        end: pos_to_lsp(&span.end),
-    }
-}
-
-pub fn pos_to_lsp(position: &Position) -> l::Position {
-    if position.is_none() {
-        panic!("Called toLsp on a none position")
-    } else {
-        l::Position {
-            line: (position.line - 1) as u32,
-            character: (position.column - 1) as u32,
+pub trait ToLspRange {
+    fn to_lsp(&self) -> l::Range;
+    fn to_location(&self, url: &Url) -> Location {
+        Location {
+            uri: url.clone(),
+            range: self.to_lsp(),
         }
     }
 }
 
-pub fn pos_to_lsp_range(position: &Position) -> l::Range {
-    l::Range {
-        start: pos_to_lsp(position),
-        end: pos_to_lsp(position),
+pub trait ToLspPosition {
+    fn to_lsp(&self) -> l::Position;
+}
+
+pub trait ToRgSpan {
+    fn to_rg(&self) -> Span;
+}
+
+pub trait ToRgPosition {
+    fn to_rg(&self) -> Position;
+}
+
+impl ToLspRange for Span {
+    fn to_lsp(&self) -> l::Range {
+        l::Range {
+            start: self.start.to_lsp(),
+            end: self.end.to_lsp(),
+        }
     }
 }
 
-pub fn lsp_to_pos(position: &l::Position) -> Position {
-    Position {
-        line: (position.line + 1) as usize,
-        column: (position.character + 1) as usize,
+impl ToLspPosition for Position {
+    fn to_lsp(&self) -> l::Position {
+        if self.is_none() {
+            panic!("Called toLsp on a none position")
+        } else {
+            l::Position {
+                line: (self.line - 1) as u32,
+                character: (self.column - 1) as u32,
+            }
+        }
     }
 }
 
-pub fn lsp_to_span(range: &l::Range) -> Span {
-    Span {
-        start: lsp_to_pos(&range.start),
-        end: lsp_to_pos(&range.end),
+impl ToRgPosition for l::Position {
+    fn to_rg(&self) -> Position {
+        Position {
+            line: (self.line + 1) as usize,
+            column: (self.character + 1) as usize,
+        }
     }
 }
 
-pub fn to_location(url: &Url, span: &Span) -> Location {
-    Location {
-        uri: url.clone(),
-        range: span_to_lsp(span),
+impl ToRgSpan for l::Range {
+    fn to_rg(&self) -> Span {
+        Span {
+            start: self.start.to_rg(),
+            end: self.end.to_rg(),
+        }
     }
 }
