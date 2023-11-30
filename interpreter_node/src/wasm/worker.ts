@@ -1,6 +1,12 @@
 import { readFile } from 'fs/promises';
 
-import init, { analyzeRg, parseRg, perfRg, runRg, serializeRg } from './module';
+import init, {
+  analyzeRg,
+  parseRg,
+  perfRg,
+  runRg,
+  serializeRg,
+} from './interpreter_module';
 import * as transformators from '../rg/transformators';
 
 // Node.js requires a crypto polyfill. Importing it directly inlines it in the

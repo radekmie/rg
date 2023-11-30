@@ -20,7 +20,7 @@ jobs:
       - name: Install
         run: npm --prefix interpreter_node ci
       - name: Build WASM module
-        run: wasm-pack build --out-dir ../../interpreter_node/src/wasm/module --out-name index --target web interpreter_rust/interpreter
+        run: wasm-pack build --out-dir ../../interpreter_node/src/wasm/interpreter_module --out-name index --target web interpreter_rust/interpreter
       - name: Build WASM LSP module
         run: wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp_module --out-name index --target web interpreter_rust/lsp_browser
       - name: Build docs

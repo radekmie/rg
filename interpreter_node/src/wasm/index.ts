@@ -15,7 +15,7 @@ const worker = new Worker(new URL('worker.ts', import.meta.url), {
 
 const queue = pLimit(1);
 
-type WASM = typeof import('./module');
+type WASM = typeof import('./interpreter_module');
 function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
   fn: Name,
   // eslint-disable-next-line @typescript-eslint/ban-types -- `Function` is a top type of all functions.
