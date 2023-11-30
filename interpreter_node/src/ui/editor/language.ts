@@ -27,167 +27,86 @@ const registerLanguage = (client: Client) => {
   monaco.languages.register({ id: 'javascript' });
 
   languages.registerDocumentSymbolProvider(LanguageID.rg, {
-    async provideDocumentSymbols(
-      document,
-      token,
-    ): Promise<vscode.SymbolInformation[]> {
-      token;
-      const result = await (client.request(
+    async provideDocumentSymbols(document) {
+      const result: WasmSymbolInformation[] = await client.request(
         proto.DocumentSymbolRequest.type.method,
-        {
-          textDocument: { uri: document.uri.toString() },
-        } as proto.DocumentSymbolParams,
-      ) as Promise<vscode.SymbolInformation[]>);
-      result.forEach(elem => {
-        elem.location.uri = vscode.Uri.parse(elem.location.uri.toString());
-        const start = elem.location.range.start;
-        elem.location.range.start.compareTo = (other: vscode.Position) => {
-          if (start.line === other.line) {
-            return start.character - other.character;
-          }
-          return start.line - other.line;
-        };
-      });
-      return result;
+        { textDocument: documentToUri(document) },
+      );
+      return result.map(wasmSymbolInformationToVscodeSymbolInformation);
     },
   });
 
   languages.registerDefinitionProvider(LanguageID.rg, {
     async provideDefinition(document, position) {
-      // type WasmLocation = never; // We don't have to show the exact transported object.
-      type WasmLocation = { uri: WasmUri; range: WasmRange };
-      type WasmUri = string;
-      type WasmRange = { start: WasmPosition; end: WasmPosition };
-      type WasmPosition = { character: number; line: number };
-      const wasmLocationToVscodeLocation = (x: WasmLocation) =>
-        new vscode.Location(
-          wasmUriToVscodeUri(x.uri),
-          wasmRangeToVscodeRange(x.range),
-        );
-      const wasmUriToVscodeUri = (x: WasmUri) => vscode.Uri.parse(x);
-      const wasmRangeToVscodeRange = (x: WasmRange) =>
-        new vscode.Range(
-          wasmPositionToVscodePosition(x.start),
-          wasmPositionToVscodePosition(x.end),
-        );
-      const wasmPositionToVscodePosition = (x: WasmPosition) =>
-        new vscode.Position(x.character, x.line);
       const result: WasmLocation | null = await client.request(
         proto.DefinitionRequest.type.method,
-        { position, textDocument: { uri: document.uri.toString() } },
+        { position, textDocument: documentToUri(document) },
       );
-      return result && wasmLocationToLocation(result);
+      return result && wasmLocationToVscodeLocation(result);
     },
   });
 
   languages.registerReferenceProvider(LanguageID.rg, {
-    async provideReferences(
-      document,
-      position,
-      context,
-      token,
-    ): Promise<vscode.Location[]> {
-      context;
-      token;
-      const result = await (client.request(
+    async provideReferences(document, position) {
+      const result: WasmLocation[] | null = await client.request(
         proto.ReferencesRequest.type.method,
         {
-          textDocument: { uri: document.uri.toString() },
+          textDocument: documentToUri(document),
           position,
           context: { includeDeclaration: true },
-        } as proto.ReferenceParams,
-      ) as Promise<vscode.Location[] | null>);
-      if (result === null) {
-        return [];
-      }
-      result.forEach(
-        elem => (elem.uri = vscode.Uri.parse(elem.uri.toString())),
+        },
       );
-      return result;
+      return result ? result.map(wasmLocationToVscodeLocation) : [];
     },
   });
 
   languages.registerRenameProvider(LanguageID.rg, {
-    async provideRenameEdits(
-      document,
-      position,
-      newName,
-      token,
-    ): Promise<vscode.WorkspaceEdit> {
-      token;
-      const result = await (client.request(proto.RenameRequest.type.method, {
-        textDocument: { uri: document.uri.toString() },
-        position,
-        newName,
-      } as proto.RenameParams) as Promise<{
-        changes: {
-          [uri: string]: vscode.TextEdit[];
-        };
-      }>);
-      const edit = new vscode.WorkspaceEdit();
-      edit.set(document.uri, result.changes[document.uri.toString()]);
-      return edit;
+    async provideRenameEdits(document, position, newName) {
+      const result: WasmWorkspaceEdit = await client.request(
+        proto.RenameRequest.type.method,
+        {
+          textDocument: documentToUri(document),
+          position,
+          newName,
+        },
+      );
+      return wasmWorkspaceEditToVscodeWorkspaceEdit(result);
     },
 
-    async prepareRename(
-      document,
-      position,
-      token,
-    ): Promise<{
-      range: vscode.Range;
-      placeholder: string;
-    }> {
-      token;
-      const result = await (client.request(
-        proto.PrepareRenameRequest.type.method,
-        {
-          textDocument: { uri: document.uri.toString() },
+    async prepareRename(document, position) {
+      const result: { range: WasmRange; placeholder: string } | null =
+        await client.request(proto.PrepareRenameRequest.type.method, {
+          textDocument: documentToUri(document),
           position,
-        } as proto.PrepareRenameParams,
-      ) as Promise<{
-        range: vscode.Range;
-        placeholder: string;
-      } | null>);
-      if (result === null) {
-        throw new Error("This element can't be renamed");
-      }
-      return result;
+        });
+      return (
+        result && {
+          range: wasmRangeToVscodeRange(result.range),
+          placeholder: result.placeholder,
+        }
+      );
     },
   });
 
   languages.registerDocumentHighlightProvider(LanguageID.rg, {
-    async provideDocumentHighlights(
-      document,
-      position,
-      token,
-    ): Promise<vscode.DocumentHighlight[]> {
-      token;
-      const result = await (client.request(
+    async provideDocumentHighlights(document, position) {
+      const result: WasmHighlight[] | null = await client.request(
         proto.DocumentHighlightRequest.type.method,
-        {
-          textDocument: { uri: document.uri.toString() },
-          position,
-        } as proto.DocumentHighlightParams,
-      ) as Promise<vscode.DocumentHighlight[]>);
-      return result;
+        { textDocument: documentToUri(document), position },
+      );
+      return result && result.map(wasmHighlightToVscodeHighlight);
     },
   });
 
   languages.registerDocumentSemanticTokensProvider(
     LanguageID.rg,
     {
-      async provideDocumentSemanticTokens(
-        document,
-        token,
-      ): Promise<vscode.SemanticTokens> {
-        token;
-        const result = await (client.request(
+      async provideDocumentSemanticTokens(document) {
+        const result: { data: Uint32Array } = await client.request(
           proto.SemanticTokensRequest.type.method,
-          {
-            textDocument: { uri: document.uri.toString() },
-          } as proto.SemanticTokensParams,
-        ) as Promise<vscode.SemanticTokens>);
-        return result;
+          { textDocument: documentToUri(document) },
+        );
+        return new vscode.SemanticTokens(result.data);
       },
     },
     new vscode.SemanticTokensLegend(
@@ -208,78 +127,40 @@ const registerLanguage = (client: Client) => {
   );
 
   languages.registerHoverProvider(LanguageID.rg, {
-    provideHover(document, position) {
-      return client.request(proto.HoverRequest.type.method, {
-        // TODO: vscodeUriToWasmUri
-        textDocument: { uri: document.uri.toString() },
-        position,
-      });
+    async provideHover(document, position) {
+      const result: WasmHover | null = await client.request(
+        proto.HoverRequest.type.method,
+        { textDocument: documentToUri(document), position },
+      );
+      return result && wasmHoverToVscodeHover(result);
     },
   });
 
   languages.registerCodeActionsProvider(LanguageID.rg, {
     async provideCodeActions(document, range) {
-      type CodeAction = {
-        edit: { changes: { [uri: string]: vscode.TextEdit[] } };
-        kind: vscode.CodeActionKind;
-        title: string;
-      };
-
-      const result: CodeAction[] = await client.request(
+      const result: WasmCodeAction[] = await client.request(
         proto.CodeActionRequest.type.method,
         {
-          textDocument: { uri: document.uri.toString() },
+          textDocument: documentToUri(document),
           range,
           context: { diagnostics: [] },
         },
       );
-
-      return result.map(elem => {
-        const changes = new vscode.WorkspaceEdit();
-        changes.set(document.uri, elem.edit.changes[document.uri.toString()]);
-        const action = new vscode.CodeAction(elem.title, elem.kind);
-        action.edit = changes;
-        return action;
-      });
+      return result.map(wasmCodeActionToVscodeCodeAction);
     },
   });
 
   languages.registerCompletionItemProvider(LanguageID.rg, {
-    async provideCompletionItems(
-      document,
-      position,
-      token,
-      context,
-    ): Promise<vscode.CompletionItem[]> {
-      token;
-      context;
-      const result = await (client.request(
+    async provideCompletionItems(document, position) {
+      const result: WasmCompletionItem[] | null = await client.request(
         proto.CompletionRequest.type.method,
         {
-          textDocument: { uri: document.uri.toString() },
+          textDocument: documentToUri(document),
           position,
           context: undefined,
-        } as proto.CompletionParams,
-      ) as Promise<
-        | {
-            label: string;
-            kind: vscode.CompletionItemKind;
-            labelDetails?: {
-              detail?: string;
-            };
-          }[]
-        | null
-      >);
-      if (result === null) {
-        return [];
-      }
-      return result.map(elem => {
-        const label = {
-          label: elem.label,
-          detail: elem.labelDetails?.detail,
-        };
-        return new vscode.CompletionItem(label, elem.kind);
-      });
+        },
+      );
+      return result ? result.map(wasmCompletionItemToVscodeCompletionItem) : [];
     },
   });
 };
@@ -293,3 +174,101 @@ export const initialize = (client: Client) => {
     console.log('Language initialized');
   }
 };
+
+type WasmLocation = { uri: WasmUri; range: WasmRange };
+const wasmLocationToVscodeLocation = (x: WasmLocation) =>
+  new vscode.Location(
+    wasmUriToVscodeUri(x.uri),
+    wasmRangeToVscodeRange(x.range),
+  );
+
+type WasmUri = string;
+const wasmUriToVscodeUri = (x: WasmUri) => vscode.Uri.parse(x);
+
+type WasmRange = { start: WasmPosition; end: WasmPosition };
+const wasmRangeToVscodeRange = (x: WasmRange) =>
+  new vscode.Range(
+    wasmPositionToVscodePosition(x.start),
+    wasmPositionToVscodePosition(x.end),
+  );
+
+type WasmHighlight = { range: WasmRange };
+const wasmHighlightToVscodeHighlight = (x: WasmHighlight) =>
+  new vscode.DocumentHighlight(wasmRangeToVscodeRange(x.range));
+
+type WasmPosition = { character: number; line: number };
+const wasmPositionToVscodePosition = (x: WasmPosition) =>
+  new vscode.Position(x.line, x.character);
+
+type WasmTextEdit = { range: WasmRange; newText: string };
+const wasmTextEditToVscodeTextEdit = (x: WasmTextEdit) =>
+  new vscode.TextEdit(wasmRangeToVscodeRange(x.range), x.newText);
+
+type WasmWorkspaceEdit = {
+  changes: {
+    [uri: WasmUri]: WasmTextEdit[];
+  };
+};
+const wasmWorkspaceEditToVscodeWorkspaceEdit = (x: WasmWorkspaceEdit) => {
+  const edit = new vscode.WorkspaceEdit();
+  Object.entries(x.changes).forEach(([uri, textEdits]) => {
+    edit.set(
+      wasmUriToVscodeUri(uri),
+      textEdits.map(wasmTextEditToVscodeTextEdit),
+    );
+  });
+  return edit;
+};
+
+type WasmHover = {
+  contents: { language: string; value: string }[];
+  range: WasmRange;
+};
+const wasmHoverToVscodeHover = (x: WasmHover) => {
+  return new vscode.Hover(x.contents, wasmRangeToVscodeRange(x.range));
+};
+
+type WasmCodeAction = {
+  edit: WasmWorkspaceEdit;
+  kind: vscode.CodeActionKind;
+  title: string;
+};
+const wasmCodeActionToVscodeCodeAction = (x: WasmCodeAction) => {
+  const edit = wasmWorkspaceEditToVscodeWorkspaceEdit(x.edit);
+  const action = new vscode.CodeAction(x.title, x.kind);
+  action.edit = edit;
+  return action;
+};
+
+type WasmCompletionItem = {
+  label: string;
+  kind: vscode.CompletionItemKind;
+  labelDetails?: {
+    detail?: string;
+  };
+};
+const wasmCompletionItemToVscodeCompletionItem = (x: WasmCompletionItem) => {
+  const label = {
+    label: x.label,
+    detail: x.labelDetails?.detail,
+  };
+  return new vscode.CompletionItem(label, x.kind);
+};
+type WasmSymbolInformation = {
+  kind: vscode.SymbolKind;
+  name: string;
+  location: WasmLocation;
+};
+
+const wasmSymbolInformationToVscodeSymbolInformation = (
+  x: WasmSymbolInformation,
+) => {
+  return new vscode.SymbolInformation(
+    x.name,
+    x.kind,
+    '',
+    wasmLocationToVscodeLocation(x.location),
+  );
+};
+
+const documentToUri = (x: vscode.TextDocument) => ({ uri: x.uri.toString() });
