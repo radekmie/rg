@@ -1,10 +1,10 @@
 import * as jsrpc from 'json-rpc-2.0';
 import * as vsrpc from 'vscode-jsonrpc';
 
-import Bytes from '../../codec/bytes';
-import StreamDemuxer from '../../codec/demuxer';
-import Headers from '../../codec/headers';
-import Queue from '../../codec/queue';
+import Bytes from './bytes';
+import StreamDemuxer from './demuxer';
+import Headers from './headers';
+import Queue from './queue';
 
 export const encoder = new TextEncoder();
 export const decoder = new TextDecoder();

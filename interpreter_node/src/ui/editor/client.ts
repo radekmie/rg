@@ -1,7 +1,9 @@
+// This file is copied from https://github.com/silvanshade/tower-lsp-web-demo
+
 import * as jsrpc from 'json-rpc-2.0';
 import * as proto from 'vscode-languageserver-protocol';
 
-import { Codec, FromServer, IntoServer } from './codec';
+import { Codec, FromServer, IntoServer } from '../../codec/codec';
 
 export default class Client extends jsrpc.JSONRPCServerAndClient {
   afterInitializedHooks: (() => Promise<void>)[] = [];
@@ -14,7 +16,7 @@ export default class Client extends jsrpc.JSONRPCServerAndClient {
         const encoded = Codec.encode(json);
         intoServer.enqueue(encoded);
         if (json.id !== undefined && json.id !== null) {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- We know it's not undefined
           const response = await fromServer.responses.get(json.id)!;
           this.client.receive(response as jsrpc.JSONRPCResponse);
         }

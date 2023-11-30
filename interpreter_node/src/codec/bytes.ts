@@ -1,4 +1,4 @@
-import { encoder, decoder } from '../ui/editor/codec';
+import { encoder, decoder } from './codec';
 
 export default class Bytes {
   static encode(input: string): Uint8Array {

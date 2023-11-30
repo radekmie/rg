@@ -5,10 +5,10 @@ import { initialize as initializeExtenstion } from 'vscode/extensions';
 import { LogLevel, initialize as initializeService } from 'vscode/services';
 
 import Client from './client';
-import { FromServer, IntoServer } from './codec';
 import { initialize as initializeLanguage } from './language';
 import { createEditor, createModel } from './monaco_editor';
 import Server from './server';
+import { FromServer, IntoServer } from '../../codec/codec';
 import { Autosize } from '../components/Autosize';
 import * as styles from '../index.module.css';
 
@@ -21,8 +21,12 @@ const startLSP = memoize(async () => {
   await initializeExtenstion();
   await server.initialize();
   initializeLanguage(client);
-  client.start();
-  server.start();
+  client.start().catch(e => {
+    console.error(e);
+  });
+  server.start().catch(e => {
+    console.error(e);
+  });
   return client;
 });
 
@@ -46,7 +50,7 @@ export function Editor({
   useEffect(() => {
     if (ref.current !== null) {
       const start = async () => {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- ref.current is not null
         const crr = ref.current!;
         const client = await startLSP();
         if (!editorRef.current) {
@@ -55,7 +59,9 @@ export function Editor({
         const model = createModel(path, source);
         editorRef.current?.setModel(model);
       };
-      start();
+      start().catch(e => {
+        console.error(e);
+      });
       return () => {
         const currentEditor = editorRef.current;
         const model = currentEditor?.getModel();

@@ -1,4 +1,4 @@
-import { FromServer, IntoServer } from './codec';
+import { FromServer, IntoServer } from '../../codec/codec';
 import init, { serve, ServerConfig } from '../../wasm/lsp_module';
 
 let initialized = false;
