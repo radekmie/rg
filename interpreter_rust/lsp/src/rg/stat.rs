@@ -7,7 +7,7 @@ use crate::completions::CompletionKind;
 
 use super::symbol::Symbol;
 
-pub trait Stat: Positioned {
+pub trait Statement: Positioned {
     fn keyword(&self) -> &'static str;
     fn symbol_type(&self, symbol: &Symbol) -> Option<String>;
     fn token_type(&self) -> &'static str {
@@ -16,7 +16,7 @@ pub trait Stat: Positioned {
     fn completion_kind(&self, pos: &Position) -> CompletionKind;
 }
 
-impl Stat for Constant<Identifier> {
+impl Statement for Constant<Identifier> {
     fn keyword(&self) -> &'static str {
         "const"
     }
@@ -38,7 +38,7 @@ impl Stat for Constant<Identifier> {
     }
 }
 
-impl Stat for Variable<Identifier> {
+impl Statement for Variable<Identifier> {
     fn keyword(&self) -> &'static str {
         "var"
     }
@@ -62,7 +62,7 @@ impl Stat for Variable<Identifier> {
     }
 }
 
-impl Stat for Edge<Identifier> {
+impl Statement for Edge<Identifier> {
     fn keyword(&self) -> &'static str {
         ""
     }
@@ -100,7 +100,7 @@ fn edge_name_label(edge_name: &EdgeName<Identifier>, symbol: &Symbol) -> Option<
     })
 }
 
-impl Stat for Typedef<Identifier> {
+impl Statement for Typedef<Identifier> {
     fn keyword(&self) -> &'static str {
         "type"
     }
@@ -123,7 +123,7 @@ impl Stat for Typedef<Identifier> {
     }
 }
 
-impl Stat for Pragma<Identifier> {
+impl Statement for Pragma<Identifier> {
     fn keyword(&self) -> &'static str {
         match self {
             Pragma::Any { .. } => "@any",
