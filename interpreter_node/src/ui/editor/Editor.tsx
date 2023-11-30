@@ -7,7 +7,7 @@ import { LogLevel, initialize as initializeService } from 'vscode/services';
 import Client from './client';
 import { initialize as initializeLanguage } from './language';
 import { createEditor, createModel } from './monaco_editor';
-import Server from './server';
+import { initialize as initializeServer } from './server';
 import { FromServer, IntoServer } from '../../codec/codec';
 import { Autosize } from '../components/Autosize';
 import * as styles from '../index.module.css';
@@ -16,15 +16,13 @@ const startLSP = memoize(async () => {
   const intoServer: IntoServer = new IntoServer();
   const fromServer: FromServer = FromServer.create();
   const client = new Client(fromServer, intoServer);
-  const server = new Server(intoServer, fromServer);
   await initializeService({ debugLogging: true, logLevel: LogLevel.Debug });
   await initializeExtenstion();
-  await server.initialize();
   initializeLanguage(client);
   client.start().catch(e => {
     console.error(e);
   });
-  server.start().catch(e => {
+  initializeServer(intoServer, fromServer).catch(e => {
     console.error(e);
   });
   return client;
