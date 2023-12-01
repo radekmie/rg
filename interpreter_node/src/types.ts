@@ -1,19 +1,13 @@
-export enum Extension {
-  hrg = '.hrg',
-  rbg = '.rbg',
-  rg = '.rg',
-}
+export type Flag = keyof Settings['flags'];
 
-export enum LanguageID {
+export enum Language {
   hrg = 'hrg',
   rbg = 'rbg',
   rg = 'rg',
 }
 
-export type Flag = keyof Settings['flags'];
-
 export type Settings = {
-  extension: Extension;
+  extension: Language;
   flags: {
     addExplicitCasts: boolean;
     compactSkipEdges: boolean;

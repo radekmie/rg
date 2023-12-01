@@ -1,10 +1,7 @@
-use std::collections::HashMap;
-
 use super::utils::ToLspRange;
-use rg::{
-    ast::{Game, Identifier},
-    position::{Positioned, Span},
-};
+use rg::ast::{Game, Identifier};
+use rg::position::{Positioned, Span};
+use std::collections::HashMap;
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionKind, CodeActionOrCommand, CodeActionResponse, TextEdit, Url,
     WorkspaceEdit,

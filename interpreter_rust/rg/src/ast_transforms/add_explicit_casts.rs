@@ -1,7 +1,5 @@
-use crate::{
-    ast::{Edge, EdgeLabel, Error, ErrorReason, Expression, Game, Type},
-    position::Span,
-};
+use crate::ast::{Edge, EdgeLabel, Error, ErrorReason, Expression, Game, Type};
+use crate::position::Span;
 use std::sync::Arc;
 
 impl<Id: Clone + PartialEq> Edge<Id> {

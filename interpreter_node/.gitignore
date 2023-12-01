@@ -1,5 +1,4 @@
 /lib
 /node_modules
-/src/wasm/interpreter_module
-/src/wasm/lsp_module
-
+/src/wasm/interpreter
+/src/wasm/lsp

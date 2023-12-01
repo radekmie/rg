@@ -6,7 +6,7 @@ import init, {
   perfRg,
   runRg,
   serializeRg,
-} from './interpreter_module';
+} from './interpreter';
 import * as transformators from '../rg/transformators';
 
 // Node.js requires a crypto polyfill. Importing it directly inlines it in the
@@ -15,7 +15,7 @@ if (typeof crypto === 'undefined') {
   eval("globalThis.crypto = require('crypto').webcrypto;");
 }
 
-const url = new URL('./module/index_bg.wasm', import.meta.url);
+const url = new URL('./interpreter/index_bg.wasm', import.meta.url);
 const response = url.protocol === 'file:' ? readFile(url.pathname) : fetch(url);
 const initPromise = init(response);
 initPromise.catch(console.error);

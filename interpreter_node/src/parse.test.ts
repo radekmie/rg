@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
 import { parse } from './parse';
-import { Extension, Settings, noFlagsEnabled } from './types';
+import { Language, Settings, noFlagsEnabled } from './types';
 
 function createRun(settings: Settings, definitions: string[] = []) {
   // TODO: These are builtins added to all games.
@@ -33,7 +33,7 @@ function createRun(settings: Settings, definitions: string[] = []) {
 
 describe('parse (.rg)', () => {
   describe('ast.Cast', () => {
-    const run = createRun({ extension: Extension.rg, flags: noFlagsEnabled }, [
+    const run = createRun({ extension: Language.rg, flags: noFlagsEnabled }, [
       'type A = { 0 };',
       'type B = { 1 };',
       'type C = A -> B;',
@@ -165,7 +165,7 @@ describe('parse (.rg)', () => {
 describe('--addExplicitCasts', () => {
   const run = createRun(
     {
-      extension: Extension.rg,
+      extension: Language.rg,
       flags: { ...noFlagsEnabled, addExplicitCasts: true },
     },
     [
@@ -237,7 +237,7 @@ describe('--addExplicitCasts', () => {
 
 describe('--compactSkipEdges', () => {
   const run = createRun({
-    extension: Extension.rg,
+    extension: Language.rg,
     flags: { ...noFlagsEnabled, compactSkipEdges: true },
   });
 
@@ -269,7 +269,7 @@ describe('--compactSkipEdges', () => {
 describe('--expandGeneratorNodes', () => {
   const run = createRun(
     {
-      extension: Extension.rg,
+      extension: Language.rg,
       flags: { ...noFlagsEnabled, expandGeneratorNodes: true },
     },
     [
@@ -403,7 +403,7 @@ describe('--expandGeneratorNodes', () => {
 describe('--inlineReachability', () => {
   const run = createRun(
     {
-      extension: Extension.rg,
+      extension: Language.rg,
       flags: { ...noFlagsEnabled, inlineReachability: true },
     },
     ['begin, end: ;'],
@@ -559,7 +559,7 @@ describe('--inlineReachability', () => {
 describe('--normalizeTypes', () => {
   const run = createRun(
     {
-      extension: Extension.rg,
+      extension: Language.rg,
       flags: { ...noFlagsEnabled, normalizeTypes: true },
     },
     ['type A = { 0 };', 'begin, end: ;'],
@@ -624,7 +624,7 @@ describe('--joinForkSuffixes', () => {
   // TODO test: don't join nodes referenced in reachability
   // TODO test: don't join nodes with different bindings
   const run = createRun({
-    extension: Extension.rg,
+    extension: Language.rg,
     flags: { ...noFlagsEnabled, joinForkSuffixes: true },
   });
 

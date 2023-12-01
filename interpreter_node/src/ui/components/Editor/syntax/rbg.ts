@@ -1,21 +1,8 @@
-import type { languages } from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 
-export const language = <languages.IMonarchLanguage>{
+export const language = <monaco.languages.IMonarchLanguage>{
   defaultToken: 'source',
-  declarationKeywords: ['domain', 'graph'],
-  keywords: [
-    'branch',
-    'else',
-    'if',
-    'in',
-    'loop',
-    'or',
-    'then',
-    'when',
-    'where',
-    'while',
-  ],
-
+  declarationKeywords: ['board', 'pieces', 'players', 'rules', 'variables'],
   operators: [
     '=',
     '==',
@@ -32,10 +19,12 @@ export const language = <languages.IMonarchLanguage>{
     '<',
     '>=',
     '<=',
+    '->>',
+    '->',
+    '?',
+    '$',
   ],
-
   symbols: /[=><!~?:&|+\-*/^%]+/,
-
   tokenizer: {
     root: [
       [
@@ -43,7 +32,6 @@ export const language = <languages.IMonarchLanguage>{
         {
           cases: {
             '@declarationKeywords': 'declarationKeyword',
-            '@keywords': 'keyword',
             '@default': 'identifier',
           },
         },
@@ -51,15 +39,7 @@ export const language = <languages.IMonarchLanguage>{
       [/[A-Z][a-zA-Z0-9_]*/, 'type.identifier'], // to show class names nicely
       [/[{}()[\]]/, '@brackets'],
       [/[:;,.]/, 'delimiter'],
-      [
-        /@symbols/,
-        {
-          cases: {
-            '@operators': 'operator',
-            '@default': '',
-          },
-        },
-      ],
+      [/@symbols/, { cases: { '@operators': 'operator', '@default': '' } }],
       [/\/\/.*$/, 'comment'],
       [/[ \t\r\n]+/, 'white'],
     ],

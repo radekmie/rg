@@ -1,7 +1,5 @@
-use crate::{
-    ast::{Constant, Error, Game, Type, Typedef, Variable},
-    position::Span,
-};
+use crate::ast::{Constant, Error, Game, Type, Typedef, Variable};
+use crate::position::Span;
 use std::sync::Arc;
 
 impl Constant<Arc<str>> {

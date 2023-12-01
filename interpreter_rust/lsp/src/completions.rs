@@ -1,14 +1,11 @@
+use crate::rg::ast_features::AstFeatures;
+use crate::rg::symbol::{Flag, Symbol};
+use crate::rg::symbol_table::SymbolTable;
+use rg::ast::*;
+use rg::position::Position;
 use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, CompletionItemLabelDetails, CompletionOptions,
     CompletionOptionsCompletionItem, CompletionResponse,
-};
-
-use rg::{ast::*, position::*};
-
-use crate::rg::{
-    ast_features::AstFeatures,
-    symbol::{Flag, Symbol},
-    symbol_table::SymbolTable,
 };
 
 #[derive(Debug, PartialEq)]
@@ -69,7 +66,7 @@ fn completion_items(
     symbol_table: &SymbolTable,
 ) -> Vec<CompletionItem> {
     let completion_kind = game
-        .stat_enclosing_pos(&pos)
+        .stat_enclosing_position(&pos)
         .map(|stat| stat.completion_kind(&pos))
         .unwrap_or(CompletionKind::Toplevel);
     let mut items = match completion_kind {
@@ -165,11 +162,8 @@ mod test {
             .lines()
             .enumerate()
             .find_map(|(line_idx, line)| {
-                if let Some(col) = line.find('^') {
-                    Some((Position::new(line_idx + 1, col + 1), input.replace('^', "")))
-                } else {
-                    None
-                }
+                line.find('^')
+                    .map(|col| (Position::new(line_idx + 1, col + 1), input.replace('^', "")))
             })
             .expect("No cursor found")
     }
@@ -178,7 +172,7 @@ mod test {
         let (pos, game) = find_cursor(input);
         let (game, _) = parse_with_errors(game.as_str());
         let obtained = game
-            .stat_enclosing_pos(&pos)
+            .stat_enclosing_position(&pos)
             .map(|stat| stat.completion_kind(&pos))
             .unwrap_or(CompletionKind::Toplevel);
         assert!(

@@ -1,10 +1,8 @@
-use std::fmt::Display;
-
+use super::symbol::{from_game, Flag, Symbol};
 use rg::ast::*;
 use rg::parsing::error::Error;
-use rg::position::*;
-
-use super::symbol::{from_game as symbols_from_game, Flag, Symbol};
+use rg::position::{Position, Positioned, Span};
+use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Occurrence {
@@ -25,14 +23,73 @@ impl Positioned for Occurrence {
 }
 
 pub struct SymbolTable {
-    pub symbols: Vec<Symbol>,
     pub occurrences: Vec<Occurrence>,
+    pub symbols: Vec<Symbol>,
+}
+
+impl SymbolTable {
+    pub fn get_occ_at(&self, pos: &Position) -> Option<&Occurrence> {
+        self.occurrences
+            .iter()
+            .find(|occ| occ.pos.encloses_position(pos))
+    }
+
+    pub fn get_occ_symbol(&self, occ: &Occurrence) -> Option<&Symbol> {
+        occ.symbol.and_then(|idx| self.symbols.get(idx))
+    }
+
+    pub fn get_symbol_at(&self, pos: &Position) -> Option<&Symbol> {
+        match self.get_occ_at(pos) {
+            Some(occ) => self.get_occ_symbol(occ),
+            None => None,
+        }
+    }
+
+    pub fn sym_idx(&self, symbol: &Symbol) -> Option<usize> {
+        self.symbols.iter().position(|sym| sym == symbol)
+    }
+
+    pub fn from_game(game: &Game<Identifier>) -> (Self, Vec<Error>) {
+        let table = SymbolTableWithErrors::from_game(game);
+        (
+            Self {
+                symbols: table.symbols,
+                occurrences: table.occurrences,
+            },
+            table.errors,
+        )
+    }
+
+    pub fn all_symbol_occurences(&self, symbol_idx: usize) -> Vec<Occurrence> {
+        self.occurrences
+            .iter()
+            .filter(|occ| occ.symbol.is_some_and(|sym| sym == symbol_idx))
+            .cloned()
+            .collect()
+    }
+}
+
+impl Display for SymbolTable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        writeln!(f, "Symbols:\n")?;
+        for (idx, symbol) in self.symbols.iter().enumerate() {
+            writeln!(f, "{idx}. {}  {symbol}", symbol.pos)?;
+        }
+
+        writeln!(f, "Occurrences:\n")?;
+        for occ in &self.occurrences {
+            let symbol = self.get_occ_symbol(occ).unwrap();
+            writeln!(f, "{}  {symbol}", occ.pos)?;
+        }
+
+        Ok(())
+    }
 }
 
 struct SymbolTableWithErrors {
-    symbols: Vec<Symbol>,
-    occurrences: Vec<Occurrence>,
     errors: Vec<Error>,
+    occurrences: Vec<Occurrence>,
+    symbols: Vec<Symbol>,
 }
 
 impl SymbolTableWithErrors {
@@ -233,7 +290,7 @@ impl SymbolTableWithErrors {
 
     pub fn from_game(game: &Game<Identifier>) -> Self {
         let mut table: Self = Self {
-            symbols: symbols_from_game(game),
+            symbols: from_game(game),
             occurrences: Vec::new(),
             errors: Vec::new(),
         };
@@ -311,65 +368,5 @@ impl SymbolTableWithErrors {
         if !self.is_defined("visible") {
             self.symbols.push(Self::make_builtin_variable("visible"));
         }
-    }
-}
-
-impl SymbolTable {
-    pub fn get_occ_at(&self, pos: &Position) -> Option<&Occurrence> {
-        self.occurrences
-            .iter()
-            .find(|occ| occ.pos.encloses_pos(pos))
-    }
-
-    pub fn get_occ_symbol(&self, occ: &Occurrence) -> Option<&Symbol> {
-        match occ.symbol {
-            Some(idx) => self.symbols.get(idx),
-            None => None,
-        }
-    }
-
-    pub fn get_symbol_at(&self, pos: &Position) -> Option<&Symbol> {
-        match self.get_occ_at(pos) {
-            Some(occ) => self.get_occ_symbol(occ),
-            None => None,
-        }
-    }
-
-    pub fn sym_idx(&self, symbol: &Symbol) -> Option<usize> {
-        self.symbols.iter().position(|sym| sym == symbol)
-    }
-
-    pub fn from_game(game: &Game<Identifier>) -> (Self, Vec<Error>) {
-        let table = SymbolTableWithErrors::from_game(game);
-        (
-            Self {
-                symbols: table.symbols,
-                occurrences: table.occurrences,
-            },
-            table.errors,
-        )
-    }
-
-    pub fn all_symbol_occurences(&self, symbol_idx: usize) -> Vec<Occurrence> {
-        self.occurrences
-            .iter()
-            .filter(|occ| occ.symbol.is_some_and(|sym| sym == symbol_idx))
-            .cloned()
-            .collect()
-    }
-}
-
-impl Display for SymbolTable {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Symbols:\n")?;
-        for (idx, symbol) in self.symbols.iter().enumerate() {
-            writeln!(f, "{}. {}  {}", idx, symbol.pos, symbol)?;
-        }
-        writeln!(f, "Occurrences:\n")?;
-        for occ in self.occurrences.iter() {
-            let symbol = self.get_occ_symbol(occ).unwrap();
-            writeln!(f, "{}  {}", occ.pos, symbol)?;
-        }
-        Ok(())
     }
 }

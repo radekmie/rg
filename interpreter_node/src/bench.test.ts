@@ -3,7 +3,7 @@ import path from 'path';
 import { describe, expect, test } from 'vitest';
 
 import { parse } from './parse';
-import { Extension, Flag, noFlagsEnabled } from './types';
+import { Language, Flag, noFlagsEnabled } from './types';
 import * as wasm from './wasm';
 
 describe('bench', () => {
@@ -20,7 +20,7 @@ describe('bench', () => {
     'ticTacToe.rg': [1, 9, 72, 504, 3024, 15120], //, 54720, 148176, 200448, 127872],
   }).map(([fileName, counts]) => {
     const filePath = path.join(__dirname, '..', '..', 'examples', fileName);
-    const extension = path.extname(filePath) as Extension;
+    const extension = path.extname(filePath).slice(1) as Language;
     const source = fs.readFileSync(filePath, { encoding: 'utf8' });
     return { counts, extension, fileName, source };
   });
@@ -29,7 +29,7 @@ describe('bench', () => {
     const flagNames = Object.keys(noFlagsEnabled) as Flag[];
     const flagSets =
       // Translation layers are heavy, so we leave them limited for now.
-      extension === Extension.rg
+      extension === Language.rg
         ? // No flags, all flags separately, and all flags.
           [[], ...flagNames.map(flagName => [flagName]), flagNames]
         : // All flags.

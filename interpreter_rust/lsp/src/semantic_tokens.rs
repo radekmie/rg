@@ -1,18 +1,15 @@
+use crate::document::Document;
+use crate::rg::ast_features::AstFeatures;
+use crate::rg::symbol::Flag;
+use crate::rg::symbol_table::SymbolTable;
+use crate::utils::ToLspPosition;
+use rg::ast::{Game, Identifier};
+use rg::position::{Position, Positioned};
 use tower_lsp::lsp_types::{
-    SemanticToken, SemanticTokenModifier, SemanticTokenType, SemanticTokensLegend,
-    SemanticTokensOptions, SemanticTokensServerCapabilities, WorkDoneProgressOptions,
+    Position as LspPosition, SemanticToken, SemanticTokenModifier, SemanticTokenType,
+    SemanticTokensLegend, SemanticTokensOptions, SemanticTokensServerCapabilities,
+    WorkDoneProgressOptions,
 };
-
-use rg::{
-    ast::{Game, Identifier},
-    position::*,
-};
-
-use crate::rg::{ast_features::AstFeatures, symbol::Flag, symbol_table::*};
-
-use tower_lsp::lsp_types::Position as LPos;
-
-use super::{document::Document, utils::ToLspPosition};
 
 pub fn capabilities() -> SemanticTokensServerCapabilities {
     SemanticTokensServerCapabilities::SemanticTokensOptions(SemanticTokensOptions {
@@ -63,7 +60,7 @@ fn semantic_token_modifier(token_modifier: SemanticTokenModifier) -> u32 {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct Token {
-    pos: LPos,
+    pos: LspPosition,
     len: u32,
     token_type: u32,
     token_modifier: u32,
@@ -77,7 +74,7 @@ struct Delta {
     column: u32,
 }
 impl Delta {
-    fn step(&mut self, pos: &LPos) {
+    fn step(&mut self, pos: &LspPosition) {
         let (d_line, d_column) = if pos.line == self.last_line {
             (0, pos.character - self.last_col_end)
         } else {

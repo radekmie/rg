@@ -1,9 +1,6 @@
+use crate::ast::Identifier;
+use crate::position::{Positioned, Span};
 use std::fmt::Display;
-
-use crate::{
-    ast::Identifier,
-    position::{Positioned, Span},
-};
 
 #[derive(Debug, Clone)]
 pub struct Error {

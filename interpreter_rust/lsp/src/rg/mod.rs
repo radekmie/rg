@@ -1,4 +1,4 @@
 pub mod ast_features;
-pub mod stat;
+pub mod statement;
 pub mod symbol;
 pub mod symbol_table;

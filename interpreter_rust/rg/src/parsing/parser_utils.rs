@@ -1,8 +1,7 @@
-use crate::ast::{Expression, Identifier};
-use crate::position::*;
-
 use super::error::Error;
 use super::parser::{Input, Result};
+use crate::ast::{Expression, Identifier};
+use crate::position::*;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while, take_while1};
 use nom::character::complete::{anychar, multispace1};
@@ -16,7 +15,7 @@ pub fn parse_error_line(input: Input) -> Result<()> {
     let error_pos = Span::from(&input);
     let (input, unexpected) = anychar(input)?;
     let error_msg = format!("unexpected character: `{}`", unexpected);
-    let err = Error::parser_error(error_pos, error_msg.to_string());
+    let err = Error::parser_error(error_pos, error_msg);
     input.extra.report_error(err);
     let (input, _) = take_while(|c| c != '\n')(input)?;
     Ok((input, ()))

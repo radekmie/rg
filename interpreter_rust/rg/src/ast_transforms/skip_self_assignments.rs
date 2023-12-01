@@ -1,7 +1,5 @@
-use crate::{
-    ast::{EdgeLabel, Error, Game},
-    position::Span,
-};
+use crate::ast::{EdgeLabel, Error, Game};
+use crate::position::Span;
 
 impl<Id: PartialEq> Game<Id> {
     pub fn skip_self_assignments(&mut self) -> Result<(), Error<Id>> {

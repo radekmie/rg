@@ -1,7 +1,6 @@
-use crate::utils::{ToRgPosition, ToRgSpan};
-
 use super::document::Document;
 use super::{code_actions, completions, features, semantic_tokens};
+use crate::utils::{ToRgPosition, ToRgSpan};
 use dashmap::DashMap;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;

@@ -1,14 +1,35 @@
 import { Intent } from '@blueprintjs/core';
 
 import { Bench } from './Bench';
+import { Editor } from './Editor';
 import { Graphviz } from './Graphviz';
 import { Loader } from './Loader';
 import { PrettyPrint } from './PrettyPrint';
 import { Settings } from './Settings';
 import { AnalyzedGame } from '../../parse';
-import { Editor } from '../editor/Editor';
 import { useApplicationState } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
+
+function extensionSwitcher(extension: string) {
+  return (path: string) => path.replace(/\.[^.]*?$/, extension);
+}
+
+const pathForView = {
+  Automaton: extensionSwitcher('.automaton'),
+  Bench: extensionSwitcher('.bench'),
+  Graphviz: extensionSwitcher('.gv'),
+  'AST.hrg': extensionSwitcher('.ast.hrg.json'),
+  'AST.rbg': extensionSwitcher('.ast.rbg.json'),
+  'AST.rg': extensionSwitcher('.ast.rg.json'),
+  'CST.hrg': extensionSwitcher('.cst.hrg.json'),
+  'CST.rbg': extensionSwitcher('.cst.rbg.json'),
+  'Source (result).hrg': extensionSwitcher('.result.hrg'),
+  'Source (source).hrg': extensionSwitcher('.source.hrg'),
+  'Source (result).rbg': extensionSwitcher('.result.rbg'),
+  'Source (source).rbg': extensionSwitcher('.source.rbg'),
+  'Source (result).rg': extensionSwitcher('.result.rg'),
+  'Source (source).rg': extensionSwitcher('.source.rg'),
+};
 
 const valueForView = {
   Automaton: (game: AnalyzedGame) => game.graphvizRg,
@@ -34,29 +55,6 @@ const valueForView = {
     ({ mode: 'rg', value: game.sourceRg } as const),
 };
 
-const switchExtension = (path: string, extension: string) => {
-  const parts = path.split('.');
-  parts[parts.length - 1] = extension;
-  return parts.join('.');
-};
-
-const pathForView = {
-  Automaton: (path: string) => switchExtension(path, 'automaton'),
-  Bench: (path: string) => switchExtension(path, 'bench'),
-  Graphviz: (path: string) => switchExtension(path, 'gv'),
-  'AST.hrg': (path: string) => switchExtension(path, 'ast.hrg.json'),
-  'AST.rbg': (path: string) => switchExtension(path, 'ast.rbg.json'),
-  'AST.rg': (path: string) => switchExtension(path, 'ast.rg.json'),
-  'CST.hrg': (path: string) => switchExtension(path, 'cst.hrg.json'),
-  'CST.rbg': (path: string) => switchExtension(path, 'cst.rbg.json'),
-  'Source (result).hrg': (path: string) => switchExtension(path, 'result.hrg'),
-  'Source (source).hrg': (path: string) => switchExtension(path, 'source.hrg'),
-  'Source (result).rbg': (path: string) => switchExtension(path, 'result.rbg'),
-  'Source (source).rbg': (path: string) => switchExtension(path, 'source.rbg'),
-  'Source (result).rg': (path: string) => switchExtension(path, 'result.rg'),
-  'Source (source).rg': (path: string) => switchExtension(path, 'source.rg'),
-};
-
 export function Application() {
   const {
     actions: { setPreset, setSettings, setSource, setView },
@@ -69,12 +67,7 @@ export function Application() {
   return (
     <>
       <section className={styles.panel}>
-        <Editor
-          path={path}
-          source={source}
-          onChange={setSource}
-          readonly={false}
-        />
+        <Editor onChange={setSource} path={path} source={source} />
       </section>
       <section className={styles.panel}>
         <Settings
@@ -113,8 +106,7 @@ export function Application() {
                   <Editor
                     path={pathForView[view](path)}
                     source={valueForView[view](game.value).value}
-                    onChange={() => undefined}
-                    readonly
+                    readOnly
                   />
                 );
               default:

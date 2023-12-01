@@ -1,19 +1,17 @@
-use std::collections::HashMap;
-
-use rg::position::Positioned;
-use tower_lsp::lsp_types::{
-    self as l, Diagnostic, GotoDefinitionResponse, Hover, Location, PrepareRenameResponse,
-    TextEdit, WorkspaceEdit,
-};
-use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
-
+use super::utils::ToLspRange;
 use crate::rg::ast_features::hover_signature;
-use crate::rg::symbol_table::*;
+use crate::rg::symbol_table::SymbolTable;
 use crate::utils::ToRgPosition;
 use rg::ast::{Game, Identifier};
 use rg::parsing::error::Error;
-
-use super::utils::ToLspRange;
+use rg::position::Positioned;
+use std::collections::HashMap;
+use tower_lsp::lsp_types::{
+    Diagnostic, DiagnosticSeverity, DocumentHighlight, GotoDefinitionResponse, Hover,
+    HoverContents, Location, MarkedString, Position, PrepareRenameResponse, TextEdit,
+    WorkspaceEdit,
+};
+use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
 
 #[allow(deprecated)]
 pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<DocumentSymbolResponse> {
@@ -24,7 +22,7 @@ pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<Document
         .map(|symbol| SymbolInformation {
             name: symbol.id.clone(),
             kind: (&symbol.flag).into(),
-            location: l::Location {
+            location: Location {
                 uri: uri.clone(),
                 range: symbol.pos.to_lsp(),
             },
@@ -38,7 +36,7 @@ pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<Document
 
 pub fn references(
     uri: &Url,
-    position: &l::Position,
+    position: &Position,
     symbol_table: &SymbolTable,
 ) -> Option<Vec<Location>> {
     let enclosing_symbol = symbol_table.get_symbol_at(&position.to_rg())?;
@@ -54,7 +52,7 @@ pub fn references(
 
 pub fn definitions(
     uri: &Url,
-    position: &l::Position,
+    position: &Position,
     symbol_table: &SymbolTable,
 ) -> Option<GotoDefinitionResponse> {
     let enclosing_symbol = symbol_table.get_symbol_at(&position.to_rg())?;
@@ -65,16 +63,16 @@ pub fn definitions(
 }
 
 pub fn document_highlight(
-    position: &l::Position,
+    position: &Position,
     symbol_table: &SymbolTable,
-) -> Option<Vec<l::DocumentHighlight>> {
+) -> Option<Vec<DocumentHighlight>> {
     let enclosing_symbol = symbol_table.get_symbol_at(&position.to_rg())?;
     let sym_idx = symbol_table.sym_idx(enclosing_symbol)?;
     let all_occurrences = symbol_table.all_symbol_occurences(sym_idx);
     Some(
         all_occurrences
             .iter()
-            .map(|occ| l::DocumentHighlight {
+            .map(|occ| DocumentHighlight {
                 range: occ.pos.to_lsp(),
                 kind: None,
             })
@@ -83,7 +81,7 @@ pub fn document_highlight(
 }
 
 pub fn prepare_rename(
-    position: &l::Position,
+    position: &Position,
     symbol_table: &SymbolTable,
 ) -> Option<PrepareRenameResponse> {
     let enclosing_occ = symbol_table.get_occ_at(&position.to_rg())?;
@@ -98,7 +96,7 @@ pub fn prepare_rename(
 
 pub fn rename(
     uri: &Url,
-    position: &l::Position,
+    position: &Position,
     symbol_table: &SymbolTable,
     new_name: String,
 ) -> Option<WorkspaceEdit> {
@@ -125,9 +123,9 @@ pub fn rename(
 pub fn diagnostics(errors: Vec<Error>) -> Vec<Diagnostic> {
     errors
         .iter()
-        .map(|Error { span, message, .. }| l::Diagnostic {
+        .map(|Error { span, message, .. }| Diagnostic {
             range: span.to_lsp(),
-            severity: Some(l::DiagnosticSeverity::ERROR),
+            severity: Some(DiagnosticSeverity::ERROR),
             source: Some("rg-lsp".into()),
             message: message.clone(),
             ..Diagnostic::default()
@@ -136,15 +134,15 @@ pub fn diagnostics(errors: Vec<Error>) -> Vec<Diagnostic> {
 }
 
 pub fn hover(
-    position: &l::Position,
+    position: &Position,
     symbol_table: &SymbolTable,
     game: &Game<Identifier>,
-) -> Option<l::Hover> {
+) -> Option<Hover> {
     let occ = symbol_table.get_occ_at(&position.to_rg())?;
     let pos = &occ.pos;
     let enclosing_symbol = symbol_table.get_occ_symbol(occ)?;
     let str = hover_signature(game, enclosing_symbol)?;
-    let contents = l::HoverContents::Array(vec![l::MarkedString::from_language_code(
+    let contents = HoverContents::Array(vec![MarkedString::from_language_code(
         "rg".to_string(),
         str,
     )]);

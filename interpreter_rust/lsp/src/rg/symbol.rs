@@ -1,15 +1,14 @@
+use rg::ast::*;
+use rg::position::{Positioned, Span};
 use std::collections::HashSet;
 use std::fmt::Display;
 
-use rg::ast::*;
-use rg::position::{Positioned, Span};
-
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Symbol {
-    pub id: String,
-    pub pos: Span,
     pub flag: Flag,
+    pub id: String,
     pub owners: Option<Vec<usize>>,
+    pub pos: Span,
 }
 
 impl Symbol {

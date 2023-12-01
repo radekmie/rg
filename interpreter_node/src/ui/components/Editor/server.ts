@@ -1,5 +1,5 @@
-import { FromServer, IntoServer } from '../../codec/codec';
-import init, { serve, ServerConfig } from '../../wasm/lsp_module';
+import { FromServer, IntoServer } from '../../../codec/codec';
+import init, { serve, ServerConfig } from '../../../wasm/lsp';
 
 export const initialize = async (
   intoServer: IntoServer,

@@ -3,7 +3,7 @@
 import * as jsrpc from 'json-rpc-2.0';
 import * as proto from 'vscode-languageserver-protocol';
 
-import { Codec, FromServer, IntoServer } from '../../codec/codec';
+import { Codec, FromServer, IntoServer } from '../../../codec/codec';
 
 export default class Client extends jsrpc.JSONRPCServerAndClient {
   afterInitializedHooks: (() => Promise<void>)[] = [];

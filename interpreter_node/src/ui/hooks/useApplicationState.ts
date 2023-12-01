@@ -7,9 +7,9 @@ import * as utils from '../../utils';
 import { presets } from '../const/presets';
 
 export type State = {
+  path: string;
   settings: Settings;
   source: string;
-  path: string;
   view: View;
 };
 
@@ -31,6 +31,7 @@ export type View =
 
 const initialPreset = presets[0];
 const initialState: State = {
+  path: initialPreset.name,
   settings: {
     extension: initialPreset.extension,
     flags: {
@@ -41,12 +42,11 @@ const initialState: State = {
     },
   },
   source: initialPreset.source,
-  path: initialPreset.name,
   view: 'Automaton',
 };
 
 export function useApplicationState() {
-  const [{ settings, source, path, view }, setState] = useState(initialState);
+  const [{ path, settings, source, view }, setState] = useState(initialState);
   const game = usePromise(() => parse(source, settings), [settings, source]);
   const actions = useMemo(
     () => ({
@@ -55,9 +55,9 @@ export function useApplicationState() {
         utils.assert(preset, `Unknown preset "${name}".`);
         setState(state => ({
           ...state,
+          path: preset.name,
           settings: { ...state.settings, extension: preset.extension },
           source: preset.source,
-          path: preset.name,
         }));
       },
       setSettings(modifier: (prev: Settings) => Settings) {
@@ -73,5 +73,5 @@ export function useApplicationState() {
     [],
   );
 
-  return { actions, game, settings, source, path, view };
+  return { actions, game, path, settings, source, view };
 }

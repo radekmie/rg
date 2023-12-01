@@ -1,5 +1,7 @@
+use super::error::Error;
+use super::parser_utils::*;
 use crate::ast::*;
-use crate::position::*;
+use crate::position::{Position, Positioned, Span};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
@@ -12,10 +14,6 @@ use nom_locate::LocatedSpan;
 use std::cell::RefCell;
 use std::fmt::Debug;
 use std::sync::Arc;
-
-use super::parser_utils::*;
-
-use super::error::Error;
 
 #[derive(Clone, Debug)]
 pub struct State<'a>(&'a RefCell<Vec<Error>>);
@@ -362,7 +360,7 @@ mod test {
                 .join("\n")
         );
         let game = game.to_string();
-        let game_str = game.strip_suffix("\n").unwrap();
+        let game_str = game.strip_suffix('\n').unwrap();
         assert!(
             game_str == input,
             "Failed to parse:\n{}\nExpected:\n{}",

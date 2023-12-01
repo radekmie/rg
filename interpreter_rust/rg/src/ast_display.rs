@@ -4,8 +4,6 @@ use std::fmt::{Display, Formatter, Result};
 impl Display for Identifier {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { identifier, .. } = self;
-        // let span = self.span();
-        // write!(f, "{span}{identifier}")
         write!(f, "{identifier}")
     }
 }

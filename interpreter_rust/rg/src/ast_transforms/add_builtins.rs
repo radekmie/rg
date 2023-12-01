@@ -1,7 +1,5 @@
-use crate::{
-    ast::{Error, ErrorReason, Game, Type, Typedef, Value, ValueEntry, Variable},
-    position::Span,
-};
+use crate::ast::{Error, ErrorReason, Game, Type, Typedef, Value, ValueEntry, Variable};
+use crate::position::Span;
 use std::sync::Arc;
 
 impl Game<Arc<str>> {

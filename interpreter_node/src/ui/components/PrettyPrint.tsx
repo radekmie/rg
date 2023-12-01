@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
+import { Editor } from './Editor';
 import { pretty } from '../../utils';
-import { Editor } from '../editor/Editor';
 
 export type PrettyPrintProps = { value: unknown };
 
@@ -25,7 +25,5 @@ export function PrettyPrint({ value }: PrettyPrintProps) {
     return ['result.json', JSON.stringify(value, null, 2)] as const;
   }, [value]);
 
-  return (
-    <Editor path={path} source={text} readonly onChange={() => undefined} />
-  );
+  return <Editor path={path} readOnly source={text} />;
 }

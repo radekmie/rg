@@ -3,10 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "postinstall": "monaco-treemending",
     "build": "parcel build --cache-dir node_modules/.cache/parcel",
     "check": "tsc --build",
     "lint": "eslint --ext ts,tsx --fix src",
+    "postinstall": "monaco-treemending",
     "start": "parcel serve --cache-dir node_modules/.cache/parcel --dist-dir lib/ui --target ui",
     "test": "vitest",
     "watch": "parcel watch --cache-dir node_modules/.cache/parcel"
@@ -16,21 +16,24 @@
     "@codingame/monaco-vscode-files-service-override": "1.83.5",
     "@hpcc-js/wasm": "2.2.0",
     "@parcel/transformer-inline-string": "2.8.3",
+    "@types/lodash": "4.14.202",
     "@types/node": "18.11.10",
     "@types/react": "18.0.25",
     "@types/react-dom": "18.0.9",
     "@types/react-svg-pan-zoom": "3.3.5",
+    "@types/vscode": "1.83.2",
     "@vitest/web-worker": "0.28.4",
     "buffer": "5.7.1",
     "chevrotain": "10.4.2",
     "commander": "9.4.1",
     "eslint-config-vazco": "7.1.0",
-    "json-rpc-2.0": "^1.6.0",
+    "json-rpc-2.0": "1.6.0",
     "lodash": "4.17.21",
     "monaco-editor": "npm:@codingame/monaco-editor-treemended@1.83.5",
     "normalize.css": "8.0.1",
     "p-limit": "3.1.0",
     "parcel": "2.8.3",
+    "path-browserify": "1.0.1",
     "process": "0.11.10",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -40,9 +43,17 @@
     "util": "0.12.5",
     "vitest": "0.28.4",
     "vscode": "npm:@codingame/monaco-vscode-api@1.83.5",
-    "vscode-jsonrpc": "^8.2.0",
-    "vscode-languageserver-protocol": "^3.17.5",
+    "vscode-jsonrpc": "8.2.0",
+    "vscode-languageserver-protocol": "3.17.5",
     "web-worker": "1.2.0"
+  },
+  "overrides": {
+    "monaco-editor": "$monaco-editor",
+    "vscode": "$vscode"
+  },
+  "resolutions": {
+    "monaco-editor": "npm:@codingame/monaco-editor-treemended@1.83.5",
+    "vscode": "npm:@codingame/monaco-vscode-api@1.83.5"
   },
   "targets": {
     "cli": {
@@ -64,18 +75,5 @@
       "source": "src/ui/index.html",
       "sourceMap": false
     }
-  },
-  "devDependencies": {
-    "@types/lodash": "4.14.202",
-    "@types/vscode": "^1.83.2",
-    "path-browserify": "^1.0.1"
-  },
-  "overrides": {
-    "monaco-editor": "$monaco-editor",
-    "vscode": "$vscode"
-  },
-  "resolutions": {
-    "monaco-editor": "npm:@codingame/monaco-editor-treemended@1.83.5",
-    "vscode": "npm:@codingame/monaco-vscode-api@1.83.5"
   }
 }
