@@ -50,6 +50,17 @@ export function createEditor(
     theme: 'rgTheme',
   });
 
+  /* eslint-disable no-bitwise -- Disable the command palette */
+  editor.addCommand(
+    monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyP,
+    () => undefined,
+  );
+  editor.addCommand(
+    monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyP,
+    () => undefined,
+  );
+  /* eslint-enable -- Disable the command palette */
+
   editor.onDidChangeModelContent(() => {
     const model = editor.getModel();
 
