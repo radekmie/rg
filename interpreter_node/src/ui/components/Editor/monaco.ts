@@ -5,7 +5,6 @@ import {
 } from '@codingame/monaco-vscode-files-service-override';
 import * as monaco from 'monaco-editor';
 import EditorWorker from 'url:monaco-editor/esm/vs/editor/editor.worker.js';
-import * as vscode from 'vscode';
 import { createConfiguredEditor } from 'vscode/monaco';
 import * as proto from 'vscode-languageserver-protocol';
 
@@ -19,7 +18,7 @@ registerFileSystemOverlay(1, fileSystemProvider);
 
 export function createModel(path: string, content: string) {
   const filePath = `/workspace/${path}`;
-  const file = new RegisteredMemoryFile(vscode.Uri.file(filePath), '');
+  const file = new RegisteredMemoryFile(monaco.Uri.file(filePath), '');
   fileSystemProvider.registerFile(file);
 
   const uri = monaco.Uri.parse(filePath);
