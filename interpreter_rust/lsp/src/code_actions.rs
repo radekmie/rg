@@ -31,7 +31,7 @@ fn split_edge(
         .iter()
         .find(|edge| edge.span().encloses_span(span))?;
     let line = edge.span().line_at(text)?;
-    let left_split = edge.rhs.span().start.is_after(&span.end);
+    let left_split = edge.rhs.span().start > span.end;
     let comma_pos = line.find(',')?;
     let (lhs, rhs_with_label) = line.split_at(comma_pos);
     let new_text = if left_split {

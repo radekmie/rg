@@ -35,10 +35,6 @@ impl Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "({},{}): {}",
-            self.span.start, self.span.end, self.message
-        )
+        write!(f, "{}: {}", self.span, self.message)
     }
 }

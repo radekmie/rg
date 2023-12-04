@@ -3,21 +3,13 @@ use map_id::MapId;
 use nom_locate::LocatedSpan;
 use std::cmp::Ordering;
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialOrd, Ord, PartialEq, Eq)]
 pub struct Position {
     pub line: usize,
     pub column: usize,
 }
 
 impl Position {
-    pub fn equal_pos(&self, other: &Self) -> bool {
-        self.line == other.line && self.column == other.column
-    }
-
-    pub fn is_after(&self, other: &Self) -> bool {
-        self.line > other.line || (self.line == other.line && self.column > other.column)
-    }
-
     pub fn is_none(&self) -> bool {
         self.line == 0 && self.column == 0
     }
@@ -75,7 +67,7 @@ impl Span {
     }
 
     pub fn equal_span(&self, other: &Span) -> bool {
-        self.start.equal_pos(&other.start) && self.end.equal_pos(&other.end)
+        self.start == other.start && self.end == other.end
     }
 
     pub fn focus_end(self) -> Self {
@@ -90,10 +82,6 @@ impl Span {
             start: self.start,
             end: self.start,
         }
-    }
-
-    pub fn is_after(&self, other: &Span) -> bool {
-        self.start.is_after(&other.start)
     }
 
     pub fn is_none(&self) -> bool {

@@ -12,7 +12,7 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 pub fn parse_error_line(input: Input) -> Result<()> {
-    let error_pos = Span::from(&input);
+    let error_pos = Span::at(&input);
     let (input, unexpected) = anychar(input)?;
     let error_msg = format!("unexpected character: `{}`", unexpected);
     let err = Error::parser_error(error_pos, error_msg);

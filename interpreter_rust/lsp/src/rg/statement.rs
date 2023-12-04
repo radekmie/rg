@@ -18,7 +18,7 @@ impl Statement for Constant<Identifier> {
             CompletionKind::None
         } else if self.type_.span().encloses_position(pos) {
             CompletionKind::Type
-        } else if self.value.span().encloses_position(pos) || pos.is_after(&self.value.end()) {
+        } else if self.value.span().encloses_position(pos) || pos > &self.value.end() {
             CompletionKind::Value
         } else {
             CompletionKind::Any
@@ -40,7 +40,7 @@ impl Statement for Edge<Identifier> {
             completion_kind_edge_name(pos, &self.lhs)
         } else if self.rhs.span().encloses_position(pos) {
             completion_kind_edge_name(pos, &self.rhs)
-        } else if self.label.span().encloses_position(pos) || pos.is_after(&self.label.end()) {
+        } else if self.label.span().encloses_position(pos) || pos > &self.label.end() {
             match self.label {
                 EdgeLabel::Assignment { .. } => CompletionKind::Variable,
                 EdgeLabel::Comparison { .. } => CompletionKind::Variable,
@@ -99,7 +99,7 @@ impl Statement for Typedef<Identifier> {
     fn completion_kind(&self, pos: &Position) -> CompletionKind {
         if self.identifier.span().encloses_position(pos) {
             CompletionKind::None
-        } else if self.type_.span().encloses_position(pos) || pos.is_after(&self.type_.end()) {
+        } else if self.type_.span().encloses_position(pos) || pos > &self.type_.end() {
             match self.type_.as_ref() {
                 Type::Set { .. } => CompletionKind::None,
                 _ => CompletionKind::Type,
@@ -125,7 +125,7 @@ impl Statement for Variable<Identifier> {
         } else if self.type_.span().encloses_position(pos) {
             CompletionKind::Type
         } else if self.default_value.span().encloses_position(pos)
-            || pos.is_after(&self.default_value.end())
+            || pos > &self.default_value.end()
         {
             CompletionKind::Value
         } else {
@@ -152,7 +152,7 @@ fn completion_kind_edge_name(pos: &Position, edge_name: &EdgeName<Identifier>) -
                 EdgeNamePart::Binding {
                     identifier, type_, ..
                 } if identifier.span().encloses_position(pos)
-                    || !type_.span().start.is_after(&identifier.span().end) =>
+                    || type_.span().start <= identifier.span().end =>
                 {
                     CompletionKind::Param
                 }

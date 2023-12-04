@@ -294,7 +294,11 @@ impl<Id: Display> Display for Variable<Id> {
 impl Display for Span {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { start, end } = self;
-        write!(f, "({},{})", start, end)
+        if start == end {
+            write!(f, "({})", start)
+        } else {
+            write!(f, "({},{})", start, end)
+        }
     }
 }
 
