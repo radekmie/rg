@@ -29,7 +29,7 @@
     "eslint-config-vazco": "7.1.0",
     "json-rpc-2.0": "1.6.0",
     "lodash": "4.17.21",
-    "monaco-editor": "npm:@codingame/monaco-editor-treemended@1.83.5",
+    "monaco-editor": "^0.44.0",
     "normalize.css": "8.0.1",
     "p-limit": "3.1.0",
     "parcel": "2.8.3",
@@ -48,11 +48,9 @@
     "web-worker": "1.2.0"
   },
   "overrides": {
-    "monaco-editor": "$monaco-editor",
     "vscode": "$vscode"
   },
   "resolutions": {
-    "monaco-editor": "npm:@codingame/monaco-editor-treemended@1.83.5",
     "vscode": "npm:@codingame/monaco-vscode-api@1.83.5"
   },
   "targets": {
