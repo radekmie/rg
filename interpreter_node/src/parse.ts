@@ -4,7 +4,7 @@ import * as hrg from './hrg';
 import * as rbg from './rbg';
 import * as rg from './rg';
 import * as translators from './translators';
-import { Extension, Settings } from './types';
+import { Language, Settings } from './types';
 import * as utils from './utils';
 import * as wasm from './wasm';
 
@@ -92,11 +92,11 @@ async function analyzeRg(source: string, { flags }: Settings) {
 
 export function parse(source: string, settings: Settings) {
   switch (settings.extension) {
-    case Extension.hrg:
+    case Language.hrg:
       return analyzeHrg(source, settings);
-    case Extension.rbg:
+    case Language.rbg:
       return analyzeRbg(source, settings);
-    case Extension.rg:
+    case Language.rg:
       return analyzeRg(source, settings);
   }
 }

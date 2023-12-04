@@ -11,23 +11,23 @@ import KnightthroughRbg from 'bundle-text:../../../../examples/knightthrough.rbg
 import TicTacToeRbg from 'bundle-text:../../../../examples/ticTacToe.rbg';
 import TicTacToeRg from 'bundle-text:../../../../examples/ticTacToe.rg';
 
-import { Extension } from '../../types';
+import { Language } from '../../types';
 
 export const presets = [
-  ['Amazons (naive)', AmazonsNaiveHrg, Extension.hrg] as const,
-  ['Amazons (smart)', AmazonsSmartHrg, Extension.hrg] as const,
-  ['Breakthrough', BreakthroughHrg, Extension.hrg] as const,
-  ['Breakthrough', BreakthroughRbg, Extension.rbg] as const,
-  ['Breakthrough', BreakthroughRg, Extension.rg] as const,
-  ['Connect4', Connect4Hrg, Extension.hrg] as const,
-  ['Hex2', Hex2Rbg, Extension.rbg] as const,
-  ['Hex9', Hex9Rbg, Extension.rbg] as const,
-  ['Knightthrough', KnightthroughHrg, Extension.hrg] as const,
-  ['Knightthrough', KnightthroughRbg, Extension.rbg] as const,
-  ['TicTacToe', TicTacToeRbg, Extension.rbg] as const,
-  ['TicTacToe', TicTacToeRg, Extension.rg] as const,
+  ['Amazons (naive)', AmazonsNaiveHrg, Language.hrg] as const,
+  ['Amazons (smart)', AmazonsSmartHrg, Language.hrg] as const,
+  ['Breakthrough', BreakthroughHrg, Language.hrg] as const,
+  ['Breakthrough', BreakthroughRbg, Language.rbg] as const,
+  ['Breakthrough', BreakthroughRg, Language.rg] as const,
+  ['Connect4', Connect4Hrg, Language.hrg] as const,
+  ['Hex2', Hex2Rbg, Language.rbg] as const,
+  ['Hex9', Hex9Rbg, Language.rbg] as const,
+  ['Knightthrough', KnightthroughHrg, Language.hrg] as const,
+  ['Knightthrough', KnightthroughRbg, Language.rbg] as const,
+  ['TicTacToe', TicTacToeRbg, Language.rbg] as const,
+  ['TicTacToe', TicTacToeRg, Language.rg] as const,
 ].map(([name, source, extension]) => ({
-  name: `${name}${extension}`,
+  name: `${name}.${extension}`,
   source,
   extension,
 }));

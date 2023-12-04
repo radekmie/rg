@@ -1152,6 +1152,7 @@ function translateCondition(
             `Unknown condition function ${expression.expression.identifier}`,
           );
       }
+      break;
     }
     case 'ExpressionConstructor':
       throw new Error('Not implemented (ExpressionConstructor).');

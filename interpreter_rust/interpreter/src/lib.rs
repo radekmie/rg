@@ -1,20 +1,16 @@
 use js_sys::{Array, Function};
 use map_id::MapId;
-use nom::combinator::all_consuming;
-use nom::error::convert_error;
-use nom::Finish;
 use rand::thread_rng;
-use rg::ast::Game;
 use rg::ist;
 use rg::ist_tools::Interner;
-use rg::parser::game;
+use rg::{ast::Game, parsing::parser::parse_with_errors};
 use serde::Deserialize;
 use serde_json::{from_str, to_string};
-use std::rc::Rc;
+use std::sync::Arc;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 pub fn prepare_ist(
-    mut game: Game<Rc<str>>,
+    mut game: Game<Arc<str>>,
 ) -> Result<(ist::Game<ist::RuntimeId>, Interner<ist::RuntimeId>), String> {
     game.expand_generator_nodes()?;
     let mut interner = Interner::default();
@@ -22,22 +18,26 @@ pub fn prepare_ist(
     Ok((game, interner))
 }
 
-pub fn safe_parse_ast(ast: &str) -> Result<Game<Rc<str>>, String> {
-    from_str::<Game<Rc<str>>>(ast).map_err(|error| error.to_string())
+pub fn safe_parse_ast(ast: &str) -> Result<Game<Arc<str>>, String> {
+    from_str::<Game<Arc<str>>>(ast).map_err(|error| error.to_string())
 }
 
-pub fn safe_parse_source(source: &str) -> Result<Game<Rc<str>>, String> {
-    match all_consuming(game)(source).finish() {
-        Ok((_, game)) => {
-            let mut game = game.map_id(&mut |id| Rc::from(*id));
-            game.add_builtins()?;
-            Ok(game)
-        }
-        Err(error) => Err(convert_error(source, error)),
+pub fn safe_parse_source(source: &str) -> Result<Game<Arc<str>>, String> {
+    let (game, errors) = parse_with_errors(source);
+    if errors.is_empty() {
+        let mut game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
+        game.add_builtins()?;
+        Ok(game)
+    } else {
+        Err(errors
+            .into_iter()
+            .map(|error| format!("{}", error))
+            .collect::<Vec<_>>()
+            .join("\n"))
     }
 }
 
-pub fn safe_serialize_ast(game: Game<Rc<str>>) -> Result<String, String> {
+pub fn safe_serialize_ast(game: Game<Arc<str>>) -> Result<String, String> {
     to_string(&game).map_err(|error| error.to_string())
 }
 

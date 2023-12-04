@@ -4,8 +4,9 @@ debug = true
 [workspace]
 members = [
   "interpreter",
+  "lsp",
+  "lsp_browser",
   "map_id",
   "map_id_macro",
-  "parser_utils",
   "rg",
 ]

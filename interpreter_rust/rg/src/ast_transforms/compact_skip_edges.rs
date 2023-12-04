@@ -1,9 +1,9 @@
 use crate::ast::{Edge, Error, Game};
 use std::collections::{BTreeMap, BTreeSet};
-use std::rc::Rc;
+use std::sync::Arc;
 
-impl Game<Rc<str>> {
-    pub fn compact_skip_edges(&mut self) -> Result<(), Error<Rc<str>>> {
+impl Game<Arc<str>> {
+    pub fn compact_skip_edges(&mut self) -> Result<(), Error<Arc<str>>> {
         if !self.are_bindings_unique() {
             self.make_bindings_unique();
         }
@@ -163,7 +163,7 @@ impl Game<Rc<str>> {
                 index += 1;
 
                 // TODO: All `bind_*` bindings should be renamed before for safety.
-                let fresh: Rc<str> = Rc::from(format!("bind_{index}"));
+                let fresh: Arc<str> = Arc::from(format!("bind_{index}"));
                 let mapping = BTreeMap::from([(binding.clone(), fresh.clone())]);
                 for y in get_edges_using_binding(edges, x, binding) {
                     mapped.insert((y, fresh.clone()));
@@ -207,14 +207,14 @@ fn get_edges_using_binding(
 #[cfg(test)]
 mod test {
     use crate::ast::Game;
-    use crate::parser::game;
+    use crate::parsing::parser::parse_with_errors;
     use map_id::MapId;
-    use nom::combinator::all_consuming;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
-    fn parse(input: &str) -> Game<Rc<str>> {
-        let (_, game) = all_consuming(game)(input).unwrap();
-        game.map_id(&mut |id| Rc::from(*id))
+    fn parse(input: &str) -> Game<Arc<str>> {
+        let (game, errors) = parse_with_errors(input);
+        assert!(errors.is_empty(), "Parse errors: {:?}", errors);
+        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
     }
 
     macro_rules! test {

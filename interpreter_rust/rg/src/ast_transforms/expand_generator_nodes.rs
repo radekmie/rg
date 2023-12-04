@@ -1,8 +1,8 @@
 use crate::ast::{Error, Game};
-use std::rc::Rc;
+use std::sync::Arc;
 
-impl Game<Rc<str>> {
-    pub fn expand_generator_nodes(&mut self) -> Result<(), Error<Rc<str>>> {
+impl Game<Arc<str>> {
+    pub fn expand_generator_nodes(&mut self) -> Result<(), Error<Arc<str>>> {
         macro_rules! substitute_bindings {
             ($list:expr) => {
                 for index in (0..$list.len()).rev() {
@@ -28,14 +28,14 @@ impl Game<Rc<str>> {
 #[cfg(test)]
 mod test {
     use crate::ast::Game;
-    use crate::parser::game;
+    use crate::parsing::parser::parse_with_errors;
     use map_id::MapId;
-    use nom::combinator::all_consuming;
-    use std::rc::Rc;
+    use std::sync::Arc;
 
-    fn parse(input: &str) -> Game<Rc<str>> {
-        let (_, game) = all_consuming(game)(input).unwrap();
-        game.map_id(&mut |id| Rc::from(*id))
+    fn parse(input: &str) -> Game<Arc<str>> {
+        let (game, errors) = parse_with_errors(input);
+        assert!(errors.is_empty(), "Parse errors: {:?}", errors);
+        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
     }
 
     macro_rules! test {

@@ -1,7 +1,7 @@
 use crate::ast::{
     Constant, Edge, EdgeLabel, Error, ErrorReason, Game, Type, Value, ValueEntry, Variable,
 };
-use std::rc::Rc;
+use std::sync::Arc;
 
 impl<Id: Clone + PartialEq> Constant<Id> {
     pub fn check_type(&self, game: &Game<Id>) -> Result<(), Error<Id>> {
@@ -60,7 +60,7 @@ impl<Id: Clone + PartialEq> Game<Id> {
 }
 
 impl<Id: Clone + PartialEq> Value<Id> {
-    pub fn check_type(&self, game: &Game<Id>, type_: &Rc<Type<Id>>) -> Result<(), Error<Id>> {
+    pub fn check_type(&self, game: &Game<Id>, type_: &Arc<Type<Id>>) -> Result<(), Error<Id>> {
         match self {
             Self::Element { identifier } => {
                 if !game.is_assignable_identifier(type_, identifier, false)? {
@@ -70,15 +70,19 @@ impl<Id: Clone + PartialEq> Value<Id> {
                     });
                 }
             }
-            Self::Map { entries } => {
+            Self::Map { entries, .. } => {
                 let Type::Arrow {
                     lhs: key_type,
                     rhs: value_type,
-                } = type_.resolve(game)? else {
+                } = type_.resolve(game)?
+                else {
                     return game.make_error(ErrorReason::ArrowTypeExpected { got: type_.clone() });
                 };
 
-                for ValueEntry { identifier, value } in entries {
+                for ValueEntry {
+                    identifier, value, ..
+                } in entries
+                {
                     value.check_type(game, value_type)?;
                     if let Some(identifier) = identifier {
                         if !game.is_assignable_identifier(key_type, identifier, false)? {

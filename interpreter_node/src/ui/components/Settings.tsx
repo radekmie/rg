@@ -9,7 +9,7 @@ import {
 } from '@blueprintjs/core';
 import { ChangeEvent, FormEvent, useCallback, useMemo } from 'react';
 
-import { Extension, Flag, Settings } from '../../types';
+import { Language, Flag, Settings } from '../../types';
 import { presets } from '../const/presets';
 import { useApplicationState, View } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
@@ -35,7 +35,7 @@ export function Settings({
 }: SettingsProps) {
   const onExtension = useCallback(
     ({ currentTarget: { value } }: FormEvent<HTMLInputElement>) => {
-      setSettings(x => ({ ...x, extension: value as Extension }));
+      setSettings(x => ({ ...x, extension: value as Language }));
     },
     [setSettings],
   );
@@ -61,8 +61,8 @@ export function Settings({
     [setView],
   );
 
-  const isHrg = settings.extension === Extension.hrg;
-  const isRbg = settings.extension === Extension.rbg;
+  const isHrg = settings.extension === Language.hrg;
+  const isRbg = settings.extension === Language.rbg;
 
   const availableFlags = useMemo<{ value: Flag; disabled?: boolean }[]>(
     () => [
@@ -125,9 +125,9 @@ export function Settings({
           onChange={onExtension}
           selectedValue={settings.extension}
         >
-          <Radio label="hrg" value={Extension.hrg} />
-          <Radio label="rbgᵝ" value={Extension.rbg} />
-          <Radio label="rg" value={Extension.rg} />
+          <Radio label="hrg" value={Language.hrg} />
+          <Radio label="rbgᵝ" value={Language.rbg} />
+          <Radio label="rg" value={Language.rg} />
         </RadioGroup>
         {availableFlags.map(({ disabled, value }, index) => (
           <div className={styles.options} key={value}>

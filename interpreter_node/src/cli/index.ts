@@ -4,7 +4,7 @@ import path from 'path';
 
 import { AnalyzedGame, parse } from '../parse';
 import * as rg from '../rg';
-import { Extension } from '../types';
+import { Language } from '../types';
 import * as utils from '../utils';
 
 program
@@ -48,11 +48,11 @@ function addCommand(
       } = input.pop() as Command;
 
       const options = parent?.opts() ?? {};
-      const extension = path.extname(file);
+      const extension = path.extname(file).slice(1);
       if (
-        extension !== Extension.hrg &&
-        extension !== Extension.rbg &&
-        extension !== Extension.rg
+        extension !== Language.hrg &&
+        extension !== Language.rbg &&
+        extension !== Language.rg
       ) {
         throw new Error(`Unknown extension "${extension}".`);
       }

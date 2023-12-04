@@ -7,15 +7,29 @@ import { Loader } from './Loader';
 import { PrettyPrint } from './PrettyPrint';
 import { Settings } from './Settings';
 import { AnalyzedGame } from '../../parse';
-import { Extension } from '../../types';
 import { useApplicationState } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
 
-const extensionToMode = {
-  [Extension.hrg]: 'hrg',
-  [Extension.rbg]: 'rbg',
-  [Extension.rg]: 'rg',
-} as const;
+function extensionSwitcher(extension: string) {
+  return (path: string) => path.replace(/\.[^.]*?$/, extension);
+}
+
+const pathForView = {
+  Automaton: extensionSwitcher('.automaton'),
+  Bench: extensionSwitcher('.bench'),
+  Graphviz: extensionSwitcher('.gv'),
+  'AST.hrg': extensionSwitcher('.ast.hrg.json'),
+  'AST.rbg': extensionSwitcher('.ast.rbg.json'),
+  'AST.rg': extensionSwitcher('.ast.rg.json'),
+  'CST.hrg': extensionSwitcher('.cst.hrg.json'),
+  'CST.rbg': extensionSwitcher('.cst.rbg.json'),
+  'Source (result).hrg': extensionSwitcher('.result.hrg'),
+  'Source (source).hrg': extensionSwitcher('.source.hrg'),
+  'Source (result).rbg': extensionSwitcher('.result.rbg'),
+  'Source (source).rbg': extensionSwitcher('.source.rbg'),
+  'Source (result).rg': extensionSwitcher('.result.rg'),
+  'Source (source).rg': extensionSwitcher('.source.rg'),
+};
 
 const valueForView = {
   Automaton: (game: AnalyzedGame) => game.graphvizRg,
@@ -47,17 +61,13 @@ export function Application() {
     game,
     settings,
     source,
+    path,
     view,
   } = useApplicationState();
-
   return (
     <>
       <section className={styles.panel}>
-        <Editor
-          onChange={setSource}
-          mode={extensionToMode[settings.extension]}
-          value={source}
-        />
+        <Editor onChange={setSource} path={path} source={source} />
       </section>
       <section className={styles.panel}>
         <Settings
@@ -92,7 +102,13 @@ export function Application() {
               case 'Source (source).hrg':
               case 'Source (source).rbg':
               case 'Source (source).rg':
-                return <Editor {...valueForView[view](game.value)} />;
+                return (
+                  <Editor
+                    path={pathForView[view](path)}
+                    source={valueForView[view](game.value).value}
+                    readOnly
+                  />
+                );
               default:
                 return <PrettyPrint value={valueForView[view](game.value)} />;
             }
