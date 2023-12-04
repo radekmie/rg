@@ -52,12 +52,16 @@ export function createEditor(
 
   editor.onDidChangeModelContent(() => {
     const model = editor.getModel();
-    if (model?.getLanguageId() !== Language.rg) {
+
+    if (!model) {
       return;
     }
-
     const text = model.getValue();
     onChange?.(text);
+
+    if (model.getLanguageId() !== Language.rg) {
+      return;
+    }
 
     client.notify(proto.DidChangeTextDocumentNotification.type.method, {
       textDocument: {
