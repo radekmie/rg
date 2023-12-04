@@ -67,7 +67,7 @@
       "context": "browser",
       "distDir": "lib/ui",
       "engines": {
-        "browsers": "> 1% and not dead"
+        "browsers": "Chrome >= 118, Safari >= 17"
       },
       "publicUrl": ".",
       "source": "src/ui/index.html",

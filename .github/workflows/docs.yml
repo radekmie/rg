@@ -19,9 +19,9 @@ jobs:
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - name: Install
         run: npm --prefix interpreter_node ci
-      - name: Build WASM module
+      - name: Build `interpreter` WASM module
         run: wasm-pack build --out-dir ../../interpreter_node/src/wasm/interpreter --out-name index --target web interpreter_rust/interpreter
-      - name: Build WASM LSP module
+      - name: Build `lsp_browser` WASM module
         run: wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp --out-name index --target web interpreter_rust/lsp_browser
       - name: Build docs
         run: npm --prefix interpreter_node run build
