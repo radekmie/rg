@@ -16,11 +16,11 @@ export const language = <monaco.languages.IMonarchLanguage>{
           },
         },
       ],
+      [/\/\/.*$/, 'comment'],
       [/[A-Z][a-zA-Z0-9_]*/, 'type.identifier'], // to show class names nicely
       [/[{}()[\]]/, '@brackets'],
       [/[:;,.]/, 'delimiter'],
       [/@symbols/, { cases: { '@operators': 'operator', '@default': '' } }],
-      [/\/\/.*$/, 'comment'],
       [/[ \t\r\n]+/, 'white'],
       [/@[\w]+/, 'macro'],
     ],

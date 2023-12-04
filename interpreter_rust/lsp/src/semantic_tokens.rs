@@ -4,7 +4,7 @@ use crate::rg::symbol::Flag;
 use crate::rg::symbol_table::SymbolTable;
 use crate::utils::ToLspPosition;
 use rg::ast::{Game, Identifier};
-use rg::position::{Position, Positioned};
+use rg::position::Positioned;
 use tower_lsp::lsp_types::{
     Position as LspPosition, SemanticToken, SemanticTokenModifier, SemanticTokenType,
     SemanticTokensLegend, SemanticTokensOptions, SemanticTokensServerCapabilities,
@@ -88,10 +88,9 @@ impl Delta {
 }
 
 pub fn semantic_tokens_full(document: &Document) -> Vec<SemanticToken> {
-    let comments = comment_tokens(document.text.as_str());
     let keywords = ast_tokens(&document.game);
     let symbols = symbol_table_tokens(&document.symbol_table);
-    let mut tokens = [&comments[..], &keywords[..], &symbols[..]].concat();
+    let mut tokens = [&keywords[..], &symbols[..]].concat();
     tokens.sort_by_key(|t| t.pos);
     let mut delta = Delta::default();
     tokens
@@ -124,27 +123,6 @@ fn ast_tokens(game: &Game<Identifier>) -> Vec<Token> {
             tokens.push(token);
         }
     });
-    tokens
-}
-
-fn comment_tokens(text: &str) -> Vec<Token> {
-    let mut tokens = Vec::new();
-    for (line_idx, line) in text.lines().enumerate() {
-        if let Some(col) = line.find("//") {
-            let token = Token {
-                pos: Position {
-                    line: line_idx + 1,
-                    column: col + 1,
-                }
-                .to_lsp(),
-                len: (line.len() - col) as u32,
-                token_type: semantic_token_type("comment"),
-                token_modifier: 0,
-            };
-            tokens.push(token);
-        }
-    }
-
     tokens
 }
 
