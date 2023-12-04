@@ -3,6 +3,7 @@ use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::fmt::Display;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
@@ -318,6 +319,13 @@ impl<Id: Clone + Ord> EdgeNamePart<Id> {
 pub struct Error<Id> {
     pub game: Game<Id>,
     pub reason: ErrorReason<Id>,
+}
+
+// Simplify error handling in WASM modules.
+impl<Id: Display> From<Error<Id>> for String {
+    fn from(error: Error<Id>) -> Self {
+        format!("{error}")
+    }
 }
 
 #[derive(Debug)]

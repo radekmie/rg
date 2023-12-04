@@ -3,7 +3,7 @@ import path from 'path';
 import { describe, expect, test } from 'vitest';
 
 import { parse } from './parse';
-import { Language, Flag, noFlagsEnabled } from './types';
+import { Flag, Language, noFlagsEnabled } from './types';
 import * as wasm from './wasm';
 
 describe('bench', () => {

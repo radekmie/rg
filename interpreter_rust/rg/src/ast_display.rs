@@ -1,12 +1,6 @@
-use crate::{ast::*, position::*};
+use crate::ast::*;
+use crate::position::{Position, Span};
 use std::fmt::{Display, Formatter, Result};
-
-impl Display for Identifier {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let Self { identifier, .. } = self;
-        write!(f, "{identifier}")
-    }
-}
 
 impl<Id: Display> Display for Constant<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
@@ -124,12 +118,6 @@ impl<Id: Display> Display for Error<Id> {
     }
 }
 
-impl<Id: Display> From<Error<Id>> for String {
-    fn from(error: Error<Id>) -> Self {
-        format!("{}", error)
-    }
-}
-
 impl<Id: Display> Display for ErrorReason<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
@@ -214,6 +202,20 @@ impl<Id: Display> Display for Game<Id> {
     }
 }
 
+impl Display for Identifier {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let Self { identifier, .. } = self;
+        write!(f, "{identifier}")
+    }
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let Self { line, column } = self;
+        write!(f, "{line}:{column}")
+    }
+}
+
 impl<Id: Display> Display for Pragma<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
@@ -221,6 +223,17 @@ impl<Id: Display> Display for Pragma<Id> {
             Self::Disjoint { edge_name, .. } => write!(f, "@disjoint {edge_name};"),
             Self::MultiAny { edge_name, .. } => write!(f, "@multiAny {edge_name};"),
             Self::Unique { edge_name, .. } => write!(f, "@unique {edge_name};"),
+        }
+    }
+}
+
+impl Display for Span {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let Self { start, end } = self;
+        if start == end {
+            write!(f, "({start})")
+        } else {
+            write!(f, "({start}, {end})")
         }
     }
 }
@@ -288,23 +301,5 @@ impl<Id: Display> Display for Variable<Id> {
             ..
         } = self;
         write!(f, "var {identifier}: {type_} = {default_value};",)
-    }
-}
-
-impl Display for Span {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let Self { start, end } = self;
-        if start == end {
-            write!(f, "({})", start)
-        } else {
-            write!(f, "({},{})", start, end)
-        }
-    }
-}
-
-impl Display for Position {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let Self { line, column } = self;
-        write!(f, "{}:{}", line, column)
     }
 }

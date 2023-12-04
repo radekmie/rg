@@ -101,10 +101,10 @@ cargo fmt
 # Lint the project.
 cargo clippy
 
-# Build WASM for `interpreter_node`.
+# Build the `interpreter` WASM module.
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/interpreter --out-name index --target web interpreter
 
-# Build WASM for LSP module
+# Build the `interpreter` LSP module.
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp --out-name index --target web lsp_browser
 ```
 

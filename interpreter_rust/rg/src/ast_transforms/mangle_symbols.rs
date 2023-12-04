@@ -1,11 +1,11 @@
 use crate::ast::{Error, Game};
 use map_id::MapId;
 use std::collections::BTreeMap;
-use std::rc::Rc;
 use std::str::from_utf8;
+use std::sync::Arc;
 
 const ALPHABET: &[u8] = "0123456789abcdefghijklmnopqrstuvwxyz".as_bytes();
-fn base36(mut input: usize) -> Rc<str> {
+fn base36(mut input: usize) -> Arc<str> {
     let mut index = 2 + input.ilog(ALPHABET.len()) as usize;
     let mut chars = vec![b'_'; index];
     while input > 0 {
@@ -14,7 +14,7 @@ fn base36(mut input: usize) -> Rc<str> {
         input /= ALPHABET.len();
     }
 
-    Rc::from(from_utf8(&chars).unwrap())
+    Arc::from(from_utf8(&chars).unwrap())
 }
 
 const RESERVED_SYMBOLS: &[&str] = &[
@@ -35,11 +35,11 @@ const RESERVED_SYMBOLS: &[&str] = &[
     "visible",
 ];
 
-impl Game<Rc<str>> {
-    pub fn mangle_symbols(&mut self) -> Result<(), Error<Rc<str>>> {
+impl Game<Arc<str>> {
+    pub fn mangle_symbols(&mut self) -> Result<(), Error<Arc<str>>> {
         let mut hashed: BTreeMap<_, _> = RESERVED_SYMBOLS
             .iter()
-            .map(|symbol| (Rc::from(*symbol), Rc::from(*symbol)))
+            .map(|symbol| (Arc::from(*symbol), Arc::from(*symbol)))
             .collect();
 
         *self = self.map_id(&mut |id| {

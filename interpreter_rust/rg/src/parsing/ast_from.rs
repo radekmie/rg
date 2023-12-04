@@ -1,4 +1,6 @@
-use crate::{ast::*, parsing::parser::Input, position::*};
+use crate::ast::*;
+use crate::parsing::parser::Input;
+use crate::position::{Positioned, Span};
 use std::sync::Arc;
 
 impl<Id: Positioned> From<(Input<'_>, (Id, Arc<Type<Id>>, Arc<Value<Id>>), Span)> for Constant<Id> {

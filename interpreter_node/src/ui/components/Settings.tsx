@@ -9,7 +9,7 @@ import {
 } from '@blueprintjs/core';
 import { ChangeEvent, FormEvent, useCallback, useMemo } from 'react';
 
-import { Language, Flag, Settings } from '../../types';
+import { Flag, Language, Settings } from '../../types';
 import { presets } from '../const/presets';
 import { useApplicationState, View } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';

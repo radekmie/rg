@@ -175,9 +175,9 @@ impl Game<Arc<str>> {
 }
 
 fn get_edges_using_binding(
-    edges: &Vec<Edge<Rc<str>>>,
+    edges: &Vec<Edge<Arc<str>>>,
     starting_edge_index: usize,
-    binding: &Rc<str>,
+    binding: &Arc<str>,
 ) -> BTreeSet<usize> {
     let mut edges_using_binding = BTreeSet::from([starting_edge_index]);
     loop {
