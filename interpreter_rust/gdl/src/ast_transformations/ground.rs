@@ -1,11 +1,12 @@
-use crate::ast::Game;
+use super::unify::Unification;
+use crate::ast::{Game, Term};
 
 impl<Symbol: Clone + Ord> Game<Symbol> {
     pub fn ground(&self) -> Self {
         let mut rules = self.0.clone();
         let mut subterms: Vec<Vec<_>> = rules
             .iter()
-            .map(|rule| rule.subterms().into_iter().cloned().collect())
+            .map(|rule| rule.subterms().cloned().collect())
             .collect();
 
         loop {
@@ -20,14 +21,10 @@ impl<Symbol: Clone + Ord> Game<Symbol> {
                         continue;
                     }
 
-                    if let Some(mapping) = subterms[j]
-                        .iter()
-                        .flat_map(|lhs| subterms[i].iter().map(move |rhs| (lhs, rhs)))
-                        .find_map(|(lhs, rhs)| lhs.unify(rhs).as_mapping())
-                    {
-                        let rule = rules[j].substitute(&mapping);
+                    if let Some(unification) = any_unification(&subterms[j], &subterms[i]) {
+                        let rule = rules[j].substitute(&unification);
                         if !rules.contains(&rule) {
-                            subterms.insert(j, rule.subterms().into_iter().cloned().collect());
+                            subterms.insert(j, rule.subterms().cloned().collect());
                             rules.insert(j, rule);
                             any_grounding_happened = true;
                         }
@@ -44,6 +41,22 @@ impl<Symbol: Clone + Ord> Game<Symbol> {
 
         Self(rules)
     }
+}
+
+fn any_unification<Symbol: Clone + Ord>(
+    xs: &[Term<Symbol>],
+    ys: &[Term<Symbol>],
+) -> Option<Unification<Symbol>> {
+    for x in xs {
+        for y in ys {
+            let unification = x.unify(y);
+            if !unification.is_empty() {
+                return Some(unification);
+            }
+        }
+    }
+
+    None
 }
 
 #[cfg(test)]

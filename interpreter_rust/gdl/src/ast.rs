@@ -1,4 +1,3 @@
-use std::collections::BTreeSet;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -12,45 +11,13 @@ impl<Symbol: Clone + Ord> AtomOrVariable<Symbol> {
         Term::Custom(self, None)
     }
 
-    fn atoms_into<'a>(&'a self, atoms: &mut BTreeSet<&'a Symbol>) {
-        match self {
-            Self::Atom(symbol) => {
-                atoms.insert(symbol);
-            }
-            Self::Variable(_) => {}
-        }
-    }
-
     pub fn is_variable(&self) -> bool {
         matches!(self, Self::Variable(_))
-    }
-
-    fn variables_into<'a>(&'a self, variables: &mut BTreeSet<&'a Symbol>) {
-        match self {
-            Self::Atom(_) => {}
-            Self::Variable(symbol) => {
-                variables.insert(symbol);
-            }
-        }
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Game<Symbol>(pub Vec<Rule<Symbol>>);
-
-impl<Symbol: Clone + Ord> Game<Symbol> {
-    pub fn atoms(&self) -> BTreeSet<&Symbol> {
-        let mut atoms = BTreeSet::new();
-        self.atoms_into(&mut atoms);
-        atoms
-    }
-
-    fn atoms_into<'a>(&'a self, atoms: &mut BTreeSet<&'a Symbol>) {
-        for term_with_predicate in &self.0 {
-            term_with_predicate.atoms_into(atoms);
-        }
-    }
-}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Rule<Symbol> {
@@ -59,36 +26,17 @@ pub struct Rule<Symbol> {
 }
 
 impl<Symbol: Clone + Ord> Rule<Symbol> {
-    fn atoms_into<'a>(&'a self, atoms: &mut BTreeSet<&'a Symbol>) {
-        for term in self.subterms() {
-            term.atoms_into(atoms);
-        }
-    }
-
     pub fn has_variable(&self) -> bool {
-        self.subterms().into_iter().any(Term::has_variable)
+        self.subterms().any(Term::has_variable)
     }
 
-    pub fn subterms(&self) -> BTreeSet<&Term<Symbol>> {
-        let mut subterms = BTreeSet::new();
-        self.term.subterms_into(&mut subterms);
-        self.predicates
-            .iter()
-            .flatten()
-            .for_each(|(_, predicate)| predicate.subterms_into(&mut subterms));
-        subterms
-    }
-
-    pub fn variables(&self) -> BTreeSet<&Symbol> {
-        let mut variables = BTreeSet::new();
-        self.variables_into(&mut variables);
-        variables
-    }
-
-    fn variables_into<'a>(&'a self, variables: &mut BTreeSet<&'a Symbol>) {
-        for term in self.subterms() {
-            term.variables_into(variables);
+    pub fn subterms(&self) -> TermIterator<Symbol> {
+        let mut iterator = TermIterator::new();
+        iterator.add(&self.term);
+        for (_, predicate) in self.predicates.iter().flatten() {
+            iterator.add(predicate);
         }
+        iterator
     }
 }
 
@@ -136,39 +84,6 @@ pub enum Term<Symbol> {
 }
 
 impl<Symbol: Clone + Ord> Term<Symbol> {
-    fn atoms_into<'a>(&'a self, atoms: &mut BTreeSet<&'a Symbol>) {
-        use Term::*;
-        match self {
-            Base(proposition) => proposition.atoms_into(atoms),
-            Custom(name, None) => name.atoms_into(atoms),
-            Custom(_, arguments) => arguments
-                .iter()
-                .flatten()
-                .for_each(|argument| argument.atoms_into(atoms)),
-            Does(role, action) => {
-                role.atoms_into(atoms);
-                action.atoms_into(atoms);
-            }
-            Goal(role, utility) => {
-                role.atoms_into(atoms);
-                utility.atoms_into(atoms);
-            }
-            Init(proposition) => proposition.atoms_into(atoms),
-            Input(role, action) => {
-                role.atoms_into(atoms);
-                action.atoms_into(atoms);
-            }
-            Legal(role, action) => {
-                role.atoms_into(atoms);
-                action.atoms_into(atoms);
-            }
-            Next(proposition) => proposition.atoms_into(atoms),
-            Role(role) => role.atoms_into(atoms),
-            Terminal => {}
-            True(proposition) => proposition.atoms_into(atoms),
-        }
-    }
-
     pub fn has_variable(&self) -> bool {
         use Term::*;
         match self {
@@ -189,62 +104,59 @@ impl<Symbol: Clone + Ord> Term<Symbol> {
             True(proposition) => proposition.has_variable(),
         }
     }
+}
 
-    fn subterms_into<'a>(&'a self, subterms: &mut BTreeSet<&'a Term<Symbol>>) {
-        use Term::*;
+pub struct TermIterator<'a, Symbol> {
+    index: usize,
+    queue: Vec<&'a Term<Symbol>>,
+}
 
-        if !matches!(self, Custom(AtomOrVariable::Variable(_), _)) {
-            subterms.insert(self);
+impl<'a, Symbol: PartialEq> TermIterator<'a, Symbol> {
+    fn add(&mut self, term: &'a Term<Symbol>) {
+        if matches!(term, Term::Custom(AtomOrVariable::Variable(_), _)) {
+            return;
         }
 
-        match self {
-            Base(proposition) => proposition.subterms_into(subterms),
-            Custom(_, arguments) => arguments
-                .iter()
-                .flatten()
-                .for_each(|argument| argument.subterms_into(subterms)),
-            Does(_, action) => action.subterms_into(subterms),
-            Goal(_, _) => {}
-            Init(proposition) => proposition.subterms_into(subterms),
-            Input(_, action) => action.subterms_into(subterms),
-            Legal(_, action) => action.subterms_into(subterms),
-            Next(proposition) => proposition.subterms_into(subterms),
-            Role(_) => {}
-            Terminal => {}
-            True(proposition) => proposition.subterms_into(subterms),
+        if !self.queue.contains(&term) {
+            self.queue.push(term);
         }
     }
 
-    fn variables_into<'a>(&'a self, variables: &mut BTreeSet<&'a Symbol>) {
-        use Term::*;
-        match self {
-            Base(proposition) => proposition.variables_into(variables),
-            Custom(name, None) => name.variables_into(variables),
-            Custom(_, arguments) => arguments
-                .iter()
-                .flatten()
-                .for_each(|argument| argument.variables_into(variables)),
-            Does(role, action) => {
-                role.variables_into(variables);
-                action.variables_into(variables);
-            }
-            Goal(role, utility) => {
-                role.variables_into(variables);
-                utility.variables_into(variables);
-            }
-            Init(proposition) => proposition.variables_into(variables),
-            Input(role, action) => {
-                role.variables_into(variables);
-                action.variables_into(variables);
-            }
-            Legal(role, action) => {
-                role.variables_into(variables);
-                action.variables_into(variables);
-            }
-            Next(proposition) => proposition.variables_into(variables),
-            Role(role) => role.variables_into(variables),
-            Terminal => {}
-            True(proposition) => proposition.variables_into(variables),
+    fn new() -> Self {
+        Self {
+            index: 0,
+            queue: Vec::new(),
         }
+    }
+}
+
+impl<'a, Symbol: PartialEq> Iterator for TermIterator<'a, Symbol> {
+    type Item = &'a Term<Symbol>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let maybe_term = self.queue.get(self.index).copied();
+        if let Some(term) = maybe_term {
+            self.index += 1;
+
+            use Term::*;
+            match term {
+                Base(proposition) => self.add(proposition),
+                Custom(_, arguments) => arguments
+                    .iter()
+                    .flatten()
+                    .for_each(|argument| self.add(argument)),
+                Does(_, action) => self.add(action),
+                Goal(_, _) => {}
+                Init(proposition) => self.add(proposition),
+                Input(_, action) => self.add(action),
+                Legal(_, action) => self.add(action),
+                Next(proposition) => self.add(proposition),
+                Role(_) => {}
+                Terminal => {}
+                True(proposition) => self.add(proposition),
+            }
+        }
+
+        maybe_term
     }
 }

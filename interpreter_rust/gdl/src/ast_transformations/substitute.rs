@@ -1,15 +1,13 @@
+use super::unify::Unification;
 use crate::ast::{AtomOrVariable, Rule, Term};
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
-type Mapping<Symbol> = BTreeMap<Symbol, Term<Symbol>>;
-
 impl<Symbol: Clone + Ord> AtomOrVariable<Symbol> {
-    pub fn substitute(&self, mapping: &Mapping<Symbol>) -> Self {
+    pub fn substitute(&self, u: &Unification<Symbol>) -> Self {
         use AtomOrVariable::*;
         match self {
             atom @ Atom(_) => atom.clone(),
-            var @ Variable(symbol) => match mapping.get(symbol) {
+            var @ Variable(symbol) => match u.get(symbol) {
                 Some(term) => match term {
                     Term::Custom(atom @ Atom(_), None) => atom.clone(),
                     _ => panic!("Cannot substitute non-trivial term for an atom."),
@@ -21,15 +19,13 @@ impl<Symbol: Clone + Ord> AtomOrVariable<Symbol> {
 }
 
 impl<Symbol: Clone + Ord> Rule<Symbol> {
-    pub fn substitute(&self, mapping: &Mapping<Symbol>) -> Self {
+    pub fn substitute(&self, u: &Unification<Symbol>) -> Self {
         Self {
-            term: Rc::new(self.term.substitute(mapping)),
+            term: Rc::new(self.term.substitute(u)),
             predicates: self.predicates.as_ref().map(|predicates| {
                 predicates
                     .iter()
-                    .map(|(is_negated, predicate)| {
-                        (*is_negated, Rc::new(predicate.substitute(mapping)))
-                    })
+                    .map(|(is_negated, predicate)| (*is_negated, Rc::new(predicate.substitute(u))))
                     .collect()
             }),
         }
@@ -37,40 +33,29 @@ impl<Symbol: Clone + Ord> Rule<Symbol> {
 }
 
 impl<Symbol: Clone + Ord> Term<Symbol> {
-    pub fn substitute(&self, mapping: &Mapping<Symbol>) -> Self {
+    pub fn substitute(&self, u: &Unification<Symbol>) -> Self {
         use Term::*;
         match self {
-            Base(proposition) => Base(Rc::new(proposition.substitute(mapping))),
-            Custom(AtomOrVariable::Variable(symbol), None) => {
-                mapping.get(symbol).unwrap_or(self).clone()
-            }
+            Base(proposition) => Base(Rc::new(proposition.substitute(u))),
+            Custom(AtomOrVariable::Variable(symbol), None) => u.get(symbol).unwrap_or(self).clone(),
             Custom(name, arguments) => Custom(
-                name.substitute(mapping),
+                name.substitute(u),
                 arguments.as_ref().map(|arguments| {
                     arguments
                         .iter()
-                        .map(|argument| Rc::new(argument.substitute(mapping)))
+                        .map(|argument| Rc::new(argument.substitute(u)))
                         .collect()
                 }),
             ),
-            Does(role, action) => Does(
-                role.substitute(mapping),
-                Rc::new(action.substitute(mapping)),
-            ),
-            Goal(role, utility) => Goal(role.substitute(mapping), utility.substitute(mapping)),
-            Init(proposition) => Init(Rc::new(proposition.substitute(mapping))),
-            Input(role, action) => Input(
-                role.substitute(mapping),
-                Rc::new(action.substitute(mapping)),
-            ),
-            Legal(role, action) => Legal(
-                role.substitute(mapping),
-                Rc::new(action.substitute(mapping)),
-            ),
-            Next(proposition) => Next(Rc::new(proposition.substitute(mapping))),
-            Role(role) => Role(role.substitute(mapping)),
+            Does(role, action) => Does(role.substitute(u), Rc::new(action.substitute(u))),
+            Goal(role, utility) => Goal(role.substitute(u), utility.substitute(u)),
+            Init(proposition) => Init(Rc::new(proposition.substitute(u))),
+            Input(role, action) => Input(role.substitute(u), Rc::new(action.substitute(u))),
+            Legal(role, action) => Legal(role.substitute(u), Rc::new(action.substitute(u))),
+            Next(proposition) => Next(Rc::new(proposition.substitute(u))),
+            Role(role) => Role(role.substitute(u)),
             Terminal => Terminal,
-            True(proposition) => True(Rc::new(proposition.substitute(mapping))),
+            True(proposition) => True(Rc::new(proposition.substitute(u))),
         }
     }
 }

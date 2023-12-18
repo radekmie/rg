@@ -2,23 +2,67 @@ use crate::ast::{AtomOrVariable, Term};
 use std::collections::BTreeMap;
 use std::iter::zip;
 
+impl<Symbol: Clone + Ord> AtomOrVariable<Symbol> {
+    pub fn unify(&self, other: &Self) -> Unification<Symbol> {
+        use AtomOrVariable::*;
+        use Unification::*;
+        match (self, other) {
+            (Variable(x), y @ Atom(_)) => {
+                NotEmpty(BTreeMap::from([(x.clone(), y.clone().as_term())]))
+            }
+            (x, y) if x == y => Empty,
+            _ => Failed,
+        }
+    }
+}
+
+impl<Symbol: Clone + Ord> Term<Symbol> {
+    pub fn unify(&self, other: &Self) -> Unification<Symbol> {
+        use Term::*;
+        match (self, other) {
+            (Base(x), Base(y)) => x.unify(y),
+            (Custom(xn, None), Custom(yn, None)) => xn.unify(yn),
+            (Custom(xn, Some(xa)), Custom(yn, Some(ya))) if xn == yn => {
+                assert!(xa.len() == ya.len());
+                zip(xa, ya).map(|(x, y)| x.unify(y)).collect()
+            }
+            (Does(xr, xa), Does(yr, ya)) => xr.unify(yr).merge(xa.unify(ya)),
+            (Goal(xr, xu), Goal(yr, yu)) => xr.unify(yr).merge(xu.unify(yu)),
+            (Init(x), Init(y)) => x.unify(y),
+            (Input(xr, xa), Input(yr, ya)) => xr.unify(yr).merge(xa.unify(ya)),
+            (Legal(xr, xa), Legal(yr, ya)) => xr.unify(yr).merge(xa.unify(ya)),
+            (Next(x), Next(y)) => x.unify(y),
+            (Role(x), Role(y)) => x.unify(y),
+            (Terminal, Terminal) => Unification::Empty,
+            (True(x), True(y)) => x.unify(y),
+            _ => Unification::Failed,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
-pub enum UnificationResult<Symbol: Ord> {
+pub enum Unification<Symbol> {
     Empty,
     Failed,
     NotEmpty(BTreeMap<Symbol, Term<Symbol>>),
 }
 
-impl<Symbol: Ord> UnificationResult<Symbol> {
-    pub fn as_mapping(self) -> Option<BTreeMap<Symbol, Term<Symbol>>> {
+impl<Symbol> Unification<Symbol> {
+    pub fn is_empty(&self) -> bool {
+        matches!(self, Self::Empty | Self::Failed)
+    }
+}
+
+impl<Symbol: Ord> Unification<Symbol> {
+    pub fn get(&self, symbol: &Symbol) -> Option<&Term<Symbol>> {
         match self {
-            Self::NotEmpty(mapping) => Some(mapping),
+            Self::NotEmpty(mapping) => mapping.get(symbol),
             _ => None,
         }
     }
 
     pub fn merge(self, other: Self) -> Self {
-        use UnificationResult::*;
+        use Unification::*;
         match (self, other) {
             (x, Empty) => x,
             (Empty, y) => y,
@@ -36,68 +80,23 @@ impl<Symbol: Ord> UnificationResult<Symbol> {
     }
 }
 
-impl<Symbol: Ord> FromIterator<UnificationResult<Symbol>> for UnificationResult<Symbol> {
+impl<Symbol: Ord> FromIterator<Unification<Symbol>> for Unification<Symbol> {
     fn from_iter<I: IntoIterator<Item = Self>>(iter: I) -> Self {
-        let mut iter = iter.into_iter();
-        let mut result = iter.next().unwrap_or(Self::Failed);
-
-        // Early return.
-        if result != Self::Failed {
-            for x in iter {
-                result = result.merge(x);
-
-                // Early return.
-                if result == Self::Failed {
-                    break;
-                }
+        let mut u = Self::Empty;
+        for x in iter {
+            u = u.merge(x);
+            if u == Self::Failed {
+                break;
             }
         }
 
-        result
-    }
-}
-
-impl<Symbol: Clone + Ord> AtomOrVariable<Symbol> {
-    pub fn unify(&self, other: &Self) -> UnificationResult<Symbol> {
-        use AtomOrVariable::*;
-        use UnificationResult::*;
-        match (self, other) {
-            (Variable(x), y @ Atom(_)) => {
-                NotEmpty(BTreeMap::from([(x.clone(), y.clone().as_term())]))
-            }
-            (x, y) if x == y => Empty,
-            _ => Failed,
-        }
-    }
-}
-
-impl<Symbol: Clone + Ord> Term<Symbol> {
-    pub fn unify(&self, other: &Self) -> UnificationResult<Symbol> {
-        use Term::*;
-        match (self, other) {
-            (Base(x), Base(y)) => x.unify(y),
-            (Custom(xn, None), Custom(yn, None)) => xn.unify(yn),
-            (Custom(xn, Some(xa)), Custom(yn, Some(ya))) if xn == yn => {
-                assert!(xa.len() == ya.len());
-                zip(xa, ya).map(|(x, y)| x.unify(y)).collect()
-            }
-            (Does(xr, xa), Does(yr, ya)) => xr.unify(yr).merge(xa.unify(ya)),
-            (Goal(xr, xu), Goal(yr, yu)) => xr.unify(yr).merge(xu.unify(yu)),
-            (Init(x), Init(y)) => x.unify(y),
-            (Input(xr, xa), Input(yr, ya)) => xr.unify(yr).merge(xa.unify(ya)),
-            (Legal(xr, xa), Legal(yr, ya)) => xr.unify(yr).merge(xa.unify(ya)),
-            (Next(x), Next(y)) => x.unify(y),
-            (Role(x), Role(y)) => x.unify(y),
-            (Terminal, Terminal) => UnificationResult::Empty,
-            (True(x), True(y)) => x.unify(y),
-            _ => UnificationResult::Failed,
-        }
+        u
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::UnificationResult::*;
+    use super::Unification::*;
     use crate::ast::Term;
     use crate::parser::infix::term;
     use nom::combinator::all_consuming;
