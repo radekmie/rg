@@ -3,6 +3,7 @@ debug = true
 
 [workspace]
 members = [
+  "gdl",
   "interpreter",
   "lsp",
   "lsp_browser",
