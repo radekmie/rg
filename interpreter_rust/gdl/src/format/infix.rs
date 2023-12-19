@@ -44,13 +44,15 @@ struct RuleInfix<'a, Symbol: Display>(&'a Rule<Symbol>);
 impl<Symbol: Display> Display for RuleInfix<'_, Symbol> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "{}", TermInfix(&self.0.term))?;
-        self.0.predicates.iter().flatten().enumerate().try_for_each(
-            |(index, (is_negated, predicate))| {
+        self.0
+            .predicates
+            .iter()
+            .enumerate()
+            .try_for_each(|(index, (is_negated, predicate))| {
                 let separator = if index == 0 { " :- " } else { " & " };
                 let negation = if *is_negated { "~" } else { "" };
                 write!(f, "{separator}{negation}{}", TermInfix(predicate))
-            },
-        )
+            })
     }
 }
 

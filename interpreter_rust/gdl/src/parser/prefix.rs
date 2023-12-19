@@ -3,7 +3,7 @@ use crate::ast::{AtomOrVariable, Game, Rule, Term};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::combinator::{into, map, opt, success};
-use nom::multi::many1;
+use nom::multi::{many0, many1};
 use nom::sequence::{pair, preceded};
 use std::convert::identity;
 use std::rc::Rc;
@@ -16,7 +16,7 @@ pub fn atom_or_variable(input: &str) -> Result<AtomOrVariable<&str>> {
 }
 
 pub fn game(input: &str) -> Result<Game<&str>> {
-    map(many1(separated(rule)), Game)(input)
+    map(many0(separated(rule)), Game)(input)
 }
 
 pub fn term(input: &str) -> Result<Term<&str>> {
@@ -72,11 +72,11 @@ pub fn rule(input: &str) -> Result<Rule<&str>> {
         term_template("not", term_rc, |term| (true, term)),
         pair(success(false), term_rc),
     ));
-    let predicates = map(separated(many1(predicate)), Some);
+    let predicates = separated(many1(predicate));
 
     into(alt((
         term_template("<=", pair(term_rc, predicates), identity),
-        pair(term_rc, success(None)),
+        pair(term_rc, success(vec![])),
     )))(input)
 }
 

@@ -22,7 +22,7 @@ pub struct Game<Symbol>(pub Vec<Rule<Symbol>>);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Rule<Symbol> {
     pub term: Rc<Term<Symbol>>,
-    pub predicates: Option<Vec<(bool, Rc<Term<Symbol>>)>>,
+    pub predicates: Vec<(bool, Rc<Term<Symbol>>)>,
 }
 
 impl<Symbol: Clone + Ord> Rule<Symbol> {
@@ -33,15 +33,15 @@ impl<Symbol: Clone + Ord> Rule<Symbol> {
     pub fn subterms(&self) -> TermIterator<Symbol> {
         let mut iterator = TermIterator::new();
         iterator.add(&self.term);
-        for (_, predicate) in self.predicates.iter().flatten() {
+        for (_, predicate) in &self.predicates {
             iterator.add(predicate);
         }
         iterator
     }
 }
 
-impl<Symbol> From<(Rc<Term<Symbol>>, Option<Vec<(bool, Rc<Term<Symbol>>)>>)> for Rule<Symbol> {
-    fn from((term, predicates): (Rc<Term<Symbol>>, Option<Vec<(bool, Rc<Term<Symbol>>)>>)) -> Self {
+impl<Symbol> From<(Rc<Term<Symbol>>, Vec<(bool, Rc<Term<Symbol>>)>)> for Rule<Symbol> {
+    fn from((term, predicates): (Rc<Term<Symbol>>, Vec<(bool, Rc<Term<Symbol>>)>)) -> Self {
         Self { term, predicates }
     }
 }

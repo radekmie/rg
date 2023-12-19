@@ -22,12 +22,11 @@ impl<Symbol: Clone + Ord> Rule<Symbol> {
     pub fn substitute(&self, u: &Unification<Symbol>) -> Self {
         Self {
             term: Rc::new(self.term.substitute(u)),
-            predicates: self.predicates.as_ref().map(|predicates| {
-                predicates
-                    .iter()
-                    .map(|(is_negated, predicate)| (*is_negated, Rc::new(predicate.substitute(u))))
-                    .collect()
-            }),
+            predicates: self
+                .predicates
+                .iter()
+                .map(|(is_negated, predicate)| (*is_negated, Rc::new(predicate.substitute(u))))
+                .collect(),
         }
     }
 }

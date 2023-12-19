@@ -2,8 +2,8 @@ use super::utils::{in_parens, separated, symbol, Result};
 use crate::ast::{AtomOrVariable, Game, Rule, Term};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::combinator::{into, map, opt, value};
-use nom::multi::{many1, separated_list1};
+use nom::combinator::{into, map, opt, success, value};
+use nom::multi::{many0, separated_list1};
 use nom::sequence::{pair, preceded, separated_pair};
 use std::rc::Rc;
 
@@ -18,7 +18,7 @@ pub fn atom_or_variable(input: &str) -> Result<AtomOrVariable<&str>> {
 }
 
 pub fn game(input: &str) -> Result<Game<&str>> {
-    map(many1(separated(rule)), Game)(input)
+    map(many0(separated(rule)), Game)(input)
 }
 
 pub fn term(input: &str) -> Result<Term<&str>> {
@@ -71,12 +71,12 @@ fn term_template<'a, T, U>(
 
 pub fn rule(input: &str) -> Result<Rule<&str>> {
     let predicate = pair(map(opt(tag("~")), |negation| negation.is_some()), term_rc);
-    let predicates = opt(preceded(
+    let predicates = preceded(
         separated(tag(":-")),
         separated_list1(separated(tag("&")), predicate),
-    ));
+    );
 
-    into(pair(term_rc, predicates))(input)
+    into(pair(term_rc, alt((predicates, success(vec![])))))(input)
 }
 
 #[cfg(test)]

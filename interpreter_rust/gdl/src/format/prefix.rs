@@ -40,18 +40,21 @@ struct RulePrefix<'a, Symbol: Display>(&'a Rule<Symbol>);
 
 impl<Symbol: Display> Display for RulePrefix<'_, Symbol> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        if let Some(predicates) = &self.0.predicates {
-            write!(f, "(<= {}", TermPrefix(&self.0.term))?;
-            predicates.iter().try_for_each(|(is_negated, predicate)| {
-                if *is_negated {
-                    write!(f, " (not {})", TermPrefix(predicate))
-                } else {
-                    write!(f, " {}", TermPrefix(predicate))
-                }
-            })?;
-            write!(f, ")")
-        } else {
+        if self.0.predicates.is_empty() {
             write!(f, "{}", TermPrefix(&self.0.term))
+        } else {
+            write!(f, "(<= {}", TermPrefix(&self.0.term))?;
+            self.0
+                .predicates
+                .iter()
+                .try_for_each(|(is_negated, predicate)| {
+                    if *is_negated {
+                        write!(f, " (not {})", TermPrefix(predicate))
+                    } else {
+                        write!(f, " {}", TermPrefix(predicate))
+                    }
+                })?;
+            write!(f, ")")
         }
     }
 }
