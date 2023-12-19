@@ -11,7 +11,12 @@ fn main() {
             break;
         }
 
-        match all_consuming(alt((parser::infix::game, parser::prefix::game)))(&buffer).finish() {
+        match alt((
+            all_consuming(parser::infix::game),
+            all_consuming(parser::prefix::game),
+        ))(&buffer)
+        .finish()
+        {
             Ok((_, game)) => {
                 print!(
                     "     infix: {}\n    prefix: {}\n  grounded: {}\n",

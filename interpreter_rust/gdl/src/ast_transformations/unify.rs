@@ -1,22 +1,19 @@
 use crate::ast::{AtomOrVariable, Term};
-use std::collections::BTreeMap;
 use std::iter::zip;
 
-impl<Symbol: Clone + Ord> AtomOrVariable<Symbol> {
+impl<Symbol: Clone + PartialEq> AtomOrVariable<Symbol> {
     pub fn unify(&self, other: &Self) -> Unification<Symbol> {
         use AtomOrVariable::*;
         use Unification::*;
         match (self, other) {
-            (Variable(x), y @ Atom(_)) => {
-                NotEmpty(BTreeMap::from([(x.clone(), y.clone().as_term())]))
-            }
+            (Variable(x), y @ Atom(_)) => NotEmpty(vec![(x.clone(), y.clone().as_term())]),
             (x, y) if x == y => Empty,
             _ => Failed,
         }
     }
 }
 
-impl<Symbol: Clone + Ord> Term<Symbol> {
+impl<Symbol: Clone + PartialEq> Term<Symbol> {
     pub fn unify(&self, other: &Self) -> Unification<Symbol> {
         use Term::*;
         match (self, other) {
@@ -44,7 +41,7 @@ impl<Symbol: Clone + Ord> Term<Symbol> {
 pub enum Unification<Symbol> {
     Empty,
     Failed,
-    NotEmpty(BTreeMap<Symbol, Term<Symbol>>),
+    NotEmpty(Vec<(Symbol, Term<Symbol>)>),
 }
 
 impl<Symbol> Unification<Symbol> {
@@ -53,10 +50,13 @@ impl<Symbol> Unification<Symbol> {
     }
 }
 
-impl<Symbol: Ord> Unification<Symbol> {
+impl<Symbol: PartialEq> Unification<Symbol> {
     pub fn get(&self, symbol: &Symbol) -> Option<&Term<Symbol>> {
         match self {
-            Self::NotEmpty(mapping) => mapping.get(symbol),
+            Self::NotEmpty(mapping) => mapping
+                .iter()
+                .find(|pair| pair.0 == *symbol)
+                .map(|pair| &pair.1),
             _ => None,
         }
     }
@@ -66,21 +66,22 @@ impl<Symbol: Ord> Unification<Symbol> {
         match (self, other) {
             (x, Empty) => x,
             (Empty, y) => y,
-            (NotEmpty(x), NotEmpty(y)) => {
-                NotEmpty(y.into_iter().fold(x, |mut mapping, (variable, atom)| {
-                    mapping
-                        .entry(variable)
-                        .and_modify(|existing| assert!(existing == &atom))
-                        .or_insert(atom);
-                    mapping
-                }))
+            (NotEmpty(mut xs), NotEmpty(ys)) => {
+                for y in ys {
+                    match xs.iter().find(|x| x.0 == y.0) {
+                        Some(x) => assert!(x.1 == y.1),
+                        None => xs.push(y),
+                    }
+                }
+
+                NotEmpty(xs)
             }
             _ => Failed,
         }
     }
 }
 
-impl<Symbol: Ord> FromIterator<Unification<Symbol>> for Unification<Symbol> {
+impl<Symbol: PartialEq> FromIterator<Unification<Symbol>> for Unification<Symbol> {
     fn from_iter<I: IntoIterator<Item = Self>>(iter: I) -> Self {
         let mut u = Self::Empty;
         for x in iter {
@@ -100,7 +101,6 @@ mod test {
     use crate::ast::Term;
     use crate::parser::infix::term;
     use nom::combinator::all_consuming;
-    use std::collections::BTreeMap;
 
     fn parse(input: &str) -> Term<&str> {
         all_consuming(term)(&input).unwrap().1
@@ -108,7 +108,7 @@ mod test {
 
     macro_rules! map {
         ($($k:expr => $v:expr),* $(,)?) => {
-            BTreeMap::from([$(($k, $v),)*])
+            ([$(($k, $v),)*])
                 .into_iter()
                 .map(|(k, v)| (k, parse(v)))
                 .collect()

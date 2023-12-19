@@ -6,7 +6,7 @@ pub enum AtomOrVariable<Symbol> {
     Variable(Symbol),
 }
 
-impl<Symbol: Clone + Ord> AtomOrVariable<Symbol> {
+impl<Symbol> AtomOrVariable<Symbol> {
     pub fn as_term(self) -> Term<Symbol> {
         Term::Custom(self, None)
     }
