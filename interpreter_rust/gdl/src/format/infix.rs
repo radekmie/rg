@@ -72,7 +72,7 @@ impl<Id: Display> Display for TermInfix<'_, Id> {
             Term::Base(proposition) => write!(f, "base({})", TermInfix(proposition)),
             Term::Custom(name, arguments) => {
                 write!(f, "{}", AtomOrVariableInfix(name))?;
-                if let Some(arguments) = arguments {
+                if !arguments.is_empty() {
                     write!(f, "(")?;
                     arguments
                         .iter()

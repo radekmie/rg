@@ -18,8 +18,8 @@ impl<Id: Clone + PartialEq> Term<Id> {
         use Term::*;
         match (self, other) {
             (Base(x), Base(y)) => x.unify(y),
-            (Custom(xn, None), Custom(yn, None)) => xn.unify(yn),
-            (Custom(xn, Some(xa)), Custom(yn, Some(ya))) if xn == yn => {
+            (Custom(xn, xa), Custom(yn, ya)) if xa.is_empty() && ya.is_empty() => xn.unify(yn),
+            (Custom(xn, xa), Custom(yn, ya)) if xn == yn => {
                 assert!(xa.len() == ya.len());
                 zip(xa, ya).map(|(x, y)| x.unify(y)).collect()
             }

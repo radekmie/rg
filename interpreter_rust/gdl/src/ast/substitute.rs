@@ -6,13 +6,13 @@ impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         use AtomOrVariable::*;
         match self {
-            atom @ Atom(_) => atom.clone(),
-            var @ Variable(symbol) => match u.get(symbol) {
+            Atom(id) => Atom(id.clone()),
+            Variable(id) => match u.get(id) {
                 Some(term) => match term {
-                    Term::Custom(atom @ Atom(_), None) => atom.clone(),
+                    Term::Custom(Atom(id), arguments) if arguments.is_empty() => Atom(id.clone()),
                     _ => panic!("Cannot substitute non-trivial term for an atom."),
                 },
-                None => var.clone(),
+                None => Variable(id.clone()),
             },
         }
     }
@@ -45,15 +45,15 @@ impl<Id: Clone + PartialEq> Term<Id> {
         use Term::*;
         match self {
             Base(proposition) => Base(Rc::new(proposition.substitute(u))),
-            Custom(AtomOrVariable::Variable(symbol), None) => u.get(symbol).unwrap_or(self).clone(),
+            Custom(AtomOrVariable::Variable(id), arguments) if arguments.is_empty() => {
+                u.get(id).unwrap_or(self).clone()
+            }
             Custom(name, arguments) => Custom(
                 name.substitute(u),
-                arguments.as_ref().map(|arguments| {
-                    arguments
-                        .iter()
-                        .map(|argument| Rc::new(argument.substitute(u)))
-                        .collect()
-                }),
+                arguments
+                    .iter()
+                    .map(|argument| Rc::new(argument.substitute(u)))
+                    .collect(),
             ),
             Does(role, action) => Does(role.substitute(u), Rc::new(action.substitute(u))),
             Goal(role, utility) => Goal(role.substitute(u), utility.substitute(u)),

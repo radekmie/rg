@@ -16,7 +16,7 @@ pub enum AtomOrVariable<Id> {
 
 impl<Id> AtomOrVariable<Id> {
     pub fn as_term(self) -> Term<Id> {
-        Term::Custom(self, None)
+        Term::Custom(self, vec![])
     }
 
     pub fn is_variable(&self) -> bool {
@@ -61,7 +61,7 @@ pub enum Term<Id> {
     Base(Rc<Term<Id>>),
 
     /// `name(...arguments)` is a custom, game-specific term.
-    Custom(AtomOrVariable<Id>, Option<Vec<Rc<Term<Id>>>>),
+    Custom(AtomOrVariable<Id>, Vec<Rc<Term<Id>>>),
 
     /// `does(r, a)` means that player `r` performs action `a` in the current state.
     Does(AtomOrVariable<Id>, Rc<Term<Id>>),
@@ -96,11 +96,9 @@ impl<Id> Term<Id> {
         use Term::*;
         match self {
             Base(proposition) => proposition.has_variable(),
-            Custom(name, None) => name.is_variable(),
-            Custom(_, arguments) => arguments
-                .iter()
-                .flatten()
-                .any(|argument| argument.has_variable()),
+            Custom(name, arguments) => {
+                name.is_variable() || arguments.iter().any(|argument| argument.has_variable())
+            }
             Does(role, action) => role.is_variable() || action.has_variable(),
             Goal(role, utility) => role.is_variable() || utility.is_variable(),
             Init(proposition) => proposition.has_variable(),
@@ -149,10 +147,7 @@ impl<'a, Id: PartialEq> Iterator for TermIterator<'a, Id> {
             use Term::*;
             match term {
                 Base(proposition) => self.add(proposition),
-                Custom(_, arguments) => arguments
-                    .iter()
-                    .flatten()
-                    .for_each(|argument| self.add(argument)),
+                Custom(_, arguments) => arguments.iter().for_each(|argument| self.add(argument)),
                 Does(_, action) => self.add(action),
                 Goal(_, _) => {}
                 Init(proposition) => self.add(proposition),
