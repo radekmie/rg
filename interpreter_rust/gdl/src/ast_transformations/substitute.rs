@@ -1,9 +1,9 @@
 use super::unify::Unification;
-use crate::ast::{AtomOrVariable, Rule, Term};
+use crate::ast::{AtomOrVariable, Predicate, Rule, Term};
 use std::rc::Rc;
 
-impl<Symbol: Clone + Ord> AtomOrVariable<Symbol> {
-    pub fn substitute(&self, u: &Unification<Symbol>) -> Self {
+impl<Id: Clone + Ord> AtomOrVariable<Id> {
+    pub fn substitute(&self, u: &Unification<Id>) -> Self {
         use AtomOrVariable::*;
         match self {
             atom @ Atom(_) => atom.clone(),
@@ -18,21 +18,30 @@ impl<Symbol: Clone + Ord> AtomOrVariable<Symbol> {
     }
 }
 
-impl<Symbol: Clone + Ord> Rule<Symbol> {
-    pub fn substitute(&self, u: &Unification<Symbol>) -> Self {
+impl<Id: Clone + Ord> Predicate<Id> {
+    pub fn substitute(&self, u: &Unification<Id>) -> Self {
+        Self {
+            is_negated: self.is_negated,
+            term: Rc::new(self.term.substitute(u)),
+        }
+    }
+}
+
+impl<Id: Clone + Ord> Rule<Id> {
+    pub fn substitute(&self, u: &Unification<Id>) -> Self {
         Self {
             term: Rc::new(self.term.substitute(u)),
             predicates: self
                 .predicates
                 .iter()
-                .map(|(is_negated, predicate)| (*is_negated, Rc::new(predicate.substitute(u))))
+                .map(|predicate| predicate.substitute(u))
                 .collect(),
         }
     }
 }
 
-impl<Symbol: Clone + Ord> Term<Symbol> {
-    pub fn substitute(&self, u: &Unification<Symbol>) -> Self {
+impl<Id: Clone + Ord> Term<Id> {
+    pub fn substitute(&self, u: &Unification<Id>) -> Self {
         use Term::*;
         match self {
             Base(proposition) => Base(Rc::new(proposition.substitute(u))),

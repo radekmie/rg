@@ -1,17 +1,17 @@
-use crate::ast::{AtomOrVariable, Game, Rule, Term};
+use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::fmt::{Display, Formatter, Result};
 use std::ops::Deref;
 use std::rc::Rc;
 
-impl<Symbol: Display> Game<Symbol> {
-    pub fn as_prefix(&self) -> GamePrefix<Symbol> {
+impl<Id: Display> Game<Id> {
+    pub fn as_prefix(&self) -> GamePrefix<Id> {
         GamePrefix(self)
     }
 }
 
-struct AtomOrVariablePrefix<'a, Symbol: Display>(&'a AtomOrVariable<Symbol>);
+struct AtomOrVariablePrefix<'a, Id: Display>(&'a AtomOrVariable<Id>);
 
-impl<Symbol: Display> Display for AtomOrVariablePrefix<'_, Symbol> {
+impl<Id: Display> Display for AtomOrVariablePrefix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self.0 {
             AtomOrVariable::Atom(symbol) => write!(f, "{symbol}"),
@@ -20,9 +20,9 @@ impl<Symbol: Display> Display for AtomOrVariablePrefix<'_, Symbol> {
     }
 }
 
-pub struct GamePrefix<'a, Symbol: Display>(&'a Game<Symbol>);
+pub struct GamePrefix<'a, Id: Display>(&'a Game<Id>);
 
-impl<Symbol: Display> Display for GamePrefix<'_, Symbol> {
+impl<Id: Display> Display for GamePrefix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         self.0
              .0
@@ -36,9 +36,21 @@ impl<Symbol: Display> Display for GamePrefix<'_, Symbol> {
     }
 }
 
-struct RulePrefix<'a, Symbol: Display>(&'a Rule<Symbol>);
+struct PredicatePrefix<'a, Id: Display>(&'a Predicate<Id>);
 
-impl<Symbol: Display> Display for RulePrefix<'_, Symbol> {
+impl<Id: Display> Display for PredicatePrefix<'_, Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        if self.0.is_negated {
+            write!(f, "(not {})", TermPrefix(&self.0.term))
+        } else {
+            write!(f, "{}", TermPrefix(&self.0.term))
+        }
+    }
+}
+
+struct RulePrefix<'a, Id: Display>(&'a Rule<Id>);
+
+impl<Id: Display> Display for RulePrefix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         if self.0.predicates.is_empty() {
             write!(f, "{}", TermPrefix(&self.0.term))
@@ -47,21 +59,15 @@ impl<Symbol: Display> Display for RulePrefix<'_, Symbol> {
             self.0
                 .predicates
                 .iter()
-                .try_for_each(|(is_negated, predicate)| {
-                    if *is_negated {
-                        write!(f, " (not {})", TermPrefix(predicate))
-                    } else {
-                        write!(f, " {}", TermPrefix(predicate))
-                    }
-                })?;
+                .try_for_each(|predicate| write!(f, " {}", PredicatePrefix(predicate)))?;
             write!(f, ")")
         }
     }
 }
 
-struct TermPrefix<'a, Symbol: Display>(&'a Rc<Term<Symbol>>);
+struct TermPrefix<'a, Id: Display>(&'a Rc<Term<Id>>);
 
-impl<Symbol: Display> Display for TermPrefix<'_, Symbol> {
+impl<Id: Display> Display for TermPrefix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self.0.deref() {
             Term::Base(proposition) => write!(f, "(base {})", TermPrefix(proposition)),

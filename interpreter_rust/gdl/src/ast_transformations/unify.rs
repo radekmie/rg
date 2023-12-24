@@ -1,8 +1,8 @@
 use crate::ast::{AtomOrVariable, Term};
 use std::iter::zip;
 
-impl<Symbol: Clone + PartialEq> AtomOrVariable<Symbol> {
-    pub fn unify(&self, other: &Self) -> Unification<Symbol> {
+impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
+    pub fn unify(&self, other: &Self) -> Unification<Id> {
         use AtomOrVariable::*;
         use Unification::*;
         match (self, other) {
@@ -13,8 +13,8 @@ impl<Symbol: Clone + PartialEq> AtomOrVariable<Symbol> {
     }
 }
 
-impl<Symbol: Clone + PartialEq> Term<Symbol> {
-    pub fn unify(&self, other: &Self) -> Unification<Symbol> {
+impl<Id: Clone + PartialEq> Term<Id> {
+    pub fn unify(&self, other: &Self) -> Unification<Id> {
         use Term::*;
         match (self, other) {
             (Base(x), Base(y)) => x.unify(y),
@@ -38,20 +38,20 @@ impl<Symbol: Clone + PartialEq> Term<Symbol> {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Unification<Symbol> {
+pub enum Unification<Id> {
     Empty,
     Failed,
-    NotEmpty(Vec<(Symbol, Term<Symbol>)>),
+    NotEmpty(Vec<(Id, Term<Id>)>),
 }
 
-impl<Symbol> Unification<Symbol> {
+impl<Id> Unification<Id> {
     pub fn is_empty(&self) -> bool {
         matches!(self, Self::Empty | Self::Failed)
     }
 }
 
-impl<Symbol: PartialEq> Unification<Symbol> {
-    pub fn get(&self, symbol: &Symbol) -> Option<&Term<Symbol>> {
+impl<Id: PartialEq> Unification<Id> {
+    pub fn get(&self, symbol: &Id) -> Option<&Term<Id>> {
         match self {
             Self::NotEmpty(mapping) => mapping
                 .iter()
@@ -81,7 +81,7 @@ impl<Symbol: PartialEq> Unification<Symbol> {
     }
 }
 
-impl<Symbol: PartialEq> FromIterator<Unification<Symbol>> for Unification<Symbol> {
+impl<Id: PartialEq> FromIterator<Unification<Id>> for Unification<Id> {
     fn from_iter<I: IntoIterator<Item = Self>>(iter: I) -> Self {
         let mut u = Self::Empty;
         for x in iter {

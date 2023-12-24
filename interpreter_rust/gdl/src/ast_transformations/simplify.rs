@@ -1,6 +1,6 @@
 use crate::ast::{Game, Term};
 
-impl<Symbol: Clone + PartialEq> Game<Symbol> {
+impl<Id: Clone + PartialEq> Game<Id> {
     pub fn simplify(&self) -> Self {
         let mut rules = self.0.clone();
 
@@ -9,12 +9,12 @@ impl<Symbol: Clone + PartialEq> Game<Symbol> {
             for i in 0..rules.len() {
                 let (xs, ys) = rules.split_at_mut(i);
                 let (rule, ys) = ys.split_first_mut().unwrap();
-                rule.predicates.retain(|(_, predicate)| {
-                    let is_constant = matches!(**predicate, Term::Custom(_, _) | Term::Role(_))
+                rule.predicates.retain(|predicate| {
+                    let is_constant = matches!(*predicate.term, Term::Custom(_, _) | Term::Role(_))
                         && xs
                             .iter()
                             .chain(ys.iter())
-                            .any(|rule| rule.predicates.is_empty() && rule.term == *predicate);
+                            .any(|rule| rule.predicates.is_empty() && rule.term == predicate.term);
                     any_simplification_happened = any_simplification_happened || is_constant;
                     !is_constant
                 });

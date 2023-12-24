@@ -1,13 +1,15 @@
+use map_id::MapId;
+use map_id_macro::MapId;
 use std::rc::Rc;
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum AtomOrVariable<Symbol> {
-    Atom(Symbol),
-    Variable(Symbol),
+#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
+pub enum AtomOrVariable<Id> {
+    Atom(Id),
+    Variable(Id),
 }
 
-impl<Symbol> AtomOrVariable<Symbol> {
-    pub fn as_term(self) -> Term<Symbol> {
+impl<Id> AtomOrVariable<Id> {
+    pub fn as_term(self) -> Term<Id> {
         Term::Custom(self, None)
     }
 
@@ -16,74 +18,74 @@ impl<Symbol> AtomOrVariable<Symbol> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Game<Symbol>(pub Vec<Rule<Symbol>>);
+#[derive(Clone, Debug, Eq, MapId, PartialEq)]
+pub struct Game<Id>(pub Vec<Rule<Id>>);
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Rule<Symbol> {
-    pub term: Rc<Term<Symbol>>,
-    pub predicates: Vec<(bool, Rc<Term<Symbol>>)>,
+#[derive(Clone, Debug, Eq, MapId, PartialEq)]
+pub struct Predicate<Id> {
+    pub is_negated: bool,
+    pub term: Rc<Term<Id>>,
 }
 
-impl<Symbol: Clone + Ord> Rule<Symbol> {
+#[derive(Clone, Debug, Eq, MapId, PartialEq)]
+pub struct Rule<Id> {
+    pub term: Rc<Term<Id>>,
+    pub predicates: Vec<Predicate<Id>>,
+}
+
+impl<Id: Clone + Ord> Rule<Id> {
     pub fn has_variable(&self) -> bool {
         self.subterms().any(Term::has_variable)
     }
 
-    pub fn subterms(&self) -> TermIterator<Symbol> {
+    pub fn subterms(&self) -> TermIterator<Id> {
         let mut iterator = TermIterator::new();
         iterator.add(&self.term);
-        for (_, predicate) in &self.predicates {
-            iterator.add(predicate);
+        for predicate in &self.predicates {
+            iterator.add(&predicate.term);
         }
         iterator
     }
 }
 
-impl<Symbol> From<(Rc<Term<Symbol>>, Vec<(bool, Rc<Term<Symbol>>)>)> for Rule<Symbol> {
-    fn from((term, predicates): (Rc<Term<Symbol>>, Vec<(bool, Rc<Term<Symbol>>)>)) -> Self {
-        Self { term, predicates }
-    }
-}
-
 /// As defined in http://logic.stanford.edu/ggp/notes/gdl.html.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum Term<Symbol> {
+#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
+pub enum Term<Id> {
     /// `base(p)` means that `p` is a base proposition in the game.
-    Base(Rc<Term<Symbol>>),
+    Base(Rc<Term<Id>>),
 
     /// `name(...arguments)` is a custom, game-specific term.
-    Custom(AtomOrVariable<Symbol>, Option<Vec<Rc<Term<Symbol>>>>),
+    Custom(AtomOrVariable<Id>, Option<Vec<Rc<Term<Id>>>>),
 
     /// `does(r, a)` means that player `r` performs action `a` in the current state.
-    Does(AtomOrVariable<Symbol>, Rc<Term<Symbol>>),
+    Does(AtomOrVariable<Id>, Rc<Term<Id>>),
 
     /// `goal(r, u)` means that player the current state has utility `u` for player `r`.
-    Goal(AtomOrVariable<Symbol>, AtomOrVariable<Symbol>),
+    Goal(AtomOrVariable<Id>, AtomOrVariable<Id>),
 
     /// `init(p)` means that the proposition `p` is true in the initial state.
-    Init(Rc<Term<Symbol>>),
+    Init(Rc<Term<Id>>),
 
     /// `input(r, a)` means that `a` is an action for role `r`.
-    Input(AtomOrVariable<Symbol>, Rc<Term<Symbol>>),
+    Input(AtomOrVariable<Id>, Rc<Term<Id>>),
 
     /// `legal(r, a)` means it is legal for role `r` to play action `a` in the current state.
-    Legal(AtomOrVariable<Symbol>, Rc<Term<Symbol>>),
+    Legal(AtomOrVariable<Id>, Rc<Term<Id>>),
 
     /// `next(p)` means that the proposition `p` is true in the next state.
-    Next(Rc<Term<Symbol>>),
+    Next(Rc<Term<Id>>),
 
     /// `role(a)` means that `a` is a role in the game.
-    Role(AtomOrVariable<Symbol>),
+    Role(AtomOrVariable<Id>),
 
     /// `terminal` means that the current state is a terminal state.
     Terminal,
 
     /// `true(p)` means that the proposition `p` is true in the current state.
-    True(Rc<Term<Symbol>>),
+    True(Rc<Term<Id>>),
 }
 
-impl<Symbol: Clone + Ord> Term<Symbol> {
+impl<Id: Clone + Ord> Term<Id> {
     pub fn has_variable(&self) -> bool {
         use Term::*;
         match self {
@@ -106,13 +108,13 @@ impl<Symbol: Clone + Ord> Term<Symbol> {
     }
 }
 
-pub struct TermIterator<'a, Symbol> {
+pub struct TermIterator<'a, Id> {
     index: usize,
-    queue: Vec<&'a Term<Symbol>>,
+    queue: Vec<&'a Term<Id>>,
 }
 
-impl<'a, Symbol: PartialEq> TermIterator<'a, Symbol> {
-    fn add(&mut self, term: &'a Term<Symbol>) {
+impl<'a, Id: PartialEq> TermIterator<'a, Id> {
+    fn add(&mut self, term: &'a Term<Id>) {
         if matches!(term, Term::Custom(AtomOrVariable::Variable(_), _)) {
             return;
         }
@@ -130,8 +132,8 @@ impl<'a, Symbol: PartialEq> TermIterator<'a, Symbol> {
     }
 }
 
-impl<'a, Symbol: PartialEq> Iterator for TermIterator<'a, Symbol> {
-    type Item = &'a Term<Symbol>;
+impl<'a, Id: PartialEq> Iterator for TermIterator<'a, Id> {
+    type Item = &'a Term<Id>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let maybe_term = self.queue.get(self.index).copied();

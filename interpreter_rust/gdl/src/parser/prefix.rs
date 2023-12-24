@@ -1,8 +1,8 @@
 use super::utils::{in_parens, separated, symbol, Result};
-use crate::ast::{AtomOrVariable, Game, Rule, Term};
+use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::combinator::{into, map, opt, success};
+use nom::combinator::{map, opt, success};
 use nom::multi::{many0, many1};
 use nom::sequence::{pair, preceded};
 use std::convert::identity;
@@ -55,6 +55,27 @@ pub fn term(input: &str) -> Result<Term<&str>> {
     ))(input)
 }
 
+pub fn predicate(input: &str) -> Result<Predicate<&str>> {
+    alt((
+        term_template("not", term_rc, |term| Predicate {
+            is_negated: true,
+            term,
+        }),
+        map(term_rc, |term| Predicate {
+            is_negated: false,
+            term,
+        }),
+    ))(input)
+}
+
+pub fn rule(input: &str) -> Result<Rule<&str>> {
+    let rule = alt((
+        term_template("<=", pair(term_rc, separated(many1(predicate))), identity),
+        pair(term_rc, success(vec![])),
+    ));
+    map(rule, |(term, predicates)| Rule { predicates, term })(input)
+}
+
 fn term_rc(input: &str) -> Result<Rc<Term<&str>>> {
     map(separated(term), Rc::from)(input)
 }
@@ -65,19 +86,6 @@ fn term_template<'a, T, U>(
     mapper: impl Fn(T) -> U,
 ) -> impl FnMut(&'a str) -> Result<U> {
     map(in_parens(preceded(separated(tag(string)), parser)), mapper)
-}
-
-pub fn rule(input: &str) -> Result<Rule<&str>> {
-    let predicate = alt((
-        term_template("not", term_rc, |term| (true, term)),
-        pair(success(false), term_rc),
-    ));
-    let predicates = separated(many1(predicate));
-
-    into(alt((
-        term_template("<=", pair(term_rc, predicates), identity),
-        pair(term_rc, success(vec![])),
-    )))(input)
 }
 
 #[cfg(test)]

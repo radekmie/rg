@@ -6,11 +6,9 @@ pub trait MapId<ToType, OldId, NewId> {
     fn map_id(&self, map: &mut impl FnMut(&OldId) -> NewId) -> ToType;
 }
 
-impl<FromType: MapId<ToType, OldId, NewId>, ToType, OldId, NewId: Ord>
-    MapId<BTreeMap<NewId, ToType>, OldId, NewId> for BTreeMap<OldId, FromType>
-{
-    fn map_id(&self, map: &mut impl FnMut(&OldId) -> NewId) -> BTreeMap<NewId, ToType> {
-        self.iter().map(|(k, v)| (map(k), v.map_id(map))).collect()
+impl<OldId, NewId> MapId<bool, OldId, NewId> for bool {
+    fn map_id(&self, _map: &mut impl FnMut(&OldId) -> NewId) -> bool {
+        *self
     }
 }
 
@@ -19,6 +17,22 @@ impl<FromType: MapId<ToType, OldId, NewId>, ToType, OldId, NewId> MapId<Arc<ToTy
 {
     fn map_id(&self, map: &mut impl FnMut(&OldId) -> NewId) -> Arc<ToType> {
         Arc::new((**self).map_id(map))
+    }
+}
+
+impl<FromType: MapId<ToType, OldId, NewId>, ToType, OldId, NewId: Ord>
+    MapId<BTreeMap<NewId, ToType>, OldId, NewId> for BTreeMap<OldId, FromType>
+{
+    fn map_id(&self, map: &mut impl FnMut(&OldId) -> NewId) -> BTreeMap<NewId, ToType> {
+        self.iter().map(|(k, v)| (map(k), v.map_id(map))).collect()
+    }
+}
+
+impl<FromType: MapId<ToType, OldId, NewId>, ToType, OldId, NewId>
+    MapId<Option<ToType>, OldId, NewId> for Option<FromType>
+{
+    fn map_id(&self, map: &mut impl FnMut(&OldId) -> NewId) -> Option<ToType> {
+        self.as_ref().map(|x| x.map_id(map))
     }
 }
 

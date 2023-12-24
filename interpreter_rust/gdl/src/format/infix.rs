@@ -1,17 +1,17 @@
-use crate::ast::{AtomOrVariable, Game, Rule, Term};
+use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::fmt::{Display, Formatter, Result};
 use std::ops::Deref;
 use std::rc::Rc;
 
-impl<Symbol: Display> Game<Symbol> {
-    pub fn as_infix(&self) -> GameInfix<Symbol> {
+impl<Id: Display> Game<Id> {
+    pub fn as_infix(&self) -> GameInfix<Id> {
         GameInfix(self)
     }
 }
 
-struct AtomOrVariableInfix<'a, Symbol: Display>(&'a AtomOrVariable<Symbol>);
+struct AtomOrVariableInfix<'a, Id: Display>(&'a AtomOrVariable<Id>);
 
-impl<Symbol: Display> Display for AtomOrVariableInfix<'_, Symbol> {
+impl<Id: Display> Display for AtomOrVariableInfix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self.0 {
             AtomOrVariable::Atom(symbol) => write!(f, "{symbol}"),
@@ -23,9 +23,9 @@ impl<Symbol: Display> Display for AtomOrVariableInfix<'_, Symbol> {
     }
 }
 
-pub struct GameInfix<'a, Symbol: Display>(&'a Game<Symbol>);
+pub struct GameInfix<'a, Id: Display>(&'a Game<Id>);
 
-impl<Symbol: Display> Display for GameInfix<'_, Symbol> {
+impl<Id: Display> Display for GameInfix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         self.0
              .0
@@ -39,26 +39,34 @@ impl<Symbol: Display> Display for GameInfix<'_, Symbol> {
     }
 }
 
-struct RuleInfix<'a, Symbol: Display>(&'a Rule<Symbol>);
+struct PredicateInfix<'a, Id: Display>(&'a Predicate<Id>);
 
-impl<Symbol: Display> Display for RuleInfix<'_, Symbol> {
+impl<Id: Display> Display for PredicateInfix<'_, Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let negation = if self.0.is_negated { "~" } else { "" };
+        write!(f, "{negation}{}", TermInfix(&self.0.term))
+    }
+}
+
+struct RuleInfix<'a, Id: Display>(&'a Rule<Id>);
+
+impl<Id: Display> Display for RuleInfix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "{}", TermInfix(&self.0.term))?;
         self.0
             .predicates
             .iter()
             .enumerate()
-            .try_for_each(|(index, (is_negated, predicate))| {
+            .try_for_each(|(index, predicate)| {
                 let separator = if index == 0 { " :- " } else { " & " };
-                let negation = if *is_negated { "~" } else { "" };
-                write!(f, "{separator}{negation}{}", TermInfix(predicate))
+                write!(f, "{separator}{}", PredicateInfix(predicate))
             })
     }
 }
 
-struct TermInfix<'a, Symbol: Display>(&'a Rc<Term<Symbol>>);
+struct TermInfix<'a, Id: Display>(&'a Rc<Term<Id>>);
 
-impl<Symbol: Display> Display for TermInfix<'_, Symbol> {
+impl<Id: Display> Display for TermInfix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self.0.deref() {
             Term::Base(proposition) => write!(f, "base({})", TermInfix(proposition)),

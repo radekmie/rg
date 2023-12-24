@@ -208,6 +208,8 @@ dependencies = [
 name = "gdl"
 version = "0.1.0"
 dependencies = [
+ "map_id",
+ "map_id_macro",
  "nom",
 ]
 
