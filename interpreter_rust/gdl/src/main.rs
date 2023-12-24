@@ -1,4 +1,5 @@
 use gdl::parser;
+use map_id::MapId;
 use nom::Finish;
 use std::io;
 
@@ -8,12 +9,15 @@ fn main() {
         if buffer.chars().any(|c| c.is_alphanumeric()) {
             match parser::game(&buffer).finish() {
                 Ok((_, game)) => {
-                    println!("      prefix: {}", game.as_prefix());
-                    println!("       infix: {}", game.as_infix());
+                    let game = game.map_id(&mut |id| String::from(*id));
+                    println!("       prefix: {}", game.as_prefix());
+                    println!("        infix: {}", game.as_infix());
                     let game = game.ground();
-                    println!("    grounded: {}", game.as_infix());
+                    println!("     grounded: {}", game.as_infix());
                     let game = game.simplify();
-                    println!("  simplified: {}", game.as_infix());
+                    println!("   simplified: {}", game.as_infix());
+                    let game = game.symbolify();
+                    println!("  symbolified: {}", game.as_infix());
                 }
                 Err(error) => println!("\n\n[ERROR]\n{error}\n\n"),
             }

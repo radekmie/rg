@@ -73,7 +73,7 @@ pub fn rule(input: &str) -> Result<Rule<&str>> {
         term_template("<=", pair(term_rc, separated(many1(predicate))), identity),
         pair(term_rc, success(vec![])),
     ));
-    map(rule, |(term, predicates)| Rule { predicates, term })(input)
+    map(rule, |(term, predicates)| Rule { term, predicates })(input)
 }
 
 fn term_rc(input: &str) -> Result<Rc<Term<&str>>> {

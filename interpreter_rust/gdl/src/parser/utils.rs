@@ -1,6 +1,5 @@
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::complete::{alpha1, digit1, multispace0};
+use nom::bytes::complete::{tag, take_while1};
+use nom::character::complete::multispace0;
 use nom::sequence::delimited;
 use nom::IResult;
 
@@ -19,5 +18,5 @@ pub fn separated<'a, T>(
 }
 
 pub fn symbol(input: &str) -> Result<&str> {
-    alt((alpha1, digit1))(input)
+    take_while1(|c: char| c.is_alphanumeric() || c == '_')(input)
 }

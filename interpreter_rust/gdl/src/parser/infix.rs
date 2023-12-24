@@ -37,17 +37,19 @@ pub fn rule(input: &str) -> Result<Rule<&str>> {
         )),
     );
     map(rule, |(term, predicates)| Rule {
-        predicates: predicates.unwrap_or_default(),
         term,
+        predicates: predicates.unwrap_or_default(),
     })(input)
 }
 
 pub fn term(input: &str) -> Result<Term<&str>> {
     alt((
         term_template("base", term_rc, Term::Base),
-        term_template("does", pair(atom_or_variable, term_rc), |(role, action)| {
-            Term::Does(role, action)
-        }),
+        term_template(
+            "does",
+            separated_pair(atom_or_variable, separated(tag(",")), term_rc),
+            |(role, action)| Term::Does(role, action),
+        ),
         term_template(
             "goal",
             separated_pair(atom_or_variable, separated(tag(",")), atom_or_variable),

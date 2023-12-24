@@ -1,6 +1,7 @@
 pub mod ground;
 pub mod simplify;
 pub mod substitute;
+pub mod symbolify;
 pub mod unify;
 
 use map_id::MapId;
