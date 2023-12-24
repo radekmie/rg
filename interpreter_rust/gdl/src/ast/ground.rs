@@ -1,7 +1,7 @@
 use super::unify::Unification;
 use crate::ast::{Game, Term};
 
-impl<Id: Clone + Ord> Game<Id> {
+impl<Id: Clone + PartialEq> Game<Id> {
     pub fn ground(&self) -> Self {
         let mut rules = self.0.clone();
         let mut subterms: Vec<Vec<_>> = rules
@@ -43,7 +43,10 @@ impl<Id: Clone + Ord> Game<Id> {
     }
 }
 
-fn any_unification<Id: Clone + Ord>(xs: &[Term<Id>], ys: &[Term<Id>]) -> Option<Unification<Id>> {
+fn any_unification<Id: Clone + PartialEq>(
+    xs: &[Term<Id>],
+    ys: &[Term<Id>],
+) -> Option<Unification<Id>> {
     for x in xs {
         for y in ys {
             let unification = x.unify(y);

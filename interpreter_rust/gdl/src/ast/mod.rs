@@ -1,8 +1,13 @@
+pub mod ground;
+pub mod simplify;
+pub mod substitute;
+pub mod unify;
+
 use map_id::MapId;
 use map_id_macro::MapId;
 use std::rc::Rc;
 
-#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, MapId, PartialEq)]
 pub enum AtomOrVariable<Id> {
     Atom(Id),
     Variable(Id),
@@ -18,27 +23,27 @@ impl<Id> AtomOrVariable<Id> {
     }
 }
 
-#[derive(Clone, Debug, Eq, MapId, PartialEq)]
+#[derive(Clone, Debug, MapId, PartialEq)]
 pub struct Game<Id>(pub Vec<Rule<Id>>);
 
-#[derive(Clone, Debug, Eq, MapId, PartialEq)]
+#[derive(Clone, Debug, MapId, PartialEq)]
 pub struct Predicate<Id> {
     pub is_negated: bool,
     pub term: Rc<Term<Id>>,
 }
 
-#[derive(Clone, Debug, Eq, MapId, PartialEq)]
+#[derive(Clone, Debug, MapId, PartialEq)]
 pub struct Rule<Id> {
     pub term: Rc<Term<Id>>,
     pub predicates: Vec<Predicate<Id>>,
 }
 
-impl<Id: Clone + Ord> Rule<Id> {
+impl<Id: PartialEq> Rule<Id> {
     pub fn has_variable(&self) -> bool {
         self.subterms().any(Term::has_variable)
     }
 
-    pub fn subterms(&self) -> TermIterator<Id> {
+    pub fn subterms(&self) -> impl Iterator<Item = &Term<Id>> {
         let mut iterator = TermIterator::new();
         iterator.add(&self.term);
         for predicate in &self.predicates {
@@ -49,7 +54,7 @@ impl<Id: Clone + Ord> Rule<Id> {
 }
 
 /// As defined in http://logic.stanford.edu/ggp/notes/gdl.html.
-#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, MapId, PartialEq)]
 pub enum Term<Id> {
     /// `base(p)` means that `p` is a base proposition in the game.
     Base(Rc<Term<Id>>),
@@ -85,7 +90,7 @@ pub enum Term<Id> {
     True(Rc<Term<Id>>),
 }
 
-impl<Id: Clone + Ord> Term<Id> {
+impl<Id> Term<Id> {
     pub fn has_variable(&self) -> bool {
         use Term::*;
         match self {
@@ -108,7 +113,7 @@ impl<Id: Clone + Ord> Term<Id> {
     }
 }
 
-pub struct TermIterator<'a, Id> {
+struct TermIterator<'a, Id> {
     index: usize,
     queue: Vec<&'a Term<Id>>,
 }

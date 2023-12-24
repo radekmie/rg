@@ -2,7 +2,7 @@ use super::unify::Unification;
 use crate::ast::{AtomOrVariable, Predicate, Rule, Term};
 use std::rc::Rc;
 
-impl<Id: Clone + Ord> AtomOrVariable<Id> {
+impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         use AtomOrVariable::*;
         match self {
@@ -18,7 +18,7 @@ impl<Id: Clone + Ord> AtomOrVariable<Id> {
     }
 }
 
-impl<Id: Clone + Ord> Predicate<Id> {
+impl<Id: Clone + PartialEq> Predicate<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         Self {
             is_negated: self.is_negated,
@@ -27,7 +27,7 @@ impl<Id: Clone + Ord> Predicate<Id> {
     }
 }
 
-impl<Id: Clone + Ord> Rule<Id> {
+impl<Id: Clone + PartialEq> Rule<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         Self {
             term: Rc::new(self.term.substitute(u)),
@@ -40,7 +40,7 @@ impl<Id: Clone + Ord> Rule<Id> {
     }
 }
 
-impl<Id: Clone + Ord> Term<Id> {
+impl<Id: Clone + PartialEq> Term<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         use Term::*;
         match self {
