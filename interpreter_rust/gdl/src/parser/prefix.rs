@@ -27,7 +27,7 @@ pub fn term(input: &str) -> Result<Term<&str>> {
         }),
         term_template(
             "goal",
-            pair(atom_or_variable, atom_or_variable),
+            pair(atom_or_variable, separated(atom_or_variable)),
             |(role, utility)| Term::Goal(role, utility),
         ),
         term_template("init", term_rc, Term::Init),
@@ -44,6 +44,7 @@ pub fn term(input: &str) -> Result<Term<&str>> {
         term_template("next", term_rc, Term::Next),
         term_template("role", atom_or_variable, Term::Role),
         term_template("terminal", success(()), |_| Term::Terminal),
+        map(tag("terminal"), |_| Term::Terminal),
         term_template("true", term_rc, Term::True),
         map(
             alt((

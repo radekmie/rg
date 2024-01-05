@@ -1,0 +1,10 @@
+[package]
+name = "gdl_to_rg"
+version = "0.1.0"
+authors = ["Radosław Miernik <radekmie@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+gdl = { path = "../gdl" }
+map_id = { path = "../map_id" }
+rg = { path = "../rg" }

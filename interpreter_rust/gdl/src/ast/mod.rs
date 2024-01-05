@@ -1,8 +1,10 @@
-pub mod ground;
-pub mod simplify;
-pub mod substitute;
-pub mod symbolify;
-pub mod unify;
+mod eval_distinct;
+mod expand_ors;
+mod ground;
+mod simplify;
+mod substitute;
+mod symbolify;
+mod unify;
 
 use map_id::MapId;
 use map_id_macro::MapId;
@@ -27,6 +29,14 @@ impl<Id> AtomOrVariable<Id> {
 #[derive(Clone, Debug, MapId, PartialEq)]
 pub struct Game<Id>(pub Vec<Rule<Id>>);
 
+impl<Id: PartialEq> Game<Id> {
+    pub fn subterms(&self) -> impl Iterator<Item = &Term<Id>> {
+        let mut iterator = TermIterator::new();
+        iterator.add_game(self);
+        iterator
+    }
+}
+
 #[derive(Clone, Debug, MapId, PartialEq)]
 pub struct Predicate<Id> {
     pub is_negated: bool,
@@ -46,10 +56,7 @@ impl<Id: PartialEq> Rule<Id> {
 
     pub fn subterms(&self) -> impl Iterator<Item = &Term<Id>> {
         let mut iterator = TermIterator::new();
-        iterator.add(&self.term);
-        for predicate in &self.predicates {
-            iterator.add(&predicate.term);
-        }
+        iterator.add_rule(self);
         iterator
     }
 }
@@ -91,6 +98,14 @@ pub enum Term<Id> {
     True(Rc<Term<Id>>),
 }
 
+impl<Id: PartialEq> Term<Id> {
+    pub fn subterms(&self) -> impl Iterator<Item = &Term<Id>> {
+        let mut iterator = TermIterator::new();
+        iterator.add_term(self);
+        iterator
+    }
+}
+
 impl<Id> Term<Id> {
     pub fn has_variable(&self) -> bool {
         use Term::*;
@@ -118,7 +133,20 @@ struct TermIterator<'a, Id> {
 }
 
 impl<'a, Id: PartialEq> TermIterator<'a, Id> {
-    fn add(&mut self, term: &'a Term<Id>) {
+    fn add_game(&mut self, game: &'a Game<Id>) {
+        for rule in &game.0 {
+            self.add_rule(rule);
+        }
+    }
+
+    fn add_rule(&mut self, rule: &'a Rule<Id>) {
+        self.add_term(&rule.term);
+        for predicate in &rule.predicates {
+            self.add_term(&predicate.term);
+        }
+    }
+
+    fn add_term(&mut self, term: &'a Term<Id>) {
         if matches!(term, Term::Custom(AtomOrVariable::Variable(_), _)) {
             return;
         }
@@ -131,7 +159,7 @@ impl<'a, Id: PartialEq> TermIterator<'a, Id> {
     fn new() -> Self {
         Self {
             index: 0,
-            queue: Vec::new(),
+            queue: vec![],
         }
     }
 }
@@ -146,17 +174,19 @@ impl<'a, Id: PartialEq> Iterator for TermIterator<'a, Id> {
 
             use Term::*;
             match term {
-                Base(proposition) => self.add(proposition),
-                Custom(_, arguments) => arguments.iter().for_each(|argument| self.add(argument)),
-                Does(_, action) => self.add(action),
+                Base(proposition) => self.add_term(proposition),
+                Custom(_, arguments) => arguments
+                    .iter()
+                    .for_each(|argument| self.add_term(argument)),
+                Does(_, action) => self.add_term(action),
                 Goal(_, _) => {}
-                Init(proposition) => self.add(proposition),
-                Input(_, action) => self.add(action),
-                Legal(_, action) => self.add(action),
-                Next(proposition) => self.add(proposition),
+                Init(proposition) => self.add_term(proposition),
+                Input(_, action) => self.add_term(action),
+                Legal(_, action) => self.add_term(action),
+                Next(proposition) => self.add_term(proposition),
                 Role(_) => {}
                 Terminal => {}
-                True(proposition) => self.add(proposition),
+                True(proposition) => self.add_term(proposition),
             }
         }
 

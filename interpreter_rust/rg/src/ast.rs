@@ -201,10 +201,10 @@ pub struct EdgeName<Id> {
 }
 
 impl<Id> EdgeName<Id> {
-    pub fn new(id: Id) -> Self {
+    pub fn new(identifier: Id) -> Self {
         Self {
             span: Span::none(),
-            parts: vec![EdgeNamePart::Literal { identifier: id }],
+            parts: vec![EdgeNamePart::new(identifier)],
         }
     }
 
@@ -256,9 +256,7 @@ impl EdgeName<Arc<str>> {
             .join("__bind__");
         Self {
             span: self.span,
-            parts: vec![EdgeNamePart::Literal {
-                identifier: Arc::from(identifier),
-            }],
+            parts: vec![EdgeNamePart::new(Arc::from(identifier))],
         }
     }
 }
@@ -279,20 +277,24 @@ pub enum EdgeNamePart<Id> {
 }
 
 impl<Id> EdgeNamePart<Id> {
-    pub fn identifier(&self) -> &Id {
+    pub fn binding(&self) -> Option<Binding<Id>> {
         match self {
-            EdgeNamePart::Binding { identifier, .. } => identifier,
-            EdgeNamePart::Literal { identifier } => identifier,
+            Self::Binding {
+                identifier, type_, ..
+            } => Some((identifier, type_)),
+            _ => None,
         }
     }
-    pub fn binding(&self) -> Option<Binding<Id>> {
-        let Self::Binding {
-            identifier, type_, ..
-        } = self
-        else {
-            return None;
-        };
-        Some((identifier, type_))
+
+    pub fn identifier(&self) -> &Id {
+        match self {
+            Self::Binding { identifier, .. } => identifier,
+            Self::Literal { identifier } => identifier,
+        }
+    }
+
+    pub fn new(identifier: Id) -> Self {
+        Self::Literal { identifier }
     }
 }
 
@@ -401,6 +403,12 @@ pub enum Expression<Id> {
     Reference {
         identifier: Id,
     },
+}
+
+impl<Id> Expression<Id> {
+    pub fn new(identifier: Id) -> Self {
+        Self::Reference { identifier }
+    }
 }
 
 impl<Id: Clone + PartialEq> Expression<Id> {
@@ -870,6 +878,10 @@ impl<Id> Type<Id> {
     pub fn is_set(&self) -> bool {
         matches!(self, Self::Set { .. })
     }
+
+    pub fn new(identifier: Id) -> Self {
+        Self::TypeReference { identifier }
+    }
 }
 
 impl<Id: Clone + PartialEq> Type<Id> {
@@ -931,6 +943,12 @@ pub enum Value<Id> {
         span: Span,
         entries: Vec<ValueEntry<Id>>,
     },
+}
+
+impl<Id> Value<Id> {
+    pub fn new(identifier: Id) -> Self {
+        Self::Element { identifier }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

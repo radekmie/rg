@@ -1,13 +1,14 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::rc::Rc;
+use std::sync::Arc;
 
-impl Game<String> {
+impl Game<Arc<str>> {
     pub fn symbolify(&self) -> Self {
         Self(self.0.iter().map(|rule| rule.symbolify()).collect())
     }
 }
 
-impl Predicate<String> {
+impl Predicate<Arc<str>> {
     pub fn symbolify(&self) -> Self {
         Self {
             is_negated: self.is_negated,
@@ -16,7 +17,7 @@ impl Predicate<String> {
     }
 }
 
-impl Rule<String> {
+impl Rule<Arc<str>> {
     pub fn symbolify(&self) -> Self {
         Self {
             term: Rc::new(self.term.symbolify()),
@@ -29,7 +30,7 @@ impl Rule<String> {
     }
 }
 
-impl Term<String> {
+impl Term<Arc<str>> {
     pub fn symbolify(&self) -> Self {
         use Term::*;
         self.maybe_symbolify().map_or_else(
@@ -52,7 +53,7 @@ impl Term<String> {
                 Terminal => Terminal,
                 True(proposition) => True(Rc::new(proposition.symbolify())),
             },
-            |id| Custom(AtomOrVariable::Atom(id), vec![]),
+            |id| Custom(AtomOrVariable::Atom(Arc::from(id)), vec![]),
         )
     }
 
@@ -60,10 +61,9 @@ impl Term<String> {
     // have the same symbolified form of `a_b_c`.
     fn maybe_symbolify(&self) -> Option<String> {
         match self {
-            // TODO: Those two could be simplified earlier.
-            Self::Custom(AtomOrVariable::Atom(id), _) if id == "distinct" || id == "or" => None,
+            // Self::Custom(AtomOrVariable::Atom(id), _) if id.as_ref() == "distinct" => None,
             Self::Custom(AtomOrVariable::Atom(id), arguments) => {
-                let mut symbolified_id = id.clone();
+                let mut symbolified_id = id.to_string();
                 for argument in arguments {
                     symbolified_id.push('_');
                     symbolified_id.push_str(&argument.maybe_symbolify()?);
@@ -81,12 +81,13 @@ mod test {
     use crate::parser::infix::game;
     use map_id::MapId;
     use nom::combinator::all_consuming;
+    use std::sync::Arc;
 
-    fn parse(input: &str) -> Game<String> {
+    fn parse(input: &str) -> Game<Arc<str>> {
         all_consuming(game)(&input)
             .unwrap()
             .1
-            .map_id(&mut |id| String::from(*id))
+            .map_id(&mut |id| Arc::from(*id))
     }
 
     macro_rules! test {

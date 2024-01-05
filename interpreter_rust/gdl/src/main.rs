@@ -2,6 +2,7 @@ use gdl::parser;
 use map_id::MapId;
 use nom::Finish;
 use std::io;
+use std::sync::Arc;
 
 fn main() {
     let mut buffer = String::new();
@@ -9,7 +10,8 @@ fn main() {
         if buffer.chars().any(|c| c.is_alphanumeric()) {
             match parser::game(&buffer).finish() {
                 Ok((_, game)) => {
-                    let game = game.map_id(&mut |id| String::from(*id));
+                    let game = game.map_id(&mut |id| Arc::from(*id));
+                    println!("        debug: {:?}", game);
                     println!("       prefix: {}", game.as_prefix());
                     println!("        infix: {}", game.as_infix());
                     let game = game.ground();
