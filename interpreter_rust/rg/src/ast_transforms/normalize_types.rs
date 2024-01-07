@@ -46,7 +46,7 @@ impl Type<Arc<str>> {
 
         let mut index = 1;
         let identifier = loop {
-            let identifier = Arc::from(format!("Type{}", index));
+            let identifier = Arc::from(format!("Type{index}"));
             if !game
                 .typedefs
                 .iter()
@@ -108,7 +108,7 @@ mod test {
 
     fn parse(input: &str) -> Game<Arc<str>> {
         let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Parse errors: {:?}", errors);
+        assert!(errors.is_empty(), "Parse errors: {errors:?}");
         game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
     }
 

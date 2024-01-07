@@ -36,7 +36,7 @@ pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<Document
 
 pub fn references(
     uri: &Url,
-    position: &Position,
+    position: Position,
     symbol_table: &SymbolTable,
 ) -> Option<Vec<Location>> {
     let enclosing_symbol = symbol_table.get_symbol_at(&position.to_rg())?;
@@ -52,7 +52,7 @@ pub fn references(
 
 pub fn definitions(
     uri: &Url,
-    position: &Position,
+    position: Position,
     symbol_table: &SymbolTable,
 ) -> Option<GotoDefinitionResponse> {
     let enclosing_symbol = symbol_table.get_symbol_at(&position.to_rg())?;
@@ -63,7 +63,7 @@ pub fn definitions(
 }
 
 pub fn document_highlight(
-    position: &Position,
+    position: Position,
     symbol_table: &SymbolTable,
 ) -> Option<Vec<DocumentHighlight>> {
     let enclosing_symbol = symbol_table.get_symbol_at(&position.to_rg())?;
@@ -81,7 +81,7 @@ pub fn document_highlight(
 }
 
 pub fn prepare_rename(
-    position: &Position,
+    position: Position,
     symbol_table: &SymbolTable,
 ) -> Option<PrepareRenameResponse> {
     let enclosing_occ = symbol_table.get_occ_at(&position.to_rg())?;
@@ -96,9 +96,9 @@ pub fn prepare_rename(
 
 pub fn rename(
     uri: &Url,
-    position: &Position,
+    position: Position,
     symbol_table: &SymbolTable,
-    new_name: String,
+    new_name: &str,
 ) -> Option<WorkspaceEdit> {
     let symbol = symbol_table.get_symbol_at(&position.to_rg())?;
     let sym_idx = symbol_table.sym_idx(symbol)?;
@@ -108,7 +108,7 @@ pub fn rename(
             .iter()
             .map(|occ| TextEdit {
                 range: occ.pos.to_lsp(),
-                new_text: new_name.clone(),
+                new_text: new_name.to_string(),
             })
             .collect();
         let changes = HashMap::from([(uri.clone(), text_edits)]);
@@ -120,7 +120,7 @@ pub fn rename(
     })
 }
 
-pub fn diagnostics(errors: Vec<Error>) -> Vec<Diagnostic> {
+pub fn diagnostics(errors: &[Error]) -> Vec<Diagnostic> {
     errors
         .iter()
         .map(|Error { span, message, .. }| Diagnostic {
@@ -134,7 +134,7 @@ pub fn diagnostics(errors: Vec<Error>) -> Vec<Diagnostic> {
 }
 
 pub fn hover(
-    position: &Position,
+    position: Position,
     symbol_table: &SymbolTable,
     game: &Game<Identifier>,
 ) -> Option<Hover> {

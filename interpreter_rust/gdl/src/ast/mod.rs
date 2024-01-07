@@ -10,7 +10,7 @@ use map_id::MapId;
 use map_id_macro::MapId;
 use std::rc::Rc;
 
-#[derive(Clone, Debug, MapId, PartialEq)]
+#[derive(Clone, Debug, MapId, PartialEq, Eq)]
 pub enum AtomOrVariable<Id> {
     Atom(Id),
     Variable(Id),
@@ -61,7 +61,7 @@ impl<Id: PartialEq> Rule<Id> {
     }
 }
 
-/// As defined in http://logic.stanford.edu/ggp/notes/gdl.html.
+/// As defined in <http://logic.stanford.edu/ggp/notes/gdl.html>.
 #[derive(Clone, Debug, MapId, PartialEq)]
 pub enum Term<Id> {
     /// `base(p)` means that `p` is a base proposition in the game.
@@ -99,7 +99,7 @@ pub enum Term<Id> {
 }
 
 impl<Id: PartialEq> Term<Id> {
-    pub fn subterms(&self) -> impl Iterator<Item = &Term<Id>> {
+    pub fn subterms(&self) -> impl Iterator<Item = &Self> {
         let mut iterator = TermIterator::new();
         iterator.add_term(self);
         iterator
@@ -108,7 +108,7 @@ impl<Id: PartialEq> Term<Id> {
 
 impl<Id> Term<Id> {
     pub fn has_variable(&self) -> bool {
-        use Term::*;
+        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match self {
             Base(proposition) => proposition.has_variable(),
             Custom(name, arguments) => {
@@ -168,11 +168,11 @@ impl<'a, Id: PartialEq> Iterator for TermIterator<'a, Id> {
     type Item = &'a Term<Id>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
+
         let maybe_term = self.queue.get(self.index).copied();
         if let Some(term) = maybe_term {
             self.index += 1;
-
-            use Term::*;
             match term {
                 Base(proposition) => self.add_term(proposition),
                 Custom(_, arguments) => arguments

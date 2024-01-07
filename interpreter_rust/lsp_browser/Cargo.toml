@@ -24,3 +24,6 @@ version = "0.3.65"
 
 [lib]
 crate-type = ["cdylib"]
+
+[lints]
+workspace = true

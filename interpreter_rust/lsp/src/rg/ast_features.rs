@@ -1,6 +1,6 @@
 use crate::rg::statement::Statement;
 use crate::rg::symbol::{Flag, Symbol};
-use rg::ast::*;
+use rg::ast::{Game, Identifier};
 use rg::position::{Position, Positioned, Span};
 
 pub trait AstFeatures {

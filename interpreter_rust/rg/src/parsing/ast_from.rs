@@ -1,4 +1,7 @@
-use crate::ast::*;
+use crate::ast::{
+    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Identifier, Type, Typedef,
+    Value, ValueEntry, Variable,
+};
 use crate::parsing::parser::Input;
 use crate::position::{Positioned, Span};
 use std::sync::Arc;
@@ -112,7 +115,7 @@ impl<Id> From<Id> for EdgeNamePart<Id> {
 
 impl From<Input<'_>> for Identifier {
     fn from(value: Input) -> Self {
-        Self::new(Span::from(&value), value.fragment().to_string())
+        Self::new(Span::from(&value), (*value.fragment()).to_string())
     }
 }
 

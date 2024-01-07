@@ -1,7 +1,7 @@
 use super::error::Error;
 use super::parser::{Input, Result};
 use crate::ast::{Expression, Identifier};
-use crate::position::*;
+use crate::position::{Position, Span};
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while, take_while1};
 use nom::character::complete::{anychar, multispace1};
@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub fn parse_error_line(input: Input) -> Result<()> {
     let error_pos = Span::at(&input);
     let (input, unexpected) = anychar(input)?;
-    let error_msg = format!("unexpected character: `{}`", unexpected);
+    let error_msg = format!("unexpected character: `{unexpected}`");
     let err = Error::parser_error(error_pos, error_msg);
     input.extra.report_error(err);
     let (input, _) = take_while(|c| c != '\n')(input)?;
@@ -34,7 +34,7 @@ pub fn with_semicolon<'a, O1, O2, O3: From<(O1, O2, Span)>>(
             let err = Error::parser_error(semicolon_pos, "expected `;`".to_string());
             input.extra.report_error(err);
         }
-        let end_pos = end.map_or(Span::at(&input), |end| Span::from(&end).focus_end());
+        let end_pos = end.map_or_else(|| Span::at(&input), |end| Span::from(&end).focus_end());
         Ok((input, second.map(|second| (first, second, end_pos).into())))
     }
 }
@@ -51,8 +51,8 @@ where
         let error_pos = Span::at(&input);
         match parser(input) {
             Ok((remaining, out)) => Ok((remaining, Some(out))),
-            Err(nom::Err::Error(input)) | Err(nom::Err::Failure(input)) => {
-                let err = Error::parser_error(error_pos, format!("expected: {}", error_msg));
+            Err(nom::Err::Error(input) | nom::Err::Failure(input)) => {
+                let err = Error::parser_error(error_pos, format!("expected: {error_msg}"));
                 input.input.extra.report_error(err);
                 Ok((input.input, None))
             }
@@ -70,7 +70,7 @@ pub fn comment(input: Input) -> Result<Input> {
 }
 
 pub fn comments_and_whitespaces(input: Input) -> Result<()> {
-    fold_many0(alt((comment, multispace1)), || (), |_, _| ())(input)
+    fold_many0(alt((comment, multispace1)), || (), |(), _| ())(input)
 }
 
 pub fn preceded_whitespace<'a, O>(
@@ -84,7 +84,7 @@ pub fn preceded_tag<'a>(str: &'a str) -> impl FnMut(Input<'a>) -> Result<Input> 
 }
 
 pub fn expect_preceded_tag<'a>(str: &'a str) -> impl FnMut(Input<'a>) -> Result<Option<Input>> {
-    expect(preceded_tag(str), format!("`{}`", str))
+    expect(preceded_tag(str), format!("`{str}`"))
 }
 
 pub fn into_arc<'a, O1, O2: From<O1>>(
@@ -108,7 +108,7 @@ pub fn identifier_(input: Input) -> Result<Input> {
 pub fn identifier(input: Input) -> Result<Identifier> {
     map(identifier_, |identifier| {
         let span: Span = Span::from(&identifier);
-        Identifier::new(span, identifier.fragment().to_string())
+        Identifier::new(span, (*identifier.fragment()).to_string())
     })(input)
 }
 
@@ -117,7 +117,7 @@ pub fn preceded_opt_id<'a>(context: &'a str) -> impl FnMut(Input<'a>) -> Result<
         let start = Position::from(&input);
         expect(
             preceded_whitespace(identifier),
-            format!("{}: identifier", context),
+            format!("{context}: identifier"),
         )(input)
         .map(|(input, res)| {
             if let Some(res) = res {

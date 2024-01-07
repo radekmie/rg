@@ -17,11 +17,11 @@ impl<Id: Copy + Ord + TryFrom<usize>> Interner<Id> {
     where
         <Id as TryFrom<usize>>::Error: Debug,
     {
+        const ERROR: &str = "Maximum number of interned strings reached! Increase Id size.";
         if let Some(id) = self.string_to_id.get(string) {
             return *id;
         }
 
-        const ERROR: &str = "Maximum number of interned strings reached! Increase Id size.";
         let id = self
             .string_to_id
             .len()

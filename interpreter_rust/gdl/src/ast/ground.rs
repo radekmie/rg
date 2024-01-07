@@ -66,7 +66,7 @@ mod test {
     use nom::combinator::all_consuming;
 
     fn parse(input: &str) -> Game<&str> {
-        all_consuming(game)(&input).unwrap().1
+        all_consuming(game)(input).unwrap().1
     }
 
     macro_rules! test {

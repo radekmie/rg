@@ -11,3 +11,6 @@ nom = "7.1.3"
 nom_locate = "4.2.0"
 rand = "0.8.5"
 serde = { version = "1.0.152", features = ["derive", "rc"] }
+
+[lints]
+workspace = true

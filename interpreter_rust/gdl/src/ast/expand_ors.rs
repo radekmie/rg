@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn expand_ors(&self) -> Self {
-        Self(self.0.iter().flat_map(|rule| rule.expand_ors()).collect())
+        Self(self.0.iter().flat_map(Rule::expand_ors).collect())
     }
 }
 
@@ -25,7 +25,7 @@ impl Rule<Arc<str>> {
     pub fn expand_ors(&self) -> Vec<Self> {
         self.predicates
             .iter()
-            .map(|predicate| predicate.expand_ors())
+            .map(Predicate::expand_ors)
             .fold(vec![vec![]], |xs, ys| {
                 let mut zs = vec![];
                 for x in xs {
@@ -50,7 +50,7 @@ impl Rule<Arc<str>> {
 
 impl Term<Arc<str>> {
     pub fn expand_ors(&self) -> Vec<Self> {
-        use Term::*;
+        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match self {
             Base(proposition) => proposition
                 .expand_ors()
@@ -124,7 +124,7 @@ mod test {
     use std::sync::Arc;
 
     fn parse(input: &str) -> Game<Arc<str>> {
-        all_consuming(game)(&input)
+        all_consuming(game)(input)
             .unwrap()
             .1
             .map_id(&mut |id| Arc::from(*id))

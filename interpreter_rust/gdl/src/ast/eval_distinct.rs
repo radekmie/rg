@@ -3,12 +3,7 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn eval_distinct(&self) -> Self {
-        Self(
-            self.0
-                .iter()
-                .flat_map(|rule| rule.eval_distinct())
-                .collect(),
-        )
+        Self(self.0.iter().filter_map(Rule::eval_distinct).collect())
     }
 }
 
@@ -24,11 +19,11 @@ impl Rule<Arc<str>> {
     pub fn eval_distinct(&self) -> Option<Self> {
         self.predicates
             .iter()
-            .fold(Some(vec![]), |predicates, predicate| {
-                match (predicates, predicate.eval_distinct()) {
-                    (None, _) | (_, Some(false)) => None,
-                    (Some(predicates), Some(true)) => Some(predicates),
-                    (Some(mut predicates), None) => {
+            .try_fold(vec![], |mut predicates, predicate| {
+                match predicate.eval_distinct() {
+                    Some(false) => None,
+                    Some(true) => Some(predicates),
+                    None => {
                         predicates.push(predicate.clone());
                         Some(predicates)
                     }
@@ -62,7 +57,7 @@ mod test {
     use std::sync::Arc;
 
     fn parse(input: &str) -> Game<Arc<str>> {
-        all_consuming(game)(&input)
+        all_consuming(game)(input)
             .unwrap()
             .1
             .map_id(&mut |id| Arc::from(*id))

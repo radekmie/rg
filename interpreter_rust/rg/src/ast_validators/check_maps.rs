@@ -10,11 +10,11 @@ impl<Id: Clone + Ord> Constant<Id> {
 impl<Id: Clone + Ord> Game<Id> {
     pub fn check_maps(&self) -> Result<(), Error<Id>> {
         for constant in &self.constants {
-            constant.check_maps(self)?
+            constant.check_maps(self)?;
         }
 
         for variable in &self.variables {
-            variable.check_maps(self)?
+            variable.check_maps(self)?;
         }
 
         Ok(())

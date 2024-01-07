@@ -3,8 +3,8 @@ use std::iter::zip;
 
 impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
     pub fn unify(&self, other: &Self) -> Unification<Id> {
-        use AtomOrVariable::*;
-        use Unification::*;
+        use AtomOrVariable::{Atom, Variable};
+        use Unification::{Empty, Failed, NotEmpty};
         match (self, other) {
             (Variable(x), y @ Atom(_)) => NotEmpty(vec![(x.clone(), y.clone().as_term())]),
             (x, y) if x == y => Empty,
@@ -15,7 +15,7 @@ impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
 
 impl<Id: Clone + PartialEq> Term<Id> {
     pub fn unify(&self, other: &Self) -> Unification<Id> {
-        use Term::*;
+        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match (self, other) {
             (Base(x), Base(y)) => x.unify(y),
             (Custom(xn, xa), Custom(yn, ya)) if xa.is_empty() && ya.is_empty() => xn.unify(yn),
@@ -62,7 +62,7 @@ impl<Id: PartialEq> Unification<Id> {
     }
 
     pub fn merge(self, other: Self) -> Self {
-        use Unification::*;
+        use Unification::{Empty, Failed, NotEmpty};
         match (self, other) {
             (x, Empty) => x,
             (Empty, y) => y,
@@ -81,7 +81,7 @@ impl<Id: PartialEq> Unification<Id> {
     }
 }
 
-impl<Id: PartialEq> FromIterator<Unification<Id>> for Unification<Id> {
+impl<Id: PartialEq> FromIterator<Self> for Unification<Id> {
     fn from_iter<I: IntoIterator<Item = Self>>(iter: I) -> Self {
         let mut u = Self::Empty;
         for x in iter {
@@ -103,7 +103,7 @@ mod test {
     use nom::combinator::all_consuming;
 
     fn parse(input: &str) -> Term<&str> {
-        all_consuming(term)(&input).unwrap().1
+        all_consuming(term)(input).unwrap().1
     }
 
     macro_rules! map {

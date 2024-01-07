@@ -104,7 +104,7 @@ fn verify() {
                 assert_eq!(rest, "");
                 assert_eq!(source, game.as_infix().to_string());
             }
-            Err(error) => assert!(false, "{error}"),
+            Err(error) => panic!("{error}"),
         }
     }
 

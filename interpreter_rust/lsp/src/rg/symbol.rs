@@ -1,4 +1,4 @@
-use rg::ast::*;
+use rg::ast::{Edge, EdgeNamePart, Game, Identifier, Type};
 use rg::position::{Positioned, Span};
 use std::collections::HashSet;
 use std::fmt::Display;
@@ -14,10 +14,10 @@ pub struct Symbol {
 impl Symbol {
     pub fn new(id: String, pos: Span, flag: Flag, owners: Option<Vec<usize>>) -> Self {
         Self {
-            id,
-            pos,
             flag,
+            id,
             owners,
+            pos,
         }
     }
 
@@ -79,12 +79,12 @@ pub enum Flag {
 impl Display for Flag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Flag::Type => write!(f, "#"),
-            Flag::Member => write!(f, "."),
-            Flag::Constant => write!(f, "!"),
-            Flag::Variable => write!(f, "?"),
-            Flag::Edge => write!(f, "()"),
-            Flag::Param => write!(f, "$"),
+            Self::Type => write!(f, "#"),
+            Self::Member => write!(f, "."),
+            Self::Constant => write!(f, "!"),
+            Self::Variable => write!(f, "?"),
+            Self::Edge => write!(f, "()"),
+            Self::Param => write!(f, "$"),
         }
     }
 }
@@ -108,7 +108,7 @@ impl Symbols {
             }
             Type::TypeReference { .. } => (),
             Type::Set { identifiers, .. } => {
-                for identifier in identifiers.iter() {
+                for identifier in identifiers {
                     if let Some(symbol) = Symbol::from_id(identifier, Flag::Member) {
                         self.symbols.push(symbol);
                     }
@@ -118,17 +118,12 @@ impl Symbols {
     }
 
     fn add_if_not_defined(&mut self, symbol: Option<Symbol>) -> Option<usize> {
-        if let Some(symbol) = symbol {
-            match defined(&self.symbols, &symbol.id, &symbol.flag) {
-                Some(idx) => Some(idx),
-                None => {
-                    self.symbols.push(symbol);
-                    Some(self.symbols.len() - 1)
-                }
-            }
-        } else {
-            None
-        }
+        symbol.map(|symbol| {
+            defined(&self.symbols, &symbol.id, &symbol.flag).unwrap_or_else(|| {
+                self.symbols.push(symbol);
+                self.symbols.len() - 1
+            })
+        })
     }
 
     fn sym_from_param(param: &Identifier, owners: Vec<usize>) -> Option<Symbol> {
@@ -176,12 +171,12 @@ impl Symbols {
                 );
 
                 // Maybe add literals as edge symbols
-                left_literals.iter().for_each(|literal| {
+                for literal in &left_literals {
                     self.add_if_not_defined(Symbol::from_id(literal.identifier(), Flag::Edge));
-                });
-                right_literals.iter().for_each(|literal| {
+                }
+                for literal in &right_literals {
                     self.add_if_not_defined(Symbol::from_id(literal.identifier(), Flag::Edge));
-                });
+                }
 
                 // Splits bindings into common, left and right
                 let (common_binds, left_binds) = left_binds
@@ -203,7 +198,7 @@ impl Symbols {
                     .collect();
                 // Maybe add left bindings as param symbols
                 if let Some(left_idx) = left_idx {
-                    for bind in left_binds.iter() {
+                    for bind in &left_binds {
                         if self
                             .is_defined_param(bind.identifier().identifier.as_str(), left_idx)
                             .is_none()
@@ -217,7 +212,7 @@ impl Symbols {
                 }
                 // Maybe add right bindings as param symbols
                 if let Some(right_idx) = right_idx {
-                    for bind in right_binds.iter() {
+                    for bind in &right_binds {
                         if self
                             .is_defined_param(bind.identifier().identifier.as_str(), right_idx)
                             .is_none()
@@ -232,7 +227,7 @@ impl Symbols {
 
                 // Merge common bindings
                 if let (Some(left_idx), Some(right_idx)) = (left_idx, right_idx) {
-                    for bind in common_binds.iter() {
+                    for bind in &common_binds {
                         let left_param_idx =
                             self.is_defined_param(bind.identifier().identifier.as_str(), left_idx);
                         let right_param_idx =
@@ -293,7 +288,7 @@ impl Symbols {
         game.edges
             .iter()
             .for_each(|edge| symbols.add_from_edge(edge));
-        for bind in symbols.edge_params.iter() {
+        for bind in &symbols.edge_params {
             let id = &bind.param;
             let owners = bind.owners.iter().copied().collect();
             if let Some(symbol) = Self::sym_from_param(id, owners) {

@@ -1,4 +1,4 @@
-use crate::position::*;
+use crate::position::Span;
 use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
@@ -68,9 +68,9 @@ impl<Id> Edge<Id> {
     pub fn new(span: Span, lhs: EdgeName<Id>, rhs: EdgeName<Id>, label: EdgeLabel<Id>) -> Self {
         Self {
             span,
+            label,
             lhs,
             rhs,
-            label,
         }
     }
 
@@ -182,7 +182,7 @@ impl<Id: Clone + Ord> EdgeLabel<Id> {
 
 impl<Id: PartialEq> EdgeLabel<Id> {
     pub fn is_self_assignment(&self) -> bool {
-        matches!(self, EdgeLabel::Assignment { lhs, rhs } if lhs.is_equal_reference(rhs))
+        matches!(self, Self::Assignment { lhs, rhs } if lhs.is_equal_reference(rhs))
     }
 }
 
@@ -211,7 +211,7 @@ impl<Id> EdgeName<Id> {
     pub fn bindings(&self) -> impl Iterator<Item = Binding<Id>> {
         self.parts
             .iter()
-            .flat_map(|edge_name_part| edge_name_part.binding())
+            .filter_map(|edge_name_part| edge_name_part.binding())
     }
 
     pub fn has_bindings(&self) -> bool {
@@ -282,7 +282,7 @@ impl<Id> EdgeNamePart<Id> {
             Self::Binding {
                 identifier, type_, ..
             } => Some((identifier, type_)),
-            _ => None,
+            Self::Literal { .. } => None,
         }
     }
 
@@ -991,9 +991,9 @@ impl<Id> Variable<Id> {
     ) -> Self {
         Self {
             span,
+            default_value,
             identifier,
             type_,
-            default_value,
         }
     }
 }

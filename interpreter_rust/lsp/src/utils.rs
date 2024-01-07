@@ -6,12 +6,12 @@ use tower_lsp::lsp_types::{Location, Position as LspPosition, Range, SymbolKind,
 impl From<&Flag> for SymbolKind {
     fn from(flag: &Flag) -> Self {
         match flag {
-            Flag::Constant => SymbolKind::VARIABLE,
-            Flag::Edge => SymbolKind::CLASS,
-            Flag::Member => SymbolKind::NULL,
-            Flag::Param => SymbolKind::ARRAY,
-            Flag::Type => SymbolKind::PACKAGE,
-            Flag::Variable => SymbolKind::FUNCTION,
+            Flag::Constant => Self::VARIABLE,
+            Flag::Edge => Self::CLASS,
+            Flag::Member => Self::NULL,
+            Flag::Param => Self::ARRAY,
+            Flag::Type => Self::PACKAGE,
+            Flag::Variable => Self::FUNCTION,
         }
     }
 }

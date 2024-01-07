@@ -1,14 +1,14 @@
 use crate::rg::ast_features::AstFeatures;
 use crate::rg::symbol::{Flag, Symbol};
 use crate::rg::symbol_table::SymbolTable;
-use rg::ast::*;
+use rg::ast::{Game, Identifier};
 use rg::position::Position;
 use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, CompletionItemLabelDetails, CompletionOptions,
-    CompletionOptionsCompletionItem, CompletionResponse,
+    CompletionOptionsCompletionItem, CompletionResponse, WorkDoneProgressOptions,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompletionKind {
     Type,
     Variable, // const/var/member/param
@@ -21,16 +21,16 @@ pub enum CompletionKind {
 }
 
 impl CompletionKind {
-    fn predicate(&self) -> impl Fn(&&Symbol) -> bool {
+    fn predicate(self) -> impl Fn(&&Symbol) -> bool {
         match self {
-            CompletionKind::Any => |_: &&Symbol| true,
-            CompletionKind::Type => |sym: &&Symbol| sym.flag == Flag::Type,
-            CompletionKind::Value => |sym: &&Symbol| sym.flag == Flag::Member,
-            CompletionKind::Edge => |sym: &&Symbol| sym.flag == Flag::Edge,
-            CompletionKind::Toplevel => |sym: &&Symbol| sym.flag == Flag::Edge,
-            CompletionKind::Param => |sym: &&Symbol| sym.flag == Flag::Param,
-            CompletionKind::Variable => |sym: &&Symbol| sym.flag != Flag::Edge,
-            _ => |_: &&Symbol| false,
+            Self::Any => |_: &&Symbol| true,
+            Self::Edge => |sym: &&Symbol| sym.flag == Flag::Edge,
+            Self::None => |_: &&Symbol| false,
+            Self::Param => |sym: &&Symbol| sym.flag == Flag::Param,
+            Self::Toplevel => |sym: &&Symbol| sym.flag == Flag::Edge,
+            Self::Type => |sym: &&Symbol| sym.flag == Flag::Type,
+            Self::Value => |sym: &&Symbol| sym.flag == Flag::Member,
+            Self::Variable => |sym: &&Symbol| sym.flag != Flag::Edge,
         }
     }
 }
@@ -40,7 +40,7 @@ pub fn capabilities() -> CompletionOptions {
         resolve_provider: Some(false),
         trigger_characters: None,
         all_commit_characters: None,
-        work_done_progress_options: Default::default(),
+        work_done_progress_options: WorkDoneProgressOptions::default(),
         completion_item: Some(CompletionOptionsCompletionItem {
             label_details_support: Some(true),
         }),
@@ -67,8 +67,7 @@ fn completion_items(
 ) -> Vec<CompletionItem> {
     let completion_kind = game
         .stat_enclosing_position(&pos)
-        .map(|stat| stat.completion_kind(&pos))
-        .unwrap_or(CompletionKind::Toplevel);
+        .map_or(CompletionKind::Toplevel, |stat| stat.completion_kind(&pos));
     let mut items = match completion_kind {
         CompletionKind::None => vec![],
         CompletionKind::Toplevel => {
@@ -129,7 +128,7 @@ fn completion_item(game: &Game<Identifier>, symbol: &Symbol) -> CompletionItem {
         label: symbol.id.clone(),
         kind: Some(symbol.flag.clone().into()),
         label_details: type_.map(|t| CompletionItemLabelDetails {
-            detail: Some(format!(" : {}", t)),
+            detail: Some(format!(" : {t}")),
             ..Default::default()
         }),
         ..Default::default()
@@ -139,12 +138,12 @@ fn completion_item(game: &Game<Identifier>, symbol: &Symbol) -> CompletionItem {
 impl From<Flag> for CompletionItemKind {
     fn from(flag: Flag) -> Self {
         match flag {
-            Flag::Type => CompletionItemKind::CLASS,
-            Flag::Edge => CompletionItemKind::METHOD,
-            Flag::Member => CompletionItemKind::FIELD,
-            Flag::Constant => CompletionItemKind::CONSTANT,
-            Flag::Variable => CompletionItemKind::VARIABLE,
-            Flag::Param => CompletionItemKind::PROPERTY,
+            Flag::Type => Self::CLASS,
+            Flag::Edge => Self::METHOD,
+            Flag::Member => Self::FIELD,
+            Flag::Constant => Self::CONSTANT,
+            Flag::Variable => Self::VARIABLE,
+            Flag::Param => Self::PROPERTY,
         }
     }
 }
@@ -173,14 +172,10 @@ mod test {
         let (game, _) = parse_with_errors(game.as_str());
         let obtained = game
             .stat_enclosing_position(&pos)
-            .map(|stat| stat.completion_kind(&pos))
-            .unwrap_or(CompletionKind::Toplevel);
+            .map_or(CompletionKind::Toplevel, |stat| stat.completion_kind(&pos));
         assert!(
             obtained == expected,
-            "Failed on \n{}\nexpected: {:?}, obtained: {:?}\n",
-            input,
-            expected,
-            obtained
+            "Failed on \n{input}\nexpected: {expected:?}, obtained: {obtained:?}\n"
         );
     }
 

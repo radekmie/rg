@@ -53,8 +53,8 @@ fn build_edge_label<Id: Display>(
         ast::EdgeLabel::Reachability {
             lhs, rhs, negated, ..
         } => ist::EdgeLabel::Reachability {
-            lhs: build_edge_name(lhs),
-            rhs: build_edge_name(rhs),
+            lhs: build_edge_name(&lhs),
+            rhs: build_edge_name(&rhs),
             negated,
         },
         ast::EdgeLabel::Skip { .. } => ist::EdgeLabel::Skip,
@@ -64,7 +64,7 @@ fn build_edge_label<Id: Display>(
     }
 }
 
-fn build_edge_name<Id: Display>(edge_name: ast::EdgeName<Id>) -> Rc<str> {
+fn build_edge_name<Id: Display>(edge_name: &ast::EdgeName<Id>) -> Rc<str> {
     let [ast::EdgeNamePart::Literal { identifier }] = &edge_name.parts[..] else {
         panic!("Only trivial EdgeName allowed.")
     };
@@ -73,8 +73,8 @@ fn build_edge_name<Id: Display>(edge_name: ast::EdgeName<Id>) -> Rc<str> {
 
 fn build_edges<Id: Display>(game: &mut ist::Game<Rc<str>>, edges: Vec<ast::Edge<Id>>) {
     for edge in edges {
-        let lhs = build_edge_name(edge.lhs);
-        let rhs = build_edge_name(edge.rhs);
+        let lhs = build_edge_name(&edge.lhs);
+        let rhs = build_edge_name(&edge.rhs);
         let label = build_edge_label(game, edge.label);
 
         game.edges
@@ -168,7 +168,7 @@ fn build_value<Id: Display + Ord>(
                 values: Rc::new(
                     entries
                         .iter()
-                        .flat_map(
+                        .filter_map(
                             |ast::ValueEntry {
                                  identifier, value, ..
                              }| {
@@ -220,17 +220,16 @@ fn build_type_or_fail<Id: Display>(
     game: &mut ist::Game<Rc<str>>,
     type_: &ast::Type<Id>,
 ) -> Rc<ist::Type<Rc<str>>> {
-    match build_type(game, type_) {
-        Some(type_) => type_,
-        None => panic!("Unresolved type {type_}. (Builtins are not automatically added yet.)"),
-    }
+    build_type(game, type_).unwrap_or_else(|| {
+        panic!("Unresolved type {type_}. (Builtins are not automatically added yet.)")
+    })
 }
 
 fn build_typedefs<Id: Display>(game: &mut ist::Game<Rc<str>>, typedefs: Vec<ast::Typedef<Id>>) {
     let typedefs_len = typedefs.len();
     let unresolved_typedefs = typedefs
         .into_iter()
-        .flat_map(|typedef| match build_type(game, &typedef.type_) {
+        .filter_map(|typedef| match build_type(game, &typedef.type_) {
             Some(type_) => {
                 game.types
                     .insert(Rc::from(typedef.identifier.to_string()), type_);
@@ -244,8 +243,7 @@ fn build_typedefs<Id: Display>(game: &mut ist::Game<Rc<str>>, typedefs: Vec<ast:
         assert_ne!(
             typedefs_len,
             unresolved_typedefs.len(),
-            "Unresolved type: {}",
-            unresolved_typedef
+            "Unresolved type: {unresolved_typedef}"
         );
 
         build_typedefs(game, unresolved_typedefs);
@@ -261,7 +259,7 @@ fn build_variables<Id: Display + Ord>(
         let default = build_value(game, &type_, &variable.default_value);
         game.variables.insert(
             Rc::from(variable.identifier.to_string()),
-            ist::Variable { type_, default },
+            ist::Variable { default, type_ },
         );
     }
 }

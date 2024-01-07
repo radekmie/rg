@@ -8,3 +8,6 @@ edition = "2021"
 gdl = { path = "../gdl" }
 map_id = { path = "../map_id" }
 rg = { path = "../rg" }
+
+[lints]
+workspace = true

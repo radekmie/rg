@@ -51,10 +51,10 @@ pub const SEMANTIC_TOKENS_MODIFIERS: &[SemanticTokenModifier] = &[
     SemanticTokenModifier::READONLY,
 ];
 
-fn semantic_token_modifier(token_modifier: SemanticTokenModifier) -> u32 {
+fn semantic_token_modifier(token_modifier: &SemanticTokenModifier) -> u32 {
     SEMANTIC_TOKENS_MODIFIERS
         .iter()
-        .position(|t| t == &token_modifier)
+        .position(|t| t == token_modifier)
         .expect("Unknown token modifier") as u32
 }
 
@@ -62,8 +62,8 @@ fn semantic_token_modifier(token_modifier: SemanticTokenModifier) -> u32 {
 struct Token {
     pos: LspPosition,
     len: u32,
-    token_type: u32,
-    token_modifier: u32,
+    type_: u32,
+    modifier_bitset: u32,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -73,8 +73,9 @@ struct Delta {
     line: u32,
     column: u32,
 }
+
 impl Delta {
-    fn step(&mut self, pos: &LspPosition) {
+    fn step(&mut self, pos: LspPosition) {
         let (d_line, d_column) = if pos.line == self.last_line {
             (0, pos.character - self.last_col_end)
         } else {
@@ -96,13 +97,13 @@ pub fn semantic_tokens_full(document: &Document) -> Vec<SemanticToken> {
     tokens
         .into_iter()
         .map(|token| {
-            delta.step(&token.pos);
+            delta.step(token.pos);
             SemanticToken {
                 delta_line: delta.line,
                 delta_start: delta.column,
                 length: token.len,
-                token_type: token.token_type,
-                token_modifiers_bitset: token.token_modifier,
+                token_type: token.type_,
+                token_modifiers_bitset: token.modifier_bitset,
             }
         })
         .collect()
@@ -117,8 +118,8 @@ fn ast_tokens(game: &Game<Identifier>) -> Vec<Token> {
             let token = Token {
                 pos: stat.span().start.to_lsp(),
                 len: keyword.len() as u32,
-                token_type,
-                token_modifier: 0,
+                type_: token_type,
+                modifier_bitset: 0,
             };
             tokens.push(token);
         }
@@ -128,11 +129,11 @@ fn ast_tokens(game: &Game<Identifier>) -> Vec<Token> {
 
 fn symbol_table_tokens(symbol_table: &SymbolTable) -> Vec<Token> {
     let mut tokens = Vec::new();
-    for occ in symbol_table.occurrences.iter() {
+    for occ in &symbol_table.occurrences {
         let symbol = symbol_table.get_occ_symbol(occ);
         if let Some(symbol) = symbol {
             let definition_mod = if symbol.pos.equal_span(&occ.pos) {
-                semantic_token_modifier(SemanticTokenModifier::DEFINITION)
+                semantic_token_modifier(&SemanticTokenModifier::DEFINITION)
             } else {
                 0
             };
@@ -145,15 +146,15 @@ fn symbol_table_tokens(symbol_table: &SymbolTable) -> Vec<Token> {
                 Flag::Param => semantic_token_type("parameter"),
             };
             let const_mod = if symbol.flag == Flag::Constant {
-                semantic_token_modifier(SemanticTokenModifier::READONLY)
+                semantic_token_modifier(&SemanticTokenModifier::READONLY)
             } else {
                 0
             };
             let token = Token {
                 pos: occ.start().to_lsp(),
                 len: symbol.id.len() as u32,
-                token_type,
-                token_modifier: definition_mod | const_mod,
+                type_: token_type,
+                modifier_bitset: definition_mod | const_mod,
             };
             tokens.push(token);
         }

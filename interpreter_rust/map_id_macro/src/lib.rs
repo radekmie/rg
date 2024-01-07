@@ -10,13 +10,6 @@ use syn::{
 // here - it should be fine for the time being.
 #[proc_macro_derive(MapId)]
 pub fn derive_map_id(input: TokenStream) -> TokenStream {
-    let DeriveInput {
-        data,
-        generics,
-        ident: name,
-        ..
-    } = parse_macro_input!(input as DeriveInput);
-
     fn field_mapper(is_self: bool, ident: &impl ToTokens, ty: &Type) -> impl ToTokens {
         let target = is_self.then_some(quote! { self. });
         match format!("{}", quote! { #ty }).as_str() {
@@ -26,6 +19,13 @@ pub fn derive_map_id(input: TokenStream) -> TokenStream {
             _ => quote! { #target #ident.map_id(map) },
         }
     }
+
+    let DeriveInput {
+        data,
+        generics,
+        ident: name,
+        ..
+    } = parse_macro_input!(input as DeriveInput);
 
     let handler = match data {
         Data::Enum(DataEnum { variants, .. }) => {

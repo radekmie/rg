@@ -1,6 +1,6 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::fmt::{Display, Formatter, Result};
-use std::ops::Deref;
+
 use std::rc::Rc;
 
 impl<Id: Display> Game<Id> {
@@ -69,7 +69,7 @@ struct TermPrefix<'a, Id: Display>(&'a Rc<Term<Id>>);
 
 impl<Id: Display> Display for TermPrefix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match self.0.deref() {
+        match &**self.0 {
             Term::Base(proposition) => write!(f, "(base {})", TermPrefix(proposition)),
             Term::Custom(name, arguments) if arguments.is_empty() => {
                 write!(f, "{}", AtomOrVariablePrefix(name))

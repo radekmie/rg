@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 impl<Id: Clone + PartialEq> Edge<Id> {
     pub fn add_explicit_casts(&self, game: &Game<Id>) -> Result<Self, Error<Id>> {
-        Ok(Edge {
+        Ok(Self {
             span: Span::none(),
             label: self.label.add_explicit_casts(game, Some(self))?,
             lhs: self.lhs.clone(),

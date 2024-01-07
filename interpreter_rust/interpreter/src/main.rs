@@ -26,7 +26,7 @@ fn main() -> Result<(), String> {
                         depth,
                         count,
                         start.elapsed().as_nanos() as f32 / 1e6
-                    )
+                    );
                 });
             }
         }

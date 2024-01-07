@@ -1,6 +1,12 @@
 use super::error::Error;
-use super::parser_utils::*;
-use crate::ast::*;
+use super::parser_utils::{
+    arc_expression, comments_and_whitespaces, expect, expect_preceded_tag, identifier, into_arc,
+    parse_error_line, preceded_opt_id, preceded_tag, preceded_whitespace, with_semicolon,
+};
+use crate::ast::{
+    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Game, Identifier, Pragma, Type,
+    Typedef, Value, ValueEntry, Variable,
+};
 use crate::position::{Position, Positioned, Span};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
@@ -239,19 +245,21 @@ fn value_entry(input: Input) -> Result<ValueEntry<Identifier>> {
         preceded_whitespace(char(':')),
         expect(value, "value"),
     )(input)?;
-    let (span, value) = match value {
-        Some(value) => {
+    let (span, value) = value.map_or_else(
+        || {
+            let span = identifier
+                .as_ref()
+                .map_or_else(Span::none, Positioned::span);
+            (span, Arc::new(Value::new(Identifier::none(Span::none()))))
+        },
+        |value| {
             let span = identifier.as_ref().map_or(value.as_ref().span(), |id| {
                 id.span().with_end(value.as_ref().span().end)
             });
             (span, value)
-        }
-        None => {
-            let span = identifier.as_ref().map_or(Span::none(), |id| id.span());
-            (span, Arc::new(Identifier::none(Span::none()).into()))
-        }
-    };
-    Ok((input, (span, identifier, value).into()))
+        },
+    );
+    Ok((input, ValueEntry::new(span, identifier, value)))
 }
 
 fn variable(input: Input) -> Result<Option<Variable<Identifier>>> {
@@ -309,7 +317,7 @@ pub fn game(input: Input) -> Result<Game<Identifier>> {
                     map(variable, |x| (None, None, x, None, None)),
                     map(edge, |x| (None, None, None, x, None)),
                     map(pragma, |x| (None, None, None, None, Some(x))),
-                    map(parse_error_line, |_| (None, None, None, None, None)),
+                    map(parse_error_line, |()| (None, None, None, None, None)),
                 )),
                 comments_and_whitespaces,
             ),
@@ -355,7 +363,7 @@ mod test {
             input,
             errors
                 .iter()
-                .map(|e| format!("{}", e))
+                .map(std::string::ToString::to_string)
                 .collect::<Vec<_>>()
                 .join("\n")
         );
@@ -363,9 +371,7 @@ mod test {
         let game_str = game.strip_suffix('\n').unwrap();
         assert!(
             game_str == input,
-            "Failed to parse:\n{}\nExpected:\n{}",
-            game_str,
-            input
+            "Failed to parse:\n{game_str}\nExpected:\n{input}"
         );
     }
 

@@ -34,7 +34,7 @@ mod test {
 
     fn parse(input: &str) -> Game<Arc<str>> {
         let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Parse errors: {:?}", errors);
+        assert!(errors.is_empty(), "Parse errors: {errors:?}");
         game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
     }
 

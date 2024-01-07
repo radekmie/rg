@@ -1,6 +1,8 @@
 use super::symbol::Symbol;
 use crate::completions::CompletionKind;
-use rg::ast::*;
+use rg::ast::{
+    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Identifier, Pragma, Type, Typedef, Variable,
+};
 use rg::position::{Position, Positioned};
 
 pub trait Statement: Positioned {
@@ -79,10 +81,10 @@ impl Statement for Pragma<Identifier> {
 
     fn keyword(&self) -> &'static str {
         match self {
-            Pragma::Any { .. } => "@any",
-            Pragma::Disjoint { .. } => "@disjoint",
-            Pragma::MultiAny { .. } => "@multiAny",
-            Pragma::Unique { .. } => "@unique",
+            Self::Any { .. } => "@any",
+            Self::Disjoint { .. } => "@disjoint",
+            Self::MultiAny { .. } => "@multiAny",
+            Self::Unique { .. } => "@unique",
         }
     }
 
@@ -147,7 +149,7 @@ fn completion_kind_edge_name(pos: &Position, edge_name: &EdgeName<Identifier>) -
         .parts
         .iter()
         .find(|part| part.span().encloses_position(pos))
-        .map(|part| {
+        .map_or(CompletionKind::Edge, |part| {
             match part {
                 EdgeNamePart::Binding {
                     identifier, type_, ..
@@ -161,5 +163,4 @@ fn completion_kind_edge_name(pos: &Position, edge_name: &EdgeName<Identifier>) -
                 EdgeNamePart::Literal { .. } => CompletionKind::Toplevel,
             }
         })
-        .unwrap_or(CompletionKind::Edge)
 }

@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn symbolify(&self) -> Self {
-        Self(self.0.iter().map(|rule| rule.symbolify()).collect())
+        Self(self.0.iter().map(Rule::symbolify).collect())
     }
 }
 
@@ -21,18 +21,14 @@ impl Rule<Arc<str>> {
     pub fn symbolify(&self) -> Self {
         Self {
             term: Rc::new(self.term.symbolify()),
-            predicates: self
-                .predicates
-                .iter()
-                .map(|predicate| predicate.symbolify())
-                .collect(),
+            predicates: self.predicates.iter().map(Predicate::symbolify).collect(),
         }
     }
 }
 
 impl Term<Arc<str>> {
     pub fn symbolify(&self) -> Self {
-        use Term::*;
+        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         self.maybe_symbolify().map_or_else(
             || match self {
                 Base(proposition) => Base(Rc::new(proposition.symbolify())),
@@ -84,7 +80,7 @@ mod test {
     use std::sync::Arc;
 
     fn parse(input: &str) -> Game<Arc<str>> {
-        all_consuming(game)(&input)
+        all_consuming(game)(input)
             .unwrap()
             .1
             .map_id(&mut |id| Arc::from(*id))

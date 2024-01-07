@@ -1,4 +1,7 @@
-use crate::ast::*;
+use crate::ast::{
+    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Error, ErrorReason, Expression, Game,
+    Identifier, Pragma, Type, Typedef, Value, ValueEntry, Variable,
+};
 use crate::position::{Position, Span};
 use std::fmt::{Display, Formatter, Result};
 

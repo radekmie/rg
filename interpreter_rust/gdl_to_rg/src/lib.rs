@@ -33,7 +33,7 @@ fn add_common_typedefs(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     let roles = gdl
         .0
         .iter()
-        .flat_map(|Rule { term, .. }| match term.as_ref() {
+        .filter_map(|Rule { term, .. }| match term.as_ref() {
             Term::Legal(AtomOrVariable::Atom(role), _) => Some(role),
             _ => None,
         })
@@ -50,7 +50,7 @@ fn add_common_typedefs(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
     let goals = gdl
         .subterms()
-        .flat_map(|term| match term {
+        .filter_map(|term| match term {
             Term::Goal(_, AtomOrVariable::Atom(goal)) => Some(goal),
             _ => None,
         })
@@ -170,7 +170,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     let roles = gdl
         .0
         .iter()
-        .flat_map(|Rule { term, .. }| match term.as_ref() {
+        .filter_map(|Rule { term, .. }| match term.as_ref() {
             Term::Legal(AtomOrVariable::Atom(role), _) => Some(role),
             _ => None,
         })
@@ -193,10 +193,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         for (opponent_index, opponent) in roles.iter().enumerate() {
             rg.edges.push(Edge {
                 span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!(
-                    "loop_{role}_visibility_{}",
-                    opponent_index
-                ))),
+                lhs: EdgeName::new(Id::from(format!("loop_{role}_visibility_{opponent_index}"))),
                 rhs: EdgeName::new(Id::from(format!(
                     "loop_{role}_visibility_{}",
                     opponent_index + 1
@@ -226,7 +223,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
             },
         });
 
-        for action in legals.get(role).unwrap().iter() {
+        for action in legals.get(role).unwrap() {
             rg.edges.push(Edge {
                 span: Span::none(),
                 lhs: EdgeName::new(Id::from(format!("loop_{role}_begin"))),
@@ -240,7 +237,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
             });
         }
 
-        for action in legals.get(role).unwrap().iter() {
+        for action in legals.get(role).unwrap() {
             rg.edges.push(Edge {
                 span: Span::none(),
                 lhs: EdgeName::new(Id::from(format!("loop_{role}_{action}_move"))),
@@ -288,8 +285,8 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                     AtomOrVariable::Atom(role.clone()),
                     Rc::new(Term::Custom(AtomOrVariable::Atom(action.clone()), vec![])),
                 ),
-                Id::from(format!("check_{role}_{action}_begin")),
-                Id::from(format!("check_{role}_{action}_end")),
+                &Id::from(format!("check_{role}_{action}_begin")),
+                &Id::from(format!("check_{role}_{action}_end")),
             );
         }
     }
@@ -370,7 +367,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     for (index, variable) in variables.iter().enumerate() {
         rg.edges.push(Edge {
             span: Span::none(),
-            lhs: EdgeName::new(Id::from(format!("next_{}_set", index))),
+            lhs: EdgeName::new(Id::from(format!("next_{index}_set"))),
             rhs: EdgeName::new(Id::from(format!("next_{}_set", index + 1))),
             label: EdgeLabel::Assignment {
                 lhs: Arc::from(Expression::new(Id::from(format!("{variable}_prev")))),
@@ -389,7 +386,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     for (index, variable) in variables.iter().enumerate() {
         rg.edges.push(Edge {
             span: Span::none(),
-            lhs: EdgeName::new(Id::from(format!("next_{}_clear", index))),
+            lhs: EdgeName::new(Id::from(format!("next_{index}_clear"))),
             rhs: EdgeName::new(Id::from(format!("next_{}_clear", index + 1))),
             label: EdgeLabel::Assignment {
                 lhs: Arc::from(Expression::new(Id::from(format!("{variable}_next")))),
@@ -413,8 +410,8 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                 AtomOrVariable::Atom(variable.clone()),
                 vec![],
             ))),
-            Id::from(format!("next_{variable}_check_begin")),
-            Id::from(format!("next_{variable}_check_end")),
+            &Id::from(format!("next_{variable}_check_begin")),
+            &Id::from(format!("next_{variable}_check_end")),
         );
     }
 }
@@ -459,8 +456,8 @@ fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         rg,
         gdl,
         &Term::Terminal,
-        Id::from("terminal_begin"),
-        Id::from("terminal_end"),
+        &Id::from("terminal_begin"),
+        &Id::from("terminal_end"),
     );
 }
 
@@ -487,7 +484,7 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         for goal in goals {
             rg.edges.push(Edge {
                 span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("goals_{}_set", index))),
+                lhs: EdgeName::new(Id::from(format!("goals_{index}_set"))),
                 rhs: EdgeName::new(Id::from(format!("goals_{}_check_{goal}", index + 1))),
                 label: EdgeLabel::Reachability {
                     span: Span::none(),
@@ -534,8 +531,8 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                     AtomOrVariable::Atom(role.clone()),
                     AtomOrVariable::Atom(goal.clone()),
                 ),
-                Id::from(format!("goals_{role}_check_{goal}_begin")),
-                Id::from(format!("goals_{role}_check_{goal}_end")),
+                &Id::from(format!("goals_{role}_check_{goal}_begin")),
+                &Id::from(format!("goals_{role}_check_{goal}_end")),
             );
         }
     }
@@ -545,8 +542,8 @@ fn connect(
     rg: &mut rg::ast::Game<Id>,
     gdl: &gdl::ast::Game<Id>,
     goal: &gdl::ast::Term<Id>,
-    begin: Id,
-    end: Id,
+    begin: &Id,
+    end: &Id,
 ) {
     use gdl::ast::{AtomOrVariable, Predicate, Rule, Term};
     use rg::ast::{Edge, EdgeLabel, EdgeName, Expression};
@@ -598,8 +595,8 @@ fn connect(
                         rg,
                         gdl,
                         term,
-                        Id::from(format!("connected_{term_id}_{}_begin", step + 1)),
-                        Id::from(format!("connected_{term_id}_{}_end", step + 1)),
+                        &Id::from(format!("connected_{term_id}_{}_begin", step + 1)),
+                        &Id::from(format!("connected_{term_id}_{}_end", step + 1)),
                     );
                     EdgeLabel::Reachability {
                         span: Span::none(),
@@ -641,7 +638,7 @@ fn connect(
 
             rg.edges.push(Edge {
                 span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("connected_{term_id}_{}", step))),
+                lhs: EdgeName::new(Id::from(format!("connected_{term_id}_{step}"))),
                 rhs: EdgeName::new(Id::from(format!("connected_{term_id}_{}", step + 1))),
                 label,
             });

@@ -43,7 +43,7 @@ pub fn term(input: &str) -> Result<Term<&str>> {
         ),
         term_template("next", term_rc, Term::Next),
         term_template("role", atom_or_variable, Term::Role),
-        term_template("terminal", success(()), |_| Term::Terminal),
+        term_template("terminal", success(()), |()| Term::Terminal),
         map(tag("terminal"), |_| Term::Terminal),
         term_template("true", term_rc, Term::True),
         map(
@@ -101,7 +101,7 @@ fn verify() {
                 assert_eq!(rest, "");
                 assert_eq!(source, game.as_prefix().to_string());
             }
-            Err(error) => assert!(false, "{error}"),
+            Err(error) => panic!("{error}"),
         }
     }
 

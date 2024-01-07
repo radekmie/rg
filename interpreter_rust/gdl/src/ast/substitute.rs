@@ -4,16 +4,16 @@ use std::rc::Rc;
 
 impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
-        use AtomOrVariable::*;
+        use AtomOrVariable::{Atom, Variable};
         match self {
             Atom(id) => Atom(id.clone()),
-            Variable(id) => match u.get(id) {
-                Some(term) => match term {
+            Variable(id) => u.get(id).map_or_else(
+                || Variable(id.clone()),
+                |term| match term {
                     Term::Custom(Atom(id), arguments) if arguments.is_empty() => Atom(id.clone()),
                     _ => panic!("Cannot substitute non-trivial term for an atom."),
                 },
-                None => Variable(id.clone()),
-            },
+            ),
         }
     }
 }
@@ -42,7 +42,7 @@ impl<Id: Clone + PartialEq> Rule<Id> {
 
 impl<Id: Clone + PartialEq> Term<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
-        use Term::*;
+        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match self {
             Base(proposition) => Base(Rc::new(proposition.substitute(u))),
             Custom(AtomOrVariable::Variable(id), arguments) if arguments.is_empty() => {

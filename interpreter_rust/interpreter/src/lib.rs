@@ -31,14 +31,14 @@ pub fn safe_parse_source(source: &str) -> Result<Game<Arc<str>>, String> {
     } else {
         Err(errors
             .into_iter()
-            .map(|error| format!("{}", error))
+            .map(|error| format!("{error}"))
             .collect::<Vec<_>>()
             .join("\n"))
     }
 }
 
-pub fn safe_serialize_ast(game: Game<Arc<str>>) -> Result<String, String> {
-    to_string(&game).map_err(|error| error.to_string())
+pub fn safe_serialize_ast(game: &Game<Arc<str>>) -> Result<String, String> {
+    to_string(game).map_err(|error| error.to_string())
 }
 
 #[derive(Deserialize)]
@@ -90,7 +90,7 @@ pub fn analyze_rg(
             };
             (node $fn:ident) => {
                 pass!($fn {
-                    let ast = safe_serialize_ast(game)?;
+                    let ast = safe_serialize_ast(&game)?;
                     let ast = $fn.call1(&JsValue::null(), &ast.into()).unwrap().as_string().unwrap();
                     game = safe_parse_ast(&ast)?;
                 });
@@ -117,7 +117,7 @@ pub fn analyze_rg(
     let source_formatted = format!("{game}");
     assert_eq!(safe_parse_source(&source_formatted)?, game);
     Ok(Array::of2(
-        &safe_serialize_ast(game)?.into(),
+        &safe_serialize_ast(&game)?.into(),
         &source_formatted.into(),
     ))
 }
@@ -125,7 +125,7 @@ pub fn analyze_rg(
 #[wasm_bindgen(js_name = parseRg)]
 pub fn parse_rg(source: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
-    safe_serialize_ast(safe_parse_source(source)?)
+    safe_serialize_ast(&safe_parse_source(source)?)
 }
 
 #[wasm_bindgen(js_name = perfRg)]

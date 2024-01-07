@@ -1,4 +1,7 @@
-use crate::ast::*;
+use crate::ast::{
+    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Identifier, Pragma, Type,
+    Typedef, Value, ValueEntry, Variable,
+};
 use map_id::MapId;
 use nom_locate::LocatedSpan;
 use std::cmp::Ordering;
@@ -62,11 +65,11 @@ impl Span {
             && (other.line < self.end.line || other.column <= self.end.column)
     }
 
-    pub fn encloses_span(&self, other: &Span) -> bool {
+    pub fn encloses_span(&self, other: &Self) -> bool {
         self.encloses_position(&other.start) && self.encloses_position(&other.end)
     }
 
-    pub fn equal_span(&self, other: &Span) -> bool {
+    pub fn equal_span(&self, other: &Self) -> bool {
         self.start == other.start && self.end == other.end
     }
 
@@ -144,8 +147,8 @@ impl PartialOrd for Span {
     }
 }
 
-impl<OldId, NewId> MapId<Span, OldId, NewId> for Span {
-    fn map_id(&self, _map: &mut impl FnMut(&OldId) -> NewId) -> Span {
+impl<OldId, NewId> MapId<Self, OldId, NewId> for Span {
+    fn map_id(&self, _map: &mut impl FnMut(&OldId) -> NewId) -> Self {
         *self
     }
 }
@@ -204,11 +207,11 @@ impl<Id> Positioned for Edge<Id> {
 impl<Id: Positioned> Positioned for EdgeLabel<Id> {
     fn span(&self) -> Span {
         match self {
-            EdgeLabel::Assignment { lhs, rhs } | EdgeLabel::Comparison { lhs, rhs, .. } => {
+            Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } => {
                 lhs.span().with_end(rhs.span().end)
             }
-            EdgeLabel::Reachability { span, .. } | EdgeLabel::Skip { span } => *span,
-            EdgeLabel::Tag { symbol } => symbol.span(),
+            Self::Reachability { span, .. } | Self::Skip { span } => *span,
+            Self::Tag { symbol } => symbol.span(),
         }
     }
 }
@@ -222,8 +225,8 @@ impl<Id> Positioned for EdgeName<Id> {
 impl<Id: Positioned> Positioned for EdgeNamePart<Id> {
     fn span(&self) -> Span {
         match &self {
-            EdgeNamePart::Binding { span, .. } => *span,
-            EdgeNamePart::Literal { identifier } => identifier.span(),
+            Self::Binding { span, .. } => *span,
+            Self::Literal { identifier } => identifier.span(),
         }
     }
 }
@@ -231,8 +234,8 @@ impl<Id: Positioned> Positioned for EdgeNamePart<Id> {
 impl<Id: Positioned> Positioned for Expression<Id> {
     fn span(&self) -> Span {
         match &self {
-            Expression::Access { span, .. } | Expression::Cast { span, .. } => *span,
-            Expression::Reference { identifier } => identifier.span(),
+            Self::Access { span, .. } | Self::Cast { span, .. } => *span,
+            Self::Reference { identifier } => identifier.span(),
         }
     }
 }
@@ -257,9 +260,9 @@ impl<Id> Positioned for Pragma<Id> {
 impl<Id: Positioned> Positioned for Type<Id> {
     fn span(&self) -> Span {
         match &self {
-            Type::Arrow { lhs, rhs } => lhs.span().with_end(rhs.span().end),
-            Type::Set { span, .. } => *span,
-            Type::TypeReference { identifier } => identifier.span(),
+            Self::Arrow { lhs, rhs } => lhs.span().with_end(rhs.span().end),
+            Self::Set { span, .. } => *span,
+            Self::TypeReference { identifier } => identifier.span(),
         }
     }
 }
@@ -273,8 +276,8 @@ impl<Id> Positioned for Typedef<Id> {
 impl<Id: Positioned> Positioned for Value<Id> {
     fn span(&self) -> Span {
         match &self {
-            Value::Element { identifier } => identifier.span(),
-            Value::Map { span, .. } => *span,
+            Self::Element { identifier } => identifier.span(),
+            Self::Map { span, .. } => *span,
         }
     }
 }

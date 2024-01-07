@@ -1,6 +1,6 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::fmt::{Display, Formatter, Result};
-use std::ops::Deref;
+
 use std::rc::Rc;
 
 impl<Id: Display> Game<Id> {
@@ -16,7 +16,7 @@ impl<Id: Display> Display for AtomOrVariableInfix<'_, Id> {
         match self.0 {
             AtomOrVariable::Atom(symbol) => write!(f, "{symbol}"),
             AtomOrVariable::Variable(symbol) => {
-                let mut symbol = format!("{}", symbol);
+                let mut symbol = format!("{symbol}");
                 write!(f, "{}{}", symbol.remove(0).to_uppercase(), symbol)
             }
         }
@@ -68,7 +68,7 @@ struct TermInfix<'a, Id: Display>(&'a Rc<Term<Id>>);
 
 impl<Id: Display> Display for TermInfix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match self.0.deref() {
+        match &**self.0 {
             Term::Base(proposition) => write!(f, "base({})", TermInfix(proposition)),
             Term::Custom(name, arguments) => {
                 write!(f, "{}", AtomOrVariableInfix(name))?;

@@ -11,3 +11,6 @@ rg = { path = "../rg" }
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 serde_json = "1.0.1"
 tower-lsp = { version = "0.20.0", default-features = false, features = ["runtime-agnostic"] }
+
+[lints]
+workspace = true

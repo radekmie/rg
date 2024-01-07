@@ -10,3 +10,6 @@ syn = "1.0.107"
 
 [lib]
 proc-macro = true
+
+[lints]
+workspace = true

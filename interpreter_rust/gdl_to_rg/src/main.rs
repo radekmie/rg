@@ -23,6 +23,6 @@ fn main() -> Result<(), String> {
         .simplify()
         .symbolify();
     let rg = gdl_to_rg(&gdl);
-    print!("{}", rg);
+    print!("{rg}");
     Ok(())
 }

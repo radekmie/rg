@@ -35,11 +35,11 @@ fn split_edge(
     let comma_pos = line.find(',')?;
     let (lhs, rhs_with_label) = line.split_at(comma_pos);
     let new_text = if left_split {
-        format!("{}, new_edge: ;\nnew_edge{}", lhs, rhs_with_label)
+        format!("{lhs}, new_edge: ;\nnew_edge{rhs_with_label}")
     } else {
         let last_colon_pos = rhs_with_label.rfind(':')?;
         let (rhs, label) = rhs_with_label.split_at(last_colon_pos);
-        format!("{}, new_edge{}\nnew_edge{}: ;", lhs, label, rhs)
+        format!("{lhs}, new_edge{label}\nnew_edge{rhs}: ;")
     };
     let text_edits = vec![TextEdit {
         range: edge.span().to_lsp(),

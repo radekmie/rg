@@ -3,7 +3,18 @@ use super::{code_actions, completions, features, semantic_tokens};
 use crate::utils::{ToRgPosition, ToRgSpan};
 use dashmap::DashMap;
 use tower_lsp::jsonrpc::Result;
-use tower_lsp::lsp_types::*;
+use tower_lsp::lsp_types::{
+    CodeActionParams, CodeActionProviderCapability, CodeActionResponse, CompletionParams,
+    CompletionResponse, Diagnostic, DiagnosticOptions, DiagnosticServerCapabilities,
+    DidChangeTextDocumentParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DidSaveTextDocumentParams, DocumentHighlight, DocumentHighlightParams, DocumentSymbolParams,
+    DocumentSymbolResponse, GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams,
+    HoverProviderCapability, InitializeParams, InitializeResult, InitializedParams, Location,
+    MessageType, OneOf, Position, PrepareRenameResponse, ReferenceParams, RenameOptions,
+    RenameParams, SemanticTokens, SemanticTokensParams, SemanticTokensResult, ServerCapabilities,
+    TextDocumentPositionParams, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, Url, WorkDoneProgressOptions, WorkspaceEdit,
+};
 use tower_lsp::{Client, LanguageServer};
 
 pub struct Backend {
@@ -141,7 +152,7 @@ impl LanguageServer for Backend {
 
     async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
         self.with_document_positioned(&params.text_document_position, |uri, position, document| {
-            features::rename(uri, position, &document.symbol_table, params.new_name)
+            features::rename(uri, position, &document.symbol_table, &params.new_name)
         })
     }
 
@@ -183,10 +194,10 @@ impl Backend {
     fn with_document_positioned<T>(
         &self,
         params: &TextDocumentPositionParams,
-        f: impl FnOnce(&Url, &Position, &Document) -> T,
+        f: impl FnOnce(&Url, Position, &Document) -> T,
     ) -> Result<T> {
         let uri = &params.text_document.uri;
-        let position = &params.position;
+        let position = params.position;
         let document = self.document_map.get(&uri.to_string()).unwrap();
         Ok(f(uri, position, &document))
     }
@@ -199,6 +210,6 @@ impl Backend {
     fn add_document(&self, uri: &Url, text: String) -> Vec<Diagnostic> {
         let (document, errors) = Document::new(text);
         self.document_map.insert(uri.to_string(), document);
-        features::diagnostics(errors)
+        features::diagnostics(&errors)
     }
 }

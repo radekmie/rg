@@ -44,15 +44,15 @@ impl<Id: Clone + PartialEq> EdgeLabel<Id> {
 impl<Id: Clone + PartialEq> Game<Id> {
     pub fn check_types(&self) -> Result<(), Error<Id>> {
         for constant in &self.constants {
-            constant.check_type(self)?
+            constant.check_type(self)?;
         }
 
         for edge in &self.edges {
-            edge.check_type(self)?
+            edge.check_type(self)?;
         }
 
         for variable in &self.variables {
-            variable.check_type(self)?
+            variable.check_type(self)?;
         }
 
         Ok(())

@@ -6,8 +6,8 @@ pub trait MapId<ToType, OldId, NewId> {
     fn map_id(&self, map: &mut impl FnMut(&OldId) -> NewId) -> ToType;
 }
 
-impl<OldId, NewId> MapId<bool, OldId, NewId> for bool {
-    fn map_id(&self, _map: &mut impl FnMut(&OldId) -> NewId) -> bool {
+impl<OldId, NewId> MapId<Self, OldId, NewId> for bool {
+    fn map_id(&self, _map: &mut impl FnMut(&OldId) -> NewId) -> Self {
         *self
     }
 }
