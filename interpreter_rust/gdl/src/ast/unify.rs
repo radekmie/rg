@@ -37,7 +37,7 @@ impl<Id: Clone + PartialEq> Term<Id> {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Unification<Id> {
     Empty,
     Failed,

@@ -71,7 +71,7 @@ pub fn predicate(input: &str) -> Result<Predicate<&str>> {
 
 pub fn rule(input: &str) -> Result<Rule<&str>> {
     let rule = alt((
-        term_template("<=", pair(term_rc, separated(many1(predicate))), identity),
+        term_template("<=", pair(term_rc, many1(separated(predicate))), identity),
         pair(term_rc, success(vec![])),
     ));
     map(rule, |(term, predicates)| Rule { term, predicates })(input)

@@ -10,7 +10,7 @@ use map_id::MapId;
 use map_id_macro::MapId;
 use std::rc::Rc;
 
-#[derive(Clone, Debug, MapId, PartialEq, Eq)]
+#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub enum AtomOrVariable<Id> {
     Atom(Id),
     Variable(Id),
@@ -26,7 +26,7 @@ impl<Id> AtomOrVariable<Id> {
     }
 }
 
-#[derive(Clone, Debug, MapId, PartialEq)]
+#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub struct Game<Id>(pub Vec<Rule<Id>>);
 
 impl<Id: PartialEq> Game<Id> {
@@ -37,13 +37,13 @@ impl<Id: PartialEq> Game<Id> {
     }
 }
 
-#[derive(Clone, Debug, MapId, PartialEq)]
+#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub struct Predicate<Id> {
     pub is_negated: bool,
     pub term: Rc<Term<Id>>,
 }
 
-#[derive(Clone, Debug, MapId, PartialEq)]
+#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub struct Rule<Id> {
     pub term: Rc<Term<Id>>,
     pub predicates: Vec<Predicate<Id>>,
@@ -62,7 +62,7 @@ impl<Id: PartialEq> Rule<Id> {
 }
 
 /// As defined in <http://logic.stanford.edu/ggp/notes/gdl.html>.
-#[derive(Clone, Debug, MapId, PartialEq)]
+#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub enum Term<Id> {
     /// `base(p)` means that `p` is a base proposition in the game.
     Base(Rc<Term<Id>>),
