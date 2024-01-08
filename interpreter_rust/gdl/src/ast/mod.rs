@@ -43,17 +43,25 @@ pub struct Predicate<Id> {
     pub term: Rc<Term<Id>>,
 }
 
+impl<Id> Predicate<Id> {
+    pub fn has_variable(&self) -> bool {
+        self.term.has_variable()
+    }
+}
+
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub struct Rule<Id> {
     pub term: Rc<Term<Id>>,
     pub predicates: Vec<Predicate<Id>>,
 }
 
-impl<Id: PartialEq> Rule<Id> {
+impl<Id> Rule<Id> {
     pub fn has_variable(&self) -> bool {
-        self.subterms().any(Term::has_variable)
+        self.term.has_variable() || self.predicates.iter().any(Predicate::has_variable)
     }
+}
 
+impl<Id: PartialEq> Rule<Id> {
     pub fn subterms(&self) -> impl Iterator<Item = &Term<Id>> {
         let mut iterator = TermIterator::new();
         iterator.add_rule(self);
