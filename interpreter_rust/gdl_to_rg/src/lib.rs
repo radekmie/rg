@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::rc::Rc;
 use std::sync::Arc;
 
 type Id = Arc<str>;
@@ -275,7 +274,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                 gdl,
                 &Term::Legal(
                     AtomOrVariable::Atom(role.clone()),
-                    Rc::new(Term::Custom(AtomOrVariable::Atom(action.clone()), vec![])),
+                    Arc::new(Term::Custom(AtomOrVariable::Atom(action.clone()), vec![])),
                 ),
                 &EdgeName::new(Id::from(format!("check_{role}_{action}_begin"))),
                 &EdgeName::new(Id::from(format!("check_{role}_{action}_end"))),
@@ -398,7 +397,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         connect(
             rg,
             gdl,
-            &Term::Next(Rc::new(Term::Custom(
+            &Term::Next(Arc::new(Term::Custom(
                 AtomOrVariable::Atom(variable.clone()),
                 vec![],
             ))),

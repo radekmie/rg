@@ -1,6 +1,6 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::fmt::{Display, Formatter, Result};
-use std::rc::Rc;
+use std::sync::Arc;
 
 impl<Id: Display> Game<Id> {
     pub fn as_infix(&self) -> GameInfix<Id> {
@@ -63,7 +63,7 @@ impl<Id: Display> Display for RuleInfix<'_, Id> {
     }
 }
 
-struct TermInfix<'a, Id: Display>(&'a Rc<Term<Id>>);
+struct TermInfix<'a, Id: Display>(&'a Arc<Term<Id>>);
 
 impl<Id: Display> Display for TermInfix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {

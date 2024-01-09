@@ -8,7 +8,7 @@ mod unify;
 
 use map_id::MapId;
 use map_id_macro::MapId;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub enum AtomOrVariable<Id> {
@@ -40,7 +40,7 @@ impl<Id: PartialEq> Game<Id> {
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub struct Predicate<Id> {
     pub is_negated: bool,
-    pub term: Rc<Term<Id>>,
+    pub term: Arc<Term<Id>>,
 }
 
 impl<Id> Predicate<Id> {
@@ -51,7 +51,7 @@ impl<Id> Predicate<Id> {
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub struct Rule<Id> {
-    pub term: Rc<Term<Id>>,
+    pub term: Arc<Term<Id>>,
     pub predicates: Vec<Predicate<Id>>,
 }
 
@@ -73,28 +73,28 @@ impl<Id: PartialEq> Rule<Id> {
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub enum Term<Id> {
     /// `base(p)` means that `p` is a base proposition in the game.
-    Base(Rc<Term<Id>>),
+    Base(Arc<Term<Id>>),
 
     /// `name(...arguments)` is a custom, game-specific term.
-    Custom(AtomOrVariable<Id>, Vec<Rc<Term<Id>>>),
+    Custom(AtomOrVariable<Id>, Vec<Arc<Term<Id>>>),
 
     /// `does(r, a)` means that player `r` performs action `a` in the current state.
-    Does(AtomOrVariable<Id>, Rc<Term<Id>>),
+    Does(AtomOrVariable<Id>, Arc<Term<Id>>),
 
     /// `goal(r, u)` means that player the current state has utility `u` for player `r`.
     Goal(AtomOrVariable<Id>, AtomOrVariable<Id>),
 
     /// `init(p)` means that the proposition `p` is true in the initial state.
-    Init(Rc<Term<Id>>),
+    Init(Arc<Term<Id>>),
 
     /// `input(r, a)` means that `a` is an action for role `r`.
-    Input(AtomOrVariable<Id>, Rc<Term<Id>>),
+    Input(AtomOrVariable<Id>, Arc<Term<Id>>),
 
     /// `legal(r, a)` means it is legal for role `r` to play action `a` in the current state.
-    Legal(AtomOrVariable<Id>, Rc<Term<Id>>),
+    Legal(AtomOrVariable<Id>, Arc<Term<Id>>),
 
     /// `next(p)` means that the proposition `p` is true in the next state.
-    Next(Rc<Term<Id>>),
+    Next(Arc<Term<Id>>),
 
     /// `role(a)` means that `a` is a role in the game.
     Role(AtomOrVariable<Id>),
@@ -103,7 +103,7 @@ pub enum Term<Id> {
     Terminal,
 
     /// `true(p)` means that the proposition `p` is true in the current state.
-    True(Rc<Term<Id>>),
+    True(Arc<Term<Id>>),
 }
 
 impl<Id> Term<Id> {

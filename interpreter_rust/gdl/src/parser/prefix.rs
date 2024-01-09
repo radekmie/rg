@@ -6,7 +6,7 @@ use nom::combinator::{map, opt, success};
 use nom::multi::{many0, many1};
 use nom::sequence::{pair, preceded};
 use std::convert::identity;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub fn atom_or_variable(input: &str) -> Result<AtomOrVariable<&str>> {
     alt((
@@ -77,8 +77,8 @@ pub fn rule(input: &str) -> Result<Rule<&str>> {
     map(rule, |(term, predicates)| Rule { term, predicates })(input)
 }
 
-fn term_rc(input: &str) -> Result<Rc<Term<&str>>> {
-    map(separated(term), Rc::from)(input)
+fn term_rc(input: &str) -> Result<Arc<Term<&str>>> {
+    map(separated(term), Arc::from)(input)
 }
 
 fn term_template<'a, T, U>(

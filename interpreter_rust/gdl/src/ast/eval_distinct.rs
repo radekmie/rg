@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn eval_distinct(&self) -> Self {
-        let mut rules: Vec<_> = self.0.iter().flat_map(Rule::eval_distinct).collect();
+        let mut rules: Vec<_> = self.0.iter().filter_map(Rule::eval_distinct).collect();
         rules.dedup();
         Self(rules)
     }

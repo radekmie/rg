@@ -5,7 +5,7 @@ use nom::bytes::complete::tag;
 use nom::combinator::{map, opt, value};
 use nom::multi::{many0, separated_list1};
 use nom::sequence::{pair, preceded, separated_pair};
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub fn atom_or_variable(input: &str) -> Result<AtomOrVariable<&str>> {
     map(symbol, |symbol: &str| {
@@ -80,8 +80,8 @@ pub fn term(input: &str) -> Result<Term<&str>> {
     ))(input)
 }
 
-fn term_rc(input: &str) -> Result<Rc<Term<&str>>> {
-    map(separated(term), Rc::from)(input)
+fn term_rc(input: &str) -> Result<Arc<Term<&str>>> {
+    map(separated(term), Arc::from)(input)
 }
 
 fn term_template<'a, T, U>(

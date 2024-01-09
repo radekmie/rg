@@ -1,5 +1,4 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
-use std::rc::Rc;
 use std::sync::Arc;
 
 impl Game<Arc<str>> {
@@ -12,7 +11,7 @@ impl Predicate<Arc<str>> {
     pub fn symbolify(&self) -> Self {
         Self {
             is_negated: self.is_negated,
-            term: Rc::new(self.term.symbolify()),
+            term: Arc::new(self.term.symbolify()),
         }
     }
 }
@@ -20,7 +19,7 @@ impl Predicate<Arc<str>> {
 impl Rule<Arc<str>> {
     pub fn symbolify(&self) -> Self {
         Self {
-            term: Rc::new(self.term.symbolify()),
+            term: Arc::new(self.term.symbolify()),
             predicates: self.predicates.iter().map(Predicate::symbolify).collect(),
         }
     }
@@ -31,23 +30,23 @@ impl Term<Arc<str>> {
         use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         self.maybe_symbolify().map_or_else(
             || match self {
-                Base(proposition) => Base(Rc::new(proposition.symbolify())),
+                Base(proposition) => Base(Arc::new(proposition.symbolify())),
                 Custom(name, arguments) => Custom(
                     name.clone(),
                     arguments
                         .iter()
-                        .map(|argument| Rc::new(argument.symbolify()))
+                        .map(|argument| Arc::new(argument.symbolify()))
                         .collect(),
                 ),
-                Does(role, action) => Does(role.clone(), Rc::new(action.symbolify())),
+                Does(role, action) => Does(role.clone(), Arc::new(action.symbolify())),
                 Goal(role, utility) => Goal(role.clone(), utility.clone()),
-                Init(proposition) => Init(Rc::new(proposition.symbolify())),
-                Input(role, action) => Input(role.clone(), Rc::new(action.symbolify())),
-                Legal(role, action) => Legal(role.clone(), Rc::new(action.symbolify())),
-                Next(proposition) => Next(Rc::new(proposition.symbolify())),
+                Init(proposition) => Init(Arc::new(proposition.symbolify())),
+                Input(role, action) => Input(role.clone(), Arc::new(action.symbolify())),
+                Legal(role, action) => Legal(role.clone(), Arc::new(action.symbolify())),
+                Next(proposition) => Next(Arc::new(proposition.symbolify())),
                 Role(role) => Role(role.clone()),
                 Terminal => Terminal,
-                True(proposition) => True(Rc::new(proposition.symbolify())),
+                True(proposition) => True(Arc::new(proposition.symbolify())),
             },
             |id| Custom(AtomOrVariable::Atom(Arc::from(id)), vec![]),
         )

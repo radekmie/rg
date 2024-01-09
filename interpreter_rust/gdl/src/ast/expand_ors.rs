@@ -1,5 +1,4 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
-use std::rc::Rc;
 use std::sync::Arc;
 
 impl Game<Arc<str>> {
@@ -17,7 +16,7 @@ impl Predicate<Arc<str>> {
             .into_iter()
             .map(|term| Self {
                 is_negated: self.is_negated,
-                term: Rc::new(term),
+                term: Arc::new(term),
             })
             .collect()
     }
@@ -42,7 +41,7 @@ impl Rule<Arc<str>> {
             .into_iter()
             .flat_map(move |predicates| {
                 self.term.expand_ors().into_iter().map(move |term| Self {
-                    term: Rc::new(term),
+                    term: Arc::new(term),
                     predicates: predicates.clone(),
                 })
             })
@@ -57,7 +56,7 @@ impl Term<Arc<str>> {
             Base(proposition) => proposition
                 .expand_ors()
                 .into_iter()
-                .map(|proposition| Base(Rc::new(proposition)))
+                .map(|proposition| Base(Arc::new(proposition)))
                 .collect(),
             Custom(AtomOrVariable::Atom(id), arguments) if &**id == "or" => arguments
                 .iter()
@@ -71,7 +70,7 @@ impl Term<Arc<str>> {
                     for x in xs {
                         for y in &ys {
                             let mut x = x.clone();
-                            x.push(Rc::new(y.clone()));
+                            x.push(Arc::new(y.clone()));
                             zs.push(x);
                         }
                     }
@@ -83,35 +82,35 @@ impl Term<Arc<str>> {
             Does(role, action) => action
                 .expand_ors()
                 .into_iter()
-                .map(|action| Does(role.clone(), Rc::new(action)))
+                .map(|action| Does(role.clone(), Arc::new(action)))
                 .collect(),
             Goal(role, utility) => vec![Goal(role.clone(), utility.clone())],
             Init(proposition) => proposition
                 .expand_ors()
                 .into_iter()
-                .map(|proposition| Init(Rc::new(proposition)))
+                .map(|proposition| Init(Arc::new(proposition)))
                 .collect(),
             Input(role, action) => action
                 .expand_ors()
                 .into_iter()
-                .map(|action| Input(role.clone(), Rc::new(action)))
+                .map(|action| Input(role.clone(), Arc::new(action)))
                 .collect(),
             Legal(role, action) => action
                 .expand_ors()
                 .into_iter()
-                .map(|action| Legal(role.clone(), Rc::new(action)))
+                .map(|action| Legal(role.clone(), Arc::new(action)))
                 .collect(),
             Next(proposition) => proposition
                 .expand_ors()
                 .into_iter()
-                .map(|proposition| Next(Rc::new(proposition)))
+                .map(|proposition| Next(Arc::new(proposition)))
                 .collect(),
             Role(role) => vec![Role(role.clone())],
             Terminal => vec![Terminal],
             True(proposition) => proposition
                 .expand_ors()
                 .into_iter()
-                .map(|proposition| True(Rc::new(proposition)))
+                .map(|proposition| True(Arc::new(proposition)))
                 .collect(),
         }
     }

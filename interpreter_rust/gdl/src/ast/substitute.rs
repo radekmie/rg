@@ -1,6 +1,6 @@
 use super::unify::Unification;
 use crate::ast::{AtomOrVariable, Predicate, Rule, Term};
-use std::rc::Rc;
+use std::sync::Arc;
 
 impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
@@ -22,7 +22,7 @@ impl<Id: Clone + PartialEq> Predicate<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         Self {
             is_negated: self.is_negated,
-            term: Rc::new(self.term.substitute(u)),
+            term: Arc::new(self.term.substitute(u)),
         }
     }
 }
@@ -30,7 +30,7 @@ impl<Id: Clone + PartialEq> Predicate<Id> {
 impl<Id: Clone + PartialEq> Rule<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         Self {
-            term: Rc::new(self.term.substitute(u)),
+            term: Arc::new(self.term.substitute(u)),
             predicates: self
                 .predicates
                 .iter()
@@ -44,7 +44,7 @@ impl<Id: Clone + PartialEq> Term<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match self {
-            Base(proposition) => Base(Rc::new(proposition.substitute(u))),
+            Base(proposition) => Base(Arc::new(proposition.substitute(u))),
             Custom(AtomOrVariable::Variable(id), arguments) if arguments.is_empty() => {
                 u.get(id).unwrap_or(self).clone()
             }
@@ -52,18 +52,18 @@ impl<Id: Clone + PartialEq> Term<Id> {
                 name.substitute(u),
                 arguments
                     .iter()
-                    .map(|argument| Rc::new(argument.substitute(u)))
+                    .map(|argument| Arc::new(argument.substitute(u)))
                     .collect(),
             ),
-            Does(role, action) => Does(role.substitute(u), Rc::new(action.substitute(u))),
+            Does(role, action) => Does(role.substitute(u), Arc::new(action.substitute(u))),
             Goal(role, utility) => Goal(role.substitute(u), utility.substitute(u)),
-            Init(proposition) => Init(Rc::new(proposition.substitute(u))),
-            Input(role, action) => Input(role.substitute(u), Rc::new(action.substitute(u))),
-            Legal(role, action) => Legal(role.substitute(u), Rc::new(action.substitute(u))),
-            Next(proposition) => Next(Rc::new(proposition.substitute(u))),
+            Init(proposition) => Init(Arc::new(proposition.substitute(u))),
+            Input(role, action) => Input(role.substitute(u), Arc::new(action.substitute(u))),
+            Legal(role, action) => Legal(role.substitute(u), Arc::new(action.substitute(u))),
+            Next(proposition) => Next(Arc::new(proposition.substitute(u))),
             Role(role) => Role(role.substitute(u)),
             Terminal => Terminal,
-            True(proposition) => True(Rc::new(proposition.substitute(u))),
+            True(proposition) => True(Arc::new(proposition.substitute(u))),
         }
     }
 }
