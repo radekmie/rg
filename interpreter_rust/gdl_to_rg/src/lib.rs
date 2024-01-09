@@ -26,14 +26,14 @@ pub fn gdl_to_rg(gdl: &gdl::ast::Game<Id>) -> rg::ast::Game<Id> {
 }
 
 fn add_common_typedefs(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
-    use gdl::ast::{AtomOrVariable, Rule, Term};
+    use gdl::ast::{AtomOrVariable, Term};
     use rg::ast::{Type, Typedef};
     use rg::position::Span;
 
     let roles = gdl
         .0
         .iter()
-        .filter_map(|Rule { term, .. }| match term.as_ref() {
+        .filter_map(|rule| match rule.term.as_ref() {
             Term::Legal(AtomOrVariable::Atom(role), _) => Some(role),
             _ => None,
         })
@@ -122,16 +122,14 @@ fn add_fact_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         if let Term::Base(term) | Term::Next(term) | Term::True(term) = term {
             if let Term::Custom(AtomOrVariable::Atom(id), arguments) = term.as_ref() {
                 if arguments.is_empty() && variables.insert(id) {
+                    let default_value = if inits.contains(id) { "1" } else { "0" };
                     rg.variables.push(Variable {
                         span: Span::none(),
-                        default_value: Arc::from(Value::new(Id::from(if inits.contains(id) {
-                            "1"
-                        } else {
-                            "0"
-                        }))),
+                        default_value: Arc::from(Value::new(Id::from(default_value))),
                         identifier: Id::from(format!("{id}_prev")),
                         type_: Arc::from(Type::new(Id::from("Bool"))),
                     });
+
                     rg.variables.push(Variable {
                         span: Span::none(),
                         default_value: Arc::from(Value::new(Id::from("0"))),
@@ -145,7 +143,7 @@ fn add_fact_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 }
 
 fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
-    use gdl::ast::{AtomOrVariable, Rule, Term};
+    use gdl::ast::{AtomOrVariable, Term};
     use rg::ast::{Edge, EdgeLabel, EdgeName, Expression};
     use rg::position::Span;
 
@@ -170,7 +168,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     let roles = gdl
         .0
         .iter()
-        .filter_map(|Rule { term, .. }| match term.as_ref() {
+        .filter_map(|rule| match rule.term.as_ref() {
             Term::Legal(AtomOrVariable::Atom(role), _) => Some(role),
             _ => None,
         })
@@ -190,25 +188,19 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
             label: EdgeLabel::Skip { span: Span::none() },
         });
 
-        for (opponent_index, opponent) in roles.iter().enumerate() {
+        for (op_index, op) in roles.iter().enumerate() {
+            let is_visible = if role_index == op_index { "1" } else { "0" };
             rg.edges.push(Edge {
                 span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("loop_{role}_visibility_{opponent_index}"))),
-                rhs: EdgeName::new(Id::from(format!(
-                    "loop_{role}_visibility_{}",
-                    opponent_index + 1
-                ))),
+                lhs: EdgeName::new(Id::from(format!("loop_{role}_visibility_{op_index}"))),
+                rhs: EdgeName::new(Id::from(format!("loop_{role}_visibility_{}", op_index + 1))),
                 label: EdgeLabel::Assignment {
                     lhs: Arc::from(Expression::Access {
                         span: Span::none(),
                         lhs: Arc::from(Expression::new(Id::from("visible"))),
-                        rhs: Arc::from(Expression::new((*opponent).clone())),
+                        rhs: Arc::from(Expression::new((*op).clone())),
                     }),
-                    rhs: Arc::from(Expression::new(Id::from(if role_index == opponent_index {
-                        "1"
-                    } else {
-                        "0"
-                    }))),
+                    rhs: Arc::from(Expression::new(Id::from(is_visible))),
                 },
             });
         }
@@ -285,8 +277,8 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                     AtomOrVariable::Atom(role.clone()),
                     Rc::new(Term::Custom(AtomOrVariable::Atom(action.clone()), vec![])),
                 ),
-                &Id::from(format!("check_{role}_{action}_begin")),
-                &Id::from(format!("check_{role}_{action}_end")),
+                &EdgeName::new(Id::from(format!("check_{role}_{action}_begin"))),
+                &EdgeName::new(Id::from(format!("check_{role}_{action}_end"))),
             );
         }
     }
@@ -410,8 +402,8 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                 AtomOrVariable::Atom(variable.clone()),
                 vec![],
             ))),
-            &Id::from(format!("next_{variable}_check_begin")),
-            &Id::from(format!("next_{variable}_check_end")),
+            &EdgeName::new(Id::from(format!("next_{variable}_check_begin"))),
+            &EdgeName::new(Id::from(format!("next_{variable}_check_end"))),
         );
     }
 }
@@ -456,8 +448,8 @@ fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         rg,
         gdl,
         &Term::Terminal,
-        &Id::from("terminal_begin"),
-        &Id::from("terminal_end"),
+        &EdgeName::new(Id::from("terminal_begin")),
+        &EdgeName::new(Id::from("terminal_end")),
     );
 }
 
@@ -531,8 +523,8 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                     AtomOrVariable::Atom(role.clone()),
                     AtomOrVariable::Atom(goal.clone()),
                 ),
-                &Id::from(format!("goals_{role}_check_{goal}_begin")),
-                &Id::from(format!("goals_{role}_check_{goal}_end")),
+                &EdgeName::new(Id::from(format!("goals_{role}_check_{goal}_begin"))),
+                &EdgeName::new(Id::from(format!("goals_{role}_check_{goal}_end"))),
             );
         }
     }
@@ -542,123 +534,87 @@ fn connect(
     rg: &mut rg::ast::Game<Id>,
     gdl: &gdl::ast::Game<Id>,
     goal: &gdl::ast::Term<Id>,
-    begin: &Id,
-    end: &Id,
+    begin: &rg::ast::EdgeName<Id>,
+    end: &rg::ast::EdgeName<Id>,
 ) {
-    use gdl::ast::{AtomOrVariable, Predicate, Rule, Term};
-    use rg::ast::{Edge, EdgeLabel, EdgeName, Expression};
+    use rg::ast::{Edge, EdgeLabel, EdgeName};
     use rg::position::Span;
 
     let edges_count = rg.edges.len();
-    for (index, Rule { term, predicates }) in gdl.0.iter().enumerate() {
-        if **term != *goal {
+    for (index, rule) in gdl.0.iter().enumerate() {
+        if rule.term.as_ref() != goal {
             continue;
         }
 
-        let term_id = match term.as_ref() {
-            Term::Custom(AtomOrVariable::Atom(id), arguments) if arguments.is_empty() => {
-                format!("{edges_count}_{index}_{id}")
-            }
-            _ => format!("{edges_count}_{index}"),
-        };
-
-        if rg
-            .edges
-            .iter()
-            .any(|edge| edge.lhs == EdgeName::new(Id::from(format!("connected_{term_id}_0"))))
-        {
-            rg.edges.push(Edge {
-                span: Span::none(),
-                lhs: EdgeName::new(begin.clone()),
-                rhs: EdgeName::new(end.clone()),
-                label: EdgeLabel::Reachability {
-                    span: Span::none(),
-                    negated: false,
-                    lhs: EdgeName::new(Id::from(format!("connected_{term_id}_0"))),
-                    rhs: EdgeName::new(Id::from(format!("connected_{term_id}_end"))),
-                },
-            });
-            continue;
-        }
-
+        let prefix = format!("connected_{edges_count}_{index}");
         rg.edges.push(Edge {
             span: Span::none(),
-            lhs: EdgeName::new(begin.clone()),
-            rhs: EdgeName::new(Id::from(format!("connected_{term_id}_0"))),
+            lhs: begin.clone(),
+            rhs: EdgeName::new(Id::from(format!("{prefix}_0"))),
             label: EdgeLabel::Skip { span: Span::none() },
         });
 
-        for (step, Predicate { is_negated, term }) in predicates.iter().enumerate() {
-            let label = match term.as_ref() {
-                Term::Custom(_, _) => {
-                    connect(
-                        rg,
-                        gdl,
-                        term,
-                        &Id::from(format!("connected_{term_id}_{}_begin", step + 1)),
-                        &Id::from(format!("connected_{term_id}_{}_end", step + 1)),
-                    );
-                    EdgeLabel::Reachability {
-                        span: Span::none(),
-                        lhs: EdgeName::new(Id::from(format!(
-                            "connected_{term_id}_{}_begin",
-                            step + 1
-                        ))),
-                        rhs: EdgeName::new(Id::from(format!(
-                            "connected_{term_id}_{}_end",
-                            step + 1
-                        ))),
-                        negated: *is_negated,
-                    }
-                }
-                Term::Does(AtomOrVariable::Atom(role), action) => match action.as_ref() {
-                    Term::Custom(AtomOrVariable::Atom(id), arguments) if arguments.is_empty() => {
-                        EdgeLabel::Comparison {
-                            lhs: Arc::from(Expression::new(Id::from(format!("does_{role}")))),
-                            rhs: Arc::from(Expression::new(id.clone())),
-                            negated: *is_negated,
-                        }
-                    }
-                    _ => unreachable!(),
-                },
-                Term::True(proposition) => match proposition.as_ref() {
-                    Term::Custom(AtomOrVariable::Atom(variable), arguments)
-                        if arguments.is_empty() =>
-                    {
-                        EdgeLabel::Comparison {
-                            lhs: Arc::from(Expression::new(Id::from(format!("{variable}_prev")))),
-                            rhs: Arc::from(Expression::new(Id::from("1"))),
-                            negated: *is_negated,
-                        }
-                    }
-                    _ => unreachable!(),
-                },
-                _ => unreachable!(),
-            };
-
+        for (step, predicate) in rule.predicates.iter().enumerate() {
+            let label = connect_one(rg, gdl, predicate, &format!("{prefix}_{}", step + 1));
             rg.edges.push(Edge {
                 span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("connected_{term_id}_{step}"))),
-                rhs: EdgeName::new(Id::from(format!("connected_{term_id}_{}", step + 1))),
+                lhs: EdgeName::new(Id::from(format!("{prefix}_{step}"))),
+                rhs: EdgeName::new(Id::from(format!("{prefix}_{}", step + 1))),
                 label,
             });
         }
 
         rg.edges.push(Edge {
             span: Span::none(),
-            lhs: EdgeName::new(Id::from(format!(
-                "connected_{term_id}_{}",
-                predicates.len()
-            ))),
-            rhs: EdgeName::new(Id::from(format!("connected_{term_id}_end"))),
+            lhs: EdgeName::new(Id::from(format!("{prefix}_{}", rule.predicates.len()))),
+            rhs: end.clone(),
             label: EdgeLabel::Skip { span: Span::none() },
         });
+    }
+}
 
-        rg.edges.push(Edge {
-            span: Span::none(),
-            lhs: EdgeName::new(Id::from(format!("connected_{term_id}_end"))),
-            rhs: EdgeName::new(end.clone()),
-            label: EdgeLabel::Skip { span: Span::none() },
-        });
+fn connect_one(
+    rg: &mut rg::ast::Game<Id>,
+    gdl: &gdl::ast::Game<Id>,
+    predicate: &gdl::ast::Predicate<Id>,
+    prefix: &str,
+) -> rg::ast::EdgeLabel<Id> {
+    use gdl::ast::{AtomOrVariable, Term};
+    use rg::ast::{EdgeLabel, EdgeName, Expression};
+    use rg::position::Span;
+
+    match predicate.term.as_ref() {
+        Term::Custom(_, _) => {
+            let lhs = EdgeName::new(Id::from(format!("{prefix}_begin")));
+            let rhs = EdgeName::new(Id::from(format!("{prefix}_end")));
+            connect(rg, gdl, &predicate.term, &lhs, &rhs);
+            EdgeLabel::Reachability {
+                span: Span::none(),
+                lhs,
+                rhs,
+                negated: predicate.is_negated,
+            }
+        }
+        Term::Does(AtomOrVariable::Atom(role), action) => match action.as_ref() {
+            Term::Custom(AtomOrVariable::Atom(id), arguments) if arguments.is_empty() => {
+                EdgeLabel::Comparison {
+                    lhs: Arc::from(Expression::new(Id::from(format!("does_{role}")))),
+                    rhs: Arc::from(Expression::new(id.clone())),
+                    negated: predicate.is_negated,
+                }
+            }
+            _ => unreachable!(),
+        },
+        Term::True(proposition) => match proposition.as_ref() {
+            Term::Custom(AtomOrVariable::Atom(id), arguments) if arguments.is_empty() => {
+                EdgeLabel::Comparison {
+                    lhs: Arc::from(Expression::new(Id::from(format!("{id}_prev")))),
+                    rhs: Arc::from(Expression::new(Id::from("1"))),
+                    negated: predicate.is_negated,
+                }
+            }
+            _ => unreachable!(),
+        },
+        _ => unreachable!(),
     }
 }

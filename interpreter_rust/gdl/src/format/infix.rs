@@ -1,6 +1,5 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::fmt::{Display, Formatter, Result};
-
 use std::rc::Rc;
 
 impl<Id: Display> Game<Id> {

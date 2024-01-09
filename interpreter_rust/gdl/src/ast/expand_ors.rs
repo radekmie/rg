@@ -4,7 +4,9 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn expand_ors(&self) -> Self {
-        Self(self.0.iter().flat_map(Rule::expand_ors).collect())
+        let mut rules: Vec<_> = self.0.iter().flat_map(Rule::expand_ors).collect();
+        rules.dedup();
+        Self(rules)
     }
 }
 
