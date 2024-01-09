@@ -1,35 +1,31 @@
 use super::unify::Unification;
-use crate::ast::{Game, Term};
+use crate::ast::{Game, Rule, Term};
 
 impl<Id: Clone + Ord> Game<Id> {
     pub fn ground(&self) -> Self {
         let mut rules = self.0.clone();
         rules.sort_unstable();
-
-        let mut subterms: Vec<Vec<_>> = rules
-            .iter()
-            .map(|rule| rule.subterms().cloned().collect())
-            .collect();
+        let mut subterms: Vec<_> = rules.iter().map(get_subterms).collect();
 
         loop {
             let mut any_grounding_happened = false;
             for i in 0..rules.len() {
-                if rules[i].has_variable() {
+                if !subterms[i].0.is_empty() {
                     continue;
                 }
 
                 for j in 0..rules.len() {
-                    if i == j {
+                    if i == j || subterms[j].0.is_empty() {
                         continue;
                     }
 
-                    if let Some(unification) = any_unification(&subterms[j], &subterms[i]) {
+                    if let Some(unification) = any_unification(&subterms[j].0, &subterms[i].1) {
                         let mut rule = rules[j].substitute(&unification);
                         rule.predicates.sort_unstable();
                         rule.predicates.dedup();
 
                         if let Err(index) = rules.binary_search(&rule) {
-                            subterms.insert(index, rule.subterms().cloned().collect());
+                            subterms.insert(index, get_subterms(&rule));
                             rules.insert(index, rule);
                             any_grounding_happened = true;
                         }
@@ -62,6 +58,10 @@ fn any_unification<Id: Clone + PartialEq>(
     }
 
     None
+}
+
+fn get_subterms<Id: Clone + PartialEq>(rule: &Rule<Id>) -> (Vec<Term<Id>>, Vec<Term<Id>>) {
+    rule.subterms().cloned().partition(Term::has_variable)
 }
 
 #[cfg(test)]

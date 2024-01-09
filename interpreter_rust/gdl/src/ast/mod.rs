@@ -106,14 +106,6 @@ pub enum Term<Id> {
     True(Rc<Term<Id>>),
 }
 
-impl<Id: PartialEq> Term<Id> {
-    pub fn subterms(&self) -> impl Iterator<Item = &Self> {
-        let mut iterator = TermIterator::new();
-        iterator.add_term(self);
-        iterator
-    }
-}
-
 impl<Id> Term<Id> {
     pub fn has_variable(&self) -> bool {
         use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
@@ -132,6 +124,14 @@ impl<Id> Term<Id> {
             Terminal => false,
             True(proposition) => proposition.has_variable(),
         }
+    }
+}
+
+impl<Id: PartialEq> Term<Id> {
+    pub fn subterms(&self) -> impl Iterator<Item = &Self> {
+        let mut iterator = TermIterator::new();
+        iterator.add_term(self);
+        iterator
     }
 }
 
