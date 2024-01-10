@@ -215,17 +215,20 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         });
 
         for action in legals.get(role).unwrap() {
-            rg.edges.push(Edge {
-                span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("loop_{role}_begin"))),
-                rhs: EdgeName::new(Id::from(format!("loop_{role}_{action}_move"))),
-                label: EdgeLabel::Reachability {
-                    span: Span::none(),
-                    negated: false,
-                    lhs: EdgeName::new(Id::from(format!("check_{role}_{action}_begin"))),
-                    rhs: EdgeName::new(Id::from(format!("check_{role}_{action}_end"))),
-                },
-            });
+            connect(
+                rg,
+                gdl,
+                &Term::Legal(
+                    AtomOrVariable::Atom((*role).clone()),
+                    Arc::new(Term::Custom(
+                        AtomOrVariable::Atom((*action).clone()),
+                        vec![],
+                    )),
+                ),
+                Id::from(format!("loop_{role}_begin")),
+                Id::from(format!("loop_{role}_{action}_move")),
+                false,
+            );
         }
 
         for action in legals.get(role).unwrap() {
@@ -266,21 +269,6 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         rhs: EdgeName::new(Id::from("loop_end")),
         label: EdgeLabel::Skip { span: Span::none() },
     });
-
-    for (role, actions) in legals {
-        for action in actions {
-            connect(
-                rg,
-                gdl,
-                &Term::Legal(
-                    AtomOrVariable::Atom(role.clone()),
-                    Arc::new(Term::Custom(AtomOrVariable::Atom(action.clone()), vec![])),
-                ),
-                &EdgeName::new(Id::from(format!("check_{role}_{action}_begin"))),
-                &EdgeName::new(Id::from(format!("check_{role}_{action}_end"))),
-            );
-        }
-    }
 }
 
 fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
@@ -300,29 +288,29 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         if let Term::Next(term) = term {
             if let Term::Custom(AtomOrVariable::Atom(id), arguments) = term.as_ref() {
                 if arguments.is_empty() && variables.insert(id) {
-                    rg.edges.push(Edge {
-                        span: Span::none(),
-                        lhs: EdgeName::new(Id::from(format!("next_{}", variables.len() - 1))),
-                        rhs: EdgeName::new(Id::from(format!("next_{}_0", variables.len()))),
-                        label: EdgeLabel::Reachability {
-                            span: Span::none(),
-                            negated: true,
-                            lhs: EdgeName::new(Id::from(format!("next_{id}_check_begin",))),
-                            rhs: EdgeName::new(Id::from(format!("next_{id}_check_end",))),
-                        },
-                    });
+                    connect(
+                        rg,
+                        gdl,
+                        &Term::Next(Arc::new(Term::Custom(
+                            AtomOrVariable::Atom(id.clone()),
+                            vec![],
+                        ))),
+                        Id::from(format!("next_{}", variables.len() - 1)),
+                        Id::from(format!("next_{}_0", variables.len())),
+                        true,
+                    );
 
-                    rg.edges.push(Edge {
-                        span: Span::none(),
-                        lhs: EdgeName::new(Id::from(format!("next_{}", variables.len() - 1))),
-                        rhs: EdgeName::new(Id::from(format!("next_{}_1", variables.len()))),
-                        label: EdgeLabel::Reachability {
-                            span: Span::none(),
-                            negated: false,
-                            lhs: EdgeName::new(Id::from(format!("next_{id}_check_begin",))),
-                            rhs: EdgeName::new(Id::from(format!("next_{id}_check_end",))),
-                        },
-                    });
+                    connect(
+                        rg,
+                        gdl,
+                        &Term::Next(Arc::new(Term::Custom(
+                            AtomOrVariable::Atom(id.clone()),
+                            vec![],
+                        ))),
+                        Id::from(format!("next_{}", variables.len() - 1)),
+                        Id::from(format!("next_{}_1", variables.len())),
+                        false,
+                    );
 
                     rg.edges.push(Edge {
                         span: Span::none(),
@@ -392,19 +380,6 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         rhs: EdgeName::new(Id::from("next_end")),
         label: EdgeLabel::Skip { span: Span::none() },
     });
-
-    for variable in variables {
-        connect(
-            rg,
-            gdl,
-            &Term::Next(Arc::new(Term::Custom(
-                AtomOrVariable::Atom(variable.clone()),
-                vec![],
-            ))),
-            &EdgeName::new(Id::from(format!("next_{variable}_check_begin"))),
-            &EdgeName::new(Id::from(format!("next_{variable}_check_end"))),
-        );
-    }
 }
 
 fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
@@ -419,36 +394,22 @@ fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         label: EdgeLabel::Skip { span: Span::none() },
     });
 
-    rg.edges.push(Edge {
-        span: Span::none(),
-        lhs: EdgeName::new(Id::from("terminal")),
-        rhs: EdgeName::new(Id::from("loop_begin")),
-        label: EdgeLabel::Reachability {
-            span: Span::none(),
-            negated: true,
-            lhs: EdgeName::new(Id::from("terminal_begin")),
-            rhs: EdgeName::new(Id::from("terminal_end")),
-        },
-    });
-
-    rg.edges.push(Edge {
-        span: Span::none(),
-        lhs: EdgeName::new(Id::from("terminal")),
-        rhs: EdgeName::new(Id::from("terminal_end")),
-        label: EdgeLabel::Reachability {
-            span: Span::none(),
-            negated: false,
-            lhs: EdgeName::new(Id::from("terminal_begin")),
-            rhs: EdgeName::new(Id::from("terminal_end")),
-        },
-    });
+    connect(
+        rg,
+        gdl,
+        &Term::Terminal,
+        Id::from("terminal"),
+        Id::from("loop_begin"),
+        true,
+    );
 
     connect(
         rg,
         gdl,
         &Term::Terminal,
-        &EdgeName::new(Id::from("terminal_begin")),
-        &EdgeName::new(Id::from("terminal_end")),
+        Id::from("terminal"),
+        Id::from("terminal_end"),
+        false,
     );
 }
 
@@ -473,17 +434,17 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
     for (index, (role, goals)) in goals.iter().enumerate() {
         for goal in goals {
-            rg.edges.push(Edge {
-                span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("goals_{index}_set"))),
-                rhs: EdgeName::new(Id::from(format!("goals_{}_check_{goal}", index + 1))),
-                label: EdgeLabel::Reachability {
-                    span: Span::none(),
-                    negated: false,
-                    lhs: EdgeName::new(Id::from(format!("goals_{role}_check_{goal}_begin"))),
-                    rhs: EdgeName::new(Id::from(format!("goals_{role}_check_{goal}_end"))),
-                },
-            });
+            connect(
+                rg,
+                gdl,
+                &Term::Goal(
+                    AtomOrVariable::Atom((*role).clone()),
+                    AtomOrVariable::Atom((*goal).clone()),
+                ),
+                Id::from(format!("goals_{index}_set")),
+                Id::from(format!("goals_{}_check_{goal}", index + 1)),
+                false,
+            );
         }
 
         for goal in goals {
@@ -512,20 +473,19 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
             rhs: Arc::from(Expression::new(Id::from("keeper"))),
         },
     });
+}
 
-    for (role, goals) in goals {
-        for goal in goals {
-            connect(
-                rg,
-                gdl,
-                &Term::Goal(
-                    AtomOrVariable::Atom(role.clone()),
-                    AtomOrVariable::Atom(goal.clone()),
-                ),
-                &EdgeName::new(Id::from(format!("goals_{role}_check_{goal}_begin"))),
-                &EdgeName::new(Id::from(format!("goals_{role}_check_{goal}_end"))),
-            );
+fn hash_term(term: &gdl::ast::Term<Id>) -> String {
+    use gdl::ast::{AtomOrVariable, Term};
+    match term {
+        Term::Custom(AtomOrVariable::Atom(id), arguments) if arguments.is_empty() => id.to_string(),
+        Term::Goal(AtomOrVariable::Atom(role), AtomOrVariable::Atom(goal)) => {
+            format!("goal_{role}_{goal}")
         }
+        Term::Legal(AtomOrVariable::Atom(role), action) => format!("legal_{role}_{}", hash_term(action)),
+        Term::Next(term) => format!("next_{}", hash_term(term)),
+        Term::Terminal => "terminal".to_string(),
+        _ => unimplemented!("{term:?}"),
     }
 }
 
@@ -533,43 +493,62 @@ fn connect(
     rg: &mut rg::ast::Game<Id>,
     gdl: &gdl::ast::Game<Id>,
     goal: &gdl::ast::Term<Id>,
-    begin: &rg::ast::EdgeName<Id>,
-    end: &rg::ast::EdgeName<Id>,
+    begin: Id,
+    end: Id,
+    negated: bool,
 ) {
     use rg::ast::{Edge, EdgeLabel, EdgeName};
     use rg::position::Span;
 
-    let edges_count = rg.edges.len();
-    for (index, rule) in gdl.0.iter().enumerate() {
-        if rule.term.as_ref() != goal {
-            continue;
-        }
+    let hash = hash_term(goal);
+    let lhs = EdgeName::new(Id::from(format!("__{hash}_begin")));
+    let rhs = EdgeName::new(Id::from(format!("__{hash}_end")));
 
-        let prefix = format!("connected_{edges_count}_{index}");
-        rg.edges.push(Edge {
-            span: Span::none(),
-            lhs: begin.clone(),
-            rhs: EdgeName::new(Id::from(format!("{prefix}_0"))),
-            label: EdgeLabel::Skip { span: Span::none() },
-        });
+    let start_present = rg.edges.iter().any(|edge| edge.lhs == lhs);
+    if !start_present {
+        for (index, rule) in gdl.0.iter().enumerate() {
+            if rule.term.as_ref() != goal {
+                continue;
+            }
 
-        for (step, predicate) in rule.predicates.iter().enumerate() {
-            let label = connect_one(rg, gdl, predicate, &format!("{prefix}_{}", step + 1));
+            let prefix = format!("__{hash}_{index}");
             rg.edges.push(Edge {
                 span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("{prefix}_{step}"))),
-                rhs: EdgeName::new(Id::from(format!("{prefix}_{}", step + 1))),
-                label,
+                lhs: lhs.clone(),
+                rhs: EdgeName::new(Id::from(format!("{prefix}_0"))),
+                label: EdgeLabel::Skip { span: Span::none() },
+            });
+
+            for (step, predicate) in rule.predicates.iter().enumerate() {
+                let label = connect_one(rg, gdl, predicate, &format!("{prefix}_{}", step + 1));
+                rg.edges.push(Edge {
+                    span: Span::none(),
+                    lhs: EdgeName::new(Id::from(format!("{prefix}_{step}"))),
+                    rhs: EdgeName::new(Id::from(format!("{prefix}_{}", step + 1))),
+                    label,
+                });
+            }
+
+            rg.edges.push(Edge {
+                span: Span::none(),
+                lhs: EdgeName::new(Id::from(format!("{prefix}_{}", rule.predicates.len()))),
+                rhs: rhs.clone(),
+                label: EdgeLabel::Skip { span: Span::none() },
             });
         }
-
-        rg.edges.push(Edge {
-            span: Span::none(),
-            lhs: EdgeName::new(Id::from(format!("{prefix}_{}", rule.predicates.len()))),
-            rhs: end.clone(),
-            label: EdgeLabel::Skip { span: Span::none() },
-        });
     }
+
+    rg.edges.push(Edge {
+        span: Span::none(),
+        lhs: EdgeName::new(begin),
+        rhs: EdgeName::new(end),
+        label: EdgeLabel::Reachability {
+            span: Span::none(),
+            lhs,
+            rhs,
+            negated,
+        },
+    });
 }
 
 fn connect_one(
@@ -584,13 +563,13 @@ fn connect_one(
 
     match predicate.term.as_ref() {
         Term::Custom(_, _) => {
-            let lhs = EdgeName::new(Id::from(format!("{prefix}_begin")));
-            let rhs = EdgeName::new(Id::from(format!("{prefix}_end")));
-            connect(rg, gdl, &predicate.term, &lhs, &rhs);
+            let lhs = Id::from(format!("{prefix}_begin"));
+            let rhs = Id::from(format!("{prefix}_end"));
+            connect(rg, gdl, &predicate.term, lhs.clone(), rhs.clone(), false);
             EdgeLabel::Reachability {
                 span: Span::none(),
-                lhs,
-                rhs,
+                lhs: EdgeName::new(lhs),
+                rhs: EdgeName::new(rhs),
                 negated: predicate.is_negated,
             }
         }
