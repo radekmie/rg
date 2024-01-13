@@ -1,10 +1,10 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 
 impl<Id: Clone + PartialEq> Game<Id> {
-    pub fn eval_distinct(&self, distinct: &Id) -> Self {
+    pub fn eval_distinct(self, distinct: &Id) -> Self {
         Self(
             self.0
-                .iter()
+                .into_iter()
                 .filter_map(|rule| rule.eval_distinct(distinct))
                 .collect(),
         )
@@ -20,7 +20,7 @@ impl<Id: Clone + PartialEq> Predicate<Id> {
 }
 
 impl<Id: Clone + PartialEq> Rule<Id> {
-    pub fn eval_distinct(&self, distinct: &Id) -> Option<Self> {
+    pub fn eval_distinct(self, distinct: &Id) -> Option<Self> {
         self.predicates
             .iter()
             .try_fold(vec![], |mut predicates, predicate| {

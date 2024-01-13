@@ -1,8 +1,8 @@
 use crate::ast::{Game, Term};
 
 impl<Id: Clone + Ord> Game<Id> {
-    pub fn simplify(&self) -> Self {
-        let mut rules = self.0.clone();
+    pub fn simplify(self) -> Self {
+        let mut rules = self.0;
         rules.sort_unstable();
         rules.dedup();
 

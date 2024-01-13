@@ -2,8 +2,8 @@ use super::unify::Unification;
 use crate::ast::{Game, Rule, Term};
 
 impl<Id: Clone + Ord> Game<Id> {
-    pub fn ground(&self) -> Self {
-        let mut rules = self.0.clone();
+    pub fn ground(self) -> Self {
+        let mut rules = self.0;
         rules.sort_unstable();
         let mut subterms: Vec<_> = rules.iter().map(get_subterms).collect();
 

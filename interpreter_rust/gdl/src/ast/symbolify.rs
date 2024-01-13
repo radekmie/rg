@@ -2,13 +2,13 @@ use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::sync::Arc;
 
 impl Game<Arc<str>> {
-    pub fn symbolify(&self) -> Self {
-        Self(self.0.iter().map(Rule::symbolify).collect())
+    pub fn symbolify(self) -> Self {
+        Self(self.0.into_iter().map(Rule::symbolify).collect())
     }
 }
 
 impl Predicate<Arc<str>> {
-    pub fn symbolify(&self) -> Self {
+    pub fn symbolify(self) -> Self {
         Self {
             is_negated: self.is_negated,
             term: Arc::new(self.term.symbolify()),
@@ -17,10 +17,10 @@ impl Predicate<Arc<str>> {
 }
 
 impl Rule<Arc<str>> {
-    pub fn symbolify(&self) -> Self {
+    pub fn symbolify(self) -> Self {
         Self {
             term: Arc::new(self.term.symbolify()),
-            predicates: self.predicates.iter().map(Predicate::symbolify).collect(),
+            predicates: self.predicates.into_iter().map(Predicate::symbolify).collect(),
         }
     }
 }

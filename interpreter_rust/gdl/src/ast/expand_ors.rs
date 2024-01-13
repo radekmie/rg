@@ -2,8 +2,8 @@ use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::sync::Arc;
 
 impl<Id: Clone + PartialEq> Game<Id> {
-    pub fn expand_ors(&self, or: &Id) -> Self {
-        Self(self.0.iter().flat_map(|rule| rule.expand_ors(or)).collect())
+    pub fn expand_ors(self, or: &Id) -> Self {
+        Self(self.0.into_iter().flat_map(|rule| rule.expand_ors(or)).collect())
     }
 }
 
@@ -21,9 +21,9 @@ impl<Id: Clone + PartialEq> Predicate<Id> {
 }
 
 impl<Id: Clone + PartialEq> Rule<Id> {
-    pub fn expand_ors(&self, or: &Id) -> Vec<Self> {
+    pub fn expand_ors(self, or: &Id) -> Vec<Self> {
         self.predicates
-            .iter()
+            .into_iter()
             .map(|predicate| predicate.expand_ors(or))
             .fold(vec![vec![]], |xs, ys| {
                 let mut zs = vec![];
