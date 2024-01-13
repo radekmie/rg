@@ -2,11 +2,11 @@ use crate::ast::{AtomOrVariable, Term};
 use std::iter::zip;
 
 impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
-    pub fn unify(&self, other: &Self) -> Unification<Id> {
+    pub fn unify<'a>(&'a self, other: &'a Self) -> Unification<Id> {
         use AtomOrVariable::{Atom, Variable};
         use Unification::{Empty, Failed, NotEmpty};
         match (self, other) {
-            (Variable(x), y @ Atom(_)) => NotEmpty(vec![(x.clone(), y.clone().as_term())]),
+            (Variable(x), Atom(y)) => NotEmpty(vec![(x, y)]),
             (x, y) if x == y => Empty,
             _ => Failed,
         }
@@ -14,7 +14,7 @@ impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
 }
 
 impl<Id: Clone + PartialEq> Term<Id> {
-    pub fn unify(&self, other: &Self) -> Unification<Id> {
+    pub fn unify<'a>(&'a self, other: &'a Self) -> Unification<Id> {
         use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match (self, other) {
             (Base(x), Base(y)) => x.unify(y),
@@ -38,25 +38,26 @@ impl<Id: Clone + PartialEq> Term<Id> {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub enum Unification<Id> {
+pub enum Unification<'a, Id> {
     Empty,
     Failed,
-    NotEmpty(Vec<(Id, Term<Id>)>),
+    NotEmpty(Vec<(&'a Id, &'a Id)>),
 }
 
-impl<Id> Unification<Id> {
+impl<Id> Unification<'_, Id> {
     pub fn is_empty(&self) -> bool {
         matches!(self, Self::Empty | Self::Failed)
     }
 }
 
-impl<Id: PartialEq> Unification<Id> {
-    pub fn get(&self, symbol: &Id) -> Option<&Term<Id>> {
+impl<Id: PartialEq> Unification<'_, Id> {
+    pub fn get(&self, symbol: &Id) -> Option<&Id> {
         match self {
             Self::NotEmpty(mapping) => mapping
                 .iter()
-                .find(|pair| pair.0 == *symbol)
-                .map(|pair| &pair.1),
+                .find(|pair| pair.0 == symbol)
+                .map(|pair| &pair.1)
+                .copied(),
             _ => None,
         }
     }
@@ -68,6 +69,8 @@ impl<Id: PartialEq> Unification<Id> {
             (Empty, y) => y,
             (NotEmpty(mut xs), NotEmpty(ys)) => {
                 for y in ys {
+                    // False-positive: `map_or_else` mutates borrowed `xs`.
+                    #[allow(clippy::option_if_let_else)]
                     match xs.iter().find(|x| x.0 == y.0) {
                         Some(x) => assert!(x.1 == y.1),
                         None => xs.push(y),
@@ -81,7 +84,7 @@ impl<Id: PartialEq> Unification<Id> {
     }
 }
 
-impl<Id: PartialEq> FromIterator<Self> for Unification<Id> {
+impl<Id: PartialEq> FromIterator<Self> for Unification<'_, Id> {
     fn from_iter<I: IntoIterator<Item = Self>>(iter: I) -> Self {
         let mut u = Self::Empty;
         for x in iter {
@@ -109,8 +112,8 @@ mod test {
     macro_rules! map {
         ($($k:expr => $v:expr),* $(,)?) => {
             ([$(($k, $v),)*])
-                .into_iter()
-                .map(|(k, v)| (k, parse(v)))
+                .iter()
+                .map(|(k, v)| (k, v))
                 .collect()
         }
     }

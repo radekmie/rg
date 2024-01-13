@@ -44,10 +44,10 @@ impl<Id: Clone + Ord> Game<Id> {
     }
 }
 
-fn any_unification<Id: Clone + PartialEq>(
-    xs: &[Term<Id>],
-    ys: &[Term<Id>],
-) -> Option<Unification<Id>> {
+fn any_unification<'a, Id: Clone + PartialEq>(
+    xs: &'a [Term<Id>],
+    ys: &'a [Term<Id>],
+) -> Option<Unification<'a, Id>> {
     for x in xs {
         for y in ys {
             let unification = x.unify(y);

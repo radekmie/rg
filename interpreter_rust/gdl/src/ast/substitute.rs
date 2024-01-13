@@ -7,13 +7,9 @@ impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
         use AtomOrVariable::{Atom, Variable};
         match self {
             Atom(id) => Atom(id.clone()),
-            Variable(id) => u.get(id).map_or_else(
-                || Variable(id.clone()),
-                |term| match term {
-                    Term::Custom(Atom(id), arguments) if arguments.is_empty() => Atom(id.clone()),
-                    _ => panic!("Cannot substitute non-trivial term for an atom."),
-                },
-            ),
+            Variable(id) => u
+                .get(id)
+                .map_or_else(|| Variable(id.clone()), |id| Atom(id.clone())),
         }
     }
 }
@@ -45,9 +41,6 @@ impl<Id: Clone + PartialEq> Term<Id> {
         use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match self {
             Base(proposition) => Base(Arc::new(proposition.substitute(u))),
-            Custom(AtomOrVariable::Variable(id), arguments) if arguments.is_empty() => {
-                u.get(id).unwrap_or(self).clone()
-            }
             Custom(name, arguments) => Custom(
                 name.substitute(u),
                 arguments
