@@ -2,7 +2,7 @@ use js_sys::{Array, Function};
 use map_id::MapId;
 use rand::thread_rng;
 use rg::ist;
-use rg::ist_tools::Interner;
+use rg::ist_tools::{new_ist_interner, ISTInterner};
 use rg::{ast::Game, parsing::parser::parse_with_errors};
 use serde::Deserialize;
 use serde_json::{from_str, to_string};
@@ -11,9 +11,9 @@ use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 pub fn prepare_ist(
     mut game: Game<Arc<str>>,
-) -> Result<(ist::Game<ist::RuntimeId>, Interner<ist::RuntimeId>), String> {
+) -> Result<(ist::Game<ist::RuntimeId>, ISTInterner), String> {
     game.expand_generator_nodes()?;
-    let mut interner = Interner::default();
+    let mut interner = new_ist_interner();
     let game = ist::Game::from(game).map_id(&mut |id| interner.intern(id));
     Ok((game, interner))
 }

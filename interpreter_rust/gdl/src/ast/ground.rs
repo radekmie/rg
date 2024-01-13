@@ -15,7 +15,7 @@ impl<Id: Clone + Ord> Game<Id> {
                 }
 
                 for j in 0..rules.len() {
-                    if i == j || subterms[j].0.is_empty() {
+                    if rules[i] == rules[j] || subterms[j].0.is_empty() {
                         continue;
                     }
 

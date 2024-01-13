@@ -12,6 +12,7 @@ members = [
   "map_id",
   "map_id_macro",
   "rg",
+  "utils",
 ]
 
 [workspace.lints.clippy]

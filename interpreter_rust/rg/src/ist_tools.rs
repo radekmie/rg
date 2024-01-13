@@ -5,59 +5,19 @@ use crate::ist_state::State;
 use rand::seq::IteratorRandom;
 use rand::Rng;
 use std::collections::BTreeMap;
-use std::fmt::Debug;
 use std::rc::Rc;
+use utils::Interner;
 
-pub struct Interner<Id: Ord> {
-    string_to_id: BTreeMap<Rc<str>, Id>,
-}
+pub type ISTInterner = Interner<Rc<str>, RuntimeId>;
 
-impl<Id: Copy + Ord + TryFrom<usize>> Interner<Id> {
-    pub fn intern(&mut self, string: &Rc<str>) -> Id
-    where
-        <Id as TryFrom<usize>>::Error: Debug,
-    {
-        const ERROR: &str = "Maximum number of interned strings reached! Increase Id size.";
-        if let Some(id) = self.string_to_id.get(string) {
-            return *id;
-        }
-
-        let id = self
-            .string_to_id
-            .len()
-            .checked_add(1)
-            .expect(ERROR)
-            .try_into()
-            .expect(ERROR);
-        self.intern_as(string, id)
-    }
-
-    pub fn intern_as(&mut self, string: &Rc<str>, id: Id) -> Id {
-        assert!(!self.string_to_id.contains_key(string));
-        self.string_to_id.insert(string.clone(), id);
-        id
-    }
-
-    pub fn recall(&self, id: &Id) -> Option<&Rc<str>> {
-        self.string_to_id
-            .iter()
-            .find(|pair| pair.1 == id)
-            .map(|pair| pair.0)
-    }
-}
-
-impl Default for Interner<RuntimeId> {
-    fn default() -> Self {
-        let mut interner = Self {
-            string_to_id: BTreeMap::default(),
-        };
-        interner.intern_as(&Rc::from("begin"), LABEL_BEGIN);
-        interner.intern_as(&Rc::from("end"), LABEL_END);
-        interner.intern_as(&Rc::from("goals"), LABEL_GOALS);
-        interner.intern_as(&Rc::from("keeper"), LABEL_KEEPER);
-        interner.intern_as(&Rc::from("player"), LABEL_PLAYER);
-        interner
-    }
+pub fn new_ist_interner() -> ISTInterner {
+    let mut interner = Interner::default();
+    interner.intern_as(&Rc::from("begin"), LABEL_BEGIN);
+    interner.intern_as(&Rc::from("end"), LABEL_END);
+    interner.intern_as(&Rc::from("goals"), LABEL_GOALS);
+    interner.intern_as(&Rc::from("keeper"), LABEL_KEEPER);
+    interner.intern_as(&Rc::from("player"), LABEL_PLAYER);
+    interner
 }
 
 impl Game<RuntimeId> {

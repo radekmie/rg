@@ -220,6 +220,7 @@ dependencies = [
  "gdl",
  "map_id",
  "rg",
+ "utils",
 ]
 
 [[package]]
@@ -552,6 +553,7 @@ dependencies = [
  "nom_locate",
  "rand",
  "serde",
+ "utils",
 ]
 
 [[package]]
@@ -802,6 +804,10 @@ dependencies = [
  "percent-encoding",
  "serde",
 ]
+
+[[package]]
+name = "utils"
+version = "0.1.0"
 
 [[package]]
 name = "version_check"
