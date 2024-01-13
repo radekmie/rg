@@ -482,7 +482,9 @@ fn hash_term(term: &gdl::ast::Term<Id>) -> String {
         Term::Goal(AtomOrVariable::Atom(role), AtomOrVariable::Atom(goal)) => {
             format!("goal_{role}_{goal}")
         }
-        Term::Legal(AtomOrVariable::Atom(role), action) => format!("legal_{role}_{}", hash_term(action)),
+        Term::Legal(AtomOrVariable::Atom(role), action) => {
+            format!("legal_{role}_{}", hash_term(action))
+        }
         Term::Next(term) => format!("next_{}", hash_term(term)),
         Term::Terminal => "terminal".to_string(),
         _ => unimplemented!("{term:?}"),

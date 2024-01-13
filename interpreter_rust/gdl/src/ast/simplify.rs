@@ -1,8 +1,10 @@
 use crate::ast::{Game, Term};
 
-impl<Id: Clone + PartialEq> Game<Id> {
+impl<Id: Clone + Ord> Game<Id> {
     pub fn simplify(&self) -> Self {
         let mut rules = self.0.clone();
+        rules.sort_unstable();
+        rules.dedup();
 
         loop {
             let mut any_simplification_happened = false;
@@ -46,9 +48,8 @@ mod test {
                 let mut actual = parse($actual).simplify();
                 let mut expect = parse($expect);
 
-                // TODO: `&str` is not `Ord`.
-                actual.0.sort_unstable_by_key(|x| format!("{x:?}"));
-                expect.0.sort_unstable_by_key(|x| format!("{x:?}"));
+                actual.0.sort_unstable();
+                expect.0.sort_unstable();
 
                 assert_eq!(actual.as_infix().to_string(), expect.as_infix().to_string());
             }

@@ -13,14 +13,15 @@ fn main() -> Result<(), String> {
         .lines()
         .filter(|line| !line.starts_with(';'))
         .collect::<String>();
+
     let gdl = parser::game(&source)
         .unwrap()
         .1
-        .map_id(&mut |id| Arc::from(*id))
         .ground()
         .expand_ors()
         .eval_distinct()
         .simplify()
+        .map_id(&mut |id| Arc::from(*id))
         .symbolify();
     let rg = gdl_to_rg(&gdl);
     print!("{rg}");

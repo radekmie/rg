@@ -1,15 +1,13 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::sync::Arc;
 
-impl Game<Arc<str>> {
+impl Game<&str> {
     pub fn expand_ors(&self) -> Self {
-        let mut rules: Vec<_> = self.0.iter().flat_map(Rule::expand_ors).collect();
-        rules.dedup();
-        Self(rules)
+        Self(self.0.iter().flat_map(Rule::expand_ors).collect())
     }
 }
 
-impl Predicate<Arc<str>> {
+impl Predicate<&str> {
     pub fn expand_ors(&self) -> Vec<Self> {
         self.term
             .expand_ors()
@@ -22,7 +20,7 @@ impl Predicate<Arc<str>> {
     }
 }
 
-impl Rule<Arc<str>> {
+impl Rule<&str> {
     pub fn expand_ors(&self) -> Vec<Self> {
         self.predicates
             .iter()
@@ -49,7 +47,7 @@ impl Rule<Arc<str>> {
     }
 }
 
-impl Term<Arc<str>> {
+impl Term<&str> {
     pub fn expand_ors(&self) -> Vec<Self> {
         use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match self {
@@ -58,9 +56,9 @@ impl Term<Arc<str>> {
                 .into_iter()
                 .map(|proposition| Base(Arc::new(proposition)))
                 .collect(),
-            Custom(AtomOrVariable::Atom(id), arguments) if &**id == "or" => arguments
+            Custom(AtomOrVariable::Atom(id), arguments) if *id == "or" => arguments
                 .iter()
-                .map(|argument| (**argument).clone())
+                .flat_map(|argument| argument.expand_ors())
                 .collect(),
             Custom(name, arguments) => arguments
                 .iter()
@@ -120,39 +118,31 @@ impl Term<Arc<str>> {
 mod test {
     use crate::ast::Game;
     use crate::parser::infix::game;
-    use map_id::MapId;
     use nom::combinator::all_consuming;
-    use std::sync::Arc;
 
-    fn parse(input: &str) -> Game<Arc<str>> {
-        all_consuming(game)(input)
-            .unwrap()
-            .1
-            .map_id(&mut |id| Arc::from(*id))
+    fn parse(input: &str) -> Game<&str> {
+        all_consuming(game)(input).unwrap().1
     }
 
     macro_rules! test {
         ($name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                let mut actual = parse($actual).symbolify();
+                let mut actual = parse($actual).expand_ors();
                 let mut expect = parse($expect);
 
-                // TODO: `&str` is not `Ord`.
-                actual.0.sort_unstable_by_key(|x| format!("{x:?}"));
-                expect.0.sort_unstable_by_key(|x| format!("{x:?}"));
+                actual.0.sort_unstable();
+                expect.0.sort_unstable();
 
                 assert_eq!(actual.as_infix().to_string(), expect.as_infix().to_string());
             }
         };
     }
 
-    test!(atom, "a", "a");
-    test!(unary, "a(x)", "a_x");
-    test!(binary, "a(x, y)", "a_x_y");
-    test!(nested_1, "a(b(x), y)", "a_b_x_y");
-    test!(nested_2, "a(x, c(y))", "a_x_c_y");
-    test!(nested_3, "a(b(x), c(y))", "a_b_x_c_y");
-    test!(collision_1, "a(b(c))", "a_b_c");
-    test!(collision_2, "a(b, c)", "a_b_c");
+    test!(simple, "a :- or(b, c)", "a :- b a :- c");
+    test!(
+        nested,
+        "a :- or(b, or(or(c, d), e))",
+        "a :- b a :- c a :- d a :- e"
+    );
 }
