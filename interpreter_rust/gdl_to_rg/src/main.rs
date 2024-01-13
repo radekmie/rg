@@ -21,11 +21,10 @@ fn main() -> Result<(), String> {
         .1
         .map_id(&mut |id| interner.intern(id))
         .ground()
-        .map_id(&mut |id| *interner.recall(id).unwrap())
-        .expand_ors()
-        .eval_distinct()
+        .expand_ors(&interner.intern(&"or"))
+        .eval_distinct(&interner.intern(&"distinct"))
         .simplify()
-        .map_id(&mut |id| Arc::from(*id))
+        .map_id(&mut |id| Arc::from(*interner.recall(id).unwrap()))
         .symbolify();
     let rg = gdl_to_rg(&gdl);
     print!("{rg}");

@@ -1,16 +1,16 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::sync::Arc;
 
-impl Game<&str> {
-    pub fn expand_ors(&self) -> Self {
-        Self(self.0.iter().flat_map(Rule::expand_ors).collect())
+impl<Id: Clone + PartialEq> Game<Id> {
+    pub fn expand_ors(&self, or: &Id) -> Self {
+        Self(self.0.iter().flat_map(|rule| rule.expand_ors(or)).collect())
     }
 }
 
-impl Predicate<&str> {
-    pub fn expand_ors(&self) -> Vec<Self> {
+impl<Id: Clone + PartialEq> Predicate<Id> {
+    pub fn expand_ors(&self, or: &Id) -> Vec<Self> {
         self.term
-            .expand_ors()
+            .expand_ors(or)
             .into_iter()
             .map(|term| Self {
                 is_negated: self.is_negated,
@@ -20,11 +20,11 @@ impl Predicate<&str> {
     }
 }
 
-impl Rule<&str> {
-    pub fn expand_ors(&self) -> Vec<Self> {
+impl<Id: Clone + PartialEq> Rule<Id> {
+    pub fn expand_ors(&self, or: &Id) -> Vec<Self> {
         self.predicates
             .iter()
-            .map(Predicate::expand_ors)
+            .map(|predicate| predicate.expand_ors(or))
             .fold(vec![vec![]], |xs, ys| {
                 let mut zs = vec![];
                 for x in xs {
@@ -38,7 +38,7 @@ impl Rule<&str> {
             })
             .into_iter()
             .flat_map(move |predicates| {
-                self.term.expand_ors().into_iter().map(move |term| Self {
+                self.term.expand_ors(or).into_iter().map(move |term| Self {
                     term: Arc::new(term),
                     predicates: predicates.clone(),
                 })
@@ -47,22 +47,22 @@ impl Rule<&str> {
     }
 }
 
-impl Term<&str> {
-    pub fn expand_ors(&self) -> Vec<Self> {
+impl<Id: Clone + PartialEq> Term<Id> {
+    pub fn expand_ors(&self, or: &Id) -> Vec<Self> {
         use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match self {
             Base(proposition) => proposition
-                .expand_ors()
+                .expand_ors(or)
                 .into_iter()
                 .map(|proposition| Base(Arc::new(proposition)))
                 .collect(),
-            Custom(AtomOrVariable::Atom(id), arguments) if *id == "or" => arguments
+            Custom(AtomOrVariable::Atom(id), arguments) if id == or => arguments
                 .iter()
-                .flat_map(|argument| argument.expand_ors())
+                .flat_map(|argument| argument.expand_ors(or))
                 .collect(),
             Custom(name, arguments) => arguments
                 .iter()
-                .map(|argument| argument.expand_ors())
+                .map(|argument| argument.expand_ors(or))
                 .fold(vec![vec![]], |xs, ys| {
                     let mut zs = vec![];
                     for x in xs {
@@ -78,35 +78,35 @@ impl Term<&str> {
                 .map(move |terms| Custom(name.clone(), terms))
                 .collect(),
             Does(role, action) => action
-                .expand_ors()
+                .expand_ors(or)
                 .into_iter()
                 .map(|action| Does(role.clone(), Arc::new(action)))
                 .collect(),
             Goal(role, utility) => vec![Goal(role.clone(), utility.clone())],
             Init(proposition) => proposition
-                .expand_ors()
+                .expand_ors(or)
                 .into_iter()
                 .map(|proposition| Init(Arc::new(proposition)))
                 .collect(),
             Input(role, action) => action
-                .expand_ors()
+                .expand_ors(or)
                 .into_iter()
                 .map(|action| Input(role.clone(), Arc::new(action)))
                 .collect(),
             Legal(role, action) => action
-                .expand_ors()
+                .expand_ors(or)
                 .into_iter()
                 .map(|action| Legal(role.clone(), Arc::new(action)))
                 .collect(),
             Next(proposition) => proposition
-                .expand_ors()
+                .expand_ors(or)
                 .into_iter()
                 .map(|proposition| Next(Arc::new(proposition)))
                 .collect(),
             Role(role) => vec![Role(role.clone())],
             Terminal => vec![Terminal],
             True(proposition) => proposition
-                .expand_ors()
+                .expand_ors(or)
                 .into_iter()
                 .map(|proposition| True(Arc::new(proposition)))
                 .collect(),
@@ -128,7 +128,7 @@ mod test {
         ($name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                let mut actual = parse($actual).expand_ors();
+                let mut actual = parse($actual).expand_ors(&"or");
                 let mut expect = parse($expect);
 
                 actual.0.sort_unstable();
