@@ -1,3 +1,7 @@
+mod display;
+mod transforms;
+mod validators;
+
 use crate::position::Span;
 use map_id::MapId;
 use map_id_macro::MapId;

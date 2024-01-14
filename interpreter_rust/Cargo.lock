@@ -266,11 +266,13 @@ dependencies = [
  "getrandom",
  "js-sys",
  "map_id",
+ "map_id_macro",
  "nom",
  "rand",
  "rg",
  "serde",
  "serde_json",
+ "utils",
  "wasm-bindgen",
 ]
 
