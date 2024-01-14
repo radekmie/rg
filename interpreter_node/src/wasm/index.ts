@@ -75,6 +75,11 @@ export async function analyzeRg(source: string, flags: Settings['flags']) {
   return [JSON.parse(ast), formattedSource] as [rg.ast.GameDeclaration, string];
 }
 
+export async function parseGdl(source: string) {
+  const ast = await workerMethod('parseGdl', [source], utils.noop);
+  return ast;
+}
+
 export async function parseRg(source: string) {
   const ast = await workerMethod('parseRg', [source], utils.noop);
   return JSON.parse(ast) as rg.ast.GameDeclaration;

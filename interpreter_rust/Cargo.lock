@@ -263,6 +263,8 @@ name = "interpreter"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
+ "gdl",
+ "gdl_to_rg",
  "getrandom",
  "js-sys",
  "map_id",

@@ -4,10 +4,12 @@ import BreakthroughHrg from 'bundle-text:../../../../examples/breakthrough.hrg';
 import BreakthroughRbg from 'bundle-text:../../../../examples/breakthrough.rbg';
 import BreakthroughRg from 'bundle-text:../../../../examples/breakthrough.rg';
 import Connect4Hrg from 'bundle-text:../../../../examples/connect4.hrg';
+import Connect4Gdl from 'bundle-text:../../../../examples/connect4.kif';
 import Hex2Rbg from 'bundle-text:../../../../examples/hex2.rbg';
 import Hex9Rbg from 'bundle-text:../../../../examples/hex9.rbg';
 import KnightthroughHrg from 'bundle-text:../../../../examples/knightthrough.hrg';
 import KnightthroughRbg from 'bundle-text:../../../../examples/knightthrough.rbg';
+import TicTacToeGdl from 'bundle-text:../../../../examples/ticTacToe.kif';
 import TicTacToeRbg from 'bundle-text:../../../../examples/ticTacToe.rbg';
 import TicTacToeRg from 'bundle-text:../../../../examples/ticTacToe.rg';
 
@@ -20,10 +22,12 @@ export const presets = [
   ['Breakthrough', BreakthroughRbg, Language.rbg] as const,
   ['Breakthrough', BreakthroughRg, Language.rg] as const,
   ['Connect4', Connect4Hrg, Language.hrg] as const,
+  ['Connect4', Connect4Gdl, Language.gdl] as const,
   ['Hex2', Hex2Rbg, Language.rbg] as const,
   ['Hex9', Hex9Rbg, Language.rbg] as const,
   ['Knightthrough', KnightthroughHrg, Language.hrg] as const,
   ['Knightthrough', KnightthroughRbg, Language.rbg] as const,
+  ['TicTacToe', TicTacToeGdl, Language.gdl] as const,
   ['TicTacToe', TicTacToeRbg, Language.rbg] as const,
   ['TicTacToe', TicTacToeRg, Language.rg] as const,
 ].map(([name, source, extension]) => ({

@@ -3,25 +3,26 @@ import * as vscode from 'vscode';
 import * as proto from 'vscode-languageserver-protocol';
 
 import Client from './client';
-import { conf, theme, monarch } from './syntax/conf';
+import { monarch, theme } from './syntax';
 import { Language } from '../../../types';
 
 function registerLanguage(client: Client) {
   monaco.editor.defineTheme('rgTheme', theme);
 
-  [Language.rg, Language.rbg, Language.hrg].forEach(lang => {
-    monaco.languages.register({ id: lang });
-    monaco.languages.setLanguageConfiguration(lang, conf);
-    monaco.languages.setMonarchTokensProvider(lang, monarch(lang));
+  Object.values(Language).forEach(id => {
+    const { configuration, language } = monarch(id);
+    monaco.languages.register({ id });
+    monaco.languages.setLanguageConfiguration(id, configuration);
+    monaco.languages.setMonarchTokensProvider(id, language);
   });
 
+  monaco.languages.register({ id: 'javascript' });
   monaco.languages.register({
     id: 'json',
     extensions: ['.json', '.jsonc'],
     aliases: ['JSON', 'json'],
     mimetypes: ['application/json'],
   });
-  monaco.languages.register({ id: 'javascript' });
 
   vscode.languages.registerDocumentSymbolProvider(Language.rg, {
     async provideDocumentSymbols(document) {

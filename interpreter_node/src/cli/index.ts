@@ -49,17 +49,13 @@ function addCommand(
 
       const options = parent?.opts() ?? {};
       const extension = path.extname(file).slice(1);
-      if (
-        extension !== Language.hrg &&
-        extension !== Language.rbg &&
-        extension !== Language.rg
-      ) {
+      if (!(Object.values(Language) as string[]).includes(extension)) {
         throw new Error(`Unknown extension "${extension}".`);
       }
 
       const source = await fs.readFile(file, { encoding: 'utf8' });
       const game = await parse(source, {
-        extension,
+        extension: extension as Language,
         flags: {
           addExplicitCasts: !!options.addExplicitCasts,
           compactSkipEdges: !!options.compactSkipEdges,

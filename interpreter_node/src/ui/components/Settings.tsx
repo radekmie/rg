@@ -125,9 +125,9 @@ export function Settings({
           onChange={onExtension}
           selectedValue={settings.extension}
         >
-          <Radio label="hrg" value={Language.hrg} />
-          <Radio label="rbgᵝ" value={Language.rbg} />
-          <Radio label="rg" value={Language.rg} />
+          {Object.entries(Language).map(([label, value]) => (
+            <Radio key={value} label={label} value={value} />
+          ))}
         </RadioGroup>
         {availableFlags.map(({ disabled, value }, index) => (
           <div className={styles.options} key={value}>

@@ -1,9 +1,21 @@
+use map_id::MapId;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
+use utils::Interner;
 
 type Id = Arc<str>;
 
-pub fn gdl_to_rg(gdl: &gdl::ast::Game<Id>) -> rg::ast::Game<Id> {
+pub fn gdl_to_rg(gdl: &gdl::ast::Game<&str>) -> rg::ast::Game<Id> {
+    let mut interner: Interner<&str, u8> = Interner::default();
+    let gdl = gdl
+        .map_id(&mut |id| interner.intern(id))
+        .ground()
+        .expand_ors(&interner.intern(&"or"))
+        .eval_distinct(&interner.intern(&"distinct"))
+        .simplify()
+        .map_id(&mut |id| Arc::from(*interner.recall(id).unwrap()))
+        .symbolify();
+
     let mut rg = rg::ast::Game {
         constants: vec![],
         edges: vec![],
@@ -12,14 +24,14 @@ pub fn gdl_to_rg(gdl: &gdl::ast::Game<Id>) -> rg::ast::Game<Id> {
         variables: vec![],
     };
 
-    add_common_typedefs(&mut rg, gdl);
+    add_common_typedefs(&mut rg, &gdl);
     rg.add_builtins().unwrap();
-    add_does_variables(&mut rg, gdl);
-    add_fact_variables(&mut rg, gdl);
-    add_loop_edges(&mut rg, gdl);
-    add_next_edges(&mut rg, gdl);
-    add_terminal_edges(&mut rg, gdl);
-    add_goal_edges(&mut rg, gdl);
+    add_does_variables(&mut rg, &gdl);
+    add_fact_variables(&mut rg, &gdl);
+    add_loop_edges(&mut rg, &gdl);
+    add_next_edges(&mut rg, &gdl);
+    add_terminal_edges(&mut rg, &gdl);
+    add_goal_edges(&mut rg, &gdl);
 
     rg
 }

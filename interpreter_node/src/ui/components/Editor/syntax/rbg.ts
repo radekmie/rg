@@ -1,6 +1,9 @@
 import type * as monaco from 'monaco-editor';
 
-export const language = <monaco.languages.IMonarchLanguage>{
+import { getLanguageConfiguration } from './getLanguageConfiguration';
+
+export const configuration = getLanguageConfiguration('//');
+export const language: monaco.languages.IMonarchLanguage = {
   defaultToken: 'source',
   declarationKeywords: ['board', 'pieces', 'players', 'rules', 'variables'],
   operators: [

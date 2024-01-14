@@ -23,6 +23,11 @@ export type AnalyzedGame = {
   sourceRgFormatted: string;
 };
 
+async function analyzeGdl(source: string, settings: Settings) {
+  const sourceRg = await wasm.parseGdl(source);
+  return analyzeRg(sourceRg, settings);
+}
+
 async function analyzeHrg(source: string, settings: Settings) {
   const sourceHrg = source;
   const cstHrg = hrg.cst.parse(sourceHrg).cstNode;
@@ -92,6 +97,8 @@ async function analyzeRg(source: string, { flags }: Settings) {
 
 export function parse(source: string, settings: Settings) {
   switch (settings.extension) {
+    case Language.gdl:
+      return analyzeGdl(source, settings);
     case Language.hrg:
       return analyzeHrg(source, settings);
     case Language.rbg:

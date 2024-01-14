@@ -123,6 +123,14 @@ pub fn analyze_rg(
     ))
 }
 
+#[wasm_bindgen(js_name = parseGdl)]
+pub fn parse_gdl(source: &str) -> Result<String, String> {
+    console_error_panic_hook::set_once();
+    let gdl = gdl::parser::game(source).map_err(|error| error.to_string())?.1;
+    let rg = gdl_to_rg::gdl_to_rg(&gdl);
+    Ok(rg.to_string())
+}
+
 #[wasm_bindgen(js_name = parseRg)]
 pub fn parse_rg(source: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
@@ -184,5 +192,5 @@ pub fn run_rg(ast: &str, plays: usize, callback: &Function) -> Result<(), String
 pub fn serialize_rg(ast: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
     let game = safe_parse_ast(ast)?;
-    Ok(format!("{game}"))
+    Ok(game.to_string())
 }

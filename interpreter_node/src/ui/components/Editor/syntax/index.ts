@@ -1,25 +1,10 @@
 import * as monaco from 'monaco-editor';
 
+import * as gdl from './gdl';
 import * as hrg from './hrg';
 import * as rbg from './rbg';
 import * as rg from './rg';
 import { Language } from '../../../../types';
-
-export const conf: monaco.languages.LanguageConfiguration = {
-  autoClosingPairs: [
-    { open: '{', close: '}' },
-    { open: '[', close: ']' },
-    { open: '(', close: ')' },
-    { open: '"', close: '"' },
-    { open: "'", close: "'" },
-  ],
-  brackets: [
-    ['{', '}'],
-    ['[', ']'],
-    ['(', ')'],
-  ],
-  comments: { lineComment: '//' },
-};
 
 export const theme: monaco.editor.IStandaloneThemeData = {
   base: 'vs',
@@ -40,11 +25,13 @@ export const theme: monaco.editor.IStandaloneThemeData = {
 
 export function monarch(id: Language) {
   switch (id) {
-    case Language.rg:
-      return rg.language;
-    case Language.rbg:
-      return rbg.language;
+    case Language.gdl:
+      return gdl;
     case Language.hrg:
-      return hrg.language;
+      return hrg;
+    case Language.rbg:
+      return rbg;
+    case Language.rg:
+      return rg;
   }
 }

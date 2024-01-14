@@ -2,16 +2,29 @@ import type * as monaco from 'monaco-editor';
 
 import { getLanguageConfiguration } from './getLanguageConfiguration';
 
-export const configuration = getLanguageConfiguration('//');
+export const configuration = getLanguageConfiguration(';');
 export const language: monaco.languages.IMonarchLanguage = {
   defaultToken: 'source',
-  declarationKeywords: ['type', 'const', 'var'],
-  operators: ['=', '==', '!=', '!', '?', '->', '$'],
-  symbols: /[=!?\->]+/,
+  declarationKeywords: [
+    'base',
+    'distinct',
+    'does',
+    'goal',
+    'init',
+    'input',
+    'legal',
+    'next',
+    'or',
+    'role',
+    'terminal',
+    'true',
+  ],
+  operators: ['<=', ':-', '~', '&', '?'],
+  symbols: /[<=:\-~&?]+/,
   tokenizer: {
     root: [
       [
-        /[a-z0-9_][a-zA-Z0-9_]*/,
+        /[a-zA-Z0-9_]+/,
         {
           cases: {
             '@declarationKeywords': 'declarationKeyword',
@@ -19,13 +32,11 @@ export const language: monaco.languages.IMonarchLanguage = {
           },
         },
       ],
-      [/\/\/.*$/, 'comment'],
-      [/[A-Z][a-zA-Z0-9_]*/, 'type.identifier'], // to show class names nicely
-      [/[{}()[\]]/, '@brackets'],
-      [/[:;,.]/, 'delimiter'],
+      [/;.*$/, 'comment'],
+      [/[()]/, '@brackets'],
+      [/[&,]/, 'delimiter'],
       [/@symbols/, { cases: { '@operators': 'operator', '@default': '' } }],
       [/[ \t\r\n]+/, 'white'],
-      [/@[\w]+/, 'macro'],
     ],
   },
 };

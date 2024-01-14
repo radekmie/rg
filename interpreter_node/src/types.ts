@@ -1,6 +1,7 @@
 export type Flag = keyof Settings['flags'];
 
 export enum Language {
+  gdl = 'kif',
   hrg = 'hrg',
   rbg = 'rbg',
   rg = 'rg',

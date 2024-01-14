@@ -3,6 +3,7 @@
 # Regular Games repo
 
 ## Setup
+
 ### Dependencies
 
 - [Node.js](https://nodejs.org/en/) 18.15.0
@@ -33,12 +34,14 @@ curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 #### Nix
 
 Open a shell with all required dependencies:
+
 ```sh
 nix develop
 ```
-These dependencies are accessible only from the current shell*, they are not installed for any user. They will be removed during the next garbage collection (`nix-collect-garbage`) (unless the shell is still open or they are referenced in any other way). See [NixOS website](https://nixos.org/) for more information (you can also install it as a secondary package manager).
 
-*: Obviously you can access them by file paths as long as they are in the filesystem.
+These dependencies are accessible only from the current shell\*, they are not installed for any user. They will be removed during the next garbage collection (`nix-collect-garbage`) (unless the shell is still open or they are referenced in any other way). See [NixOS website](https://nixos.org/) for more information (you can also install it as a secondary package manager).
+
+\*: Obviously you can access them by file paths as long as they are in the filesystem.
 
 ### Quick start
 
@@ -74,11 +77,13 @@ npm test
 
 | Feature                                         |    `interpreter_node`    |    `interpreter_rust`    |
 | :---------------------------------------------- | :----------------------: | :----------------------: |
+| Parser of GDL (Game Description Language)       | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Parser of RG (Regular Games)                    | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Parser of HRG (High-level Regular Games)        |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Parser of RBG (Regular Board Games)             |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Interpreter of the IST (Interpreter State Tree) | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Translation of RG into IST                      | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Translation of GDL into RG                      | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Translation of HRG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Translation of RBG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `addBuiltins`                    | :heavy_multiplication_x: |    :heavy_check_mark:    |

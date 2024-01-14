@@ -2,6 +2,7 @@ import { readFile } from 'fs/promises';
 
 import init, {
   analyzeRg,
+  parseGdl,
   parseRg,
   perfRg,
   runRg,
@@ -38,7 +39,7 @@ function reify(arg: unknown) {
   return arg;
 }
 
-const methods = { analyzeRg, parseRg, perfRg, runRg, serializeRg };
+const methods = { analyzeRg, parseGdl, parseRg, perfRg, runRg, serializeRg };
 self.addEventListener('message', ({ data }) => {
   initPromise
     .then(() => {

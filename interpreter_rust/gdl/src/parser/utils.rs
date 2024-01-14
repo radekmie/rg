@@ -1,9 +1,25 @@
-use nom::bytes::complete::{tag, take_while1};
-use nom::character::complete::multispace0;
+use nom::character::complete::multispace1;
+use nom::multi::fold_many0;
+use nom::combinator::eof;
+use crate::parser::alt;
+use nom::combinator::cut;
+use nom::bytes::complete::{tag, take_while1, take_until};
 use nom::sequence::delimited;
 use nom::IResult;
 
 pub type Result<'a, T> = IResult<&'a str, T>;
+
+pub fn comment(input: &str) -> Result<&str> {
+    delimited(
+        tag(";"),
+        cut(take_until("\n")),
+        alt((eof, tag("\n"))),
+    )(input)
+}
+
+pub fn comments_and_whitespaces(input: &str) -> Result<()> {
+    fold_many0(alt((comment, multispace1)), || (), |(), _| ())(input)
+}
 
 pub fn in_parens<'a, T>(
     parser: impl FnMut(&'a str) -> Result<T>,
@@ -14,7 +30,7 @@ pub fn in_parens<'a, T>(
 pub fn separated<'a, T>(
     parser: impl FnMut(&'a str) -> Result<T>,
 ) -> impl FnMut(&'a str) -> Result<T> {
-    delimited(multispace0, parser, multispace0)
+    delimited(comments_and_whitespaces, parser, comments_and_whitespaces)
 }
 
 pub fn symbol(input: &str) -> Result<&str> {
