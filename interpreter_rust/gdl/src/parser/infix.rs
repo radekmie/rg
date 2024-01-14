@@ -23,8 +23,8 @@ pub fn game(input: &str) -> Result<Game<&str>> {
 
 pub fn predicate(input: &str) -> Result<Predicate<&str>> {
     map(pair(opt(tag("~")), term_rc), |(negation, term)| Predicate {
-        is_negated: negation.is_some(),
         term,
+        is_negated: negation.is_some(),
     })(input)
 }
 

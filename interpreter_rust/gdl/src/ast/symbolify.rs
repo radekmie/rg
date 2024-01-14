@@ -20,7 +20,11 @@ impl Rule<Arc<str>> {
     pub fn symbolify(self) -> Self {
         Self {
             term: Arc::new(self.term.symbolify()),
-            predicates: self.predicates.into_iter().map(Predicate::symbolify).collect(),
+            predicates: self
+                .predicates
+                .into_iter()
+                .map(Predicate::symbolify)
+                .collect(),
         }
     }
 }

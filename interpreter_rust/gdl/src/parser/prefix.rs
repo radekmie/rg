@@ -59,12 +59,12 @@ pub fn term(input: &str) -> Result<Term<&str>> {
 pub fn predicate(input: &str) -> Result<Predicate<&str>> {
     alt((
         term_template("not", term_rc, |term| Predicate {
-            is_negated: true,
             term,
+            is_negated: true,
         }),
         map(term_rc, |term| Predicate {
-            is_negated: false,
             term,
+            is_negated: false,
         }),
     ))(input)
 }

@@ -3,7 +3,12 @@ use std::sync::Arc;
 
 impl<Id: Clone + PartialEq> Game<Id> {
     pub fn expand_ors(self, or: &Id) -> Self {
-        Self(self.0.into_iter().flat_map(|rule| rule.expand_ors(or)).collect())
+        Self(
+            self.0
+                .into_iter()
+                .flat_map(|rule| rule.expand_ors(or))
+                .collect(),
+        )
     }
 }
 

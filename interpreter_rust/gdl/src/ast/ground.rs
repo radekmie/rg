@@ -5,17 +5,31 @@ impl<Id: Clone + Ord> Game<Id> {
     pub fn ground(self) -> Self {
         let mut rules = self.0;
         rules.sort_unstable();
+        for rule in &mut rules {
+            rule.predicates.sort_unstable();
+        }
+
+        // Cached subterms partitioned into ones with and without variables.
         let mut subterms: Vec<_> = rules.iter().map(get_subterms).collect();
 
+        // Rules grounded in this iteration.
+        let mut rules_to_add = vec![];
+
+        // Rules to be reviewed in this iteration.
+        let mut rules_to_review: Vec<_> = (0..rules.len()).collect();
+
         loop {
-            let mut any_grounding_happened = false;
             for i in 0..rules.len() {
                 if !subterms[i].0.is_empty() {
                     continue;
                 }
 
                 for j in 0..rules.len() {
-                    if rules[i] == rules[j] || subterms[j].0.is_empty() {
+                    if i == j
+                        || subterms[j].0.is_empty()
+                        || (rules_to_review.binary_search(&i).is_err()
+                            && rules_to_review.binary_search(&j).is_err())
+                    {
                         continue;
                     }
 
@@ -24,17 +38,29 @@ impl<Id: Clone + Ord> Game<Id> {
                         rule.predicates.sort_unstable();
                         rule.predicates.dedup();
 
-                        if let Err(index) = rules.binary_search(&rule) {
-                            subterms.insert(index, get_subterms(&rule));
-                            rules.insert(index, rule);
-                            any_grounding_happened = true;
+                        if rules.binary_search(&rule).is_err() {
+                            if let Err(index) = rules_to_add.binary_search(&rule) {
+                                rules_to_add.insert(index, rule);
+                            }
                         }
                     }
                 }
             }
 
-            if !any_grounding_happened {
+            // No new rules means everything got grounded.
+            if rules_to_add.is_empty() {
                 break;
+            }
+
+            rules_to_review.clear();
+            rules.reserve(rules_to_add.len());
+            subterms.reserve(rules_to_add.len());
+
+            for rule in rules_to_add.drain(..) {
+                let index = rules.binary_search(&rule).unwrap_err();
+                rules_to_review.push(index);
+                subterms.insert(index, get_subterms(&rule));
+                rules.insert(index, rule);
             }
         }
 

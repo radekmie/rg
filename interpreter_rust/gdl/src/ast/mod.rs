@@ -39,8 +39,8 @@ impl<Id: PartialEq> Game<Id> {
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub struct Predicate<Id> {
-    pub is_negated: bool,
     pub term: Arc<Term<Id>>,
+    pub is_negated: bool,
 }
 
 impl<Id> Predicate<Id> {
