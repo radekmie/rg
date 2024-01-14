@@ -13,7 +13,8 @@ fn main() -> Result<(), String> {
         .map_err(|error| error.to_string())?
         .lines()
         .filter(|line| !line.starts_with(';'))
-        .collect::<String>();
+        .collect::<Vec<_>>()
+        .join("\n");
 
     let mut interner: Interner<&str, u8> = Interner::default();
     let gdl = parser::game(&source)
@@ -26,6 +27,7 @@ fn main() -> Result<(), String> {
         .simplify()
         .map_id(&mut |id| Arc::from(*interner.recall(id).unwrap()))
         .symbolify();
+    println!("// {}", gdl.as_infix());
     let rg = gdl_to_rg(&gdl);
     print!("{rg}");
     Ok(())

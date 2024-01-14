@@ -1,5 +1,7 @@
 use super::unify::Unification;
-use crate::ast::{Game, Rule, Term};
+use crate::ast::{AtomOrVariable, Game, Rule, Term};
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 impl<Id: Clone + Ord> Game<Id> {
     pub fn ground(self) -> Self {
@@ -17,6 +19,9 @@ impl<Id: Clone + Ord> Game<Id> {
 
         // Rules to be reviewed in this iteration.
         let mut rules_to_review: Vec<_> = (0..rules.len()).collect();
+
+        // Static terms used to prune impossible substitutions.
+        let static_terms = get_static_terms(&rules);
 
         loop {
             for i in 0..rules.len() {
@@ -38,7 +43,24 @@ impl<Id: Clone + Ord> Game<Id> {
                         rule.predicates.sort_unstable();
                         rule.predicates.dedup();
 
-                        if rules.binary_search(&rule).is_err() {
+                        let has_failed_static_term = rule.predicates.iter().any(|predicate| {
+                            if !predicate.has_variable() {
+                                if let Term::Custom(AtomOrVariable::Atom(id), _) =
+                                    predicate.term.as_ref()
+                                {
+                                    if let Some(terms) = static_terms.get(id) {
+                                        if !terms.contains(&predicate.term) || predicate.is_negated
+                                        {
+                                            return true;
+                                        }
+                                    }
+                                }
+                            }
+
+                            false
+                        });
+
+                        if !has_failed_static_term && rules.binary_search(&rule).is_err() {
                             if let Err(index) = rules_to_add.binary_search(&rule) {
                                 rules_to_add.insert(index, rule);
                             }
@@ -84,6 +106,39 @@ fn any_unification<'a, Id: Clone + Ord>(
     }
 
     None
+}
+
+fn get_static_terms<Id: Clone + Ord>(rules: &[Rule<Id>]) -> BTreeMap<Id, BTreeSet<Arc<Term<Id>>>> {
+    rules
+        .iter()
+        .filter_map(|rule| {
+            if rule.predicates.is_empty() {
+                if let Term::Custom(AtomOrVariable::Atom(x), _) = rule.term.as_ref() {
+                    return Some(x);
+                }
+            }
+
+            None
+        })
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .filter(|x| {
+            rules.iter().all(|rule| {
+                match rule.term.as_ref() {
+                    Term::Custom(AtomOrVariable::Atom(y), _) if *x == y => rule.predicates.is_empty(),
+                    _ => true,
+                }
+            })
+        })
+        .map(|x| (
+            x.clone(),
+            rules
+                .iter()
+                .filter(move |rule| matches!(rule.term.as_ref(), Term::Custom(AtomOrVariable::Atom(y), _) if x == y))
+                .map(|rule| rule.term.clone())
+                .collect()
+        ))
+        .collect()
 }
 
 fn get_subterms<Id: Clone + PartialEq>(rule: &Rule<Id>) -> (Vec<Term<Id>>, Vec<Term<Id>>) {

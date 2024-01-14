@@ -499,7 +499,7 @@ fn connect(
     end: Id,
     negated: bool,
 ) {
-    use rg::ast::{Edge, EdgeLabel, EdgeName};
+    use rg::ast::{Edge, EdgeLabel, EdgeName, Expression};
     use rg::position::Span;
 
     let hash = hash_term(goal);
@@ -508,10 +508,13 @@ fn connect(
 
     let start_present = rg.edges.iter().any(|edge| edge.lhs == lhs);
     if !start_present {
+        let mut edge_added = false;
         for (index, rule) in gdl.0.iter().enumerate() {
             if rule.term.as_ref() != goal {
                 continue;
             }
+
+            edge_added = true;
 
             let prefix = format!("__{hash}_{index}");
             rg.edges.push(Edge {
@@ -536,6 +539,20 @@ fn connect(
                 lhs: EdgeName::new(Id::from(format!("{prefix}_{}", rule.predicates.len()))),
                 rhs: rhs.clone(),
                 label: EdgeLabel::Skip { span: Span::none() },
+            });
+        }
+
+        // If no edges were added, add an always-false one.
+        if !edge_added {
+            rg.edges.push(Edge {
+                span: Span::none(),
+                lhs: lhs.clone(),
+                rhs: rhs.clone(),
+                label: EdgeLabel::Comparison {
+                    lhs: Arc::from(Expression::new(begin.clone())),
+                    rhs: Arc::from(Expression::new(begin.clone())),
+                    negated: true,
+                },
             });
         }
     }
