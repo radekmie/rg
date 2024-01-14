@@ -70,7 +70,7 @@ impl<Id: Clone + Ord> Game<Id> {
     }
 }
 
-fn any_unification<'a, Id: Clone + PartialEq>(
+fn any_unification<'a, Id: Clone + Ord>(
     xs: &'a [Term<Id>],
     ys: &'a [Term<Id>],
 ) -> Option<Unification<'a, Id>> {

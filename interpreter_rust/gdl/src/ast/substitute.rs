@@ -2,7 +2,7 @@ use super::unify::Unification;
 use crate::ast::{AtomOrVariable, Predicate, Rule, Term};
 use std::sync::Arc;
 
-impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
+impl<Id: Clone + Ord> AtomOrVariable<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         use AtomOrVariable::{Atom, Variable};
         match self {
@@ -14,7 +14,7 @@ impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq> Predicate<Id> {
+impl<Id: Clone + Ord> Predicate<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         Self {
             is_negated: self.is_negated,
@@ -23,7 +23,7 @@ impl<Id: Clone + PartialEq> Predicate<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq> Rule<Id> {
+impl<Id: Clone + Ord> Rule<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         Self {
             term: Arc::new(self.term.substitute(u)),
@@ -36,7 +36,7 @@ impl<Id: Clone + PartialEq> Rule<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq> Term<Id> {
+impl<Id: Clone + Ord> Term<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
         use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match self {

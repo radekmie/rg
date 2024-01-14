@@ -1,7 +1,7 @@
 use crate::ast::{AtomOrVariable, Term};
 use std::iter::zip;
 
-impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
+impl<Id: Clone + Ord> AtomOrVariable<Id> {
     pub fn unify<'a>(&'a self, other: &'a Self) -> Unification<Id> {
         use AtomOrVariable::{Atom, Variable};
         use Unification::{Empty, Failed, NotEmpty};
@@ -13,7 +13,7 @@ impl<Id: Clone + PartialEq> AtomOrVariable<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq> Term<Id> {
+impl<Id: Clone + Ord> Term<Id> {
     pub fn unify<'a>(&'a self, other: &'a Self) -> Unification<Id> {
         use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match (self, other) {
@@ -50,14 +50,13 @@ impl<Id> Unification<'_, Id> {
     }
 }
 
-impl<Id: PartialEq> Unification<'_, Id> {
+impl<Id: Ord> Unification<'_, Id> {
     pub fn get(&self, symbol: &Id) -> Option<&Id> {
         match self {
             Self::NotEmpty(mapping) => mapping
-                .iter()
-                .find(|pair| pair.0 == symbol)
-                .map(|pair| &pair.1)
-                .copied(),
+                .binary_search_by(|pair| pair.0.cmp(symbol))
+                .ok()
+                .map(|index| mapping[index].1),
             _ => None,
         }
     }
@@ -69,11 +68,10 @@ impl<Id: PartialEq> Unification<'_, Id> {
             (Empty, y) => y,
             (NotEmpty(mut xs), NotEmpty(ys)) => {
                 for y in ys {
-                    // False-positive: `map_or_else` mutates borrowed `xs`.
-                    #[allow(clippy::option_if_let_else)]
-                    match xs.iter().find(|x| x.0 == y.0) {
-                        Some(x) => assert!(x.1 == y.1),
-                        None => xs.push(y),
+                    match xs.binary_search_by(|x| x.0.cmp(y.0)) {
+                        Ok(index) if xs[index].1 != y.1 => return Failed,
+                        Ok(_) => {}
+                        Err(index) => xs.insert(index, y),
                     }
                 }
 
@@ -84,7 +82,7 @@ impl<Id: PartialEq> Unification<'_, Id> {
     }
 }
 
-impl<Id: PartialEq> FromIterator<Self> for Unification<'_, Id> {
+impl<Id: Ord> FromIterator<Self> for Unification<'_, Id> {
     fn from_iter<I: IntoIterator<Item = Self>>(iter: I) -> Self {
         let mut u = Self::Empty;
         for x in iter {
@@ -137,4 +135,6 @@ mod test {
     test!(ok_rhs_1, "a(1)", "a(X)", Failed);
     test!(ok_rhs_2a, "a(1, 2)", "a(X, 2)", Failed);
     test!(ok_rhs_2b, "a(1, 2)", "a(1, X)", Failed);
+    test!(rebind_1, "a(X, X)", "a(1, 2)", Failed);
+    test!(rebind_2, "a(X, X)", "a(1, 1)", NotEmpty(map!("X"=>"1")));
 }
