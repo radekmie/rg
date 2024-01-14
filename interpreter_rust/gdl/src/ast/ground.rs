@@ -6,10 +6,10 @@ use std::sync::Arc;
 impl<Id: Clone + Ord> Game<Id> {
     pub fn ground(self) -> Self {
         let mut rules = self.0;
-        rules.sort_unstable();
         for rule in &mut rules {
             rule.predicates.sort_unstable();
         }
+        rules.sort_unstable();
 
         // Cached subterms partitioned into ones with and without variables.
         let mut subterms: Vec<_> = rules.iter().map(get_subterms).collect();
@@ -43,23 +43,7 @@ impl<Id: Clone + Ord> Game<Id> {
                         rule.predicates.sort_unstable();
                         rule.predicates.dedup();
 
-                        let has_failed_static_term = rule.predicates.iter().any(|predicate| {
-                            if !predicate.has_variable() {
-                                if let Term::Custom(AtomOrVariable::Atom(id), _) =
-                                    predicate.term.as_ref()
-                                {
-                                    if let Some(terms) = static_terms.get(id) {
-                                        if !terms.contains(&predicate.term) || predicate.is_negated
-                                        {
-                                            return true;
-                                        }
-                                    }
-                                }
-                            }
-
-                            false
-                        });
-
+                        let has_failed_static_term = prune_static_terms(&mut rule, &static_terms);
                         if !has_failed_static_term && rules.binary_search(&rule).is_err() {
                             if let Err(index) = rules_to_add.binary_search(&rule) {
                                 rules_to_add.insert(index, rule);
@@ -145,6 +129,35 @@ fn get_subterms<Id: Clone + PartialEq>(rule: &Rule<Id>) -> (Vec<Term<Id>>, Vec<T
     rule.subterms().cloned().partition(Term::has_variable)
 }
 
+fn prune_static_terms<Id: Ord>(
+    rule: &mut Rule<Id>,
+    static_terms: &BTreeMap<Id, BTreeSet<Arc<Term<Id>>>>,
+) -> bool {
+    let mut has_failed_static_term = false;
+    rule.predicates.retain(|predicate| {
+        // As soon as any predicate fails, fail all of them.
+        if has_failed_static_term {
+            return false;
+        }
+
+        if !predicate.has_variable() {
+            if let Term::Custom(AtomOrVariable::Atom(id), _) = predicate.term.as_ref() {
+                if let Some(terms) = static_terms.get(id) {
+                    if predicate.is_negated || !terms.contains(&predicate.term) {
+                        has_failed_static_term = true;
+                    }
+
+                    return false;
+                }
+            }
+        }
+
+        true
+    });
+
+    has_failed_static_term
+}
+
 #[cfg(test)]
 mod test {
     use crate::ast::Game;
@@ -174,49 +187,49 @@ mod test {
     test!(
         one_variable_one_precondition,
         "a(1) a(2) b(X) :- a(X)",
-        "a(1) a(2) b(1) :- a(1) b(2) :- a(2)"
+        "a(1) a(2) b(1) b(2)"
     );
 
     test!(
         one_variable_two_preconditions,
         "a(1) a(2) b(X) :- a(X) & a(X)",
-        "a(1) a(2) b(1) :- a(1) b(2) :- a(2)"
+        "a(1) a(2) b(1) b(2)"
     );
 
     test!(
         two_variables_one_precondition,
         "a(1, 2) a(3, 4) b(X, Y) :- a(X, Y)",
-        "a(1, 2) a(3, 4) b(1, 2) :- a(1, 2) b(3, 4) :- a(3, 4)"
+        "a(1, 2) a(3, 4) b(1, 2) b(3, 4)"
     );
 
     test!(
         two_variables_two_preconditions,
         "a(1, 2) a(3, 4) b(X, Y) :- a(X, Y) & a(X, Y)",
-        "a(1, 2) a(3, 4) b(1, 2) :- a(1, 2) b(3, 4) :- a(3, 4)"
+        "a(1, 2) a(3, 4) b(1, 2) b(3, 4)"
     );
 
     test!(
         two_variables_partial_unification,
         "a(1, 2) a(3, 4) b(1, Y) :- a(1, Y)",
-        "a(1, 2) a(3, 4) b(1, 2) :- a(1, 2)"
+        "a(1, 2) a(3, 4) b(1, 2)"
     );
 
     test!(
         two_variables_cross_product_1,
         "a(1) a(2) b(X, Y) :- a(X) & a(Y)",
-        "a(1) a(2) b(1, 1) :- a(1) b(1, 2) :- a(1) & a(2) b(2, 1) :- a(1) & a(2) b(2, 2) :- a(2)"
+        "a(1) a(2) b(1, 1) b(1, 2) b(2, 1) b(2, 2)"
     );
 
     test!(
         two_variables_cross_product_2,
         "a(1) a(2) b(X) :- a(X) & a(Y)",
-        "a(1) a(2) b(1) :- a(1) b(1) :- a(1) & a(2) b(2) :- a(1) & a(2) b(2) :- a(2)"
+        "a(1) a(2) b(1) b(2)"
     );
 
     test!(
         nested_simple,
         "a(1) b(X) :- c(d(1, X)) e(d(X, Y)) :- a(X) & f(Y) f(2) :- a(1)",
-        "a(1) b(2) :- c(d(1, 2)) e(d(1, 2)) :- a(1) & f(2) f(2) :- a(1)"
+        "a(1) b(2) :- c(d(1, 2)) e(d(1, 2)) :- f(2) f(2) :- a(1)"
     );
 
     test!(
@@ -244,20 +257,20 @@ mod test {
         index(1)
         index(2)
 
-        base(cell(1, 1, b)) :- index(1)
-        base(cell(1, 2, b)) :- index(1) & index(2)
-        base(cell(2, 1, b)) :- index(1) & index(2)
-        base(cell(2, 2, b)) :- index(2)
+        base(cell(1, 1, b))
+        base(cell(1, 2, b))
+        base(cell(2, 1, b))
+        base(cell(2, 2, b))
 
-        base(cell(1, 1, x)) :- index(1)
-        base(cell(1, 2, x)) :- index(1) & index(2)
-        base(cell(2, 1, x)) :- index(1) & index(2)
-        base(cell(2, 2, x)) :- index(2)
+        base(cell(1, 1, o))
+        base(cell(1, 2, o))
+        base(cell(2, 1, o))
+        base(cell(2, 2, o))
 
-        base(cell(1, 1, o)) :- index(1)
-        base(cell(1, 2, o)) :- index(1) & index(2)
-        base(cell(2, 1, o)) :- index(1) & index(2)
-        base(cell(2, 2, o)) :- index(2)
+        base(cell(1, 1, x))
+        base(cell(1, 2, x))
+        base(cell(2, 1, x))
+        base(cell(2, 2, x))
 
         diagonal(b) :- true(cell(1, 1, b)) & true(cell(2, 2, b))
         diagonal(x) :- true(cell(1, 1, x)) & true(cell(2, 2, x))
@@ -350,33 +363,33 @@ mod test {
         terminal :- ~open
         ",
         "
-        base(cell(1, 1, b)) :- index(1)
-        base(cell(1, 1, o)) :- index(1)
-        base(cell(1, 1, x)) :- index(1)
-        base(cell(1, 2, b)) :- index(1) & index(2)
-        base(cell(1, 2, o)) :- index(1) & index(2)
-        base(cell(1, 2, x)) :- index(1) & index(2)
-        base(cell(1, 3, b)) :- index(1) & index(3)
-        base(cell(1, 3, o)) :- index(1) & index(3)
-        base(cell(1, 3, x)) :- index(1) & index(3)
-        base(cell(2, 1, b)) :- index(1) & index(2)
-        base(cell(2, 1, o)) :- index(1) & index(2)
-        base(cell(2, 1, x)) :- index(1) & index(2)
-        base(cell(2, 2, b)) :- index(2)
-        base(cell(2, 2, o)) :- index(2)
-        base(cell(2, 2, x)) :- index(2)
-        base(cell(2, 3, b)) :- index(2) & index(3)
-        base(cell(2, 3, o)) :- index(2) & index(3)
-        base(cell(2, 3, x)) :- index(2) & index(3)
-        base(cell(3, 1, b)) :- index(1) & index(3)
-        base(cell(3, 1, o)) :- index(1) & index(3)
-        base(cell(3, 1, x)) :- index(1) & index(3)
-        base(cell(3, 2, b)) :- index(2) & index(3)
-        base(cell(3, 2, o)) :- index(2) & index(3)
-        base(cell(3, 2, x)) :- index(2) & index(3)
-        base(cell(3, 3, b)) :- index(3)
-        base(cell(3, 3, o)) :- index(3)
-        base(cell(3, 3, x)) :- index(3)
+        base(cell(1, 1, b))
+        base(cell(1, 1, o))
+        base(cell(1, 1, x))
+        base(cell(1, 2, b))
+        base(cell(1, 2, o))
+        base(cell(1, 2, x))
+        base(cell(1, 3, b))
+        base(cell(1, 3, o))
+        base(cell(1, 3, x))
+        base(cell(2, 1, b))
+        base(cell(2, 1, o))
+        base(cell(2, 1, x))
+        base(cell(2, 2, b))
+        base(cell(2, 2, o))
+        base(cell(2, 2, x))
+        base(cell(2, 3, b))
+        base(cell(2, 3, o))
+        base(cell(2, 3, x))
+        base(cell(3, 1, b))
+        base(cell(3, 1, o))
+        base(cell(3, 1, x))
+        base(cell(3, 2, b))
+        base(cell(3, 2, o))
+        base(cell(3, 2, x))
+        base(cell(3, 3, b))
+        base(cell(3, 3, o))
+        base(cell(3, 3, x))
         base(control(oplayer)) :- role(oplayer)
         base(control(xplayer)) :- role(xplayer)
         column(1, b) :- true(cell(1, 1, b)) & true(cell(2, 1, b)) & true(cell(3, 1, b))
@@ -452,25 +465,25 @@ mod test {
         init(cell(3, 2, b))
         init(cell(3, 3, b))
         init(control(xplayer))
-        input(oplayer, mark(1, 1)) :- index(1) & role(oplayer)
-        input(oplayer, mark(1, 2)) :- index(1) & index(2) & role(oplayer)
-        input(oplayer, mark(1, 3)) :- index(1) & index(3) & role(oplayer)
-        input(oplayer, mark(2, 1)) :- index(1) & index(2) & role(oplayer)
-        input(oplayer, mark(2, 2)) :- index(2) & role(oplayer)
-        input(oplayer, mark(2, 3)) :- index(2) & index(3) & role(oplayer)
-        input(oplayer, mark(3, 1)) :- index(1) & index(3) & role(oplayer)
-        input(oplayer, mark(3, 2)) :- index(2) & index(3) & role(oplayer)
-        input(oplayer, mark(3, 3)) :- index(3) & role(oplayer)
+        input(oplayer, mark(1, 1)) :- role(oplayer)
+        input(oplayer, mark(1, 2)) :- role(oplayer)
+        input(oplayer, mark(1, 3)) :- role(oplayer)
+        input(oplayer, mark(2, 1)) :- role(oplayer)
+        input(oplayer, mark(2, 2)) :- role(oplayer)
+        input(oplayer, mark(2, 3)) :- role(oplayer)
+        input(oplayer, mark(3, 1)) :- role(oplayer)
+        input(oplayer, mark(3, 2)) :- role(oplayer)
+        input(oplayer, mark(3, 3)) :- role(oplayer)
         input(oplayer, noop) :- role(oplayer)
-        input(xplayer, mark(1, 1)) :- index(1) & role(xplayer)
-        input(xplayer, mark(1, 2)) :- index(1) & index(2) & role(xplayer)
-        input(xplayer, mark(1, 3)) :- index(1) & index(3) & role(xplayer)
-        input(xplayer, mark(2, 1)) :- index(1) & index(2) & role(xplayer)
-        input(xplayer, mark(2, 2)) :- index(2) & role(xplayer)
-        input(xplayer, mark(2, 3)) :- index(2) & index(3) & role(xplayer)
-        input(xplayer, mark(3, 1)) :- index(1) & index(3) & role(xplayer)
-        input(xplayer, mark(3, 2)) :- index(2) & index(3) & role(xplayer)
-        input(xplayer, mark(3, 3)) :- index(3) & role(xplayer)
+        input(xplayer, mark(1, 1)) :- role(xplayer)
+        input(xplayer, mark(1, 2)) :- role(xplayer)
+        input(xplayer, mark(1, 3)) :- role(xplayer)
+        input(xplayer, mark(2, 1)) :- role(xplayer)
+        input(xplayer, mark(2, 2)) :- role(xplayer)
+        input(xplayer, mark(2, 3)) :- role(xplayer)
+        input(xplayer, mark(3, 1)) :- role(xplayer)
+        input(xplayer, mark(3, 2)) :- role(xplayer)
+        input(xplayer, mark(3, 3)) :- role(xplayer)
         input(xplayer, noop) :- role(xplayer)
         legal(oplayer, mark(1, 1)) :- true(cell(1, 1, b)) & true(control(oplayer))
         legal(oplayer, mark(1, 2)) :- true(cell(1, 2, b)) & true(control(oplayer))
