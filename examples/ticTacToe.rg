@@ -61,7 +61,16 @@ win2,end: player = PlayerOrKeeper(keeper);
 
 // Unique paths from the given state to each of the next semimoves and player switches
 @unique begin;
+@unique turn;
+@unique move;
+@unique preend;
+@unique end;
+@unique checkwin;
+@unique checkline;
 @unique chooseX;
 @unique chooseX(coordX:Coord);
-@unique chooseY(coordY:Coord);
-@unique checkwin;
+@unique chooseY;
+@unique chooseY(coordX:Coord);
+@unique check;
+@unique set;
+@unique endmove;
