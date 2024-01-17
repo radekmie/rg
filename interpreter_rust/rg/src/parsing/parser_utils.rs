@@ -3,7 +3,7 @@ use super::parser::{Input, Result};
 use crate::ast::{Expression, Identifier};
 use crate::position::{Position, Span};
 use nom::branch::alt;
-use nom::bytes::complete::{tag, take_while, take_while1, take_until};
+use nom::bytes::complete::{tag, take_until, take_while, take_while1};
 use nom::character::complete::{anychar, multispace1};
 use nom::combinator::{cut, eof, into, map, opt, verify};
 use nom::multi::fold_many0;
@@ -62,11 +62,7 @@ where
 }
 
 pub fn comment(input: Input) -> Result<Input> {
-    delimited(
-        tag("//"),
-        cut(take_until("\n")),
-        alt((eof, tag("\n"))),
-    )(input)
+    delimited(tag("//"), cut(take_until("\n")), alt((eof, tag("\n"))))(input)
 }
 
 pub fn comments_and_whitespaces(input: Input) -> Result<()> {

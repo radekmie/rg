@@ -4,19 +4,22 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn check_reachabilities(&self) -> Result<(), Error<Arc<str>>> {
-        let next_edges: BTreeMap<&EdgeName<Arc<str>>, BTreeSet<&EdgeName<Arc<str>>>> = self
-            .edges
-            .iter()
-            .fold(BTreeMap::default(), |mut next_edges, edge| {
-                next_edges.entry(&edge.lhs).or_default().insert(&edge.rhs);
-                next_edges
-            });
+        let next_edge_names: BTreeMap<_, BTreeSet<_>> =
+            self.edges
+                .iter()
+                .fold(BTreeMap::new(), |mut next_edge_names, edge| {
+                    next_edge_names
+                        .entry(&edge.lhs)
+                        .or_default()
+                        .insert(&edge.rhs);
+                    next_edge_names
+                });
 
-        let is_reachable = |a: &EdgeName<Arc<str>>, b: &EdgeName<Arc<str>>| -> bool {
-            let mut seen = BTreeSet::default();
+        let is_reachable = |a: &EdgeName<_>, b: &EdgeName<_>| -> bool {
+            let mut seen = BTreeSet::new();
             let mut queue = vec![a];
             while let Some(lhs) = queue.pop() {
-                if let Some(rhss) = next_edges.get(lhs) {
+                if let Some(rhss) = next_edge_names.get(lhs) {
                     for rhs in rhss {
                         if !seen.contains(rhs) {
                             if rhs == &b {

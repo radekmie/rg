@@ -156,7 +156,6 @@ export function inlineReachability({ edges }: ast.GameDeclaration) {
   for (const e of edges) {
     if (e.label.kind === 'Reachability') {
       const path = findAcceptablePaths(edges, e.label.lhs, e.label.rhs);
-      console.log(e.label, path);
       if (path.ok) {
         substituteWithPaths(
           edges,

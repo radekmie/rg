@@ -1,20 +1,16 @@
-use nom::character::complete::multispace1;
-use nom::multi::fold_many0;
-use nom::combinator::eof;
 use crate::parser::alt;
+use nom::bytes::complete::{tag, take_until, take_while1};
+use nom::character::complete::multispace1;
 use nom::combinator::cut;
-use nom::bytes::complete::{tag, take_while1, take_until};
+use nom::combinator::eof;
+use nom::multi::fold_many0;
 use nom::sequence::delimited;
 use nom::IResult;
 
 pub type Result<'a, T> = IResult<&'a str, T>;
 
 pub fn comment(input: &str) -> Result<&str> {
-    delimited(
-        tag(";"),
-        cut(take_until("\n")),
-        alt((eof, tag("\n"))),
-    )(input)
+    delimited(tag(";"), cut(take_until("\n")), alt((eof, tag("\n"))))(input)
 }
 
 pub fn comments_and_whitespaces(input: &str) -> Result<()> {
