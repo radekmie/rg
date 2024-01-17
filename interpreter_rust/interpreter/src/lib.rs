@@ -58,6 +58,8 @@ struct Flags {
     mangle_symbols: bool,
     #[serde(rename = "normalizeTypes")]
     normalize_types: bool,
+    #[serde(rename = "pruneUnreachableNodes")]
+    prune_unreachable_nodes: bool,
     #[serde(rename = "skipSelfAssignments")]
     skip_self_assignments: bool,
 }
@@ -110,6 +112,7 @@ pub fn analyze_rg(
         pass!(rust expand_generator_nodes);
         pass!(node join_fork_suffixes);
         pass!(node inline_reachability);
+        pass!(rust prune_unreachable_nodes);
         pass!(rust mangle_symbols);
 
         break;
@@ -126,7 +129,9 @@ pub fn analyze_rg(
 #[wasm_bindgen(js_name = parseGdl)]
 pub fn parse_gdl(source: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
-    let gdl = gdl::parser::game(source).map_err(|error| error.to_string())?.1;
+    let gdl = gdl::parser::game(source)
+        .map_err(|error| error.to_string())?
+        .1;
     let rg = gdl_to_rg::gdl_to_rg(&gdl);
     Ok(rg.to_string())
 }

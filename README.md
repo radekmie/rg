@@ -93,6 +93,7 @@ npm test
 | Transformation `joinForkSuffixes`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `mangleSymbols`                  | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `normalizeTypes`                 | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `pruneUnreachableNodes`          | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `skipSelfAssignments`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 
 ## `interpreter_rust`
@@ -153,16 +154,17 @@ npm test
 Usage: node lib/cli [options] [command]
 
 Options:
-  --addExplicitCasts      add type casts to all expressions
-  --compactSkipEdges      optimize automaton by compacting skip edges
-  --expandGeneratorNodes  expand generator nodes
-  --inlineReachability    inline reachability when possible
-  --joinForkSuffixes      join paths with identical labels leading to the same node
-  --mangleSymbols         mangle all user-defined symbols
-  --normalizeTypes        normalize all types so Arrow types appear only in type definitions and are at most one level deep
-  --reuseFunctions        reuse subautomatons when translating function calls (.hrg only)
-  --skipSelfAssignments   replaces all self assignments (e.g., `x = x`) with skip edges
-  -h, --help              display help for command
+  --addExplicitCasts       add type casts to all expressions
+  --compactSkipEdges       optimize automaton by compacting skip edges
+  --expandGeneratorNodes   expand generator nodes
+  --inlineReachability     inline reachability when possible
+  --joinForkSuffixes       join paths with identical labels leading to the same node
+  --mangleSymbols          mangle all user-defined symbols
+  --normalizeTypes         normalize all types so Arrow types appear only in type definitions and are at most one level deep
+  --pruneUnreachableNodes  prune unused nodes
+  --reuseFunctions         reuse subautomatons when translating function calls (.hrg only)
+  --skipSelfAssignments    replaces all self assignments (e.g., `x = x`) with skip edges
+  -h, --help               display help for command
 
 Commands:
   help [command]          display help for command

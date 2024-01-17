@@ -73,6 +73,7 @@ export function Settings({
       { value: 'joinForkSuffixes' },
       { value: 'mangleSymbols' },
       { value: 'normalizeTypes' },
+      { value: 'pruneUnreachableNodes' },
       { value: 'reuseFunctions', disabled: !isHrg },
       { value: 'skipSelfAssignments' },
     ],

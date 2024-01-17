@@ -17,6 +17,7 @@ export type Settings = {
     joinForkSuffixes: boolean;
     mangleSymbols: boolean;
     normalizeTypes: boolean;
+    pruneUnreachableNodes: boolean;
     reuseFunctions: boolean;
     skipSelfAssignments: boolean;
   };
@@ -30,6 +31,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   inlineReachability: false,
   joinForkSuffixes: false,
   mangleSymbols: false,
+  pruneUnreachableNodes: false,
   reuseFunctions: false,
   skipSelfAssignments: false,
 };

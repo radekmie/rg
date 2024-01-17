@@ -22,6 +22,7 @@ program
     '--normalizeTypes',
     'normalize all types so Arrow types appear only in type definitions and are at most one level deep',
   )
+  .option('--pruneUnreachableNodes', 'prune unreachable nodes')
   .option(
     '--reuseFunctions',
     'reuse subautomatons when translating function calls (.hrg only)',
@@ -64,6 +65,7 @@ function addCommand(
           joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,
           normalizeTypes: !!options.normalizeTypes,
+          pruneUnreachableNodes: !!options.pruneUnreachableNodes,
           reuseFunctions: !!options.reuseFunctions,
           skipSelfAssignments: !!options.skipSelfAssignments,
         },
