@@ -72,6 +72,21 @@ export function findAcceptablePaths(
   return utils.success(result);
 }
 
+export function negateLabel(edgeLabel: ast.EdgeLabel): ast.EdgeLabel {
+  switch (edgeLabel.kind) {
+    case 'Assignment':
+      throw new Error('Assignment cannot be negated.');
+    case 'Comparison':
+      return ast.Comparison({ ...edgeLabel, negated: !edgeLabel.negated });
+    case 'Reachability':
+      return ast.Reachability({ ...edgeLabel, negated: !edgeLabel.negated });
+    case 'Skip':
+      return edgeLabel;
+    case 'Tag':
+      return edgeLabel;
+  }
+}
+
 /* TODO? could reuse the subautomaton "in-place" instead (like [--reuseFunctions]):
  * - create fresh variable: "reachability-pathsStart-pathsEnd"
  * - create corresponding type, add new possible value for each call of this method
@@ -88,6 +103,7 @@ export function substituteWithPaths(
   paths: ast.EdgeDeclaration[],
   pathsStart: ast.EdgeName,
   pathsEnd: ast.EdgeName,
+  negated: boolean,
 ) {
   if (paths.length === 0) {
     originalEdge.label = ast.Skip({});
@@ -126,7 +142,7 @@ export function substituteWithPaths(
     const newEdge = ast.EdgeDeclaration({
       lhs: getMapping(e.lhs) || makeFreshNode(serializeEdgeName(e.lhs)),
       rhs: getMapping(e.rhs) || makeFreshNode(serializeEdgeName(e.rhs)),
-      label: e.label,
+      label: negated ? negateLabel(e.label) : e.label,
     });
     setMapping(e.lhs, newEdge.lhs);
     setMapping(e.rhs, newEdge.rhs);
@@ -138,9 +154,9 @@ export function inlineReachability({ edges }: ast.GameDeclaration) {
   const makeFreshNode = lib.makeFreshEdgeName(edges);
 
   for (const e of edges) {
-    // TODO can you handle negated reachability by simply negating all labels?
-    if (e.label.kind === 'Reachability' && !e.label.negated) {
+    if (e.label.kind === 'Reachability') {
       const path = findAcceptablePaths(edges, e.label.lhs, e.label.rhs);
+      console.log(e.label, path);
       if (path.ok) {
         substituteWithPaths(
           edges,
@@ -149,6 +165,7 @@ export function inlineReachability({ edges }: ast.GameDeclaration) {
           path.value,
           e.label.lhs,
           e.label.rhs,
+          e.label.negated,
         );
       }
     }

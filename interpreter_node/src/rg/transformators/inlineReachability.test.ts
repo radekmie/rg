@@ -77,6 +77,7 @@ describe('inlineReachability', () => {
       replacement,
       makeEdgeName('a'),
       makeEdgeName('c'),
+      false,
     );
 
     expect(serializeEdges(edges)).toMatchInlineSnapshot(`
@@ -99,6 +100,7 @@ describe('inlineReachability', () => {
       replacement,
       makeEdgeName('a'),
       makeEdgeName('b'),
+      false,
     );
 
     expect(serializeEdges(edges)).toMatchInlineSnapshot(`
