@@ -28,63 +28,59 @@ export default class Client extends jsrpc.JSONRPCServerAndClient {
   async start(): Promise<void> {
     // process 'window/logMessage': client <- server
     this.addMethod(proto.LogMessageNotification.type.method, params => {
-      const { type, message } = params as {
-        type: proto.MessageType;
+      const { message, type } = params as {
         message: string;
+        type: proto.MessageType;
       };
+
       switch (type) {
         case proto.MessageType.Error: {
-          console.log('[error] ' + message);
+          console.error(message);
           break;
         }
         case proto.MessageType.Warning: {
-          console.log('[warn] ' + message);
+          console.warn(message);
           break;
         }
         case proto.MessageType.Info: {
-          console.log('[info] ' + message);
+          console.log(message);
           break;
         }
         case proto.MessageType.Log: {
-          console.log('[log] ' + message);
+          console.debug(message);
           break;
         }
       }
-      return;
     });
 
     // request 'initialize': client <-> server
-    await (this.request(proto.InitializeRequest.type.method, {
-      processId: null,
-      clientInfo: {
-        name: 'demo-language-client',
-      },
+    await this.request(proto.InitializeRequest.type.method, {
       capabilities: {},
+      clientInfo: { name: 'demo-language-client' },
+      processId: null,
       rootUri: null,
-    } as proto.InitializeParams) as Promise<jsrpc.JSONRPCResponse>);
+    });
 
     // notify 'initialized': client --> server
     this.notify(proto.InitializedNotification.type.method, {});
 
-    await Promise.all(
-      this.afterInitializedHooks.map((f: () => Promise<void>) => f()),
-    );
+    await Promise.all(this.afterInitializedHooks.map(fn => fn()));
     await Promise.all([this.processNotifications(), this.processRequests()]);
   }
 
-  async processNotifications(): Promise<void> {
+  async processNotifications() {
     for await (const notification of this.#fromServer.notifications) {
       await this.receiveAndSend(notification);
     }
   }
 
-  async processRequests(): Promise<void> {
+  async processRequests() {
     for await (const request of this.#fromServer.requests) {
       await this.receiveAndSend(request);
     }
   }
 
-  pushAfterInitializeHook(...hooks: (() => Promise<void>)[]): void {
+  pushAfterInitializeHook(...hooks: (() => Promise<void>)[]) {
     this.afterInitializedHooks.push(...hooks);
   }
 }

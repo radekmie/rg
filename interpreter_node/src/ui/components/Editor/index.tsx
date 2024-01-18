@@ -13,8 +13,8 @@ import * as styles from '../../index.module.css';
 import { Autosize } from '../Autosize';
 
 const startLSP = memoize(async () => {
-  const intoServer: IntoServer = new IntoServer();
-  const fromServer: FromServer = FromServer.create();
+  const intoServer = new IntoServer();
+  const fromServer = FromServer.create();
   const client = new Client(fromServer, intoServer);
   await initializeService({ debugLogging: true, logLevel: LogLevel.Debug });
   await initializeExtenstion();

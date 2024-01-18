@@ -18,6 +18,7 @@ const availablePresets = presets.map(game => game.name);
 
 export type SettingsProps = {
   intent: Intent;
+  preset: string;
   settings: Settings;
   view: View;
 } & Pick<
@@ -27,6 +28,7 @@ export type SettingsProps = {
 
 export function Settings({
   intent,
+  preset,
   setPreset,
   setSettings,
   setView,
@@ -107,6 +109,7 @@ export function Settings({
           className={styles.noOutline}
           onChange={onPreset}
           options={availablePresets}
+          value={preset}
         />
         <HTMLSelect
           className={styles.noOutline}

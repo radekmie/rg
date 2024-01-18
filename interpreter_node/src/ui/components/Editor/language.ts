@@ -165,12 +165,9 @@ function registerLanguage(client: Client) {
 
 let initialized = false;
 export function initialize(client: Client) {
-  if (initialized) {
-    console.warn('Language already initialized; ignoring');
-  } else {
+  if (!initialized) {
     initialized = true;
     registerLanguage(client);
-    console.log('Language initialized');
   }
 }
 

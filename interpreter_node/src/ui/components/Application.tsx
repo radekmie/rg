@@ -11,7 +11,7 @@ import { useApplicationState } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
 
 function extensionSwitcher(extension: string) {
-  return (path: string) => path.replace(/\.[^.]*?$/, extension);
+  return (preset: string) => preset.replace(/\.[^.]*?$/, extension);
 }
 
 const pathForView = {
@@ -61,13 +61,13 @@ export function Application() {
     game,
     settings,
     source,
-    path,
+    preset,
     view,
   } = useApplicationState();
   return (
     <>
       <section className={styles.panel}>
-        <Editor onChange={setSource} path={path} source={source} />
+        <Editor onChange={setSource} path={preset} source={source} />
       </section>
       <section className={styles.panel}>
         <Settings
@@ -78,6 +78,7 @@ export function Application() {
               ? Intent.DANGER
               : Intent.SUCCESS
           }
+          preset={preset}
           setPreset={setPreset}
           setSettings={setSettings}
           setView={setView}
@@ -104,7 +105,7 @@ export function Application() {
               case 'Source (source).rg':
                 return (
                   <Editor
-                    path={pathForView[view](path)}
+                    path={pathForView[view](preset)}
                     source={valueForView[view](game.value).value}
                     readOnly
                   />
