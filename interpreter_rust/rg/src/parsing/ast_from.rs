@@ -83,17 +83,20 @@ impl<Id: Positioned> From<Id> for Expression<Id> {
     }
 }
 
-impl<Id: Positioned> From<Vec<EdgeNamePart<Id>>> for EdgeName<Id> {
-    fn from(parts: Vec<EdgeNamePart<Id>>) -> Self {
-        let (first, last) = (parts.first().unwrap(), parts.last().unwrap());
+impl<Id: Positioned> From<(Id, Vec<EdgeNamePart<Id>>)> for EdgeName<Id> {
+    fn from((identifier, bindings): (Id, Vec<EdgeNamePart<Id>>)) -> Self {
+        let first = EdgeNamePart::from(identifier);
+        let last = bindings.last().unwrap_or(&first);
         let span = first.span().with_end(last.end());
+        let mut parts = vec![first];
+        parts.extend(bindings);
         Self { span, parts }
     }
 }
 
 impl<Id: Positioned> From<Id> for EdgeName<Id> {
     fn from(identifier: Id) -> Self {
-        Self::from(vec![EdgeNamePart::from(identifier)])
+        Self::from((identifier, vec![]))
     }
 }
 
