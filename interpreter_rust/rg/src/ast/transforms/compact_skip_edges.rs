@@ -233,36 +233,36 @@ mod test {
         };
     }
 
-    test!(empty, " begin, end: ; ", " begin, end: ; ");
+    test!(empty, "begin, end: ;", "begin, end: ;");
 
     test!(
         prefix,
-        " begin, b: ; b, c: 1 == 1; c, end: 2 == 2; ",
-        " begin, c: 1 == 1; c, end: 2 == 2; "
+        "begin, b: ; b, c: 1 == 1; c, end: 2 == 2;",
+        "begin, c: 1 == 1; c, end: 2 == 2;"
     );
 
     test!(
         infix,
-        " begin, b: 1 == 1; b, c: ; c, end: 2 == 2; ",
-        " begin, c: 1 == 1; c, end: 2 == 2; "
+        "begin, b: 1 == 1; b, c: ; c, end: 2 == 2;",
+        "begin, c: 1 == 1; c, end: 2 == 2;"
     );
 
     test!(
         suffix,
-        " begin, b: 1 == 1; b, c: 2 == 2; c, end: ; ",
-        " begin, b: 1 == 1; b, end: 2 == 2; "
+        "begin, b: 1 == 1; b, c: 2 == 2; c, end: ;",
+        "begin, b: 1 == 1; b, end: 2 == 2;"
     );
 
     test!(
         player_assignment_prefix,
-        " begin, b: player = x; b, c(t:T): ; c(t:T), end: ; ",
-        " begin, b: player = x; b, c(t:T): ; c(t:T), end: ; "
+        "begin, b: player = x; b, c(t:T): ; c(t:T), end: ;",
+        "begin, b: player = x; b, c(t:T): ; c(t:T), end: ;"
     );
 
     test!(
         player_assignment_suffix,
-        " begin, b(t:T): ; b(t:T), c: ; c, end: player = x; ",
-        " begin, b(t:T): ; b(t:T), c: ; c, end: player = x; "
+        "begin, b(t:T): ; b(t:T), c: ; c, end: player = x;",
+        "begin, b(t:T): ; b(t:T), c: ; c, end: player = x;"
     );
 
     test!(

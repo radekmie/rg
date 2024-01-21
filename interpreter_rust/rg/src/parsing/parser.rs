@@ -358,19 +358,17 @@ mod test {
         let (game, errors) = parse_with_errors(input);
         assert!(
             errors.is_empty(),
-            "Failed to parse:\n{}\nErrors:\n{}",
-            input,
+            "Failed to parse:\n{input}\nErrors:\n{}",
             errors
-                .iter()
-                .map(std::string::ToString::to_string)
+                .into_iter()
+                .map(|error| error.to_string())
                 .collect::<Vec<_>>()
                 .join("\n")
         );
-        let game = game.to_string();
-        let game_str = game.strip_suffix('\n').unwrap();
-        assert!(
-            game_str == input,
-            "Failed to parse:\n{game_str}\nExpected:\n{input}"
+        assert_eq!(
+            input,
+            game.to_string().strip_suffix('\n').unwrap(),
+            "Failed to parse:\n{game}\nExpected:\n{input}"
         );
     }
 
@@ -378,9 +376,7 @@ mod test {
         let (game, errors) = parse_with_errors(input);
         assert!(
             !errors.is_empty(),
-            "Expected to fail to parse:\n{}\nParsed:\n{}",
-            input,
-            game.to_string()
+            "Expected to fail to parse:\n{input}\nParsed:\n{game}"
         )
     }
 
@@ -425,6 +421,5 @@ mod test {
         check_error("foo(x: Y) bar, goo: ;");
         check_error("(x: Y)foo, goo: ;");
         check_error("foo,(x: Y)goo: ;");
-
     }
 }
