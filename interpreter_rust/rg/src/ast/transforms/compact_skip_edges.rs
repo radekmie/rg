@@ -218,76 +218,75 @@ mod test {
     }
 
     macro_rules! test {
-        ($name:ident { $($actual:tt)* } { $($expect:tt)* }) => {
+        ($name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                let mut actual = parse(stringify!($($actual)*));
+                let mut actual = parse($actual);
+                let expect = parse($expect);
                 actual.compact_skip_edges().unwrap();
-                let expect = parse(stringify!($($expect)*));
 
-                assert_eq!(actual, expect, "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n");
+                assert_eq!(
+                    actual, expect,
+                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
+                );
             }
         };
     }
 
+    test!(empty, "begin, end: ;", "begin, end: ;");
+
     test!(
-        empty
-        { begin, end: ; }
-        { begin, end: ; }
+        prefix,
+        "begin, b: ; b, c: 1 == 1; c, end: 2 == 2;",
+        "begin, c: 1 == 1; c, end: 2 == 2;"
     );
 
     test!(
-        prefix
-        { begin, b: ; b, c: 1 == 1; c, end: 2 == 2; }
-        { begin, c: 1 == 1; c, end: 2 == 2; }
+        infix,
+        "begin, b: 1 == 1; b, c: ; c, end: 2 == 2;",
+        "begin, c: 1 == 1; c, end: 2 == 2;"
     );
 
     test!(
-        infix
-        { begin, b: 1 == 1; b, c: ; c, end: 2 == 2; }
-        { begin, c: 1 == 1; c, end: 2 == 2; }
+        suffix,
+        "begin, b: 1 == 1; b, c: 2 == 2; c, end: ;",
+        "begin, b: 1 == 1; b, end: 2 == 2;"
     );
 
     test!(
-        suffix
-        { begin, b: 1 == 1; b, c: 2 == 2; c, end: ; }
-        { begin, b: 1 == 1; b, end: 2 == 2; }
+        player_assignment_prefix,
+        "begin, b: player = x; b, c(t:T): ; c(t:T), end: ;",
+        "begin, b: player = x; b, c(t:T): ; c(t:T), end: ;"
     );
 
     test!(
-        player_assignment_prefix
-        { begin, b: player = x; b, c(t:T): ; c(t:T), end: ; }
-        { begin, b: player = x; b, c(t:T): ; c(t:T), end: ; }
+        player_assignment_suffix,
+        "begin, b(t:T): ; b(t:T), c: ; c, end: player = x;",
+        "begin, b(t:T): ; b(t:T), c: ; c, end: player = x;"
     );
 
     test!(
-        player_assignment_suffix
-        { begin, b(t:T): ; b(t:T), c: ; c, end: player = x; }
-        { begin, b(t:T): ; b(t:T), c: ; c, end: player = x; }
-    );
-
-    test!(
-        simple_loop
-        {
+        simple_loop,
+        "
             begin, loop: ;
             loop, cond: ;
             cond, true: 1 == 1;
             cond, false: 1 != 1;
             false, loop: ;
             true, end: player = keeper;
-        }
-        {
+        ",
+        "
             begin, loop: ;
             loop, cond: ;
             cond, true: 1 == 1;
             cond, loop: 1 != 1;
             true, end: player = keeper;
-        }
+        "
     );
 
     test!(
-        simple_loop_with_binds_single
-        {
+        simple_loop_with_binds_single,
+        "
             type X = { x };
             begin, loop(x: X): ;
             loop(x: X), cond(x: X): ;
@@ -295,8 +294,8 @@ mod test {
             cond(x: X), false(x: X): 1 != 1;
             false(x: X), loop(x: X): ;
             true(x: X), end: player = keeper;
-        }
-        {
+        ",
+        "
             type X = { x };
             begin, loop(x: X): ;
             loop(x: X), cond(x: X): ;
@@ -304,12 +303,12 @@ mod test {
             cond(x: X), false(x: X): 1 != 1;
             false(x: X), loop(x: X): ;
             true(x: X), end: player = keeper;
-        }
+        "
     );
 
     test!(
-        simple_loop_with_binds_multiple
-        {
+        simple_loop_with_binds_multiple,
+        "
             type X = { x };
             type Y = { y };
             type Z = { z };
@@ -319,8 +318,8 @@ mod test {
             cond(x: X)(z: Z), false(x: X)(z: Z): 1 != 1;
             false(x: X)(z: Z), loop(x: X)(y: Y): ;
             true(x: X)(y: Y), end: player = keeper;
-        }
-        {
+        ",
+        "
             type X = { x };
             type Y = { y };
             type Z = { z };
@@ -330,12 +329,12 @@ mod test {
             cond(bind_1: X)(bind_3: Z), false(bind_1: X)(bind_3: Z): 1 != 1;
             false(bind_1: X)(bind_3: Z), loop(bind_1: X)(bind_2: Y): ;
             true(bind_1: X)(bind_4: Y), end: player = keeper;
-        }
+        "
     );
 
     test!(
-        complex_loop_with_binds
-        {
+        complex_loop_with_binds,
+        "
             type T = { a, b };
             var v: T = a;
             begin, a: ;
@@ -349,8 +348,8 @@ mod test {
             g(t: T), h: v = t;
             h, a: ;
             h, end: ;
-        }
-        {
+        ",
+        "
             type T = { a, b };
             var v: T = a;
             begin, a: ;
@@ -361,12 +360,12 @@ mod test {
             g(bind_2: T), h: v = bind_2;
             h, a: ;
             h, end: ;
-        }
+        "
     );
 
     test!(
-        disconnected_reachability
-        {
+        disconnected_reachability,
+        "
             begin, foo: ? a -> e;
             begin, bar: ! a -> e;
             foo, end: ;
@@ -377,8 +376,8 @@ mod test {
             c, e: ;
             b, d: 1 == 1;
             d, e: ;
-        }
-        {
+        ",
+        "
             begin, end: ? a -> e;
             begin, bar: ! a -> e;
             bar, end: ;
@@ -387,42 +386,42 @@ mod test {
             b, e: 1 == 1;
             b, d: 1 == 1;
             d, e: ;
-        }
+        "
     );
 
     test!(
-        linear_ordered
-        {
+        linear_ordered,
+        "
             begin, x1(p: Position): 1 == 1;
             x1(p: Position), x3(p: Position): p != null;
             x3(p: Position), x4(p: Position): position = p;
             x4(p: Position), x2(p: Position): 1 == 1;
             x2(p: Position), end: 1 == 1;
-        }
-        {
+        ",
+        "
             begin, x1(p: Position): 1 == 1;
             x1(p: Position), x3(p: Position): p != null;
             x3(p: Position), x4(p: Position): position = p;
             x4(p: Position), x2(p: Position): 1 == 1;
             x2(p: Position), end: 1 == 1;
-        }
+        "
     );
 
     test!(
-        linear_unordered
-        {
+        linear_unordered,
+        "
             begin, x1(p: Position): 1 == 1;
             x2(p: Position), end: 1 == 1;
             x1(p: Position), x4(p: Position): p != null;
             x4(p: Position), x5(p: Position): position = p;
             x5(p: Position), x2(p: Position): 1 == 1;
-        }
-        {
+        ",
+        "
             begin, x1(p: Position): 1 == 1;
             x2(p: Position), end: 1 == 1;
             x1(p: Position), x4(p: Position): p != null;
             x4(p: Position), x5(p: Position): position = p;
             x5(p: Position), x2(p: Position): 1 == 1;
-        }
+        "
     );
 }

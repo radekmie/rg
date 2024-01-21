@@ -13,7 +13,7 @@ use nom::bytes::complete::tag;
 use nom::character::complete::char;
 use nom::combinator::{all_consuming, cut, into, map, opt, success};
 use nom::error::context;
-use nom::multi::{fold_many0, many0, many1, separated_list0};
+use nom::multi::{fold_many0, many0, separated_list0};
 use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
 use nom::IResult;
 use nom_locate::LocatedSpan;
@@ -127,32 +127,31 @@ fn expr_label(input: Input) -> Result<EdgeLabel<Identifier>> {
 }
 
 fn edge_name(input: Input) -> Result<EdgeName<Identifier>> {
-    into(many1(preceded_whitespace(edge_name_part)))(input)
+    into(pair(identifier, edge_name_bindings))(input)
 }
 
 fn expect_edge_name(input: Input) -> Result<EdgeName<Identifier>> {
-    let (input, first) = expect(edge_name_part, "edge name")(input)?;
+    let (input, first) = expect(identifier, "edge name")(input)?;
     if let Some(name) = first {
-        let (input, rest) = many0(preceded_whitespace(edge_name_part))(input)?;
-        let mut parts = vec![name];
-        parts.extend(rest);
-        Ok((input, parts.into()))
+        let (input, rest) = edge_name_bindings(input)?;
+        Ok((input, (name, rest).into()))
     } else {
         let identifier = Identifier::none(Span::at(&input));
-        Ok((input, vec![EdgeNamePart::Literal { identifier }].into()))
+        Ok((input, identifier.into()))
     }
 }
 
-fn edge_name_part(input: Input) -> Result<EdgeNamePart<Identifier>> {
-    alt((
-        into(tuple((
-            tag("("),
-            cut(preceded_opt_id("edge_name_part")),
-            preceded_type_,
-            preceded_tag(")"),
-        ))),
-        into(identifier),
-    ))(input)
+fn edge_name_bindings(input: Input) -> Result<Vec<EdgeNamePart<Identifier>>> {
+    many0(edge_name_binding)(input)
+}
+
+fn edge_name_binding(input: Input) -> Result<EdgeNamePart<Identifier>> {
+    into(tuple((
+        tag("("),
+        cut(preceded_opt_id("edge_name_part")),
+        preceded_type_,
+        preceded_tag(")"),
+    )))(input)
 }
 
 fn expect_expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
@@ -359,20 +358,26 @@ mod test {
         let (game, errors) = parse_with_errors(input);
         assert!(
             errors.is_empty(),
-            "Failed to parse:\n{}\nErrors:\n{}",
-            input,
+            "Failed to parse:\n{input}\nErrors:\n{}",
             errors
-                .iter()
-                .map(std::string::ToString::to_string)
+                .into_iter()
+                .map(|error| error.to_string())
                 .collect::<Vec<_>>()
                 .join("\n")
         );
-        let game = game.to_string();
-        let game_str = game.strip_suffix('\n').unwrap();
-        assert!(
-            game_str == input,
-            "Failed to parse:\n{game_str}\nExpected:\n{input}"
+        assert_eq!(
+            input,
+            game.to_string().strip_suffix('\n').unwrap(),
+            "Failed to parse:\n{game}\nExpected:\n{input}"
         );
+    }
+
+    fn check_error(input: &str) {
+        let (game, errors) = parse_with_errors(input);
+        assert!(
+            !errors.is_empty(),
+            "Expected to fail to parse:\n{input}\nParsed:\n{game}"
+        )
     }
 
     #[test]
@@ -401,5 +406,20 @@ mod test {
         check_parse("foo, bar: ;");
         check_parse("foo, bar: x == y;");
         check_parse("foo, bar: ? move -> move;");
+        check_parse("foo(x: Y)(y: Z), bar: ;");
+        check_parse("foo(x: Y), bar(x: Y): ;");
+        check_parse("foo(x: Y)(z: Z), bar(y: Z)(v: Z): ;");
+        check_parse("type Z = { z };\nbegin, loop(x: X)(y: Y): ;");
+    }
+
+    #[test]
+    fn incorrect_edge() {
+        check_error("foo bar, goo: ;");
+        check_error("foo, goo bar: ;");
+        check_error("foo (x: Y), goo: ;");
+        check_error("foo, goo(x:Y) (y: Y): ;");
+        check_error("foo(x: Y) bar, goo: ;");
+        check_error("(x: Y)foo, goo: ;");
+        check_error("foo,(x: Y)goo: ;");
     }
 }

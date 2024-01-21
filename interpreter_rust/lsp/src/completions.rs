@@ -100,7 +100,7 @@ fn get_symbols<'a>(
 
 fn keyword_completions() -> Vec<CompletionItem> {
     static KEYWORDS: [&str; 7] = [
-        "constr",
+        "const",
         "var",
         "type",
         "@any",
