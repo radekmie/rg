@@ -790,72 +790,127 @@ impl<Id: PartialEq> Game<Id> {
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Pragma<Id> {
-    Any {
+    Distinct {
         #[serde(skip)]
         span: Span,
-        #[serde(rename = "edgeName")]
-        edge_name: EdgeName<Id>,
+        #[serde(rename = "edgeNames")]
+        edge_names: Vec<EdgeName<Id>>,
     },
-    Disjoint {
+    Repeat {
         #[serde(skip)]
         span: Span,
-        #[serde(rename = "edgeName")]
-        edge_name: EdgeName<Id>,
+        #[serde(rename = "edgeNames")]
+        edge_names: Vec<EdgeName<Id>>,
+        #[serde(rename = "identifiers")]
+        identifiers: Vec<Id>,
     },
-    MultiAny {
+    SimpleApply {
         #[serde(skip)]
         span: Span,
-        #[serde(rename = "edgeName")]
-        edge_name: EdgeName<Id>,
+        #[serde(rename = "edgeNames")]
+        edge_names: Vec<EdgeName<Id>>,
+    },
+    TagIndex {
+        #[serde(skip)]
+        span: Span,
+        #[serde(rename = "edgeNames")]
+        edge_names: Vec<EdgeName<Id>>,
+        index: usize,
+    },
+    TagMaxIndex {
+        #[serde(skip)]
+        span: Span,
+        #[serde(rename = "edgeNames")]
+        edge_names: Vec<EdgeName<Id>>,
+        index: usize,
     },
     Unique {
         #[serde(skip)]
         span: Span,
-        #[serde(rename = "edgeName")]
-        edge_name: EdgeName<Id>,
+        #[serde(rename = "edgeNames")]
+        edge_names: Vec<EdgeName<Id>>,
     },
 }
 
 impl<Id> Pragma<Id> {
-    pub fn edge_name(&self) -> &EdgeName<Id> {
+    pub fn edge_names(&self) -> &Vec<EdgeName<Id>> {
         match self {
-            Self::Any { edge_name, .. }
-            | Self::Disjoint { edge_name, .. }
-            | Self::MultiAny { edge_name, .. }
-            | Self::Unique { edge_name, .. } => edge_name,
+            Self::Distinct { edge_names, .. }
+            | Self::Repeat { edge_names, .. }
+            | Self::SimpleApply { edge_names, .. }
+            | Self::TagIndex { edge_names, .. }
+            | Self::TagMaxIndex { edge_names, .. }
+            | Self::Unique { edge_names, .. } => edge_names,
         }
     }
 }
 
 impl<Id: PartialEq> Pragma<Id> {
     pub fn bindings(&self) -> impl Iterator<Item = Binding<Id>> {
-        match self {
-            Self::Any { edge_name, .. }
-            | Self::Disjoint { edge_name, .. }
-            | Self::MultiAny { edge_name, .. }
-            | Self::Unique { edge_name, .. } => edge_name.bindings(),
-        }
+        // TODO: Should we deduplicate those?
+        self.edge_names().iter().flat_map(EdgeName::bindings)
     }
 }
 
 impl Pragma<Arc<str>> {
     pub fn substitute_bindings(&self, mapping: &Mapping<Arc<str>>) -> Self {
         match self {
-            Self::Any { edge_name, span } => Self::Any {
+            Self::Distinct { span, edge_names } => Self::Distinct {
                 span: *span,
-                edge_name: edge_name.substitute_bindings(mapping),
+                edge_names: edge_names
+                    .iter()
+                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .collect(),
             },
-            Self::Disjoint { edge_name, span } => Self::Disjoint {
+            Self::Repeat {
+                span,
+                edge_names,
+                identifiers,
+            } => Self::Repeat {
                 span: *span,
-                edge_name: edge_name.substitute_bindings(mapping),
+                edge_names: edge_names
+                    .iter()
+                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .collect(),
+                identifiers: identifiers.to_vec(),
             },
-            Self::MultiAny { edge_name, span } => Self::MultiAny {
+            Self::SimpleApply { span, edge_names } => Self::SimpleApply {
                 span: *span,
-                edge_name: edge_name.substitute_bindings(mapping),
+                edge_names: edge_names
+                    .iter()
+                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .collect(),
             },
-            Self::Unique { edge_name, span } => Self::Unique {
+            Self::TagIndex {
+                span,
+                edge_names,
+                index,
+            } => Self::TagIndex {
                 span: *span,
-                edge_name: edge_name.substitute_bindings(mapping),
+                edge_names: edge_names
+                    .iter()
+                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .collect(),
+                index: *index,
+            },
+            Self::TagMaxIndex {
+                span,
+                edge_names,
+                index,
+            } => Self::TagMaxIndex {
+                span: *span,
+                edge_names: edge_names
+                    .iter()
+                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .collect(),
+                index: *index,
+            },
+            Self::Unique { span, edge_names } => Self::Unique {
+                span: *span,
+                edge_names: edge_names
+                    .iter()
+                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .collect(),
             },
         }
     }

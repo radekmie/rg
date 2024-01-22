@@ -1,7 +1,7 @@
 use super::error::Error;
 use super::parser_utils::{
-    arc_expression, comments_and_whitespaces, expect, expect_preceded_tag, identifier, into_arc,
-    parse_error_line, preceded_opt_id, preceded_tag, preceded_whitespace, with_semicolon,
+    arc_expression, comments_and_whitespaces, expect, expect_preceded_tag, identifier, integer,
+    into_arc, parse_error_line, preceded_opt_id, preceded_tag, preceded_whitespace, with_semicolon,
 };
 use crate::ast::{
     Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Game, Identifier, Pragma, Type,
@@ -13,7 +13,7 @@ use nom::bytes::complete::tag;
 use nom::character::complete::char;
 use nom::combinator::{all_consuming, cut, into, map, opt, success};
 use nom::error::context;
-use nom::multi::{fold_many0, many0, separated_list0};
+use nom::multi::{fold_many0, many0, many1, separated_list0};
 use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
 use nom::IResult;
 use nom_locate::LocatedSpan;
@@ -276,30 +276,84 @@ fn variable(input: Input) -> Result<Option<Variable<Identifier>>> {
 }
 
 fn pragma(input: Input) -> Result<Pragma<Identifier>> {
-    macro_rules! edge_name {
-        ($tag:literal, $constructor:ident) => {
-            map(
-                tuple((
-                    tag("@"),
-                    preceded_tag($tag),
-                    cut(preceded_whitespace(expect_edge_name)),
-                    expect_preceded_tag(";"),
-                )),
-                |(start, _, edge_name, _)| {
-                    let span = edge_name.end().with_start((&start).into());
-                    Pragma::$constructor { span, edge_name }
-                },
-            )
-        };
-    }
-
     context(
         "pragma",
         alt((
-            edge_name!("any", Any),
-            edge_name!("disjoint", Disjoint),
-            edge_name!("multiAny", MultiAny),
-            edge_name!("unique", Unique),
+            map(
+                tuple((
+                    tag("@distinct"),
+                    cut(many1(preceded_whitespace(edge_name))),
+                    tag(";"),
+                )),
+                |(tag, edge_names, semicolon)| Pragma::Distinct {
+                    span: Span::from((&tag, &semicolon)),
+                    edge_names,
+                },
+            ),
+            map(
+                tuple((
+                    tag("@repeat"),
+                    cut(many1(preceded_whitespace(edge_name))),
+                    tag(":"),
+                    cut(many1(preceded_whitespace(identifier))),
+                    tag(";"),
+                )),
+                |(tag, edge_names, _, identifiers, semicolon)| Pragma::Repeat {
+                    span: Span::from((&tag, &semicolon)),
+                    edge_names,
+                    identifiers,
+                },
+            ),
+            map(
+                tuple((
+                    tag("@simpleApply"),
+                    cut(many1(preceded_whitespace(edge_name))),
+                    tag(";"),
+                )),
+                |(tag, edge_names, semicolon)| Pragma::SimpleApply {
+                    span: Span::from((&tag, &semicolon)),
+                    edge_names,
+                },
+            ),
+            map(
+                tuple((
+                    tag("@tagIndex"),
+                    cut(many1(preceded_whitespace(edge_name))),
+                    tag(":"),
+                    preceded_whitespace(integer),
+                    tag(";"),
+                )),
+                |(tag, edge_names, _, index, semicolon)| Pragma::TagIndex {
+                    span: Span::from((&tag, &semicolon)),
+                    edge_names,
+                    index,
+                },
+            ),
+            map(
+                tuple((
+                    tag("@tagMaxIndex"),
+                    cut(many1(preceded_whitespace(edge_name))),
+                    tag(":"),
+                    preceded_whitespace(integer),
+                    tag(";"),
+                )),
+                |(tag, edge_names, _, index, semicolon)| Pragma::TagIndex {
+                    span: Span::from((&tag, &semicolon)),
+                    edge_names,
+                    index,
+                },
+            ),
+            map(
+                tuple((
+                    tag("@unique"),
+                    cut(many1(preceded_whitespace(edge_name))),
+                    tag(";"),
+                )),
+                |(tag, edge_names, semicolon)| Pragma::Unique {
+                    span: Span::from((&tag, &semicolon)),
+                    edge_names,
+                },
+            ),
         )),
     )(input)
 }

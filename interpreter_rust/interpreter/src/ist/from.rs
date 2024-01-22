@@ -9,12 +9,10 @@ impl<Id: Display + Ord> From<ast::Game<Id>> for ist::Game<Rc<str>> {
         let mut ist = Self {
             constants: BTreeMap::default(),
             edges: BTreeMap::default(),
-            pragmas: Vec::default(),
             types: BTreeMap::default(),
             variables: BTreeMap::default(),
         };
 
-        build_pragmas(&mut ist, ast.pragmas);
         build_typedefs(&mut ist, ast.typedefs);
         build_constants(&mut ist, ast.constants);
         build_variables(&mut ist, ast.variables);
@@ -108,29 +106,6 @@ fn build_expression<Id: Display>(
                 value: Rc::new(ist::Value::Element { value: identifier }),
             }
         }
-    }
-}
-
-fn build_pragma<Id: Display>(pragma: ast::Pragma<Id>) -> ist::Pragma<Rc<str>> {
-    match pragma {
-        ast::Pragma::Any { edge_name, .. } => ist::Pragma::Any {
-            edge_name: Rc::from(edge_name.to_string()),
-        },
-        ast::Pragma::Disjoint { edge_name, .. } => ist::Pragma::Disjoint {
-            edge_name: Rc::from(edge_name.to_string()),
-        },
-        ast::Pragma::MultiAny { edge_name, .. } => ist::Pragma::MultiAny {
-            edge_name: Rc::from(edge_name.to_string()),
-        },
-        ast::Pragma::Unique { edge_name, .. } => ist::Pragma::Unique {
-            edge_name: Rc::from(edge_name.to_string()),
-        },
-    }
-}
-
-fn build_pragmas<Id: Display>(game: &mut ist::Game<Rc<str>>, pragmas: Vec<ast::Pragma<Id>>) {
-    for pragma in pragmas {
-        game.pragmas.push(build_pragma(pragma));
     }
 }
 

@@ -99,14 +99,16 @@ fn get_symbols<'a>(
 }
 
 fn keyword_completions() -> Vec<CompletionItem> {
-    static KEYWORDS: [&str; 7] = [
+    static KEYWORDS: [&str; 9] = [
         "const",
         "var",
         "type",
-        "@any",
+        "@distinct",
+        "@repeat",
+        "@simpleApply",
+        "@tagIndex",
+        "@tagMaxIndex",
         "@unique",
-        "@multiAny",
-        "@disjoint",
     ];
     KEYWORDS
         .into_iter()
