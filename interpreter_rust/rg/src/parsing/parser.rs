@@ -283,7 +283,7 @@ fn pragma(input: Input) -> Result<Pragma<Identifier>> {
                 tuple((
                     tag("@distinct"),
                     cut(many1(preceded_whitespace(edge_name))),
-                    tag(";"),
+                    preceded_whitespace(tag(";")),
                 )),
                 |(tag, edge_names, semicolon)| Pragma::Distinct {
                     span: Span::from((&tag, &semicolon)),
@@ -294,9 +294,9 @@ fn pragma(input: Input) -> Result<Pragma<Identifier>> {
                 tuple((
                     tag("@repeat"),
                     cut(many1(preceded_whitespace(edge_name))),
-                    tag(":"),
+                    preceded_whitespace(tag(":")),
                     cut(many1(preceded_whitespace(identifier))),
-                    tag(";"),
+                    preceded_whitespace(tag(";")),
                 )),
                 |(tag, edge_names, _, identifiers, semicolon)| Pragma::Repeat {
                     span: Span::from((&tag, &semicolon)),
@@ -308,7 +308,7 @@ fn pragma(input: Input) -> Result<Pragma<Identifier>> {
                 tuple((
                     tag("@simpleApply"),
                     cut(many1(preceded_whitespace(edge_name))),
-                    tag(";"),
+                    preceded_whitespace(tag(";")),
                 )),
                 |(tag, edge_names, semicolon)| Pragma::SimpleApply {
                     span: Span::from((&tag, &semicolon)),
@@ -319,9 +319,9 @@ fn pragma(input: Input) -> Result<Pragma<Identifier>> {
                 tuple((
                     tag("@tagIndex"),
                     cut(many1(preceded_whitespace(edge_name))),
-                    tag(":"),
+                    preceded_whitespace(tag(":")),
                     preceded_whitespace(integer),
-                    tag(";"),
+                    preceded_whitespace(tag(";")),
                 )),
                 |(tag, edge_names, _, index, semicolon)| Pragma::TagIndex {
                     span: Span::from((&tag, &semicolon)),
@@ -333,9 +333,9 @@ fn pragma(input: Input) -> Result<Pragma<Identifier>> {
                 tuple((
                     tag("@tagMaxIndex"),
                     cut(many1(preceded_whitespace(edge_name))),
-                    tag(":"),
+                    preceded_whitespace(tag(":")),
                     preceded_whitespace(integer),
-                    tag(";"),
+                    preceded_whitespace(tag(";")),
                 )),
                 |(tag, edge_names, _, index, semicolon)| Pragma::TagIndex {
                     span: Span::from((&tag, &semicolon)),
@@ -347,7 +347,7 @@ fn pragma(input: Input) -> Result<Pragma<Identifier>> {
                 tuple((
                     tag("@unique"),
                     cut(many1(preceded_whitespace(edge_name))),
-                    tag(";"),
+                    preceded_whitespace(tag(";")),
                 )),
                 |(tag, edge_names, semicolon)| Pragma::Unique {
                     span: Span::from((&tag, &semicolon)),
