@@ -3,11 +3,11 @@ use super::parser::{Input, Result};
 use crate::ast::{Expression, Identifier};
 use crate::position::{Position, Span};
 use nom::branch::alt;
-use nom::bytes::complete::{tag, take_until, take_while, take_while1};
+use nom::bytes::complete::{tag, take_till, take_while, take_while1};
 use nom::character::complete::{anychar, digit1, multispace1};
-use nom::combinator::{cut, eof, into, map, map_res, opt, verify};
+use nom::combinator::{cut, into, map, map_res, opt, verify};
 use nom::multi::fold_many0;
-use nom::sequence::{delimited, preceded};
+use nom::sequence::preceded;
 use std::fmt::Display;
 use std::sync::Arc;
 
@@ -62,7 +62,7 @@ where
 }
 
 pub fn comment(input: Input) -> Result<Input> {
-    delimited(tag("//"), cut(take_until("\n")), alt((eof, tag("\n"))))(input)
+    preceded(tag("//"), cut(take_till(|c| c == '\n')))(input)
 }
 
 pub fn comments_and_whitespaces(input: Input) -> Result<()> {

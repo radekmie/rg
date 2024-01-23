@@ -14,7 +14,7 @@ use nom::character::complete::char;
 use nom::combinator::{all_consuming, cut, into, map, opt, success};
 use nom::error::context;
 use nom::multi::{fold_many0, many0, many1, separated_list0};
-use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
+use nom::sequence::{pair, preceded, separated_pair, terminated, tuple};
 use nom::IResult;
 use nom_locate::LocatedSpan;
 use std::cell::RefCell;
@@ -360,31 +360,33 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
 pub fn game(input: Input) -> Result<Game<Identifier>> {
     context(
         "game",
-        fold_many0(
-            delimited(
-                comments_and_whitespaces,
-                alt((
-                    map(constant, |x| (x, None, None, None, None)),
-                    map(typedef, |x| (None, x, None, None, None)),
-                    map(variable, |x| (None, None, x, None, None)),
-                    map(edge, |x| (None, None, None, x, None)),
-                    map(pragma, |x| (None, None, None, None, x)),
-                    map(parse_error_line, |()| (None, None, None, None, None)),
-                )),
-                comments_and_whitespaces,
+        terminated(
+            fold_many0(
+                preceded(
+                    comments_and_whitespaces,
+                    alt((
+                        map(constant, |x| (x, None, None, None, None)),
+                        map(typedef, |x| (None, x, None, None, None)),
+                        map(variable, |x| (None, None, x, None, None)),
+                        map(edge, |x| (None, None, None, x, None)),
+                        map(pragma, |x| (None, None, None, None, x)),
+                        map(parse_error_line, |()| (None, None, None, None, None)),
+                    )),
+                ),
+                Game::default,
+                |mut game, declaration| {
+                    match declaration {
+                        (Some(constant), _, _, _, _) => game.constants.push(constant),
+                        (_, Some(typedef), _, _, _) => game.typedefs.push(typedef),
+                        (_, _, Some(variable), _, _) => game.variables.push(variable),
+                        (_, _, _, Some(edge), _) => game.edges.push(edge),
+                        (_, _, _, _, Some(pragma)) => game.pragmas.push(pragma),
+                        _ => (),
+                    }
+                    game
+                },
             ),
-            Game::default,
-            |mut game, declaration| {
-                match declaration {
-                    (Some(constant), _, _, _, _) => game.constants.push(constant),
-                    (_, Some(typedef), _, _, _) => game.typedefs.push(typedef),
-                    (_, _, Some(variable), _, _) => game.variables.push(variable),
-                    (_, _, _, Some(edge), _) => game.edges.push(edge),
-                    (_, _, _, _, Some(pragma)) => game.pragmas.push(pragma),
-                    _ => (),
-                }
-                game
-            },
+            comments_and_whitespaces,
         ),
     )(input)
 }
