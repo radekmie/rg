@@ -12,6 +12,12 @@ impl<OldId, NewId> MapId<Self, OldId, NewId> for bool {
     }
 }
 
+impl<OldId, NewId> MapId<Self, OldId, NewId> for usize {
+    fn map_id(&self, _map: &mut impl FnMut(&OldId) -> NewId) -> Self {
+        *self
+    }
+}
+
 impl<FromType: MapId<ToType, OldId, NewId>, ToType, OldId, NewId> MapId<Arc<ToType>, OldId, NewId>
     for Arc<FromType>
 {

@@ -76,14 +76,23 @@ impl Statement for Edge<Identifier> {
 
 impl Statement for Pragma<Identifier> {
     fn completion_kind(&self, pos: &Position) -> CompletionKind {
-        completion_kind_edge_name(pos, self.edge_name())
+        for edge_name in self.edge_names() {
+            if edge_name.span.encloses_position(pos) {
+                return completion_kind_edge_name(pos, edge_name);
+            }
+        }
+
+        // TODO: Handle `CompletionKind::Variable` for `identifiers`.
+        CompletionKind::None
     }
 
     fn keyword(&self) -> &'static str {
         match self {
-            Self::Any { .. } => "@any",
-            Self::Disjoint { .. } => "@disjoint",
-            Self::MultiAny { .. } => "@multiAny",
+            Self::Distinct { .. } => "@distinct",
+            Self::Repeat { .. } => "@repeat",
+            Self::SimpleApply { .. } => "@simpleApply",
+            Self::TagIndex { .. } => "@tagIndex",
+            Self::TagMaxIndex { .. } => "@tagMaxIndex",
             Self::Unique { .. } => "@unique",
         }
     }

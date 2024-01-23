@@ -313,7 +313,9 @@ impl SymbolTableWithErrors {
             table.add_from_edge(edge);
         });
         game.pragmas.iter().for_each(|pragma| {
-            table.add_from_edge_name(pragma.edge_name());
+            for edge_name in pragma.edge_names() {
+                table.add_from_edge_name(edge_name);
+            }
         });
         table
     }

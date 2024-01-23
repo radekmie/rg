@@ -39,27 +39,30 @@ mod test {
     }
 
     macro_rules! test {
-        ($name:ident { $($actual:tt)* } { $($expect:tt)* }) => {
+        ($name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                let mut actual = parse(stringify!($($actual)*));
+                let mut actual = parse($actual);
                 actual.expand_generator_nodes().unwrap();
-                let expect = parse(stringify!($($expect)*));
+                let expect = parse($expect);
 
-                assert_eq!(actual, expect, "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n");
+                assert_eq!(
+                    actual, expect,
+                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
+                );
             }
         };
     }
 
     test!(
-        edge
-        { type T = { a, b }; x(t: T), y: ; }
-        { type T = { a, b }; x__bind__a, y: ; x__bind__b, y: ; }
+        edge,
+        "type T = { a, b }; x(t: T), y: ;",
+        "type T = { a, b }; x__bind__a, y: ; x__bind__b, y: ;"
     );
 
     test!(
-        pragma
-        { type T = { a, b }; @unique x(t: T); }
-        { type T = { a, b }; @unique x__bind__a; @unique x__bind__b; }
+        pragma,
+        "type T = { a, b }; @unique x(t: T);",
+        "type T = { a, b }; @unique x__bind__a; @unique x__bind__b;"
     );
 }

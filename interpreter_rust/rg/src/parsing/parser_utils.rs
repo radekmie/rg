@@ -4,8 +4,8 @@ use crate::ast::{Expression, Identifier};
 use crate::position::{Position, Span};
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_until, take_while, take_while1};
-use nom::character::complete::{anychar, multispace1};
-use nom::combinator::{cut, eof, into, map, opt, verify};
+use nom::character::complete::{anychar, digit1, multispace1};
+use nom::combinator::{cut, eof, into, map, map_res, opt, verify};
 use nom::multi::fold_many0;
 use nom::sequence::{delimited, preceded};
 use std::fmt::Display;
@@ -124,4 +124,8 @@ pub fn preceded_opt_id<'a>(context: &'a str) -> impl FnMut(Input<'a>) -> Result<
             }
         })
     }
+}
+
+pub fn integer(input: Input) -> Result<usize> {
+    map_res(digit1, |digits: Input| digits.parse())(input)
 }

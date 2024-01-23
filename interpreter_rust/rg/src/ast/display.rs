@@ -222,10 +222,60 @@ impl Display for Position {
 impl<Id: Display> Display for Pragma<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::Any { edge_name, .. } => write!(f, "@any {edge_name};"),
-            Self::Disjoint { edge_name, .. } => write!(f, "@disjoint {edge_name};"),
-            Self::MultiAny { edge_name, .. } => write!(f, "@multiAny {edge_name};"),
-            Self::Unique { edge_name, .. } => write!(f, "@unique {edge_name};"),
+            Self::Distinct { edge_names, .. } => {
+                write!(f, "@distinct")?;
+                edge_names
+                    .iter()
+                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                write!(f, ";")
+            }
+            Self::Repeat {
+                edge_names,
+                identifiers,
+                ..
+            } => {
+                write!(f, "@repeat")?;
+                edge_names
+                    .iter()
+                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                write!(f, " :")?;
+                identifiers
+                    .iter()
+                    .try_for_each(|identifier| write!(f, " {identifier}"))?;
+                write!(f, ";")
+            }
+            Self::SimpleApply { edge_names, .. } => {
+                write!(f, "@simpleApply")?;
+                edge_names
+                    .iter()
+                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                write!(f, ";")
+            }
+            Self::TagIndex {
+                edge_names, index, ..
+            } => {
+                write!(f, "@tagIndex")?;
+                edge_names
+                    .iter()
+                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                write!(f, " : {index};")
+            }
+            Self::TagMaxIndex {
+                edge_names, index, ..
+            } => {
+                write!(f, "@tagMaxIndex")?;
+                edge_names
+                    .iter()
+                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                write!(f, " : {index};")
+            }
+            Self::Unique { edge_names, .. } => {
+                write!(f, "@unique")?;
+                edge_names
+                    .iter()
+                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                write!(f, ";")
+            }
         }
     }
 }
