@@ -109,19 +109,8 @@ directionRightChecked, directionOK: pos = Position(right[pos]);
 
 directionOK, moved: opponentOrEmpty[turnPlayer][board[pos]] == Bool(1);
 
-// Unique paths from the given state to each of the next semimoves and player switches
-@unique begin;
-@unique move;
-@unique selectedPos(position:Position);
-@unique directionForward;
-@unique directionLeft;
-@unique directionRight;
-@unique wincheck;
-
 moved, done: board[pos] = pieceOfPlayer[turnPlayer];
 done, wincheck: player = PlayerOrKeeper(keeper);
-
-@unique wincheck;
 
 wincheck, win: directionOfPlayer[turnPlayer][pos] == Position(null);
 wincheck, continue: directionOfPlayer[turnPlayer][pos] != Position(null);
@@ -131,3 +120,5 @@ lose, win: turnPlayer = opponent[turnPlayer];
 win, score: goals[turnPlayer] = Score(100);
 score, finish: goals[opponent[turnPlayer]] = Score(0);
 finish, end: player = PlayerOrKeeper(keeper);
+
+@unique begin turn move lose selectPos selectedPos(p:Position) setPos(p:Position) setFinished checkOwn forward selectDirection directionForward directionOK directionLeft directionLeftChecked directionRight directionRightChecked moved done wincheck continue turn lose win score finish end;

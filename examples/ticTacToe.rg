@@ -60,17 +60,4 @@ win1,win2: goals[opponent[playerTurn]] = Score(0);
 win2,end: player = PlayerOrKeeper(keeper);
 
 // Unique paths from the given state to each of the next semimoves and player switches
-@unique begin;
-@unique turn;
-@unique move;
-@unique preend;
-@unique end;
-@unique checkwin;
-@unique checkline;
-@unique chooseX;
-@unique chooseX(coordX:Coord);
-@unique chooseY;
-@unique chooseY(coordX:Coord);
-@unique check;
-@unique set;
-@unique endmove;
+@unique begin turn move preend end move chooseX chooseX(c:Coord) chooseY(c:Coord) check set endmove checkwin win nextturn turn checkline checklineH1 checklineH2 endcheckline checklineV1 checklineV2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 win win1 win2;
