@@ -222,8 +222,23 @@ impl Display for Position {
 impl<Id: Display> Display for Pragma<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::Distinct { edge_names, .. } => {
-                write!(f, "@distinct")?;
+            Self::Disjoint {
+                edge_name,
+                edge_names,
+                ..
+            } => {
+                write!(f, "@disjoint {edge_name} :")?;
+                edge_names
+                    .iter()
+                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                write!(f, ";")
+            }
+            Self::DisjointExhaustive {
+                edge_name,
+                edge_names,
+                ..
+            } => {
+                write!(f, "@disjointExhaustive {edge_name} :")?;
                 edge_names
                     .iter()
                     .try_for_each(|edge_name| write!(f, " {edge_name}"))?;

@@ -279,12 +279,29 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
     let pragma = alt((
         map(
             tuple((
-                tag("distinct"),
+                tag("disjoint"),
+                cut(preceded_whitespace(edge_name)),
+                preceded_whitespace(tag(":")),
                 cut(many1(preceded_whitespace(edge_name))),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, edge_names, semicolon)| Pragma::Distinct {
+            |(tag, edge_name, _, edge_names, semicolon)| Pragma::Disjoint {
                 span: Span::from((&tag, &semicolon)),
+                edge_name,
+                edge_names,
+            },
+        ),
+        map(
+            tuple((
+                tag("disjointExhaustive"),
+                cut(preceded_whitespace(edge_name)),
+                preceded_whitespace(tag(":")),
+                cut(many1(preceded_whitespace(edge_name))),
+                preceded_whitespace(tag(";")),
+            )),
+            |(tag, edge_name, _, edge_names, semicolon)| Pragma::DisjointExhaustive {
+                span: Span::from((&tag, &semicolon)),
+                edge_name,
                 edge_names,
             },
         ),
@@ -335,7 +352,7 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
                 preceded_whitespace(integer),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, edge_names, _, index, semicolon)| Pragma::TagIndex {
+            |(tag, edge_names, _, index, semicolon)| Pragma::TagMaxIndex {
                 span: Span::from((&tag, &semicolon)),
                 edge_names,
                 index,

@@ -249,7 +249,8 @@ impl Positioned for Identifier {
 impl<Id> Positioned for Pragma<Id> {
     fn span(&self) -> Span {
         match self {
-            Self::Distinct { span, .. }
+            Self::Disjoint { span, .. }
+            | Self::DisjointExhaustive { span, .. }
             | Self::Repeat { span, .. }
             | Self::SimpleApply { span, .. }
             | Self::TagIndex { span, .. }

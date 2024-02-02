@@ -790,9 +790,19 @@ impl<Id: PartialEq> Game<Id> {
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Pragma<Id> {
-    Distinct {
+    Disjoint {
         #[serde(skip)]
         span: Span,
+        #[serde(rename = "edgeName")]
+        edge_name: EdgeName<Id>,
+        #[serde(rename = "edgeNames")]
+        edge_names: Vec<EdgeName<Id>>,
+    },
+    DisjointExhaustive {
+        #[serde(skip)]
+        span: Span,
+        #[serde(rename = "edgeName")]
+        edge_name: EdgeName<Id>,
         #[serde(rename = "edgeNames")]
         edge_names: Vec<EdgeName<Id>>,
     },
@@ -833,9 +843,30 @@ pub enum Pragma<Id> {
 }
 
 impl<Id> Pragma<Id> {
-    pub fn edge_names(&self) -> &Vec<EdgeName<Id>> {
+    pub fn edge_names(&self) -> impl Iterator<Item = &EdgeName<Id>> {
         match self {
-            Self::Distinct { edge_names, .. }
+            Self::Disjoint {
+                edge_name,
+                edge_names,
+                ..
+            }
+            | Self::DisjointExhaustive {
+                edge_name,
+                edge_names,
+                ..
+            } => Some(edge_name).into_iter().chain(edge_names),
+            Self::Repeat { edge_names, .. }
+            | Self::SimpleApply { edge_names, .. }
+            | Self::TagIndex { edge_names, .. }
+            | Self::TagMaxIndex { edge_names, .. }
+            | Self::Unique { edge_names, .. } => None.into_iter().chain(edge_names),
+        }
+    }
+
+    pub fn edge_names_ref_mut(&mut self) -> &mut Vec<EdgeName<Id>> {
+        match self {
+            Self::Disjoint { edge_names, .. }
+            | Self::DisjointExhaustive { edge_names, .. }
             | Self::Repeat { edge_names, .. }
             | Self::SimpleApply { edge_names, .. }
             | Self::TagIndex { edge_names, .. }
@@ -848,15 +879,32 @@ impl<Id> Pragma<Id> {
 impl<Id: PartialEq> Pragma<Id> {
     pub fn bindings(&self) -> impl Iterator<Item = Binding<Id>> {
         // TODO: Should we deduplicate those?
-        self.edge_names().iter().flat_map(EdgeName::bindings)
+        self.edge_names().flat_map(EdgeName::bindings)
     }
 }
 
 impl Pragma<Arc<str>> {
     pub fn substitute_bindings(&self, mapping: &Mapping<Arc<str>>) -> Self {
         match self {
-            Self::Distinct { span, edge_names } => Self::Distinct {
+            Self::Disjoint {
+                span,
+                edge_name,
+                edge_names,
+            } => Self::Disjoint {
                 span: *span,
+                edge_name: edge_name.substitute_bindings(mapping),
+                edge_names: edge_names
+                    .iter()
+                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .collect(),
+            },
+            Self::DisjointExhaustive {
+                span,
+                edge_name,
+                edge_names,
+            } => Self::DisjointExhaustive {
+                span: *span,
+                edge_name: edge_name.substitute_bindings(mapping),
                 edge_names: edge_names
                     .iter()
                     .map(|edge_name| edge_name.substitute_bindings(mapping))
