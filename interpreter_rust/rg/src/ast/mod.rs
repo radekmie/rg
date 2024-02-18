@@ -159,6 +159,10 @@ pub enum EdgeLabel<Id> {
 }
 
 impl<Id> EdgeLabel<Id> {
+    pub fn is_tag(&self) -> bool {
+        matches!(self, Self::Tag { .. })
+    }
+
     pub fn is_skip(&self) -> bool {
         matches!(self, Self::Skip { .. })
     }

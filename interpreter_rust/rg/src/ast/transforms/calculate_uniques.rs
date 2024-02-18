@@ -31,7 +31,7 @@ impl Game<Arc<str>> {
                         for edge in edges {
                             if seen.contains(&edge.rhs) {
                                 unique_edge_names.remove(&edge.rhs);
-                            } else if !edge.label.is_player_assignment() {
+                            } else if !edge.label.is_player_assignment() && !edge.label.is_tag() {
                                 queue.push(edge.rhs.clone());
                             }
                         }
