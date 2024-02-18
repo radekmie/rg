@@ -88,6 +88,7 @@ npm test
 | Translation of RBG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `addBuiltins`                    | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `addExplicitCasts`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `calculateUniques`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `compactSkipEdges`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `expandGeneratorNodes`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `joinForkSuffixes`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
@@ -155,6 +156,7 @@ Usage: node lib/cli [options] [command]
 
 Options:
   --addExplicitCasts       add type casts to all expressions
+  --calculateUniques       calculate missing @unique pragmas automatically
   --compactSkipEdges       optimize automaton by compacting skip edges
   --expandGeneratorNodes   expand generator nodes
   --inlineReachability     inline reachability when possible

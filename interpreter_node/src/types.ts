@@ -11,6 +11,7 @@ export type Settings = {
   extension: Language;
   flags: {
     addExplicitCasts: boolean;
+    calculateUniques: boolean;
     compactSkipEdges: boolean;
     expandGeneratorNodes: boolean;
     inlineReachability: boolean;
@@ -25,6 +26,7 @@ export type Settings = {
 
 export const noFlagsEnabled: Settings['flags'] = {
   addExplicitCasts: false,
+  calculateUniques: false,
   normalizeTypes: false,
   compactSkipEdges: false,
   expandGeneratorNodes: false,
