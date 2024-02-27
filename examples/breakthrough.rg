@@ -97,7 +97,7 @@ checkOwn, forward: board[pos] = Piece(e);
 forward, selectDirection: pos = Position(directionOfPlayer[turnPlayer][pos]);
 
 selectDirection, directionForward: $ F;
-directionForward, directionOK: board[pos] == Piece(e);
+directionForward, moved: board[pos] == Piece(e);
 
 selectDirection, directionLeft: $ L;
 directionLeft, directionLeftChecked: left[pos] != Position(null);
