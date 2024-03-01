@@ -11,6 +11,10 @@ program
   .name('node lib/cli')
   .option('--addExplicitCasts', 'add type casts to all expressions')
   .option(
+    '--calculateTagIndexes',
+    'calculate missing @tagIndex and @tagMaxIndex pragmas automatically',
+  )
+  .option(
     '--calculateUniques',
     'calculate missing @unique pragmas automatically',
   )
@@ -63,6 +67,7 @@ function addCommand(
         extension: extension as Language,
         flags: {
           addExplicitCasts: !!options.addExplicitCasts,
+          calculateTagIndexes: !!options.calculateTagIndexes,
           calculateUniques: !!options.calculateUniques,
           compactSkipEdges: !!options.compactSkipEdges,
           expandGeneratorNodes: !!options.expandGeneratorNodes,

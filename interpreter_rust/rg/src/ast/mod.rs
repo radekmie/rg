@@ -827,16 +827,16 @@ pub enum Pragma<Id> {
     TagIndex {
         #[serde(skip)]
         span: Span,
+        index: usize,
         #[serde(rename = "edgeNames")]
         edge_names: Vec<EdgeName<Id>>,
-        index: usize,
     },
     TagMaxIndex {
         #[serde(skip)]
         span: Span,
+        index: usize,
         #[serde(rename = "edgeNames")]
         edge_names: Vec<EdgeName<Id>>,
-        index: usize,
     },
     Unique {
         #[serde(skip)]

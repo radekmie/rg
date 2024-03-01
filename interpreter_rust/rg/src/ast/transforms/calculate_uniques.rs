@@ -49,10 +49,13 @@ impl Game<Arc<str>> {
             }
         });
 
-        self.pragmas.push(Pragma::Unique {
+        let pragma = Pragma::Unique {
             span: Span::none(),
             edge_names: unique_edge_names.into_iter().collect(),
-        });
+        };
+
+        let index = self.pragmas.partition_point(|x| *x < pragma);
+        self.pragmas.insert(index, pragma);
 
         Ok(())
     }

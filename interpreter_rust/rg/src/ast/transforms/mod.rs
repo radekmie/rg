@@ -1,5 +1,6 @@
 mod add_builtins;
 mod add_explicit_casts;
+mod calculate_tag_indexes;
 mod calculate_uniques;
 mod compact_skip_edges;
 mod expand_generator_nodes;
