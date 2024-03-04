@@ -58,6 +58,3 @@ checklineRL2,endcheckline: board[otherInLine2[posX]][otherInLine1[posY]] == Piec
 win,win1: goals[playerTurn] = Score(100);
 win1,win2: goals[opponent[playerTurn]] = Score(0);
 win2,end: player = PlayerOrKeeper(keeper);
-
-@tagIndex chooseX: 0;
-@tagIndex chooseY: 1;

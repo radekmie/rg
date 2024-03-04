@@ -125,6 +125,3 @@ finish, end: player = PlayerOrKeeper(keeper);
 
 @disjointExhaustive turn:move lose;
 @disjointExhaustive wincheck:continue win;
-
-@tagIndex selectPos : 0;
-@tagIndex selectDirection : 1;
