@@ -1,4 +1,4 @@
-use crate::ast::{Error, Game, Pragma};
+use crate::ast::{EdgeLabel, Error, Game, Pragma};
 use crate::position::Span;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -13,14 +13,30 @@ impl Game<Arc<str>> {
                     next_edges
                 });
 
-        let edge_names: BTreeSet<_> = self
+        let mut unique_edge_names: BTreeSet<_> = self
             .edges
             .iter()
             .flat_map(|edge| [&edge.lhs, &edge.rhs])
             .cloned()
             .collect();
 
-        let mut unique_edge_names = edge_names.clone();
+        let edge_names: BTreeSet<_> = self
+            .edges
+            .iter()
+            .filter_map(|edge| {
+                if edge.label.is_player_assignment() || edge.label.is_tag() {
+                    Some(&edge.rhs)
+                } else if let EdgeLabel::Reachability { lhs, .. } = &edge.label {
+                    Some(lhs)
+                } else if edge.lhs.is_begin() {
+                    Some(&edge.lhs)
+                } else {
+                    None
+                }
+            })
+            .cloned()
+            .collect();
+
         for edge_name in edge_names {
             let mut seen = BTreeSet::new();
             let mut queue = vec![edge_name];
