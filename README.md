@@ -88,6 +88,7 @@ npm test
 | Translation of RBG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `addBuiltins`                    | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `addExplicitCasts`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `calculateSimpleApply`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `calculateTagIndexes`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `calculateUniques`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `compactSkipEdges`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
@@ -157,6 +158,7 @@ Usage: node lib/cli [options] [command]
 
 Options:
   --addExplicitCasts       add type casts to all expressions
+  --calculateSimpleApply   calculate missing @simpleApply pragmas automatically
   --calculateTagIndexes    calculate missing @tagIndex and @tagMaxIndex pragmas automatically
   --calculateUniques       calculate missing @unique pragmas automatically
   --compactSkipEdges       optimize automaton by compacting skip edges

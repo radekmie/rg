@@ -69,6 +69,7 @@ export function Settings({
   const availableFlags = useMemo<{ value: Flag; disabled?: boolean }[]>(
     () => [
       { value: 'addExplicitCasts' },
+      { value: 'calculateSimpleApply' },
       { value: 'calculateTagIndexes' },
       { value: 'calculateUniques' },
       { value: 'compactSkipEdges' },

@@ -159,6 +159,10 @@ pub enum EdgeLabel<Id> {
 }
 
 impl<Id> EdgeLabel<Id> {
+    pub fn is_assignment(&self) -> bool {
+        matches!(self, Self::Assignment { .. })
+    }
+
     pub fn is_tag(&self) -> bool {
         matches!(self, Self::Tag { .. })
     }
@@ -196,7 +200,7 @@ impl<Id: PartialEq> EdgeLabel<Id> {
 
 impl EdgeLabel<Arc<str>> {
     pub fn is_player_assignment(&self) -> bool {
-        matches!(self, Self::Assignment { lhs, .. } if matches!(lhs.uncast(), Expression::Reference { identifier } if &**identifier == "player"))
+        matches!(self, Self::Assignment { lhs, .. } if lhs.uncast().is_player_reference())
     }
 }
 
@@ -511,6 +515,12 @@ impl<Id: PartialEq> Expression<Id> {
             Self::Cast { rhs, .. } => rhs,
             _ => self,
         }
+    }
+}
+
+impl Expression<Arc<str>> {
+    pub fn is_player_reference(&self) -> bool {
+        matches!(self, Self::Reference { identifier } if &**identifier == "player")
     }
 }
 

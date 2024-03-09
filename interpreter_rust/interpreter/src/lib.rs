@@ -46,6 +46,8 @@ pub fn safe_serialize_ast(game: &Game<Arc<str>>) -> Result<String, String> {
 struct Flags {
     #[serde(rename = "addExplicitCasts")]
     add_explicit_casts: bool,
+    #[serde(rename = "calculateSimpleApply")]
+    calculate_simple_apply: bool,
     #[serde(rename = "calculateTagIndexes")]
     calculate_tag_indexes: bool,
     #[serde(rename = "calculateUniques")]
@@ -118,6 +120,7 @@ pub fn analyze_rg(
         pass!(node inline_reachability);
         pass!(rust prune_unreachable_nodes);
         pass!(rust mangle_symbols);
+        pass!(rust calculate_simple_apply);
         pass!(rust calculate_tag_indexes);
         pass!(rust calculate_uniques);
 
