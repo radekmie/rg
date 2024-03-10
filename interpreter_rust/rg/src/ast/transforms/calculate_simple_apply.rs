@@ -34,7 +34,7 @@ impl Game<Arc<str>> {
                             let mut assignments = assignments.clone();
                             if let EdgeLabel::Assignment { lhs, rhs } = &edge.label {
                                 assignments.push(edge.label.clone());
-                                if lhs.is_player_reference() {
+                                if lhs.uncast().is_player_reference() {
                                     paths_to_players
                                         .entry(rhs.clone())
                                         .or_default()

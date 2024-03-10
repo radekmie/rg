@@ -512,7 +512,7 @@ impl<Id: PartialEq> Expression<Id> {
 
     pub fn uncast(&self) -> &Self {
         match self {
-            Self::Cast { rhs, .. } => rhs,
+            Self::Cast { rhs, .. } => rhs.uncast(),
             _ => self,
         }
     }
