@@ -21,34 +21,49 @@ impl Game<Arc<str>> {
             .collect();
 
         let mut simple_apply_edge_names = BTreeSet::new();
-        for edge_name in edge_names {
-            let mut seen = BTreeSet::new();
-            let mut paths_to_players: BTreeMap<_, BTreeSet<(_, Vec<_>)>> = BTreeMap::new();
-            let mut paths_to_tags: BTreeMap<_, BTreeSet<(_, Vec<_>)>> = BTreeMap::new();
+        'outer: for edge_name in edge_names {
+            let mut paths_to_edges = BTreeMap::new();
+            let mut paths_to_players: BTreeMap<_, BTreeSet<(_, _)>> = BTreeMap::new();
+            let mut paths_to_tags: BTreeMap<_, BTreeSet<(_, _)>> = BTreeMap::new();
             let mut queue = vec![(edge_name.clone(), vec![])];
             while let Some((lhs, assignments)) = queue.pop() {
                 let maybe_edges = next_edges.get(&lhs);
-                if seen.insert(lhs) {
-                    if let Some(edges) = maybe_edges {
+
+                let mut seen = None;
+                paths_to_edges
+                    .entry(lhs)
+                    .and_modify(|existing| seen = Some(*existing == assignments))
+                    .or_insert_with(|| assignments.clone());
+
+                match seen {
+                    Some(true) => {}
+                    Some(false) => continue 'outer,
+                    None => {
+                        let Some(edges) = maybe_edges else { continue };
+
                         for edge in edges {
                             let mut assignments = assignments.clone();
-                            if let EdgeLabel::Assignment { lhs, rhs } = &edge.label {
-                                assignments.push(edge.label.clone());
-                                if lhs.uncast().is_player_reference() {
-                                    paths_to_players
-                                        .entry(rhs.clone())
+                            match &edge.label {
+                                EdgeLabel::Assignment { lhs, rhs } => {
+                                    assignments.push(edge.label.clone());
+                                    if lhs.uncast().is_player_reference() {
+                                        paths_to_players
+                                            .entry(rhs.clone())
+                                            .or_default()
+                                            .insert((edge.rhs.clone(), assignments));
+                                    } else {
+                                        queue.push((edge.rhs.clone(), assignments));
+                                    }
+                                }
+                                EdgeLabel::Tag { symbol } => {
+                                    paths_to_tags
+                                        .entry(symbol.clone())
                                         .or_default()
                                         .insert((edge.rhs.clone(), assignments));
-                                } else {
+                                }
+                                _ => {
                                     queue.push((edge.rhs.clone(), assignments));
                                 }
-                            } else if let EdgeLabel::Tag { symbol } = &edge.label {
-                                paths_to_tags
-                                    .entry(symbol.clone())
-                                    .or_default()
-                                    .insert((edge.rhs.clone(), assignments));
-                            } else {
-                                queue.push((edge.rhs.clone(), assignments));
                             }
                         }
                     }
