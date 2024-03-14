@@ -85,7 +85,7 @@ pub fn analyze_rg(
     let mut game = safe_parse_source(source)?;
     loop {
         game.check_maps()?;
-        game.check_multiple_edges()?;
+        // game.check_multiple_edges()?;
         game.check_reachabilities()?;
         game.check_types()?;
 

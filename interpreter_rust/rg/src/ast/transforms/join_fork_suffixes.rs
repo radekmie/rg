@@ -62,10 +62,9 @@ impl Game<Arc<str>> {
                         {
                             if let Some(e4) = self.has_single_incoming(&e2.lhs) {
                                 // (3)
-                                let mut maybe_e3 = self.incoming_edges(&e1.lhs).filter(|e3| {
-                                    e3.lhs.bindings().eq(e4.lhs.bindings()) && e3.lhs != e4.lhs
-                                    // This can be removed, since we now allow multi edges
-                                }); // (6)
+                                let mut maybe_e3 = self
+                                    .incoming_edges(&e1.lhs)
+                                    .filter(|e3| e3.lhs.bindings().eq(e4.lhs.bindings())); // (6)
                                 if let Some(e3) = maybe_e3.next() {
                                     to_remove.push(&e2.lhs);
                                     to_join.push((e4.clone(), e3.rhs.clone(), e2.clone()));
@@ -86,7 +85,9 @@ impl Game<Arc<str>> {
             self.remove_edge(&e4);
             self.remove_edge(&e2);
             e4.rhs = y1;
-            self.edges.push(e4);
+            if !self.edges.contains(&e4) {
+                self.edges.push(e4);
+            }
         }
         Ok(changed)
     }
@@ -178,12 +179,9 @@ mod test {
         a2, a3: 2 == 2;
         a3, a4: 3 == 3;
         a4, a5: 4 == 4;
-        begin, b0: branch1 == branch1;
-        begin, c0: branch2 == branch2;
-        begin, d0: branch3 == branch3;
-        b0, a1: 0 == 0;
-        c0, a1: 0 == 0;
-        d0, a1: 0 == 0;"
+        begin, a0: branch1 == branch1;
+        begin, a0: branch2 == branch2;
+        begin, a0: branch3 == branch3;"
     );
 
     test!(
@@ -278,7 +276,7 @@ mod test {
     );
 
     test!(
-        dont_create_multi_edges,
+        intermediate_multi_edges,
         "begin, end: ;
         1, l1: 0 == 0;
         1, r1: 0 == 0;
@@ -287,9 +285,7 @@ mod test {
         2, 3: 7 == 7;",
         "begin, end: ;
         1, l1: 0 == 0;
-        1, r1: 0 == 0;
         l1, 2: 1 == 1;
-        r1, 2: 1 == 1;
         2, 3: 7 == 7;"
     );
 
@@ -309,12 +305,11 @@ mod test {
         11, 9: 3 == 3;
         9, 12: 5 == 5;
         9, 18: 1 == 1;
-        9, 20: 2 == 2;
         18, 15: 3 == 3;
-        20, 15: 3 == 3;
         15, 12: 4 == 4;
         15, 23: ;
-        23, 12: 5 == 5;"
+        23, 12: 5 == 5;
+        9, 18: 2 == 2;"
     );
 
     test!(
@@ -332,8 +327,7 @@ mod test {
         1, 1a: 1 == 1;
         1a, 2a: 3 == 3;
         2a, 3: 4 == 4;
-        1, 1b: 2 == 2;
-        1b, 2a: 3 == 3;"
+        1, 1a: 2 == 2;"
     );
 
     test!(
