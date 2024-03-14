@@ -67,7 +67,6 @@ export async function analyzeRg(source: string, flags: Settings['flags']) {
     [
       source,
       JSON.stringify(flags),
-      '$$TRANSFORMATOR$$joinForkSuffixes' as unknown as () => unknown,
       '$$TRANSFORMATOR$$inlineReachability' as unknown as () => unknown,
     ],
     utils.noop,

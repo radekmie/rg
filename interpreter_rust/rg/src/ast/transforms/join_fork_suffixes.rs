@@ -1,0 +1,358 @@
+use std::sync::Arc;
+
+use crate::ast::{Edge, EdgeName, Error, Game};
+// Before:
+//
+//  Visual:
+//
+//    z1──(e3)─►y1──(e1)─┐
+//                       ▼
+//                       x
+//                       ▲
+//    z2──(e4)─►y2──(e2)─┘
+//
+//   Edges:
+//   - e1 from y1 to x
+//   - e2 from y2 to x
+//   - e3 from z1 to y1
+//   - e4 from z2 to y2
+//
+// After:
+//
+//  Visual:
+//
+//    z1──(e3)─┐
+//             ▼
+//             y1──(e1)─►x
+//             ▲
+//    z2──(e4)─┘
+//
+//   Edges:
+//   - e1 from y1 to x
+//   - e3 from z1 to y1
+//   - e4 from z2 to y1
+//
+// Conditions:
+//   1. y1 has no other outgoing edges
+//   2. y2 has no other outgoing edges
+//   3. y2 has no other incoming edges
+//   4. y2 is not a reachability target -- its deleted
+//   5. y1 and y2 have the same bindings
+//   6. z1 and z2 have the same bindings
+//   7. e1 and e2 have the same label
+//   8. y1 is not a reachability target -- it gains reachability paths
+
+impl Game<Arc<str>> {
+    fn to_join(&self) -> Vec<(Edge<Arc<str>>, EdgeName<Arc<str>>, Edge<Arc<str>>)> {
+        let mut to_join = vec![];
+        let mut to_remove = vec![];
+        for x in self.nodes() {
+            for e1 in self.incoming_edges(x) {
+                if self.has_single_outgoing(&e1.lhs).is_some() &&  // (1)
+                !self.is_reachability_target(&e1.lhs) && // (8)
+                !to_remove.contains(&&e1.lhs)
+                {
+                    for e2 in self.incoming_edges(x) {
+                        if e1 != e2 &&
+                            e1.label == e2.label && // (7)
+                            e1.lhs.bindings().eq(e2.lhs.bindings()) && // (5)
+                            self.has_single_outgoing(&e2.lhs).is_some() && // (2)
+                            !self.is_reachability_target(&e2.lhs)
+                        // (4)
+                        {
+                            if let Some(e4) = self.has_single_incoming(&e2.lhs) {
+                                // (3)
+                                let mut maybe_e3 = self.incoming_edges(&e1.lhs).filter(|e3| {
+                                    e3.lhs.bindings().eq(e4.lhs.bindings()) && e3.lhs != e4.lhs
+                                    // This can be removed, since we now allow multi edges
+                                }); // (6)
+                                if let Some(e3) = maybe_e3.next() {
+                                    to_remove.push(&e2.lhs);
+                                    to_join.push((e4.clone(), e3.rhs.clone(), e2.clone()));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        to_join
+    }
+
+    pub fn join_fork_suffixes(&mut self) -> Result<bool, Error<Arc<str>>> {
+        let mut changed = false;
+        for (mut e4, y1, e2) in self.to_join() {
+            changed = true;
+            self.remove_edge(&e4);
+            self.remove_edge(&e2);
+            e4.rhs = y1;
+            self.edges.push(e4);
+        }
+        Ok(changed)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::ast::Game;
+    use crate::parsing::parser::parse_with_errors;
+    use map_id::MapId;
+    use std::sync::Arc;
+
+    fn parse(input: &str) -> Game<Arc<str>> {
+        let (game, errors) = parse_with_errors(input);
+        assert!(errors.is_empty(), "Parse errors: {errors:?}");
+        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
+    }
+
+    macro_rules! test {
+        ($name:ident, $actual:expr, $expect:expr) => {
+            #[test]
+            fn $name() {
+                let mut actual = parse($actual);
+                let expect = parse($expect);
+                // Some test cases need more than one iteration to
+                while actual.join_fork_suffixes().unwrap() {}
+
+                assert_eq!(
+                    actual, expect,
+                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
+                );
+            }
+        };
+    }
+
+    test!(
+        small,
+        "begin, end: ;
+        1, l1: 1 == 1;
+        1, r1: 2 == 2;
+        l1, l2: 4 == 4;
+        l2, 2: 0 == 0;
+        r1, r2: 5 == 5;
+        r2, 2: 0 == 0;
+        2, 3: 7 == 7;",
+        "begin, end: ;
+        1, l1: 1 == 1;
+        1, r1: 2 == 2;
+        l1, l2: 4 == 4;
+        l2, 2: 0 == 0;
+        2, 3: 7 == 7;
+        r1, l2: 5 == 5;"
+    );
+
+    test!(
+        bigger,
+        "begin, a0: branch0 == branch0;
+        a5, end: 5 == 5;
+        a0, a1: 0 == 0;
+        a1, a2: 1 == 1;
+        a2, a3: 2 == 2;
+        a3, a4: 3 == 3;
+        a4, a5: 4 == 4;
+        begin, b0: branch1 == branch1;
+        b5, end: 5 == 5;
+        b0, b1: 0 == 0;
+        b1, b2: 1 == 1;
+        b2, b3: 2 == 2;
+        b3, b4: 3 == 3;
+        b4, b5: 4 == 4;
+        begin, c0: branch2 == branch2;
+        c5, end: 5 == 5;
+        c0, c1: 0 == 0;
+        c1, c2: 1 == 1;
+        c2, c3: 2 == 2;
+        c3, c4: 3 == 3;
+        c4, c5: 4 == 4;
+        begin, d0: branch3 == branch3;
+        d5, end: 5 == 5;
+        d0, d1: 0 == 0;
+        d1, d2: 1 == 1;
+        d2, d3: 2 == 2;
+        d3, d4: 3 == 3;
+        d4, d5: 4 == 4;",
+        "begin, a0: branch0 == branch0;
+        a5, end: 5 == 5;
+        a0, a1: 0 == 0;
+        a1, a2: 1 == 1;
+        a2, a3: 2 == 2;
+        a3, a4: 3 == 3;
+        a4, a5: 4 == 4;
+        begin, b0: branch1 == branch1;
+        begin, c0: branch2 == branch2;
+        begin, d0: branch3 == branch3;
+        b0, a1: 0 == 0;
+        c0, a1: 0 == 0;
+        d0, a1: 0 == 0;"
+    );
+
+    test!(
+        dont_join_multiple_outgoing,
+        "begin, end: ;
+        1, l1: 1 == 1;
+        1, r1: 2 == 2;
+        l1, l2: 4 == 4;
+        l2, 2: 0 == 0;
+        r1, r2: 5 == 5;
+        r2, 2: 0 == 0;
+        2, 3: 7 == 7;
+        l2, 4: 0 == 0;
+        r2, 4: 0 == 0;",
+        "begin, end: ;
+        1, l1: 1 == 1;
+        1, r1: 2 == 2;
+        l1, l2: 4 == 4;
+        l2, 2: 0 == 0;
+        r1, r2: 5 == 5;
+        r2, 2: 0 == 0;
+        2, 3: 7 == 7;
+        l2, 4: 0 == 0;
+        r2, 4: 0 == 0;"
+    );
+
+    test!(
+        dont_join_multiple_outgoing_single,
+        "begin, end: ;
+        1, l1: 1 == 1;
+        1, r1: 2 == 2;
+        l1, l2: 4 == 4;
+        l2, 2: 0 == 0;
+        r1, r2: 5 == 5;
+        r2, 2: 0 == 0;
+        2, 3: 7 == 7;
+        l2, 4: 0 == 0;",
+        "begin, end: ;
+        1, l1: 1 == 1;
+        1, r1: 2 == 2;
+        l1, l2: 4 == 4;
+        l2, 2: 0 == 0;
+        r1, r2: 5 == 5;
+        r2, 2: 0 == 0;
+        2, 3: 7 == 7;
+        l2, 4: 0 == 0;"
+    );
+
+    test!(
+        dont_join_multiple_incoming,
+        "begin, end: ;
+        1, l1: 1 == 1;
+        1, r1: 2 == 2;
+        l1, l2: 4 == 4;
+        l2, 2: 0 == 0;
+        r1, r2: 5 == 5;
+        r2, 2: 0 == 0;
+        2, 3: 7 == 7;
+        4, l2: 0 == 0;
+        4, r2: 0 == 0;",
+        "begin, end: ;
+        1, l1: 1 == 1;
+        1, r1: 2 == 2;
+        l1, l2: 4 == 4;
+        l2, 2: 0 == 0;
+        r1, r2: 5 == 5;
+        r2, 2: 0 == 0;
+        2, 3: 7 == 7;
+        4, l2: 0 == 0;
+        4, r2: 0 == 0;"
+    );
+
+    test!(
+        dont_join_multiple_incoming_single,
+        "begin, end: ;
+        1, l1: 1 == 1;
+        1, r1: 2 == 2;
+        l1, l2: 4 == 4;
+        l2, 2: 0 == 0;
+        r1, r2: 5 == 5;
+        r2, 2: 0 == 0;
+        2, 3: 7 == 7;
+        4, l2: 0 == 0;",
+        "begin, end: ;
+        1, l1: 1 == 1;
+        1, r1: 2 == 2;
+        l1, l2: 4 == 4;
+        l2, 2: 0 == 0;
+        2, 3: 7 == 7;
+        4, l2: 0 == 0;
+        r1, l2: 5 == 5;"
+    );
+
+    test!(
+        dont_create_multi_edges,
+        "begin, end: ;
+        1, l1: 0 == 0;
+        1, r1: 0 == 0;
+        l1, 2: 1 == 1;
+        r1, 2: 1 == 1;
+        2, 3: 7 == 7;",
+        "begin, end: ;
+        1, l1: 0 == 0;
+        1, r1: 0 == 0;
+        l1, 2: 1 == 1;
+        r1, 2: 1 == 1;
+        2, 3: 7 == 7;"
+    );
+
+    test!(
+        shape_from_breakthrough,
+        "begin, end: ;
+        11, 9: 3 == 3;
+        9, 12: 5 == 5;
+        9, 18: 1 == 1;
+        9, 20: 2 == 2;
+        18, 15: 3 == 3;
+        20, 15: 3 == 3;
+        15, 12: 4 == 4;
+        15, 23: ;
+        23, 12: 5 == 5;",
+        "begin, end: ;
+        11, 9: 3 == 3;
+        9, 12: 5 == 5;
+        9, 18: 1 == 1;
+        9, 20: 2 == 2;
+        18, 15: 3 == 3;
+        20, 15: 3 == 3;
+        15, 12: 4 == 4;
+        15, 23: ;
+        23, 12: 5 == 5;"
+    );
+
+    test!(
+        last_reachability,
+        "begin, end: ;
+        x, y: ? 1 -> 3;
+        1, 1a: 1==1;
+        1a, 2a: 3==3;
+        2a, 3: 4==4;
+        1, 1b: 2==2;
+        1b, 2b: 3==3;
+        2b, 3: 4==4;",
+        "begin, end: ;
+        x, y: ? 1 -> 3;
+        1, 1a: 1 == 1;
+        1a, 2a: 3 == 3;
+        2a, 3: 4 == 4;
+        1, 1b: 2 == 2;
+        1b, 2a: 3 == 3;"
+    );
+
+    test!(
+        dont_join_inner_reachability,
+        "begin, end: ;
+        x, y: ? 1 -> 2a;
+        1, 1a: 1==1;
+        1a, 2a: 3==3;
+        2a, 3: 4==4;
+        1, 1b: 2==2;
+        1b, 2b: 3==3;
+        2b, 3: 4==4;",
+        "begin, end: ;
+        x, y: ? 1 -> 2a;
+        1, 1a: 1 == 1;
+        1a, 2a: 3 == 3;
+        2a, 3: 4 == 4;
+        1, 1b: 2 == 2;
+        1b, 2b: 3 == 3;
+        2b, 3: 4 == 4;"
+    );
+}

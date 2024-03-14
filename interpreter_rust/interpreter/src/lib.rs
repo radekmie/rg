@@ -78,7 +78,6 @@ struct Flags {
 pub fn analyze_rg(
     source: &str,
     flags: &str,
-    join_fork_suffixes: &Function,
     inline_reachability: &Function,
 ) -> Result<Array, String> {
     let flags = from_str::<Flags>(flags).map_err(|error| error.to_string())?;
@@ -121,7 +120,7 @@ pub fn analyze_rg(
         pass!(rust compact_skip_edges);
         pass!(rust add_explicit_casts);
         pass!(rust expand_generator_nodes);
-        pass!(node join_fork_suffixes);
+        pass!(rust join_fork_suffixes);
         pass!(node inline_reachability);
         pass!(rust prune_singleton_types);
         pass!(rust prune_unreachable_nodes);
