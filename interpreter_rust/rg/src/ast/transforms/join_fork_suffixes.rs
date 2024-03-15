@@ -1,6 +1,5 @@
-use std::sync::Arc;
-
 use crate::ast::{Edge, EdgeName, Error, Game};
+use std::{collections::BTreeSet, sync::Arc};
 // Before:
 //
 //  Visual:
@@ -36,37 +35,55 @@ use crate::ast::{Edge, EdgeName, Error, Game};
 //   1. y1 has no other outgoing edges
 //   2. y2 has no other outgoing edges
 //   3. y2 has no other incoming edges
-//   4. y2 is not a reachability target -- its deleted
+//   4. y2 is not a reachability target -- it's deleted
 //   5. y1 and y2 have the same bindings
 //   6. z1 and z2 have the same bindings
 //   7. e1 and e2 have the same label
 //   8. y1 is not a reachability target -- it gains reachability paths
 
 impl Game<Arc<str>> {
+    pub fn join_fork_suffixes(&mut self) -> Result<(), Error<Arc<str>>> {
+        while self.join_fork_suffixes_step() {}
+        Ok(())
+    }
+
+    fn join_fork_suffixes_step(&mut self) -> bool {
+        let mut changed = false;
+        for (mut e4, y1, e2) in self.to_join() {
+            changed = true;
+            self.remove_edge(&e4);
+            self.remove_edge(&e2);
+            e4.rhs = y1;
+            self.add_edge(e4);
+        }
+        changed
+    }
+
     fn to_join(&self) -> Vec<(Edge<Arc<str>>, EdgeName<Arc<str>>, Edge<Arc<str>>)> {
         let mut to_join = vec![];
-        let mut to_remove = vec![];
-        for x in self.nodes() {
+        let mut to_remove = BTreeSet::new();
+        for x in self.edge_names() {
             for e1 in self.incoming_edges(x) {
-                if self.has_single_outgoing(&e1.lhs).is_some() &&  // (1)
+                if self.outgoing_edge(&e1.lhs).is_some() &&  // (1)
                 !self.is_reachability_target(&e1.lhs) && // (8)
                 !to_remove.contains(&&e1.lhs)
                 {
                     for e2 in self.incoming_edges(x) {
                         if e1 != e2 &&
                             e1.label == e2.label && // (7)
-                            e1.lhs.bindings().eq(e2.lhs.bindings()) && // (5)
-                            self.has_single_outgoing(&e2.lhs).is_some() && // (2)
+                            e1.lhs.has_equal_bindings(&e2.lhs) && // (5)
+                            self.outgoing_edge(&e2.lhs).is_some() && // (2)
                             !self.is_reachability_target(&e2.lhs)
                         // (4)
                         {
-                            if let Some(e4) = self.has_single_incoming(&e2.lhs) {
+                            if let Some(e4) = self.incoming_edge(&e2.lhs) {
                                 // (3)
-                                let mut maybe_e3 = self
+                                let maybe_e3 = self
                                     .incoming_edges(&e1.lhs)
-                                    .filter(|e3| e3.lhs.bindings().eq(e4.lhs.bindings())); // (6)
-                                if let Some(e3) = maybe_e3.next() {
-                                    to_remove.push(&e2.lhs);
+                                    .filter(|e3| e3.lhs.has_equal_bindings(&e4.lhs)) // (6)
+                                    .next();
+                                if let Some(e3) = maybe_e3 {
+                                    to_remove.insert(&e2.lhs);
                                     to_join.push((e4.clone(), e3.rhs.clone(), e2.clone()));
                                 }
                             }
@@ -76,20 +93,6 @@ impl Game<Arc<str>> {
             }
         }
         to_join
-    }
-
-    pub fn join_fork_suffixes(&mut self) -> Result<bool, Error<Arc<str>>> {
-        let mut changed = false;
-        for (mut e4, y1, e2) in self.to_join() {
-            changed = true;
-            self.remove_edge(&e4);
-            self.remove_edge(&e2);
-            e4.rhs = y1;
-            if !self.edges.contains(&e4) {
-                self.edges.push(e4);
-            }
-        }
-        Ok(changed)
     }
 }
 
@@ -112,8 +115,7 @@ mod test {
             fn $name() {
                 let mut actual = parse($actual);
                 let expect = parse($expect);
-                // Some test cases need more than one iteration to
-                while actual.join_fork_suffixes().unwrap() {}
+                actual.join_fork_suffixes().unwrap();
 
                 assert_eq!(
                     actual, expect,

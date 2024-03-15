@@ -874,6 +874,12 @@ impl<Id: Clone + PartialEq> Game<Id> {
 }
 
 impl<Id: PartialEq> Game<Id> {
+    pub fn add_edge(&mut self, edge: Edge<Id>) {
+        if !self.edges.contains(&edge) {
+            self.edges.push(edge);
+        }
+    }
+
     pub fn are_connected(&self, lhs: &EdgeName<Id>, rhs: &EdgeName<Id>) -> bool {
         self.edges
             .iter()
@@ -884,11 +890,23 @@ impl<Id: PartialEq> Game<Id> {
         self.edges.iter().any(|edge| matches!(&edge.label, EdgeLabel::Reachability { lhs, rhs, .. } if lhs == edge_name || rhs == edge_name))
     }
 
+    /// Returns the only edge ending at `edge_name` or `None` if there are multiple or no such edges.
+    pub fn incoming_edge<'a>(&'a self, edge_name: &'a EdgeName<Id>) -> Option<&'a Edge<Id>> {
+        let mut iterator = self.incoming_edges(edge_name);
+        iterator.next().filter(|_| iterator.next().is_none())
+    }
+
     pub fn incoming_edges<'a>(
         &'a self,
         edge_name: &'a EdgeName<Id>,
     ) -> impl Iterator<Item = &'a Edge<Id>> {
         self.edges.iter().filter(move |edge| &edge.rhs == edge_name)
+    }
+
+    /// Returns the only edge starting from `edge_name` or `None` if there are multiple or no such edges.
+    pub fn outgoing_edge<'a>(&'a self, edge_name: &'a EdgeName<Id>) -> Option<&'a Edge<Id>> {
+        let mut iterator = self.outgoing_edges(edge_name);
+        iterator.next().filter(|_| iterator.next().is_none())
     }
 
     pub fn outgoing_edges<'a>(
@@ -898,42 +916,17 @@ impl<Id: PartialEq> Game<Id> {
         self.edges.iter().filter(move |edge| &edge.lhs == edge_name)
     }
 
-    pub fn has_single_outgoing<'a>(&'a self, edge_name: &'a EdgeName<Id>) -> Option<&'a Edge<Id>> {
-        let mut iterator = self.outgoing_edges(edge_name);
-        let edge = iterator.next();
-        if iterator.next().is_some() {
-            return None;
-        }
-        edge
-    }
-
-    pub fn has_single_incoming<'a>(&'a self, edge_name: &'a EdgeName<Id>) -> Option<&'a Edge<Id>> {
-        let mut iterator = self.incoming_edges(edge_name);
-        let edge = iterator.next();
-        if iterator.next().is_some() {
-            return None;
-        }
-        edge
-    }
-
-    pub fn is_extension_node(&self, edge_name: &EdgeName<Id>) -> bool {
-        self.has_single_incoming(edge_name).is_some()
-            && self.has_single_outgoing(edge_name).is_some()
-    }
-
     pub fn remove_edge(&mut self, edge: &Edge<Id>) {
         self.edges.retain(|x| x != edge);
     }
 }
 
 impl<Id: Ord> Game<Id> {
-    pub fn nodes(&self) -> impl Iterator<Item = &EdgeName<Id>> {
-        let mut edge_names = BTreeSet::new();
-        self.edges.iter().for_each(|edge| {
-            edge_names.insert(&edge.lhs);
-            edge_names.insert(&edge.rhs);
-        });
-        edge_names.into_iter()
+    pub fn edge_names(&self) -> BTreeSet<&EdgeName<Id>> {
+        self.edges
+            .iter()
+            .flat_map(|edge| [&edge.lhs, &edge.rhs])
+            .collect()
     }
 }
 
