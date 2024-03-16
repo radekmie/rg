@@ -34,6 +34,10 @@ program
     '--normalizeTypes',
     'normalize all types so Arrow types appear only in type definitions and are at most one level deep',
   )
+  .option(
+    '--pruneSingletonTypes',
+    'prune singleton types (i.e., Set types with one element)',
+  )
   .option('--pruneUnreachableNodes', 'prune unreachable nodes')
   .option(
     '--reuseFunctions',
@@ -80,6 +84,7 @@ function addCommand(
           joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,
           normalizeTypes: !!options.normalizeTypes,
+          pruneSingletonTypes: !!options.pruneSingletonTypes,
           pruneUnreachableNodes: !!options.pruneUnreachableNodes,
           reuseFunctions: !!options.reuseFunctions,
           skipSelfAssignments: !!options.skipSelfAssignments,

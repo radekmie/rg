@@ -117,6 +117,10 @@ impl<Id: PartialEq> Edge<Id> {
             .chain(self.rhs.bindings())
             .find(|binding| binding.0 == identifier)
     }
+
+    pub fn has_binding(&self, identifier: &Id) -> bool {
+        self.get_binding(identifier).is_some()
+    }
 }
 
 impl Edge<Arc<str>> {
@@ -192,7 +196,43 @@ impl<Id: Clone + Ord> EdgeLabel<Id> {
     }
 }
 
+impl<Id: Clone + PartialEq> EdgeLabel<Id> {
+    pub fn remove_casts(&self, identifier: &Id) -> Self {
+        match self {
+            Self::Assignment { lhs, rhs } => Self::Assignment {
+                lhs: Arc::new(lhs.remove_casts(identifier)),
+                rhs: Arc::new(rhs.remove_casts(identifier)),
+            },
+            Self::Comparison { lhs, rhs, negated } => Self::Comparison {
+                lhs: Arc::new(lhs.remove_casts(identifier)),
+                rhs: Arc::new(rhs.remove_casts(identifier)),
+                negated: *negated,
+            },
+            _ => self.clone(),
+        }
+    }
+
+    pub fn substitute_variable(&self, id: &Id, expression: &Expression<Id>) -> Self {
+        match self {
+            Self::Assignment { lhs, rhs } => Self::Assignment {
+                lhs: Arc::new(lhs.substitute_variable(id, expression)),
+                rhs: Arc::new(rhs.substitute_variable(id, expression)),
+            },
+            Self::Comparison { lhs, rhs, negated } => Self::Comparison {
+                lhs: Arc::new(lhs.substitute_variable(id, expression)),
+                rhs: Arc::new(rhs.substitute_variable(id, expression)),
+                negated: *negated,
+            },
+            _ => self.clone(),
+        }
+    }
+}
+
 impl<Id: PartialEq> EdgeLabel<Id> {
+    pub fn has_variable(&self, identifier: &Id) -> bool {
+        matches!(self, Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } if lhs.has_variable(identifier) || rhs.has_variable(identifier))
+    }
+
     pub fn is_self_assignment(&self) -> bool {
         matches!(self, Self::Assignment { lhs, rhs } if lhs.is_equal_reference(rhs))
     }
@@ -231,12 +271,6 @@ impl<Id> EdgeName<Id> {
     }
 }
 
-impl<Id: PartialEq> EdgeName<Id> {
-    pub fn has_binding(&self, identifier: &Id) -> bool {
-        self.bindings().any(|binding| binding.0 == identifier)
-    }
-}
-
 impl<Id: Clone + Ord> EdgeName<Id> {
     pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
         Self {
@@ -247,6 +281,12 @@ impl<Id: Clone + Ord> EdgeName<Id> {
                 .map(|edge_name| edge_name.rename_variables(mapping))
                 .collect(),
         }
+    }
+}
+
+impl<Id: PartialEq> EdgeName<Id> {
+    pub fn has_binding(&self, identifier: &Id) -> bool {
+        self.bindings().any(|binding| binding.0 == identifier)
     }
 }
 
@@ -421,6 +461,13 @@ impl<Id> Expression<Id> {
     pub fn new(identifier: Id) -> Self {
         Self::Reference { identifier }
     }
+
+    pub fn uncast(&self) -> &Self {
+        match self {
+            Self::Cast { rhs, .. } => rhs.uncast(),
+            _ => self,
+        }
+    }
 }
 
 impl<Id: Clone + PartialEq> Expression<Id> {
@@ -468,6 +515,46 @@ impl<Id: Clone + PartialEq> Expression<Id> {
             Self::Reference { identifier } => Ok(game.infer(identifier, edge)),
         }
     }
+
+    pub fn remove_casts(&self, identifier: &Id) -> Self {
+        match self {
+            Self::Access { lhs, rhs, .. } => Self::Access {
+                span: Span::none(),
+                lhs: Arc::new(lhs.remove_casts(identifier)),
+                rhs: Arc::new(rhs.remove_casts(identifier)),
+            },
+            Self::Cast { lhs, rhs, .. } if lhs.is_reference(identifier) => {
+                rhs.remove_casts(identifier)
+            }
+            Self::Cast { lhs, rhs, .. } => Self::Cast {
+                lhs: lhs.clone(),
+                rhs: Arc::new(rhs.remove_casts(identifier)),
+                span: Span::none(),
+            },
+            Self::Reference { identifier } => Self::Reference {
+                identifier: identifier.clone(),
+            },
+        }
+    }
+
+    pub fn substitute_variable(&self, identifier: &Id, expression: &Self) -> Self {
+        match self {
+            Self::Access { lhs, rhs, .. } => Self::Access {
+                span: Span::none(),
+                lhs: Arc::new(lhs.substitute_variable(identifier, expression)),
+                rhs: Arc::new(rhs.substitute_variable(identifier, expression)),
+            },
+            Self::Cast { lhs, rhs, .. } => Self::Cast {
+                span: Span::none(),
+                lhs: lhs.clone(),
+                rhs: Arc::new(rhs.substitute_variable(identifier, expression)),
+            },
+            Self::Reference { identifier: x } if x == identifier => expression.clone(),
+            Self::Reference { identifier } => Self::Reference {
+                identifier: identifier.clone(),
+            },
+        }
+    }
 }
 
 impl<Id: Clone + Ord> Expression<Id> {
@@ -491,6 +578,16 @@ impl<Id: Clone + Ord> Expression<Id> {
 }
 
 impl<Id: PartialEq> Expression<Id> {
+    pub fn has_variable(&self, identifier: &Id) -> bool {
+        match self {
+            Self::Access { lhs, rhs, .. } => {
+                lhs.has_variable(identifier) || rhs.has_variable(identifier)
+            }
+            Self::Cast { rhs, .. } => rhs.has_variable(identifier),
+            Self::Reference { identifier: x } => x == identifier,
+        }
+    }
+
     pub fn is_equal_reference(&self, other: &Self) -> bool {
         match (self.uncast(), other.uncast()) {
             (
@@ -507,13 +604,6 @@ impl<Id: PartialEq> Expression<Id> {
             ) => x_lhs.is_equal_reference(y_lhs) && x_rhs.is_equal_reference(y_rhs),
             (Self::Reference { identifier: x }, Self::Reference { identifier: y }) => x == y,
             _ => false,
-        }
-    }
-
-    pub fn uncast(&self) -> &Self {
-        match self {
-            Self::Cast { rhs, .. } => rhs.uncast(),
-            _ => self,
         }
     }
 }
@@ -996,6 +1086,13 @@ pub enum Type<Id> {
 }
 
 impl<Id> Type<Id> {
+    pub fn as_singleton(&self) -> Option<&Id> {
+        match self {
+            Self::Set { identifiers, .. } if identifiers.len() == 1 => identifiers.first(),
+            _ => None,
+        }
+    }
+
     pub fn is_set(&self) -> bool {
         matches!(self, Self::Set { .. })
     }
@@ -1024,6 +1121,12 @@ impl<Id: Clone + PartialEq> Type<Id> {
                 game.resolve_typedef_or_fail(identifier)?.type_.values(game)
             }
         }
+    }
+}
+
+impl<Id: PartialEq> Type<Id> {
+    pub fn is_reference(&self, identifier: &Id) -> bool {
+        matches!(self, Self::TypeReference { identifier: x } if x == identifier)
     }
 }
 

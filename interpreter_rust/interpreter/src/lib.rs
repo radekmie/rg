@@ -64,6 +64,8 @@ struct Flags {
     mangle_symbols: bool,
     #[serde(rename = "normalizeTypes")]
     normalize_types: bool,
+    #[serde(rename = "pruneSingletonTypes")]
+    prune_singleton_types: bool,
     #[serde(rename = "pruneUnreachableNodes")]
     prune_unreachable_nodes: bool,
     #[serde(rename = "skipSelfAssignments")]
@@ -118,6 +120,7 @@ pub fn analyze_rg(
         pass!(rust expand_generator_nodes);
         pass!(node join_fork_suffixes);
         pass!(node inline_reachability);
+        pass!(rust prune_singleton_types);
         pass!(rust prune_unreachable_nodes);
         pass!(rust mangle_symbols);
         pass!(rust calculate_simple_apply);

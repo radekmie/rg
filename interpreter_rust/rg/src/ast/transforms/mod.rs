@@ -7,5 +7,6 @@ mod compact_skip_edges;
 mod expand_generator_nodes;
 mod mangle_symbols;
 mod normalize_types;
+mod prune_singleton_types;
 mod prune_unreachable_nodes;
 mod skip_self_assignments;

@@ -96,6 +96,7 @@ npm test
 | Transformation `joinForkSuffixes`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `mangleSymbols`                  | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `normalizeTypes`                 | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `pruneSingletonTypes`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `pruneUnreachableNodes`          | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `skipSelfAssignments`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 
@@ -167,6 +168,7 @@ Options:
   --joinForkSuffixes       join paths with identical labels leading to the same node
   --mangleSymbols          mangle all user-defined symbols
   --normalizeTypes         normalize all types so Arrow types appear only in type definitions and are at most one level deep
+  --pruneSingletonTypes    prune singleton types (i.e., Set types with one element)
   --pruneUnreachableNodes  prune unused nodes
   --reuseFunctions         reuse subautomatons when translating function calls (.hrg only)
   --skipSelfAssignments    replaces all self assignments (e.g., `x = x`) with skip edges
