@@ -70,6 +70,8 @@ struct Flags {
     prune_unreachable_nodes: bool,
     #[serde(rename = "skipSelfAssignments")]
     skip_self_assignments: bool,
+    #[serde(rename = "skipSelfComparisons")]
+    skip_self_comparisons: bool,
 }
 
 #[wasm_bindgen(js_name = analyzeRg)]
@@ -115,6 +117,7 @@ pub fn analyze_rg(
 
         pass!(rust normalize_types);
         pass!(rust skip_self_assignments);
+        pass!(rust skip_self_comparisons);
         pass!(rust compact_skip_edges);
         pass!(rust add_explicit_casts);
         pass!(rust expand_generator_nodes);

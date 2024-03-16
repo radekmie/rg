@@ -82,6 +82,7 @@ export function Settings({
       { value: 'pruneUnreachableNodes' },
       { value: 'reuseFunctions', disabled: !isHrg },
       { value: 'skipSelfAssignments' },
+      { value: 'skipSelfComparisons' },
     ],
     [isHrg],
   );

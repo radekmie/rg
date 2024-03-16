@@ -236,6 +236,10 @@ impl<Id: PartialEq> EdgeLabel<Id> {
     pub fn is_self_assignment(&self) -> bool {
         matches!(self, Self::Assignment { lhs, rhs } if lhs.is_equal_reference(rhs))
     }
+
+    pub fn is_self_comparison(&self) -> bool {
+        matches!(self, Self::Comparison { lhs, rhs, .. } if lhs.is_equal_reference(rhs))
+    }
 }
 
 impl EdgeLabel<Arc<str>> {

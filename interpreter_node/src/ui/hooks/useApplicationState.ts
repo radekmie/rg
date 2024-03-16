@@ -39,6 +39,7 @@ const initialState: State = {
       compactSkipEdges: true,
       reuseFunctions: true,
       skipSelfAssignments: true,
+      skipSelfComparisons: true,
     },
   },
   source: initialPreset.source,

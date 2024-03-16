@@ -10,3 +10,4 @@ mod normalize_types;
 mod prune_singleton_types;
 mod prune_unreachable_nodes;
 mod skip_self_assignments;
+mod skip_self_comparisons;

@@ -24,6 +24,7 @@ export type Settings = {
     pruneUnreachableNodes: boolean;
     reuseFunctions: boolean;
     skipSelfAssignments: boolean;
+    skipSelfComparisons: boolean;
   };
 };
 
@@ -42,4 +43,5 @@ export const noFlagsEnabled: Settings['flags'] = {
   pruneUnreachableNodes: false,
   reuseFunctions: false,
   skipSelfAssignments: false,
+  skipSelfComparisons: false,
 };

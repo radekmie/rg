@@ -99,6 +99,7 @@ npm test
 | Transformation `pruneSingletonTypes`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `pruneUnreachableNodes`          | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `skipSelfAssignments`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `skipSelfComparisons`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 
 ## `interpreter_rust`
 
@@ -172,6 +173,7 @@ Options:
   --pruneUnreachableNodes  prune unused nodes
   --reuseFunctions         reuse subautomatons when translating function calls (.hrg only)
   --skipSelfAssignments    replaces all self assignments (e.g., `x = x`) with skip edges
+  --skipSelfComparisons    replaces all self comparisons (e.g., `x == x`) with skip edges
   -h, --help               display help for command
 
 Commands:
