@@ -5,6 +5,7 @@ mod calculate_tag_indexes;
 mod calculate_uniques;
 mod compact_skip_edges;
 mod expand_generator_nodes;
+mod join_fork_suffixes;
 mod mangle_symbols;
 mod normalize_types;
 mod prune_singleton_types;

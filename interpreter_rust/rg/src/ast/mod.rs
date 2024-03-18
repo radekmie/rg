@@ -6,7 +6,7 @@ use crate::position::Span;
 use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Display;
 use std::sync::Arc;
 
@@ -275,6 +275,16 @@ impl<Id> EdgeName<Id> {
     }
 }
 
+impl<Id: PartialEq> EdgeName<Id> {
+    pub fn has_binding(&self, identifier: &Id) -> bool {
+        self.bindings().any(|binding| binding.0 == identifier)
+    }
+
+    pub fn has_equal_bindings(&self, other: &Self) -> bool {
+        self.bindings().eq(other.bindings())
+    }
+}
+
 impl<Id: Clone + Ord> EdgeName<Id> {
     pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
         Self {
@@ -285,12 +295,6 @@ impl<Id: Clone + Ord> EdgeName<Id> {
                 .map(|edge_name| edge_name.rename_variables(mapping))
                 .collect(),
         }
-    }
-}
-
-impl<Id: PartialEq> EdgeName<Id> {
-    pub fn has_binding(&self, identifier: &Id) -> bool {
-        self.bindings().any(|binding| binding.0 == identifier)
     }
 }
 
@@ -870,6 +874,12 @@ impl<Id: Clone + PartialEq> Game<Id> {
 }
 
 impl<Id: PartialEq> Game<Id> {
+    pub fn add_edge(&mut self, edge: Edge<Id>) {
+        if !self.edges.contains(&edge) {
+            self.edges.push(edge);
+        }
+    }
+
     pub fn are_connected(&self, lhs: &EdgeName<Id>, rhs: &EdgeName<Id>) -> bool {
         self.edges
             .iter()
@@ -880,6 +890,12 @@ impl<Id: PartialEq> Game<Id> {
         self.edges.iter().any(|edge| matches!(&edge.label, EdgeLabel::Reachability { lhs, rhs, .. } if lhs == edge_name || rhs == edge_name))
     }
 
+    /// Returns the only edge ending at `edge_name` or `None` if there are multiple or no such edges.
+    pub fn incoming_edge<'a>(&'a self, edge_name: &'a EdgeName<Id>) -> Option<&'a Edge<Id>> {
+        let mut iterator = self.incoming_edges(edge_name);
+        iterator.next().filter(|_| iterator.next().is_none())
+    }
+
     pub fn incoming_edges<'a>(
         &'a self,
         edge_name: &'a EdgeName<Id>,
@@ -887,11 +903,30 @@ impl<Id: PartialEq> Game<Id> {
         self.edges.iter().filter(move |edge| &edge.rhs == edge_name)
     }
 
+    /// Returns the only edge starting from `edge_name` or `None` if there are multiple or no such edges.
+    pub fn outgoing_edge<'a>(&'a self, edge_name: &'a EdgeName<Id>) -> Option<&'a Edge<Id>> {
+        let mut iterator = self.outgoing_edges(edge_name);
+        iterator.next().filter(|_| iterator.next().is_none())
+    }
+
     pub fn outgoing_edges<'a>(
         &'a self,
         edge_name: &'a EdgeName<Id>,
     ) -> impl Iterator<Item = &'a Edge<Id>> {
         self.edges.iter().filter(move |edge| &edge.lhs == edge_name)
+    }
+
+    pub fn remove_edge(&mut self, edge: &Edge<Id>) {
+        self.edges.retain(|x| x != edge);
+    }
+}
+
+impl<Id: Ord> Game<Id> {
+    pub fn edge_names(&self) -> BTreeSet<&EdgeName<Id>> {
+        self.edges
+            .iter()
+            .flat_map(|edge| [&edge.lhs, &edge.rhs])
+            .collect()
     }
 }
 

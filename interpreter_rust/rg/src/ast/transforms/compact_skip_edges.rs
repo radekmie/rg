@@ -39,7 +39,6 @@ impl Game<Arc<str>> {
     ///   3. b has no other incoming nor outgoing edges
     ///   4. b has no bindings
     ///   5. b is not a reachability target
-    ///   6. there's no other edge between a and c (multiedges are not allowed)
     fn compact_skip_edge_backward(&self) -> Option<(usize, usize)> {
         for (y_index, y) in self.edges.iter().enumerate() {
             if y.label.is_skip()
@@ -50,7 +49,6 @@ impl Game<Arc<str>> {
                 for (x_index, x) in self.edges.iter().enumerate() {
                     if x.rhs == y.lhs
                         && (!y.rhs.has_bindings() || !x.label.is_player_assignment())
-                        && !self.are_connected(&x.lhs, &y.rhs)
                         && self.incoming_edges(&y.lhs).all(|z| z == x)
                     {
                         return Some((x_index, y_index));
@@ -379,13 +377,10 @@ mod test {
         ",
         "
             begin, end: ? a -> e;
-            begin, bar: ! a -> e;
-            bar, end: ;
-
-            a, b: ;
+            begin, end: ! a -> e;
+            
+            a, e: 1 == 1;
             b, e: 1 == 1;
-            b, d: 1 == 1;
-            d, e: ;
         "
     );
 
