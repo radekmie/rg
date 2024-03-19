@@ -162,6 +162,12 @@ pub enum EdgeLabel<Id> {
     },
 }
 
+impl<Id> Default for EdgeLabel<Id> {
+    fn default() -> Self {
+        Self::Skip { span: Span::none() }
+    }
+}
+
 impl<Id> EdgeLabel<Id> {
     pub fn is_assignment(&self) -> bool {
         matches!(self, Self::Assignment { .. })

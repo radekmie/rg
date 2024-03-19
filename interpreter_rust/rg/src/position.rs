@@ -21,7 +21,7 @@ impl Position {
         Self { line, column }
     }
 
-    pub fn none() -> Self {
+    pub const fn none() -> Self {
         Self { line: 0, column: 0 }
     }
 
@@ -104,7 +104,7 @@ impl Span {
         Self { start, end }
     }
 
-    pub fn none() -> Self {
+    pub const fn none() -> Self {
         Self {
             start: Position::none(),
             end: Position::none(),
