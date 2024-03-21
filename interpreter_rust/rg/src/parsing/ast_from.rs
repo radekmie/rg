@@ -2,7 +2,7 @@ use crate::ast::{
     Constant, Edge, Expression, Identifier, Label, Node, NodePart, Type, Typedef, Value,
     ValueEntry, Variable,
 };
-use crate::parsing::parser::Input;
+use utils::parser::Input;
 use std::sync::Arc;
 use utils::position::{Positioned, Span};
 

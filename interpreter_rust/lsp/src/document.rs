@@ -1,7 +1,7 @@
 use crate::rg::symbol_table::SymbolTable;
 use rg::ast::{Game, Identifier};
 use rg::parsing::parser::parse_with_errors;
-use utils::parsing::error::Error;
+use utils::error::Error;
 
 pub struct Document {
     pub game: Game<Identifier>,

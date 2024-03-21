@@ -1,3 +1,4 @@
+pub mod error;
 pub mod interner;
-pub mod parsing;
+pub mod parser;
 pub mod position;

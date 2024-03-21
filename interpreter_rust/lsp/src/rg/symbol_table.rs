@@ -1,7 +1,7 @@
 use super::symbol::{from_game, Flag, Symbol};
 use rg::ast::{Edge, Expression, Game, Identifier, Label, Node, NodePart, Type, Value, ValueEntry};
 use std::fmt::{Display, Formatter, Result};
-use utils::parsing::error::Error;
+use utils::error::Error;
 use utils::position::{Position, Positioned, Span};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

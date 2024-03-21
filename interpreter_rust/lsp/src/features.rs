@@ -10,7 +10,7 @@ use tower_lsp::lsp_types::{
     WorkspaceEdit,
 };
 use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
-use utils::parsing::error::Error;
+use utils::error::Error;
 use utils::position::Positioned;
 
 #[allow(deprecated)]
