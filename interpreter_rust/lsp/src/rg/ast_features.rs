@@ -1,7 +1,7 @@
 use crate::rg::statement::Statement;
 use crate::rg::symbol::{Flag, Symbol};
 use rg::ast::{Game, Identifier};
-use rg::position::{Position, Positioned, Span};
+use utils::position::{Position, Positioned, Span};
 
 pub trait AstFeatures {
     fn find_stat(&self, predicate: impl Fn(&&dyn Statement) -> bool) -> Option<&dyn Statement>;

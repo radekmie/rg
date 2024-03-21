@@ -3,8 +3,6 @@ use crate::rg::ast_features::hover_signature;
 use crate::rg::symbol_table::SymbolTable;
 use crate::utils::ToRgPosition;
 use rg::ast::{Game, Identifier};
-use rg::parsing::error::Error;
-use rg::position::Positioned;
 use std::collections::HashMap;
 use tower_lsp::lsp_types::{
     Diagnostic, DiagnosticSeverity, DocumentHighlight, GotoDefinitionResponse, Hover,
@@ -12,6 +10,8 @@ use tower_lsp::lsp_types::{
     WorkspaceEdit,
 };
 use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
+use utils::parsing::error::Error;
+use utils::position::Positioned;
 
 #[allow(deprecated)]
 pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<DocumentSymbolResponse> {

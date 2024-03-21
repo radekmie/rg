@@ -1,7 +1,7 @@
 use map_id::MapId;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
-use utils::Interner;
+use utils::interner::Interner;
 
 type Id = Arc<str>;
 
@@ -39,7 +39,7 @@ pub fn gdl_to_rg(gdl: &gdl::ast::Game<&str>) -> rg::ast::Game<Id> {
 fn add_common_typedefs(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use gdl::ast::{AtomOrVariable, Term};
     use rg::ast::{Type, Typedef};
-    use rg::position::Span;
+    use utils::position::Span;
 
     let roles = gdl
         .0
@@ -80,7 +80,7 @@ fn add_common_typedefs(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 fn add_does_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use gdl::ast::{AtomOrVariable, Term};
     use rg::ast::{Type, Typedef, Value, Variable};
-    use rg::position::Span;
+    use utils::position::Span;
 
     let mut role_actions: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
     for term in gdl.subterms() {
@@ -115,7 +115,7 @@ fn add_does_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 fn add_fact_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use gdl::ast::{AtomOrVariable, Term};
     use rg::ast::{Type, Value, Variable};
-    use rg::position::Span;
+    use utils::position::Span;
 
     let mut inits = BTreeSet::new();
     for term in gdl.subterms() {
@@ -156,7 +156,7 @@ fn add_fact_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use gdl::ast::{AtomOrVariable, Term};
     use rg::ast::{Edge, Expression, Label, Node};
-    use rg::position::Span;
+    use utils::position::Span;
 
     rg.edges.push(Edge {
         span: Span::none(),
@@ -286,7 +286,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use gdl::ast::{AtomOrVariable, Term};
     use rg::ast::{Edge, Expression, Label, Node};
-    use rg::position::Span;
+    use utils::position::Span;
 
     rg.edges.push(Edge {
         span: Span::none(),
@@ -397,7 +397,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use gdl::ast::Term;
     use rg::ast::{Edge, Label, Node};
-    use rg::position::Span;
+    use utils::position::Span;
 
     rg.edges.push(Edge {
         span: Span::none(),
@@ -428,7 +428,7 @@ fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use gdl::ast::{AtomOrVariable, Rule, Term};
     use rg::ast::{Edge, Expression, Label, Node};
-    use rg::position::Span;
+    use utils::position::Span;
 
     rg.edges.push(Edge {
         span: Span::none(),
@@ -512,7 +512,7 @@ fn connect(
     negated: bool,
 ) {
     use rg::ast::{Edge, Expression, Label, Node};
-    use rg::position::Span;
+    use utils::position::Span;
 
     let hash = hash_term(goal);
     let lhs = Node::new(Id::from(format!("__{hash}_begin")));
@@ -590,7 +590,7 @@ fn connect_one(
 ) -> rg::ast::Label<Id> {
     use gdl::ast::{AtomOrVariable, Term};
     use rg::ast::{Expression, Label, Node};
-    use rg::position::Span;
+    use utils::position::Span;
 
     match predicate.term.as_ref() {
         Term::Custom(_, _) => {

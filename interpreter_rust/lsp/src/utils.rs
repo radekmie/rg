@@ -1,6 +1,6 @@
 use crate::rg::symbol::Flag;
-use rg::position::{Position, Span};
 use tower_lsp::lsp_types::{Location, Position as LspPosition, Range, SymbolKind, Url};
+use utils::position::{Position, Span};
 
 // https://microsoft.github.io/monaco-editor/typedoc/enums/languages.SymbolKind.html
 impl From<&Flag> for SymbolKind {

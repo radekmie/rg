@@ -1,11 +1,11 @@
 use super::utils::ToLspRange;
 use rg::ast::{Game, Identifier};
-use rg::position::{Positioned, Span};
 use std::collections::HashMap;
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionKind, CodeActionOrCommand, CodeActionResponse, TextEdit, Url,
     WorkspaceEdit,
 };
+use utils::position::{Positioned, Span};
 
 pub fn provide(
     uri: &Url,

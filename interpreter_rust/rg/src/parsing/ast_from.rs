@@ -3,8 +3,8 @@ use crate::ast::{
     ValueEntry, Variable,
 };
 use crate::parsing::parser::Input;
-use crate::position::{Positioned, Span};
 use std::sync::Arc;
+use utils::position::{Positioned, Span};
 
 impl<Id: Positioned> From<(Input<'_>, (Id, Arc<Type<Id>>, Arc<Value<Id>>), Span)> for Constant<Id> {
     fn from(

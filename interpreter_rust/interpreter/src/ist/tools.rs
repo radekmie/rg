@@ -7,7 +7,7 @@ use rand::Rng;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 use std::sync::Arc;
-use utils::Interner;
+use utils::interner::Interner;
 
 pub type ISTInterner = Interner<Arc<str>, RuntimeId>;
 

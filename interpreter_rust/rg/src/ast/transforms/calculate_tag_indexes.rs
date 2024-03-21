@@ -1,7 +1,7 @@
 use crate::ast::{Edge, Error, Game, Pragma};
-use crate::position::Span;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
+use utils::position::Span;
 
 impl Game<Arc<str>> {
     pub fn calculate_tag_indexes(&mut self) -> Result<(), Error<Arc<str>>> {

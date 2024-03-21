@@ -4,12 +4,12 @@ use crate::rg::symbol::Flag;
 use crate::rg::symbol_table::SymbolTable;
 use crate::utils::ToLspPosition;
 use rg::ast::{Game, Identifier};
-use rg::position::Positioned;
 use tower_lsp::lsp_types::{
     Position as LspPosition, SemanticToken, SemanticTokenModifier, SemanticTokenType,
     SemanticTokensLegend, SemanticTokensOptions, SemanticTokensServerCapabilities,
     WorkDoneProgressOptions,
 };
+use utils::position::Positioned;
 
 pub fn capabilities() -> SemanticTokensServerCapabilities {
     SemanticTokensServerCapabilities::SemanticTokensOptions(SemanticTokensOptions {

@@ -2,13 +2,13 @@ mod display;
 mod transforms;
 mod validators;
 
-use crate::position::Span;
 use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Display;
 use std::sync::Arc;
+use utils::position::Span;
 
 #[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Identifier {

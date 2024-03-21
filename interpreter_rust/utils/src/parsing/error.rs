@@ -1,5 +1,4 @@
-use crate::ast::Identifier;
-use crate::position::{Positioned, Span};
+use crate::position::Span;
 use std::fmt::Display;
 
 #[derive(Debug, Clone)]
@@ -24,10 +23,10 @@ impl Error {
         }
     }
 
-    pub fn symbol_table_error(identifier: &Identifier) -> Self {
+    pub fn symbol_table_error(identifier: &str, span: &Span) -> Self {
         Self {
-            span: identifier.span(),
-            message: format!("Unknown identifier: {}", identifier.identifier),
+            span: *span,
+            message: format!("Unknown identifier: {}", identifier),
             kind: ErrorKind::UnknownIdentifier,
         }
     }

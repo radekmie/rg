@@ -1,7 +1,7 @@
 use rg::ast::{Edge, Game, Identifier, NodePart, Type};
-use rg::position::{Positioned, Span};
 use std::collections::HashSet;
 use std::fmt::Display;
+use utils::position::{Positioned, Span};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Symbol {

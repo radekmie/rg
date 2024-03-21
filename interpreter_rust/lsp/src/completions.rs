@@ -2,11 +2,11 @@ use crate::rg::ast_features::AstFeatures;
 use crate::rg::symbol::{Flag, Symbol};
 use crate::rg::symbol_table::SymbolTable;
 use rg::ast::{Game, Identifier};
-use rg::position::Position;
 use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, CompletionItemLabelDetails, CompletionOptions,
     CompletionOptionsCompletionItem, CompletionResponse, WorkDoneProgressOptions,
 };
+use utils::position::Position;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompletionKind {
@@ -152,7 +152,8 @@ impl From<Flag> for CompletionItemKind {
 
 #[cfg(test)]
 mod test {
-    use rg::{parsing::parser::parse_with_errors, position::Position};
+    use rg::parsing::parser::parse_with_errors;
+    use utils::position::Position;
 
     use crate::rg::ast_features::AstFeatures;
 

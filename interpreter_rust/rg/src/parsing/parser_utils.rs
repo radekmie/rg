@@ -1,7 +1,5 @@
-use super::error::Error;
 use super::parser::{Input, Result};
 use crate::ast::{Expression, Identifier};
-use crate::position::{Position, Span};
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_till, take_while, take_while1};
 use nom::character::complete::{anychar, digit1, multispace1};
@@ -10,6 +8,8 @@ use nom::multi::fold_many0;
 use nom::sequence::preceded;
 use std::fmt::Display;
 use std::sync::Arc;
+use utils::parsing::error::Error;
+use utils::position::{Position, Span};
 
 pub fn parse_error_line(input: Input) -> Result<()> {
     let error_pos = Span::at(&input);

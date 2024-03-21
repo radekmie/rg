@@ -243,6 +243,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7dfda62a12f55daeae5015f81b0baea145391cb4520f86c248fc615d72640d12"
 
 [[package]]
+name = "hrg"
+version = "0.1.0"
+dependencies = [
+ "nom",
+ "nom_locate",
+ "rand",
+ "serde",
+ "utils",
+]
+
+[[package]]
 name = "httparse"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -328,6 +339,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tower-lsp",
+ "utils",
 ]
 
 [[package]]
@@ -812,6 +824,13 @@ dependencies = [
 [[package]]
 name = "utils"
 version = "0.1.0"
+dependencies = [
+ "map_id",
+ "nom",
+ "nom_locate",
+ "rand",
+ "serde",
+]
 
 [[package]]
 name = "version_check"

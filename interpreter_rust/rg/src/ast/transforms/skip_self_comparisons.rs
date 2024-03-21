@@ -1,5 +1,5 @@
 use crate::ast::{Error, Game, Label};
-use crate::position::Span;
+use utils::position::Span;
 
 impl<Id: PartialEq> Game<Id> {
     pub fn skip_self_comparisons(&mut self) -> Result<(), Error<Id>> {

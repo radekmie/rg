@@ -1,4 +1,3 @@
-use super::error::Error;
 use super::parser_utils::{
     arc_expression, comments_and_whitespaces, expect, expect_preceded_tag, identifier, integer,
     into_arc, parse_error_line, preceded_opt_id, preceded_tag, preceded_whitespace, with_semicolon,
@@ -7,7 +6,6 @@ use crate::ast::{
     Constant, Edge, Expression, Game, Identifier, Label, Node, NodePart, Pragma, Type, Typedef,
     Value, ValueEntry, Variable,
 };
-use crate::position::{Position, Positioned, Span};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
@@ -20,6 +18,8 @@ use nom_locate::LocatedSpan;
 use std::cell::RefCell;
 use std::fmt::Debug;
 use std::sync::Arc;
+use utils::parsing::error::Error;
+use utils::position::{Position, Positioned, Span};
 
 #[derive(Clone, Debug)]
 pub struct State<'a>(&'a RefCell<Vec<Error>>);

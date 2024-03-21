@@ -1,8 +1,8 @@
 use super::symbol::{from_game, Flag, Symbol};
 use rg::ast::{Edge, Expression, Game, Identifier, Label, Node, NodePart, Type, Value, ValueEntry};
-use rg::parsing::error::Error;
-use rg::position::{Position, Positioned, Span};
 use std::fmt::{Display, Formatter, Result};
+use utils::parsing::error::Error;
+use utils::position::{Position, Positioned, Span};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Occurrence {
@@ -118,7 +118,10 @@ impl SymbolTableWithErrors {
         if !identifier.is_none() {
             let occ = self.occ_from_id(identifier);
             if occ.symbol.is_none() {
-                self.errors.push(Error::symbol_table_error(identifier));
+                self.errors.push(Error::symbol_table_error(
+                    &identifier.identifier,
+                    &identifier.span,
+                ));
             } else {
                 self.occurrences.push(occ);
             }
@@ -129,7 +132,10 @@ impl SymbolTableWithErrors {
         if !identifier.is_none() {
             let occ = self.occ_with_flag(identifier, flag);
             if occ.symbol.is_none() {
-                self.errors.push(Error::symbol_table_error(identifier));
+                self.errors.push(Error::symbol_table_error(
+                    &identifier.identifier,
+                    &identifier.span,
+                ));
             } else {
                 self.occurrences.push(occ);
             }
@@ -146,7 +152,10 @@ impl SymbolTableWithErrors {
             let span = identifier.span();
             let symbol_idx = self.find_symbol(&identifier.identifier, &Some(flag), owner);
             if symbol_idx.is_none() {
-                self.errors.push(Error::symbol_table_error(identifier));
+                self.errors.push(Error::symbol_table_error(
+                    &identifier.identifier,
+                    &identifier.span,
+                ));
             } else {
                 self.occurrences.push(Occurrence::new(span, symbol_idx));
             }
@@ -191,7 +200,10 @@ impl SymbolTableWithErrors {
             if sym_idx.is_some() {
                 self.occurrences.push(Occurrence::new(span, sym_idx));
             } else if create_error {
-                self.errors.push(Error::symbol_table_error(identifier));
+                self.errors.push(Error::symbol_table_error(
+                    &identifier.identifier,
+                    &identifier.span,
+                ));
             }
         }
     }

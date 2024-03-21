@@ -2,7 +2,6 @@ use crate::ast::{
     Constant, Edge, Error, ErrorReason, Expression, Game, Identifier, Label, Node, NodePart,
     Pragma, Type, Typedef, Value, ValueEntry, Variable,
 };
-use crate::position::{Position, Span};
 use std::fmt::{Display, Formatter, Result};
 
 impl<Id: Display> Display for Constant<Id> {
@@ -212,13 +211,6 @@ impl Display for Identifier {
     }
 }
 
-impl Display for Position {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let Self { line, column } = self;
-        write!(f, "{line}:{column}")
-    }
-}
-
 impl<Id: Display> Display for Pragma<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
@@ -263,17 +255,6 @@ impl<Id: Display> Display for Pragma<Id> {
                 nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, ";")
             }
-        }
-    }
-}
-
-impl Display for Span {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let Self { start, end } = self;
-        if start == end {
-            write!(f, "({start})")
-        } else {
-            write!(f, "({start}, {end})")
         }
     }
 }
