@@ -376,8 +376,8 @@ describe('--expandGeneratorNodes', () => {
     await expect(run(['a(y: T2), b(x: T1)(y: T2): T4(x) == T4(y);'])).resolves
       .toMatchInlineSnapshot(`
       "a__bind__3, b__bind__1__bind__3: T4(1) == T4(3);
-      a__bind__3, b__bind__2__bind__3: T4(2) == T4(3);
       a__bind__4, b__bind__1__bind__4: T4(1) == T4(4);
+      a__bind__3, b__bind__2__bind__3: T4(2) == T4(3);
       a__bind__4, b__bind__2__bind__4: T4(2) == T4(4);"
     `);
   });
@@ -499,16 +499,18 @@ describe('--inlineReachability', () => {
     ).resolves.toMatchInlineSnapshot(`
       "x, __gen_1_reachability_a_d: ;
       a, __gen_4_reachability_e_f: ;
-      a, c: ! e -> f;
+      a, __gen_5_reachability_e_f: ;
       b, d: ;
       c, d: ;
       e, f: ;
-      __gen_1_reachability_a_d, __gen_5_reachability_e_f: ;
-      __gen_1_reachability_a_d, __gen_3_c: ! e -> f;
+      __gen_1_reachability_a_d, __gen_6_reachability_e_f: ;
+      __gen_1_reachability_a_d, __gen_7_reachability_e_f: ;
       __gen_3_c, y: ;
       __gen_2_b, y: ;
       __gen_4_reachability_e_f, b: ;
-      __gen_5_reachability_e_f, __gen_2_b: ;"
+      __gen_5_reachability_e_f, c: ;
+      __gen_6_reachability_e_f, __gen_2_b: ;
+      __gen_7_reachability_e_f, __gen_3_c: ;"
     `);
   });
 

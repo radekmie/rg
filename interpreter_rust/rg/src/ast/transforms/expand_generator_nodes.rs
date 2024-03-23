@@ -3,38 +3,28 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn expand_generator_nodes(&mut self) -> Result<(), Error<Arc<str>>> {
-        for index in (0..self.edges.len()).rev() {
-            let mappings = self.create_mappings(self.edges[index].bindings())?;
-            if !mappings.is_empty() {
-                for mapping in &mappings {
-                    self.edges
-                        .push(self.edges[index].substitute_bindings(mapping));
-                }
-
-                self.edges.remove(index);
-            }
-        }
-
-        // TODO: It does NOT handle the case there singular `edge_name` contains
-        // bindings (only happens in `Disjoint` and `DisjointExhaustive`).
-        for index in (0..self.pragmas.len()).rev() {
-            let mappings = self.create_mappings(self.pragmas[index].bindings())?;
-            if !mappings.is_empty() {
-                for mapping in &mappings {
-                    let edge_names = self.pragmas[index].edge_names_ref_mut();
-                    for index in (0..edge_names.len()).rev() {
-                        let edge_name = edge_names[index].substitute_bindings(mapping);
-                        if !edge_names.contains(&edge_name) {
-                            edge_names.insert(index, edge_name);
-                        }
+        macro_rules! expand {
+            ($ident:ident) => {
+                for index in (0..self.$ident.len()).rev() {
+                    let bindings = self.$ident[index].bindings();
+                    if bindings.is_empty() {
+                        continue;
                     }
-                }
 
-                self.pragmas[index]
-                    .edge_names_ref_mut()
-                    .retain(|edge_name| !edge_name.has_bindings());
-            }
+                    let mappings = self.create_mappings(bindings.into_iter())?;
+                    let item = self.$ident.remove(index);
+                    self.$ident.splice(
+                        index..index,
+                        mappings
+                            .into_iter()
+                            .map(|mapping| item.substitute_bindings(&mapping)),
+                    );
+                }
+            };
         }
+
+        expand!(edges);
+        expand!(pragmas);
 
         Ok(())
     }
@@ -78,12 +68,12 @@ mod test {
     test!(
         pragma1,
         "type T = { a, b }; @unique x(t: T);",
-        "type T = { a, b }; @unique x__bind__a x__bind__b;"
+        "type T = { a, b }; @unique x__bind__a; @unique x__bind__b;"
     );
 
     test!(
         pragma2,
         "type T = { a, b }; @unique y(t1: T)(t2: T);",
-        "type T = { a, b }; @unique y__bind__a__bind__a y__bind__a__bind__b y__bind__b__bind__a y__bind__b__bind__b;"
+        "type T = { a, b }; @unique y__bind__a__bind__a; @unique y__bind__a__bind__b; @unique y__bind__b__bind__a; @unique y__bind__b__bind__b;"
     );
 }

@@ -5,14 +5,7 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn calculate_tag_indexes(&mut self) -> Result<(), Error<Arc<str>>> {
-        let next_edges: BTreeMap<_, BTreeSet<_>> =
-            self.edges
-                .iter()
-                .fold(BTreeMap::new(), |mut next_edges, edge| {
-                    next_edges.entry(&edge.lhs).or_default().insert(edge);
-                    next_edges
-                });
-
+        let next_edges = self.next_edges();
         let mut tag_indexes: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
         for Edge { label, rhs, .. } in &self.edges {
             if label.is_player_assignment() {
@@ -24,7 +17,7 @@ impl Game<Arc<str>> {
                         if let Some(edges) = maybe_edges {
                             for edge in edges {
                                 if edge.label.is_tag() {
-                                    let indexes = tag_indexes.entry(lhs).or_default();
+                                    let indexes = tag_indexes.entry(lhs.clone()).or_default();
                                     match indexes.iter().max() {
                                         None => {
                                             indexes.insert(index);
@@ -70,7 +63,7 @@ impl Game<Arc<str>> {
 
                 if let Some(index) = maybe_index {
                     let edge_names = groups.entry(index).or_default();
-                    let index = edge_names.partition_point(|x| x < edge_name);
+                    let index = edge_names.partition_point(|x| *x < edge_name);
                     edge_names.insert(index, edge_name.clone());
                 }
 

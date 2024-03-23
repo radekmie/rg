@@ -1,5 +1,6 @@
 use crate::ast::{Edge, EdgeName, Error, Game};
-use std::{collections::BTreeSet, sync::Arc};
+use std::collections::BTreeSet;
+
 // Before:
 //
 //  Visual:
@@ -41,8 +42,8 @@ use std::{collections::BTreeSet, sync::Arc};
 //   7. e1 and e2 have the same label
 //   8. y1 is not a reachability target -- it gains reachability paths
 
-impl Game<Arc<str>> {
-    pub fn join_fork_suffixes(&mut self) -> Result<(), Error<Arc<str>>> {
+impl<Id: Clone + Ord> Game<Id> {
+    pub fn join_fork_suffixes(&mut self) -> Result<(), Error<Id>> {
         while self.join_fork_suffixes_step() {}
         Ok(())
     }
@@ -59,36 +60,54 @@ impl Game<Arc<str>> {
         changed
     }
 
-    fn to_join(&self) -> Vec<(Edge<Arc<str>>, EdgeName<Arc<str>>, Edge<Arc<str>>)> {
+    fn to_join(&self) -> Vec<(Edge<Id>, EdgeName<Id>, Edge<Id>)> {
+        let prev_edges = self.prev_edges();
+
         let mut to_join = vec![];
         let mut to_remove = BTreeSet::new();
         for x in self.edge_names() {
-            for e1 in self.incoming_edges(x) {
-                if self.outgoing_edge(&e1.lhs).is_some() &&  // (1)
-                !self.is_reachability_target(&e1.lhs) && // (8)
-                !to_remove.contains(&&e1.lhs)
+            for e1 in prev_edges.get(x).into_iter().flat_map(|x| x.iter()) {
+                if to_remove.contains(&&e1.lhs)
+                    // (1)
+                    || self.outgoing_edge(&e1.lhs).is_none()
+                    // (8)
+                    || self.is_reachability_target(&e1.lhs)
                 {
-                    for e2 in self.incoming_edges(x) {
-                        if e1 != e2 &&
-                            e1.label == e2.label && // (7)
-                            e1.lhs.has_equal_bindings(&e2.lhs) && // (5)
-                            self.outgoing_edge(&e2.lhs).is_some() && // (2)
-                            !self.is_reachability_target(&e2.lhs)
+                    continue;
+                }
+
+                for e2 in prev_edges.get(x).into_iter().flat_map(|x| x.iter()) {
+                    if e1 == e2
+                        // (7)
+                        || e1.label != e2.label
+                        // (5)
+                        || !e1.lhs.has_equal_bindings(&e2.lhs)
+                        // (2)
+                        || self.outgoing_edge(&e2.lhs).is_none()
                         // (4)
-                        {
-                            if let Some(e4) = self.incoming_edge(&e2.lhs) {
-                                // (3)
-                                let maybe_e3 = self
-                                    .incoming_edges(&e1.lhs)
-                                    .filter(|e3| e3.lhs.has_equal_bindings(&e4.lhs)) // (6)
-                                    .next();
-                                if let Some(e3) = maybe_e3 {
-                                    to_remove.insert(&e2.lhs);
-                                    to_join.push((e4.clone(), e3.rhs.clone(), e2.clone()));
-                                }
-                            }
-                        }
+                        || self.is_reachability_target(&e2.lhs)
+                    {
+                        continue;
                     }
+
+                    // (3)
+                    let mut iterator = prev_edges.get(&e2.lhs).into_iter().flat_map(|x| x.iter());
+                    let Some(e4) = iterator.next().filter(|_| iterator.next().is_none()) else {
+                        continue;
+                    };
+
+                    let Some(e3) = prev_edges
+                        .get(&e1.lhs)
+                        .into_iter()
+                        .flat_map(|x| x.iter())
+                        // (6)
+                        .find(|e3| e3.lhs.has_equal_bindings(&e4.lhs))
+                    else {
+                        continue;
+                    };
+
+                    to_remove.insert(&e2.lhs);
+                    to_join.push(((*e4).clone(), e3.rhs.clone(), (*e2).clone()));
                 }
             }
         }

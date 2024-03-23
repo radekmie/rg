@@ -5,14 +5,7 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn calculate_simple_apply(&mut self) -> Result<(), Error<Arc<str>>> {
-        let next_edges: BTreeMap<_, BTreeSet<_>> =
-            self.edges
-                .iter()
-                .fold(BTreeMap::new(), |mut next_edges, edge| {
-                    next_edges.entry(&edge.lhs).or_default().insert(edge);
-                    next_edges
-                });
-
+        let next_edges = self.next_edges();
         let edge_names: BTreeSet<_> = self
             .edges
             .iter()

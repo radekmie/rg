@@ -94,23 +94,13 @@ impl<Id: Clone + Ord> Edge<Id> {
     }
 }
 
-impl<Id: PartialEq> Edge<Id> {
-    pub fn bindings(&self) -> impl Iterator<Item = Binding<Id>> {
-        self.rhs
-            .bindings()
-            .fold(
-                self.lhs.bindings().collect::<Vec<_>>(),
-                |mut bindings, binding| {
-                    if !bindings.contains(&binding) {
-                        bindings.push(binding);
-                    }
-
-                    bindings
-                },
-            )
-            .into_iter()
+impl<Id: Ord> Edge<Id> {
+    pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
+        self.lhs.bindings().chain(self.rhs.bindings()).collect()
     }
+}
 
+impl<Id: PartialEq> Edge<Id> {
     pub fn get_binding(&self, identifier: &Id) -> Option<Binding<Id>> {
         self.lhs
             .bindings()
@@ -879,6 +869,33 @@ impl<Id: Clone + PartialEq> Game<Id> {
     }
 }
 
+impl<Id: Ord> Game<Id> {
+    pub fn edge_names(&self) -> BTreeSet<&EdgeName<Id>> {
+        self.edges
+            .iter()
+            .flat_map(|edge| [&edge.lhs, &edge.rhs])
+            .collect()
+    }
+
+    pub fn next_edges(&self) -> BTreeMap<&EdgeName<Id>, BTreeSet<&Edge<Id>>> {
+        self.edges
+            .iter()
+            .fold(BTreeMap::new(), |mut next_edges, edge| {
+                next_edges.entry(&edge.lhs).or_default().insert(edge);
+                next_edges
+            })
+    }
+
+    pub fn prev_edges(&self) -> BTreeMap<&EdgeName<Id>, BTreeSet<&Edge<Id>>> {
+        self.edges
+            .iter()
+            .fold(BTreeMap::new(), |mut prev_edges, edge| {
+                prev_edges.entry(&edge.rhs).or_default().insert(edge);
+                prev_edges
+            })
+    }
+}
+
 impl<Id: PartialEq> Game<Id> {
     pub fn add_edge(&mut self, edge: Edge<Id>) {
         if !self.edges.contains(&edge) {
@@ -924,15 +941,6 @@ impl<Id: PartialEq> Game<Id> {
 
     pub fn remove_edge(&mut self, edge: &Edge<Id>) {
         self.edges.retain(|x| x != edge);
-    }
-}
-
-impl<Id: Ord> Game<Id> {
-    pub fn edge_names(&self) -> BTreeSet<&EdgeName<Id>> {
-        self.edges
-            .iter()
-            .flat_map(|edge| [&edge.lhs, &edge.rhs])
-            .collect()
     }
 }
 
@@ -1025,10 +1033,9 @@ impl<Id> Pragma<Id> {
     }
 }
 
-impl<Id: PartialEq> Pragma<Id> {
-    pub fn bindings(&self) -> impl Iterator<Item = Binding<Id>> {
-        // TODO: Should we deduplicate those?
-        self.edge_names().flat_map(EdgeName::bindings)
+impl<Id: Ord> Pragma<Id> {
+    pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
+        self.edge_names().flat_map(EdgeName::bindings).collect()
     }
 }
 
