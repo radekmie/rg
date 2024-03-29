@@ -2,8 +2,8 @@ use crate::ast::{
     Constant, Edge, Expression, Identifier, Label, Node, NodePart, Type, Typedef, Value,
     ValueEntry, Variable,
 };
-use utils::parser::Input;
 use std::sync::Arc;
+use utils::parser::Input;
 use utils::position::{Positioned, Span};
 
 impl<Id: Positioned> From<(Input<'_>, (Id, Arc<Type<Id>>, Arc<Value<Id>>), Span)> for Constant<Id> {

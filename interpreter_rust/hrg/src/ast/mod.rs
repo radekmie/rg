@@ -1,15 +1,36 @@
+mod display;
+
 use std::sync::Arc;
 use utils::position::Span;
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Default)]
 pub struct Identifier {
     pub span: Span,
     pub identifier: String,
 }
 
+impl Identifier {
+    pub fn new(span: Span, identifier: String) -> Self {
+        Self { span, identifier }
+    }
+
+    pub fn none(span: Span) -> Self {
+        Self {
+            span,
+            identifier: String::from("<none>"),
+        }
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.identifier == "<none>"
+    }
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Statement<Id> {
     Assignment {
         identifier: Id,
-        accessiors: Vec<Arc<Expression<Id>>>,
+        accessors: Vec<Arc<Expression<Id>>>,
         expression: Arc<Expression<Id>>,
     },
     Branch {
@@ -21,12 +42,7 @@ pub enum Statement<Id> {
     },
     Forall {
         identifier: Id,
-        tpe: Type<Id>,
-        body: Vec<Statement<Id>>,
-    },
-    Function {
-        name: Id,
-        args: Vec<FunctionArg<Id>>,
+        type_: Arc<Type<Id>>,
         body: Vec<Statement<Id>>,
     },
     Loop {
@@ -36,7 +52,7 @@ pub enum Statement<Id> {
         identifier: Id,
     },
     Tag {
-        symbol: String,
+        symbol: Id,
     },
     When {
         condition: Arc<Expression<Id>>,
@@ -48,36 +64,58 @@ pub enum Statement<Id> {
     },
 }
 
-pub struct FunctionArg<Id> {
-    pub identifier: Id,
-    pub tpe: Arc<Type<Id>>,
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct Function<Id> {
+    pub name: Id,
+    pub args: Vec<FunctionArg<Id>>,
+    pub body: Vec<Statement<Id>>,
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct FunctionArg<Id> {
+    pub identifier: Id,
+    pub type_: Arc<Type<Id>>,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct FunctionDeclaration<Id> {
+    pub identifier: Id,
+    pub type_: Arc<Type<Id>>,
+    pub cases: Vec<FunctionCase<Id>>,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct FunctionCase<Id> {
+    // pub identifier: Id,
+    pub args: Vec<Arc<Pattern<Id>>>,
+    pub body: Arc<Expression<Id>>,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct DomainDeclaration<Id> {
     pub identifier: Id,
     pub elements: Vec<DomainElement<Id>>,
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DomainElement<Id> {
     Generator {
         identifier: Id,
-        args: Vec<String>,
+        args: Vec<Id>,
         values: Vec<DomainValue<Id>>,
     },
+    Literal {
+        identifier: Id,
+    },
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DomainValue<Id> {
-    Range {
-        identifier: Id,
-        min: String,
-        max: String,
-    },
-    Set {
-        identifier: Id,
-        values: Vec<String>,
-    },
+    Range { identifier: Id, min: Id, max: Id },
+    Set { identifier: Id, values: Vec<Id> },
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Binop {
     Add,
     And,
@@ -91,6 +129,7 @@ pub enum Binop {
     Sub,
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Expression<Id> {
     Access {
         lhs: Arc<Expression<Id>>,
@@ -109,16 +148,13 @@ pub enum Expression<Id> {
         identifier: Id,
         args: Vec<Arc<Expression<Id>>>,
     },
-    Identifier {
-        identifier: Id,
-    },
     If {
         condition: Arc<Expression<Id>>,
         then: Arc<Expression<Id>>,
         else_: Arc<Expression<Id>>,
     },
     Literal {
-        identifier: String,
+        identifier: Id,
     },
     Map {
         pattern: Arc<Pattern<Id>>,
@@ -127,6 +163,7 @@ pub enum Expression<Id> {
     },
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Pattern<Id> {
     Constructor {
         identifier: Id,
@@ -141,11 +178,13 @@ pub enum Pattern<Id> {
     Wildcard,
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct TypeDeclaration<Id> {
     pub identifier: Id,
-    pub tpe: Type<Id>,
+    pub type_: Arc<Type<Id>>,
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Type<Id> {
     Function {
         lhs: Arc<Type<Id>>,
@@ -156,6 +195,7 @@ pub enum Type<Id> {
     },
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Value<Id> {
     ValueConstructor {
         identifier: Id,
@@ -169,13 +209,24 @@ pub enum Value<Id> {
     },
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ValueMapEntry<Id> {
     pub key: Arc<Value<Id>>,
     pub value: Arc<Value<Id>>,
 }
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct VariableDeclaration<Id> {
     pub identifier: Id,
-    pub tpe: Type<Id>,
+    pub type_: Arc<Type<Id>>,
     pub default_value: Option<Arc<Expression<Id>>>,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Default)]
+pub struct GameDeclaration<Id> {
+    pub automaton: Vec<Function<Id>>,
+    pub domains: Vec<DomainDeclaration<Id>>,
+    pub functions: Vec<FunctionDeclaration<Id>>,
+    pub variables: Vec<VariableDeclaration<Id>>,
+    pub types: Vec<TypeDeclaration<Id>>,
 }

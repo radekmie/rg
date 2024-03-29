@@ -2,11 +2,12 @@ use crate::error::Error;
 use crate::position::Span;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_till, take_while, take_while1};
+use nom::character::complete::char;
 use nom::character::complete::{anychar, digit1, multispace1};
 use nom::combinator::{cut, into, map, map_res, opt, verify};
 
-use nom::multi::fold_many0;
-use nom::sequence::preceded;
+use nom::multi::{fold_many0, separated_list0};
+use nom::sequence::{delimited, preceded};
 use nom::IResult;
 use nom_locate::LocatedSpan;
 use std::cell::RefCell;
@@ -113,4 +114,40 @@ pub fn identifier_(input: Input) -> Result<Input> {
 
 pub fn integer(input: Input) -> Result<usize> {
     map_res(digit1, |digits: Input| digits.parse())(input)
+}
+
+pub fn ww<'a, O>(inner: impl FnMut(Input<'a>) -> Result<O>) -> impl FnMut(Input<'a>) -> Result<O> {
+    delimited(comments_and_whitespaces, inner, comments_and_whitespaces)
+}
+
+pub fn ww_tag<'a>(str: &'a str) -> impl FnMut(Input<'a>) -> Result<Input> {
+    ww(tag(str))
+}
+
+pub fn ww_char<'a>(c: char) -> impl FnMut(Input<'a>) -> Result<char> {
+    ww(char(c))
+}
+
+pub fn in_braces<'a, O>(
+    inner: impl FnMut(Input<'a>) -> Result<O>,
+) -> impl FnMut(Input<'a>) -> Result<O> {
+    delimited(ww_char('{'), inner, ww_char('}'))
+}
+
+pub fn in_parens<'a, O>(
+    inner: impl FnMut(Input<'a>) -> Result<O>,
+) -> impl FnMut(Input<'a>) -> Result<O> {
+    delimited(ww_char('('), inner, ww_char(')'))
+}
+
+pub fn in_brackets<'a, O>(
+    inner: impl FnMut(Input<'a>) -> Result<O>,
+) -> impl FnMut(Input<'a>) -> Result<O> {
+    delimited(ww_char('['), inner, ww_char(']'))
+}
+
+pub fn comma_separated<'a, O>(
+    inner: impl FnMut(Input<'a>) -> Result<O>,
+) -> impl FnMut(Input<'a>) -> Result<Vec<O>> {
+    separated_list0(ww_char(','), inner)
 }
