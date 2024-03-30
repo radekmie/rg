@@ -1,5 +1,5 @@
-use crate::error::Error;
 use crate::position::Span;
+use crate::Error;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_till, take_while, take_while1};
 use nom::character::complete::char;

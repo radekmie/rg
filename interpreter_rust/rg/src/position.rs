@@ -1,5 +1,5 @@
 use crate::ast::{
-    Constant, Edge, Expression, Identifier, Label, Node, NodePart, Pragma, Type, Typedef, Value,
+    Constant, Edge, Expression, Label, Node, NodePart, Pragma, Type, Typedef, Value,
     ValueEntry, Variable,
 };
 use utils::position::{Positioned, Span};
@@ -49,12 +49,6 @@ impl<Id: Positioned> Positioned for Expression<Id> {
             Self::Access { span, .. } | Self::Cast { span, .. } => *span,
             Self::Reference { identifier } => identifier.span(),
         }
-    }
-}
-
-impl Positioned for Identifier {
-    fn span(&self) -> Span {
-        self.span
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::ast::{
-    Constant, Edge, Error, ErrorReason, Expression, Game, Identifier, Label, Node, NodePart,
+    Constant, Edge, Error, ErrorReason, Expression, Game, Label, Node, NodePart,
     Pragma, Type, Typedef, Value, ValueEntry, Variable,
 };
 use std::fmt::{Display, Formatter, Result};
@@ -201,13 +201,6 @@ impl<Id: Display> Display for Game<Id> {
             writeln!(f, "{edge}")?;
         }
         Ok(())
-    }
-}
-
-impl Display for Identifier {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        let Self { identifier, .. } = self;
-        write!(f, "{identifier}")
     }
 }
 

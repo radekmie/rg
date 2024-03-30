@@ -1,30 +1,6 @@
 mod display;
 
 use std::sync::Arc;
-use utils::position::Span;
-
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Default)]
-pub struct Identifier {
-    pub span: Span,
-    pub identifier: String,
-}
-
-impl Identifier {
-    pub fn new(span: Span, identifier: String) -> Self {
-        Self { span, identifier }
-    }
-
-    pub fn none(span: Span) -> Self {
-        Self {
-            span,
-            identifier: String::from("<none>"),
-        }
-    }
-
-    pub fn is_none(&self) -> bool {
-        self.identifier == "<none>"
-    }
-}
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Statement<Id> {

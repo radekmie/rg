@@ -1,6 +1,6 @@
 use crate::ast::{
     Binop, DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg,
-    FunctionDeclaration, GameDeclaration, Identifier, Pattern, Statement, Type, TypeDeclaration,
+    FunctionDeclaration, GameDeclaration, Pattern, Statement, Type, TypeDeclaration,
     VariableDeclaration,
 };
 use nom::branch::alt;
@@ -12,12 +12,13 @@ use nom::multi::{fold_many0, many0, many1, separated_list0};
 use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
 use std::cell::RefCell;
 use std::sync::Arc;
-use utils::error::Error;
 use utils::parser::{
     comma_separated, comments_and_whitespaces, identifier_, in_braces, in_brackets, in_parens,
     into_arc, parse_error_line, ww, ww_char, ww_tag, Input, Result, State,
 };
 use utils::position::Span;
+use utils::Error;
+use utils::Identifier;
 
 pub fn arc_expression(expression: Expression<Identifier>) -> Arc<Expression<Identifier>> {
     Arc::new(expression)

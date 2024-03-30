@@ -1,8 +1,8 @@
-use super::utils::ToLspRange;
+use super::common::utils::ToLspRange;
+use crate::common::symbol_table::SymbolTable;
+use crate::common::utils::ToPosition;
+use crate::document::AST;
 use crate::rg::ast_features::hover_signature;
-use crate::rg::symbol_table::SymbolTable;
-use crate::utils::ToRgPosition;
-use rg::ast::{Game, Identifier};
 use std::collections::HashMap;
 use tower_lsp::lsp_types::{
     Diagnostic, DiagnosticSeverity, DocumentHighlight, GotoDefinitionResponse, Hover,
@@ -10,8 +10,8 @@ use tower_lsp::lsp_types::{
     WorkspaceEdit,
 };
 use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
-use utils::error::Error;
 use utils::position::Positioned;
+use utils::Error;
 
 #[allow(deprecated)]
 pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<DocumentSymbolResponse> {
@@ -133,21 +133,22 @@ pub fn diagnostics(errors: &[Error]) -> Vec<Diagnostic> {
         .collect()
 }
 
-pub fn hover(
-    position: Position,
-    symbol_table: &SymbolTable,
-    game: &Game<Identifier>,
-) -> Option<Hover> {
-    let occ = symbol_table.get_occ_at(&position.to_rg())?;
-    let pos = &occ.pos;
-    let enclosing_symbol = symbol_table.get_occ_symbol(occ)?;
-    let str = hover_signature(game, enclosing_symbol)?;
-    let contents = HoverContents::Array(vec![MarkedString::from_language_code(
-        "rg".to_string(),
-        str,
-    )]);
-    Some(Hover {
-        contents,
-        range: Some(pos.to_lsp()),
-    })
+pub fn hover(position: Position, symbol_table: &SymbolTable, game: &AST) -> Option<Hover> {
+    match game {
+        AST::RG(game) => {
+            let occ = symbol_table.get_occ_at(&position.to_rg())?;
+            let pos = &occ.pos;
+            let enclosing_symbol = symbol_table.get_occ_symbol(occ)?;
+            let str = hover_signature(game, enclosing_symbol)?;
+            let contents = HoverContents::Array(vec![MarkedString::from_language_code(
+                "rg".to_string(),
+                str,
+            )]);
+            Some(Hover {
+                contents,
+                range: Some(pos.to_lsp()),
+            })
+        }
+        AST::HRG(_) => None,
+    }
 }

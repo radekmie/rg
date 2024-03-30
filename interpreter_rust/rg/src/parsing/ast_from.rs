@@ -1,10 +1,11 @@
 use crate::ast::{
-    Constant, Edge, Expression, Identifier, Label, Node, NodePart, Type, Typedef, Value,
+    Constant, Edge, Expression, Label, Node, NodePart, Type, Typedef, Value,
     ValueEntry, Variable,
 };
 use std::sync::Arc;
 use utils::parser::Input;
 use utils::position::{Positioned, Span};
+use utils::Identifier;
 
 impl<Id: Positioned> From<(Input<'_>, (Id, Arc<Type<Id>>, Arc<Value<Id>>), Span)> for Constant<Id> {
     fn from(
@@ -113,12 +114,6 @@ impl<Id: Positioned> From<(Input<'_>, Id, Arc<Type<Id>>, Input<'_>)> for NodePar
 impl<Id> From<Id> for NodePart<Id> {
     fn from(identifier: Id) -> Self {
         Self::Literal { identifier }
-    }
-}
-
-impl From<Input<'_>> for Identifier {
-    fn from(value: Input) -> Self {
-        Self::new(Span::from(&value), (*value.fragment()).to_string())
     }
 }
 

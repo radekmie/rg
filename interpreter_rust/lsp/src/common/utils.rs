@@ -1,4 +1,4 @@
-use crate::rg::symbol::Flag;
+use super::symbol::Flag;
 use tower_lsp::lsp_types::{Location, Position as LspPosition, Range, SymbolKind, Url};
 use utils::position::{Position, Span};
 
@@ -30,11 +30,11 @@ pub trait ToLspPosition {
     fn to_lsp(&self) -> LspPosition;
 }
 
-pub trait ToRgSpan {
+pub trait ToSpan {
     fn to_rg(&self) -> Span;
 }
 
-pub trait ToRgPosition {
+pub trait ToPosition {
     fn to_rg(&self) -> Position;
 }
 
@@ -60,7 +60,7 @@ impl ToLspPosition for Position {
     }
 }
 
-impl ToRgPosition for LspPosition {
+impl ToPosition for LspPosition {
     fn to_rg(&self) -> Position {
         Position {
             line: (self.line + 1) as usize,
@@ -69,7 +69,7 @@ impl ToRgPosition for LspPosition {
     }
 }
 
-impl ToRgSpan for Range {
+impl ToSpan for Range {
     fn to_rg(&self) -> Span {
         Span {
             start: self.start.to_rg(),

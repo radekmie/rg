@@ -1,5 +1,5 @@
 use crate::ast::{
-    Constant, Edge, Expression, Game, Identifier, Label, Node, NodePart, Pragma, Type, Typedef,
+    Constant, Edge, Expression, Game, Label, Node, NodePart, Pragma, Type, Typedef,
     Value, ValueEntry, Variable,
 };
 use nom::branch::alt;
@@ -11,12 +11,12 @@ use nom::multi::{fold_many0, many0, many1, separated_list0};
 use nom::sequence::{pair, preceded, separated_pair, terminated, tuple};
 use std::cell::RefCell;
 use std::sync::Arc;
-use utils::error::Error;
 use utils::parser::{
     comments_and_whitespaces, expect, expect_preceded_tag, identifier_, integer, into_arc,
     parse_error_line, preceded_tag, preceded_whitespace, with_semicolon, Input, Result, State,
 };
 use utils::position::{Position, Positioned, Span};
+use utils::{Error, Identifier};
 
 pub fn arc_expression(expression: Expression<Identifier>) -> Arc<Expression<Identifier>> {
     Arc::new(expression)

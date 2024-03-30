@@ -334,6 +334,7 @@ name = "lsp"
 version = "0.1.0"
 dependencies = [
  "dashmap",
+ "hrg",
  "rand",
  "rg",
  "serde",

@@ -1,12 +1,17 @@
-use crate::rg::ast_features::AstFeatures;
-use crate::rg::symbol::{Flag, Symbol};
-use crate::rg::symbol_table::SymbolTable;
-use rg::ast::{Game, Identifier};
+use crate::{
+    common::{
+        symbol::{Flag, Symbol},
+        symbol_table::SymbolTable,
+    },
+    document::AST,
+    rg::ast_features::AstFeatures,
+};
+use rg::ast::Game;
 use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, CompletionItemLabelDetails, CompletionOptions,
     CompletionOptionsCompletionItem, CompletionResponse, WorkDoneProgressOptions,
 };
-use utils::position::Position;
+use utils::{position::Position, Identifier};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompletionKind {
@@ -49,14 +54,19 @@ pub fn capabilities() -> CompletionOptions {
 
 pub fn completions(
     pos: Position,
-    game: &Game<Identifier>,
+    game: &AST,
     symbol_table: &SymbolTable,
 ) -> Option<CompletionResponse> {
-    let items = completion_items(pos, game, symbol_table);
-    if items.is_empty() {
-        None
-    } else {
-        Some(CompletionResponse::Array(items))
+    match game {
+        AST::RG(game) => {
+            let items = completion_items(pos, game, symbol_table);
+            if items.is_empty() {
+                None
+            } else {
+                Some(CompletionResponse::Array(items))
+            }
+        }
+        AST::HRG(_) => None,
     }
 }
 

@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter, Result};
 
 use super::{
     Binop, DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg,
-    FunctionDeclaration, GameDeclaration, Identifier, Pattern, Statement, Type, TypeDeclaration,
+    FunctionDeclaration, GameDeclaration, Pattern, Statement, Type, TypeDeclaration,
     VariableDeclaration,
 };
 
@@ -15,12 +15,6 @@ fn join<T: Display>(f: &mut Formatter<'_>, items: &Vec<T>, separator: &str) -> R
         }
     }
     Ok(())
-}
-
-impl Display for Identifier {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{}", self.identifier)
-    }
 }
 
 impl<Id: Display> Display for Statement<Id> {

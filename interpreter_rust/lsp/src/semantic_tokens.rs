@@ -1,15 +1,16 @@
-use crate::document::Document;
+use crate::common::symbol_table::SymbolTable;
+use crate::common::utils::ToLspPosition;
+use crate::document::AST;
 use crate::rg::ast_features::AstFeatures;
-use crate::rg::symbol::Flag;
-use crate::rg::symbol_table::SymbolTable;
-use crate::utils::ToLspPosition;
-use rg::ast::{Game, Identifier};
+use crate::{common::symbol::Flag, document::Document};
+use rg::ast::Game;
 use tower_lsp::lsp_types::{
     Position as LspPosition, SemanticToken, SemanticTokenModifier, SemanticTokenType,
     SemanticTokensLegend, SemanticTokensOptions, SemanticTokensServerCapabilities,
     WorkDoneProgressOptions,
 };
 use utils::position::Positioned;
+use utils::Identifier;
 
 pub fn capabilities() -> SemanticTokensServerCapabilities {
     SemanticTokensServerCapabilities::SemanticTokensOptions(SemanticTokensOptions {
@@ -89,7 +90,10 @@ impl Delta {
 }
 
 pub fn semantic_tokens_full(document: &Document) -> Vec<SemanticToken> {
-    let keywords = ast_tokens(&document.game);
+    let keywords = match &document.tree {
+        AST::RG(game) => ast_tokens(game),
+        AST::HRG(_) => vec![],
+    };
     let symbols = symbol_table_tokens(&document.symbol_table);
     let mut tokens = [&keywords[..], &symbols[..]].concat();
     tokens.sort_by_key(|t| t.pos);

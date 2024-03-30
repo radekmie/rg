@@ -1,6 +1,6 @@
 use super::document::Document;
 use super::{code_actions, completions, features, semantic_tokens};
-use crate::utils::{ToRgPosition, ToRgSpan};
+use crate::common::utils::{ToPosition, ToSpan};
 use dashmap::DashMap;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::{
@@ -160,7 +160,7 @@ impl LanguageServer for Backend {
         self.with_document_positioned(
             &params.text_document_position_params,
             |_, position, document| {
-                features::hover(position, &document.symbol_table, &document.game)
+                features::hover(position, &document.symbol_table, &document.tree)
             },
         )
     }
@@ -170,7 +170,7 @@ impl LanguageServer for Backend {
             code_actions::provide(
                 uri,
                 &params.range.to_rg(),
-                &document.game,
+                &document.tree,
                 document.text.as_str(),
             )
         })
@@ -178,7 +178,7 @@ impl LanguageServer for Backend {
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
         self.with_document_positioned(&params.text_document_position, |_, position, document| {
-            completions::completions(position.to_rg(), &document.game, &document.symbol_table)
+            completions::completions(position.to_rg(), &document.tree, &document.symbol_table)
         })
     }
 }
@@ -208,7 +208,7 @@ impl Backend {
     }
 
     fn add_document(&self, uri: &Url, text: String) -> Vec<Diagnostic> {
-        let (document, errors) = Document::new(text);
+        let (document, errors) = Document::new(uri, text);
         self.document_map.insert(uri.to_string(), document);
         features::diagnostics(&errors)
     }

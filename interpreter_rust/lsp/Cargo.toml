@@ -6,6 +6,7 @@ edition = "2021"
 
 [dependencies]
 dashmap = "5.5.3"
+hrg = { path = "../hrg" }
 rand = "0.8.5"
 rg = { path = "../rg" }
 serde = { version = "1.0.152", features = ["derive", "rc"] }
