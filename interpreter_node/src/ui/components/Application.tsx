@@ -25,9 +25,7 @@ export function Application() {
 
   const view = Math.min(viewSelected, (game.value?.steps.length ?? 1) - 1);
   let content: ReactNode;
-  if (game.loading) {
-    content = <Loader />;
-  } else if (game.error) {
+  if (game.error) {
     content = <PrettyPrint value={game.error} />;
   } else if (game.value) {
     const step = game.value.steps[view];
@@ -52,7 +50,7 @@ export function Application() {
         break;
     }
   } else {
-    content = null;
+    content = <Loader />;
   }
 
   return (
