@@ -1,10 +1,10 @@
-use crate::ast::{Edge, EdgeLabel, Error, ErrorReason, Expression, Game, Type};
+use crate::ast::{Edge, EdgeLabel, Error, ErrorReason, Expression, Game, Type, Typedef};
 use crate::position::Span;
 use std::mem::{replace, take};
 use std::sync::Arc;
 
 impl<Id: Clone + PartialEq> Edge<Id> {
-    pub fn add_explicit_casts(&mut self, game: &Game<Id>) -> Result<(), Error<Id>> {
+    fn add_explicit_casts(&mut self, game: &Game<Id>) -> Result<(), Error<Id>> {
         let mut label = take(&mut self.label);
         label.add_explicit_casts(game, Some(self))?;
         self.label = label;
@@ -13,15 +13,17 @@ impl<Id: Clone + PartialEq> Edge<Id> {
 }
 
 impl<Id: Clone + PartialEq> EdgeLabel<Id> {
-    pub fn add_explicit_casts(
+    fn add_explicit_casts(
         &mut self,
         game: &Game<Id>,
         edge: Option<&Edge<Id>>,
     ) -> Result<(), Error<Id>> {
         if let Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } = self {
             let type_ = &lhs.infer(game, edge)?;
-            Arc::make_mut(lhs).add_explicit_casts(game, edge, type_)?;
-            Arc::make_mut(rhs).add_explicit_casts(game, edge, type_)?;
+            if let Some(Typedef { identifier, .. }) = game.resolve_type_or_fail(type_)? {
+                Arc::make_mut(lhs).add_explicit_casts_typedef(game, edge, identifier, None)?;
+                Arc::make_mut(rhs).add_explicit_casts_typedef(game, edge, identifier, None)?;
+            }
         }
 
         Ok(())
@@ -29,21 +31,25 @@ impl<Id: Clone + PartialEq> EdgeLabel<Id> {
 }
 
 impl<Id: Clone + PartialEq> Expression<Id> {
-    pub fn add_explicit_casts(
+    fn add_explicit_casts_type(
         &mut self,
         game: &Game<Id>,
         edge: Option<&Edge<Id>>,
         type_: &Type<Id>,
     ) -> Result<(), Error<Id>> {
-        self.add_explicit_casts_inner(game, edge, type_, None)
+        if let Some(Typedef { identifier, .. }) = game.resolve_type_or_fail(type_)? {
+            self.add_explicit_casts_typedef(game, edge, identifier, None)?;
+        }
+
+        Ok(())
     }
 
-    fn add_explicit_casts_inner(
+    fn add_explicit_casts_typedef(
         &mut self,
         game: &Game<Id>,
         edge: Option<&Edge<Id>>,
-        type_: &Type<Id>,
-        cast: Option<&Arc<Type<Id>>>,
+        cast_as: &Id,
+        cast_to: Option<&Arc<Type<Id>>>,
     ) -> Result<(), Error<Id>> {
         match self {
             Self::Access { lhs, rhs, .. } => {
@@ -52,27 +58,23 @@ impl<Id: Clone + PartialEq> Expression<Id> {
                     return game.make_error(ErrorReason::ArrowTypeExpected { got: lhs_type });
                 };
 
-                Arc::make_mut(lhs).add_explicit_casts_inner(game, edge, &lhs_type, None)?;
-                Arc::make_mut(rhs).add_explicit_casts_inner(game, edge, key_type, None)?;
+                Arc::make_mut(lhs).add_explicit_casts_type(game, edge, &lhs_type)?;
+                Arc::make_mut(rhs).add_explicit_casts_type(game, edge, key_type)?;
             }
             Self::Cast { lhs, rhs, .. } => {
-                Arc::make_mut(rhs).add_explicit_casts_inner(game, edge, type_, Some(lhs))?;
+                let cast_to = Some(&*lhs).filter(|type_| type_.is_reference(cast_as));
+                Arc::make_mut(rhs).add_explicit_casts_typedef(game, edge, cast_as, cast_to)?;
             }
             Self::Reference { .. } => {}
         }
 
-        if !cast.is_some_and(|cast| *type_ == **cast) {
-            if let Some(typedef) = game.resolve_type_or_fail(type_)? {
-                let identifier = &typedef.identifier;
-                if !matches!(self, Self::Cast { lhs, .. } if lhs.is_reference(identifier)) {
-                    let identifier = identifier.clone();
-                    *self = Self::Cast {
-                        span: Span::none(),
-                        lhs: Arc::new(typedef.to_type()),
-                        rhs: Arc::new(replace(self, Self::Reference { identifier })),
-                    };
-                }
-            }
+        if cast_to.is_none() && !self.is_cast_and(|lhs, _| lhs.is_reference(cast_as)) {
+            let identifier = cast_as.clone();
+            *self = Self::Cast {
+                span: Span::none(),
+                lhs: Arc::new(Type::from(cast_as.clone())),
+                rhs: Arc::new(replace(self, Self::Reference { identifier })),
+            };
         }
 
         Ok(())

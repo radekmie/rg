@@ -466,6 +466,10 @@ impl<Id> Expression<Id> {
         Self::Reference { identifier }
     }
 
+    pub fn is_cast_and(&self, fn_: impl FnOnce(&Arc<Type<Id>>, &Arc<Self>) -> bool) -> bool {
+        matches!(self, Self::Cast { lhs, rhs, .. } if fn_(lhs, rhs))
+    }
+
     pub fn uncast(&self) -> &Self {
         match self {
             Self::Cast { rhs, .. } => rhs.uncast(),
@@ -1199,12 +1203,6 @@ impl<Id> Typedef<Id> {
             identifier,
             type_,
         }
-    }
-}
-
-impl<Id: Clone> Typedef<Id> {
-    pub fn to_type(&self) -> Type<Id> {
-        Type::from(self.identifier.clone())
     }
 }
 
