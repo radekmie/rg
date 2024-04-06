@@ -234,7 +234,7 @@ impl<Id: PartialEq> EdgeLabel<Id> {
     }
 
     pub fn is_self_comparison(&self) -> bool {
-        matches!(self, Self::Comparison { lhs, rhs, .. } if lhs.is_equal_reference(rhs))
+        matches!(self, Self::Comparison { lhs, rhs, negated } if !negated && lhs.is_equal_reference(rhs))
     }
 }
 
