@@ -9,25 +9,26 @@ import {
 } from '@blueprintjs/core';
 import { ChangeEvent, FormEvent, useCallback, useMemo } from 'react';
 
-import { Flag, Language, Settings } from '../../types';
+import { Flag, Language, Settings, noFlagsEnabled } from '../../types';
 import { presets } from '../const/presets';
-import { useApplicationState, View } from '../hooks/useApplicationState';
+import { useApplicationState } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
 
 const availablePresets = presets.map(game => game.name);
+const availableFlags = Object.keys(noFlagsEnabled);
 
 export type SettingsProps = {
-  intent: Intent;
   preset: string;
   settings: Settings;
-  view: View;
-} & Pick<
-  ReturnType<typeof useApplicationState>['actions'],
-  'setPreset' | 'setSettings' | 'setView'
->;
+  view: number;
+} & Pick<ReturnType<typeof useApplicationState>, 'game'> &
+  Pick<
+    ReturnType<typeof useApplicationState>['actions'],
+    'setPreset' | 'setSettings' | 'setView'
+  >;
 
 export function Settings({
-  intent,
+  game,
   preset,
   setPreset,
   setSettings,
@@ -58,53 +59,37 @@ export function Settings({
 
   const onView = useCallback(
     (event: ChangeEvent<HTMLSelectElement>) => {
-      setView(event.currentTarget.value as unknown as View);
+      setView(+event.currentTarget.value);
     },
     [setView],
   );
 
-  const isHrg = settings.extension === Language.hrg;
-  const isRbg = settings.extension === Language.rbg;
+  const availableViews = useMemo(
+    () =>
+      (game.value?.steps ?? []).map((step, index) => {
+        let label = {
+          ast: 'AST.',
+          automaton: 'Automaton',
+          bench: 'Bench',
+          cst: 'CST.',
+          error: 'Error',
+          graphviz: 'Automaton.graphviz',
+          source: 'src.',
+        }[step.kind];
 
-  const availableFlags = useMemo<{ value: Flag; disabled?: boolean }[]>(
-    () => [
-      { value: 'addExplicitCasts' },
-      { value: 'calculateSimpleApply' },
-      { value: 'calculateTagIndexes' },
-      { value: 'calculateUniques' },
-      { value: 'compactSkipEdges' },
-      { value: 'expandGeneratorNodes' },
-      { value: 'inlineReachability' },
-      { value: 'joinForkSuffixes' },
-      { value: 'mangleSymbols' },
-      { value: 'normalizeTypes' },
-      { value: 'pruneSingletonTypes' },
-      { value: 'pruneUnreachableNodes' },
-      { value: 'reuseFunctions', disabled: !isHrg },
-      { value: 'skipSelfAssignments' },
-      { value: 'skipSelfComparisons' },
-    ],
-    [isHrg],
-  );
+        if ('language' in step) {
+          label += step.language;
+        }
 
-  const availableViews = useMemo<{ value: View; disabled?: boolean }[]>(
-    () => [
-      { value: 'Bench' },
-      { value: 'Automaton' },
-      { value: 'Graphviz' },
-      { value: 'Source (source).hrg', disabled: !isHrg },
-      { value: 'Source (result).hrg', disabled: !isHrg },
-      { value: 'Source (source).rbg', disabled: !isRbg },
-      { value: 'Source (result).rbg', disabled: !isRbg },
-      { value: 'Source (source).rg' },
-      { value: 'Source (result).rg' },
-      { value: 'CST.hrg', disabled: !isHrg },
-      { value: 'CST.rbg', disabled: !isRbg },
-      { value: 'AST.hrg', disabled: !isHrg },
-      { value: 'AST.rbg', disabled: !isRbg },
-      { value: 'AST.rg' },
-    ],
-    [isHrg, isRbg],
+        if (step.title) {
+          label += ` [${step.title}]`;
+        }
+
+        label = `${String(index + 1).padEnd(3)} ${label}`;
+
+        return { label, value: index };
+      }),
+    [game],
   );
 
   return (
@@ -125,8 +110,14 @@ export function Settings({
       </div>
       <Callout
         className={styles.settings}
-        icon={intent === Intent.NONE ? 'time' : undefined}
-        intent={intent}
+        icon={game.loading ? 'time' : undefined}
+        intent={
+          game.loading
+            ? Intent.NONE
+            : game.error ?? game.value?.error
+            ? Intent.DANGER
+            : Intent.SUCCESS
+        }
       >
         <RadioGroup
           className={styles.options}
@@ -138,14 +129,13 @@ export function Settings({
             <Radio key={value} label={label} value={value} />
           ))}
         </RadioGroup>
-        {availableFlags.map(({ disabled, value }, index) => (
-          <div className={styles.options} key={value}>
+        {availableFlags.map((flag, index) => (
+          <div className={styles.options} key={flag}>
             <Label>{index === 0 ? 'Flags' : ''}</Label>
             <Checkbox
-              checked={settings.flags[value]}
-              disabled={disabled}
-              label={`--${value}`}
-              name={value}
+              checked={settings.flags[flag as Flag]}
+              label={`--${flag}`}
+              name={flag}
               onChange={onFlag}
             />
           </div>

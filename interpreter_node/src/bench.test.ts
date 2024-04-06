@@ -33,7 +33,7 @@ describe('bench', () => {
         ? // No flags, all flags separately, and all flags.
           [[], ...flagNames.map(flagName => [flagName]), flagNames]
         : // All flags.
-          [flagNames];
+          [[], flagNames];
 
     describe(fileName, () => {
       for (const flagSet of flagSets) {

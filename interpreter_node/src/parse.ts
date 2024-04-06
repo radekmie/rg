@@ -4,106 +4,240 @@ import * as hrg from './hrg';
 import * as rbg from './rbg';
 import * as rg from './rg';
 import * as translators from './translators';
-import { Language, Settings } from './types';
+import { Language as L, Settings } from './types';
 import * as utils from './utils';
 import * as wasm from './wasm';
 
-export type AnalyzedGame = {
-  astHrg: hrg.ast.GameDeclaration | null;
-  astRbg: rbg.ast.Game | null;
-  astRg: rg.ast.GameDeclaration;
-  cstHrg: CstNode | null;
-  cstRbg: CstNode | null;
-  graphvizRg: string;
-  sourceHrg: string | null;
-  sourceHrgFormatted: string | null;
-  sourceRbg: string | null;
-  sourceRbgFormatted: string | null;
-  sourceRg: string;
-  sourceRgFormatted: string;
-};
+export type AnalyzedGameStep = { title?: string } & (
+  | { kind: 'ast'; language: L.hrg; value: hrg.ast.GameDeclaration }
+  | { kind: 'ast'; language: L.rbg; value: rbg.ast.Game }
+  | { kind: 'ast'; language: L.rg; value: rg.ast.GameDeclaration }
+  | { kind: 'automaton'; value: string }
+  | { kind: 'bench'; value: rg.ast.GameDeclaration }
+  | { kind: 'cst'; language: L.hrg; value: CstNode }
+  | { kind: 'cst'; language: L.rbg; value: CstNode }
+  | { kind: 'error'; value: unknown }
+  | { kind: 'graphviz'; value: string }
+  | { kind: 'source'; language: L; value: string }
+);
 
-async function analyzeGdl(source: string, settings: Settings) {
-  const sourceRg = await wasm.parseGdl(source);
-  return analyzeRg(sourceRg, settings);
-}
+export class AnalyzedGame {
+  steps: AnalyzedGameStep[] = [];
 
-async function analyzeHrg(source: string, settings: Settings) {
-  const sourceHrg = source;
-  const cstHrg = hrg.cst.parse(sourceHrg).cstNode;
-  const astHrg = hrg.ast.visit(cstHrg);
-  const astRg = translators.hrg2rg(astHrg, settings);
-  const sourceRg = await wasm.serializeRg(astRg);
-
-  const sourceHrgFormatted = hrg.ast.serializeGameDeclaration(astHrg);
-  const cstHrgFormatted = hrg.cst.parse(sourceHrgFormatted).cstNode;
-  const astHrgFormatted = hrg.ast.visit(cstHrgFormatted);
-  if (!utils.isEqual(astHrg, astHrgFormatted)) {
-    throw new Error('HrgFormattingError (AST mismatch)');
+  get astHrg() {
+    for (const step of this.steps.slice().reverse()) {
+      if (step.kind === 'ast' && step.language === L.hrg) {
+        return step.value;
+      }
+    }
   }
 
-  return {
-    ...(await analyzeRg(sourceRg, settings)),
-    astHrg,
-    cstHrg,
-    sourceHrg,
-    sourceHrgFormatted,
-  } as AnalyzedGame;
-}
-
-async function analyzeRbg(source: string, settings: Settings) {
-  const sourceRbg = source;
-  const cstRbg = rbg.cst.parse(sourceRbg).cstNode;
-  const astRbg = rbg.ast.visit(cstRbg);
-  const astRg = translators.rbg2rg(astRbg);
-  const sourceRg = await wasm.serializeRg(astRg);
-
-  const sourceRbgFormatted = rbg.ast.serializeGame(astRbg);
-  const cstRbgFormatted = rbg.cst.parse(sourceRbgFormatted).cstNode;
-  const astRbgFormatted = rbg.ast.visit(cstRbgFormatted);
-  if (!utils.isEqual(astRbg, astRbgFormatted)) {
-    throw new Error('RbgFormattingError (AST mismatch)');
+  get astRbg() {
+    for (const step of this.steps.slice().reverse()) {
+      if (step.kind === 'ast' && step.language === L.rbg) {
+        return step.value;
+      }
+    }
   }
 
-  return {
-    ...(await analyzeRg(sourceRg, settings)),
-    astRbg,
-    cstRbg,
-    sourceRbg,
-    sourceRbgFormatted,
-  } as AnalyzedGame;
-}
+  get astRg() {
+    for (const step of this.steps.slice().reverse()) {
+      if (step.kind === 'ast' && step.language === L.rg) {
+        return step.value;
+      }
+    }
 
-async function analyzeRg(source: string, { flags }: Settings) {
-  const sourceRg = source;
-  const [astRg, sourceRgFormatted] = await wasm.analyzeRg(source, flags);
-  const graphvizRg = rg.ast.graphviz(astRg);
-
-  return {
-    astHrg: null,
-    astRbg: null,
-    astRg,
-    cstHrg: null,
-    cstRbg: null,
-    graphvizRg,
-    sourceHrg: null,
-    sourceHrgFormatted: null,
-    sourceRbg: null,
-    sourceRbgFormatted: null,
-    sourceRg,
-    sourceRgFormatted,
-  } as AnalyzedGame;
-}
-
-export function parse(source: string, settings: Settings) {
-  switch (settings.extension) {
-    case Language.gdl:
-      return analyzeGdl(source, settings);
-    case Language.hrg:
-      return analyzeHrg(source, settings);
-    case Language.rbg:
-      return analyzeRbg(source, settings);
-    case Language.rg:
-      return analyzeRg(source, settings);
+    utils.assert(false, 'RgAnalysisError');
   }
+
+  get cstHrg() {
+    for (const step of this.steps.slice().reverse()) {
+      if (step.kind === 'cst' && step.language === L.hrg) {
+        return step.value;
+      }
+    }
+  }
+
+  get cstRbg() {
+    for (const step of this.steps.slice().reverse()) {
+      if (step.kind === 'cst' && step.language === L.rbg) {
+        return step.value;
+      }
+    }
+  }
+
+  get error() {
+    for (const step of this.steps.slice().reverse()) {
+      if (step.kind === 'error') {
+        return step.value;
+      }
+    }
+  }
+
+  get graphvizRg() {
+    for (const step of this.steps.slice().reverse()) {
+      if (step.kind === 'graphviz') {
+        return step.value;
+      }
+    }
+  }
+
+  get sourceHrg() {
+    for (const step of this.steps) {
+      if (step.kind === 'source' && step.language === L.hrg) {
+        return step.value;
+      }
+    }
+  }
+
+  get sourceHrgFormatted() {
+    for (const step of this.steps.slice().reverse()) {
+      if (step.kind === 'source' && step.language === L.hrg) {
+        return step.value;
+      }
+    }
+  }
+
+  get sourceRbg() {
+    for (const step of this.steps) {
+      if (step.kind === 'source' && step.language === L.rbg) {
+        return step.value;
+      }
+    }
+  }
+
+  get sourceRbgFormatted() {
+    for (const step of this.steps.slice().reverse()) {
+      if (step.kind === 'source' && step.language === L.rbg) {
+        return step.value;
+      }
+    }
+  }
+
+  get sourceRg() {
+    for (const step of this.steps) {
+      if (step.kind === 'source' && step.language === L.rg) {
+        return step.value;
+      }
+    }
+
+    utils.assert(false, 'RgAnalysisError');
+  }
+
+  get sourceRgFormatted() {
+    for (const step of this.steps.slice().reverse()) {
+      if (step.kind === 'source' && step.language === L.rg) {
+        return step.value;
+      }
+    }
+
+    utils.assert(false, 'RgAnalysisError');
+  }
+}
+
+export async function parse(source: string, settings: Settings) {
+  const game = new AnalyzedGame();
+  const { extension, flags } = settings;
+
+  try {
+    game.steps.push({
+      kind: 'source',
+      language: extension,
+      title: 'original',
+      value: source,
+    });
+
+    switch (extension) {
+      case L.gdl: {
+        const astRg = await wasm.parseGdl(source);
+        game.steps.push({ kind: 'ast', language: L.rg, value: astRg });
+
+        break;
+      }
+      case L.hrg: {
+        let cst = hrg.cst.parse(source).cstNode;
+        game.steps.push({ kind: 'cst', language: L.hrg, value: cst });
+
+        const ast = hrg.ast.visit(cst);
+        game.steps.push({ kind: 'ast', language: L.hrg, value: ast });
+
+        source = hrg.ast.serializeGameDeclaration(ast);
+        game.steps.push({
+          kind: 'source',
+          language: L.hrg,
+          title: 'formatted',
+          value: source,
+        });
+
+        cst = hrg.cst.parse(source).cstNode;
+        game.steps.push({ kind: 'cst', language: L.hrg, value: cst });
+
+        if (!utils.isEqual(ast, hrg.ast.visit(cst))) {
+          throw new Error('HrgFormattingError (AST mismatch)');
+        }
+
+        const astRg = translators.hrg2rg(ast, settings);
+        game.steps.push({ kind: 'ast', language: L.rg, value: astRg });
+
+        break;
+      }
+      case L.rbg: {
+        let cst = rbg.cst.parse(source).cstNode;
+        game.steps.push({ kind: 'cst', language: L.rbg, value: cst });
+
+        const ast = rbg.ast.visit(cst);
+        game.steps.push({ kind: 'ast', language: L.rbg, value: ast });
+
+        source = rbg.ast.serializeGame(ast);
+        game.steps.push({
+          kind: 'source',
+          language: L.rbg,
+          title: 'formatted',
+          value: source,
+        });
+
+        cst = rbg.cst.parse(source).cstNode;
+        game.steps.push({ kind: 'cst', language: L.rbg, value: cst });
+
+        if (!utils.isEqual(ast, rbg.ast.visit(cst))) {
+          throw new Error('RbgFormattingError (AST mismatch)');
+        }
+
+        const astRg = translators.rbg2rg(ast);
+        game.steps.push({ kind: 'ast', language: L.rg, value: astRg });
+
+        break;
+      }
+    }
+
+    if (extension !== L.rg) {
+      const astRg = game.astRg;
+      if (astRg) {
+        const sourceRg = await wasm.serializeRg(astRg);
+        game.steps.push({ kind: 'source', language: L.rg, value: sourceRg });
+      }
+    }
+
+    const steps = await wasm.analyzeRg(game.sourceRg, flags);
+    if (extension !== L.rg) {
+      steps.shift();
+      steps.shift();
+    }
+
+    game.steps.push(...steps);
+
+    const graphvizRg = rg.ast.graphviz(game.astRg);
+    game.steps.unshift(
+      { kind: 'bench', value: game.astRg },
+      { kind: 'automaton', value: graphvizRg },
+      { kind: 'graphviz', value: graphvizRg },
+    );
+  } catch (error) {
+    // If the analysis failed, ignore register this error.
+    if (game.steps[game.steps.length - 1].kind !== 'error') {
+      game.steps.push({ kind: 'error', value: error });
+    }
+  }
+
+  return game;
 }

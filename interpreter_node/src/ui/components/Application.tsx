@@ -1,4 +1,4 @@
-import { Intent } from '@blueprintjs/core';
+import { ReactNode } from 'react';
 
 import { Bench } from './Bench';
 import { Editor } from './Editor';
@@ -6,54 +6,12 @@ import { Graphviz } from './Graphviz';
 import { Loader } from './Loader';
 import { PrettyPrint } from './PrettyPrint';
 import { Settings } from './Settings';
-import { AnalyzedGame } from '../../parse';
 import { useApplicationState } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
 
-function extensionSwitcher(extension: string) {
-  return (preset: string) => preset.replace(/\.[^.]*?$/, extension);
+function extensionSwitcher(preset: string, extension: string) {
+  return preset.replace(/\.[^.]*?$/, extension);
 }
-
-const pathForView = {
-  Automaton: extensionSwitcher('.automaton'),
-  Bench: extensionSwitcher('.bench'),
-  Graphviz: extensionSwitcher('.gv'),
-  'AST.hrg': extensionSwitcher('.ast.hrg.json'),
-  'AST.rbg': extensionSwitcher('.ast.rbg.json'),
-  'AST.rg': extensionSwitcher('.ast.rg.json'),
-  'CST.hrg': extensionSwitcher('.cst.hrg.json'),
-  'CST.rbg': extensionSwitcher('.cst.rbg.json'),
-  'Source (result).hrg': extensionSwitcher('.result.hrg'),
-  'Source (source).hrg': extensionSwitcher('.source.hrg'),
-  'Source (result).rbg': extensionSwitcher('.result.rbg'),
-  'Source (source).rbg': extensionSwitcher('.source.rbg'),
-  'Source (result).rg': extensionSwitcher('.result.rg'),
-  'Source (source).rg': extensionSwitcher('.source.rg'),
-};
-
-const valueForView = {
-  Automaton: (game: AnalyzedGame) => game.graphvizRg,
-  Bench: (game: AnalyzedGame) => game.astRg,
-  Graphviz: (game: AnalyzedGame) =>
-    ({ mode: 'text', value: game.graphvizRg } as const),
-  'AST.hrg': (game: AnalyzedGame) => game.astHrg,
-  'AST.rbg': (game: AnalyzedGame) => game.astRbg,
-  'AST.rg': (game: AnalyzedGame) => game.astRg,
-  'CST.hrg': (game: AnalyzedGame) => game.cstHrg,
-  'CST.rbg': (game: AnalyzedGame) => game.cstRbg,
-  'Source (result).hrg': (game: AnalyzedGame) =>
-    ({ mode: 'hrg', value: game.sourceHrgFormatted ?? '' } as const),
-  'Source (source).hrg': (game: AnalyzedGame) =>
-    ({ mode: 'hrg', value: game.sourceHrg ?? '' } as const),
-  'Source (result).rbg': (game: AnalyzedGame) =>
-    ({ mode: 'rbg', value: game.sourceRbgFormatted ?? '' } as const),
-  'Source (source).rbg': (game: AnalyzedGame) =>
-    ({ mode: 'rbg', value: game.sourceRbg ?? '' } as const),
-  'Source (result).rg': (game: AnalyzedGame) =>
-    ({ mode: 'rg', value: game.sourceRgFormatted } as const),
-  'Source (source).rg': (game: AnalyzedGame) =>
-    ({ mode: 'rg', value: game.sourceRg } as const),
-};
 
 export function Application() {
   const {
@@ -62,8 +20,41 @@ export function Application() {
     settings,
     source,
     preset,
-    view,
+    view: viewSelected,
   } = useApplicationState();
+
+  const view = Math.min(viewSelected, (game.value?.steps.length ?? 1) - 1);
+  let content: ReactNode;
+  if (game.loading) {
+    content = <Loader />;
+  } else if (game.error) {
+    content = <PrettyPrint value={game.error} />;
+  } else if (game.value) {
+    const step = game.value.steps[view];
+    switch (step.kind) {
+      case 'automaton':
+        content = <Graphviz source={step.value} />;
+        break;
+      case 'bench':
+        content = <Bench gameDeclaration={step.value} />;
+        break;
+      case 'source':
+        content = (
+          <Editor
+            path={extensionSwitcher(preset, `.${view}.${step.language}`)}
+            source={step.value}
+            readOnly
+          />
+        );
+        break;
+      default:
+        content = <PrettyPrint value={step.value} />;
+        break;
+    }
+  } else {
+    content = null;
+  }
+
   return (
     <>
       <section className={styles.panel}>
@@ -71,13 +62,7 @@ export function Application() {
       </section>
       <section className={styles.panel}>
         <Settings
-          intent={
-            game.loading
-              ? Intent.NONE
-              : game.error
-              ? Intent.DANGER
-              : Intent.SUCCESS
-          }
+          game={game}
           preset={preset}
           setPreset={setPreset}
           setSettings={setSettings}
@@ -85,38 +70,7 @@ export function Application() {
           settings={settings}
           view={view}
         />
-        {game.error ? (
-          <PrettyPrint value={game.error} />
-        ) : game.value ? (
-          (() => {
-            switch (view) {
-              case 'Automaton':
-                return <Graphviz source={valueForView[view](game.value)} />;
-              case 'Bench':
-                return (
-                  <Bench gameDeclaration={valueForView[view](game.value)} />
-                );
-              case 'Graphviz':
-              case 'Source (result).hrg':
-              case 'Source (result).rbg':
-              case 'Source (result).rg':
-              case 'Source (source).hrg':
-              case 'Source (source).rbg':
-              case 'Source (source).rg':
-                return (
-                  <Editor
-                    path={pathForView[view](preset)}
-                    source={valueForView[view](game.value).value}
-                    readOnly
-                  />
-                );
-              default:
-                return <PrettyPrint value={valueForView[view](game.value)} />;
-            }
-          })()
-        ) : (
-          <Loader />
-        )}
+        {content}
       </section>
     </>
   );

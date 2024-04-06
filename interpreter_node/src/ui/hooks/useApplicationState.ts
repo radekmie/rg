@@ -10,24 +10,8 @@ export type State = {
   preset: string;
   settings: Settings;
   source: string;
-  view: View;
+  view: number;
 };
-
-export type View =
-  | 'AST.hrg'
-  | 'AST.rbg'
-  | 'AST.rg'
-  | 'Automaton'
-  | 'Bench'
-  | 'CST.hrg'
-  | 'CST.rbg'
-  | 'Graphviz'
-  | 'Source (result).hrg'
-  | 'Source (result).rbg'
-  | 'Source (result).rg'
-  | 'Source (source).hrg'
-  | 'Source (source).rbg'
-  | 'Source (source).rg';
 
 const initialPreset = presets[presets.length - 1];
 const initialState: State = {
@@ -43,7 +27,7 @@ const initialState: State = {
     },
   },
   source: initialPreset.source,
-  view: 'Automaton',
+  view: 0,
 };
 
 export function useApplicationState() {
@@ -67,7 +51,7 @@ export function useApplicationState() {
       setSource(source: string) {
         setState(state => ({ ...state, source }));
       },
-      setView(view: View) {
+      setView(view: number) {
         setState(state => ({ ...state, view }));
       },
     }),

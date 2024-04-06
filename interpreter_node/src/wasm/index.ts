@@ -1,5 +1,6 @@
 import pLimit from 'p-limit';
 
+import { AnalyzedGameStep } from '../parse';
 import * as rg from '../rg';
 import { Settings } from '../types';
 import * as utils from '../utils';
@@ -61,7 +62,7 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
 }
 
 export async function analyzeRg(source: string, flags: Settings['flags']) {
-  const [ast, formattedSource] = await workerMethod(
+  const steps = await workerMethod(
     'analyzeRg',
     // @ts-expect-error: Workaround for passing functions to Web Worker.
     [
@@ -71,16 +72,11 @@ export async function analyzeRg(source: string, flags: Settings['flags']) {
     ],
     utils.noop,
   );
-  return [JSON.parse(ast), formattedSource] as [rg.ast.GameDeclaration, string];
+  return steps.map(step => JSON.parse(step)) as AnalyzedGameStep[];
 }
 
 export async function parseGdl(source: string) {
   const ast = await workerMethod('parseGdl', [source], utils.noop);
-  return ast;
-}
-
-export async function parseRg(source: string) {
-  const ast = await workerMethod('parseRg', [source], utils.noop);
   return JSON.parse(ast) as rg.ast.GameDeclaration;
 }
 

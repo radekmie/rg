@@ -6,7 +6,7 @@ use map_id::MapId;
 use rand::thread_rng;
 use rg::{ast::Game, parsing::parser::parse_with_errors};
 use serde::Deserialize;
-use serde_json::{from_str, to_string};
+use serde_json::{from_str, json, to_string};
 use std::sync::Arc;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
@@ -38,7 +38,7 @@ pub fn safe_parse_source(source: &str) -> Result<Game<Arc<str>>, String> {
     }
 }
 
-pub fn safe_serialize_ast(game: &Game<Arc<str>>) -> Result<String, String> {
+fn safe_serialize_ast(game: &Game<Arc<str>>) -> Result<String, String> {
     to_string(game).map_err(|error| error.to_string())
 }
 
@@ -80,14 +80,58 @@ pub fn analyze_rg(
     flags: &str,
     inline_reachability: &Function,
 ) -> Result<Array, String> {
-    let flags = from_str::<Flags>(flags).map_err(|error| error.to_string())?;
+    let mut steps = vec![];
 
-    let mut game = safe_parse_source(source)?;
+    macro_rules! step {
+        ({ $($json:tt)+ }) => {{
+            let step = json!({ $($json)+ });
+            steps.push(to_string(&step).map_err(|error| error.to_string())?);
+        }};
+    }
+
+    macro_rules! quit {
+        () => {{
+            let array = Array::new();
+            for step in steps {
+                array.push(&step.into());
+            }
+
+            return Ok(array);
+        }};
+    }
+
+    macro_rules! fail {
+        ($error:expr) => {{
+            step!({ "kind": "error", "value": $error });
+            quit!();
+        }};
+    }
+
+    macro_rules! check {
+        ($expr:expr) => {
+            match $expr {
+                Ok(expr) => expr,
+                Err(error) => fail!(error.to_string()),
+            }
+        };
+    }
+
+    macro_rules! game_step {
+        ($game:expr, $title:expr) => {{
+            step!({ "kind": "source", "language": "rg", "value": $game.to_string(), "title": $title });
+            step!({ "kind": "ast", "language": "rg", "value": $game, "title": $title });
+        }};
+    }
+
+    let flags = check!(from_str::<Flags>(flags));
+    let mut game = check!(safe_parse_source(source));
+    game_step!(game, "");
+
     loop {
-        game.check_maps()?;
-        // game.check_multiple_edges()?;
-        game.check_reachabilities()?;
-        game.check_types()?;
+        check!(game.check_maps());
+        // check!(game.check_multiple_edges());
+        check!(game.check_reachabilities());
+        check!(game.check_types());
 
         let copy = game.clone();
 
@@ -96,20 +140,21 @@ pub fn analyze_rg(
                 if flags.$fn {
                     $block
                     if game != copy {
+                        game_step!(game, stringify!($fn));
                         continue;
                     }
                 }
             };
             (node $fn:ident) => {
                 pass!($fn {
-                    let ast = safe_serialize_ast(&game)?;
+                    let ast = check!(safe_serialize_ast(&game));
                     let ast = $fn.call1(&JsValue::null(), &ast.into()).unwrap().as_string().unwrap();
-                    game = safe_parse_ast(&ast)?;
+                    game = check!(safe_parse_ast(&ast));
                 });
             };
             (rust $fn:ident) => {
                 pass!($fn {
-                    game.$fn()?;
+                    check!(game.$fn());
                 });
             };
         }
@@ -132,12 +177,8 @@ pub fn analyze_rg(
         break;
     }
 
-    let source_formatted = format!("{game}");
-    assert_eq!(safe_parse_source(&source_formatted)?, game);
-    Ok(Array::of2(
-        &safe_serialize_ast(&game)?.into(),
-        &source_formatted.into(),
-    ))
+    assert_eq!(check!(safe_parse_source(&game.to_string())), game);
+    quit!()
 }
 
 #[wasm_bindgen(js_name = parseGdl)]
@@ -147,13 +188,7 @@ pub fn parse_gdl(source: &str) -> Result<String, String> {
         .map_err(|error| error.to_string())?
         .1;
     let rg = gdl_to_rg::gdl_to_rg(&gdl);
-    Ok(rg.to_string())
-}
-
-#[wasm_bindgen(js_name = parseRg)]
-pub fn parse_rg(source: &str) -> Result<String, String> {
-    console_error_panic_hook::set_once();
-    safe_serialize_ast(&safe_parse_source(source)?)
+    safe_serialize_ast(&rg)
 }
 
 #[wasm_bindgen(js_name = perfRg)]
