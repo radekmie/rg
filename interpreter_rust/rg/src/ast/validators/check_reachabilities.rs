@@ -1,4 +1,4 @@
-use crate::ast::{EdgeLabel, Error, ErrorReason, Game, Node};
+use crate::ast::{Error, ErrorReason, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -43,7 +43,7 @@ impl Game<Arc<str>> {
         }
 
         for edge in &self.edges {
-            if let EdgeLabel::Reachability { lhs, rhs, .. } = &edge.label {
+            if let Label::Reachability { lhs, rhs, .. } = &edge.label {
                 if !is_reachable(lhs, rhs) {
                     return self.make_error(ErrorReason::Unreachable {
                         lhs: lhs.clone(),

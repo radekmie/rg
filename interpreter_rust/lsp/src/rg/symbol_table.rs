@@ -1,7 +1,5 @@
 use super::symbol::{from_game, Flag, Symbol};
-use rg::ast::{
-    Edge, EdgeLabel, Expression, Game, Identifier, Node, NodePart, Type, Value, ValueEntry,
-};
+use rg::ast::{Edge, Expression, Game, Identifier, Label, Node, NodePart, Type, Value, ValueEntry};
 use rg::parsing::error::Error;
 use rg::position::{Position, Positioned, Span};
 use std::fmt::{Display, Formatter, Result};
@@ -176,7 +174,7 @@ impl SymbolTableWithErrors {
         let left_owner = self.add_from_node(&edge.lhs);
         let right_owner = self.add_from_node(&edge.rhs);
         let owner = left_owner.or(right_owner);
-        self.add_from_edge_label(&edge.label, &owner);
+        self.add_from_label(&edge.label, &owner);
     }
 
     fn add_maybe_edge_param(
@@ -198,19 +196,19 @@ impl SymbolTableWithErrors {
         }
     }
 
-    fn add_from_edge_label(&mut self, label: &EdgeLabel<Identifier>, owner: &Option<usize>) {
+    fn add_from_label(&mut self, label: &Label<Identifier>, owner: &Option<usize>) {
         match label {
-            EdgeLabel::Assignment { lhs, rhs } => {
+            Label::Assignment { lhs, rhs } => {
                 self.add_from_expression(lhs, owner);
                 self.add_from_expression(rhs, owner);
             }
-            EdgeLabel::Comparison { lhs, rhs, .. } => {
+            Label::Comparison { lhs, rhs, .. } => {
                 self.add_from_expression(lhs, owner);
                 self.add_from_expression(rhs, owner);
             }
-            EdgeLabel::Skip { .. } => (),
-            EdgeLabel::Tag { symbol } => self.add_maybe_edge_param(symbol, owner, false),
-            EdgeLabel::Reachability { lhs, rhs, .. } => {
+            Label::Skip { .. } => (),
+            Label::Tag { symbol } => self.add_maybe_edge_param(symbol, owner, false),
+            Label::Reachability { lhs, rhs, .. } => {
                 self.add_from_node(lhs);
                 self.add_from_node(rhs);
             }

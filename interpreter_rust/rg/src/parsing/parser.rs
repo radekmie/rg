@@ -4,7 +4,7 @@ use super::parser_utils::{
     into_arc, parse_error_line, preceded_opt_id, preceded_tag, preceded_whitespace, with_semicolon,
 };
 use crate::ast::{
-    Constant, Edge, EdgeLabel, Expression, Game, Identifier, Node, NodePart, Pragma, Type, Typedef,
+    Constant, Edge, Expression, Game, Identifier, Label, Node, NodePart, Pragma, Type, Typedef,
     Value, ValueEntry, Variable,
 };
 use crate::position::{Position, Positioned, Span};
@@ -57,33 +57,33 @@ fn edge(input: Input) -> Result<Option<Edge<Identifier>>> {
         expect(
             tuple((
                 terminated(preceded_whitespace(expect_node), expect_preceded_tag(":")),
-                edge_label,
+                label,
             )),
-            "`<node>, <node> : <edge_label>;",
+            "`<node>, <node> : <label>;",
         ),
     )(input)
 }
 
-fn edge_label(input: Input) -> Result<EdgeLabel<Identifier>> {
+fn label(input: Input) -> Result<Label<Identifier>> {
     alt((
         tag_label,
         compare_or_assign_label,
         reachability_label,
         expr_label,
-        success::<_, _, _>(EdgeLabel::Skip {
+        success::<_, _, _>(Label::Skip {
             span: Span::at(&input),
         }),
     ))(input)
 }
 
-fn tag_label(input: Input) -> Result<EdgeLabel<Identifier>> {
+fn tag_label(input: Input) -> Result<Label<Identifier>> {
     into(preceded(
         preceded_whitespace(char('$')),
-        cut(preceded_opt_id("edge_label")),
+        cut(preceded_opt_id("label")),
     ))(input)
 }
 
-fn reachability_label(input: Input) -> Result<EdgeLabel<Identifier>> {
+fn reachability_label(input: Input) -> Result<Label<Identifier>> {
     into(tuple((
         preceded_whitespace(alt((tag("!"), tag("?")))),
         cut(terminated(
@@ -94,7 +94,7 @@ fn reachability_label(input: Input) -> Result<EdgeLabel<Identifier>> {
     )))(input)
 }
 
-fn compare_or_assign_label(input: Input) -> Result<EdgeLabel<Identifier>> {
+fn compare_or_assign_label(input: Input) -> Result<Label<Identifier>> {
     let error_pos = Span::at(&input);
     let (input, (lhs, sep, rhs)) = tuple((
         opt(expression),
@@ -114,7 +114,7 @@ fn compare_or_assign_label(input: Input) -> Result<EdgeLabel<Identifier>> {
 
 // Additional parser for cases like `foo, bar: abc^`
 // It always returns an error or fails, so it's used only in LSP
-fn expr_label(input: Input) -> Result<EdgeLabel<Identifier>> {
+fn expr_label(input: Input) -> Result<Label<Identifier>> {
     let (input, lhs) = preceded_whitespace(expression)(input)?;
     let error_pos = Span::from(&input).focus_start();
     let err = Error::parser_error(error_pos, "expected: `=`, `==` or `!=`".to_string());

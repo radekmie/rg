@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, EdgeLabel, Expression, Identifier, Node, NodePart, Pragma, Type, Typedef,
-    Value, ValueEntry, Variable,
+    Constant, Edge, Expression, Identifier, Label, Node, NodePart, Pragma, Type, Typedef, Value,
+    ValueEntry, Variable,
 };
 use map_id::MapId;
 use nom_locate::LocatedSpan;
@@ -204,7 +204,7 @@ impl<Id> Positioned for Edge<Id> {
     }
 }
 
-impl<Id: Positioned> Positioned for EdgeLabel<Id> {
+impl<Id: Positioned> Positioned for Label<Id> {
     fn span(&self) -> Span {
         match self {
             Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } => {

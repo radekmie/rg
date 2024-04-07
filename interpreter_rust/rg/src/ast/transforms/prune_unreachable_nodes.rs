@@ -1,4 +1,4 @@
-use crate::ast::{EdgeLabel, Error, Game, Node};
+use crate::ast::{Error, Game, Label, Node};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -16,7 +16,7 @@ impl Game<Arc<str>> {
                             queue.push(edge.rhs.clone());
                         }
 
-                        if let EdgeLabel::Reachability { lhs, .. } = &edge.label {
+                        if let Label::Reachability { lhs, .. } = &edge.label {
                             if !seen.contains(lhs) {
                                 queue.push(lhs.clone());
                             }

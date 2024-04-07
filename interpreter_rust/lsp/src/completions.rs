@@ -192,7 +192,7 @@ mod test {
     }
 
     #[test]
-    fn edge_label() {
+    fn label() {
         completion_kind("begin, e1: ^", CompletionKind::Variable);
         completion_kind("begin, e1(param: Foo): ^", CompletionKind::Variable);
         completion_kind("begin, e1(param: Foo): foo[^]", CompletionKind::Variable);

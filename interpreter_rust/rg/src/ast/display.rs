@@ -1,5 +1,5 @@
 use crate::ast::{
-    Constant, Edge, EdgeLabel, Error, ErrorReason, Expression, Game, Identifier, Node, NodePart,
+    Constant, Edge, Error, ErrorReason, Expression, Game, Identifier, Label, Node, NodePart,
     Pragma, Type, Typedef, Value, ValueEntry, Variable,
 };
 use crate::position::{Position, Span};
@@ -26,7 +26,7 @@ impl<Id: Display> Display for Edge<Id> {
     }
 }
 
-impl<Id: Display> Display for EdgeLabel<Id> {
+impl<Id: Display> Display for Label<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Assignment { lhs, rhs } => write!(f, "{lhs} = {rhs}"),

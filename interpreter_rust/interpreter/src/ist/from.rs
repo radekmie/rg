@@ -34,29 +34,29 @@ fn build_constants<Id: Display + Ord>(
     }
 }
 
-fn build_edge_label<Id: Display>(
+fn build_label<Id: Display>(
     game: &mut ist::Game<Rc<str>>,
-    edge_label: ast::EdgeLabel<Id>,
+    label: ast::Label<Id>,
 ) -> ist::EdgeLabel<Rc<str>> {
-    match edge_label {
-        ast::EdgeLabel::Assignment { lhs, rhs } => ist::EdgeLabel::Assignment {
+    match label {
+        ast::Label::Assignment { lhs, rhs } => ist::EdgeLabel::Assignment {
             lhs: build_expression(game, &lhs),
             rhs: build_expression(game, &rhs),
         },
-        ast::EdgeLabel::Comparison { lhs, rhs, negated } => ist::EdgeLabel::Comparison {
+        ast::Label::Comparison { lhs, rhs, negated } => ist::EdgeLabel::Comparison {
             lhs: build_expression(game, &lhs),
             rhs: build_expression(game, &rhs),
             negated,
         },
-        ast::EdgeLabel::Reachability {
+        ast::Label::Reachability {
             lhs, rhs, negated, ..
         } => ist::EdgeLabel::Reachability {
             lhs: build_node(&lhs),
             rhs: build_node(&rhs),
             negated,
         },
-        ast::EdgeLabel::Skip { .. } => ist::EdgeLabel::Skip,
-        ast::EdgeLabel::Tag { symbol } => ist::EdgeLabel::Tag {
+        ast::Label::Skip { .. } => ist::EdgeLabel::Skip,
+        ast::Label::Tag { symbol } => ist::EdgeLabel::Tag {
             symbol: Rc::from(symbol.to_string()),
         },
     }
@@ -73,7 +73,7 @@ fn build_edges<Id: Display>(game: &mut ist::Game<Rc<str>>, edges: Vec<ast::Edge<
     for edge in edges {
         let lhs = build_node(&edge.lhs);
         let rhs = build_node(&edge.rhs);
-        let label = build_edge_label(game, edge.label);
+        let label = build_label(game, edge.label);
 
         game.edges
             .entry(lhs)

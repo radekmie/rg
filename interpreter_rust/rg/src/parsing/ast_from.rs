@@ -1,5 +1,5 @@
 use crate::ast::{
-    Constant, Edge, EdgeLabel, Expression, Identifier, Node, NodePart, Type, Typedef, Value,
+    Constant, Edge, Expression, Identifier, Label, Node, NodePart, Type, Typedef, Value,
     ValueEntry, Variable,
 };
 use crate::parsing::parser::Input;
@@ -23,8 +23,8 @@ impl<Id: Positioned> From<(Input<'_>, (Id, Arc<Type<Id>>, Arc<Value<Id>>), Span)
     }
 }
 
-impl<Id: Positioned> From<(Node<Id>, (Node<Id>, EdgeLabel<Id>), Span)> for Edge<Id> {
-    fn from((lhs, (rhs, label), end): (Node<Id>, (Node<Id>, EdgeLabel<Id>), Span)) -> Self {
+impl<Id: Positioned> From<(Node<Id>, (Node<Id>, Label<Id>), Span)> for Edge<Id> {
+    fn from((lhs, (rhs, label), end): (Node<Id>, (Node<Id>, Label<Id>), Span)) -> Self {
         Self {
             span: end.with_start(lhs.start()),
             label,
@@ -34,19 +34,19 @@ impl<Id: Positioned> From<(Node<Id>, (Node<Id>, EdgeLabel<Id>), Span)> for Edge<
     }
 }
 
-impl<Id> From<Id> for EdgeLabel<Id> {
+impl<Id> From<Id> for Label<Id> {
     fn from(symbol: Id) -> Self {
         Self::Tag { symbol }
     }
 }
 
-impl<Id> From<(Arc<Expression<Id>>, Arc<Expression<Id>>)> for EdgeLabel<Id> {
+impl<Id> From<(Arc<Expression<Id>>, Arc<Expression<Id>>)> for Label<Id> {
     fn from((lhs, rhs): (Arc<Expression<Id>>, Arc<Expression<Id>>)) -> Self {
         Self::Assignment { lhs, rhs }
     }
 }
 
-impl<Id> From<(Arc<Expression<Id>>, &str, Arc<Expression<Id>>)> for EdgeLabel<Id> {
+impl<Id> From<(Arc<Expression<Id>>, &str, Arc<Expression<Id>>)> for Label<Id> {
     fn from((lhs, separator, rhs): (Arc<Expression<Id>>, &str, Arc<Expression<Id>>)) -> Self {
         match separator {
             "!=" => Self::Comparison {
@@ -65,7 +65,7 @@ impl<Id> From<(Arc<Expression<Id>>, &str, Arc<Expression<Id>>)> for EdgeLabel<Id
     }
 }
 
-impl<Id: Positioned> From<(Input<'_>, Node<Id>, Node<Id>)> for EdgeLabel<Id> {
+impl<Id: Positioned> From<(Input<'_>, Node<Id>, Node<Id>)> for Label<Id> {
     fn from((tag, lhs, rhs): (Input, Node<Id>, Node<Id>)) -> Self {
         let negated = *tag.fragment() == "!";
         Self::Reachability {

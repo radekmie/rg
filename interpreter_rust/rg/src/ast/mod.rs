@@ -63,13 +63,13 @@ impl<Id> Constant<Id> {
 pub struct Edge<Id> {
     #[serde(skip)]
     pub span: Span,
-    pub label: EdgeLabel<Id>,
+    pub label: Label<Id>,
     pub lhs: Node<Id>,
     pub rhs: Node<Id>,
 }
 
 impl<Id> Edge<Id> {
-    pub fn new(span: Span, lhs: Node<Id>, rhs: Node<Id>, label: EdgeLabel<Id>) -> Self {
+    pub fn new(span: Span, lhs: Node<Id>, rhs: Node<Id>, label: Label<Id>) -> Self {
         Self {
             span,
             label,
@@ -125,8 +125,8 @@ impl Edge<Arc<str>> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(tag = "kind")]
-pub enum EdgeLabel<Id> {
+#[serde(rename = "EdgeLabel", tag = "kind")]
+pub enum Label<Id> {
     Assignment {
         lhs: Arc<Expression<Id>>,
         rhs: Arc<Expression<Id>>,
@@ -152,13 +152,13 @@ pub enum EdgeLabel<Id> {
     },
 }
 
-impl<Id> Default for EdgeLabel<Id> {
+impl<Id> Default for Label<Id> {
     fn default() -> Self {
         Self::Skip { span: Span::none() }
     }
 }
 
-impl<Id> EdgeLabel<Id> {
+impl<Id> Label<Id> {
     pub fn is_assignment(&self) -> bool {
         matches!(self, Self::Assignment { .. })
     }
@@ -172,7 +172,7 @@ impl<Id> EdgeLabel<Id> {
     }
 }
 
-impl<Id: Clone + Ord> EdgeLabel<Id> {
+impl<Id: Clone + Ord> Label<Id> {
     pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
         match self {
             Self::Assignment { lhs, rhs } => Self::Assignment {
@@ -192,7 +192,7 @@ impl<Id: Clone + Ord> EdgeLabel<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq> EdgeLabel<Id> {
+impl<Id: Clone + PartialEq> Label<Id> {
     pub fn remove_casts(&self, identifier: &Id) -> Self {
         match self {
             Self::Assignment { lhs, rhs } => Self::Assignment {
@@ -224,7 +224,7 @@ impl<Id: Clone + PartialEq> EdgeLabel<Id> {
     }
 }
 
-impl<Id: PartialEq> EdgeLabel<Id> {
+impl<Id: PartialEq> Label<Id> {
     pub fn has_variable(&self, identifier: &Id) -> bool {
         matches!(self, Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } if lhs.has_variable(identifier) || rhs.has_variable(identifier))
     }
@@ -238,7 +238,7 @@ impl<Id: PartialEq> EdgeLabel<Id> {
     }
 }
 
-impl EdgeLabel<Arc<str>> {
+impl Label<Arc<str>> {
     pub fn is_player_assignment(&self) -> bool {
         matches!(self, Self::Assignment { lhs, .. } if lhs.uncast().is_player_reference())
     }
@@ -914,7 +914,7 @@ impl<Id: PartialEq> Game<Id> {
     }
 
     pub fn is_reachability_target(&self, node: &Node<Id>) -> bool {
-        self.edges.iter().any(|edge| matches!(&edge.label, EdgeLabel::Reachability { lhs, rhs, .. } if lhs == node || rhs == node))
+        self.edges.iter().any(|edge| matches!(&edge.label, Label::Reachability { lhs, rhs, .. } if lhs == node || rhs == node))
     }
 
     /// Returns the only edge ending at `node` or `None` if there are multiple or no such edges.

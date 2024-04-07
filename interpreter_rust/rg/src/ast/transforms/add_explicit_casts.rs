@@ -1,4 +1,4 @@
-use crate::ast::{Edge, EdgeLabel, Error, ErrorReason, Expression, Game, Type, Typedef};
+use crate::ast::{Edge, Error, ErrorReason, Expression, Game, Label, Type, Typedef};
 use crate::position::Span;
 use std::mem::{replace, take};
 use std::sync::Arc;
@@ -12,7 +12,7 @@ impl<Id: Clone + PartialEq> Edge<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq> EdgeLabel<Id> {
+impl<Id: Clone + PartialEq> Label<Id> {
     fn add_explicit_casts(
         &mut self,
         game: &Game<Id>,

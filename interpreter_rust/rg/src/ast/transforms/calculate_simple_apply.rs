@@ -1,4 +1,4 @@
-use crate::ast::{EdgeLabel, Error, Game, Pragma};
+use crate::ast::{Error, Game, Label, Pragma};
 use crate::position::Span;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -37,7 +37,7 @@ impl Game<Arc<str>> {
                         for edge in edges {
                             let mut assignments = assignments.clone();
                             match &edge.label {
-                                EdgeLabel::Assignment { lhs, rhs } => {
+                                Label::Assignment { lhs, rhs } => {
                                     assignments.push(edge.label.clone());
                                     if lhs.uncast().is_player_reference() {
                                         paths_to_players
@@ -48,7 +48,7 @@ impl Game<Arc<str>> {
                                         queue.push((edge.rhs.clone(), assignments));
                                     }
                                 }
-                                EdgeLabel::Tag { symbol } => {
+                                Label::Tag { symbol } => {
                                     paths_to_tags
                                         .entry(symbol.clone())
                                         .or_default()

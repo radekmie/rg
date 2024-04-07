@@ -1,5 +1,5 @@
 use crate::ast::{
-    Constant, Edge, EdgeLabel, Error, ErrorReason, Game, Type, Value, ValueEntry, Variable,
+    Constant, Edge, Error, ErrorReason, Game, Label, Type, Value, ValueEntry, Variable,
 };
 use std::sync::Arc;
 
@@ -15,7 +15,7 @@ impl<Id: Clone + PartialEq> Edge<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq> EdgeLabel<Id> {
+impl<Id: Clone + PartialEq> Label<Id> {
     pub fn check_type(&self, game: &Game<Id>, edge: Option<&Edge<Id>>) -> Result<(), Error<Id>> {
         match self {
             Self::Assignment { lhs, rhs } => {

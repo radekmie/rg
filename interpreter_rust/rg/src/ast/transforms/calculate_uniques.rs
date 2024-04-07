@@ -1,4 +1,4 @@
-use crate::ast::{EdgeLabel, Error, Game, Pragma};
+use crate::ast::{Error, Game, Label, Pragma};
 use crate::position::Span;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -26,7 +26,7 @@ impl Game<Arc<str>> {
             .filter_map(|edge| {
                 if edge.label.is_player_assignment() || edge.label.is_tag() {
                     Some(&edge.rhs)
-                } else if let EdgeLabel::Reachability { lhs, .. } = &edge.label {
+                } else if let Label::Reachability { lhs, .. } = &edge.label {
                     Some(lhs)
                 } else if edge.lhs.is_begin() {
                     Some(&edge.lhs)

@@ -1,8 +1,6 @@
 use super::symbol::Symbol;
 use crate::completions::CompletionKind;
-use rg::ast::{
-    Constant, Edge, EdgeLabel, Identifier, Node, NodePart, Pragma, Type, Typedef, Variable,
-};
+use rg::ast::{Constant, Edge, Identifier, Label, Node, NodePart, Pragma, Type, Typedef, Variable};
 use rg::position::{Position, Positioned};
 
 pub trait Statement: Positioned {
@@ -44,11 +42,11 @@ impl Statement for Edge<Identifier> {
             completion_kind_node(pos, &self.rhs)
         } else if self.label.span().encloses_position(pos) || pos > &self.label.end() {
             match self.label {
-                EdgeLabel::Assignment { .. } => CompletionKind::Variable,
-                EdgeLabel::Comparison { .. } => CompletionKind::Variable,
-                EdgeLabel::Reachability { .. } => CompletionKind::Edge,
-                EdgeLabel::Skip { .. } => CompletionKind::Variable,
-                EdgeLabel::Tag { .. } => CompletionKind::Param,
+                Label::Assignment { .. } => CompletionKind::Variable,
+                Label::Comparison { .. } => CompletionKind::Variable,
+                Label::Reachability { .. } => CompletionKind::Edge,
+                Label::Skip { .. } => CompletionKind::Variable,
+                Label::Tag { .. } => CompletionKind::Param,
             }
         } else {
             CompletionKind::Edge
