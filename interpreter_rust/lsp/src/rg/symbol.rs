@@ -1,4 +1,4 @@
-use rg::ast::{Edge, EdgeNamePart, Game, Identifier, Type};
+use rg::ast::{Edge, Game, Identifier, NodePart, Type};
 use rg::position::{Positioned, Span};
 use std::collections::HashSet;
 use std::fmt::Display;
@@ -147,11 +147,11 @@ impl Symbols {
     }
 
     fn add_from_edge(&mut self, edge: &Edge<Identifier>) {
-        if let [EdgeNamePart::Literal {
+        if let [NodePart::Literal {
             identifier: left_id,
         }, left_binds @ ..] = edge.lhs.parts.as_slice()
         {
-            if let [EdgeNamePart::Literal {
+            if let [NodePart::Literal {
                 identifier: right_id,
             }, right_binds @ ..] = edge.rhs.parts.as_slice()
             {
@@ -161,14 +161,14 @@ impl Symbols {
                 // Split binds into literals and bindings
                 let (left_binds, left_literals) = left_binds
                     .iter()
-                    .partition::<Vec<&EdgeNamePart<Identifier>>, _>(|bind| {
-                        matches!(bind, EdgeNamePart::Binding { .. })
+                    .partition::<Vec<&NodePart<Identifier>>, _>(|bind| {
+                        matches!(bind, NodePart::Binding { .. })
                     });
-                let (right_binds, right_literals) = right_binds.iter().partition::<Vec<
-                    &EdgeNamePart<Identifier>,
-                >, _>(
-                    |bind| matches!(bind, EdgeNamePart::Binding { .. }),
-                );
+                let (right_binds, right_literals) = right_binds
+                    .iter()
+                    .partition::<Vec<&NodePart<Identifier>>, _>(|bind| {
+                        matches!(bind, NodePart::Binding { .. })
+                    });
 
                 // Maybe add literals as edge symbols
                 for literal in &left_literals {
@@ -181,13 +181,13 @@ impl Symbols {
                 // Splits bindings into common, left and right
                 let (common_binds, left_binds) = left_binds
                     .iter()
-                    .partition::<Vec<&EdgeNamePart<Identifier>>, _>(|bind| {
+                    .partition::<Vec<&NodePart<Identifier>>, _>(|bind| {
                         let id = bind.identifier().identifier.as_str();
                         right_binds
                             .iter()
                             .any(|right| right.identifier().identifier == id)
                     });
-                let right_binds: Vec<&EdgeNamePart<Identifier>> = right_binds
+                let right_binds: Vec<&NodePart<Identifier>> = right_binds
                     .into_iter()
                     .filter(|bind| {
                         let id = bind.identifier().identifier.as_str();

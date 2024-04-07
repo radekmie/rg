@@ -222,7 +222,7 @@ mod test {
     }
 
     #[test]
-    fn edge_name() {
+    fn node() {
         completion_kind("begin, ^", CompletionKind::Toplevel);
         completion_kind("begin ^, e1", CompletionKind::Edge);
         completion_kind("begin(^), e1", CompletionKind::Param);

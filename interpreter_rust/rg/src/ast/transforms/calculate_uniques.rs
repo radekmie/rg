@@ -13,14 +13,14 @@ impl Game<Arc<str>> {
                     next_edges
                 });
 
-        let mut unique_edge_names: BTreeSet<_> = self
+        let mut unique_nodes: BTreeSet<_> = self
             .edges
             .iter()
             .flat_map(|edge| [&edge.lhs, &edge.rhs])
             .cloned()
             .collect();
 
-        let edge_names: BTreeSet<_> = self
+        let nodes: BTreeSet<_> = self
             .edges
             .iter()
             .filter_map(|edge| {
@@ -37,16 +37,16 @@ impl Game<Arc<str>> {
             .cloned()
             .collect();
 
-        for edge_name in edge_names {
+        for node in nodes {
             let mut seen = BTreeSet::new();
-            let mut queue = vec![edge_name];
+            let mut queue = vec![node];
             while let Some(lhs) = queue.pop() {
                 let maybe_edges = next_edges.get(&lhs);
                 if seen.insert(lhs) {
                     if let Some(edges) = maybe_edges {
                         for edge in edges {
                             if seen.contains(&edge.rhs) {
-                                unique_edge_names.remove(&edge.rhs);
+                                unique_nodes.remove(&edge.rhs);
                             } else if !edge.label.is_player_assignment() && !edge.label.is_tag() {
                                 queue.push(edge.rhs.clone());
                             }
@@ -57,8 +57,8 @@ impl Game<Arc<str>> {
         }
 
         self.pragmas.retain(|pragma| {
-            if let Pragma::Unique { edge_names, .. } = pragma {
-                unique_edge_names.extend(edge_names.iter().cloned());
+            if let Pragma::Unique { nodes, .. } = pragma {
+                unique_nodes.extend(nodes.iter().cloned());
                 false
             } else {
                 true
@@ -67,7 +67,7 @@ impl Game<Arc<str>> {
 
         let pragma = Pragma::Unique {
             span: Span::none(),
-            edge_names: unique_edge_names.into_iter().collect(),
+            nodes: unique_nodes.into_iter().collect(),
         };
 
         let index = self.pragmas.partition_point(|x| *x < pragma);

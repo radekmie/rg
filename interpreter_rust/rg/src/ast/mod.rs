@@ -64,12 +64,12 @@ pub struct Edge<Id> {
     #[serde(skip)]
     pub span: Span,
     pub label: EdgeLabel<Id>,
-    pub lhs: EdgeName<Id>,
-    pub rhs: EdgeName<Id>,
+    pub lhs: Node<Id>,
+    pub rhs: Node<Id>,
 }
 
 impl<Id> Edge<Id> {
-    pub fn new(span: Span, lhs: EdgeName<Id>, rhs: EdgeName<Id>, label: EdgeLabel<Id>) -> Self {
+    pub fn new(span: Span, lhs: Node<Id>, rhs: Node<Id>, label: EdgeLabel<Id>) -> Self {
         Self {
             span,
             label,
@@ -139,8 +139,8 @@ pub enum EdgeLabel<Id> {
     Reachability {
         #[serde(skip)]
         span: Span,
-        lhs: EdgeName<Id>,
-        rhs: EdgeName<Id>,
+        lhs: Node<Id>,
+        rhs: Node<Id>,
         negated: bool,
     },
     Skip {
@@ -245,25 +245,25 @@ impl EdgeLabel<Arc<str>> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(tag = "kind")]
-pub struct EdgeName<Id> {
+#[serde(rename = "EdgeName", tag = "kind")]
+pub struct Node<Id> {
     #[serde(skip)]
     pub span: Span,
-    pub parts: Vec<EdgeNamePart<Id>>,
+    pub parts: Vec<NodePart<Id>>,
 }
 
-impl<Id> EdgeName<Id> {
+impl<Id> Node<Id> {
     pub fn new(identifier: Id) -> Self {
         Self {
             span: Span::none(),
-            parts: vec![EdgeNamePart::new(identifier)],
+            parts: vec![NodePart::new(identifier)],
         }
     }
 
     pub fn bindings(&self) -> impl Iterator<Item = Binding<Id>> {
         self.parts
             .iter()
-            .filter_map(|edge_name_part| edge_name_part.binding())
+            .filter_map(|node_part| node_part.binding())
     }
 
     pub fn has_bindings(&self) -> bool {
@@ -271,7 +271,7 @@ impl<Id> EdgeName<Id> {
     }
 }
 
-impl<Id: PartialEq> EdgeName<Id> {
+impl<Id: PartialEq> Node<Id> {
     pub fn has_binding(&self, identifier: &Id) -> bool {
         self.bindings().any(|binding| binding.0 == identifier)
     }
@@ -281,45 +281,45 @@ impl<Id: PartialEq> EdgeName<Id> {
     }
 }
 
-impl<Id: Clone + Ord> EdgeName<Id> {
+impl<Id: Clone + Ord> Node<Id> {
     pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
         Self {
             span: self.span,
             parts: self
                 .parts
                 .iter()
-                .map(|edge_name| edge_name.rename_variables(mapping))
+                .map(|node_part| node_part.rename_variables(mapping))
                 .collect(),
         }
     }
 }
 
-impl EdgeName<Arc<str>> {
+impl Node<Arc<str>> {
     pub fn is_begin(&self) -> bool {
-        matches!(&self.parts[..], [EdgeNamePart::Literal { identifier }] if &**identifier == "begin")
+        matches!(&self.parts[..], [NodePart::Literal { identifier }] if &**identifier == "begin")
     }
 
     pub fn substitute_bindings(&self, mapping: &Mapping<Arc<str>>) -> Self {
         let identifier = self
             .parts
             .iter()
-            .map(|edge_name_part| match edge_name_part {
-                EdgeNamePart::Binding { identifier, .. } => mapping.get(identifier).unwrap(),
-                EdgeNamePart::Literal { identifier } => identifier,
+            .map(|node_part| match node_part {
+                NodePart::Binding { identifier, .. } => mapping.get(identifier).unwrap(),
+                NodePart::Literal { identifier } => identifier,
             })
             .cloned()
             .collect::<Vec<_>>()
             .join("__bind__");
         Self {
             span: self.span,
-            parts: vec![EdgeNamePart::new(Arc::from(identifier))],
+            parts: vec![NodePart::new(Arc::from(identifier))],
         }
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(tag = "kind")]
-pub enum EdgeNamePart<Id> {
+#[serde(rename = "EdgeNamePart", tag = "kind")]
+pub enum NodePart<Id> {
     Binding {
         #[serde(skip)]
         span: Span,
@@ -332,7 +332,7 @@ pub enum EdgeNamePart<Id> {
     },
 }
 
-impl<Id> EdgeNamePart<Id> {
+impl<Id> NodePart<Id> {
     pub fn binding(&self) -> Option<Binding<Id>> {
         match self {
             Self::Binding {
@@ -354,7 +354,7 @@ impl<Id> EdgeNamePart<Id> {
     }
 }
 
-impl<Id: Clone + Ord> EdgeNamePart<Id> {
+impl<Id: Clone + Ord> NodePart<Id> {
     pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
         if let Self::Binding {
             identifier, type_, ..
@@ -410,8 +410,8 @@ pub enum ErrorReason<Id> {
         value: Value<Id>,
     },
     MultipleEdges {
-        lhs: EdgeName<Id>,
-        rhs: EdgeName<Id>,
+        lhs: Node<Id>,
+        rhs: Node<Id>,
     },
     SetTypeExpected {
         got: Arc<Type<Id>>,
@@ -422,8 +422,8 @@ pub enum ErrorReason<Id> {
         resolved: Arc<Type<Id>>,
     },
     Unreachable {
-        lhs: EdgeName<Id>,
-        rhs: EdgeName<Id>,
+        lhs: Node<Id>,
+        rhs: Node<Id>,
     },
     UnresolvedConstant {
         identifier: Id,
@@ -874,14 +874,14 @@ impl<Id: Clone + PartialEq> Game<Id> {
 }
 
 impl<Id: Ord> Game<Id> {
-    pub fn edge_names(&self) -> BTreeSet<&EdgeName<Id>> {
+    pub fn nodes(&self) -> BTreeSet<&Node<Id>> {
         self.edges
             .iter()
             .flat_map(|edge| [&edge.lhs, &edge.rhs])
             .collect()
     }
 
-    pub fn next_edges(&self) -> BTreeMap<&EdgeName<Id>, BTreeSet<&Edge<Id>>> {
+    pub fn next_edges(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>> {
         self.edges
             .iter()
             .fold(BTreeMap::new(), |mut next_edges, edge| {
@@ -890,7 +890,7 @@ impl<Id: Ord> Game<Id> {
             })
     }
 
-    pub fn prev_edges(&self) -> BTreeMap<&EdgeName<Id>, BTreeSet<&Edge<Id>>> {
+    pub fn prev_edges(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>> {
         self.edges
             .iter()
             .fold(BTreeMap::new(), |mut prev_edges, edge| {
@@ -907,40 +907,34 @@ impl<Id: PartialEq> Game<Id> {
         }
     }
 
-    pub fn are_connected(&self, lhs: &EdgeName<Id>, rhs: &EdgeName<Id>) -> bool {
+    pub fn are_connected(&self, lhs: &Node<Id>, rhs: &Node<Id>) -> bool {
         self.edges
             .iter()
             .any(|edge| &edge.lhs == lhs && &edge.rhs == rhs)
     }
 
-    pub fn is_reachability_target(&self, edge_name: &EdgeName<Id>) -> bool {
-        self.edges.iter().any(|edge| matches!(&edge.label, EdgeLabel::Reachability { lhs, rhs, .. } if lhs == edge_name || rhs == edge_name))
+    pub fn is_reachability_target(&self, node: &Node<Id>) -> bool {
+        self.edges.iter().any(|edge| matches!(&edge.label, EdgeLabel::Reachability { lhs, rhs, .. } if lhs == node || rhs == node))
     }
 
-    /// Returns the only edge ending at `edge_name` or `None` if there are multiple or no such edges.
-    pub fn incoming_edge<'a>(&'a self, edge_name: &'a EdgeName<Id>) -> Option<&'a Edge<Id>> {
-        let mut iterator = self.incoming_edges(edge_name);
+    /// Returns the only edge ending at `node` or `None` if there are multiple or no such edges.
+    pub fn incoming_edge<'a>(&'a self, node: &'a Node<Id>) -> Option<&'a Edge<Id>> {
+        let mut iterator = self.incoming_edges(node);
         iterator.next().filter(|_| iterator.next().is_none())
     }
 
-    pub fn incoming_edges<'a>(
-        &'a self,
-        edge_name: &'a EdgeName<Id>,
-    ) -> impl Iterator<Item = &'a Edge<Id>> {
-        self.edges.iter().filter(move |edge| &edge.rhs == edge_name)
+    pub fn incoming_edges<'a>(&'a self, node: &'a Node<Id>) -> impl Iterator<Item = &'a Edge<Id>> {
+        self.edges.iter().filter(move |edge| &edge.rhs == node)
     }
 
-    /// Returns the only edge starting from `edge_name` or `None` if there are multiple or no such edges.
-    pub fn outgoing_edge<'a>(&'a self, edge_name: &'a EdgeName<Id>) -> Option<&'a Edge<Id>> {
-        let mut iterator = self.outgoing_edges(edge_name);
+    /// Returns the only edge starting from `node` or `None` if there are multiple or no such edges.
+    pub fn outgoing_edge<'a>(&'a self, node: &'a Node<Id>) -> Option<&'a Edge<Id>> {
+        let mut iterator = self.outgoing_edges(node);
         iterator.next().filter(|_| iterator.next().is_none())
     }
 
-    pub fn outgoing_edges<'a>(
-        &'a self,
-        edge_name: &'a EdgeName<Id>,
-    ) -> impl Iterator<Item = &'a Edge<Id>> {
-        self.edges.iter().filter(move |edge| &edge.lhs == edge_name)
+    pub fn outgoing_edges<'a>(&'a self, node: &'a Node<Id>) -> impl Iterator<Item = &'a Edge<Id>> {
+        self.edges.iter().filter(move |edge| &edge.lhs == node)
     }
 
     pub fn remove_edge(&mut self, edge: &Edge<Id>) {
@@ -955,23 +949,23 @@ pub enum Pragma<Id> {
         #[serde(skip)]
         span: Span,
         #[serde(rename = "edgeName")]
-        edge_name: EdgeName<Id>,
+        node: Node<Id>,
         #[serde(rename = "edgeNames")]
-        edge_names: Vec<EdgeName<Id>>,
+        nodes: Vec<Node<Id>>,
     },
     DisjointExhaustive {
         #[serde(skip)]
         span: Span,
         #[serde(rename = "edgeName")]
-        edge_name: EdgeName<Id>,
+        node: Node<Id>,
         #[serde(rename = "edgeNames")]
-        edge_names: Vec<EdgeName<Id>>,
+        nodes: Vec<Node<Id>>,
     },
     Repeat {
         #[serde(skip)]
         span: Span,
         #[serde(rename = "edgeNames")]
-        edge_names: Vec<EdgeName<Id>>,
+        nodes: Vec<Node<Id>>,
         #[serde(rename = "identifiers")]
         identifiers: Vec<Id>,
     },
@@ -979,145 +973,110 @@ pub enum Pragma<Id> {
         #[serde(skip)]
         span: Span,
         #[serde(rename = "edgeNames")]
-        edge_names: Vec<EdgeName<Id>>,
+        nodes: Vec<Node<Id>>,
     },
     TagIndex {
         #[serde(skip)]
         span: Span,
         index: usize,
         #[serde(rename = "edgeNames")]
-        edge_names: Vec<EdgeName<Id>>,
+        nodes: Vec<Node<Id>>,
     },
     TagMaxIndex {
         #[serde(skip)]
         span: Span,
         index: usize,
         #[serde(rename = "edgeNames")]
-        edge_names: Vec<EdgeName<Id>>,
+        nodes: Vec<Node<Id>>,
     },
     Unique {
         #[serde(skip)]
         span: Span,
         #[serde(rename = "edgeNames")]
-        edge_names: Vec<EdgeName<Id>>,
+        nodes: Vec<Node<Id>>,
     },
 }
 
 impl<Id> Pragma<Id> {
-    pub fn edge_names(&self) -> impl Iterator<Item = &EdgeName<Id>> {
+    pub fn nodes(&self) -> impl Iterator<Item = &Node<Id>> {
         match self {
-            Self::Disjoint {
-                edge_name,
-                edge_names,
-                ..
+            Self::Disjoint { node, nodes, .. } | Self::DisjointExhaustive { node, nodes, .. } => {
+                Some(node).into_iter().chain(nodes)
             }
-            | Self::DisjointExhaustive {
-                edge_name,
-                edge_names,
-                ..
-            } => Some(edge_name).into_iter().chain(edge_names),
-            Self::Repeat { edge_names, .. }
-            | Self::SimpleApply { edge_names, .. }
-            | Self::TagIndex { edge_names, .. }
-            | Self::TagMaxIndex { edge_names, .. }
-            | Self::Unique { edge_names, .. } => None.into_iter().chain(edge_names),
-        }
-    }
-
-    pub fn edge_names_ref_mut(&mut self) -> &mut Vec<EdgeName<Id>> {
-        match self {
-            Self::Disjoint { edge_names, .. }
-            | Self::DisjointExhaustive { edge_names, .. }
-            | Self::Repeat { edge_names, .. }
-            | Self::SimpleApply { edge_names, .. }
-            | Self::TagIndex { edge_names, .. }
-            | Self::TagMaxIndex { edge_names, .. }
-            | Self::Unique { edge_names, .. } => edge_names,
+            Self::Repeat { nodes, .. }
+            | Self::SimpleApply { nodes, .. }
+            | Self::TagIndex { nodes, .. }
+            | Self::TagMaxIndex { nodes, .. }
+            | Self::Unique { nodes, .. } => None.into_iter().chain(nodes),
         }
     }
 }
 
 impl<Id: Ord> Pragma<Id> {
     pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
-        self.edge_names().flat_map(EdgeName::bindings).collect()
+        self.nodes().flat_map(Node::bindings).collect()
     }
 }
 
 impl Pragma<Arc<str>> {
     pub fn substitute_bindings(&self, mapping: &Mapping<Arc<str>>) -> Self {
         match self {
-            Self::Disjoint {
-                span,
-                edge_name,
-                edge_names,
-            } => Self::Disjoint {
+            Self::Disjoint { span, node, nodes } => Self::Disjoint {
                 span: *span,
-                edge_name: edge_name.substitute_bindings(mapping),
-                edge_names: edge_names
+                node: node.substitute_bindings(mapping),
+                nodes: nodes
                     .iter()
-                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .map(|node| node.substitute_bindings(mapping))
                     .collect(),
             },
-            Self::DisjointExhaustive {
-                span,
-                edge_name,
-                edge_names,
-            } => Self::DisjointExhaustive {
+            Self::DisjointExhaustive { span, node, nodes } => Self::DisjointExhaustive {
                 span: *span,
-                edge_name: edge_name.substitute_bindings(mapping),
-                edge_names: edge_names
+                node: node.substitute_bindings(mapping),
+                nodes: nodes
                     .iter()
-                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .map(|node| node.substitute_bindings(mapping))
                     .collect(),
             },
             Self::Repeat {
                 span,
-                edge_names,
+                nodes,
                 identifiers,
             } => Self::Repeat {
                 span: *span,
-                edge_names: edge_names
+                nodes: nodes
                     .iter()
-                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .map(|node| node.substitute_bindings(mapping))
                     .collect(),
                 identifiers: identifiers.to_vec(),
             },
-            Self::SimpleApply { span, edge_names } => Self::SimpleApply {
+            Self::SimpleApply { span, nodes } => Self::SimpleApply {
                 span: *span,
-                edge_names: edge_names
+                nodes: nodes
                     .iter()
-                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .map(|node| node.substitute_bindings(mapping))
                     .collect(),
             },
-            Self::TagIndex {
-                span,
-                edge_names,
-                index,
-            } => Self::TagIndex {
+            Self::TagIndex { span, nodes, index } => Self::TagIndex {
                 span: *span,
-                edge_names: edge_names
+                nodes: nodes
                     .iter()
-                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .map(|node| node.substitute_bindings(mapping))
                     .collect(),
                 index: *index,
             },
-            Self::TagMaxIndex {
-                span,
-                edge_names,
-                index,
-            } => Self::TagMaxIndex {
+            Self::TagMaxIndex { span, nodes, index } => Self::TagMaxIndex {
                 span: *span,
-                edge_names: edge_names
+                nodes: nodes
                     .iter()
-                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .map(|node| node.substitute_bindings(mapping))
                     .collect(),
                 index: *index,
             },
-            Self::Unique { span, edge_names } => Self::Unique {
+            Self::Unique { span, nodes } => Self::Unique {
                 span: *span,
-                edge_names: edge_names
+                nodes: nodes
                     .iter()
-                    .map(|edge_name| edge_name.substitute_bindings(mapping))
+                    .map(|node| node.substitute_bindings(mapping))
                     .collect(),
             },
         }

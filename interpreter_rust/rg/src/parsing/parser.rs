@@ -4,8 +4,8 @@ use super::parser_utils::{
     into_arc, parse_error_line, preceded_opt_id, preceded_tag, preceded_whitespace, with_semicolon,
 };
 use crate::ast::{
-    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Game, Identifier, Pragma, Type,
-    Typedef, Value, ValueEntry, Variable,
+    Constant, Edge, EdgeLabel, Expression, Game, Identifier, Node, NodePart, Pragma, Type, Typedef,
+    Value, ValueEntry, Variable,
 };
 use crate::position::{Position, Positioned, Span};
 use nom::branch::alt;
@@ -53,16 +53,13 @@ fn preceded_type_(input: Input) -> Result<Arc<Type<Identifier>>> {
 
 fn edge(input: Input) -> Result<Option<Edge<Identifier>>> {
     with_semicolon(
-        terminated(preceded_whitespace(edge_name), expect_preceded_tag(",")),
+        terminated(preceded_whitespace(node), expect_preceded_tag(",")),
         expect(
             tuple((
-                terminated(
-                    preceded_whitespace(expect_edge_name),
-                    expect_preceded_tag(":"),
-                ),
+                terminated(preceded_whitespace(expect_node), expect_preceded_tag(":")),
                 edge_label,
             )),
-            "`<edge_name>, <edge_name> : <edge_label>;",
+            "`<node>, <node> : <edge_label>;",
         ),
     )(input)
 }
@@ -90,10 +87,10 @@ fn reachability_label(input: Input) -> Result<EdgeLabel<Identifier>> {
     into(tuple((
         preceded_whitespace(alt((tag("!"), tag("?")))),
         cut(terminated(
-            preceded_whitespace(expect_edge_name),
+            preceded_whitespace(expect_node),
             expect_preceded_tag("->"),
         )),
-        preceded_whitespace(expect_edge_name),
+        preceded_whitespace(expect_node),
     )))(input)
 }
 
@@ -126,14 +123,14 @@ fn expr_label(input: Input) -> Result<EdgeLabel<Identifier>> {
     Ok((input, (lhs, rhs).into()))
 }
 
-fn edge_name(input: Input) -> Result<EdgeName<Identifier>> {
-    into(pair(identifier, edge_name_bindings))(input)
+fn node(input: Input) -> Result<Node<Identifier>> {
+    into(pair(identifier, node_bindings))(input)
 }
 
-fn expect_edge_name(input: Input) -> Result<EdgeName<Identifier>> {
+fn expect_node(input: Input) -> Result<Node<Identifier>> {
     let (input, first) = expect(identifier, "edge name")(input)?;
     if let Some(name) = first {
-        let (input, rest) = edge_name_bindings(input)?;
+        let (input, rest) = node_bindings(input)?;
         Ok((input, (name, rest).into()))
     } else {
         let identifier = Identifier::none(Span::at(&input));
@@ -141,14 +138,14 @@ fn expect_edge_name(input: Input) -> Result<EdgeName<Identifier>> {
     }
 }
 
-fn edge_name_bindings(input: Input) -> Result<Vec<EdgeNamePart<Identifier>>> {
-    many0(edge_name_binding)(input)
+fn node_bindings(input: Input) -> Result<Vec<NodePart<Identifier>>> {
+    many0(node_binding)(input)
 }
 
-fn edge_name_binding(input: Input) -> Result<EdgeNamePart<Identifier>> {
+fn node_binding(input: Input) -> Result<NodePart<Identifier>> {
     into(tuple((
         tag("("),
-        cut(preceded_opt_id("edge_name_part")),
+        cut(preceded_opt_id("node_part")),
         preceded_type_,
         preceded_tag(")"),
     )))(input)
@@ -280,93 +277,93 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
         map(
             tuple((
                 tag("disjoint"),
-                cut(preceded_whitespace(edge_name)),
+                cut(preceded_whitespace(node)),
                 preceded_whitespace(tag(":")),
-                cut(many1(preceded_whitespace(edge_name))),
+                cut(many1(preceded_whitespace(node))),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, edge_name, _, edge_names, semicolon)| Pragma::Disjoint {
+            |(tag, node, _, nodes, semicolon)| Pragma::Disjoint {
                 span: Span::from((&tag, &semicolon)),
-                edge_name,
-                edge_names,
+                node,
+                nodes,
             },
         ),
         map(
             tuple((
                 tag("disjointExhaustive"),
-                cut(preceded_whitespace(edge_name)),
+                cut(preceded_whitespace(node)),
                 preceded_whitespace(tag(":")),
-                cut(many1(preceded_whitespace(edge_name))),
+                cut(many1(preceded_whitespace(node))),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, edge_name, _, edge_names, semicolon)| Pragma::DisjointExhaustive {
+            |(tag, node, _, nodes, semicolon)| Pragma::DisjointExhaustive {
                 span: Span::from((&tag, &semicolon)),
-                edge_name,
-                edge_names,
+                node,
+                nodes,
             },
         ),
         map(
             tuple((
                 tag("repeat"),
-                cut(many1(preceded_whitespace(edge_name))),
+                cut(many1(preceded_whitespace(node))),
                 preceded_whitespace(tag(":")),
                 cut(many1(preceded_whitespace(identifier))),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, edge_names, _, identifiers, semicolon)| Pragma::Repeat {
+            |(tag, nodes, _, identifiers, semicolon)| Pragma::Repeat {
                 span: Span::from((&tag, &semicolon)),
-                edge_names,
+                nodes,
                 identifiers,
             },
         ),
         map(
             tuple((
                 tag("simpleApply"),
-                cut(many1(preceded_whitespace(edge_name))),
+                cut(many1(preceded_whitespace(node))),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, edge_names, semicolon)| Pragma::SimpleApply {
+            |(tag, nodes, semicolon)| Pragma::SimpleApply {
                 span: Span::from((&tag, &semicolon)),
-                edge_names,
+                nodes,
             },
         ),
         map(
             tuple((
                 tag("tagIndex"),
-                cut(many1(preceded_whitespace(edge_name))),
+                cut(many1(preceded_whitespace(node))),
                 preceded_whitespace(tag(":")),
                 preceded_whitespace(integer),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, edge_names, _, index, semicolon)| Pragma::TagIndex {
+            |(tag, nodes, _, index, semicolon)| Pragma::TagIndex {
                 span: Span::from((&tag, &semicolon)),
-                edge_names,
+                nodes,
                 index,
             },
         ),
         map(
             tuple((
                 tag("tagMaxIndex"),
-                cut(many1(preceded_whitespace(edge_name))),
+                cut(many1(preceded_whitespace(node))),
                 preceded_whitespace(tag(":")),
                 preceded_whitespace(integer),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, edge_names, _, index, semicolon)| Pragma::TagMaxIndex {
+            |(tag, nodes, _, index, semicolon)| Pragma::TagMaxIndex {
                 span: Span::from((&tag, &semicolon)),
-                edge_names,
+                nodes,
                 index,
             },
         ),
         map(
             tuple((
                 tag("unique"),
-                cut(many1(preceded_whitespace(edge_name))),
+                cut(many1(preceded_whitespace(node))),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, edge_names, semicolon)| Pragma::Unique {
+            |(tag, nodes, semicolon)| Pragma::Unique {
                 span: Span::from((&tag, &semicolon)),
-                edge_names,
+                nodes,
             },
         ),
     ));

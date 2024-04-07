@@ -46,7 +46,7 @@ impl Game<Arc<str>> {
 
         let tag_indexes_by_index = tag_indexes.into_iter().fold(
             BTreeMap::new(),
-            |mut groups: BTreeMap<_, Vec<_>>, (edge_name, indexes)| {
+            |mut groups: BTreeMap<_, Vec<_>>, (node, indexes)| {
                 let maybe_index = match indexes.len() {
                     0 => None,
                     1 => indexes
@@ -62,25 +62,25 @@ impl Game<Arc<str>> {
                 };
 
                 if let Some(index) = maybe_index {
-                    let edge_names = groups.entry(index).or_default();
-                    let index = edge_names.partition_point(|x| *x < edge_name);
-                    edge_names.insert(index, edge_name.clone());
+                    let nodes = groups.entry(index).or_default();
+                    let index = nodes.partition_point(|x| *x < node);
+                    nodes.insert(index, node.clone());
                 }
 
                 groups
             },
         );
 
-        for (index, edge_names) in tag_indexes_by_index {
+        for (index, nodes) in tag_indexes_by_index {
             let pragma = match index {
                 Ok(index) => Pragma::TagIndex {
                     span: Span::none(),
-                    edge_names,
+                    nodes,
                     index,
                 },
                 Err(index) => Pragma::TagMaxIndex {
                     span: Span::none(),
-                    edge_names,
+                    nodes,
                     index,
                 },
             };

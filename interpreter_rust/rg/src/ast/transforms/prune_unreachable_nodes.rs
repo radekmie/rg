@@ -1,4 +1,4 @@
-use crate::ast::{EdgeLabel, EdgeName, Error, Game};
+use crate::ast::{EdgeLabel, Error, Game, Node};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -6,7 +6,7 @@ impl Game<Arc<str>> {
     pub fn prune_unreachable_nodes(&mut self) -> Result<(), Error<Arc<str>>> {
         let next_edges = self.next_edges();
         let mut seen = BTreeSet::new();
-        let mut queue = vec![EdgeName::new(Arc::from("begin"))];
+        let mut queue = vec![Node::new(Arc::from("begin"))];
         while let Some(lhs) = queue.pop() {
             let maybe_edges = next_edges.get(&lhs);
             if seen.insert(lhs) {

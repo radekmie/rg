@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Error, ErrorReason, Expression, Game,
-    Identifier, Pragma, Type, Typedef, Value, ValueEntry, Variable,
+    Constant, Edge, EdgeLabel, Error, ErrorReason, Expression, Game, Identifier, Node, NodePart,
+    Pragma, Type, Typedef, Value, ValueEntry, Variable,
 };
 use crate::position::{Position, Span};
 use std::fmt::{Display, Formatter, Result};
@@ -58,7 +58,7 @@ impl<Id: Display> Display for EdgeLabel<Id> {
     }
 }
 
-impl<Id: Display> Display for EdgeName<Id> {
+impl<Id: Display> Display for Node<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         for part in &self.parts {
             write!(f, "{part}")?;
@@ -68,7 +68,7 @@ impl<Id: Display> Display for EdgeName<Id> {
     }
 }
 
-impl<Id: Display> Display for EdgeNamePart<Id> {
+impl<Id: Display> Display for NodePart<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Binding {
@@ -222,73 +222,45 @@ impl Display for Position {
 impl<Id: Display> Display for Pragma<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Self::Disjoint {
-                edge_name,
-                edge_names,
-                ..
-            } => {
-                write!(f, "@disjoint {edge_name} :")?;
-                edge_names
-                    .iter()
-                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+            Self::Disjoint { node, nodes, .. } => {
+                write!(f, "@disjoint {node} :")?;
+                nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, ";")
             }
-            Self::DisjointExhaustive {
-                edge_name,
-                edge_names,
-                ..
-            } => {
-                write!(f, "@disjointExhaustive {edge_name} :")?;
-                edge_names
-                    .iter()
-                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+            Self::DisjointExhaustive { node, nodes, .. } => {
+                write!(f, "@disjointExhaustive {node} :")?;
+                nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, ";")
             }
             Self::Repeat {
-                edge_names,
-                identifiers,
-                ..
+                nodes, identifiers, ..
             } => {
                 write!(f, "@repeat")?;
-                edge_names
-                    .iter()
-                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, " :")?;
                 identifiers
                     .iter()
                     .try_for_each(|identifier| write!(f, " {identifier}"))?;
                 write!(f, ";")
             }
-            Self::SimpleApply { edge_names, .. } => {
+            Self::SimpleApply { nodes, .. } => {
                 write!(f, "@simpleApply")?;
-                edge_names
-                    .iter()
-                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, ";")
             }
-            Self::TagIndex {
-                edge_names, index, ..
-            } => {
+            Self::TagIndex { nodes, index, .. } => {
                 write!(f, "@tagIndex")?;
-                edge_names
-                    .iter()
-                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, " : {index};")
             }
-            Self::TagMaxIndex {
-                edge_names, index, ..
-            } => {
+            Self::TagMaxIndex { nodes, index, .. } => {
                 write!(f, "@tagMaxIndex")?;
-                edge_names
-                    .iter()
-                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, " : {index};")
             }
-            Self::Unique { edge_names, .. } => {
+            Self::Unique { nodes, .. } => {
                 write!(f, "@unique")?;
-                edge_names
-                    .iter()
-                    .try_for_each(|edge_name| write!(f, " {edge_name}"))?;
+                nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, ";")
             }
         }

@@ -51,8 +51,8 @@ fn build_edge_label<Id: Display>(
         ast::EdgeLabel::Reachability {
             lhs, rhs, negated, ..
         } => ist::EdgeLabel::Reachability {
-            lhs: build_edge_name(&lhs),
-            rhs: build_edge_name(&rhs),
+            lhs: build_node(&lhs),
+            rhs: build_node(&rhs),
             negated,
         },
         ast::EdgeLabel::Skip { .. } => ist::EdgeLabel::Skip,
@@ -62,8 +62,8 @@ fn build_edge_label<Id: Display>(
     }
 }
 
-fn build_edge_name<Id: Display>(edge_name: &ast::EdgeName<Id>) -> Rc<str> {
-    let [ast::EdgeNamePart::Literal { identifier }] = &edge_name.parts[..] else {
+fn build_node<Id: Display>(node: &ast::Node<Id>) -> Rc<str> {
+    let [ast::NodePart::Literal { identifier }] = &node.parts[..] else {
         panic!("Only trivial EdgeName allowed.")
     };
     Rc::from(identifier.to_string())
@@ -71,8 +71,8 @@ fn build_edge_name<Id: Display>(edge_name: &ast::EdgeName<Id>) -> Rc<str> {
 
 fn build_edges<Id: Display>(game: &mut ist::Game<Rc<str>>, edges: Vec<ast::Edge<Id>>) {
     for edge in edges {
-        let lhs = build_edge_name(&edge.lhs);
-        let rhs = build_edge_name(&edge.rhs);
+        let lhs = build_node(&edge.lhs);
+        let rhs = build_node(&edge.rhs);
         let label = build_edge_label(game, edge.label);
 
         game.edges

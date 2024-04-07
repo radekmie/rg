@@ -1,6 +1,6 @@
 use super::symbol::{from_game, Flag, Symbol};
 use rg::ast::{
-    Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Game, Identifier, Type, Value, ValueEntry,
+    Edge, EdgeLabel, Expression, Game, Identifier, Node, NodePart, Type, Value, ValueEntry,
 };
 use rg::parsing::error::Error;
 use rg::position::{Position, Positioned, Span};
@@ -173,8 +173,8 @@ impl SymbolTableWithErrors {
     }
 
     fn add_from_edge(&mut self, edge: &Edge<Identifier>) {
-        let left_owner = self.add_from_edge_name(&edge.lhs);
-        let right_owner = self.add_from_edge_name(&edge.rhs);
+        let left_owner = self.add_from_node(&edge.lhs);
+        let right_owner = self.add_from_node(&edge.rhs);
         let owner = left_owner.or(right_owner);
         self.add_from_edge_label(&edge.label, &owner);
     }
@@ -211,8 +211,8 @@ impl SymbolTableWithErrors {
             EdgeLabel::Skip { .. } => (),
             EdgeLabel::Tag { symbol } => self.add_maybe_edge_param(symbol, owner, false),
             EdgeLabel::Reachability { lhs, rhs, .. } => {
-                self.add_from_edge_name(lhs);
-                self.add_from_edge_name(rhs);
+                self.add_from_node(lhs);
+                self.add_from_node(rhs);
             }
         }
     }
@@ -234,13 +234,13 @@ impl SymbolTableWithErrors {
     }
 
     // Returns symbol idx for edge name if it has parameters
-    fn add_from_edge_name(&mut self, edge_name: &EdgeName<Identifier>) -> Option<usize> {
-        match edge_name.parts.as_slice() {
-            [EdgeNamePart::Literal { identifier }] => {
+    fn add_from_node(&mut self, node: &Node<Identifier>) -> Option<usize> {
+        match node.parts.as_slice() {
+            [NodePart::Literal { identifier }] => {
                 self.add_occ_with_flag(identifier, Flag::Edge);
                 None
             }
-            [EdgeNamePart::Literal { identifier }, bindings @ ..] => {
+            [NodePart::Literal { identifier }, bindings @ ..] => {
                 let occ = self.occ_with_flag(identifier, Flag::Edge);
                 let sym_idx = occ.symbol;
                 self.occurrences.push(occ);
@@ -253,15 +253,15 @@ impl SymbolTableWithErrors {
         }
     }
 
-    fn add_from_name_part(&mut self, name_part: &EdgeNamePart<Identifier>, owner: &Option<usize>) {
+    fn add_from_name_part(&mut self, name_part: &NodePart<Identifier>, owner: &Option<usize>) {
         match name_part {
-            EdgeNamePart::Binding {
+            NodePart::Binding {
                 identifier, type_, ..
             } => {
                 self.add_occ_with_flag_and_owner(identifier, Flag::Param, owner);
                 self.add_from_type(type_);
             }
-            EdgeNamePart::Literal { identifier } => {
+            NodePart::Literal { identifier } => {
                 self.add_occ_with_flag(identifier, Flag::Edge);
             }
         }
@@ -313,8 +313,8 @@ impl SymbolTableWithErrors {
             table.add_from_edge(edge);
         });
         game.pragmas.iter().for_each(|pragma| {
-            for edge_name in pragma.edge_names() {
-                table.add_from_edge_name(edge_name);
+            for node in pragma.nodes() {
+                table.add_from_node(node);
             }
         });
         table

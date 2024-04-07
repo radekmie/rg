@@ -6,19 +6,19 @@ use std::sync::Arc;
 impl Game<Arc<str>> {
     pub fn calculate_simple_apply(&mut self) -> Result<(), Error<Arc<str>>> {
         let next_edges = self.next_edges();
-        let edge_names: BTreeSet<_> = self
+        let nodes: BTreeSet<_> = self
             .edges
             .iter()
             .flat_map(|edge| [&edge.lhs, &edge.rhs])
             .cloned()
             .collect();
 
-        let mut simple_apply_edge_names = BTreeSet::new();
-        'outer: for edge_name in edge_names {
+        let mut simple_apply_nodes = BTreeSet::new();
+        'outer: for node in nodes {
             let mut paths_to_edges = BTreeMap::new();
             let mut paths_to_players: BTreeMap<_, BTreeSet<(_, _)>> = BTreeMap::new();
             let mut paths_to_tags: BTreeMap<_, BTreeSet<(_, _)>> = BTreeMap::new();
-            let mut queue = vec![(edge_name.clone(), vec![])];
+            let mut queue = vec![(node.clone(), vec![])];
             while let Some((lhs, assignments)) = queue.pop() {
                 let maybe_edges = next_edges.get(&lhs);
 
@@ -66,23 +66,23 @@ impl Game<Arc<str>> {
             if paths_to_players.len() <= 1
                 && paths_to_tags.into_values().all(|paths| paths.len() == 1)
             {
-                simple_apply_edge_names.insert(edge_name.clone());
+                simple_apply_nodes.insert(node.clone());
             }
         }
 
         self.pragmas.retain(|pragma| {
-            if let Pragma::SimpleApply { edge_names, .. } = pragma {
-                simple_apply_edge_names.extend(edge_names.iter().cloned());
+            if let Pragma::SimpleApply { nodes, .. } = pragma {
+                simple_apply_nodes.extend(nodes.iter().cloned());
                 false
             } else {
                 true
             }
         });
 
-        if !simple_apply_edge_names.is_empty() {
+        if !simple_apply_nodes.is_empty() {
             let pragma = Pragma::SimpleApply {
                 span: Span::none(),
-                edge_names: simple_apply_edge_names.into_iter().collect(),
+                nodes: simple_apply_nodes.into_iter().collect(),
             };
 
             let index = self.pragmas.partition_point(|x| *x < pragma);

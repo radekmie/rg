@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Identifier, Pragma, Type,
-    Typedef, Value, ValueEntry, Variable,
+    Constant, Edge, EdgeLabel, Expression, Identifier, Node, NodePart, Pragma, Type, Typedef,
+    Value, ValueEntry, Variable,
 };
 use map_id::MapId;
 use nom_locate::LocatedSpan;
@@ -216,13 +216,13 @@ impl<Id: Positioned> Positioned for EdgeLabel<Id> {
     }
 }
 
-impl<Id> Positioned for EdgeName<Id> {
+impl<Id> Positioned for Node<Id> {
     fn span(&self) -> Span {
         self.span
     }
 }
 
-impl<Id: Positioned> Positioned for EdgeNamePart<Id> {
+impl<Id: Positioned> Positioned for NodePart<Id> {
     fn span(&self) -> Span {
         match &self {
             Self::Binding { span, .. } => *span,

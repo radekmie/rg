@@ -1,4 +1,4 @@
-use crate::ast::{Edge, EdgeName, Error, Game};
+use crate::ast::{Edge, Error, Game, Node};
 use std::collections::BTreeSet;
 
 // Before:
@@ -60,12 +60,12 @@ impl<Id: Clone + Ord> Game<Id> {
         changed
     }
 
-    fn to_join(&self) -> Vec<(Edge<Id>, EdgeName<Id>, Edge<Id>)> {
+    fn to_join(&self) -> Vec<(Edge<Id>, Node<Id>, Edge<Id>)> {
         let prev_edges = self.prev_edges();
 
         let mut to_join = vec![];
         let mut to_remove = BTreeSet::new();
-        for x in self.edge_names() {
+        for x in self.nodes() {
             for e1 in prev_edges.get(x).into_iter().flat_map(|x| x.iter()) {
                 if to_remove.contains(&&e1.lhs)
                     // (1)

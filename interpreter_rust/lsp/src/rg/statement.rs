@@ -1,7 +1,7 @@
 use super::symbol::Symbol;
 use crate::completions::CompletionKind;
 use rg::ast::{
-    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Identifier, Pragma, Type, Typedef, Variable,
+    Constant, Edge, EdgeLabel, Identifier, Node, NodePart, Pragma, Type, Typedef, Variable,
 };
 use rg::position::{Position, Positioned};
 
@@ -39,9 +39,9 @@ impl Statement for Constant<Identifier> {
 impl Statement for Edge<Identifier> {
     fn completion_kind(&self, pos: &Position) -> CompletionKind {
         if self.lhs.span().encloses_position(pos) {
-            completion_kind_edge_name(pos, &self.lhs)
+            completion_kind_node(pos, &self.lhs)
         } else if self.rhs.span().encloses_position(pos) {
-            completion_kind_edge_name(pos, &self.rhs)
+            completion_kind_node(pos, &self.rhs)
         } else if self.label.span().encloses_position(pos) || pos > &self.label.end() {
             match self.label {
                 EdgeLabel::Assignment { .. } => CompletionKind::Variable,
@@ -60,9 +60,9 @@ impl Statement for Edge<Identifier> {
     }
 
     fn symbol_type(&self, symbol: &Symbol) -> Option<String> {
-        for edge_name in [&self.lhs, &self.rhs] {
-            for part in &edge_name.parts {
-                if let EdgeNamePart::Binding { span, type_, .. } = part {
+        for node in [&self.lhs, &self.rhs] {
+            for node_part in &node.parts {
+                if let NodePart::Binding { span, type_, .. } = node_part {
                     if span.encloses_span(&symbol.pos) {
                         return Some(type_.to_string());
                     }
@@ -76,9 +76,9 @@ impl Statement for Edge<Identifier> {
 
 impl Statement for Pragma<Identifier> {
     fn completion_kind(&self, pos: &Position) -> CompletionKind {
-        for edge_name in self.edge_names() {
-            if edge_name.span.encloses_position(pos) {
-                return completion_kind_edge_name(pos, edge_name);
+        for node in self.nodes() {
+            if node.span.encloses_position(pos) {
+                return completion_kind_node(pos, node);
             }
         }
 
@@ -154,23 +154,22 @@ impl Statement for Variable<Identifier> {
     }
 }
 
-fn completion_kind_edge_name(pos: &Position, edge_name: &EdgeName<Identifier>) -> CompletionKind {
-    edge_name
-        .parts
+fn completion_kind_node(pos: &Position, node: &Node<Identifier>) -> CompletionKind {
+    node.parts
         .iter()
-        .find(|part| part.span().encloses_position(pos))
-        .map_or(CompletionKind::Edge, |part| {
-            match part {
-                EdgeNamePart::Binding {
+        .find(|node_part| node_part.span().encloses_position(pos))
+        .map_or(CompletionKind::Edge, |node_part| {
+            match node_part {
+                NodePart::Binding {
                     identifier, type_, ..
                 } if identifier.span().encloses_position(pos)
                     || type_.span().start <= identifier.span().end =>
                 {
                     CompletionKind::Param
                 }
-                EdgeNamePart::Binding { .. } => CompletionKind::Type,
+                NodePart::Binding { .. } => CompletionKind::Type,
                 // We can been on toplevel before an edge
-                EdgeNamePart::Literal { .. } => CompletionKind::Toplevel,
+                NodePart::Literal { .. } => CompletionKind::Toplevel,
             }
         })
 }

@@ -155,13 +155,13 @@ fn add_fact_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
 fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use gdl::ast::{AtomOrVariable, Term};
-    use rg::ast::{Edge, EdgeLabel, EdgeName, Expression};
+    use rg::ast::{Edge, EdgeLabel, Expression, Node};
     use rg::position::Span;
 
     rg.edges.push(Edge {
         span: Span::none(),
-        lhs: EdgeName::new(Id::from("begin")),
-        rhs: EdgeName::new(Id::from("loop_begin")),
+        lhs: Node::new(Id::from("begin")),
+        rhs: Node::new(Id::from("loop_begin")),
         label: EdgeLabel::Skip { span: Span::none() },
     });
 
@@ -190,12 +190,12 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     for (role_index, role) in roles.iter().enumerate() {
         rg.edges.push(Edge {
             span: Span::none(),
-            lhs: EdgeName::new(if role_index == 0 {
+            lhs: Node::new(if role_index == 0 {
                 Id::from("loop_begin")
             } else {
                 Id::from(format!("loop_{}_end", roles[role_index - 1]))
             }),
-            rhs: EdgeName::new(Id::from(format!("loop_{role}_visibility_0"))),
+            rhs: Node::new(Id::from(format!("loop_{role}_visibility_0"))),
             label: EdgeLabel::Skip { span: Span::none() },
         });
 
@@ -203,8 +203,8 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
             let is_visible = if role_index == op_index { "1" } else { "0" };
             rg.edges.push(Edge {
                 span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("loop_{role}_visibility_{op_index}"))),
-                rhs: EdgeName::new(Id::from(format!("loop_{role}_visibility_{}", op_index + 1))),
+                lhs: Node::new(Id::from(format!("loop_{role}_visibility_{op_index}"))),
+                rhs: Node::new(Id::from(format!("loop_{role}_visibility_{}", op_index + 1))),
                 label: EdgeLabel::Assignment {
                     lhs: Arc::from(Expression::Access {
                         span: Span::none(),
@@ -218,8 +218,8 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
         rg.edges.push(Edge {
             span: Span::none(),
-            lhs: EdgeName::new(Id::from(format!("loop_{role}_visibility_{}", roles.len()))),
-            rhs: EdgeName::new(Id::from(format!("loop_{role}_begin"))),
+            lhs: Node::new(Id::from(format!("loop_{role}_visibility_{}", roles.len()))),
+            rhs: Node::new(Id::from(format!("loop_{role}_begin"))),
             label: EdgeLabel::Assignment {
                 lhs: Arc::from(Expression::new(Id::from("player"))),
                 rhs: Arc::from(Expression::new((*role).clone())),
@@ -246,8 +246,8 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         for action in legals.get(role).unwrap() {
             rg.edges.push(Edge {
                 span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("loop_{role}_{action}_move"))),
-                rhs: EdgeName::new(Id::from(format!("loop_{role}_{action}_tag"))),
+                lhs: Node::new(Id::from(format!("loop_{role}_{action}_move"))),
+                rhs: Node::new(Id::from(format!("loop_{role}_{action}_tag"))),
                 label: EdgeLabel::Assignment {
                     lhs: Arc::from(Expression::new(Id::from(format!("does_{role}")))),
                     rhs: Arc::from(Expression::new((*action).clone())),
@@ -256,8 +256,8 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
             rg.edges.push(Edge {
                 span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("loop_{role}_{action}_tag"))),
-                rhs: EdgeName::new(Id::from(format!("loop_{role}_switch"))),
+                lhs: Node::new(Id::from(format!("loop_{role}_{action}_tag"))),
+                rhs: Node::new(Id::from(format!("loop_{role}_switch"))),
                 label: EdgeLabel::Tag {
                     symbol: (*action).clone(),
                 },
@@ -266,8 +266,8 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
         rg.edges.push(Edge {
             span: Span::none(),
-            lhs: EdgeName::new(Id::from(format!("loop_{role}_switch"))),
-            rhs: EdgeName::new(Id::from(format!("loop_{role}_end"))),
+            lhs: Node::new(Id::from(format!("loop_{role}_switch"))),
+            rhs: Node::new(Id::from(format!("loop_{role}_end"))),
             label: EdgeLabel::Assignment {
                 lhs: Arc::from(Expression::new(Id::from("player"))),
                 rhs: Arc::from(Expression::new(Id::from("keeper"))),
@@ -277,21 +277,21 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
     rg.edges.push(Edge {
         span: Span::none(),
-        lhs: EdgeName::new(Id::from(format!("loop_{}_end", roles.last().unwrap()))),
-        rhs: EdgeName::new(Id::from("loop_end")),
+        lhs: Node::new(Id::from(format!("loop_{}_end", roles.last().unwrap()))),
+        rhs: Node::new(Id::from("loop_end")),
         label: EdgeLabel::Skip { span: Span::none() },
     });
 }
 
 fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use gdl::ast::{AtomOrVariable, Term};
-    use rg::ast::{Edge, EdgeLabel, EdgeName, Expression};
+    use rg::ast::{Edge, EdgeLabel, Expression, Node};
     use rg::position::Span;
 
     rg.edges.push(Edge {
         span: Span::none(),
-        lhs: EdgeName::new(Id::from("loop_end")),
-        rhs: EdgeName::new(Id::from("next_0")),
+        lhs: Node::new(Id::from("loop_end")),
+        rhs: Node::new(Id::from("next_0")),
         label: EdgeLabel::Skip { span: Span::none() },
     });
 
@@ -326,8 +326,8 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
                     rg.edges.push(Edge {
                         span: Span::none(),
-                        lhs: EdgeName::new(Id::from(format!("next_{}_0", variables.len()))),
-                        rhs: EdgeName::new(Id::from(format!("next_{}", variables.len()))),
+                        lhs: Node::new(Id::from(format!("next_{}_0", variables.len()))),
+                        rhs: Node::new(Id::from(format!("next_{}", variables.len()))),
                         label: EdgeLabel::Assignment {
                             lhs: Arc::from(Expression::new(Id::from(format!("{id}_next")))),
                             rhs: Arc::from(Expression::new(Id::from("0"))),
@@ -336,8 +336,8 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
                     rg.edges.push(Edge {
                         span: Span::none(),
-                        lhs: EdgeName::new(Id::from(format!("next_{}_1", variables.len()))),
-                        rhs: EdgeName::new(Id::from(format!("next_{}", variables.len()))),
+                        lhs: Node::new(Id::from(format!("next_{}_1", variables.len()))),
+                        rhs: Node::new(Id::from(format!("next_{}", variables.len()))),
                         label: EdgeLabel::Assignment {
                             lhs: Arc::from(Expression::new(Id::from(format!("{id}_next")))),
                             rhs: Arc::from(Expression::new(Id::from("1"))),
@@ -350,16 +350,16 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
     rg.edges.push(Edge {
         span: Span::none(),
-        lhs: EdgeName::new(Id::from(format!("next_{}", variables.len()))),
-        rhs: EdgeName::new(Id::from("next_0_set")),
+        lhs: Node::new(Id::from(format!("next_{}", variables.len()))),
+        rhs: Node::new(Id::from("next_0_set")),
         label: EdgeLabel::Skip { span: Span::none() },
     });
 
     for (index, variable) in variables.iter().enumerate() {
         rg.edges.push(Edge {
             span: Span::none(),
-            lhs: EdgeName::new(Id::from(format!("next_{index}_set"))),
-            rhs: EdgeName::new(Id::from(format!("next_{}_set", index + 1))),
+            lhs: Node::new(Id::from(format!("next_{index}_set"))),
+            rhs: Node::new(Id::from(format!("next_{}_set", index + 1))),
             label: EdgeLabel::Assignment {
                 lhs: Arc::from(Expression::new(Id::from(format!("{variable}_prev")))),
                 rhs: Arc::from(Expression::new(Id::from(format!("{variable}_next")))),
@@ -369,16 +369,16 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
     rg.edges.push(Edge {
         span: Span::none(),
-        lhs: EdgeName::new(Id::from(format!("next_{}_set", variables.len()))),
-        rhs: EdgeName::new(Id::from("next_0_clear")),
+        lhs: Node::new(Id::from(format!("next_{}_set", variables.len()))),
+        rhs: Node::new(Id::from("next_0_clear")),
         label: EdgeLabel::Skip { span: Span::none() },
     });
 
     for (index, variable) in variables.iter().enumerate() {
         rg.edges.push(Edge {
             span: Span::none(),
-            lhs: EdgeName::new(Id::from(format!("next_{index}_clear"))),
-            rhs: EdgeName::new(Id::from(format!("next_{}_clear", index + 1))),
+            lhs: Node::new(Id::from(format!("next_{index}_clear"))),
+            rhs: Node::new(Id::from(format!("next_{}_clear", index + 1))),
             label: EdgeLabel::Assignment {
                 lhs: Arc::from(Expression::new(Id::from(format!("{variable}_next")))),
                 rhs: Arc::from(Expression::new(Id::from("0"))),
@@ -388,21 +388,21 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
     rg.edges.push(Edge {
         span: Span::none(),
-        lhs: EdgeName::new(Id::from(format!("next_{}_clear", variables.len()))),
-        rhs: EdgeName::new(Id::from("next_end")),
+        lhs: Node::new(Id::from(format!("next_{}_clear", variables.len()))),
+        rhs: Node::new(Id::from("next_end")),
         label: EdgeLabel::Skip { span: Span::none() },
     });
 }
 
 fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use gdl::ast::Term;
-    use rg::ast::{Edge, EdgeLabel, EdgeName};
+    use rg::ast::{Edge, EdgeLabel, Node};
     use rg::position::Span;
 
     rg.edges.push(Edge {
         span: Span::none(),
-        lhs: EdgeName::new(Id::from("next_end")),
-        rhs: EdgeName::new(Id::from("terminal")),
+        lhs: Node::new(Id::from("next_end")),
+        rhs: Node::new(Id::from("terminal")),
         label: EdgeLabel::Skip { span: Span::none() },
     });
 
@@ -427,13 +427,13 @@ fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
 fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use gdl::ast::{AtomOrVariable, Rule, Term};
-    use rg::ast::{Edge, EdgeLabel, EdgeName, Expression};
+    use rg::ast::{Edge, EdgeLabel, Expression, Node};
     use rg::position::Span;
 
     rg.edges.push(Edge {
         span: Span::none(),
-        lhs: EdgeName::new(Id::from("terminal_end")),
-        rhs: EdgeName::new(Id::from("goals_0_set")),
+        lhs: Node::new(Id::from("terminal_end")),
+        rhs: Node::new(Id::from("goals_0_set")),
         label: EdgeLabel::Skip { span: Span::none() },
     });
 
@@ -462,8 +462,8 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         for goal in goals {
             rg.edges.push(Edge {
                 span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("goals_{}_check_{goal}", index + 1))),
-                rhs: EdgeName::new(Id::from(format!("goals_{}_set", index + 1))),
+                lhs: Node::new(Id::from(format!("goals_{}_check_{goal}", index + 1))),
+                rhs: Node::new(Id::from(format!("goals_{}_set", index + 1))),
                 label: EdgeLabel::Assignment {
                     lhs: Arc::from(Expression::Access {
                         span: Span::none(),
@@ -478,8 +478,8 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
     rg.edges.push(Edge {
         span: Span::none(),
-        lhs: EdgeName::new(Id::from(format!("goals_{}_set", goals.len()))),
-        rhs: EdgeName::new(Id::from("end")),
+        lhs: Node::new(Id::from(format!("goals_{}_set", goals.len()))),
+        rhs: Node::new(Id::from("end")),
         label: EdgeLabel::Assignment {
             lhs: Arc::from(Expression::new(Id::from("player"))),
             rhs: Arc::from(Expression::new(Id::from("keeper"))),
@@ -511,12 +511,12 @@ fn connect(
     end: Id,
     negated: bool,
 ) {
-    use rg::ast::{Edge, EdgeLabel, EdgeName, Expression};
+    use rg::ast::{Edge, EdgeLabel, Expression, Node};
     use rg::position::Span;
 
     let hash = hash_term(goal);
-    let lhs = EdgeName::new(Id::from(format!("__{hash}_begin")));
-    let rhs = EdgeName::new(Id::from(format!("__{hash}_end")));
+    let lhs = Node::new(Id::from(format!("__{hash}_begin")));
+    let rhs = Node::new(Id::from(format!("__{hash}_end")));
 
     let start_present = rg.edges.iter().any(|edge| edge.lhs == lhs);
     if !start_present {
@@ -532,7 +532,7 @@ fn connect(
             rg.edges.push(Edge {
                 span: Span::none(),
                 lhs: lhs.clone(),
-                rhs: EdgeName::new(Id::from(format!("{prefix}_0"))),
+                rhs: Node::new(Id::from(format!("{prefix}_0"))),
                 label: EdgeLabel::Skip { span: Span::none() },
             });
 
@@ -540,15 +540,15 @@ fn connect(
                 let label = connect_one(rg, gdl, predicate, &format!("{prefix}_{}", step + 1));
                 rg.edges.push(Edge {
                     span: Span::none(),
-                    lhs: EdgeName::new(Id::from(format!("{prefix}_{step}"))),
-                    rhs: EdgeName::new(Id::from(format!("{prefix}_{}", step + 1))),
+                    lhs: Node::new(Id::from(format!("{prefix}_{step}"))),
+                    rhs: Node::new(Id::from(format!("{prefix}_{}", step + 1))),
                     label,
                 });
             }
 
             rg.edges.push(Edge {
                 span: Span::none(),
-                lhs: EdgeName::new(Id::from(format!("{prefix}_{}", rule.predicates.len()))),
+                lhs: Node::new(Id::from(format!("{prefix}_{}", rule.predicates.len()))),
                 rhs: rhs.clone(),
                 label: EdgeLabel::Skip { span: Span::none() },
             });
@@ -571,8 +571,8 @@ fn connect(
 
     rg.edges.push(Edge {
         span: Span::none(),
-        lhs: EdgeName::new(begin),
-        rhs: EdgeName::new(end),
+        lhs: Node::new(begin),
+        rhs: Node::new(end),
         label: EdgeLabel::Reachability {
             span: Span::none(),
             lhs,
@@ -589,7 +589,7 @@ fn connect_one(
     prefix: &str,
 ) -> rg::ast::EdgeLabel<Id> {
     use gdl::ast::{AtomOrVariable, Term};
-    use rg::ast::{EdgeLabel, EdgeName, Expression};
+    use rg::ast::{EdgeLabel, Expression, Node};
     use rg::position::Span;
 
     match predicate.term.as_ref() {
@@ -599,8 +599,8 @@ fn connect_one(
             connect(rg, gdl, &predicate.term, lhs.clone(), rhs.clone(), false);
             EdgeLabel::Reachability {
                 span: Span::none(),
-                lhs: EdgeName::new(lhs),
-                rhs: EdgeName::new(rhs),
+                lhs: Node::new(lhs),
+                rhs: Node::new(rhs),
                 negated: predicate.is_negated,
             }
         }

@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, EdgeLabel, EdgeName, EdgeNamePart, Expression, Identifier, Type, Typedef,
-    Value, ValueEntry, Variable,
+    Constant, Edge, EdgeLabel, Expression, Identifier, Node, NodePart, Type, Typedef, Value,
+    ValueEntry, Variable,
 };
 use crate::parsing::parser::Input;
 use crate::position::{Positioned, Span};
@@ -23,8 +23,8 @@ impl<Id: Positioned> From<(Input<'_>, (Id, Arc<Type<Id>>, Arc<Value<Id>>), Span)
     }
 }
 
-impl<Id: Positioned> From<(EdgeName<Id>, (EdgeName<Id>, EdgeLabel<Id>), Span)> for Edge<Id> {
-    fn from((lhs, (rhs, label), end): (EdgeName<Id>, (EdgeName<Id>, EdgeLabel<Id>), Span)) -> Self {
+impl<Id: Positioned> From<(Node<Id>, (Node<Id>, EdgeLabel<Id>), Span)> for Edge<Id> {
+    fn from((lhs, (rhs, label), end): (Node<Id>, (Node<Id>, EdgeLabel<Id>), Span)) -> Self {
         Self {
             span: end.with_start(lhs.start()),
             label,
@@ -65,8 +65,8 @@ impl<Id> From<(Arc<Expression<Id>>, &str, Arc<Expression<Id>>)> for EdgeLabel<Id
     }
 }
 
-impl<Id: Positioned> From<(Input<'_>, EdgeName<Id>, EdgeName<Id>)> for EdgeLabel<Id> {
-    fn from((tag, lhs, rhs): (Input, EdgeName<Id>, EdgeName<Id>)) -> Self {
+impl<Id: Positioned> From<(Input<'_>, Node<Id>, Node<Id>)> for EdgeLabel<Id> {
+    fn from((tag, lhs, rhs): (Input, Node<Id>, Node<Id>)) -> Self {
         let negated = *tag.fragment() == "!";
         Self::Reachability {
             span: Span::from(&tag).with_end(rhs.span().end),
@@ -83,9 +83,9 @@ impl<Id: Positioned> From<Id> for Expression<Id> {
     }
 }
 
-impl<Id: Positioned> From<(Id, Vec<EdgeNamePart<Id>>)> for EdgeName<Id> {
-    fn from((identifier, bindings): (Id, Vec<EdgeNamePart<Id>>)) -> Self {
-        let first = EdgeNamePart::from(identifier);
+impl<Id: Positioned> From<(Id, Vec<NodePart<Id>>)> for Node<Id> {
+    fn from((identifier, bindings): (Id, Vec<NodePart<Id>>)) -> Self {
+        let first = NodePart::from(identifier);
         let last = bindings.last().unwrap_or(&first);
         let span = first.span().with_end(last.end());
         let mut parts = vec![first];
@@ -94,13 +94,13 @@ impl<Id: Positioned> From<(Id, Vec<EdgeNamePart<Id>>)> for EdgeName<Id> {
     }
 }
 
-impl<Id: Positioned> From<Id> for EdgeName<Id> {
+impl<Id: Positioned> From<Id> for Node<Id> {
     fn from(identifier: Id) -> Self {
         Self::from((identifier, vec![]))
     }
 }
 
-impl<Id: Positioned> From<(Input<'_>, Id, Arc<Type<Id>>, Input<'_>)> for EdgeNamePart<Id> {
+impl<Id: Positioned> From<(Input<'_>, Id, Arc<Type<Id>>, Input<'_>)> for NodePart<Id> {
     fn from((start, identifier, type_, end): (Input, Id, Arc<Type<Id>>, Input)) -> Self {
         Self::Binding {
             span: Span::from((&start, &end)),
@@ -110,7 +110,7 @@ impl<Id: Positioned> From<(Input<'_>, Id, Arc<Type<Id>>, Input<'_>)> for EdgeNam
     }
 }
 
-impl<Id> From<Id> for EdgeNamePart<Id> {
+impl<Id> From<Id> for NodePart<Id> {
     fn from(identifier: Id) -> Self {
         Self::Literal { identifier }
     }
