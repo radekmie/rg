@@ -3,28 +3,31 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn expand_generator_nodes(&mut self) -> Result<(), Error<Arc<str>>> {
-        macro_rules! expand {
-            ($ident:ident) => {
-                for index in (0..self.$ident.len()).rev() {
-                    let bindings = self.$ident[index].bindings();
-                    if bindings.is_empty() {
-                        continue;
-                    }
+        for index in (0..self.edges.len()).rev() {
+            let bindings = self.edges[index].bindings();
+            if bindings.is_empty() {
+                continue;
+            }
 
-                    let mappings = self.create_mappings(bindings.into_iter())?;
-                    let item = self.$ident.remove(index);
-                    self.$ident.splice(
-                        index..index,
-                        mappings
-                            .into_iter()
-                            .map(|mapping| item.substitute_bindings(&mapping)),
-                    );
-                }
-            };
+            let mappings = self.create_mappings(bindings.into_iter())?;
+            let item = self.edges.remove(index);
+            self.edges.splice(
+                index..index,
+                mappings
+                    .into_iter()
+                    .map(|mapping| item.substitute_bindings(&mapping)),
+            );
         }
 
-        expand!(edges);
-        expand!(pragmas);
+        for index in 0..self.pragmas.len() {
+            let bindings = self.pragmas[index].bindings();
+            if bindings.is_empty() {
+                continue;
+            }
+
+            let mappings = self.create_mappings(bindings.into_iter())?;
+            self.pragmas[index].substitute_bindings_mut(&mappings);
+        }
 
         Ok(())
     }
@@ -68,12 +71,12 @@ mod test {
     test!(
         pragma1,
         "type T = { a, b }; @unique x(t: T);",
-        "type T = { a, b }; @unique x__bind__a; @unique x__bind__b;"
+        "type T = { a, b }; @unique x__bind__a x__bind__b;"
     );
 
     test!(
         pragma2,
         "type T = { a, b }; @unique y(t1: T)(t2: T);",
-        "type T = { a, b }; @unique y__bind__a__bind__a; @unique y__bind__a__bind__b; @unique y__bind__b__bind__a; @unique y__bind__b__bind__b;"
+        "type T = { a, b }; @unique y__bind__a__bind__a y__bind__a__bind__b y__bind__b__bind__a y__bind__b__bind__b;"
     );
 }

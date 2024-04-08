@@ -1019,66 +1019,35 @@ impl<Id: Ord> Pragma<Id> {
 }
 
 impl Pragma<Arc<str>> {
-    pub fn substitute_bindings(&self, mapping: &Mapping<Arc<str>>) -> Self {
+    pub fn substitute_bindings_mut(&mut self, mappings: &[Mapping<Arc<str>>]) {
+        if let Self::Disjoint { node, .. } | Self::DisjointExhaustive { node, .. } = self {
+            let mut node_variants = mappings
+                .iter()
+                .map(|mapping| node.substitute_bindings(mapping))
+                .collect::<BTreeSet<_>>();
+            assert_eq!(
+                node_variants.len(),
+                1,
+                "Cannot `substitute_bindings_mut` of a `Pragma` with bindings in `node`."
+            );
+            *node = node_variants.pop_first().unwrap();
+        };
+
         match self {
-            Self::Disjoint { span, node, nodes } => Self::Disjoint {
-                span: *span,
-                node: node.substitute_bindings(mapping),
-                nodes: nodes
+            Self::Disjoint { nodes, .. }
+            | Self::DisjointExhaustive { nodes, .. }
+            | Self::Repeat { nodes, .. }
+            | Self::SimpleApply { nodes, .. }
+            | Self::TagIndex { nodes, .. }
+            | Self::TagMaxIndex { nodes, .. }
+            | Self::Unique { nodes, .. } => {
+                *nodes = mappings
                     .iter()
-                    .map(|node| node.substitute_bindings(mapping))
-                    .collect(),
-            },
-            Self::DisjointExhaustive { span, node, nodes } => Self::DisjointExhaustive {
-                span: *span,
-                node: node.substitute_bindings(mapping),
-                nodes: nodes
-                    .iter()
-                    .map(|node| node.substitute_bindings(mapping))
-                    .collect(),
-            },
-            Self::Repeat {
-                span,
-                nodes,
-                identifiers,
-            } => Self::Repeat {
-                span: *span,
-                nodes: nodes
-                    .iter()
-                    .map(|node| node.substitute_bindings(mapping))
-                    .collect(),
-                identifiers: identifiers.to_vec(),
-            },
-            Self::SimpleApply { span, nodes } => Self::SimpleApply {
-                span: *span,
-                nodes: nodes
-                    .iter()
-                    .map(|node| node.substitute_bindings(mapping))
-                    .collect(),
-            },
-            Self::TagIndex { span, nodes, index } => Self::TagIndex {
-                span: *span,
-                nodes: nodes
-                    .iter()
-                    .map(|node| node.substitute_bindings(mapping))
-                    .collect(),
-                index: *index,
-            },
-            Self::TagMaxIndex { span, nodes, index } => Self::TagMaxIndex {
-                span: *span,
-                nodes: nodes
-                    .iter()
-                    .map(|node| node.substitute_bindings(mapping))
-                    .collect(),
-                index: *index,
-            },
-            Self::Unique { span, nodes } => Self::Unique {
-                span: *span,
-                nodes: nodes
-                    .iter()
-                    .map(|node| node.substitute_bindings(mapping))
-                    .collect(),
-            },
+                    .flat_map(|mapping| nodes.iter().map(|node| node.substitute_bindings(mapping)))
+                    .collect::<BTreeSet<_>>()
+                    .into_iter()
+                    .collect();
+            }
         }
     }
 }
