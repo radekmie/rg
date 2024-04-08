@@ -145,7 +145,8 @@ impl Iterator for StateNext<'_> {
             }
 
             if let Some(state) = search_queue.pop() {
-                if !visited_states.insert(state.clone()) {
+                if !game.uniques.contains(&state.position) && !visited_states.insert(state.clone())
+                {
                     continue;
                 }
 

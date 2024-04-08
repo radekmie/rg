@@ -5,7 +5,7 @@ pub mod tools;
 
 use map_id::MapId;
 use map_id_macro::MapId;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
 // Interned strings that the interpreter relies on.
@@ -63,6 +63,7 @@ pub struct Game<Id: Ord> {
     pub constants: BTreeMap<Id, Rc<Value<Id>>>,
     pub edges: BTreeMap<Id, Vec<Edge<Id>>>,
     pub types: BTreeMap<Id, Rc<Type<Id>>>,
+    pub uniques: BTreeSet<Id>,
     pub variables: BTreeMap<Id, Variable<Id>>,
 }
 

@@ -6,17 +6,18 @@ use rand::seq::IteratorRandom;
 use rand::Rng;
 use std::collections::BTreeMap;
 use std::rc::Rc;
+use std::sync::Arc;
 use utils::Interner;
 
-pub type ISTInterner = Interner<Rc<str>, RuntimeId>;
+pub type ISTInterner = Interner<Arc<str>, RuntimeId>;
 
 pub fn new_ist_interner() -> ISTInterner {
     let mut interner = Interner::default();
-    interner.intern_as(&Rc::from("begin"), LABEL_BEGIN);
-    interner.intern_as(&Rc::from("end"), LABEL_END);
-    interner.intern_as(&Rc::from("goals"), LABEL_GOALS);
-    interner.intern_as(&Rc::from("keeper"), LABEL_KEEPER);
-    interner.intern_as(&Rc::from("player"), LABEL_PLAYER);
+    interner.intern_as(&Arc::from("begin"), LABEL_BEGIN);
+    interner.intern_as(&Arc::from("end"), LABEL_END);
+    interner.intern_as(&Arc::from("goals"), LABEL_GOALS);
+    interner.intern_as(&Arc::from("keeper"), LABEL_KEEPER);
+    interner.intern_as(&Arc::from("player"), LABEL_PLAYER);
     interner
 }
 
