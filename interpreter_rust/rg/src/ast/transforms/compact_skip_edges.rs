@@ -1,4 +1,4 @@
-use crate::ast::{Edge, Error, Game};
+use crate::ast::{Edge, Error, Game, Type};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -21,6 +21,8 @@ impl Game<Arc<str>> {
         while let Some(x) = self.compact_skip_edge_single() {
             self.edges.remove(x);
         }
+
+        self.make_bindings_canonical();
 
         Ok(())
     }
@@ -143,6 +145,33 @@ impl Game<Arc<str>> {
         }
 
         true
+    }
+
+    // TODO: Extract to a separate AST transform.
+    fn make_bindings_canonical(&mut self) {
+        // Iterate over indexes to eliminate multiple ownership.
+        let edges = &mut self.edges;
+        for x in 0..edges.len() {
+            for (binding, type_) in edges[x].clone().bindings() {
+                let Type::TypeReference { ref identifier } = type_.as_ref() else {
+                    continue;
+                };
+
+                if !binding.starts_with("bind_") {
+                    continue;
+                }
+
+                let fresh: Arc<str> = Arc::from(identifier.to_lowercase());
+                if *binding == fresh {
+                    continue;
+                }
+
+                let mapping = BTreeMap::from([(binding.clone(), fresh)]);
+                for y in get_edges_using_binding(edges, x, binding) {
+                    edges[y] = edges[y].rename_variables(&mapping);
+                }
+            }
+        }
     }
 
     // TODO: Extract to a separate AST transform.
@@ -321,12 +350,12 @@ mod test {
             type X = { x };
             type Y = { y };
             type Z = { z };
-            begin, loop(bind_1: X)(bind_2: Y): ;
-            loop(bind_1: X)(bind_2: Y), cond(bind_1: X)(bind_3: Z): ;
-            cond(bind_1: X)(bind_3: Z), true(bind_1: X)(bind_4: Y): 1 == 1;
-            cond(bind_1: X)(bind_3: Z), false(bind_1: X)(bind_3: Z): 1 != 1;
-            false(bind_1: X)(bind_3: Z), loop(bind_1: X)(bind_2: Y): ;
-            true(bind_1: X)(bind_4: Y), end: player = keeper;
+            begin, loop(x: X)(y: Y): ;
+            loop(x: X)(y: Y), cond(x: X)(z: Z): ;
+            cond(x: X)(z: Z), true(x: X)(y: Y): 1 == 1;
+            cond(x: X)(z: Z), false(x: X)(z: Z): 1 != 1;
+            false(x: X)(z: Z), loop(x: X)(y: Y): ;
+            true(x: X)(y: Y), end: player = keeper;
         "
     );
 
@@ -351,11 +380,11 @@ mod test {
             type T = { a, b };
             var v: T = a;
             begin, a: ;
-            a, c(bind_1: T): T(bind_1) != T(a);
-            c(bind_1: T), d: v = bind_1;
+            a, c(t: T): T(t) != T(a);
+            c(t: T), d: v = t;
             d, end: ;
-            d, g(bind_2: T): T(bind_2) != T(a);
-            g(bind_2: T), h: v = bind_2;
+            d, g(t: T): T(t) != T(a);
+            g(t: T), h: v = t;
             h, a: ;
             h, end: ;
         "
