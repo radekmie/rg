@@ -2,8 +2,6 @@ use rg::ast::{Edge, Game, NodePart, Type};
 use std::collections::HashSet;
 use utils::{position::Positioned, Identifier};
 
-use crate::common::symbol::{defined, Flag, Symbol};
-
 struct EdgeParam {
     param: Identifier,
     owners: HashSet<usize>,

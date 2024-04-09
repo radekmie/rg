@@ -1,8 +1,6 @@
-use std::fmt::{Display, Formatter, Result};
-
-use utils::position::{Position, Positioned, Span};
-
 use super::symbol::Symbol;
+use std::fmt::{Display, Formatter, Result};
+use utils::position::{Position, Positioned, Span};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Occurrence {

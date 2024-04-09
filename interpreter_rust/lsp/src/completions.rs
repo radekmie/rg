@@ -3,7 +3,7 @@ use crate::{
         symbol::{Flag, Symbol},
         symbol_table::SymbolTable,
     },
-    document::AST,
+    document::Ast,
     rg::ast_features::AstFeatures,
 };
 use rg::ast::Game;
@@ -54,11 +54,11 @@ pub fn capabilities() -> CompletionOptions {
 
 pub fn completions(
     pos: Position,
-    game: &AST,
+    game: &Ast,
     symbol_table: &SymbolTable,
 ) -> Option<CompletionResponse> {
     match game {
-        AST::RG(game) => {
+        Ast::Rg(game) => {
             let items = completion_items(pos, game, symbol_table);
             if items.is_empty() {
                 None
@@ -66,7 +66,7 @@ pub fn completions(
                 Some(CompletionResponse::Array(items))
             }
         }
-        AST::HRG(_) => None,
+        Ast::Hrg(_) => None,
     }
 }
 

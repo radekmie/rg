@@ -1,7 +1,7 @@
 use super::common::utils::ToLspRange;
 use crate::common::symbol_table::SymbolTable;
 use crate::common::utils::ToPosition;
-use crate::document::AST;
+use crate::document::Ast;
 use crate::rg::ast_features::hover_signature;
 use std::collections::HashMap;
 use tower_lsp::lsp_types::{
@@ -133,9 +133,9 @@ pub fn diagnostics(errors: &[Error]) -> Vec<Diagnostic> {
         .collect()
 }
 
-pub fn hover(position: Position, symbol_table: &SymbolTable, game: &AST) -> Option<Hover> {
+pub fn hover(position: Position, symbol_table: &SymbolTable, game: &Ast) -> Option<Hover> {
     match game {
-        AST::RG(game) => {
+        Ast::Rg(game) => {
             let occ = symbol_table.get_occ_at(&position.to_rg())?;
             let pos = &occ.pos;
             let enclosing_symbol = symbol_table.get_occ_symbol(occ)?;
@@ -149,6 +149,6 @@ pub fn hover(position: Position, symbol_table: &SymbolTable, game: &AST) -> Opti
                 range: Some(pos.to_lsp()),
             })
         }
-        AST::HRG(_) => None,
+        Ast::Hrg(_) => None,
     }
 }

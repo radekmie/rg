@@ -1,5 +1,4 @@
 use std::fmt::Display;
-
 use utils::{
     position::{Positioned, Span},
     Identifier,

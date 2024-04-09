@@ -1,6 +1,5 @@
-use crate::document::AST;
-
 use super::common::utils::ToLspRange;
+use crate::document::Ast;
 use rg::ast::Game;
 use std::collections::HashMap;
 use tower_lsp::lsp_types::{
@@ -12,16 +11,16 @@ use utils::{
     Identifier,
 };
 
-pub fn provide(uri: &Url, span: &Span, game: &AST, text: &str) -> Option<CodeActionResponse> {
+pub fn provide(uri: &Url, span: &Span, game: &Ast, text: &str) -> Option<CodeActionResponse> {
     match game {
-        AST::RG(game) => {
+        Ast::Rg(game) => {
             let actions = vec![split_edge(uri, span, game, text)]
                 .into_iter()
                 .flatten()
                 .collect();
             Some(actions)
         }
-        AST::HRG(_) => None,
+        Ast::Hrg(_) => None,
     }
 }
 

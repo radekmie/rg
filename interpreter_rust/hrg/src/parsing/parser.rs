@@ -6,7 +6,7 @@ use crate::ast::{
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
-use nom::combinator::{all_consuming, into, map, opt};
+use nom::combinator::{all_consuming, into, map, opt, value};
 use nom::error::context;
 use nom::multi::{fold_many0, many0, many1, separated_list0};
 use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
@@ -134,16 +134,16 @@ fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {
 
 fn binop(input: Input) -> Result<Binop> {
     ww(alt((
-        map(tag("+"), |_| Binop::Add),
-        map(tag("-"), |_| Binop::Sub),
-        map(tag("&&"), |_| Binop::And),
-        map(tag("||"), |_| Binop::Or),
-        map(tag("=="), |_| Binop::Eq),
-        map(tag("!="), |_| Binop::Ne),
-        map(tag("<"), |_| Binop::Lt),
-        map(tag("<="), |_| Binop::Lte),
-        map(tag(">"), |_| Binop::Gt),
-        map(tag(">="), |_| Binop::Gte),
+        value(Binop::Add, tag("+")),
+        value(Binop::Sub, tag("-")),
+        value(Binop::And, tag("&&")),
+        value(Binop::Or, tag("||")),
+        value(Binop::Eq, tag("==")),
+        value(Binop::Ne, tag("!=")),
+        value(Binop::Lt, tag("<")),
+        value(Binop::Lte, tag("<=")),
+        value(Binop::Gt, tag(">")),
+        value(Binop::Gte, tag(">=")),
     )))(input)
 }
 

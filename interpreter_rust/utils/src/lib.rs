@@ -1,11 +1,10 @@
-use std::fmt::{Display, Formatter, Result};
-
-use parser::Input;
-use position::{Positioned, Span};
-
 pub mod interner;
 pub mod parser;
 pub mod position;
+
+use parser::Input;
+use position::{Positioned, Span};
+use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Default)]
 pub struct Identifier {

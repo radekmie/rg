@@ -1,5 +1,4 @@
 use std::sync::Arc;
-
 use crate::ast::{
     DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg, FunctionCase,
     FunctionDeclaration, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,

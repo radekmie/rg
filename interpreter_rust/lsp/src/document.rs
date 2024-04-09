@@ -1,24 +1,22 @@
+use crate::common::symbol_table::SymbolTable;
+use crate::hrg::symbol_table::from_game as hrg_symbol_table;
+use crate::rg::symbol_table::from_game as rg_symbol_table;
 use hrg::ast::GameDeclaration;
 use hrg::parsing::parser::parse_with_errors as hrg_parse;
 use rg::ast::Game;
 use rg::parsing::parser::parse_with_errors as rg_parse;
-
 use tower_lsp::lsp_types::Url;
 use utils::{Error, Identifier};
 
-use crate::common::symbol_table::SymbolTable;
-use crate::hrg::symbol_table::from_game as hrg_symbol_table;
-use crate::rg::symbol_table::from_game as rg_symbol_table;
-
 pub struct Document {
-    pub tree: AST,
+    pub tree: Ast,
     pub symbol_table: SymbolTable,
     pub text: String,
 }
 
-pub enum AST {
-    RG(Game<Identifier>),
-    HRG(GameDeclaration<Identifier>),
+pub enum Ast {
+    Rg(Game<Identifier>),
+    Hrg(GameDeclaration<Identifier>),
 }
 
 impl Document {
@@ -35,7 +33,7 @@ impl Document {
         parse_errors.append(&mut symbol_table_errors);
         (
             Self {
-                tree: AST::RG(game),
+                tree: Ast::Rg(game),
                 symbol_table,
                 text,
             },
@@ -49,7 +47,7 @@ impl Document {
         parse_errors.append(&mut symbol_table_errors);
         (
             Self {
-                tree: AST::HRG(game),
+                tree: Ast::Hrg(game),
                 symbol_table,
                 text,
             },

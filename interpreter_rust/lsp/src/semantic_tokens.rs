@@ -1,6 +1,6 @@
 use crate::common::symbol_table::SymbolTable;
 use crate::common::utils::ToLspPosition;
-use crate::document::AST;
+use crate::document::Ast;
 use crate::rg::ast_features::AstFeatures;
 use crate::{common::symbol::Flag, document::Document};
 use rg::ast::Game;
@@ -91,8 +91,8 @@ impl Delta {
 
 pub fn semantic_tokens_full(document: &Document) -> Vec<SemanticToken> {
     let keywords = match &document.tree {
-        AST::RG(game) => ast_tokens(game),
-        AST::HRG(_) => vec![],
+        Ast::Rg(game) => ast_tokens(game),
+        Ast::Hrg(_) => vec![],
     };
     let symbols = symbol_table_tokens(&document.symbol_table);
     let mut tokens = [&keywords[..], &symbols[..]].concat();

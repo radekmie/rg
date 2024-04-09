@@ -1,10 +1,9 @@
+use super::symbol::Symbols;
 use crate::common::symbol::{Flag, Symbol};
 use crate::common::symbol_table::{Occurrence, SymbolTable};
 use rg::ast::{Edge, Expression, Game, Label, Node, NodePart, Type, Value, ValueEntry};
 use utils::{Error, Identifier};
 use utils::position::{Positioned, Span};
-
-use super::symbol::Symbols;
 
 struct SymbolTableWithErrors {
     errors: Vec<Error>,

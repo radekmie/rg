@@ -1,10 +1,9 @@
-use hrg::ast::GameDeclaration;
-use utils::{Error, Identifier};
-
 use crate::common::{
     symbol::Symbol,
     symbol_table::{Occurrence, SymbolTable},
 };
+use hrg::ast::GameDeclaration;
+use utils::{Error, Identifier};
 
 struct SymbolTableWithErrors {
     errors: Vec<Error>,
@@ -13,7 +12,7 @@ struct SymbolTableWithErrors {
 }
 
 impl SymbolTableWithErrors {
-    fn from_game(game: &GameDeclaration<Identifier>) -> Self {
+    fn from_game(_game: &GameDeclaration<Identifier>) -> Self {
         Self {
             errors: vec![],
             occurrences: vec![],
