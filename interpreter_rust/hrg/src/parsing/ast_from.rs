@@ -1,8 +1,8 @@
-use std::sync::Arc;
 use crate::ast::{
     DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg, FunctionCase,
     FunctionDeclaration, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
 };
+use std::sync::Arc;
 
 impl<Id> From<(Id, Vec<Arc<Expression<Id>>>, Arc<Expression<Id>>)> for Statement<Id> {
     fn from(
@@ -191,7 +191,11 @@ impl<Id: Clone>
     ) -> Self {
         let cases = cases
             .into_iter()
-            .map(|(args, body)| FunctionCase { args, body })
+            .map(|(args, body)| FunctionCase {
+                identifier: identifier.clone(),
+                args,
+                body,
+            })
             .collect();
         FunctionDeclaration {
             identifier,

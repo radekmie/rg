@@ -1,310 +1,234 @@
 use super::symbol::Symbols;
-use crate::common::symbol::{Flag, Symbol};
-use crate::common::symbol_table::{Occurrence, SymbolTable};
+use crate::common::symbol::{make_builtin_type, make_builtin_variable, Flag, Symbol};
+use crate::common::symbol_table::{Occurrence, SymbolTable, SymbolTableBuilder};
 use rg::ast::{Edge, Expression, Game, Label, Node, NodePart, Type, Value, ValueEntry};
 use utils::{Error, Identifier};
 use utils::position::{Positioned, Span};
 
-struct SymbolTableWithErrors {
-    errors: Vec<Error>,
-    occurrences: Vec<Occurrence>,
-    symbols: Vec<Symbol>,
+fn add_from_type(table: &mut SymbolTableBuilder, type_: &Type<Identifier>) {
+    match type_ {
+        Type::Arrow { lhs, rhs } => {
+            add_from_type(table, lhs);
+            add_from_type(table, rhs);
+        }
+        Type::TypeReference { identifier } => {
+            table.add_occ_with_flag(identifier, Flag::Type);
+        }
+        Type::Set { identifiers, .. } => {
+            for identifier in identifiers {
+                table.add_occ_with_flag(identifier, Flag::Member);
+            }
+        }
+    }
 }
 
-impl SymbolTableWithErrors {
-    /*
-     * The last symbol with matching id defined before this position is used.
-     */
-    fn find_symbol(&self, id: &str, flag: &Option<Flag>, owner: &Option<usize>) -> Option<usize> {
-        self.symbols.iter().position(|symbol| {
-            symbol.id == id
-                && flag.as_ref().map_or(true, |f| symbol.flag == *f)
-                && owner.as_ref().map_or(true, |o| symbol.is_owned_by(*o))
-        })
-    }
+fn add_from_edge(table: &mut SymbolTableBuilder, edge: &Edge<Identifier>) {
+    let left_owner = add_from_edge_name(table, &edge.lhs);
+    let right_owner = add_from_edge_name(table, &edge.rhs);
+    let owner = left_owner.or(right_owner);
+    add_from_edge_label(table, &edge.label, &owner);
+}
 
-    fn occ_from_id(&self, identifier: &Identifier) -> Occurrence {
+fn add_maybe_edge_param(
+    table: &mut SymbolTableBuilder,
+    identifier: &Identifier,
+    owner: &Option<usize>,
+    create_error: bool,
+) {
+    if !identifier.is_none() {
         let span = identifier.span();
-        let symbol_idx = self.find_symbol(&identifier.identifier, &None, &None);
-        Occurrence::new(span, symbol_idx)
-    }
-
-    fn occ_with_flag(&self, identifier: &Identifier, flag: Flag) -> Occurrence {
-        let span = identifier.span();
-        let symbol_idx = self.find_symbol(&identifier.identifier, &Some(flag), &None);
-        Occurrence::new(span, symbol_idx)
-    }
-
-    fn add_occ(&mut self, identifier: &Identifier) {
-        if !identifier.is_none() {
-            let occ = self.occ_from_id(identifier);
-            if occ.symbol.is_none() {
-                self.errors.push(Error::symbol_table_error(
-                    &identifier.identifier,
-                    &identifier.span,
-                ));
-            } else {
-                self.occurrences.push(occ);
-            }
-        }
-    }
-
-    fn add_occ_with_flag(&mut self, identifier: &Identifier, flag: Flag) {
-        if !identifier.is_none() {
-            let occ = self.occ_with_flag(identifier, flag);
-            if occ.symbol.is_none() {
-                self.errors.push(Error::symbol_table_error(
-                    &identifier.identifier,
-                    &identifier.span,
-                ));
-            } else {
-                self.occurrences.push(occ);
-            }
-        }
-    }
-
-    fn add_occ_with_flag_and_owner(
-        &mut self,
-        identifier: &Identifier,
-        flag: Flag,
-        owner: &Option<usize>,
-    ) {
-        if !identifier.is_none() {
-            let span = identifier.span();
-            let symbol_idx = self.find_symbol(&identifier.identifier, &Some(flag), owner);
-            if symbol_idx.is_none() {
-                self.errors.push(Error::symbol_table_error(
-                    &identifier.identifier,
-                    &identifier.span,
-                ));
-            } else {
-                self.occurrences.push(Occurrence::new(span, symbol_idx));
-            }
-        }
-    }
-
-    fn add_from_type(&mut self, type_: &Type<Identifier>) {
-        match type_ {
-            Type::Arrow { lhs, rhs } => {
-                self.add_from_type(lhs);
-                self.add_from_type(rhs);
-            }
-            Type::TypeReference { identifier } => {
-                self.add_occ_with_flag(identifier, Flag::Type);
-            }
-            Type::Set { identifiers, .. } => {
-                for identifier in identifiers {
-                    self.add_occ_with_flag(identifier, Flag::Member);
-                }
-            }
-        }
-    }
-
-    fn add_from_edge(&mut self, edge: &Edge<Identifier>) {
-        let left_owner = self.add_from_node(&edge.lhs);
-        let right_owner = self.add_from_node(&edge.rhs);
-        let owner = left_owner.or(right_owner);
-        self.add_from_label(&edge.label, &owner);
-    }
-
-    fn add_maybe_edge_param(
-        &mut self,
-        identifier: &Identifier,
-        owner: &Option<usize>,
-        create_error: bool,
-    ) {
-        if !identifier.is_none() {
-            let span = identifier.span();
-            let sym_idx = self
-                .find_symbol(&identifier.identifier, &Some(Flag::Param), owner)
-                .or_else(|| self.find_symbol(&identifier.identifier, &None, &None));
-            if sym_idx.is_some() {
-                self.occurrences.push(Occurrence::new(span, sym_idx));
-            } else if create_error {
-                self.errors.push(Error::symbol_table_error(
-                    &identifier.identifier,
-                    &identifier.span,
-                ));
-            }
-        }
-    }
-
-    fn add_from_label(&mut self, label: &Label<Identifier>, owner: &Option<usize>) {
-        match label {
-            Label::Assignment { lhs, rhs } => {
-                self.add_from_expression(lhs, owner);
-                self.add_from_expression(rhs, owner);
-            }
-            Label::Comparison { lhs, rhs, .. } => {
-                self.add_from_expression(lhs, owner);
-                self.add_from_expression(rhs, owner);
-            }
-            Label::Skip { .. } => (),
-            Label::Tag { symbol } => self.add_maybe_edge_param(symbol, owner, false),
-            Label::Reachability { lhs, rhs, .. } => {
-                self.add_from_node(lhs);
-                self.add_from_node(rhs);
-            }
-        }
-    }
-
-    fn add_from_expression(&mut self, expr: &Expression<Identifier>, owner: &Option<usize>) {
-        match expr {
-            Expression::Reference { identifier } => {
-                self.add_maybe_edge_param(identifier, owner, true);
-            }
-            Expression::Access { lhs, rhs, .. } => {
-                self.add_from_expression(lhs, owner);
-                self.add_from_expression(rhs, owner);
-            }
-            Expression::Cast { lhs, rhs, .. } => {
-                self.add_from_type(lhs);
-                self.add_from_expression(rhs, owner);
-            }
-        }
-    }
-
-    // Returns symbol idx for edge name if it has parameters
-    fn add_from_node(&mut self, node: &Node<Identifier>) -> Option<usize> {
-        match node.parts.as_slice() {
-            [NodePart::Literal { identifier }] => {
-                self.add_occ_with_flag(identifier, Flag::Edge);
-                None
-            }
-            [NodePart::Literal { identifier }, bindings @ ..] => {
-                let occ = self.occ_with_flag(identifier, Flag::Edge);
-                let sym_idx = occ.symbol;
-                self.occurrences.push(occ);
-                for binding in bindings {
-                    self.add_from_name_part(binding, &sym_idx);
-                }
-                sym_idx
-            }
-            _ => None,
-        }
-    }
-
-    fn add_from_name_part(&mut self, name_part: &NodePart<Identifier>, owner: &Option<usize>) {
-        match name_part {
-            NodePart::Binding {
-                identifier, type_, ..
-            } => {
-                self.add_occ_with_flag_and_owner(identifier, Flag::Param, owner);
-                self.add_from_type(type_);
-            }
-            NodePart::Literal { identifier } => {
-                self.add_occ_with_flag(identifier, Flag::Edge);
-            }
-        }
-    }
-
-    fn add_from_value(&mut self, value: &Value<Identifier>) {
-        match value {
-            Value::Element { identifier } => {
-                self.add_occ(identifier);
-            }
-            Value::Map { entries, .. } => {
-                for entry in entries {
-                    self.add_from_value_entry(entry);
-                }
-            }
-        }
-    }
-
-    fn add_from_value_entry(&mut self, entry: &ValueEntry<Identifier>) {
-        if let Some(identifier) = entry.identifier.as_ref() {
-            self.add_occ(identifier);
-        }
-        self.add_from_value(&entry.value);
-    }
-
-    pub fn from_game(game: &Game<Identifier>) -> Self {
-        let mut table: Self = Self {
-            symbols: Symbols::from_game(game),
-            occurrences: Vec::new(),
-            errors: Vec::new(),
-        };
-        table.add_builtin_symbols();
-        game.constants.iter().for_each(|constant| {
-            table.add_occ_with_flag(&constant.identifier, Flag::Constant);
-            table.add_from_type(&constant.type_);
-            table.add_from_value(&constant.value);
-        });
-
-        game.variables.iter().for_each(|variable| {
-            table.add_occ_with_flag(&variable.identifier, Flag::Variable);
-            table.add_from_type(&variable.type_);
-            table.add_from_value(&variable.default_value);
-        });
-        game.typedefs.iter().for_each(|typedef| {
-            table.add_occ_with_flag(&typedef.identifier, Flag::Type);
-            table.add_from_type(&typedef.type_);
-        });
-        game.edges.iter().for_each(|edge| {
-            table.add_from_edge(edge);
-        });
-        game.pragmas.iter().for_each(|pragma| {
-            for node in pragma.nodes() {
-                table.add_from_node(node);
-            }
-        });
-        table
-    }
-
-    fn is_defined(&self, symbol: &str) -> bool {
-        self.symbols.iter().any(|sym| sym.id == symbol)
-    }
-
-    fn make_builtin_type(symbol: &str) -> Symbol {
-        Symbol::new(symbol.to_string(), Span::none(), Flag::Type, None)
-    }
-
-    fn make_builtin_variable(symbol: &str) -> Symbol {
-        Symbol::new(symbol.to_string(), Span::none(), Flag::Variable, None)
-    }
-
-    fn add_builtin_symbols(&mut self) {
-        if !self.is_defined("Bool") {
-            self.symbols.push(Self::make_builtin_type("Bool"));
-            self.symbols.push(Symbol::new(
-                "0".to_string(),
-                Span::none(),
-                Flag::Member,
-                None,
-            ));
-            self.symbols.push(Symbol::new(
-                "1".to_string(),
-                Span::none(),
-                Flag::Member,
-                None,
+        let sym_idx = table
+            .find_symbol(&identifier.identifier, &Some(Flag::Param), owner)
+            .or_else(|| table.find_symbol(&identifier.identifier, &None, &None));
+        if sym_idx.is_some() {
+            table.occurrences.push(Occurrence::new(span, sym_idx));
+        } else if create_error {
+            table.errors.push(Error::symbol_table_error(
+                &identifier.identifier,
+                &identifier.span,
             ));
         }
-        if !self.is_defined("Goals") {
-            self.symbols.push(Self::make_builtin_type("Goals"));
+    }
+}
+
+fn add_from_edge_label(
+    table: &mut SymbolTableBuilder,
+    label: &Label<Identifier>,
+    owner: &Option<usize>,
+) {
+    match label {
+        Label::Assignment { lhs, rhs } => {
+            add_from_expression(table, lhs, owner);
+            add_from_expression(table, rhs, owner);
         }
-        if !self.is_defined("Visibility") {
-            self.symbols.push(Self::make_builtin_type("Visibility"));
+        Label::Comparison { lhs, rhs, .. } => {
+            add_from_expression(table, lhs, owner);
+            add_from_expression(table, rhs, owner);
         }
-        if !self.is_defined("keeper") {
-            self.symbols.push(Self::make_builtin_variable("keeper"));
+        Label::Skip { .. } => (),
+        Label::Tag { symbol } => add_maybe_edge_param(table, symbol, owner, false),
+        Label::Reachability { lhs, rhs, .. } => {
+            add_from_edge_name(table, lhs);
+            add_from_edge_name(table, rhs);
         }
-        if !self.is_defined("PlayerOrKeeper") {
-            self.symbols.push(Self::make_builtin_type("PlayerOrKeeper"));
+    }
+}
+
+fn add_from_expression(
+    table: &mut SymbolTableBuilder,
+    expr: &Expression<Identifier>,
+    owner: &Option<usize>,
+) {
+    match expr {
+        Expression::Reference { identifier } => {
+            add_maybe_edge_param(table, identifier, owner, true);
         }
-        if !self.is_defined("goals") {
-            self.symbols.push(Self::make_builtin_variable("goals"));
+        Expression::Access { lhs, rhs, .. } => {
+            add_from_expression(table, lhs, owner);
+            add_from_expression(table, rhs, owner);
         }
-        if !self.is_defined("player") {
-            self.symbols.push(Self::make_builtin_variable("player"));
+        Expression::Cast { lhs, rhs, .. } => {
+            add_from_type(table, lhs);
+            add_from_expression(table, rhs, owner);
         }
-        if !self.is_defined("visible") {
-            self.symbols.push(Self::make_builtin_variable("visible"));
+    }
+}
+
+// Returns symbol idx for edge name if it has parameters
+fn add_from_edge_name(
+    table: &mut SymbolTableBuilder,
+    edge_name: &Node<Identifier>,
+) -> Option<usize> {
+    match edge_name.parts.as_slice() {
+        [NodePart::Literal { identifier }] => {
+            table.add_occ_with_flag(identifier, Flag::Edge);
+            None
         }
+        [NodePart::Literal { identifier }, bindings @ ..] => {
+            let occ = table.occ_with_flag(identifier, Flag::Edge);
+            let sym_idx = occ.symbol;
+            table.occurrences.push(occ);
+            for binding in bindings {
+                add_from_name_part(table, binding, &sym_idx);
+            }
+            sym_idx
+        }
+        _ => None,
+    }
+}
+
+fn add_from_name_part(
+    table: &mut SymbolTableBuilder,
+    name_part: &NodePart<Identifier>,
+    owner: &Option<usize>,
+) {
+    match name_part {
+        NodePart::Binding {
+            identifier, type_, ..
+        } => {
+            table.add_occ_with_flag_and_owner(identifier, Flag::Param, owner);
+            add_from_type(table, type_);
+        }
+        NodePart::Literal { identifier } => {
+            table.add_occ_with_flag(identifier, Flag::Edge);
+        }
+    }
+}
+
+fn add_from_value(table: &mut SymbolTableBuilder, value: &Value<Identifier>) {
+    match value {
+        Value::Element { identifier } => {
+            table.add_occ(identifier);
+        }
+        Value::Map { entries, .. } => {
+            for entry in entries {
+                add_from_value_entry(table, entry);
+            }
+        }
+    }
+}
+
+fn add_from_value_entry(table: &mut SymbolTableBuilder, entry: &ValueEntry<Identifier>) {
+    if let Some(identifier) = entry.identifier.as_ref() {
+        table.add_occ(identifier);
+    }
+    add_from_value(table, &entry.value);
+}
+
+pub fn table_builder_from_game(game: &Game<Identifier>) -> SymbolTableBuilder {
+    let mut table: SymbolTableBuilder = SymbolTableBuilder {
+        symbols: Symbols::from_game(game),
+        occurrences: Vec::new(),
+        errors: Vec::new(),
+    };
+    add_builtin_symbols(&mut table);
+    game.constants.iter().for_each(|constant| {
+        table.add_occ_with_flag(&constant.identifier, Flag::Constant);
+        add_from_type(&mut table, &constant.type_);
+        add_from_value(&mut table, &constant.value);
+    });
+
+    game.variables.iter().for_each(|variable| {
+        table.add_occ_with_flag(&variable.identifier, Flag::Variable);
+        add_from_type(&mut table, &variable.type_);
+        add_from_value(&mut table, &variable.default_value);
+    });
+    game.typedefs.iter().for_each(|typedef| {
+        table.add_occ_with_flag(&typedef.identifier, Flag::Type);
+        add_from_type(&mut table, &typedef.type_);
+    });
+    game.edges.iter().for_each(|edge| {
+        add_from_edge(&mut table, edge);
+    });
+    game.pragmas.iter().for_each(|pragma| {
+        for edge_name in pragma.nodes() {
+            add_from_edge_name(&mut table, edge_name);
+        }
+    });
+    table
+}
+
+fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
+    if !table.is_defined("Bool") {
+        table.symbols.push(make_builtin_type("Bool"));
+        table.symbols.push(Symbol::new(
+            "0".to_string(),
+            Span::none(),
+            Flag::Member,
+            None,
+        ));
+        table.symbols.push(Symbol::new(
+            "1".to_string(),
+            Span::none(),
+            Flag::Member,
+            None,
+        ));
+    }
+    if !table.is_defined("Goals") {
+        table.symbols.push(make_builtin_type("Goals"));
+    }
+    if !table.is_defined("Visibility") {
+        table.symbols.push(make_builtin_type("Visibility"));
+    }
+    if !table.is_defined("keeper") {
+        table.symbols.push(make_builtin_variable("keeper"));
+    }
+    if !table.is_defined("PlayerOrKeeper") {
+        table.symbols.push(make_builtin_type("PlayerOrKeeper"));
+    }
+    if !table.is_defined("goals") {
+        table.symbols.push(make_builtin_variable("goals"));
+    }
+    if !table.is_defined("player") {
+        table.symbols.push(make_builtin_variable("player"));
+    }
+    if !table.is_defined("visible") {
+        table.symbols.push(make_builtin_variable("visible"));
     }
 }
 
 pub fn from_game(game: &Game<Identifier>) -> (SymbolTable, Vec<Error>) {
-    let table = SymbolTableWithErrors::from_game(game);
+    let table = table_builder_from_game(game);
     (
         SymbolTable {
             symbols: table.symbols,

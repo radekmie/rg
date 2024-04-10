@@ -89,3 +89,15 @@ impl Display for Flag {
         }
     }
 }
+
+pub fn make_builtin_type(symbol: &str) -> Symbol {
+    Symbol::new(symbol.to_string(), Span::none(), Flag::Type, None)
+}
+
+pub fn make_builtin_variable(symbol: &str) -> Symbol {
+    Symbol::new(symbol.to_string(), Span::none(), Flag::Variable, None)
+}
+
+pub fn make_builtin_function(symbol: &str) -> Symbol {
+    Symbol::new(symbol.to_string(), Span::none(), Flag::Edge, None)
+}

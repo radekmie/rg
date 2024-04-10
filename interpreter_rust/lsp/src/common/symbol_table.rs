@@ -1,6 +1,7 @@
-use super::symbol::Symbol;
+use super::symbol::{Flag, Symbol};
 use std::fmt::{Display, Formatter, Result};
 use utils::position::{Position, Positioned, Span};
+use utils::{Error, Identifier};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Occurrence {
@@ -68,5 +69,93 @@ impl Display for SymbolTable {
         }
 
         Ok(())
+    }
+}
+
+pub struct SymbolTableBuilder {
+    pub errors: Vec<Error>,
+    pub occurrences: Vec<Occurrence>,
+    pub symbols: Vec<Symbol>,
+}
+
+impl SymbolTableBuilder {
+    /*
+     * The last symbol with matching id defined before this position is used.
+     */
+    pub fn find_symbol(
+        &self,
+        id: &str,
+        flag: &Option<Flag>,
+        owner: &Option<usize>,
+    ) -> Option<usize> {
+        self.symbols.iter().position(|symbol| {
+            symbol.id == id
+                && flag.as_ref().map_or(true, |f| symbol.flag == *f)
+                && owner.as_ref().map_or(true, |o| symbol.is_owned_by(*o))
+        })
+    }
+
+    pub fn occ_from_id(&self, identifier: &Identifier) -> Occurrence {
+        let span = identifier.span();
+        let symbol_idx = self.find_symbol(&identifier.identifier, &None, &None);
+        Occurrence::new(span, symbol_idx)
+    }
+
+    pub fn occ_with_flag(&self, identifier: &Identifier, flag: Flag) -> Occurrence {
+        let span = identifier.span();
+        let symbol_idx = self.find_symbol(&identifier.identifier, &Some(flag), &None);
+        Occurrence::new(span, symbol_idx)
+    }
+
+    pub fn add_occ(&mut self, identifier: &Identifier) {
+        if !identifier.is_none() {
+            let occ = self.occ_from_id(identifier);
+            if occ.symbol.is_none() {
+                self.errors.push(Error::symbol_table_error(
+                    &identifier.identifier,
+                    &identifier.span,
+                ));
+            } else {
+                self.occurrences.push(occ);
+            }
+        }
+    }
+
+    pub fn add_occ_with_flag(&mut self, identifier: &Identifier, flag: Flag) {
+        if !identifier.is_none() {
+            let occ = self.occ_with_flag(identifier, flag);
+            if occ.symbol.is_none() {
+                self.errors.push(Error::symbol_table_error(
+                    &identifier.identifier,
+                    &identifier.span,
+                ));
+            } else {
+                self.occurrences.push(occ);
+            }
+        }
+    }
+
+    pub fn add_occ_with_flag_and_owner(
+        &mut self,
+        identifier: &Identifier,
+        flag: Flag,
+        owner: &Option<usize>,
+    ) {
+        if !identifier.is_none() {
+            let span = identifier.span();
+            let symbol_idx = self.find_symbol(&identifier.identifier, &Some(flag), owner);
+            if symbol_idx.is_none() {
+                self.errors.push(Error::symbol_table_error(
+                    &identifier.identifier,
+                    &identifier.span,
+                ));
+            } else {
+                self.occurrences.push(Occurrence::new(span, symbol_idx));
+            }
+        }
+    }
+
+    pub fn is_defined(&self, symbol: &str) -> bool {
+        self.symbols.iter().any(|sym| sym.id == symbol)
     }
 }

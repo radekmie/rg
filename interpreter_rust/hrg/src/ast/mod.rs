@@ -62,7 +62,7 @@ pub struct FunctionDeclaration<Id> {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct FunctionCase<Id> {
-    // pub identifier: Id,
+    pub identifier: Id,
     pub args: Vec<Arc<Pattern<Id>>>,
     pub body: Arc<Expression<Id>>,
 }
