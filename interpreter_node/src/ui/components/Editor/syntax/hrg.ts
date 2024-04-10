@@ -9,6 +9,7 @@ export const language: monaco.languages.IMonarchLanguage = {
   keywords: [
     'branch',
     'else',
+    'forall',
     'if',
     'in',
     'loop',
