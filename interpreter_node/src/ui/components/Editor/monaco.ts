@@ -69,7 +69,10 @@ export function createEditor(
     const text = model.getValue();
     onChange?.(text);
 
-    if (model.getLanguageId() !== Language.rg) {
+    if (
+      model.getLanguageId() !== Language.rg &&
+      model.getLanguageId() !== Language.hrg
+    ) {
       return;
     }
 
@@ -85,7 +88,11 @@ export function createEditor(
   editor.onDidChangeModel(event => {
     if (event.newModelUrl) {
       const model = editor.getModel();
-      if (!model || model.getLanguageId() !== Language.rg) {
+      if (
+        !model ||
+        (model.getLanguageId() !== Language.rg &&
+          model.getLanguageId() !== Language.hrg)
+      ) {
         return;
       }
 
@@ -121,6 +128,9 @@ export function createEditor(
     const model = monaco.editor.getModel(monaco.Uri.parse(uri));
     if (model?.getLanguageId() === Language.rg) {
       monaco.editor.setModelMarkers(model, Language.rg, diags);
+    }
+    if (model?.getLanguageId() === Language.hrg) {
+      monaco.editor.setModelMarkers(model, Language.hrg, diags);
     }
   });
 
