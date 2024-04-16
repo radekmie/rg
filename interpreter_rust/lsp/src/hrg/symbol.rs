@@ -1,10 +1,15 @@
+use std::sync::Arc;
+
 use hrg::ast::{
     DomainDeclaration, DomainElement, DomainValue, Function, FunctionDeclaration, GameDeclaration,
-    Statement, TypeDeclaration, VariableDeclaration,
+    Statement, Type, TypeDeclaration, VariableDeclaration,
 };
 use utils::Identifier;
 
-use crate::common::symbol::{Flag, Symbol};
+use crate::common::{
+    self,
+    symbol::{Flag, Symbol},
+};
 
 pub struct Symbols {
     pub symbols: Vec<Symbol>,
@@ -14,9 +19,11 @@ impl Symbols {
     fn add_from_statement(&mut self, stat: &Statement<Identifier>) {
         match stat {
             Statement::Forall {
-                identifier, body, ..
+                identifier,
+                body,
+                type_,
             } => {
-                if let Some(symbol) = Symbol::from_id(identifier, Flag::Param) {
+                if let Some(symbol) = typed(identifier, Flag::Param, (*type_).clone()) {
                     self.symbols.push(symbol);
                 }
                 body.iter()
@@ -37,26 +44,27 @@ impl Symbols {
     }
 
     fn add_from_type_decl(&mut self, type_: &TypeDeclaration<Identifier>) {
-        if let Some(symbol) = Symbol::from_id(&type_.identifier, Flag::Type) {
+        if let Some(symbol) = untyped(&type_.identifier, Flag::Type) {
             self.symbols.push(symbol);
         }
     }
 
     fn add_from_domain_decl(&mut self, domain: &DomainDeclaration<Identifier>) {
-        if let Some(symbol) = Symbol::from_id(&domain.identifier, Flag::Type) {
+        if let Some(symbol) = untyped(&domain.identifier, Flag::Type) {
             self.symbols.push(symbol);
         }
+        let type_ = Arc::new(Type::new(domain.identifier.clone()));
         domain.elements.iter().for_each(|element| match element {
             DomainElement::Generator {
                 identifier,
                 args,
                 values,
             } => {
-                if let Some(symbol) = Symbol::from_id(identifier, Flag::Type) {
+                if let Some(symbol) = typed(identifier, Flag::Type, type_.clone()) {
                     self.symbols.push(symbol);
                 }
                 args.iter().for_each(|arg| {
-                    if let Some(symbol) = Symbol::from_id(arg, Flag::Param) {
+                    if let Some(symbol) = untyped(arg, Flag::Param) {
                         self.symbols.push(symbol);
                     }
                 });
@@ -64,7 +72,7 @@ impl Symbols {
                     DomainValue::Range { .. } => {}
                     DomainValue::Set { values, .. } => {
                         values.iter().for_each(|id| {
-                            if let Some(symbol) = Symbol::from_id(id, Flag::Member) {
+                            if let Some(symbol) = untyped(id, Flag::Member) {
                                 self.symbols.push(symbol);
                             }
                         });
@@ -72,7 +80,7 @@ impl Symbols {
                 });
             }
             DomainElement::Literal { identifier } => {
-                if let Some(symbol) = Symbol::from_id(identifier, Flag::Member) {
+                if let Some(symbol) = typed(identifier, Flag::Member, type_.clone()) {
                     self.symbols.push(symbol);
                 }
             }
@@ -80,17 +88,17 @@ impl Symbols {
     }
 
     fn add_from_variable_decl(&mut self, variable: &VariableDeclaration<Identifier>) {
-        if let Some(symbol) = Symbol::from_id(&variable.identifier, Flag::Variable) {
+        if let Some(symbol) = typed(&variable.identifier, Flag::Variable, variable.type_.clone()) {
             self.symbols.push(symbol);
         }
     }
 
     fn add_from_function(&mut self, func: &Function<Identifier>) {
-        if let Some(symbol) = Symbol::from_id(&func.name, Flag::Edge) {
+        if let Some(symbol) = untyped(&func.name, Flag::Edge) {
             self.symbols.push(symbol);
         }
         func.args.iter().for_each(|arg| {
-            if let Some(symbol) = Symbol::from_id(&arg.identifier, Flag::Param) {
+            if let Some(symbol) = typed(&arg.identifier, Flag::Param, arg.type_.clone()) {
                 self.symbols.push(symbol);
             }
         });
@@ -100,7 +108,7 @@ impl Symbols {
     }
 
     fn add_from_function_decl(&mut self, func: &FunctionDeclaration<Identifier>) {
-        if let Some(symbol) = Symbol::from_id(&func.identifier, Flag::Edge) {
+        if let Some(symbol) = typed(&func.identifier, Flag::Edge, func.type_.clone()) {
             self.symbols.push(symbol);
         }
     }
@@ -124,4 +132,12 @@ impl Symbols {
             .for_each(|func| symbols.add_from_function_decl(func));
         symbols.symbols
     }
+}
+
+fn typed(identifier: &Identifier, flag: Flag, type_: Arc<Type<Identifier>>) -> Option<Symbol> {
+    Symbol::from_id(identifier, flag, common::symbol::Type::Hrg(type_))
+}
+
+fn untyped(identifier: &Identifier, flag: Flag) -> Option<Symbol> {
+    Symbol::from_id(identifier, flag, common::symbol::Type::NoType)
 }

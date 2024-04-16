@@ -171,6 +171,12 @@ pub enum Type<Id> {
     },
 }
 
+impl<Id> Type<Id> {
+    pub fn new(identifier: Id) -> Self {
+        Self::Name { identifier }
+    }
+}
+
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Value<Id> {
     ValueConstructor {

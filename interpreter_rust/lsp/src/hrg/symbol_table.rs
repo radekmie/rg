@@ -1,5 +1,5 @@
 use crate::common::{
-    symbol::{make_builtin_function, make_builtin_variable, Flag},
+    symbol::{make_builtin, Flag},
     symbol_table::{SymbolTable, SymbolTableBuilder},
 };
 use hrg::ast::{
@@ -291,25 +291,25 @@ fn add_from_variable_declaration(
 
 fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
     if !table.is_defined("keeper") {
-        table.symbols.push(make_builtin_variable("keeper"));
+        table.symbols.push(make_builtin("keeper", Flag::Variable));
     }
     if !table.is_defined("goals") {
-        table.symbols.push(make_builtin_variable("goals"));
+        table.symbols.push(make_builtin("goals", Flag::Variable));
     }
     if !table.is_defined("player") {
-        table.symbols.push(make_builtin_variable("player"));
+        table.symbols.push(make_builtin("player", Flag::Variable));
     }
     if !table.is_defined("not") {
-        table.symbols.push(make_builtin_function("not"));
+        table.symbols.push(make_builtin("not", Flag::Edge));
     }
     if !table.is_defined("assert") {
-        table.symbols.push(make_builtin_function("assert"));
+        table.symbols.push(make_builtin("assert", Flag::Edge));
     }
     if !table.is_defined("reachable") {
-        table.symbols.push(make_builtin_function("reachable"));
+        table.symbols.push(make_builtin("reachable", Flag::Edge));
     }
     if !table.is_defined("end") {
-        table.symbols.push(make_builtin_function("end"));
+        table.symbols.push(make_builtin("end", Flag::Edge));
     }
 }
 

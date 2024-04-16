@@ -1,5 +1,5 @@
 use super::symbol::Symbols;
-use crate::common::symbol::{make_builtin_type, make_builtin_variable, Flag, Symbol};
+use crate::common::symbol::{make_builtin, Flag};
 use crate::common::symbol_table::{Occurrence, SymbolTable, SymbolTableBuilder};
 use rg::ast::{Edge, Expression, Game, Label, Node, NodePart, Type, Value, ValueEntry};
 use utils::{Error, Identifier};
@@ -190,40 +190,32 @@ pub fn table_builder_from_game(game: &Game<Identifier>) -> SymbolTableBuilder {
 
 fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
     if !table.is_defined("Bool") {
-        table.symbols.push(make_builtin_type("Bool"));
-        table.symbols.push(Symbol::new(
-            "0".to_string(),
-            Span::none(),
-            Flag::Member,
-            None,
-        ));
-        table.symbols.push(Symbol::new(
-            "1".to_string(),
-            Span::none(),
-            Flag::Member,
-            None,
-        ));
+        table.symbols.push(make_builtin("Bool", Flag::Type));
+        table.symbols.push(make_builtin("0", Flag::Member));
+        table.symbols.push(make_builtin("1", Flag::Member));
     }
     if !table.is_defined("Goals") {
-        table.symbols.push(make_builtin_type("Goals"));
+        table.symbols.push(make_builtin("Goals", Flag::Type));
     }
     if !table.is_defined("Visibility") {
-        table.symbols.push(make_builtin_type("Visibility"));
+        table.symbols.push(make_builtin("Visibility", Flag::Type));
     }
     if !table.is_defined("keeper") {
-        table.symbols.push(make_builtin_variable("keeper"));
+        table.symbols.push(make_builtin("keeper", Flag::Variable));
     }
     if !table.is_defined("PlayerOrKeeper") {
-        table.symbols.push(make_builtin_type("PlayerOrKeeper"));
+        table
+            .symbols
+            .push(make_builtin("PlayerOrKeeper", Flag::Type));
     }
     if !table.is_defined("goals") {
-        table.symbols.push(make_builtin_variable("goals"));
+        table.symbols.push(make_builtin("goals", Flag::Variable));
     }
     if !table.is_defined("player") {
-        table.symbols.push(make_builtin_variable("player"));
+        table.symbols.push(make_builtin("player", Flag::Variable));
     }
     if !table.is_defined("visible") {
-        table.symbols.push(make_builtin_variable("visible"));
+        table.symbols.push(make_builtin("visible", Flag::Variable));
     }
 }
 

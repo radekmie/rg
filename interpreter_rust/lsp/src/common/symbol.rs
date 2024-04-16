@@ -1,8 +1,11 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 use utils::{
     position::{Positioned, Span},
     Identifier,
 };
+
+type RgType = rg::ast::Type<Identifier>;
+type HrgType = hrg::ast::Type<Identifier>;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Symbol {
@@ -10,25 +13,27 @@ pub struct Symbol {
     pub id: String,
     pub owners: Option<Vec<usize>>,
     pub pos: Span,
+    pub type_: Type,
 }
 
 impl Symbol {
-    pub fn new(id: String, pos: Span, flag: Flag, owners: Option<Vec<usize>>) -> Self {
+    pub fn new(id: String, pos: Span, flag: Flag, owners: Option<Vec<usize>>, type_: Type) -> Self {
         Self {
             flag,
             id,
             owners,
             pos,
+            type_,
         }
     }
 
-    pub fn from_id(identifier: &Identifier, flag: Flag) -> Option<Self> {
+    pub fn from_id(identifier: &Identifier, flag: Flag, type_: Type) -> Option<Symbol> {
         if identifier.is_none() {
             None
         } else {
             let id = identifier.identifier.clone();
             let pos = identifier.span();
-            Some(Self::new(id, pos, flag, None))
+            Some(Self::new(id, pos, flag, None, type_))
         }
     }
 
@@ -68,6 +73,13 @@ impl Positioned for Symbol {
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum Type {
+    Hrg(Arc<HrgType>),
+    Rg(Arc<RgType>),
+    NoType,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Flag {
     Type,
     Member,
@@ -90,14 +102,6 @@ impl Display for Flag {
     }
 }
 
-pub fn make_builtin_type(symbol: &str) -> Symbol {
-    Symbol::new(symbol.to_string(), Span::none(), Flag::Type, None)
-}
-
-pub fn make_builtin_variable(symbol: &str) -> Symbol {
-    Symbol::new(symbol.to_string(), Span::none(), Flag::Variable, None)
-}
-
-pub fn make_builtin_function(symbol: &str) -> Symbol {
-    Symbol::new(symbol.to_string(), Span::none(), Flag::Edge, None)
+pub fn make_builtin(symbol: &str, flag: Flag) -> Symbol {
+    Symbol::new(symbol.to_string(), Span::none(), flag, None, Type::NoType)
 }
