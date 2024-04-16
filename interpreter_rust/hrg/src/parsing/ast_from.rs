@@ -163,9 +163,9 @@ impl<Id> From<(Id, Vec<DomainElement<Id>>)> for DomainDeclaration<Id> {
     }
 }
 
-impl<Id> From<(Id, Arc<Type<Id>>, Option<Arc<Expression<Id>>>)> for VariableDeclaration<Id> {
+impl<Id> From<(Id, Arc<Type<Id>>, Option<(Id, Arc<Expression<Id>>)>)> for VariableDeclaration<Id> {
     fn from(
-        (identifier, type_, default_value): (Id, Arc<Type<Id>>, Option<Arc<Expression<Id>>>),
+        (identifier, type_, default_value): (Id, Arc<Type<Id>>, Option<(Id, Arc<Expression<Id>>)>),
     ) -> Self {
         Self {
             identifier,
@@ -179,20 +179,20 @@ impl<Id: Clone>
     From<(
         Id,
         Arc<Type<Id>>,
-        Vec<(Vec<Arc<Pattern<Id>>>, Arc<Expression<Id>>)>,
+        Vec<((Id, Vec<Arc<Pattern<Id>>>), Arc<Expression<Id>>)>,
     )> for FunctionDeclaration<Id>
 {
     fn from(
         (identifier, type_, cases): (
             Id,
             Arc<Type<Id>>,
-            Vec<(Vec<Arc<Pattern<Id>>>, Arc<Expression<Id>>)>,
+            Vec<((Id, Vec<Arc<Pattern<Id>>>), Arc<Expression<Id>>)>,
         ),
     ) -> Self {
         let cases = cases
             .into_iter()
-            .map(|(args, body)| FunctionCase {
-                identifier: identifier.clone(),
+            .map(|((identifier, args), body)| FunctionCase {
+                identifier,
                 args,
                 body,
             })

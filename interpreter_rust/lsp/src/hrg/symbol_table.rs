@@ -126,6 +126,7 @@ fn add_from_function_declaration(
 }
 
 fn add_from_function_case(table: &mut SymbolTableBuilder, case: &FunctionCase<Identifier>) {
+    table.add_occ(&case.identifier);
     for arg in &case.args {
         add_from_pattern(table, arg);
     }
@@ -283,10 +284,10 @@ fn add_from_variable_declaration(
 ) {
     table.add_occ(&variable.identifier);
     add_from_type(table, &variable.type_);
-    variable
-        .default_value
-        .as_ref()
-        .map(|value| add_from_expression(table, value));
+    variable.default_value.as_ref().map(|(id, value)| {
+        table.add_occ(id);
+        add_from_expression(table, value)
+    });
 }
 
 fn add_builtin_symbols(table: &mut SymbolTableBuilder) {

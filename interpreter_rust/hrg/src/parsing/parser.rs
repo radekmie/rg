@@ -6,7 +6,7 @@ use crate::ast::{
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
-use nom::combinator::{all_consuming, into, map, opt, value};
+use nom::combinator::{all_consuming, into, map, opt, value, verify};
 use nom::error::context;
 use nom::multi::{fold_many0, many0, many1, separated_list0};
 use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
@@ -249,8 +249,10 @@ fn domain_declaration(input: Input) -> Result<DomainDeclaration<Identifier>> {
 fn function_declaration(input: Input) -> Result<FunctionDeclaration<Identifier>> {
     let (input, (id, type_)) = separated_pair(identifier, char(':'), type_)(input)?;
     let (input, cases) = many1(pair(
-        ww(preceded(
-            tag(id.identifier.as_str()),
+        ww(pair(
+            verify(identifier, |identifier| {
+                identifier.identifier == id.identifier
+            }),
             in_parens(comma_separated(pattern)),
         )),
         preceded(ww_char('='), expression),
@@ -260,8 +262,13 @@ fn function_declaration(input: Input) -> Result<FunctionDeclaration<Identifier>>
 
 fn variable_declaration(input: Input) -> Result<VariableDeclaration<Identifier>> {
     let (input, (id, type_)) = separated_pair(identifier, char(':'), type_)(input)?;
-    let (input, default_value) = opt(ww(preceded(
-        pair(tag(id.identifier.as_str()), ww_char('=')),
+    let (input, default_value) = opt(ww(pair(
+        terminated(
+            verify(identifier, |identifier| {
+                identifier.identifier == id.identifier
+            }),
+            ww_char('='),
+        ),
         expression,
     )))(input)?;
     Ok((input, (id, type_, default_value).into()))

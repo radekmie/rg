@@ -201,7 +201,7 @@ pub struct ValueMapEntry<Id> {
 pub struct VariableDeclaration<Id> {
     pub identifier: Id,
     pub type_: Arc<Type<Id>>,
-    pub default_value: Option<Arc<Expression<Id>>>,
+    pub default_value: Option<(Id, Arc<Expression<Id>>)>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Default)]

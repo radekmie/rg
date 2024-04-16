@@ -142,8 +142,8 @@ impl<Id: Display> Display for FunctionDeclaration<Id> {
 impl<Id: Display> Display for VariableDeclaration<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         writeln!(f, "{} : {}", self.identifier, self.type_)?;
-        if let Some(default_value) = self.default_value.as_ref() {
-            write!(f, "{} = ", self.identifier)?;
+        if let Some((id, default_value)) = self.default_value.as_ref() {
+            write!(f, "{} = ", id)?;
             write_expression(f, default_value.as_ref(), 2)?;
         }
         Ok(())

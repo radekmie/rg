@@ -57,20 +57,18 @@ pub fn completions(
     game: &Ast,
     symbol_table: &SymbolTable,
 ) -> Option<CompletionResponse> {
-    match game {
-        Ast::Rg(game) => {
-            let items = completion_items(pos, game, symbol_table);
-            if items.is_empty() {
-                None
-            } else {
-                Some(CompletionResponse::Array(items))
-            }
-        }
-        Ast::Hrg(_) => None,
+    let items = match game {
+        Ast::Rg(game) => completion_items_rg(pos, game, symbol_table),
+        Ast::Hrg(_) => completion_items_hrg(symbol_table),
+    };
+    if items.is_empty() {
+        None
+    } else {
+        Some(CompletionResponse::Array(items))
     }
 }
 
-fn completion_items(
+fn completion_items_rg(
     pos: Position,
     game: &Game<Identifier>,
     symbol_table: &SymbolTable,
@@ -97,6 +95,16 @@ fn completion_items(
                 .collect()
         }
     };
+    items.dedup();
+    items
+}
+
+fn completion_items_hrg(symbol_table: &SymbolTable) -> Vec<CompletionItem> {
+    let symbols = get_symbols(symbol_table, &CompletionKind::Any.predicate());
+    let mut items: Vec<CompletionItem> = symbols
+        .into_iter()
+        .map(|sym| completion_item(sym))
+        .collect();
     items.dedup();
     items
 }
