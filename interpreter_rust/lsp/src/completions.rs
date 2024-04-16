@@ -84,7 +84,7 @@ fn completion_items(
             let symbols = get_symbols(symbol_table, &CompletionKind::Toplevel.predicate());
             let mut items: Vec<CompletionItem> = symbols
                 .into_iter()
-                .map(|sym| completion_item(game, sym))
+                .map(|sym| completion_item(sym))
                 .collect();
             items.extend(keyword_completions());
             items
@@ -93,7 +93,7 @@ fn completion_items(
             let symbols = get_symbols(symbol_table, &kind.predicate());
             symbols
                 .into_iter()
-                .map(|sym| completion_item(game, sym))
+                .map(|sym| completion_item(sym))
                 .collect()
         }
     };
@@ -130,12 +130,8 @@ fn keyword_completions() -> Vec<CompletionItem> {
         .collect()
 }
 
-fn completion_item(game: &Game<Identifier>, symbol: &Symbol) -> CompletionItem {
-    let type_ = if symbol.flag == Flag::Type {
-        None
-    } else {
-        game.symbol_type(symbol)
-    };
+fn completion_item(symbol: &Symbol) -> CompletionItem {
+    let type_ = symbol.type_.to_option();
     CompletionItem {
         label: symbol.id.clone(),
         kind: Some(symbol.flag.clone().into()),

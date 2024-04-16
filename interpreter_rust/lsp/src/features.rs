@@ -1,7 +1,6 @@
 use super::common::utils::ToLspRange;
 use crate::common::symbol_table::SymbolTable;
 use crate::common::utils::ToPosition;
-use crate::document::Ast;
 use crate::rg::ast_features::hover_signature;
 use std::collections::HashMap;
 use tower_lsp::lsp_types::{
@@ -133,22 +132,17 @@ pub fn diagnostics(errors: &[Error]) -> Vec<Diagnostic> {
         .collect()
 }
 
-pub fn hover(position: Position, symbol_table: &SymbolTable, game: &Ast) -> Option<Hover> {
-    match game {
-        Ast::Rg(game) => {
-            let occ = symbol_table.get_occ_at(&position.to_rg())?;
-            let pos = &occ.pos;
-            let enclosing_symbol = symbol_table.get_occ_symbol(occ)?;
-            let str = hover_signature(game, enclosing_symbol)?;
-            let contents = HoverContents::Array(vec![MarkedString::from_language_code(
-                "rg".to_string(),
-                str,
-            )]);
-            Some(Hover {
-                contents,
-                range: Some(pos.to_lsp()),
-            })
-        }
-        Ast::Hrg(_) => None,
-    }
+pub fn hover(position: Position, symbol_table: &SymbolTable) -> Option<Hover> {
+    let occ = symbol_table.get_occ_at(&position.to_rg())?;
+    let pos = &occ.pos;
+    let enclosing_symbol = symbol_table.get_occ_symbol(occ)?;
+    let str = hover_signature(enclosing_symbol)?;
+    let contents = HoverContents::Array(vec![MarkedString::from_language_code(
+        "rg".to_string(),
+        str,
+    )]);
+    Some(Hover {
+        contents,
+        range: Some(pos.to_lsp()),
+    })
 }

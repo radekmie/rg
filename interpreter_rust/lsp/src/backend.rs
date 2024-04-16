@@ -159,9 +159,7 @@ impl LanguageServer for Backend {
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         self.with_document_positioned(
             &params.text_document_position_params,
-            |_, position, document| {
-                features::hover(position, &document.symbol_table, &document.tree)
-            },
+            |_, position, document| features::hover(position, &document.symbol_table),
         )
     }
 
