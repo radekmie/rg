@@ -37,9 +37,9 @@ chooseY(coordY:Coord),check: posY = Coord(coordY);
 check,set: board[posX][posY] == Piece(e);
 set,endmove: board[posX][posY] = Piece(playerTurn);
 
-@simpleApplyExhaustive turn (coordX:Coord): move,chooseX,chooseX(coordX),chooseY;
-@simpleApplyExhaustive chooseY (coordY:Coord): chooseY(coordY),check;
-@simpleApplyExhaustive check : set,endmove,checkwin;
+//@simpleApplyExhaustive turn coordX: move,chooseX,chooseX(coordX:Coord),chooseY;
+//@simpleApplyExhaustive chooseY coordY: chooseY(coordY:Coord),check;
+//@simpleApplyExhaustive check : set,endmove,checkwin;
 
 endmove,checkwin: player = PlayerOrKeeper(keeper);
 checkwin,win: ? checkline -> endcheckline;
