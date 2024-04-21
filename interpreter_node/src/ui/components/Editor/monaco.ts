@@ -35,6 +35,10 @@ function asRange(range: monaco.IRange) {
   };
 }
 
+function hasLsp(language: string) {
+  return language === Language.rg || language === Language.hrg;
+}
+
 export function createEditor(
   client: Client,
   container: HTMLElement,
@@ -69,10 +73,7 @@ export function createEditor(
     const text = model.getValue();
     onChange?.(text);
 
-    if (
-      model.getLanguageId() !== Language.rg &&
-      model.getLanguageId() !== Language.hrg
-    ) {
+    if (!hasLsp(model.getLanguageId())) {
       return;
     }
 
@@ -88,11 +89,7 @@ export function createEditor(
   editor.onDidChangeModel(event => {
     if (event.newModelUrl) {
       const model = editor.getModel();
-      if (
-        !model ||
-        (model.getLanguageId() !== Language.rg &&
-          model.getLanguageId() !== Language.hrg)
-      ) {
+      if (!model || !hasLsp(model.getLanguageId())) {
         return;
       }
 
@@ -126,11 +123,8 @@ export function createEditor(
     }));
 
     const model = monaco.editor.getModel(monaco.Uri.parse(uri));
-    if (model?.getLanguageId() === Language.rg) {
-      monaco.editor.setModelMarkers(model, Language.rg, diags);
-    }
-    if (model?.getLanguageId() === Language.hrg) {
-      monaco.editor.setModelMarkers(model, Language.hrg, diags);
+    if (model && hasLsp(model.getLanguageId())) {
+      monaco.editor.setModelMarkers(model, model.getLanguageId(), diags);
     }
   });
 

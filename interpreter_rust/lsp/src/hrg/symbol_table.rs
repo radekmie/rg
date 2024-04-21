@@ -225,8 +225,7 @@ fn add_from_pattern(table: &mut SymbolTableBuilder, pattern: &Pattern<Identifier
                 add_from_pattern(table, arg);
             }
         }
-        Pattern::Literal { .. } => {}
-        Pattern::Variable { identifier } => {
+        Pattern::Literal { identifier } | Pattern::Variable { identifier } => {
             table.add_occ(identifier);
         }
         Pattern::Wildcard => {}
@@ -249,30 +248,6 @@ fn add_from_type(table: &mut SymbolTableBuilder, type_: &Type<Identifier>) {
         }
     }
 }
-
-// fn add_from_value(table: &mut SymbolTableBuilder, value: &Value<Identifier>) {
-//     match value {
-//         Value::ValueConstructor { identifier, args } => {
-//             table.add_occ(identifier);
-//             for arg in args {
-//                 add_from_value(table, arg);
-//             }
-//         }
-//         Value::Element { identifier } => {
-//             table.add_occ(identifier);
-//         }
-//         Value::Map { entries } => {
-//             for entry in entries {
-//                 add_from_value_entry(table, entry);
-//             }
-//         }
-//     }
-// }
-
-// fn add_from_value_entry(table: &mut SymbolTableBuilder, entry: &ValueMapEntry<Identifier>) {
-//     add_from_value(table, &entry.key);
-//     add_from_value(table, &entry.value);
-// }
 
 fn add_from_variable_declaration(
     table: &mut SymbolTableBuilder,

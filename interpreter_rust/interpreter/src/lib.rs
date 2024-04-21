@@ -1,11 +1,13 @@
 mod ist;
 
-use hrg::{ast::GameDeclaration, parsing::parser::parse_with_errors as unsafe_parse_hrg};
+use hrg::ast::GameDeclaration;
+use hrg::parsing::parser::parse_with_errors as unsafe_parse_hrg;
 use ist::tools::{new_ist_interner, ISTInterner};
 use js_sys::{Array, Function};
 use map_id::MapId;
 use rand::thread_rng;
-use rg::{ast::Game, parsing::parser::parse_with_errors as unsafe_parse_rg};
+use rg::ast::Game;
+use rg::parsing::parser::parse_with_errors as unsafe_parse_rg;
 use serde::Deserialize;
 use serde_json::{from_str, json, to_string};
 use std::sync::Arc;

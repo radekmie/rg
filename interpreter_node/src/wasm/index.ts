@@ -1,7 +1,7 @@
 import pLimit from 'p-limit';
 
-import { AnalyzedGameStep } from '../parse';
 import * as hrg from '../hrg';
+import { AnalyzedGameStep } from '../parse';
 import * as rg from '../rg';
 import { Settings } from '../types';
 import * as utils from '../utils';

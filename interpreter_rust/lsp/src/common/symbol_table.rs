@@ -79,9 +79,7 @@ pub struct SymbolTableBuilder {
 }
 
 impl SymbolTableBuilder {
-    /*
-     * The last symbol with matching id defined before this position is used.
-     */
+    /** The last symbol with matching id defined before this position is used. */
     pub fn find_symbol(
         &self,
         id: &str,

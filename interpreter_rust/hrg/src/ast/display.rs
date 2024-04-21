@@ -149,27 +149,30 @@ impl<Id: Display> Display for VariableDeclaration<Id> {
             write!(f, "{} = ", self.identifier)?;
             write_expression(f, default_value.as_ref(), 2)?;
         }
+        writeln!(f)?;
         Ok(())
     }
 }
 
+fn write_toplevel<T: Display>(f: &mut Formatter<'_>, items: &[T]) -> Result {
+    let mut iter = items.iter();
+    if let Some(item) = iter.next() {
+        writeln!(f, "{item}")?;
+        for item in iter {
+            writeln!(f, "{item}")?;
+        }
+        writeln!(f)?;
+    }
+    Ok(())
+}
+
 impl<Id: Display> Display for GameDeclaration<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        self.domains
-            .iter()
-            .try_for_each(|domain| writeln!(f, "{domain}"))?;
-        self.functions
-            .iter()
-            .try_for_each(|function| writeln!(f, "{function}"))?;
-        self.variables
-            .iter()
-            .try_for_each(|variable| writeln!(f, "{variable}"))?;
-        self.automaton
-            .iter()
-            .try_for_each(|function| write!(f, "{function}\n\n"))?;
-        self.types
-            .iter()
-            .try_for_each(|type_| write!(f, "{type_}\n\n"))?;
+        write_toplevel(f, &self.domains)?;
+        write_toplevel(f, &self.functions)?;
+        write_toplevel(f, &self.variables)?;
+        write_toplevel(f, &self.automaton)?;
+        write_toplevel(f, &self.types)?;
         Ok(())
     }
 }
@@ -216,6 +219,7 @@ fn write_expression<Id: Display>(
             expression,
             domains,
         } => {
+            let indent = if indent == 0 { 0 } else { indent - 2 };
             writeln!(f, "{{")?;
             write_indent(f, indent)?;
             write!(f, "{} = ", pattern)?;
@@ -357,7 +361,7 @@ fn write_function<Id: Display>(
     writeln!(f, ") {{")?;
     write_statements(f, &function.body, indent + 2)?;
     write_indent(f, indent)?;
-    write!(f, "}}")
+    writeln!(f, "}}")
 }
 
 fn write_function_declaration<Id: Display>(
@@ -366,14 +370,15 @@ fn write_function_declaration<Id: Display>(
     indent: usize,
 ) -> Result {
     write_indent(f, indent)?;
-    writeln!(f, "{} : {}", decl.identifier, decl.type_)?;
+    write!(f, "{} : {}", decl.identifier, decl.type_)?;
     for case in &decl.cases {
+        writeln!(f)?;
         write_indent(f, indent)?;
         write!(f, "{}(", decl.identifier)?;
         write_with_separator(f, &case.args, ", ")?;
         write!(f, ") = ")?;
         write_expression(f, case.body.as_ref(), indent + 2)?;
-        writeln!(f)?;
     }
+    writeln!(f)?;
     Ok(())
 }

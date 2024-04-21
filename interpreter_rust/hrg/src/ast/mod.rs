@@ -182,7 +182,6 @@ where
     where
         S: Serializer,
     {
-        dbg!("Serializing");
         match self {
             Expression::BinExpr { lhs, op, rhs } => {
                 let mut state: <S as Serializer>::SerializeStruct =
