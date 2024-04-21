@@ -332,8 +332,8 @@ impl<Id> NodePart<Id> {
 
     pub fn type_(&self) -> Option<Arc<Type<Id>>> {
         match self {
-            EdgeNamePart::Binding { type_, .. } => Some(type_.clone()),
-            EdgeNamePart::Literal { .. } => None,
+            NodePart::Binding { type_, .. } => Some(type_.clone()),
+            NodePart::Literal { .. } => None,
         }
     }
 }

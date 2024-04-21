@@ -246,6 +246,8 @@ checksum = "7dfda62a12f55daeae5015f81b0baea145391cb4520f86c248fc615d72640d12"
 name = "hrg"
 version = "0.1.0"
 dependencies = [
+ "map_id",
+ "map_id_macro",
  "nom",
  "nom_locate",
  "rand",
@@ -277,6 +279,7 @@ dependencies = [
  "gdl",
  "gdl_to_rg",
  "getrandom",
+ "hrg",
  "js-sys",
  "map_id",
  "map_id_macro",

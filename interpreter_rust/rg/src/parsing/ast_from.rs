@@ -1,6 +1,5 @@
 use crate::ast::{
-    Constant, Edge, Expression, Label, Node, NodePart, Type, Typedef, Value,
-    ValueEntry, Variable,
+    Constant, Edge, Expression, Label, Node, NodePart, Type, Typedef, Value, ValueEntry, Variable,
 };
 use std::sync::Arc;
 use utils::parser::Input;

@@ -75,7 +75,7 @@ fn when(input: Input) -> Result<Statement<Identifier>> {
             preceded(tag("when"), expression),
             in_braces(many0(statement)),
         ),
-        |(condition, body)| Statement::When { condition, body },
+        |(expression, body)| Statement::When { expression, body },
     )(input)
 }
 
@@ -85,7 +85,7 @@ fn while_(input: Input) -> Result<Statement<Identifier>> {
             preceded(tag("while"), expression),
             in_braces(many0(statement)),
         ),
-        |(condition, body)| Statement::While { condition, body },
+        |(expression, body)| Statement::While { expression, body },
     )(input)
 }
 
@@ -132,12 +132,47 @@ fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {
     )))(input)
 }
 
-fn binop(input: Input) -> Result<Binop> {
+fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
+    alt((
+        into_arc(tuple((
+            preceded(ww_tag("if"), expression),
+            preceded(tag("then"), expression),
+            preceded(tag("else"), expression),
+        ))),
+        into_arc(in_braces(pair(
+            separated_pair(pattern, char('='), expression),
+            opt(preceded(tag("where"), comma_separated(domain_value))),
+        ))),
+        map(
+            pair(expression2, opt(preceded(ww_tag("||"), expression))),
+            |(lhs, rhs)| match rhs {
+                Some(rhs) => Arc::new(Expression::BinExpr {
+                    lhs,
+                    op: Binop::Or,
+                    rhs,
+                }),
+                None => lhs,
+            },
+        ),
+    ))(input)
+}
+
+fn expression2(input: Input) -> Result<Arc<Expression<Identifier>>> {
+    map(
+        pair(expression3, opt(preceded(ww_tag("&&"), expression2))),
+        |(lhs, rhs)| match rhs {
+            Some(rhs) => Arc::new(Expression::BinExpr {
+                lhs,
+                op: Binop::And,
+                rhs,
+            }),
+            None => lhs,
+        },
+    )(input)
+}
+
+fn comp_binop(input: Input) -> Result<Binop> {
     ww(alt((
-        value(Binop::Add, tag("+")),
-        value(Binop::Sub, tag("-")),
-        value(Binop::And, tag("&&")),
-        value(Binop::Or, tag("||")),
         value(Binop::Eq, tag("==")),
         value(Binop::Ne, tag("!=")),
         value(Binop::Lt, tag("<")),
@@ -147,33 +182,57 @@ fn binop(input: Input) -> Result<Binop> {
     )))(input)
 }
 
-fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    let (input, lhs) = alt((
-        into_arc(in_braces(pair(
-            separated_pair(pattern, char('='), expression),
-            opt(preceded(tag("where"), comma_separated(domain_value))),
-        ))),
-        into_arc(tuple((
-            preceded(ww_tag("if"), expression),
-            preceded(tag("then"), expression),
-            preceded(tag("else"), expression),
-        ))),
-        into_arc(pair(identifier, in_parens(comma_separated(expression)))),
-        in_parens(expression),
-        into_arc(identifier),
-    ))(input)?;
-    let (input, lhs) = left_rec_expr(input, lhs)?;
-    let (input, op) = opt(binop)(input)?;
-    match op {
-        Some(op) => {
-            let (input, rhs) = expression(input)?;
-            Ok((input, Arc::new(Expression::BinExpr { lhs, op, rhs })))
+fn expression3(input: Input) -> Result<Arc<Expression<Identifier>>> {
+    map(
+        pair(expression4, opt(pair(comp_binop, expression3))),
+        |(lhs, rhs)| match rhs {
+            Some((op, rhs)) => Arc::new(Expression::BinExpr { lhs, op, rhs }),
+            None => lhs,
+        },
+    )(input)
+}
+
+fn addsub_binop(input: Input) -> Result<Binop> {
+    ww(alt((
+        value(Binop::Add, tag("+")),
+        value(Binop::Sub, tag("-")),
+    )))(input)
+}
+
+fn expression4(input: Input) -> Result<Arc<Expression<Identifier>>> {
+    map(
+        pair(expression5, opt(pair(addsub_binop, expression4))),
+        |(lhs, rhs)| match rhs {
+            Some((op, rhs)) => Arc::new(Expression::BinExpr { lhs, op, rhs }),
+            None => lhs,
+        },
+    )(input)
+}
+
+fn expression5(input: Input) -> Result<Arc<Expression<Identifier>>> {
+    let (input, identifier) = opt(identifier)(input)?;
+    match identifier {
+        Some(identifier) => {
+            let is_constructor = identifier.identifier.chars().next().unwrap().is_uppercase();
+            if is_constructor {
+                let (input, args) = opt(in_parens(comma_separated(expression)))(input)?;
+                if let Some(args) = args {
+                    let expr = Arc::new(Expression::Constructor { identifier, args });
+                    Ok((input, expr))
+                } else {
+                    let expression = Arc::new(identifier.into());
+                    expression_suffix(input, expression)
+                }
+            } else {
+                let expression = Arc::new(identifier.into());
+                expression_suffix(input, expression)
+            }
         }
-        None => Ok((input, lhs)),
+        None => in_parens(expression)(input),
     }
 }
 
-fn left_rec_expr(
+fn expression_suffix(
     input: Input,
     lhs: Arc<Expression<Identifier>>,
 ) -> Result<Arc<Expression<Identifier>>> {
@@ -184,18 +243,18 @@ fn left_rec_expr(
         Some(rhs) => {
             let lhs = Arc::new(Expression::Access { lhs, rhs });
             match args {
-                Some(args) => left_rec_expr(
+                Some(args) => expression_suffix(
                     input,
                     Arc::new(Expression::Call {
                         expression: lhs,
                         args,
                     }),
                 ),
-                None => left_rec_expr(input, lhs),
+                None => expression_suffix(input, lhs),
             }
         }
         None => match args {
-            Some(args) => left_rec_expr(
+            Some(args) => expression_suffix(
                 input,
                 Arc::new(Expression::Call {
                     expression: lhs,
@@ -211,7 +270,13 @@ fn pattern(input: Input) -> Result<Arc<Pattern<Identifier>>> {
     ww(alt((
         map(char('_'), |_| Arc::new(Pattern::Wildcard)),
         into_arc(pair(identifier, in_parens(comma_separated(pattern)))),
-        into_arc(identifier),
+        map(identifier, |identifier| {
+            if identifier.identifier.chars().next().unwrap().is_uppercase() {
+                Arc::new(Pattern::Variable { identifier })
+            } else {
+                Arc::new(Pattern::Literal { identifier })
+            }
+        }),
     )))(input)
 }
 
@@ -262,7 +327,7 @@ fn function_declaration(input: Input) -> Result<FunctionDeclaration<Identifier>>
 
 fn variable_declaration(input: Input) -> Result<VariableDeclaration<Identifier>> {
     let (input, (id, type_)) = separated_pair(identifier, char(':'), type_)(input)?;
-    let (input, default_value) = opt(ww(pair(
+    let (input, default_value) = opt(ww(preceded(
         terminated(
             verify(identifier, |identifier| {
                 identifier.identifier == id.identifier

@@ -1,6 +1,7 @@
 import pLimit from 'p-limit';
 
 import { AnalyzedGameStep } from '../parse';
+import * as hrg from '../hrg';
 import * as rg from '../rg';
 import { Settings } from '../types';
 import * as utils from '../utils';
@@ -78,6 +79,11 @@ export async function analyzeRg(source: string, flags: Settings['flags']) {
 export async function parseGdl(source: string) {
   const ast = await workerMethod('parseGdl', [source], utils.noop);
   return JSON.parse(ast) as rg.ast.GameDeclaration;
+}
+
+export async function parseHrg(source: string) {
+  const ast = await workerMethod('parseHrg', [source], utils.noop);
+  return JSON.parse(ast) as hrg.ast.GameDeclaration;
 }
 
 export async function perfRg(

@@ -59,8 +59,11 @@ impl<Id> From<(Id, (Id, Id))> for DomainValue<Id> {
 }
 
 impl<Id> From<(Id, Vec<Id>)> for DomainValue<Id> {
-    fn from((identifier, values): (Id, Vec<Id>)) -> Self {
-        Self::Set { identifier, values }
+    fn from((identifier, elements): (Id, Vec<Id>)) -> Self {
+        Self::Set {
+            identifier,
+            elements,
+        }
     }
 }
 
@@ -78,17 +81,13 @@ impl<Id>
     )> for Expression<Id>
 {
     fn from(
-        (condition, then, else_): (
+        (cond, then, else_): (
             Arc<Expression<Id>>,
             Arc<Expression<Id>>,
             Arc<Expression<Id>>,
         ),
     ) -> Self {
-        Self::If {
-            condition,
-            then,
-            else_,
-        }
+        Self::If { cond, then, else_ }
     }
 }
 
@@ -115,12 +114,6 @@ impl<Id>
             expression,
             domains: domains.unwrap_or_default(),
         }
-    }
-}
-
-impl<Id> From<Id> for Pattern<Id> {
-    fn from(identifier: Id) -> Self {
-        Self::Variable { identifier }
     }
 }
 
@@ -163,9 +156,9 @@ impl<Id> From<(Id, Vec<DomainElement<Id>>)> for DomainDeclaration<Id> {
     }
 }
 
-impl<Id> From<(Id, Arc<Type<Id>>, Option<(Id, Arc<Expression<Id>>)>)> for VariableDeclaration<Id> {
+impl<Id> From<(Id, Arc<Type<Id>>, Option<Arc<Expression<Id>>>)> for VariableDeclaration<Id> {
     fn from(
-        (identifier, type_, default_value): (Id, Arc<Type<Id>>, Option<(Id, Arc<Expression<Id>>)>),
+        (identifier, type_, default_value): (Id, Arc<Type<Id>>, Option<Arc<Expression<Id>>>),
     ) -> Self {
         Self {
             identifier,

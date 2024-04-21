@@ -80,19 +80,13 @@ fn completion_items_rg(
         CompletionKind::None => vec![],
         CompletionKind::Toplevel => {
             let symbols = get_symbols(symbol_table, &CompletionKind::Toplevel.predicate());
-            let mut items: Vec<CompletionItem> = symbols
-                .into_iter()
-                .map(|sym| completion_item(sym))
-                .collect();
+            let mut items: Vec<CompletionItem> = symbols.into_iter().map(completion_item).collect();
             items.extend(keyword_completions());
             items
         }
         kind => {
             let symbols = get_symbols(symbol_table, &kind.predicate());
-            symbols
-                .into_iter()
-                .map(|sym| completion_item(sym))
-                .collect()
+            symbols.into_iter().map(completion_item).collect()
         }
     };
     items.dedup();
@@ -101,10 +95,7 @@ fn completion_items_rg(
 
 fn completion_items_hrg(symbol_table: &SymbolTable) -> Vec<CompletionItem> {
     let symbols = get_symbols(symbol_table, &CompletionKind::Any.predicate());
-    let mut items: Vec<CompletionItem> = symbols
-        .into_iter()
-        .map(|sym| completion_item(sym))
-        .collect();
+    let mut items: Vec<CompletionItem> = symbols.into_iter().map(completion_item).collect();
     items.dedup();
     items
 }

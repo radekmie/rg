@@ -84,14 +84,14 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
         Statement::Tag { symbol: _ } => {
             // table.add_occ_with_flag(symbol, Flag::Tag);
         }
-        Statement::When { condition, body } => {
-            add_from_expression(table, condition);
+        Statement::When { expression, body } => {
+            add_from_expression(table, expression);
             for statement in body {
                 add_from_statement(table, statement);
             }
         }
-        Statement::While { condition, body } => {
-            add_from_expression(table, condition);
+        Statement::While { expression, body } => {
+            add_from_expression(table, expression);
             for statement in body {
                 add_from_statement(table, statement);
             }
@@ -195,12 +195,8 @@ fn add_from_expression(table: &mut SymbolTableBuilder, expr: &Expression<Identif
                 add_from_expression(table, arg);
             }
         }
-        Expression::If {
-            condition,
-            then,
-            else_,
-        } => {
-            add_from_expression(table, condition);
+        Expression::If { cond, then, else_ } => {
+            add_from_expression(table, cond);
             add_from_expression(table, then);
             add_from_expression(table, else_);
         }
@@ -284,10 +280,9 @@ fn add_from_variable_declaration(
 ) {
     table.add_occ(&variable.identifier);
     add_from_type(table, &variable.type_);
-    variable.default_value.as_ref().map(|(id, value)| {
-        table.add_occ(id);
-        add_from_expression(table, value)
-    });
+    if let Some(default_value) = variable.default_value.as_ref() {
+        add_from_expression(table, default_value)
+    }
 }
 
 fn add_builtin_symbols(table: &mut SymbolTableBuilder) {

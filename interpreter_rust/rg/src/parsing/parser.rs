@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, Expression, Game, Label, Node, NodePart, Pragma, Type, Typedef,
-    Value, ValueEntry, Variable,
+    Constant, Edge, Expression, Game, Label, Node, NodePart, Pragma, Type, Typedef, Value,
+    ValueEntry, Variable,
 };
 use nom::branch::alt;
 use nom::bytes::complete::tag;

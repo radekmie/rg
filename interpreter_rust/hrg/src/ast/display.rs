@@ -52,9 +52,12 @@ impl<Id: Display> Display for DomainValue<Id> {
                 min,
                 max,
             } => write!(f, "{identifier} in {min}..{max}"),
-            Self::Set { identifier, values } => {
+            Self::Set {
+                identifier,
+                elements,
+            } => {
                 write!(f, "{identifier} in {{ ")?;
-                write_with_separator(f, values, ", ")?;
+                write_with_separator(f, elements, ", ")?;
                 write!(f, " }}")
             }
         }
@@ -92,7 +95,7 @@ impl<Id: Display> Display for Pattern<Id> {
                 write_with_separator(f, args, ", ")?;
                 write!(f, ")")
             }
-            Self::Literal { pattern } => write!(f, "{pattern}"),
+            Self::Literal { identifier } => write!(f, "{identifier}"),
             Self::Variable { identifier } => write!(f, "{identifier}"),
             Self::Wildcard => write!(f, "_"),
         }
@@ -142,8 +145,8 @@ impl<Id: Display> Display for FunctionDeclaration<Id> {
 impl<Id: Display> Display for VariableDeclaration<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         writeln!(f, "{} : {}", self.identifier, self.type_)?;
-        if let Some((id, default_value)) = self.default_value.as_ref() {
-            write!(f, "{} = ", id)?;
+        if let Some(default_value) = self.default_value.as_ref() {
+            write!(f, "{} = ", self.identifier)?;
             write_expression(f, default_value.as_ref(), 2)?;
         }
         Ok(())
@@ -224,13 +227,9 @@ fn write_expression<Id: Display>(
             writeln!(f)?;
             write_rbrace(f, indent)
         }
-        Expression::If {
-            condition,
-            then,
-            else_,
-        } => {
+        Expression::If { cond, then, else_ } => {
             write!(f, "if ")?;
-            write_expression(f, condition.as_ref(), indent + 2)?;
+            write_expression(f, cond.as_ref(), indent + 2)?;
             writeln!(f)?;
             write_indent(f, indent)?;
             write!(f, "then ")?;
@@ -322,13 +321,13 @@ fn write_statement<Id: Display>(
 
         Statement::Tag { symbol } => write!(f, "$ {symbol}"),
 
-        Statement::When { condition, body } => {
-            writeln!(f, "when {condition} {{")?;
+        Statement::When { expression, body } => {
+            writeln!(f, "when {expression} {{")?;
             write_statements(f, body, indent + 2)?;
             write_rbrace(f, indent)
         }
-        Statement::While { condition, body } => {
-            writeln!(f, "while {condition} {{")?;
+        Statement::While { expression, body } => {
+            writeln!(f, "while {expression} {{")?;
             write_statements(f, body, indent + 2)?;
             write_rbrace(f, indent)
         }

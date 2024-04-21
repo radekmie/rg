@@ -2,8 +2,8 @@ use super::symbol::Symbols;
 use crate::common::symbol::{make_builtin, Flag};
 use crate::common::symbol_table::{Occurrence, SymbolTable, SymbolTableBuilder};
 use rg::ast::{Edge, Expression, Game, Label, Node, NodePart, Type, Value, ValueEntry};
+use utils::position::Positioned;
 use utils::{Error, Identifier};
-use utils::position::{Positioned, Span};
 
 fn add_from_type(table: &mut SymbolTableBuilder, type_: &Type<Identifier>) {
     match type_ {

@@ -70,8 +70,8 @@ impl Symbols {
                 });
                 values.iter().for_each(|value| match value {
                     DomainValue::Range { .. } => {}
-                    DomainValue::Set { values, .. } => {
-                        values.iter().for_each(|id| {
+                    DomainValue::Set { elements, .. } => {
+                        elements.iter().for_each(|id| {
                             if let Some(symbol) = untyped(id, Flag::Member) {
                                 self.symbols.push(symbol);
                             }

@@ -155,10 +155,7 @@ export async function parse(source: string, settings: Settings) {
         break;
       }
       case L.hrg: {
-        let cst = hrg.cst.parse(source).cstNode;
-        game.steps.push({ kind: 'cst', language: L.hrg, value: cst });
-
-        const ast = hrg.ast.visit(cst);
+        const ast = await wasm.parseHrg(source);
         game.steps.push({ kind: 'ast', language: L.hrg, value: ast });
 
         source = hrg.ast.serializeGameDeclaration(ast);
@@ -169,7 +166,7 @@ export async function parse(source: string, settings: Settings) {
           value: source,
         });
 
-        cst = hrg.cst.parse(source).cstNode;
+        const cst = hrg.cst.parse(source).cstNode;
         game.steps.push({ kind: 'cst', language: L.hrg, value: cst });
 
         if (!utils.isEqual(ast, hrg.ast.visit(cst))) {

@@ -1,8 +1,10 @@
+use crate::common::{
+    self,
+    symbol::{defined, Flag, Symbol},
+};
 use rg::ast::{Edge, Game, NodePart, Type};
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 use utils::{position::Positioned, Identifier};
-
-use crate::common::symbol::{defined, Flag, Symbol};
 
 struct EdgeParam {
     param: Identifier,

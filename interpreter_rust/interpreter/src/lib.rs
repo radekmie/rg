@@ -1,10 +1,11 @@
 mod ist;
 
+use hrg::{ast::GameDeclaration, parsing::parser::parse_with_errors as unsafe_parse_hrg};
 use ist::tools::{new_ist_interner, ISTInterner};
 use js_sys::{Array, Function};
 use map_id::MapId;
 use rand::thread_rng;
-use rg::{ast::Game, parsing::parser::parse_with_errors};
+use rg::{ast::Game, parsing::parser::parse_with_errors as unsafe_parse_rg};
 use serde::Deserialize;
 use serde_json::{from_str, json, to_string};
 use std::sync::Arc;
@@ -23,8 +24,22 @@ pub fn safe_parse_ast(ast: &str) -> Result<Game<Arc<str>>, String> {
     from_str::<Game<Arc<str>>>(ast).map_err(|error| error.to_string())
 }
 
-pub fn safe_parse_source(source: &str) -> Result<Game<Arc<str>>, String> {
-    let (game, errors) = parse_with_errors(source);
+pub fn safe_parse_hrg_source(source: &str) -> Result<GameDeclaration<Arc<str>>, String> {
+    let (game, errors) = unsafe_parse_hrg(source);
+    if errors.is_empty() {
+        let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
+        Ok(game)
+    } else {
+        Err(errors
+            .into_iter()
+            .map(|error| format!("{error}"))
+            .collect::<Vec<_>>()
+            .join("\n"))
+    }
+}
+
+pub fn safe_parse_rg_source(source: &str) -> Result<Game<Arc<str>>, String> {
+    let (game, errors) = unsafe_parse_rg(source);
     if errors.is_empty() {
         let mut game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
         game.add_builtins()?;
@@ -38,7 +53,11 @@ pub fn safe_parse_source(source: &str) -> Result<Game<Arc<str>>, String> {
     }
 }
 
-fn safe_serialize_ast(game: &Game<Arc<str>>) -> Result<String, String> {
+pub fn safe_serialize_hrg_ast(game: &GameDeclaration<Arc<str>>) -> Result<String, String> {
+    to_string(game).map_err(|error| error.to_string())
+}
+
+pub fn safe_serialize_rg_ast(game: &Game<Arc<str>>) -> Result<String, String> {
     to_string(game).map_err(|error| error.to_string())
 }
 
@@ -124,7 +143,7 @@ pub fn analyze_rg(
     }
 
     let flags = check!(from_str::<Flags>(flags));
-    let mut game = check!(safe_parse_source(source));
+    let mut game = check!(safe_parse_rg_source(source));
     game_step!(game, "");
 
     loop {
@@ -147,7 +166,7 @@ pub fn analyze_rg(
             };
             (node $fn:ident) => {
                 pass!($fn {
-                    let ast = check!(safe_serialize_ast(&game));
+                    let ast = check!(safe_serialize_rg_ast(&game));
                     let ast = $fn.call1(&JsValue::null(), &ast.into()).unwrap().as_string().unwrap();
                     game = check!(safe_parse_ast(&ast));
                 });
@@ -177,7 +196,7 @@ pub fn analyze_rg(
         break;
     }
 
-    assert_eq!(check!(safe_parse_source(&game.to_string())), game);
+    assert_eq!(check!(safe_parse_rg_source(&game.to_string())), game);
     quit!()
 }
 
@@ -188,7 +207,13 @@ pub fn parse_gdl(source: &str) -> Result<String, String> {
         .map_err(|error| error.to_string())?
         .1;
     let rg = gdl_to_rg::gdl_to_rg(&gdl);
-    safe_serialize_ast(&rg)
+    safe_serialize_rg_ast(&rg)
+}
+
+#[wasm_bindgen(js_name = parseHrg)]
+pub fn parse_hrg(source: &str) -> Result<String, String> {
+    console_error_panic_hook::set_once();
+    safe_serialize_hrg_ast(&safe_parse_hrg_source(source)?)
 }
 
 #[wasm_bindgen(js_name = perfRg)]
