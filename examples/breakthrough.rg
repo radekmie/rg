@@ -121,7 +121,11 @@ win, score: goals[turnPlayer] = Score(100);
 score, finish: goals[opponent[turnPlayer]] = Score(0);
 finish, end: player = PlayerOrKeeper(keeper);
 
-@simpleApply selectPos selectedPos(p:Position) setPos(p:Position) setFinished checkOwn forward selectDirection directionForward directionOK directionLeft directionLeftChecked directionRight directionRightChecked moved done;
+//@simpleApplyExhaustive selectPos p: selectedPos(p:Position),setPos(p:Position),setFinished,checkOwn,forward,selectDirection;
+//@simpleApplyExhaustive selectDirection F: directionForward,moved;
+//@simpleApplyExhaustive selectDirection L: directionLeft,moved;
+//@simpleApplyExhaustive selectDirection R: directionRight,moved;
+//@simpleApplyExhaustive moved : done,wincheck;
 
 @disjointExhaustive turn:move lose;
 @disjointExhaustive wincheck:continue win;
