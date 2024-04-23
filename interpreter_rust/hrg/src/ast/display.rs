@@ -161,14 +161,15 @@ fn write_toplevel<T: Display>(f: &mut Formatter<'_>, items: &[T]) -> Result {
         for item in iter {
             writeln!(f, "{item}")?;
         }
-        writeln!(f)?;
     }
     Ok(())
 }
 
 impl<Id: Display> Display for GameDeclaration<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write_toplevel(f, &self.domains)?;
+        self.domains
+            .iter()
+            .try_for_each(|domain| writeln!(f, "{domain}"))?;
         write_toplevel(f, &self.functions)?;
         write_toplevel(f, &self.variables)?;
         write_toplevel(f, &self.automaton)?;
