@@ -271,16 +271,16 @@ fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
         table.symbols.push(make_builtin("player", Flag::Variable));
     }
     if !table.is_defined("not") {
-        table.symbols.push(make_builtin("not", Flag::Edge));
+        table.symbols.push(make_builtin("not", Flag::Function));
     }
     if !table.is_defined("assert") {
-        table.symbols.push(make_builtin("assert", Flag::Edge));
+        table.symbols.push(make_builtin("assert", Flag::Function));
     }
     if !table.is_defined("reachable") {
-        table.symbols.push(make_builtin("reachable", Flag::Edge));
+        table.symbols.push(make_builtin("reachable", Flag::Function));
     }
     if !table.is_defined("end") {
-        table.symbols.push(make_builtin("end", Flag::Edge));
+        table.symbols.push(make_builtin("end", Flag::Function));
     }
 }
 

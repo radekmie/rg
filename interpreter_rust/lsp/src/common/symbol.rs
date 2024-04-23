@@ -104,7 +104,7 @@ pub enum Flag {
     Member,
     Constant,
     Variable,
-    Edge,
+    Function,
     Param,
 }
 
@@ -115,7 +115,7 @@ impl Display for Flag {
             Self::Member => write!(f, "."),
             Self::Constant => write!(f, "!"),
             Self::Variable => write!(f, "?"),
-            Self::Edge => write!(f, "()"),
+            Self::Function => write!(f, "()"),
             Self::Param => write!(f, "$"),
         }
     }

@@ -29,13 +29,13 @@ impl CompletionKind {
     fn predicate(self) -> impl Fn(&&Symbol) -> bool {
         match self {
             Self::Any => |_: &&Symbol| true,
-            Self::Edge => |sym: &&Symbol| sym.flag == Flag::Edge,
+            Self::Edge => |sym: &&Symbol| sym.flag == Flag::Function,
             Self::None => |_: &&Symbol| false,
             Self::Param => |sym: &&Symbol| sym.flag == Flag::Param,
-            Self::Toplevel => |sym: &&Symbol| sym.flag == Flag::Edge,
+            Self::Toplevel => |sym: &&Symbol| sym.flag == Flag::Function,
             Self::Type => |sym: &&Symbol| sym.flag == Flag::Type,
             Self::Value => |sym: &&Symbol| sym.flag == Flag::Member,
-            Self::Variable => |sym: &&Symbol| sym.flag != Flag::Edge,
+            Self::Variable => |sym: &&Symbol| sym.flag != Flag::Function,
         }
     }
 }
@@ -146,7 +146,7 @@ impl From<Flag> for CompletionItemKind {
     fn from(flag: Flag) -> Self {
         match flag {
             Flag::Type => Self::CLASS,
-            Flag::Edge => Self::METHOD,
+            Flag::Function => Self::METHOD,
             Flag::Member => Self::FIELD,
             Flag::Constant => Self::CONSTANT,
             Flag::Variable => Self::VARIABLE,

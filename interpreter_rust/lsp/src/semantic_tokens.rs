@@ -143,7 +143,7 @@ fn symbol_table_tokens(symbol_table: &SymbolTable) -> Vec<Token> {
             };
             let token_type = match symbol.flag {
                 Flag::Constant => semantic_token_type("constant"),
-                Flag::Edge => semantic_token_type("function"),
+                Flag::Function => semantic_token_type("function"),
                 Flag::Type => semantic_token_type("type"),
                 Flag::Variable => semantic_token_type("variable"),
                 Flag::Member => semantic_token_type("member"),

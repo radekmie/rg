@@ -7,7 +7,7 @@ impl From<&Flag> for SymbolKind {
     fn from(flag: &Flag) -> Self {
         match flag {
             Flag::Constant => Self::VARIABLE,
-            Flag::Edge => Self::CLASS,
+            Flag::Function => Self::CLASS,
             Flag::Member => Self::NULL,
             Flag::Param => Self::ARRAY,
             Flag::Type => Self::PACKAGE,

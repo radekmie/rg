@@ -78,8 +78,8 @@ impl Symbols {
                 identifier: right_id,
             }, right_binds @ ..] = edge.rhs.parts.as_slice()
             {
-                let left_idx = self.add_if_not_defined(untyped(left_id, Flag::Edge));
-                let right_idx = self.add_if_not_defined(untyped(right_id, Flag::Edge));
+                let left_idx = self.add_if_not_defined(untyped(left_id, Flag::Function));
+                let right_idx = self.add_if_not_defined(untyped(right_id, Flag::Function));
 
                 // Split binds into literals and bindings
                 let (left_binds, left_literals) = left_binds
@@ -95,10 +95,10 @@ impl Symbols {
 
                 // Maybe add literals as edge symbols
                 for literal in &left_literals {
-                    self.add_if_not_defined(untyped(literal.identifier(), Flag::Edge));
+                    self.add_if_not_defined(untyped(literal.identifier(), Flag::Function));
                 }
                 for literal in &right_literals {
-                    self.add_if_not_defined(untyped(literal.identifier(), Flag::Edge));
+                    self.add_if_not_defined(untyped(literal.identifier(), Flag::Function));
                 }
 
                 // Splits bindings into common, left and right

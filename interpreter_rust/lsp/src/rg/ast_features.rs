@@ -37,7 +37,7 @@ pub fn hover_signature(symbol: &Symbol) -> Option<String> {
     let type_ = &symbol.type_;
     match symbol.flag {
         Flag::Constant => Some(format!("const {}: {}", symbol.id, type_)),
-        Flag::Edge => type_
+        Flag::Function => type_
             .to_option()
             .map(|type_| format!("{}: {}", symbol.id, type_)),
         Flag::Member => Some(format!("{}: {}", symbol.id, type_)),

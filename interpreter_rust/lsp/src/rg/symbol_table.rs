@@ -101,11 +101,11 @@ fn add_from_edge_name(
 ) -> Option<usize> {
     match edge_name.parts.as_slice() {
         [NodePart::Literal { identifier }] => {
-            table.add_occ_with_flag(identifier, Flag::Edge);
+            table.add_occ_with_flag(identifier, Flag::Function);
             None
         }
         [NodePart::Literal { identifier }, bindings @ ..] => {
-            let occ = table.occ_with_flag(identifier, Flag::Edge);
+            let occ = table.occ_with_flag(identifier, Flag::Function);
             let sym_idx = occ.symbol;
             table.occurrences.push(occ);
             for binding in bindings {
@@ -130,7 +130,7 @@ fn add_from_name_part(
             add_from_type(table, type_);
         }
         NodePart::Literal { identifier } => {
-            table.add_occ_with_flag(identifier, Flag::Edge);
+            table.add_occ_with_flag(identifier, Flag::Function);
         }
     }
 }

@@ -94,7 +94,7 @@ impl Symbols {
     }
 
     fn add_from_function(&mut self, func: &Function<Identifier>) {
-        if let Some(symbol) = untyped(&func.name, Flag::Edge) {
+        if let Some(symbol) = untyped(&func.name, Flag::Function) {
             self.symbols.push(symbol);
         }
         func.args.iter().for_each(|arg| {
@@ -108,7 +108,7 @@ impl Symbols {
     }
 
     fn add_from_function_decl(&mut self, func: &FunctionDeclaration<Identifier>) {
-        if let Some(symbol) = typed(&func.identifier, Flag::Edge, func.type_.clone()) {
+        if let Some(symbol) = typed(&func.identifier, Flag::Function, func.type_.clone()) {
             self.symbols.push(symbol);
         }
     }
