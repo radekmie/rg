@@ -22,11 +22,9 @@ pub fn prepare_ist(
     Ok((game, interner))
 }
 
-
-
-// pub fn safe_parse_hrg_ast(ast: &str) -> Result<GameDeclaration<Arc<str>>, String> {
-//     from_str::<GameDeclaration<Arc<str>>>(ast).map_err(|error| error.to_string())
-// }
+pub fn safe_parse_hrg_ast(ast: &str) -> Result<GameDeclaration<Arc<str>>, String> {
+    from_str::<GameDeclaration<Arc<str>>>(ast).map_err(|error| error.to_string())
+}
 
 pub fn safe_parse_rg_ast(ast: &str) -> Result<Game<Arc<str>>, String> {
     from_str::<Game<Arc<str>>>(ast).map_err(|error| error.to_string())
@@ -275,12 +273,12 @@ pub fn run_rg(ast: &str, plays: usize, callback: &Function) -> Result<(), String
     Ok(())
 }
 
-// #[wasm_bindgen(js_name = serializeHrg)]
-// pub fn serialize_hrg(ast: &str) -> Result<String, String> {
-//     console_error_panic_hook::set_once();
-//     let game = safe_parse_hrg_ast(ast)?;
-//     Ok(game.to_string())
-// }
+#[wasm_bindgen(js_name = serializeHrg)]
+pub fn serialize_hrg(ast: &str) -> Result<String, String> {
+    console_error_panic_hook::set_once();
+    let game = safe_parse_hrg_ast(ast)?;
+    Ok(game.to_string())
+}
 
 #[wasm_bindgen(js_name = serializeRg)]
 pub fn serialize_rg(ast: &str) -> Result<String, String> {

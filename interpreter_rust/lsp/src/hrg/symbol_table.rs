@@ -277,7 +277,9 @@ fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
         table.symbols.push(make_builtin("assert", Flag::Function));
     }
     if !table.is_defined("reachable") {
-        table.symbols.push(make_builtin("reachable", Flag::Function));
+        table
+            .symbols
+            .push(make_builtin("reachable", Flag::Function));
     }
     if !table.is_defined("end") {
         table.symbols.push(make_builtin("end", Flag::Function));

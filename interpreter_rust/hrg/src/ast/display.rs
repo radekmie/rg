@@ -148,8 +148,8 @@ impl<Id: Display> Display for VariableDeclaration<Id> {
         if let Some(default_value) = self.default_value.as_ref() {
             write!(f, "{} = ", self.identifier)?;
             write_expression(f, default_value.as_ref(), 2)?;
+            writeln!(f)?;
         }
-        writeln!(f)?;
         Ok(())
     }
 }
@@ -170,6 +170,9 @@ impl<Id: Display> Display for GameDeclaration<Id> {
         self.domains
             .iter()
             .try_for_each(|domain| writeln!(f, "{domain}"))?;
+        if !self.domains.is_empty() {
+            writeln!(f)?;
+        }
         write_toplevel(f, &self.functions)?;
         write_toplevel(f, &self.variables)?;
         write_toplevel(f, &self.automaton)?;

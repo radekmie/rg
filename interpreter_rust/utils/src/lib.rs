@@ -72,7 +72,7 @@ impl Error {
     pub fn symbol_table_error(identifier: &str, span: &Span) -> Self {
         Self {
             span: *span,
-            message: format!("Unknown identifier: {}", identifier),
+            message: format!("Unknown identifier: {identifier}"),
             kind: ErrorKind::UnknownIdentifier,
         }
     }

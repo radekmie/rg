@@ -158,7 +158,7 @@ export async function parse(source: string, settings: Settings) {
         const ast = await wasm.parseHrg(source);
         game.steps.push({ kind: 'ast', language: L.hrg, value: ast });
 
-        source = hrg.ast.serializeGameDeclaration(ast);
+        source = await wasm.serializeHrg(ast);
         game.steps.push({
           kind: 'source',
           language: L.hrg,

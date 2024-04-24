@@ -386,4 +386,3 @@ pub fn parse_expression(input: &str) -> Arc<Expression<Identifier>> {
     let (_, expression) = all_consuming(expression)(input).expect("Parser cannot fail");
     expression
 }
-

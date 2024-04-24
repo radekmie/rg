@@ -83,7 +83,20 @@ export async function parseGdl(source: string) {
 
 export async function parseHrg(source: string) {
   const ast = await workerMethod('parseHrg', [source], utils.noop);
-  return JSON.parse(ast) as hrg.ast.GameDeclaration;
+  return parseHrgAst(ast);
+}
+
+function parseHrgAst(ast: string) {
+  return JSON.parse(ast, (_, value) => {
+    if (value && value.kind === 'BinExpr') {
+      return {
+        kind: "Expression" + value.op,
+        lhs: value.lhs,
+        rhs: value.rhs,
+      };
+    }
+    return value;
+  }) as hrg.ast.GameDeclaration;
 }
 
 export async function perfRg(
@@ -113,4 +126,37 @@ export async function serializeRg(gameDeclaration: rg.ast.GameDeclaration) {
   const ast = JSON.stringify(gameDeclaration);
   const rg = await workerMethod('serializeRg', [ast], utils.noop);
   return rg;
+}
+
+export async function serializeHrg(gameDeclaration: hrg.ast.GameDeclaration) {
+  const ast = stringifyGame(gameDeclaration);
+  const hrg = await workerMethod('serializeHrg', [ast], utils.noop);
+  return hrg;
+}
+
+const binopKinds = [
+  'ExpressionAdd',
+  'ExpressionSub',
+  'ExpressionAnd',
+  'ExpressionOr',
+  'ExpressionEq',
+  'ExpressionNe',
+  'ExpressionLt',
+  'ExpressionLte',
+  'ExpressionGt',
+  'ExpressionGte',
+];
+
+function stringifyGame(game: hrg.ast.GameDeclaration) {
+  return JSON.stringify(game, (_, value) => {
+    if (value && binopKinds.includes(value.kind)) {
+      return {
+        kind: 'BinExpr',
+        lhs: value.lhs,
+        op: value.kind.replace('Expression', ''),
+        rhs: value.rhs,
+      };
+    }
+    return value;
+  });
 }

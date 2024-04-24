@@ -6,6 +6,7 @@ import init, {
   parseHrg,
   perfRg,
   runRg,
+  serializeHrg,
   serializeRg,
 } from './interpreter';
 import * as transformators from '../rg/transformators';
@@ -45,6 +46,7 @@ const methods = {
   parseHrg,
   perfRg,
   runRg,
+  serializeHrg,
   serializeRg,
 };
 self.addEventListener('message', ({ data }) => {

@@ -2,7 +2,7 @@ mod display;
 
 use map_id::MapId;
 use map_id_macro::MapId;
-use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
@@ -110,25 +110,15 @@ pub enum DomainValue<Id> {
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Binop {
-    #[serde(rename = "ExpressionAdd")]
     Add,
-    #[serde(rename = "ExpressionAnd")]
     And,
-    #[serde(rename = "ExpressionEq")]
     Eq,
-    #[serde(rename = "ExpressionGt")]
     Gt,
-    #[serde(rename = "ExpressionGte")]
     Gte,
-    #[serde(rename = "ExpressionLt")]
     Lt,
-    #[serde(rename = "ExpressionLte")]
     Lte,
-    #[serde(rename = "ExpressionNe")]
     Ne,
-    #[serde(rename = "ExpressionOr")]
     Or,
-    #[serde(rename = "ExpressionSub")]
     Sub,
 }
 
@@ -139,9 +129,10 @@ impl<OldId, NewId> MapId<Self, OldId, NewId> for Binop {
 }
 
 // TODO: Implement Deserialize by hand
-#[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Expression<Id> {
+    #[serde(rename = "ExpressionAccess")]
     Access {
         lhs: Arc<Expression<Id>>,
         rhs: Arc<Expression<Id>>,
@@ -151,101 +142,31 @@ pub enum Expression<Id> {
         op: Binop,
         rhs: Arc<Expression<Id>>,
     },
+    #[serde(rename = "ExpressionCall")]
     Call {
         expression: Arc<Expression<Id>>,
         args: Vec<Arc<Expression<Id>>>,
     },
+    #[serde(rename = "ExpressionConstructor")]
     Constructor {
         identifier: Id,
         args: Vec<Arc<Expression<Id>>>,
     },
+    #[serde(rename = "ExpressionIf")]
     If {
         cond: Arc<Expression<Id>>,
         then: Arc<Expression<Id>>,
+        #[serde(rename = "else")]
         else_: Arc<Expression<Id>>,
     },
-    Literal {
-        identifier: Id,
-    },
+    #[serde(rename = "ExpressionLiteral")]
+    Literal { identifier: Id },
+    #[serde(rename = "ExpressionMap")]
     Map {
         pattern: Arc<Pattern<Id>>,
         expression: Arc<Expression<Id>>,
         domains: Vec<DomainValue<Id>>,
     },
-}
-
-impl<Id> Serialize for Expression<Id>
-where
-    Id: Serialize,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            Expression::BinExpr { lhs, op, rhs } => {
-                let mut state: <S as Serializer>::SerializeStruct =
-                    serializer.serialize_struct("BinExpr", 3)?;
-                state.serialize_field("kind", op)?;
-                state.serialize_field("lhs", lhs)?;
-                state.serialize_field("rhs", rhs)?;
-                state.end()
-            }
-            Expression::Access { lhs, rhs } => {
-                let mut state: <S as Serializer>::SerializeStruct =
-                    serializer.serialize_struct("Access", 3)?;
-                state.serialize_field("kind", "ExpressionAccess")?;
-                state.serialize_field("lhs", lhs)?;
-                state.serialize_field("rhs", rhs)?;
-                state.end()
-            }
-            Expression::Call { expression, args } => {
-                let mut state: <S as Serializer>::SerializeStruct =
-                    serializer.serialize_struct("Call", 3)?;
-                state.serialize_field("kind", "ExpressionCall")?;
-                state.serialize_field("expression", expression)?;
-                state.serialize_field("args", args)?;
-                state.end()
-            }
-            Expression::Constructor { identifier, args } => {
-                let mut state: <S as Serializer>::SerializeStruct =
-                    serializer.serialize_struct("Constructor", 3)?;
-                state.serialize_field("kind", "ExpressionConstructor")?;
-                state.serialize_field("identifier", identifier)?;
-                state.serialize_field("args", args)?;
-                state.end()
-            }
-            Expression::If { cond, then, else_ } => {
-                let mut state: <S as Serializer>::SerializeStruct =
-                    serializer.serialize_struct("If", 4)?;
-                state.serialize_field("kind", "ExpressionIf")?;
-                state.serialize_field("cond", cond)?;
-                state.serialize_field("then", then)?;
-                state.serialize_field("else", else_)?;
-                state.end()
-            }
-            Expression::Literal { identifier } => {
-                let mut state: <S as Serializer>::SerializeStruct =
-                    serializer.serialize_struct("Literal", 2)?;
-                state.serialize_field("kind", "ExpressionLiteral")?;
-                state.serialize_field("identifier", identifier)?;
-                state.end()
-            }
-            Expression::Map {
-                pattern,
-                expression,
-                domains,
-            } => {
-                let mut state: <S as Serializer>::SerializeStruct =
-                    serializer.serialize_struct("Map", 4)?;
-                state.serialize_field("kind", "ExpressionMap")?;
-                state.serialize_field("pattern", pattern)?;
-                state.serialize_field("expression", expression)?;
-                state.serialize_field("domains", domains)?;
-                state.end()
-            }
-        }
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
@@ -328,6 +249,10 @@ pub struct GameDeclaration<Id> {
     pub domains: Vec<DomainDeclaration<Id>>,
     pub functions: Vec<FunctionDeclaration<Id>>,
     pub variables: Vec<VariableDeclaration<Id>>,
-    #[serde(skip)]
+    #[serde(skip_serializing, default = "empty_vec")]
     pub types: Vec<TypeDeclaration<Id>>,
+}
+
+fn empty_vec<Id>() -> Vec<TypeDeclaration<Id>> {
+    Vec::new()
 }
