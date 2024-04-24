@@ -166,10 +166,7 @@ export async function parse(source: string, settings: Settings) {
           value: source,
         });
 
-        const cst = hrg.cst.parse(source).cstNode;
-        game.steps.push({ kind: 'cst', language: L.hrg, value: cst });
-
-        if (!utils.isEqual(ast, hrg.ast.visit(cst))) {
+        if (!utils.isEqual(ast, await wasm.parseHrg(source))) {
           throw new Error('HrgFormattingError (AST mismatch)');
         }
 
