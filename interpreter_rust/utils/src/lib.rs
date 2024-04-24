@@ -27,6 +27,10 @@ impl Identifier {
     pub fn is_none(&self) -> bool {
         self.identifier == "<none>"
     }
+
+    pub fn is_numeric(&self) -> bool {
+        self.identifier.chars().all(char::is_numeric)
+    }
 }
 
 impl Display for Identifier {

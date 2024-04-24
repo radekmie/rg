@@ -35,7 +35,7 @@ fn add_maybe_edge_param(
     owner: &Option<usize>,
     create_error: bool,
 ) {
-    if !identifier.is_none() {
+    if !identifier.is_none() && !identifier.is_numeric() {
         let span = identifier.span();
         let sym_idx = table
             .find_symbol(&identifier.identifier, &Some(Flag::Param), owner)

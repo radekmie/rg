@@ -28,7 +28,7 @@ impl Symbol {
     }
 
     pub fn from_id(identifier: &Identifier, flag: Flag, type_: Type) -> Option<Self> {
-        if identifier.is_none() {
+        if identifier.is_none() || identifier.is_numeric() {
             None
         } else {
             let id = identifier.identifier.clone();

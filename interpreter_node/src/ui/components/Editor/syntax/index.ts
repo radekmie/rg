@@ -20,6 +20,7 @@ export const theme: monaco.editor.IStandaloneThemeData = {
     { token: 'variable', foreground: '005cc5' },
     { token: 'function', foreground: '986801' },
     { token: 'macro', foreground: 'ff0000' },
+    { token: 'number', foreground: '795E26' },
   ],
 };
 

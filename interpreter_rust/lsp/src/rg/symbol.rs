@@ -49,7 +49,7 @@ impl Symbols {
         owners: Vec<usize>,
         type_: Arc<Type<Identifier>>,
     ) -> Option<Symbol> {
-        if param.is_none() {
+        if param.is_none() || param.is_numeric() {
             None
         } else {
             let id = param.identifier.clone();
