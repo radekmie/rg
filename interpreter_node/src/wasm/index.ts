@@ -86,11 +86,12 @@ export async function parseHrg(source: string) {
   return parseHrgAst(ast);
 }
 
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-plus-operands -- `parseHrgAst` is a workaround. */
 function parseHrgAst(ast: string) {
   return JSON.parse(ast, (_, value) => {
     if (value && value.kind === 'BinExpr') {
       return {
-        kind: "Expression" + value.op,
+        kind: 'Expression' + value.op,
         lhs: value.lhs,
         rhs: value.rhs,
       };
@@ -98,6 +99,7 @@ function parseHrgAst(ast: string) {
     return value;
   }) as hrg.ast.GameDeclaration;
 }
+/* eslint-enable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-plus-operands -- `parseHrgAst` is a workaround. */
 
 export async function perfRg(
   gameDeclaration: rg.ast.GameDeclaration,
@@ -147,6 +149,7 @@ const binopKinds = [
   'ExpressionGte',
 ];
 
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- `stringifyGame` is a workaround. */
 function stringifyGame(game: hrg.ast.GameDeclaration) {
   return JSON.stringify(game, (_, value) => {
     if (value && binopKinds.includes(value.kind)) {
@@ -160,3 +163,4 @@ function stringifyGame(game: hrg.ast.GameDeclaration) {
     return value;
   });
 }
+/* eslint-enable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- `stringifyGame` is a workaround. */

@@ -256,7 +256,7 @@ fn add_from_variable_declaration(
     table.add_occ(&variable.identifier);
     add_from_type(table, &variable.type_);
     if let Some(default_value) = variable.default_value.as_ref() {
-        add_from_expression(table, default_value)
+        add_from_expression(table, default_value);
     }
 }
 

@@ -460,7 +460,7 @@ mod test {
         assert!(
             !errors.is_empty(),
             "Expected to fail to parse:\n{input}\nParsed:\n{game}"
-        )
+        );
     }
 
     #[test]

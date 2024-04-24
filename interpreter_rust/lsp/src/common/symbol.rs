@@ -27,7 +27,7 @@ impl Symbol {
         }
     }
 
-    pub fn from_id(identifier: &Identifier, flag: Flag, type_: Type) -> Option<Symbol> {
+    pub fn from_id(identifier: &Identifier, flag: Flag, type_: Type) -> Option<Self> {
         if identifier.is_none() {
             None
         } else {
@@ -82,8 +82,8 @@ pub enum Type {
 impl Type {
     pub fn to_option(&self) -> Option<&Self> {
         match self {
-            Type::Hrg(_) | Type::Rg(_) => Some(self),
-            Type::NoType => None,
+            Self::Hrg(_) | Self::Rg(_) => Some(self),
+            Self::NoType => None,
         }
     }
 }

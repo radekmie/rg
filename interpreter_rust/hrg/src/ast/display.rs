@@ -30,7 +30,7 @@ impl<Id: Display> Display for DomainElement<Id> {
                 args,
                 values,
             } => {
-                write!(f, "{}(", identifier)?;
+                write!(f, "{identifier}(")?;
                 write_with_separator(f, args, ", ")?;
                 write!(f, ")")?;
                 if !values.is_empty() {
@@ -226,7 +226,7 @@ fn write_expression<Id: Display>(
             let indent = if indent == 0 { 0 } else { indent - 2 };
             writeln!(f, "{{")?;
             write_indent(f, indent)?;
-            write!(f, "{} = ", pattern)?;
+            write!(f, "{pattern} = ")?;
             write_expression(f, expression, indent + 2)?;
             if !domains.is_empty() {
                 write!(f, " where ")?;

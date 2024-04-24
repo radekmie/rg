@@ -22,9 +22,9 @@ pub enum Ast {
 impl Document {
     pub fn new(uri: &Url, text: String) -> (Self, Vec<Error>) {
         if uri.as_str().ends_with(".rg") {
-            Document::rg(text)
+            Self::rg(text)
         } else {
-            Document::hrg(text)
+            Self::hrg(text)
         }
     }
     fn rg(text: String) -> (Self, Vec<Error>) {

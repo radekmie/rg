@@ -22,8 +22,8 @@ impl<Id> From<(Id, Vec<Arc<Expression<Id>>>)> for Statement<Id> {
     }
 }
 
-impl<Id> From<((Id, Arc<Type<Id>>), Vec<Statement<Id>>)> for Statement<Id> {
-    fn from(((identifier, type_), body): ((Id, Arc<Type<Id>>), Vec<Statement<Id>>)) -> Self {
+impl<Id> From<((Id, Arc<Type<Id>>), Vec<Self>)> for Statement<Id> {
+    fn from(((identifier, type_), body): ((Id, Arc<Type<Id>>), Vec<Self>)) -> Self {
         Self::Forall {
             identifier,
             type_,
@@ -73,39 +73,22 @@ impl<Id> From<Id> for Expression<Id> {
     }
 }
 
-impl<Id>
-    From<(
-        Arc<Expression<Id>>,
-        Arc<Expression<Id>>,
-        Arc<Expression<Id>>,
-    )> for Expression<Id>
-{
-    fn from(
-        (cond, then, else_): (
-            Arc<Expression<Id>>,
-            Arc<Expression<Id>>,
-            Arc<Expression<Id>>,
-        ),
-    ) -> Self {
+impl<Id> From<(Arc<Self>, Arc<Self>, Arc<Self>)> for Expression<Id> {
+    fn from((cond, then, else_): (Arc<Self>, Arc<Self>, Arc<Self>)) -> Self {
         Self::If { cond, then, else_ }
     }
 }
 
-impl<Id> From<(Id, Vec<Arc<Expression<Id>>>)> for Expression<Id> {
-    fn from((identifier, args): (Id, Vec<Arc<Expression<Id>>>)) -> Self {
+impl<Id> From<(Id, Vec<Arc<Self>>)> for Expression<Id> {
+    fn from((identifier, args): (Id, Vec<Arc<Self>>)) -> Self {
         Self::Constructor { identifier, args }
     }
 }
 
-impl<Id>
-    From<(
-        (Arc<Pattern<Id>>, Arc<Expression<Id>>),
-        Option<Vec<DomainValue<Id>>>,
-    )> for Expression<Id>
-{
+impl<Id> From<((Arc<Pattern<Id>>, Arc<Self>), Option<Vec<DomainValue<Id>>>)> for Expression<Id> {
     fn from(
         ((pattern, expression), domains): (
-            (Arc<Pattern<Id>>, Arc<Expression<Id>>),
+            (Arc<Pattern<Id>>, Arc<Self>),
             Option<Vec<DomainValue<Id>>>,
         ),
     ) -> Self {
@@ -117,8 +100,8 @@ impl<Id>
     }
 }
 
-impl<Id> From<(Id, Vec<Arc<Pattern<Id>>>)> for Pattern<Id> {
-    fn from((identifier, args): (Id, Vec<Arc<Pattern<Id>>>)) -> Self {
+impl<Id> From<(Id, Vec<Arc<Self>>)> for Pattern<Id> {
+    fn from((identifier, args): (Id, Vec<Arc<Self>>)) -> Self {
         Self::Constructor { identifier, args }
     }
 }
@@ -190,7 +173,7 @@ impl<Id: Clone>
                 body,
             })
             .collect();
-        FunctionDeclaration {
+        Self {
             identifier,
             type_,
             cases,

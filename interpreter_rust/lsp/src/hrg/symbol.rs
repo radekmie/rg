@@ -31,7 +31,7 @@ impl Symbols {
             }
             Statement::Branch { arms } => arms.iter().for_each(|arm| {
                 arm.iter()
-                    .for_each(|statement| self.add_from_statement(statement))
+                    .for_each(|statement| self.add_from_statement(statement));
             }),
             Statement::Loop { body }
             | Statement::When { body, .. }
@@ -63,19 +63,19 @@ impl Symbols {
                 if let Some(symbol) = typed(identifier, Flag::Type, type_.clone()) {
                     self.symbols.push(symbol);
                 }
-                args.iter().for_each(|arg| {
+                for arg in args {
                     if let Some(symbol) = untyped(arg, Flag::Param) {
                         self.symbols.push(symbol);
                     }
-                });
+                }
                 values.iter().for_each(|value| match value {
                     DomainValue::Range { .. } => {}
                     DomainValue::Set { elements, .. } => {
-                        elements.iter().for_each(|id| {
+                        for id in elements {
                             if let Some(symbol) = untyped(id, Flag::Member) {
                                 self.symbols.push(symbol);
                             }
-                        });
+                        }
                     }
                 });
             }
