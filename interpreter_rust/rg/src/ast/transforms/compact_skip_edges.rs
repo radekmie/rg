@@ -4,6 +4,8 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn compact_skip_edges(&mut self) -> Result<(), Error<Arc<str>>> {
+        // If multiple edge series use the same binding names, rename them to
+        // unique `bind_N` for `N = 1, 2, ...`.
         if !self.are_bindings_unique() {
             self.make_bindings_unique();
         }
@@ -22,6 +24,7 @@ impl Game<Arc<str>> {
             self.edges.remove(x);
         }
 
+        // Rename `bind_N: T` into `t: T` if `t` is not referenced.
         self.make_bindings_canonical();
 
         Ok(())
@@ -166,8 +169,16 @@ impl Game<Arc<str>> {
                     continue;
                 }
 
+                let edges_to_rename = get_edges_using_binding(edges, x, binding);
+                if edges_to_rename
+                    .iter()
+                    .any(|index| edges[*index].label.has_variable(&fresh))
+                {
+                    continue;
+                }
+
                 let mapping = BTreeMap::from([(binding.clone(), fresh)]);
-                for y in get_edges_using_binding(edges, x, binding) {
+                for y in edges_to_rename {
                     edges[y] = edges[y].rename_variables(&mapping);
                 }
             }
@@ -447,5 +458,11 @@ mod test {
             x4(p: Position), x5(p: Position): position = p;
             x5(p: Position), x2(p: Position): 1 == 1;
         "
+    );
+
+    test!(
+        canonical_form,
+        "type T = { 0, 1 }; var t: T = 0; a, b(x: T): x == t; c, d(x: T): x == t;",
+        "type T = { 0, 1 }; var t: T = 0; a, b(bind_1: T): bind_1 == t; c, d(bind_2: T): bind_2 == t;"
     );
 }
