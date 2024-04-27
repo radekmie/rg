@@ -106,7 +106,7 @@ pub fn analyze_hrg(source: &str) -> Result<Array, String> {
     let step = to_string(&step).map_err(|error| error.to_string())?;
     array.push(&step.into());
 
-    return Ok(array);
+    Ok(array)
 }
 
 #[wasm_bindgen(js_name = analyzeRg)]
