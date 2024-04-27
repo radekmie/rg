@@ -155,23 +155,14 @@ export async function parse(source: string, settings: Settings) {
         break;
       }
       case L.hrg: {
-        const ast = await wasm.parseHrg(source);
-        game.steps.push({ kind: 'ast', language: L.hrg, value: ast });
+        const steps = await wasm.analyzeHrg(source);
 
-        source = await wasm.serializeHrg(ast);
-        game.steps.push({
-          kind: 'source',
-          language: L.hrg,
-          title: 'formatted',
-          value: source,
-        });
-
-        if (!utils.isEqual(ast, await wasm.parseHrg(source))) {
-          throw new Error('HrgFormattingError (AST mismatch)');
+        game.steps.push(...steps);
+        const astHrg = game.astHrg;
+        if (astHrg) {
+          const astRg = translators.hrg2rg(astHrg, settings);
+          game.steps.push({ kind: 'ast', language: L.rg, value: astRg });
         }
-
-        const astRg = translators.hrg2rg(ast, settings);
-        game.steps.push({ kind: 'ast', language: L.rg, value: astRg });
 
         break;
       }

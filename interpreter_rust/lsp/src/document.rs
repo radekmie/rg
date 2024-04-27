@@ -1,9 +1,7 @@
 use crate::common::symbol_table::SymbolTable;
 use crate::hrg::symbol_table::from_game as hrg_symbol_table;
 use crate::rg::symbol_table::from_game as rg_symbol_table;
-use hrg::ast::GameDeclaration;
 use hrg::parsing::parser::parse_with_errors as hrg_parse;
-use rg::ast::Game;
 use rg::parsing::parser::parse_with_errors as rg_parse;
 use tower_lsp::lsp_types::Url;
 use utils::{Error, Identifier};
@@ -15,8 +13,8 @@ pub struct Document {
 }
 
 pub enum Ast {
-    Rg(Game<Identifier>),
-    Hrg(GameDeclaration<Identifier>),
+    Rg(rg::ast::Game<Identifier>),
+    Hrg(hrg::ast::Game<Identifier>),
 }
 
 impl Document {

@@ -1,11 +1,6 @@
 use std::{fmt::Display, sync::Arc};
-use utils::{
-    position::{Positioned, Span},
-    Identifier,
-};
-
-type RgType = rg::ast::Type<Identifier>;
-type HrgType = hrg::ast::Type<Identifier>;
+use utils::position::{Positioned, Span};
+use utils::Identifier;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Symbol {
@@ -74,8 +69,8 @@ impl Positioned for Symbol {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Type {
-    Hrg(Arc<HrgType>),
-    Rg(Arc<RgType>),
+    Hrg(Arc<hrg::ast::Type<Identifier>>),
+    Rg(Arc<rg::ast::Type<Identifier>>),
     NoType,
 }
 

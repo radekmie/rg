@@ -1,7 +1,6 @@
 use crate::ast::{
     Binop, DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg,
-    FunctionDeclaration, GameDeclaration, Pattern, Statement, Type, TypeDeclaration,
-    VariableDeclaration,
+    FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
 };
 use nom::branch::alt;
 use nom::bytes::complete::tag;
@@ -339,7 +338,7 @@ fn variable_declaration(input: Input) -> Result<VariableDeclaration<Identifier>>
     Ok((input, (id, type_, default_value).into()))
 }
 
-pub fn game(input: Input) -> Result<GameDeclaration<Identifier>> {
+pub fn game(input: Input) -> Result<Game<Identifier>> {
     context(
         "game_declaration",
         terminated(
@@ -355,7 +354,7 @@ pub fn game(input: Input) -> Result<GameDeclaration<Identifier>> {
                         map(parse_error_line, |()| (None, None, None, None, None)),
                     )),
                 ),
-                GameDeclaration::default,
+                Game::default,
                 |mut game, declaration| {
                     match declaration {
                         (Some(domain), _, _, _, _) => game.domains.push(domain),
@@ -373,7 +372,7 @@ pub fn game(input: Input) -> Result<GameDeclaration<Identifier>> {
     )(input)
 }
 
-pub fn parse_with_errors(input: &str) -> (GameDeclaration<Identifier>, Vec<Error>) {
+pub fn parse_with_errors(input: &str) -> (Game<Identifier>, Vec<Error>) {
     let errors = RefCell::new(Vec::new());
     let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
     let (_, game) = all_consuming(game)(input).expect("Parser cannot fail");

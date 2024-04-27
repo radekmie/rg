@@ -1,6 +1,5 @@
 import pLimit from 'p-limit';
 
-import * as hrg from '../hrg';
 import { AnalyzedGameStep } from '../parse';
 import * as rg from '../rg';
 import { Settings } from '../types';
@@ -62,6 +61,11 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
   );
 }
 
+export async function analyzeHrg(source: string) {
+  const steps = await workerMethod('analyzeHrg', [source], utils.noop);
+  return steps.map(step => parseHrg(step)) as AnalyzedGameStep[];
+}
+
 export async function analyzeRg(source: string, flags: Settings['flags']) {
   const steps = await workerMethod(
     'analyzeRg',
@@ -81,14 +85,9 @@ export async function parseGdl(source: string) {
   return JSON.parse(ast) as rg.ast.GameDeclaration;
 }
 
-export async function parseHrg(source: string) {
-  const ast = await workerMethod('parseHrg', [source], utils.noop);
-  return parseHrgAst(ast);
-}
-
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-plus-operands -- `parseHrgAst` is a workaround. */
-function parseHrgAst(ast: string) {
-  return JSON.parse(ast, (_, value) => {
+function parseHrg(step: string) {
+  return JSON.parse(step, (_, value) => {
     if (value && value.kind === 'BinExpr') {
       return {
         kind: 'Expression' + value.op,
@@ -97,7 +96,7 @@ function parseHrgAst(ast: string) {
       };
     }
     return value;
-  }) as hrg.ast.GameDeclaration;
+  });
 }
 /* eslint-enable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-plus-operands -- `parseHrgAst` is a workaround. */
 
@@ -129,38 +128,3 @@ export async function serializeRg(gameDeclaration: rg.ast.GameDeclaration) {
   const rg = await workerMethod('serializeRg', [ast], utils.noop);
   return rg;
 }
-
-export async function serializeHrg(gameDeclaration: hrg.ast.GameDeclaration) {
-  const ast = stringifyGame(gameDeclaration);
-  const hrg = await workerMethod('serializeHrg', [ast], utils.noop);
-  return hrg;
-}
-
-const binopKinds = [
-  'ExpressionAdd',
-  'ExpressionSub',
-  'ExpressionAnd',
-  'ExpressionOr',
-  'ExpressionEq',
-  'ExpressionNe',
-  'ExpressionLt',
-  'ExpressionLte',
-  'ExpressionGt',
-  'ExpressionGte',
-];
-
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- `stringifyGame` is a workaround. */
-function stringifyGame(game: hrg.ast.GameDeclaration) {
-  return JSON.stringify(game, (_, value) => {
-    if (value && binopKinds.includes(value.kind)) {
-      return {
-        kind: 'BinExpr',
-        lhs: value.lhs,
-        op: value.kind.replace('Expression', ''),
-        rhs: value.rhs,
-      };
-    }
-    return value;
-  });
-}
-/* eslint-enable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- `stringifyGame` is a workaround. */

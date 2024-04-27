@@ -1,12 +1,12 @@
 mod ist;
 
-use hrg::ast::GameDeclaration;
+use hrg::ast::Game as HrgGame;
 use hrg::parsing::parser::parse_with_errors as unsafe_parse_hrg;
 use ist::tools::{new_ist_interner, ISTInterner};
 use js_sys::{Array, Function};
 use map_id::MapId;
 use rand::thread_rng;
-use rg::ast::Game;
+use rg::ast::Game as RgGame;
 use rg::parsing::parser::parse_with_errors as unsafe_parse_rg;
 use serde::Deserialize;
 use serde_json::{from_str, json, to_string};
@@ -14,7 +14,7 @@ use std::sync::Arc;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 pub fn prepare_ist(
-    mut game: Game<Arc<str>>,
+    mut game: RgGame<Arc<str>>,
 ) -> Result<(ist::Game<ist::RuntimeId>, ISTInterner), String> {
     game.expand_generator_nodes()?;
     let mut interner = new_ist_interner();
@@ -22,15 +22,11 @@ pub fn prepare_ist(
     Ok((game, interner))
 }
 
-pub fn safe_parse_hrg_ast(ast: &str) -> Result<GameDeclaration<Arc<str>>, String> {
-    from_str::<GameDeclaration<Arc<str>>>(ast).map_err(|error| error.to_string())
+pub fn safe_parse_rg_ast(ast: &str) -> Result<RgGame<Arc<str>>, String> {
+    from_str::<RgGame<Arc<str>>>(ast).map_err(|error| error.to_string())
 }
 
-pub fn safe_parse_rg_ast(ast: &str) -> Result<Game<Arc<str>>, String> {
-    from_str::<Game<Arc<str>>>(ast).map_err(|error| error.to_string())
-}
-
-pub fn safe_parse_hrg_source(source: &str) -> Result<GameDeclaration<Arc<str>>, String> {
+pub fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> {
     let (game, errors) = unsafe_parse_hrg(source);
     if errors.is_empty() {
         let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
@@ -44,7 +40,7 @@ pub fn safe_parse_hrg_source(source: &str) -> Result<GameDeclaration<Arc<str>>, 
     }
 }
 
-pub fn safe_parse_rg_source(source: &str) -> Result<Game<Arc<str>>, String> {
+pub fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
     let (game, errors) = unsafe_parse_rg(source);
     if errors.is_empty() {
         let mut game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
@@ -59,11 +55,7 @@ pub fn safe_parse_rg_source(source: &str) -> Result<Game<Arc<str>>, String> {
     }
 }
 
-pub fn safe_serialize_hrg_ast(game: &GameDeclaration<Arc<str>>) -> Result<String, String> {
-    to_string(game).map_err(|error| error.to_string())
-}
-
-pub fn safe_serialize_rg_ast(game: &Game<Arc<str>>) -> Result<String, String> {
+pub fn safe_serialize_rg_ast(game: &RgGame<Arc<str>>) -> Result<String, String> {
     to_string(game).map_err(|error| error.to_string())
 }
 
@@ -97,6 +89,24 @@ struct Flags {
     skip_self_assignments: bool,
     #[serde(rename = "skipSelfComparisons")]
     skip_self_comparisons: bool,
+}
+
+#[wasm_bindgen(js_name = analyzeHrg)]
+pub fn analyze_hrg(source: &str) -> Result<Array, String> {
+    let array = Array::new();
+    console_error_panic_hook::set_once();
+    let game = safe_parse_hrg_source(source)?;
+    let step = json!({ "kind": "ast", "language": "hrg", "value": game});
+    let step = to_string(&step).map_err(|error| error.to_string())?;
+    array.push(&step.into());
+    let serialized = game.to_string();
+    assert_eq!(safe_parse_hrg_source(&serialized)?, game);
+    let step =
+        json!({ "kind": "source", "language": "hrg", "value": serialized, "title": "formatted"});
+    let step = to_string(&step).map_err(|error| error.to_string())?;
+    array.push(&step.into());
+
+    return Ok(array);
 }
 
 #[wasm_bindgen(js_name = analyzeRg)]
@@ -216,12 +226,6 @@ pub fn parse_gdl(source: &str) -> Result<String, String> {
     safe_serialize_rg_ast(&rg)
 }
 
-#[wasm_bindgen(js_name = parseHrg)]
-pub fn parse_hrg(source: &str) -> Result<String, String> {
-    console_error_panic_hook::set_once();
-    safe_serialize_hrg_ast(&safe_parse_hrg_source(source)?)
-}
-
 #[wasm_bindgen(js_name = perfRg)]
 pub fn perf_rg(ast: &str, depth: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
@@ -271,13 +275,6 @@ pub fn run_rg(ast: &str, plays: usize, callback: &Function) -> Result<(), String
     });
 
     Ok(())
-}
-
-#[wasm_bindgen(js_name = serializeHrg)]
-pub fn serialize_hrg(ast: &str) -> Result<String, String> {
-    console_error_panic_hook::set_once();
-    let game = safe_parse_hrg_ast(ast)?;
-    Ok(game.to_string())
 }
 
 #[wasm_bindgen(js_name = serializeRg)]

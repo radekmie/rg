@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use hrg::ast::{
-    DomainDeclaration, DomainElement, DomainValue, Function, FunctionDeclaration, GameDeclaration,
-    Statement, Type, TypeDeclaration, VariableDeclaration,
+    DomainDeclaration, DomainElement, DomainValue, Function, FunctionDeclaration, Game, Statement,
+    Type, TypeDeclaration, VariableDeclaration,
 };
 use utils::Identifier;
 
@@ -113,7 +113,7 @@ impl Symbols {
         }
     }
 
-    pub fn from_game(game: &GameDeclaration<Identifier>) -> Vec<Symbol> {
+    pub fn from_game(game: &Game<Identifier>) -> Vec<Symbol> {
         let mut symbols = Self { symbols: vec![] };
         game.types
             .iter()

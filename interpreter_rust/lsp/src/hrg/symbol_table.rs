@@ -1,17 +1,14 @@
-use crate::common::{
-    symbol::{make_builtin, Flag},
-    symbol_table::{SymbolTable, SymbolTableBuilder},
-};
+use crate::common::symbol::{make_builtin, Flag};
+use crate::common::symbol_table::{SymbolTable, SymbolTableBuilder};
 use hrg::ast::{
     DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg, FunctionCase,
-    FunctionDeclaration, GameDeclaration, Pattern, Statement, Type, TypeDeclaration,
-    VariableDeclaration,
+    FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
 };
 use utils::{Error, Identifier};
 
 use super::symbol::Symbols;
 
-fn table_builder_from_game(game: &GameDeclaration<Identifier>) -> SymbolTableBuilder {
+fn table_builder_from_game(game: &Game<Identifier>) -> SymbolTableBuilder {
     let mut table = SymbolTableBuilder {
         errors: vec![],
         occurrences: vec![],
@@ -286,7 +283,7 @@ fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
     }
 }
 
-pub fn from_game(game: &GameDeclaration<Identifier>) -> (SymbolTable, Vec<Error>) {
+pub fn from_game(game: &Game<Identifier>) -> (SymbolTable, Vec<Error>) {
     let table = table_builder_from_game(game);
     (
         SymbolTable {

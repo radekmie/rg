@@ -108,6 +108,7 @@ pub enum DomainValue<Id> {
     Set { identifier: Id, elements: Vec<Id> },
 }
 
+// TODO: Implement MapId for trivial enums
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Binop {
     Add,
@@ -128,7 +129,6 @@ impl<OldId, NewId> MapId<Self, OldId, NewId> for Binop {
     }
 }
 
-// TODO: Implement Deserialize by hand
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Expression<Id> {
@@ -243,8 +243,8 @@ pub struct VariableDeclaration<Id> {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(tag = "kind")]
-pub struct GameDeclaration<Id> {
+#[serde(tag = "kind", rename = "GameDeclaration")]
+pub struct Game<Id> {
     pub automaton: Vec<Function<Id>>,
     pub domains: Vec<DomainDeclaration<Id>>,
     pub functions: Vec<FunctionDeclaration<Id>>,

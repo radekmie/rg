@@ -1,12 +1,11 @@
 import { readFile } from 'fs/promises';
 
 import init, {
+  analyzeHrg,
   analyzeRg,
   parseGdl,
-  parseHrg,
   perfRg,
   runRg,
-  serializeHrg,
   serializeRg,
 } from './interpreter';
 import * as transformators from '../rg/transformators';
@@ -41,12 +40,11 @@ function reify(arg: unknown) {
 }
 
 const methods = {
+  analyzeHrg,
   analyzeRg,
   parseGdl,
-  parseHrg,
   perfRg,
   runRg,
-  serializeHrg,
   serializeRg,
 };
 self.addEventListener('message', ({ data }) => {

@@ -1,7 +1,6 @@
 use super::{
     Binop, DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg,
-    FunctionDeclaration, GameDeclaration, Pattern, Statement, Type, TypeDeclaration,
-    VariableDeclaration,
+    FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
 };
 use std::fmt::{Display, Formatter, Result};
 
@@ -155,24 +154,16 @@ impl<Id: Display> Display for VariableDeclaration<Id> {
 }
 
 fn write_toplevel<T: Display>(f: &mut Formatter<'_>, items: &[T]) -> Result {
-    let mut iter = items.iter();
-    if let Some(item) = iter.next() {
-        writeln!(f, "{item}")?;
-        for item in iter {
-            writeln!(f, "{item}")?;
-        }
+    items.iter().try_for_each(|item| writeln!(f, "{item}"))?;
+    if !items.is_empty() {
+        writeln!(f)?;
     }
     Ok(())
 }
 
-impl<Id: Display> Display for GameDeclaration<Id> {
+impl<Id: Display> Display for Game<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        self.domains
-            .iter()
-            .try_for_each(|domain| writeln!(f, "{domain}"))?;
-        if !self.domains.is_empty() {
-            writeln!(f)?;
-        }
+        write_toplevel(f, &self.domains)?;
         write_toplevel(f, &self.functions)?;
         write_toplevel(f, &self.variables)?;
         write_toplevel(f, &self.automaton)?;

@@ -1,11 +1,7 @@
-use crate::{
-    common::{
-        symbol::{Flag, Symbol},
-        symbol_table::SymbolTable,
-    },
-    document::Ast,
-    rg::ast_features::AstFeatures,
-};
+use crate::common::symbol::{Flag, Symbol};
+use crate::common::symbol_table::SymbolTable;
+use crate::document::Ast;
+use crate::rg::ast_features::AstFeatures;
 use rg::ast::Game;
 use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, CompletionItemLabelDetails, CompletionOptions,
@@ -80,7 +76,7 @@ fn completion_items_rg(
         CompletionKind::None => vec![],
         CompletionKind::Toplevel => {
             let symbols = get_symbols(symbol_table, &CompletionKind::Toplevel.predicate());
-            let mut items: Vec<CompletionItem> = symbols.into_iter().map(completion_item).collect();
+            let mut items: Vec<_> = symbols.into_iter().map(completion_item).collect();
             items.extend(keyword_completions());
             items
         }
@@ -95,7 +91,7 @@ fn completion_items_rg(
 
 fn completion_items_hrg(symbol_table: &SymbolTable) -> Vec<CompletionItem> {
     let symbols = get_symbols(symbol_table, &CompletionKind::Any.predicate());
-    let mut items: Vec<CompletionItem> = symbols.into_iter().map(completion_item).collect();
+    let mut items: Vec<_> = symbols.into_iter().map(completion_item).collect();
     items.dedup();
     items
 }

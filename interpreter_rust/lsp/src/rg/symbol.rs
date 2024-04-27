@@ -1,7 +1,5 @@
-use crate::common::{
-    self,
-    symbol::{defined, Flag, Symbol},
-};
+use crate::common;
+use crate::common::symbol::{defined, Flag, Symbol};
 use rg::ast::{Edge, Game, NodePart, Type};
 use std::{collections::HashSet, sync::Arc};
 use utils::{position::Positioned, Identifier};
