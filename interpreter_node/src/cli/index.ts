@@ -51,6 +51,10 @@ program
     '--skipSelfComparisons',
     'replaces all self comparisons (e.g., `x == x`) with skip edges',
   )
+  .option(
+    '--skipUnusedAssignments',
+    'replaces all assigments with no references to new value',
+  )
   .configureHelp({ sortSubcommands: true });
 
 function addCommand(
@@ -93,6 +97,7 @@ function addCommand(
           reuseFunctions: !!options.reuseFunctions,
           skipSelfAssignments: !!options.skipSelfAssignments,
           skipSelfComparisons: !!options.skipSelfComparisons,
+          skipUnusedAssignments: !!options.skipUnusedAssignments,
         },
       });
 

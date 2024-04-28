@@ -89,6 +89,8 @@ struct Flags {
     skip_self_assignments: bool,
     #[serde(rename = "skipSelfComparisons")]
     skip_self_comparisons: bool,
+    #[serde(rename = "skipUnusedAssignments")]
+    skip_unused_assignments: bool,
 }
 
 #[wasm_bindgen(js_name = analyzeHrg)]
@@ -200,6 +202,7 @@ pub fn analyze_rg(
         pass!(rust compact_skip_edges);
         pass!(rust add_explicit_casts);
         pass!(rust expand_generator_nodes);
+        pass!(rust skip_unused_assignments);
         pass!(rust join_fork_suffixes);
         pass!(node inline_reachability);
         pass!(rust prune_singleton_types);
