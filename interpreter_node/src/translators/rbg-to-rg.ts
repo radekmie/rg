@@ -9,6 +9,7 @@ type Context = {
     defaultValue: string,
   ) => string;
   $createTypeFromSet: (identifiers: string[]) => rg.Type;
+  $exposeIndex: number;
   $mathOperator: (
     limit: number,
     lhs: rg.Expression,
@@ -59,27 +60,8 @@ function translateAtomContent(
       const local = context.$randomEdgeName();
       context.$connect(from, local, rg.Assignment({ lhs, rhs }));
 
-      const tagVariable = context.$randomEdgeName();
-      context.$connect(
-        local,
-        tagVariable,
-        rg.Tag({ symbol: content.variable }),
-      );
-
-      if (typeof content.rvalue === 'number') {
-        const symbol = String(content.rvalue);
-        context.$connect(tagVariable, to, rg.Tag({ symbol }));
-      } else {
-        const tagValue = exposeUsingGenerator({
-          bind: `${content.variable}Generator`,
-          context,
-          from: tagVariable,
-          type: context.$mathType(limit + 1),
-          value: rhs,
-        });
-        context.$connect(tagValue, to, rg.Skip({}));
-      }
-
+      // Expose position.
+      exposePosition(context, local, to);
       return;
     }
     case 'Check': {
@@ -185,17 +167,8 @@ function translateAtomContent(
         }),
       );
 
-      // Expose tag (position).
-      const tagPosition = exposeUsingGenerator({
-        context,
-        bind: 'coordGenerator',
-        from: setPiece,
-        type: rg.TypeReference({ identifier: 'Coord' }),
-        value: rg.Reference({ identifier: 'coord' }),
-      });
-
-      // Expose tag (piece).
-      context.$connect(tagPosition, to, rg.Tag({ symbol: content.piece }));
+      // Expose position.
+      exposePosition(context, setPiece, to);
       return;
     }
     case 'On':
@@ -435,34 +408,13 @@ function translateAtomContent(
       return;
     }
     case 'Switch': {
-      // Expose tag (preamble).
+      // Expose position.
       const local = context.$randomEdgeName();
-      context.$connect(from, local, rg.Skip({}));
-
-      // Expose tag (position).
-      const tagPosition = exposeUsingGenerator({
-        context,
-        bind: 'coordGenerator',
-        from: local,
-        type: rg.TypeReference({ identifier: 'Coord' }),
-        value: rg.Reference({ identifier: 'coord' }),
-      });
-
-      // Expose tag (piece).
-      const tagPiece = exposeUsingGenerator({
-        context,
-        bind: 'pieceGenerator',
-        from: tagPosition,
-        type: rg.TypeReference({ identifier: 'Piece' }),
-        value: rg.Access({
-          lhs: rg.Reference({ identifier: 'board' }),
-          rhs: rg.Reference({ identifier: 'coord' }),
-        }),
-      });
+      exposePosition(context, from, local);
 
       // Switch player.
       context.$connect(
-        tagPiece,
+        local,
         to,
         rg.Assignment({
           lhs: rg.Reference({ identifier: 'player' }),
@@ -773,34 +725,26 @@ function boundRValue(context: Context, rvalue: rbg.RValue): number {
   );
 }
 
-function exposeUsingGenerator({
-  bind,
-  context,
-  from,
-  type,
-  value,
-}: {
-  bind: string;
-  context: Context;
-  from: rg.EdgeName;
-  type: rg.Type;
-  value: rg.Expression;
-}) {
-  const local = context.$randomEdgeName();
-  local.parts.push(rg.Binding({ identifier: bind, type }));
+function exposePosition(context: Context, from: rg.EdgeName, to: rg.EdgeName) {
+  const localCoord = context.$randomEdgeName();
+  const bind = 'coordGenerator';
+  const type = rg.TypeReference({ identifier: 'Coord' });
+  localCoord.parts.push(rg.Binding({ identifier: bind, type }));
   context.$connect(
     from,
-    local,
+    localCoord,
     rg.Comparison({
       lhs: rg.Reference({ identifier: bind }),
-      rhs: value,
+      rhs: rg.Reference({ identifier: 'coord' }),
       negated: false,
     }),
   );
 
-  const next = context.$randomEdgeName();
-  context.$connect(local, next, rg.Tag({ symbol: bind }));
-  return next;
+  const localIndex = context.$randomEdgeName();
+  context.$connect(localCoord, localIndex, rg.Tag({ symbol: bind }));
+
+  const exposeTag = `index_${++context.$exposeIndex}`;
+  context.$connect(localIndex, to, rg.Tag({ symbol: exposeTag }));
 }
 
 function hasMathExpression(expression: rg.Expression): boolean {
@@ -1191,6 +1135,7 @@ export default function translate(game: rbg.Game) {
 
       return rg.TypeReference({ identifier });
     },
+    $exposeIndex: 0,
     $mathOperator(limit, lhs, rhs, operator) {
       const mathOperator = [
         'math',
