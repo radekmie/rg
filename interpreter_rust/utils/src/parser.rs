@@ -1,15 +1,29 @@
-use super::error::Error;
-use super::parser::{Input, Result};
-use crate::ast::{Expression, Identifier};
-use crate::position::{Position, Span};
+use crate::position::Span;
+use crate::Error;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_till, take_while, take_while1};
+use nom::character::complete::char;
 use nom::character::complete::{anychar, digit1, multispace1};
 use nom::combinator::{cut, into, map, map_res, opt, verify};
-use nom::multi::fold_many0;
-use nom::sequence::preceded;
-use std::fmt::Display;
+use nom::multi::{fold_many0, separated_list0};
+use nom::sequence::{delimited, preceded};
+use nom::IResult;
+use nom_locate::LocatedSpan;
+use std::cell::RefCell;
+use std::fmt::{Debug, Display};
 use std::sync::Arc;
+
+#[derive(Clone, Debug)]
+pub struct State<'a>(pub &'a RefCell<Vec<Error>>);
+
+impl<'a> State<'a> {
+    pub fn report_error(&self, error: Error) {
+        self.0.borrow_mut().push(error);
+    }
+}
+
+pub type Input<'a> = LocatedSpan<&'a str, State<'a>>;
+pub type Result<'a, T> = IResult<Input<'a>, T>;
 
 pub fn parse_error_line(input: Input) -> Result<()> {
     let error_pos = Span::at(&input);
@@ -89,10 +103,6 @@ pub fn into_arc<'a, O1, O2: From<O1>>(
     map(into(inner), Arc::new)
 }
 
-pub fn arc_expression(expression: Expression<Identifier>) -> Arc<Expression<Identifier>> {
-    Arc::new(expression)
-}
-
 pub fn identifier_(input: Input) -> Result<Input> {
     static KEYWORDS: [&str; 4] = ["any", "const", "type", "var"];
     verify(
@@ -101,31 +111,42 @@ pub fn identifier_(input: Input) -> Result<Input> {
     )(input)
 }
 
-pub fn identifier(input: Input) -> Result<Identifier> {
-    map(identifier_, |identifier| {
-        let span: Span = Span::from(&identifier);
-        Identifier::new(span, (*identifier.fragment()).to_string())
-    })(input)
-}
-
-pub fn preceded_opt_id<'a>(context: &'a str) -> impl FnMut(Input<'a>) -> Result<Identifier> {
-    move |input| {
-        let start = Position::from(&input);
-        expect(
-            preceded_whitespace(identifier),
-            format!("{context}: identifier"),
-        )(input)
-        .map(|(input, res)| {
-            if let Some(res) = res {
-                (input, res)
-            } else {
-                let span = start.with_end((&input).into());
-                (input, Identifier::none(span))
-            }
-        })
-    }
-}
-
 pub fn integer(input: Input) -> Result<usize> {
     map_res(digit1, |digits: Input| digits.parse())(input)
+}
+
+pub fn ww<'a, O>(inner: impl FnMut(Input<'a>) -> Result<O>) -> impl FnMut(Input<'a>) -> Result<O> {
+    delimited(comments_and_whitespaces, inner, comments_and_whitespaces)
+}
+
+pub fn ww_tag<'a>(str: &'a str) -> impl FnMut(Input<'a>) -> Result<Input> {
+    ww(tag(str))
+}
+
+pub fn ww_char<'a>(c: char) -> impl FnMut(Input<'a>) -> Result<char> {
+    ww(char(c))
+}
+
+pub fn in_braces<'a, O>(
+    inner: impl FnMut(Input<'a>) -> Result<O>,
+) -> impl FnMut(Input<'a>) -> Result<O> {
+    delimited(ww_char('{'), inner, ww_char('}'))
+}
+
+pub fn in_parens<'a, O>(
+    inner: impl FnMut(Input<'a>) -> Result<O>,
+) -> impl FnMut(Input<'a>) -> Result<O> {
+    delimited(ww_char('('), inner, ww_char(')'))
+}
+
+pub fn in_brackets<'a, O>(
+    inner: impl FnMut(Input<'a>) -> Result<O>,
+) -> impl FnMut(Input<'a>) -> Result<O> {
+    delimited(ww_char('['), inner, ww_char(']'))
+}
+
+pub fn comma_separated<'a, O>(
+    inner: impl FnMut(Input<'a>) -> Result<O>,
+) -> impl FnMut(Input<'a>) -> Result<Vec<O>> {
+    separated_list0(ww_char(','), inner)
 }

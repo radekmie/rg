@@ -1,15 +1,17 @@
 [package]
-name = "utils"
+name = "hrg"
 version = "0.1.0"
-authors = ["Radosław Miernik <radekmie@gmail.com>"]
+authors = ["Jakub Ciesluk <323892@uwr.edu.pl>"]
 edition = "2021"
-
-[lints]
-workspace = true
 
 [dependencies]
 map_id = { path = "../map_id" }
+map_id_macro = { path = "../map_id_macro" }
 nom = "7.1.3"
 nom_locate = "4.2.0"
 rand = "0.8.5"
 serde = { version = "1.0.152", features = ["derive", "rc"] }
+utils = { path = "../utils" }
+
+[lints]
+workspace = true

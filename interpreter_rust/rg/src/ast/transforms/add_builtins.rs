@@ -1,6 +1,6 @@
 use crate::ast::{Error, ErrorReason, Game, Type, Typedef, Value, ValueEntry, Variable};
-use crate::position::Span;
 use std::sync::Arc;
+use utils::position::Span;
 
 impl Game<Arc<str>> {
     pub fn add_builtins(&mut self) -> Result<(), Error<Arc<str>>> {

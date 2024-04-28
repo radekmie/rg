@@ -1,7 +1,7 @@
 use crate::ast::{Edge, Error, ErrorReason, Expression, Game, Label, Type, Typedef};
-use crate::position::Span;
 use std::mem::{replace, take};
 use std::sync::Arc;
+use utils::position::Span;
 
 impl<Id: Clone + PartialEq> Edge<Id> {
     fn add_explicit_casts(&mut self, game: &Game<Id>) -> Result<(), Error<Id>> {

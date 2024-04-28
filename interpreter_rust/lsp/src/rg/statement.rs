@@ -1,7 +1,10 @@
-use super::symbol::Symbol;
+use crate::common::symbol::Symbol;
 use crate::completions::CompletionKind;
-use rg::ast::{Constant, Edge, Identifier, Label, Node, NodePart, Pragma, Type, Typedef, Variable};
-use rg::position::{Position, Positioned};
+use rg::ast::{Constant, Edge, Label, Node, NodePart, Pragma, Type, Typedef, Variable};
+use utils::{
+    position::{Position, Positioned},
+    Identifier,
+};
 
 pub trait Statement: Positioned {
     fn completion_kind(&self, pos: &Position) -> CompletionKind;

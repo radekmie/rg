@@ -1,23 +1,27 @@
-use super::utils::ToLspRange;
-use rg::ast::{Game, Identifier};
-use rg::position::{Positioned, Span};
+use super::common::utils::ToLspRange;
+use crate::document::Ast;
+use rg::ast::Game;
 use std::collections::HashMap;
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionKind, CodeActionOrCommand, CodeActionResponse, TextEdit, Url,
     WorkspaceEdit,
 };
+use utils::{
+    position::{Positioned, Span},
+    Identifier,
+};
 
-pub fn provide(
-    uri: &Url,
-    span: &Span,
-    game: &Game<Identifier>,
-    text: &str,
-) -> Option<CodeActionResponse> {
-    let actions = vec![split_edge(uri, span, game, text)]
-        .into_iter()
-        .flatten()
-        .collect();
-    Some(actions)
+pub fn provide(uri: &Url, span: &Span, game: &Ast, text: &str) -> Option<CodeActionResponse> {
+    match game {
+        Ast::Rg(game) => {
+            let actions = vec![split_edge(uri, span, game, text)]
+                .into_iter()
+                .flatten()
+                .collect();
+            Some(actions)
+        }
+        Ast::Hrg(_) => None,
+    }
 }
 
 fn split_edge(

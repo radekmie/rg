@@ -1,115 +1,31 @@
-use rg::ast::{Edge, Game, Identifier, NodePart, Type};
-use rg::position::{Positioned, Span};
-use std::collections::HashSet;
-use std::fmt::Display;
-
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Symbol {
-    pub flag: Flag,
-    pub id: String,
-    pub owners: Option<Vec<usize>>,
-    pub pos: Span,
-}
-
-impl Symbol {
-    pub fn new(id: String, pos: Span, flag: Flag, owners: Option<Vec<usize>>) -> Self {
-        Self {
-            flag,
-            id,
-            owners,
-            pos,
-        }
-    }
-
-    fn from_id(identifier: &Identifier, flag: Flag) -> Option<Self> {
-        if identifier.is_none() {
-            None
-        } else {
-            let id = identifier.identifier.clone();
-            let pos = identifier.span();
-            Some(Self::new(id, pos, flag, None))
-        }
-    }
-
-    pub fn is_owned_by(&self, owner: usize) -> bool {
-        self.owners
-            .as_ref()
-            .is_some_and(|owners| owners.contains(&owner))
-    }
-
-    pub fn safe_pos(&self) -> Option<Span> {
-        if self.pos.is_none() {
-            None
-        } else {
-            Some(self.pos)
-        }
-    }
-}
-
-fn defined(symbols: &[Symbol], name: &str, flag: &Flag) -> Option<usize> {
-    symbols
-        .iter()
-        .enumerate()
-        .find(|(_, symbol)| symbol.id == name && symbol.flag == *flag)
-        .map(|(idx, _)| idx)
-}
-
-impl Display for Symbol {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{}", self.id, self.flag)
-    }
-}
-
-impl Positioned for Symbol {
-    fn span(&self) -> Span {
-        self.pos
-    }
-}
-
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum Flag {
-    Type,
-    Member,
-    Constant,
-    Variable,
-    Edge,
-    Param,
-}
-
-impl Display for Flag {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Type => write!(f, "#"),
-            Self::Member => write!(f, "."),
-            Self::Constant => write!(f, "!"),
-            Self::Variable => write!(f, "?"),
-            Self::Edge => write!(f, "()"),
-            Self::Param => write!(f, "$"),
-        }
-    }
-}
+use crate::common;
+use crate::common::symbol::{defined, Flag, Symbol};
+use rg::ast::{Edge, Game, NodePart, Type};
+use std::{collections::HashSet, sync::Arc};
+use utils::{position::Positioned, Identifier};
 
 struct EdgeParam {
     param: Identifier,
+    type_: Arc<Type<Identifier>>,
     owners: HashSet<usize>,
 }
 
-struct Symbols {
+pub struct Symbols {
     symbols: Vec<Symbol>,
     edge_params: Vec<EdgeParam>,
 }
 
 impl Symbols {
-    fn add_from_type(&mut self, type_: &Type<Identifier>) {
+    fn add_from_type(&mut self, type_: &Type<Identifier>, sym_type: Arc<Type<Identifier>>) {
         match type_ {
             Type::Arrow { lhs, rhs } => {
-                self.add_from_type(lhs);
-                self.add_from_type(rhs);
+                self.add_from_type(lhs, sym_type.clone());
+                self.add_from_type(rhs, sym_type);
             }
             Type::TypeReference { .. } => (),
             Type::Set { identifiers, .. } => {
                 for identifier in identifiers {
-                    if let Some(symbol) = Symbol::from_id(identifier, Flag::Member) {
+                    if let Some(symbol) = typed(identifier, Flag::Member, sym_type.clone()) {
                         self.symbols.push(symbol);
                     }
                 }
@@ -126,13 +42,18 @@ impl Symbols {
         })
     }
 
-    fn sym_from_param(param: &Identifier, owners: Vec<usize>) -> Option<Symbol> {
-        if param.is_none() {
+    fn sym_from_param(
+        param: &Identifier,
+        owners: Vec<usize>,
+        type_: Arc<Type<Identifier>>,
+    ) -> Option<Symbol> {
+        if param.is_none() || param.is_numeric() {
             None
         } else {
             let id = param.identifier.clone();
             let pos = param.span();
-            Some(Symbol::new(id, pos, Flag::Param, Some(owners)))
+            let type_ = common::symbol::Type::Rg(type_);
+            Some(Symbol::new(id, pos, Flag::Param, Some(owners), type_))
         }
     }
 
@@ -155,8 +76,8 @@ impl Symbols {
                 identifier: right_id,
             }, right_binds @ ..] = edge.rhs.parts.as_slice()
             {
-                let left_idx = self.add_if_not_defined(Symbol::from_id(left_id, Flag::Edge));
-                let right_idx = self.add_if_not_defined(Symbol::from_id(right_id, Flag::Edge));
+                let left_idx = self.add_if_not_defined(untyped(left_id, Flag::Function));
+                let right_idx = self.add_if_not_defined(untyped(right_id, Flag::Function));
 
                 // Split binds into literals and bindings
                 let (left_binds, left_literals) = left_binds
@@ -172,10 +93,10 @@ impl Symbols {
 
                 // Maybe add literals as edge symbols
                 for literal in &left_literals {
-                    self.add_if_not_defined(Symbol::from_id(literal.identifier(), Flag::Edge));
+                    self.add_if_not_defined(untyped(literal.identifier(), Flag::Function));
                 }
                 for literal in &right_literals {
-                    self.add_if_not_defined(Symbol::from_id(literal.identifier(), Flag::Edge));
+                    self.add_if_not_defined(untyped(literal.identifier(), Flag::Function));
                 }
 
                 // Splits bindings into common, left and right
@@ -206,6 +127,7 @@ impl Symbols {
                             self.edge_params.push(EdgeParam {
                                 param: bind.identifier().clone(),
                                 owners: HashSet::from([left_idx]),
+                                type_: bind.type_().unwrap(),
                             });
                         }
                     }
@@ -220,6 +142,7 @@ impl Symbols {
                             self.edge_params.push(EdgeParam {
                                 param: bind.identifier().clone(),
                                 owners: HashSet::from([right_idx]),
+                                type_: bind.type_().unwrap(),
                             });
                         }
                     }
@@ -251,6 +174,7 @@ impl Symbols {
                                 self.edge_params.push(EdgeParam {
                                     param: bind.identifier().clone(),
                                     owners: HashSet::from([left_idx, right_idx]),
+                                    type_: bind.type_().unwrap(),
                                 });
                             }
                         }
@@ -267,23 +191,24 @@ impl Symbols {
         };
         game.constants.iter().for_each(|constant| {
             let id = &constant.identifier;
-            if let Some(symbol) = Symbol::from_id(id, Flag::Constant) {
+            if let Some(symbol) = typed(id, Flag::Constant, constant.type_.clone()) {
                 symbols.symbols.push(symbol);
             }
         });
 
         game.variables.iter().for_each(|variable| {
             let id = &variable.identifier;
-            if let Some(symbol) = Symbol::from_id(id, Flag::Variable) {
+            if let Some(symbol) = typed(id, Flag::Variable, variable.type_.clone()) {
                 symbols.symbols.push(symbol);
             }
         });
         game.typedefs.iter().for_each(|typedef| {
             let id = &typedef.identifier;
-            if let Some(symbol) = Symbol::from_id(id, Flag::Type) {
+            if let Some(symbol) = untyped(id, Flag::Type) {
                 symbols.symbols.push(symbol);
             }
-            symbols.add_from_type(&typedef.type_);
+            let sym_type = Arc::new(Type::new(id.clone()));
+            symbols.add_from_type(&typedef.type_, sym_type);
         });
         game.edges
             .iter()
@@ -291,7 +216,7 @@ impl Symbols {
         for bind in &symbols.edge_params {
             let id = &bind.param;
             let owners = bind.owners.iter().copied().collect();
-            if let Some(symbol) = Self::sym_from_param(id, owners) {
+            if let Some(symbol) = Self::sym_from_param(id, owners, bind.type_.clone()) {
                 symbols.symbols.push(symbol);
             }
         }
@@ -299,6 +224,10 @@ impl Symbols {
     }
 }
 
-pub fn from_game(game: &Game<Identifier>) -> Vec<Symbol> {
-    Symbols::from_game(game)
+fn typed(identifier: &Identifier, flag: Flag, type_: Arc<Type<Identifier>>) -> Option<Symbol> {
+    Symbol::from_id(identifier, flag, common::symbol::Type::Rg(type_))
+}
+
+fn untyped(identifier: &Identifier, flag: Flag) -> Option<Symbol> {
+    Symbol::from_id(identifier, flag, common::symbol::Type::NoType)
 }

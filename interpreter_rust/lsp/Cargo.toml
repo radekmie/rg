@@ -6,11 +6,13 @@ edition = "2021"
 
 [dependencies]
 dashmap = "5.5.3"
+hrg = { path = "../hrg" }
 rand = "0.8.5"
 rg = { path = "../rg" }
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 serde_json = "1.0.1"
 tower-lsp = { version = "0.20.0", default-features = false, features = ["runtime-agnostic"] }
+utils = { path = "../utils" }
 
 [lints]
 workspace = true

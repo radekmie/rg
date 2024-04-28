@@ -1,6 +1,6 @@
 use crate::ast::{Constant, Error, Game, Type, Typedef, Variable};
-use crate::position::Span;
 use std::sync::Arc;
+use utils::position::Span;
 
 impl Constant<Arc<str>> {
     pub fn normalize_type(&self, game: &mut Game<Arc<str>>) -> Result<Self, Error<Arc<str>>> {

@@ -61,6 +61,11 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
   );
 }
 
+export async function analyzeHrg(source: string) {
+  const steps = await workerMethod('analyzeHrg', [source], utils.noop);
+  return steps.map(step => parseHrg(step)) as AnalyzedGameStep[];
+}
+
 export async function analyzeRg(source: string, flags: Settings['flags']) {
   const steps = await workerMethod(
     'analyzeRg',
@@ -79,6 +84,21 @@ export async function parseGdl(source: string) {
   const ast = await workerMethod('parseGdl', [source], utils.noop);
   return JSON.parse(ast) as rg.ast.GameDeclaration;
 }
+
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-plus-operands -- `parseHrgAst` is a workaround. */
+function parseHrg(step: string) {
+  return JSON.parse(step, (_, value) => {
+    if (value && value.kind === 'BinExpr') {
+      return {
+        kind: 'Expression' + value.op,
+        lhs: value.lhs,
+        rhs: value.rhs,
+      };
+    }
+    return value;
+  });
+}
+/* eslint-enable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-plus-operands -- `parseHrgAst` is a workaround. */
 
 export async function perfRg(
   gameDeclaration: rg.ast.GameDeclaration,

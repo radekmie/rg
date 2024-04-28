@@ -1,13 +1,7 @@
-use super::error::Error;
-use super::parser_utils::{
-    arc_expression, comments_and_whitespaces, expect, expect_preceded_tag, identifier, integer,
-    into_arc, parse_error_line, preceded_opt_id, preceded_tag, preceded_whitespace, with_semicolon,
-};
 use crate::ast::{
-    Constant, Edge, Expression, Game, Identifier, Label, Node, NodePart, Pragma, Type, Typedef,
-    Value, ValueEntry, Variable,
+    Constant, Edge, Expression, Game, Label, Node, NodePart, Pragma, Type, Typedef, Value,
+    ValueEntry, Variable,
 };
-use crate::position::{Position, Positioned, Span};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
@@ -15,23 +9,43 @@ use nom::combinator::{all_consuming, cut, into, map, opt, success};
 use nom::error::context;
 use nom::multi::{fold_many0, many0, many1, separated_list0};
 use nom::sequence::{pair, preceded, separated_pair, terminated, tuple};
-use nom::IResult;
-use nom_locate::LocatedSpan;
 use std::cell::RefCell;
-use std::fmt::Debug;
 use std::sync::Arc;
+use utils::parser::{
+    comments_and_whitespaces, expect, expect_preceded_tag, identifier_, integer, into_arc,
+    parse_error_line, preceded_tag, preceded_whitespace, with_semicolon, Input, Result, State,
+};
+use utils::position::{Position, Positioned, Span};
+use utils::{Error, Identifier};
 
-#[derive(Clone, Debug)]
-pub struct State<'a>(&'a RefCell<Vec<Error>>);
-
-impl<'a> State<'a> {
-    pub fn report_error(&self, error: Error) {
-        self.0.borrow_mut().push(error);
-    }
+pub fn arc_expression(expression: Expression<Identifier>) -> Arc<Expression<Identifier>> {
+    Arc::new(expression)
 }
 
-pub type Input<'a> = LocatedSpan<&'a str, State<'a>>;
-pub type Result<'a, T> = IResult<Input<'a>, T>;
+fn identifier(input: Input) -> Result<Identifier> {
+    map(identifier_, |identifier| {
+        let span: Span = Span::from(&identifier);
+        Identifier::new(span, (*identifier.fragment()).to_string())
+    })(input)
+}
+
+fn preceded_opt_id<'a>(context: &'a str) -> impl FnMut(Input<'a>) -> Result<Identifier> {
+    move |input| {
+        let start = Position::from(&input);
+        expect(
+            preceded_whitespace(identifier),
+            format!("{context}: identifier"),
+        )(input)
+        .map(|(input, res)| {
+            if let Some(res) = res {
+                (input, res)
+            } else {
+                let span = start.with_end((&input).into());
+                (input, Identifier::none(span))
+            }
+        })
+    }
+}
 
 fn constant(input: Input) -> Result<Option<Constant<Identifier>>> {
     with_semicolon(
@@ -446,7 +460,7 @@ mod test {
         assert!(
             !errors.is_empty(),
             "Expected to fail to parse:\n{input}\nParsed:\n{game}"
-        )
+        );
     }
 
     #[test]

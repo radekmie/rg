@@ -9,6 +9,7 @@ export const language: monaco.languages.IMonarchLanguage = {
   keywords: [
     'branch',
     'else',
+    'forall',
     'if',
     'in',
     'loop',
@@ -38,6 +39,7 @@ export const language: monaco.languages.IMonarchLanguage = {
   symbols: /[=><!~?:&|+\-*/^%]+/,
   tokenizer: {
     root: [
+      [/\d+/, 'number'],
       [
         /[a-z0-9_][a-zA-Z0-9_]*/,
         {

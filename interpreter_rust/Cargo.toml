@@ -6,6 +6,7 @@ resolver = "2"
 members = [
   "gdl",
   "gdl_to_rg",
+  "hrg",
   "interpreter",
   "lsp",
   "lsp_browser",

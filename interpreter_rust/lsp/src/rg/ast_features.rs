@@ -1,14 +1,18 @@
-use crate::rg::statement::Statement;
-use crate::rg::symbol::{Flag, Symbol};
-use rg::ast::{Game, Identifier};
-use rg::position::{Position, Positioned, Span};
+use crate::{
+    common::symbol::{Flag, Symbol},
+    rg::statement::Statement,
+};
+use rg::ast::Game;
+use utils::{
+    position::{Position, Span},
+    Identifier,
+};
 
 pub trait AstFeatures {
     fn find_stat(&self, predicate: impl Fn(&&dyn Statement) -> bool) -> Option<&dyn Statement>;
     fn stat_enclosing_position(&self, position: &Position) -> Option<&dyn Statement>;
     fn stat_enclosing_span(&self, span: &Span) -> Option<&dyn Statement>;
     fn stats(&self) -> Vec<&dyn Statement>;
-    fn symbol_type(&self, symbol: &Symbol) -> Option<String>;
 }
 
 impl AstFeatures for Game<Identifier> {
@@ -24,21 +28,18 @@ impl AstFeatures for Game<Identifier> {
         self.find_stat(|stat| stat.span().encloses_span(span))
     }
 
-    fn symbol_type(&self, symbol: &Symbol) -> Option<String> {
-        self.stat_enclosing_span(&symbol.span())
-            .and_then(|stat| stat.symbol_type(symbol))
-    }
-
     fn stats(&self) -> Vec<&dyn Statement> {
         stats(self).collect()
     }
 }
 
-pub fn hover_signature(game: &Game<Identifier>, symbol: &Symbol) -> Option<String> {
-    let type_ = game.symbol_type(symbol)?;
+pub fn hover_signature(symbol: &Symbol) -> Option<String> {
+    let type_ = &symbol.type_;
     match symbol.flag {
         Flag::Constant => Some(format!("const {}: {}", symbol.id, type_)),
-        Flag::Edge => None,
+        Flag::Function => type_
+            .to_option()
+            .map(|type_| format!("{}: {}", symbol.id, type_)),
         Flag::Member => Some(format!("{}: {}", symbol.id, type_)),
         Flag::Param => Some(format!("{}: {}", symbol.id, type_)),
         Flag::Type => Some(format!("type {}", symbol.id)),

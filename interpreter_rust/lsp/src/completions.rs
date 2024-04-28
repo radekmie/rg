@@ -1,12 +1,13 @@
+use crate::common::symbol::{Flag, Symbol};
+use crate::common::symbol_table::SymbolTable;
+use crate::document::Ast;
 use crate::rg::ast_features::AstFeatures;
-use crate::rg::symbol::{Flag, Symbol};
-use crate::rg::symbol_table::SymbolTable;
-use rg::ast::{Game, Identifier};
-use rg::position::Position;
+use rg::ast::Game;
 use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, CompletionItemLabelDetails, CompletionOptions,
     CompletionOptionsCompletionItem, CompletionResponse, WorkDoneProgressOptions,
 };
+use utils::{position::Position, Identifier};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompletionKind {
@@ -24,13 +25,13 @@ impl CompletionKind {
     fn predicate(self) -> impl Fn(&&Symbol) -> bool {
         match self {
             Self::Any => |_: &&Symbol| true,
-            Self::Edge => |sym: &&Symbol| sym.flag == Flag::Edge,
+            Self::Edge => |sym: &&Symbol| sym.flag == Flag::Function,
             Self::None => |_: &&Symbol| false,
             Self::Param => |sym: &&Symbol| sym.flag == Flag::Param,
-            Self::Toplevel => |sym: &&Symbol| sym.flag == Flag::Edge,
+            Self::Toplevel => |sym: &&Symbol| sym.flag == Flag::Function,
             Self::Type => |sym: &&Symbol| sym.flag == Flag::Type,
             Self::Value => |sym: &&Symbol| sym.flag == Flag::Member,
-            Self::Variable => |sym: &&Symbol| sym.flag != Flag::Edge,
+            Self::Variable => |sym: &&Symbol| sym.flag != Flag::Function,
         }
     }
 }
@@ -49,10 +50,13 @@ pub fn capabilities() -> CompletionOptions {
 
 pub fn completions(
     pos: Position,
-    game: &Game<Identifier>,
+    game: &Ast,
     symbol_table: &SymbolTable,
 ) -> Option<CompletionResponse> {
-    let items = completion_items(pos, game, symbol_table);
+    let items = match game {
+        Ast::Rg(game) => completion_items_rg(pos, game, symbol_table),
+        Ast::Hrg(_) => completion_items_hrg(symbol_table),
+    };
     if items.is_empty() {
         None
     } else {
@@ -60,7 +64,7 @@ pub fn completions(
     }
 }
 
-fn completion_items(
+fn completion_items_rg(
     pos: Position,
     game: &Game<Identifier>,
     symbol_table: &SymbolTable,
@@ -72,21 +76,22 @@ fn completion_items(
         CompletionKind::None => vec![],
         CompletionKind::Toplevel => {
             let symbols = get_symbols(symbol_table, &CompletionKind::Toplevel.predicate());
-            let mut items: Vec<CompletionItem> = symbols
-                .into_iter()
-                .map(|sym| completion_item(game, sym))
-                .collect();
+            let mut items: Vec<_> = symbols.into_iter().map(completion_item).collect();
             items.extend(keyword_completions());
             items
         }
         kind => {
             let symbols = get_symbols(symbol_table, &kind.predicate());
-            symbols
-                .into_iter()
-                .map(|sym| completion_item(game, sym))
-                .collect()
+            symbols.into_iter().map(completion_item).collect()
         }
     };
+    items.dedup();
+    items
+}
+
+fn completion_items_hrg(symbol_table: &SymbolTable) -> Vec<CompletionItem> {
+    let symbols = get_symbols(symbol_table, &CompletionKind::Any.predicate());
+    let mut items: Vec<_> = symbols.into_iter().map(completion_item).collect();
     items.dedup();
     items
 }
@@ -120,12 +125,8 @@ fn keyword_completions() -> Vec<CompletionItem> {
         .collect()
 }
 
-fn completion_item(game: &Game<Identifier>, symbol: &Symbol) -> CompletionItem {
-    let type_ = if symbol.flag == Flag::Type {
-        None
-    } else {
-        game.symbol_type(symbol)
-    };
+fn completion_item(symbol: &Symbol) -> CompletionItem {
+    let type_ = symbol.type_.to_option();
     CompletionItem {
         label: symbol.id.clone(),
         kind: Some(symbol.flag.clone().into()),
@@ -141,7 +142,7 @@ impl From<Flag> for CompletionItemKind {
     fn from(flag: Flag) -> Self {
         match flag {
             Flag::Type => Self::CLASS,
-            Flag::Edge => Self::METHOD,
+            Flag::Function => Self::METHOD,
             Flag::Member => Self::FIELD,
             Flag::Constant => Self::CONSTANT,
             Flag::Variable => Self::VARIABLE,
@@ -152,7 +153,8 @@ impl From<Flag> for CompletionItemKind {
 
 #[cfg(test)]
 mod test {
-    use rg::{parsing::parser::parse_with_errors, position::Position};
+    use rg::parsing::parser::parse_with_errors;
+    use utils::position::Position;
 
     use crate::rg::ast_features::AstFeatures;
 

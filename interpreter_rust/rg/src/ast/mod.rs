@@ -2,36 +2,13 @@ mod display;
 mod transforms;
 mod validators;
 
-use crate::position::Span;
 use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Display;
 use std::sync::Arc;
-
-#[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Identifier {
-    pub span: Span,
-    pub identifier: String,
-}
-
-impl Identifier {
-    pub fn new(span: Span, identifier: String) -> Self {
-        Self { span, identifier }
-    }
-
-    pub fn none(span: Span) -> Self {
-        Self {
-            span,
-            identifier: String::from("<none>"),
-        }
-    }
-
-    pub fn is_none(&self) -> bool {
-        self.identifier == "<none>"
-    }
-}
+use utils::position::Span;
 
 pub type Binding<'a, Id> = (&'a Id, &'a Arc<Type<Id>>);
 pub type Mapping<Id> = BTreeMap<Id, Id>;
@@ -351,6 +328,13 @@ impl<Id> NodePart<Id> {
 
     pub fn new(identifier: Id) -> Self {
         Self::Literal { identifier }
+    }
+
+    pub fn type_(&self) -> Option<Arc<Type<Id>>> {
+        match self {
+            Self::Binding { type_, .. } => Some(type_.clone()),
+            Self::Literal { .. } => None,
+        }
     }
 }
 
