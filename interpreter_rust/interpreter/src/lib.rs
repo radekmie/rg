@@ -26,6 +26,10 @@ pub fn safe_parse_rg_ast(ast: &str) -> Result<RgGame<Arc<str>>, String> {
     from_str::<RgGame<Arc<str>>>(ast).map_err(|error| error.to_string())
 }
 
+pub fn analyze(game: &RgGame<Arc<str>>) {
+    game.reaching_definitions()
+}
+
 pub fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> {
     let (game, errors) = unsafe_parse_hrg(source);
     if errors.is_empty() {
