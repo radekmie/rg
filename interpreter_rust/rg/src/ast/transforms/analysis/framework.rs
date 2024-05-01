@@ -1,79 +1,71 @@
-use super::flow_graph::FlowGraph;
-use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
+use crate::ast::Game;
+
+use super::flow::Flow;
+use std::{collections::BTreeMap, sync::Arc};
 
 type Id = Arc<str>;
+type Node = crate::ast::Node<Id>;
+type Edge = crate::ast::Edge<Id>;
 
-pub trait Parameters<L, G, Domain: Clone> {
+pub trait Parameters<Domain: Clone> {
     fn bot() -> Domain;
     fn join(a: Domain, b: Domain) -> Domain;
-    fn extreme(program: &G) -> Domain;
-    // fn transfer(input: &Domain, label: &L) -> Domain;
+    fn extreme(program: &Game<Id>) -> Domain;
 
-    fn kill(input: Domain, label: &L) -> Domain;
-    fn gen(input: Domain, label: &L) -> Domain;
-    fn transfer(input: Domain, label: &L) -> Domain {
-        let input = Self::kill(input, label);
-        Self::gen(input, label)
+    fn kill(input: Domain, edge: &Edge) -> Domain;
+    fn gen(input: Domain, edge: &Edge) -> Domain;
+    fn transfer(input: Domain, edge: &Edge) -> Domain {
+        let input = Self::kill(input, edge);
+        Self::gen(input, edge)
     }
 }
 
-pub trait Instance<L: Ord + Clone, Domain: Clone + PartialEq> {
-    // type Result = BTreeMap<L, (Domain, Domain)>;
-
-    fn analyse<F: FlowGraph<L>, G, P: Parameters<L, G, Domain>>(
+pub trait Instance<Domain: Clone + PartialEq + std::fmt::Debug> {
+    fn analyse<P: Parameters<Domain>>(
         &self,
-        flow: &F,
+        flow: &Flow,
         p: P,
-        game: &G,
-    ) -> BTreeMap<L, (Domain, Domain)> {
+        game: &Game<Id>,
+    ) -> BTreeMap<Node, Domain> {
         Worker::analyse(flow, p, game)
     }
     fn name() -> &'static str;
 }
 
-
-struct Worker<'a, L, G, Domain: Clone, F: FlowGraph<L>, P: Parameters<L, G, Domain>> {
-    cfg: &'a F,
-    result: BTreeMap<L, (Domain, Domain)>,
+struct Worker<'a, Domain: Clone, P: Parameters<Domain>> {
+    cfg: &'a Flow<'a>,
+    result: BTreeMap<Node, Domain>,
     parameters: P,
-    _g: PhantomData<G>,
 }
 
-impl<
-        'a,
-        L: Ord + Clone,
-        G,
-        Domain: Clone + PartialEq,
-        F: FlowGraph<L>,
-        P: Parameters<L, G, Domain>,
-    > Worker<'a, L, G, Domain, F, P>
-{
-    fn new(cfg: &'a F, parameters: P, game: &G) -> Self {
+impl<'a, Domain: Clone + PartialEq + std::fmt::Debug, P: Parameters<Domain>> Worker<'a, Domain, P> {
+    fn new(cfg: &'a Flow<'a>, parameters: P, game: &Game<Id>) -> Self {
         let mut result = BTreeMap::new();
         let entry = cfg.entry();
         let extreme = P::extreme(game);
-        result.insert(entry, (extreme.clone(), extreme)); // initial result-table
+        result.insert(entry, extreme); // initial result-table
         Worker {
             cfg,
             result,
             parameters,
-            _g: PhantomData,
         }
     }
 
-    fn output(&self, label: &L) -> &Domain {
-        let kw = self.result.get(label).unwrap();
-        &kw.1
+    fn knowledge(&self, node: &Node) -> Option<Domain> {
+        self.result.get(node).cloned()
     }
 
-    fn summarize_predecessors(&self, label: &L, old_input: &Domain) -> Domain {
-        if *label != self.cfg.entry() {
-            let preds = self.cfg.predecessors(label).unwrap();
-            let preds_outputs: Vec<_> = preds
+    fn summarize_predecessors(&self, node: &Node, old_input: &Domain) -> Domain {
+        if *node != self.cfg.entry() {
+            let incoming_edges = self.cfg.predecessors(node).unwrap();
+            let preds_kw: Vec<_> = incoming_edges
                 .iter()
-                .map(|&pred| self.output(pred).clone())
+                .map(|edge| {
+                    let pred_output = self.knowledge(&edge.lhs).unwrap_or(P::bot());
+                    P::transfer(pred_output, edge)
+                })
                 .collect();
-            preds_outputs
+            preds_kw
                 .into_iter()
                 .fold(P::bot(), |acc, pred_output| P::join(acc, pred_output))
         } else {
@@ -81,25 +73,19 @@ impl<
         }
     }
 
-    fn transfer(&mut self, label: &L) -> bool {
-        dbg!("transfer");
-        let (input, old_output) = self.result.get(label).unwrap().clone();
-        let input = self.summarize_predecessors(label, &input);
-        let output = if self.cfg.is_reversed() {
-            P::transfer(input.clone(), label)
-        } else {
-            input.clone()
-        };
-        self.result
-            .insert((*label).clone(), (input, output.clone()));
-        output != old_output
+    fn transfer(&mut self, node: &Node) -> bool {
+        let kw = self.knowledge(node).unwrap_or(P::bot());
+        let new_kw = self.summarize_predecessors(node, &kw);
+        let changed = kw != new_kw;
+        self.result.insert((*node).clone(), new_kw);
+        changed
     }
 
     fn step(&mut self) -> bool {
-        let labels = self.cfg.labels();
+        let nodes = self.cfg.nodes();
         let mut changed = false;
-        for label in labels.iter() {
-            if self.transfer(label) {
+        for node in nodes.iter() {
+            if self.transfer(node) {
                 changed = true;
             }
         }
@@ -110,7 +96,7 @@ impl<
         while self.step() {}
     }
 
-    pub fn analyse(cfg: &'a F, parameters: P, game: &G) -> BTreeMap<L, (Domain, Domain)> {
+    pub fn analyse(cfg: &'a Flow<'a>, parameters: P, game: &Game<Id>) -> BTreeMap<Node, Domain> {
         let mut worker = Self::new(cfg, parameters, game);
         worker.run();
         worker.result

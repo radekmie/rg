@@ -9,7 +9,7 @@ pub struct ReachingDefinitions;
 type Id = Arc<str>;
 type Domain = BTreeSet<(Id, Option<Edge<Id>>)>;
 
-impl Parameters<Edge<Id>, Game<Id>, Domain> for ReachingDefinitions {
+impl Parameters<Domain> for ReachingDefinitions {
     fn bot() -> Domain {
         BTreeSet::new()
     }
@@ -26,8 +26,8 @@ impl Parameters<Edge<Id>, Game<Id>, Domain> for ReachingDefinitions {
         a.union(&b).cloned().collect()
     }
 
-    fn kill(input: Domain, label: &Edge<Id>) -> Domain {
-        match &label.label {
+    fn kill(input: Domain, edge: &Edge<Id>) -> Domain {
+        match &edge.label {
             Label::Assignment { lhs, .. } => {
                 if let Expression::Reference { identifier } = lhs.as_ref() {
                     input
@@ -42,11 +42,12 @@ impl Parameters<Edge<Id>, Game<Id>, Domain> for ReachingDefinitions {
         }
     }
 
-    fn gen(input: Domain, label: &Edge<Id>) -> Domain {
-        match &label.label {
+    fn gen(mut input: Domain, edge: &Edge<Id>) -> Domain {
+        match &edge.label {
             Label::Assignment { lhs, .. } => {
                 if let Expression::Reference { identifier } = lhs.as_ref() {
-                    BTreeSet::from_iter(std::iter::once((identifier.clone(), Some(label.clone()))))
+                    input.insert((identifier.clone(), Some(edge.clone())));
+                    input
                 } else {
                     input
                 }
@@ -56,7 +57,7 @@ impl Parameters<Edge<Id>, Game<Id>, Domain> for ReachingDefinitions {
     }
 }
 
-impl Instance<Edge<Id>, Domain> for ReachingDefinitions {
+impl Instance<Domain> for ReachingDefinitions {
     fn name() -> &'static str {
         "Reaching Definitions"
     }
