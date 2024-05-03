@@ -10,11 +10,11 @@ type Id = Arc<str>;
 type Domain = BTreeSet<(Id, Option<Edge<Id>>)>;
 
 impl Parameters<Domain> for ReachingDefinitions {
-    fn bot() -> Domain {
+    fn bot(&self) -> Domain {
         BTreeSet::new()
     }
 
-    fn extreme(program: &Game<Id>) -> Domain {
+    fn extreme(&self, program: &Game<Id>) -> Domain {
         program
             .variables
             .iter()
@@ -22,11 +22,11 @@ impl Parameters<Domain> for ReachingDefinitions {
             .collect()
     }
 
-    fn join(a: Domain, b: Domain) -> Domain {
+    fn join(&self, a: Domain, b: Domain) -> Domain {
         a.union(&b).cloned().collect()
     }
 
-    fn kill(input: Domain, edge: &Edge<Id>) -> Domain {
+    fn kill(&self, input: Domain, edge: &Edge<Id>) -> Domain {
         match &edge.label {
             Label::Assignment { lhs, .. } => {
                 if let Expression::Reference { identifier } = lhs.as_ref() {
@@ -42,7 +42,7 @@ impl Parameters<Domain> for ReachingDefinitions {
         }
     }
 
-    fn gen(mut input: Domain, edge: &Edge<Id>) -> Domain {
+    fn gen(&self, mut input: Domain, edge: &Edge<Id>) -> Domain {
         match &edge.label {
             Label::Assignment { lhs, .. } => {
                 if let Expression::Reference { identifier } = lhs.as_ref() {

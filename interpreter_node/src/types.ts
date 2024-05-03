@@ -17,6 +17,7 @@ export type Settings = {
     compactSkipEdges: boolean;
     expandGeneratorNodes: boolean;
     inlineReachability: boolean;
+    inlineAssignment: boolean;
     joinForkSuffixes: boolean;
     mangleSymbols: boolean;
     normalizeTypes: boolean;
@@ -37,6 +38,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   compactSkipEdges: false,
   expandGeneratorNodes: false,
   inlineReachability: false,
+  inlineAssignment: false,
   joinForkSuffixes: false,
   mangleSymbols: false,
   pruneSingletonTypes: false,

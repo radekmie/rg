@@ -58,6 +58,14 @@ impl<Id> Edge<Id> {
     pub fn has_bindings(&self) -> bool {
         self.lhs.has_bindings() || self.rhs.has_bindings()
     }
+
+    pub fn skip(&mut self) {
+        self.label = Label::Skip { span: self.span };
+    }
+
+    pub fn skip_edge(lhs: Node<Id>, rhs: Node<Id>) -> Self {
+        Self::new(Span::none(), lhs, rhs, Label::Skip { span: Span::none() })
+    }
 }
 
 impl<Id: Clone + Ord> Edge<Id> {

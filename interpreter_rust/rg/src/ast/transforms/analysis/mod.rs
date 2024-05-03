@@ -1,18 +1,21 @@
-use std::{collections::{BTreeMap, BTreeSet}, sync::Arc};
-
+use self::flow::Flow;
+use self::framework::Instance;
+use self::reaching_definitions::ReachingDefinitions;
 use crate::ast::{Edge, Game, Node};
-
-use self::{flow::Flow, framework::Instance, reaching_definitions::ReachingDefinitions};
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 mod flow;
 mod framework;
 mod reaching_definitions;
 
 impl Game<Arc<str>> {
-    pub fn reaching_definitions(&self) -> BTreeMap<Node<Arc<str>>, BTreeSet<(Arc<str>, Option<Edge<Arc<str>>>)>> {
+    pub fn reaching_definitions(
+        &self,
+    ) -> BTreeMap<Node<Arc<str>>, BTreeSet<(Arc<str>, Option<Edge<Arc<str>>>)>> {
         let params = reaching_definitions::ReachingDefinitions;
         let flow = Flow::new(self);
-        let result = ReachingDefinitions.analyse(&flow, params, self);
+
         // result.iter().for_each(|(node, defs)| {
         //     println!("Node: {node}");
         //     println!("Definitions: ");
@@ -25,6 +28,6 @@ impl Game<Arc<str>> {
         //     });
         //     println!("");
         // })
-        result
+        ReachingDefinitions.analyse(&flow, params, self)
     }
 }

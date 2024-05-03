@@ -1,11 +1,12 @@
 mod add_builtins;
 mod add_explicit_casts;
-pub mod analysis;
+mod analysis;
 mod calculate_simple_apply;
 mod calculate_tag_indexes;
 mod calculate_uniques;
 mod compact_skip_edges;
 mod expand_generator_nodes;
+mod inline_assignment;
 mod join_fork_suffixes;
 mod mangle_symbols;
 mod normalize_types;

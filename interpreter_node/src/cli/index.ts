@@ -24,6 +24,7 @@ program
   )
   .option('--compactSkipEdges', 'optimize automaton by compacting skip edges')
   .option('--expandGeneratorNodes', 'expand generator nodes')
+  .option('--inlineAssignment', 'inline assignment when possible')
   .option('--inlineReachability', 'inline reachability when possible')
   .option(
     '--joinForkSuffixes',
@@ -85,6 +86,7 @@ function addCommand(
           compactSkipEdges: !!options.compactSkipEdges,
           expandGeneratorNodes: !!options.expandGeneratorNodes,
           inlineReachability: !!options.inlineReachability,
+          inlineAssignment: !!options.inlineAssignment,
           joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,
           normalizeTypes: !!options.normalizeTypes,
