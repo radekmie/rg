@@ -10,10 +10,14 @@ impl Game<Arc<str>> {
         let reaching_definitions = self.reaching_definitions();
         let next_edges = self.next_edges();
         let mut to_inline = BTreeSet::new();
+        let mut modified_edges = BTreeSet::new();
         for edge in &self.edges {
             if let Label::Assignment { lhs, rhs } = &edge.label {
                 if let Expression::Reference { identifier } = lhs.as_ref() {
                     if identifier.as_ref() != "player" {
+                        if modified_edges.contains(edge) {
+                            continue;
+                        }
                         if let Some(current_definitions) = reaching_definitions.get(&edge.lhs) {
                             let vars_in_rhs = vars_in_expression(rhs);
                             let defs_on_assignment: BTreeMap<_, _> =
@@ -34,6 +38,7 @@ impl Game<Arc<str>> {
                                         .iter()
                                         .any(|binding| vars_in_rhs.contains(binding.0))
                                 {
+                                    modified_edges.extend(usages.iter().cloned());
                                     to_inline.insert((
                                         (*identifier).clone(),
                                         (*rhs).clone(),
@@ -47,7 +52,7 @@ impl Game<Arc<str>> {
                 }
             }
         }
-        for (to_replace, new_expr, to_skip, usages) in to_inline.iter().rev() {
+        for (to_replace, new_expr, to_skip, usages) in to_inline.iter() {
             for edge in &mut self.edges {
                 if edge == to_skip {
                     edge.skip();
