@@ -16,23 +16,24 @@ impl Game<Arc<str>> {
                     if identifier.as_ref() != "player" {
                         if let Some(current_definitions) = reaching_definitions.get(&edge.lhs) {
                             let vars_in_rhs = vars_in_expression(rhs);
-                            if !edge
-                                .bindings()
-                                .iter()
-                                .any(|binding| vars_in_rhs.contains(binding.0))
-                            {
-                                let defs_on_assignment: BTreeMap<_, _> =
-                                    group_definitions(current_definitions)
-                                        .into_iter()
-                                        .filter(|(var, _)| vars_in_rhs.contains(var))
-                                        .collect();
-                                if let Some(usages) = can_be_inlined(
-                                    &next_edges,
-                                    &reaching_definitions,
-                                    edge,
-                                    identifier,
-                                    &defs_on_assignment,
-                                ) {
+                            let defs_on_assignment: BTreeMap<_, _> =
+                                group_definitions(current_definitions)
+                                    .into_iter()
+                                    .filter(|(var, _)| vars_in_rhs.contains(var))
+                                    .collect();
+                            if let Some(usages) = can_be_inlined(
+                                &next_edges,
+                                &reaching_definitions,
+                                edge,
+                                identifier,
+                                &defs_on_assignment,
+                            ) {
+                                if usages.is_empty()
+                                    || !edge
+                                        .bindings()
+                                        .iter()
+                                        .any(|binding| vars_in_rhs.contains(binding.0))
+                                {
                                     to_inline.insert((
                                         (*identifier).clone(),
                                         (*rhs).clone(),
@@ -48,16 +49,32 @@ impl Game<Arc<str>> {
         }
         for (to_replace, new_expr, to_skip, usages) in to_inline.iter().rev() {
             for edge in &mut self.edges {
-                if usages.contains(edge) {
-                    edge.label = edge.label.substitute_variable(to_replace, new_expr);
-                }
                 if edge == to_skip {
                     edge.skip();
+                } else if usages.contains(edge) {
+                    edge.label = substiture_variable(&edge.label, to_replace, new_expr);
                 }
             }
         }
 
         Ok(())
+    }
+}
+
+fn substiture_variable(
+    label: &Label<Arc<str>>,
+    to_replace: &Arc<str>,
+    new_expr: &Expression<Arc<str>>,
+) -> Label<Arc<str>> {
+    if let Label::Assignment { lhs, rhs } = label {
+        let lhs = match lhs.as_ref() {
+            Expression::Reference { identifier } if identifier == to_replace => (*lhs).clone(),
+            _ => Arc::new(lhs.substitute_variable(to_replace, new_expr)),
+        };
+        let rhs = Arc::new(rhs.substitute_variable(to_replace, new_expr));
+        Label::Assignment { lhs, rhs }
+    } else {
+        label.substitute_variable(to_replace, new_expr)
     }
 }
 

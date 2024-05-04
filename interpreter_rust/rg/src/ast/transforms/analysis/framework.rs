@@ -55,7 +55,8 @@ impl<'a, Domain: Clone + PartialEq + std::fmt::Debug, P: Parameters<Domain>> Wor
     }
 
     fn summarize_predecessors(&self, node: &Node, old_input: &Domain) -> Domain {
-        if let Some(incoming_edges) = self.cfg.predecessors(node) {
+        let incoming_edges = self.cfg.predecessors(node);
+        if !incoming_edges.is_empty() {
             let preds_kw: Vec<_> = incoming_edges
                 .iter()
                 .map(|edge| {

@@ -35,15 +35,15 @@ impl<'a> Flow<'a> {
         &self.nodes
     }
 
-    pub fn predecessors(&self, node: &Node) -> Option<BTreeSet<&Edge>> {
-        self.prev_edges.get(node).map(|prev| {
-            let mut result = BTreeSet::new();
-            result.extend(prev.iter());
-            if let Some(reachability_edges) = self.reachability_edges.get(node) {
-                result.extend(reachability_edges.iter());
-            }
-            result
-        })
+    pub fn predecessors(&self, node: &Node) -> BTreeSet<&Edge> {
+        let mut result = BTreeSet::new();
+        if let Some(prev_edges) = self.prev_edges.get(node) {
+            result.extend(prev_edges.iter());
+        }
+        if let Some(reachability_edges) = self.reachability_edges.get(node) {
+            result.extend(reachability_edges.iter());
+        }
+        result
     }
 
     pub fn entry(&self) -> Node {

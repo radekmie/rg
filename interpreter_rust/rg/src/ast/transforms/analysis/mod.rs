@@ -15,6 +15,7 @@ impl Game<Arc<str>> {
     ) -> BTreeMap<Node<Arc<str>>, BTreeSet<(Arc<str>, Option<Edge<Arc<str>>>)>> {
         let params = reaching_definitions::ReachingDefinitions;
         let flow = Flow::new(self);
+        let result = ReachingDefinitions.analyse(&flow, params, self);
 
         // result.iter().for_each(|(node, defs)| {
         //     println!("Node: {node}");
@@ -27,7 +28,7 @@ impl Game<Arc<str>> {
         //         }
         //     });
         //     println!("");
-        // })
-        ReachingDefinitions.analyse(&flow, params, self)
+        // });
+        result
     }
 }
