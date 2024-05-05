@@ -2,14 +2,13 @@ use super::flow::Flow;
 use crate::ast::Game;
 use std::{collections::BTreeMap, sync::Arc};
 
-type Id = Arc<str>;
-type Node = crate::ast::Node<Id>;
-type Edge = crate::ast::Edge<Id>;
+type Node = crate::ast::Node<Arc<str>>;
+type Edge = crate::ast::Edge<Arc<str>>;
 
 pub trait Parameters<Domain: Clone> {
     fn bot(&self) -> Domain;
     fn join(&self, a: Domain, b: Domain) -> Domain;
-    fn extreme(&self, program: &Game<Id>) -> Domain;
+    fn extreme(&self, program: &Game<Arc<str>>) -> Domain;
 
     fn kill(&self, input: Domain, edge: &Edge) -> Domain;
     fn gen(&self, input: Domain, edge: &Edge) -> Domain;
@@ -24,7 +23,7 @@ pub trait Instance<Domain: Clone + PartialEq + std::fmt::Debug> {
         &self,
         flow: &Flow,
         p: P,
-        game: &Game<Id>,
+        game: &Game<Arc<str>>,
     ) -> BTreeMap<Node, Domain> {
         Worker::analyse(flow, p, game)
     }
@@ -38,7 +37,7 @@ struct Worker<'a, Domain: Clone, P: Parameters<Domain>> {
 }
 
 impl<'a, Domain: Clone + PartialEq + std::fmt::Debug, P: Parameters<Domain>> Worker<'a, Domain, P> {
-    fn new(cfg: &'a Flow<'a>, parameters: P, game: &Game<Id>) -> Self {
+    fn new(cfg: &'a Flow<'a>, parameters: P, game: &Game<Arc<str>>) -> Self {
         let mut result = BTreeMap::new();
         let entry = cfg.entry();
         let extreme = parameters.extreme(game);
@@ -57,16 +56,15 @@ impl<'a, Domain: Clone + PartialEq + std::fmt::Debug, P: Parameters<Domain>> Wor
     fn summarize_predecessors(&self, node: &Node, old_input: &Domain) -> Domain {
         let incoming_edges = self.cfg.predecessors(node);
         if !incoming_edges.is_empty() {
-            let preds_kw: Vec<_> = incoming_edges
+            incoming_edges
                 .iter()
                 .map(|edge| {
                     let pred_output = self.knowledge(&edge.lhs).unwrap_or(self.p.bot());
                     self.p.transfer(pred_output, edge)
                 })
-                .collect();
-            preds_kw.into_iter().fold(self.p.bot(), |acc, pred_output| {
-                self.p.join(acc, pred_output)
-            })
+                .fold(self.p.bot(), |acc, pred_output| {
+                    self.p.join(acc, pred_output)
+                })
         } else {
             old_input.clone()
         }
@@ -95,7 +93,11 @@ impl<'a, Domain: Clone + PartialEq + std::fmt::Debug, P: Parameters<Domain>> Wor
         while self.step() {}
     }
 
-    pub fn analyse(cfg: &'a Flow<'a>, parameters: P, game: &Game<Id>) -> BTreeMap<Node, Domain> {
+    pub fn analyse(
+        cfg: &'a Flow<'a>,
+        parameters: P,
+        game: &Game<Arc<str>>,
+    ) -> BTreeMap<Node, Domain> {
         let mut worker = Self::new(cfg, parameters, game);
         worker.run();
         worker.result

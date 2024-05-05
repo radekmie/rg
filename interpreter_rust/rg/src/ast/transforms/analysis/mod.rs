@@ -12,23 +12,25 @@ mod reaching_definitions;
 impl Game<Arc<str>> {
     pub fn reaching_definitions(
         &self,
+        debug: bool,
     ) -> BTreeMap<Node<Arc<str>>, BTreeSet<(Arc<str>, Option<Edge<Arc<str>>>)>> {
         let params = reaching_definitions::ReachingDefinitions;
         let flow = Flow::new(self);
         let result = ReachingDefinitions.analyse(&flow, params, self);
-
-        // result.iter().for_each(|(node, defs)| {
-        //     println!("Node: {node}");
-        //     println!("Definitions: ");
-        //     defs.iter().for_each(|(id, edge)| {
-        //         if let Some(edge) = edge {
-        //             println!("  {id} :  \"{edge}\"");
-        //         } else {
-        //             println!("  {id} : None");
-        //         }
-        //     });
-        //     println!("");
-        // });
+        if debug {
+            result.iter().for_each(|(node, defs)| {
+                println!("Node: {node}");
+                println!("Definitions: ");
+                defs.iter().for_each(|(id, edge)| {
+                    if let Some(edge) = edge {
+                        println!("  {id} :  \"{edge}\"");
+                    } else {
+                        println!("  {id} : None");
+                    }
+                });
+                println!();
+            });
+        }
         result
     }
 }

@@ -155,6 +155,15 @@ impl<Id> Label<Id> {
     pub fn is_skip(&self) -> bool {
         matches!(self, Self::Skip { .. })
     }
+
+    pub fn as_var_assignment(&self) -> Option<(&Id, &Arc<Expression<Id>>)> {
+        if let Self::Assignment { lhs, rhs } = self {
+            if let Expression::Reference { identifier } = lhs.as_ref() {
+                return Some((identifier, rhs));
+            }
+        }
+        None
+    }
 }
 
 impl<Id: Clone + Ord> Label<Id> {
@@ -205,6 +214,24 @@ impl<Id: Clone + PartialEq> Label<Id> {
                 negated: *negated,
             },
             _ => self.clone(),
+        }
+    }
+}
+
+impl<Id: Ord> Label<Id> {
+    pub fn used_variables(&self) -> BTreeSet<&Id> {
+        match self {
+            Label::Assignment { lhs, rhs } => {
+                let mut vars = lhs.used_variables();
+                vars.extend(rhs.used_variables());
+                vars
+            }
+            Label::Comparison { lhs, rhs, .. } => {
+                let mut vars = lhs.used_variables();
+                vars.extend(rhs.used_variables());
+                vars
+            }
+            _ => BTreeSet::new(),
         }
     }
 }
@@ -554,6 +581,23 @@ impl<Id: Clone + PartialEq> Expression<Id> {
                 identifier: identifier.clone(),
             },
         }
+    }
+}
+
+impl<Id: Ord> Expression<Id> {
+    pub fn used_variables(&self) -> BTreeSet<&Id> {
+        let mut vars = BTreeSet::new();
+        match self {
+            Expression::Access { lhs, rhs, .. } => {
+                vars.extend(lhs.used_variables());
+                vars.extend(rhs.used_variables());
+            }
+            Expression::Cast { rhs, .. } => vars.extend(rhs.used_variables()),
+            Expression::Reference { identifier } => {
+                vars.insert(identifier);
+            }
+        }
+        vars
     }
 }
 

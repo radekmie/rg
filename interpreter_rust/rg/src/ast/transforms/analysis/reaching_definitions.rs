@@ -1,20 +1,17 @@
-use std::{collections::BTreeSet, sync::Arc};
-
-use crate::ast::{Edge, Expression, Game, Label};
-
 use super::framework::{Instance, Parameters};
+use crate::ast::{Edge, Expression, Game, Label};
+use std::{collections::BTreeSet, sync::Arc};
 
 pub struct ReachingDefinitions;
 
-type Id = Arc<str>;
-type Domain = BTreeSet<(Id, Option<Edge<Id>>)>;
+type Domain = BTreeSet<(Arc<str>, Option<Edge<Arc<str>>>)>;
 
 impl Parameters<Domain> for ReachingDefinitions {
     fn bot(&self) -> Domain {
         BTreeSet::new()
     }
 
-    fn extreme(&self, program: &Game<Id>) -> Domain {
+    fn extreme(&self, program: &Game<Arc<str>>) -> Domain {
         program
             .variables
             .iter()
@@ -26,7 +23,7 @@ impl Parameters<Domain> for ReachingDefinitions {
         a.union(&b).cloned().collect()
     }
 
-    fn kill(&self, input: Domain, edge: &Edge<Id>) -> Domain {
+    fn kill(&self, input: Domain, edge: &Edge<Arc<str>>) -> Domain {
         match &edge.label {
             Label::Assignment { lhs, .. } => {
                 if let Expression::Reference { identifier } = lhs.as_ref() {
@@ -42,7 +39,7 @@ impl Parameters<Domain> for ReachingDefinitions {
         }
     }
 
-    fn gen(&self, mut input: Domain, edge: &Edge<Id>) -> Domain {
+    fn gen(&self, mut input: Domain, edge: &Edge<Arc<str>>) -> Domain {
         match &edge.label {
             Label::Assignment { lhs, .. } => {
                 if let Expression::Reference { identifier } = lhs.as_ref() {

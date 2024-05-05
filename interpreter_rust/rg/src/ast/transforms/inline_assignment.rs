@@ -6,46 +6,48 @@ use std::{
 use crate::ast::{Edge, Error, Expression, Game, Label, Node};
 
 impl Game<Arc<str>> {
+    /// For each assignment to a variable `x = expr` :
+    ///   - collect references to `x`, until it's reassigned
+    ///   - check if `x` can be inlined
+    ///   - if yes, replace `x` with `expr` on every usage, and change assignment to skip
+    ///
+    /// Assignment `x = expr` can be inlined, if:
+    /// 1. `expr` contains no bindings (TODO: This can be improved if all usages of `x` share this binding)
+    /// 2. On every usage of `x` until its reassigned:
+    ///   - the only reaching definition of `x` is from that assignment
+    ///   - all variables in `expr` have the same values as in the assignment
     pub fn inline_assignment(&mut self) -> Result<(), Error<Arc<str>>> {
-        let reaching_definitions = self.reaching_definitions();
+        let reaching_definitions = self.reaching_definitions(false);
         let next_edges = self.next_edges();
         let mut to_inline = BTreeSet::new();
         let mut modified_edges = BTreeSet::new();
         for edge in &self.edges {
-            if let Label::Assignment { lhs, rhs } = &edge.label {
-                if let Expression::Reference { identifier } = lhs.as_ref() {
-                    if identifier.as_ref() != "player" {
-                        if modified_edges.contains(edge) {
-                            continue;
-                        }
-                        if let Some(current_definitions) = reaching_definitions.get(&edge.lhs) {
-                            let vars_in_rhs = vars_in_expression(rhs);
-                            let defs_on_assignment: BTreeMap<_, _> =
-                                group_definitions(current_definitions)
-                                    .into_iter()
-                                    .filter(|(var, _)| vars_in_rhs.contains(var))
-                                    .collect();
-                            if let Some(usages) = can_be_inlined(
-                                &next_edges,
-                                &reaching_definitions,
-                                edge,
-                                identifier,
-                                &defs_on_assignment,
-                            ) {
-                                if usages.is_empty()
-                                    || !edge
-                                        .bindings()
-                                        .iter()
-                                        .any(|binding| vars_in_rhs.contains(binding.0))
-                                {
-                                    modified_edges.extend(usages.iter().cloned());
-                                    to_inline.insert((
-                                        (*identifier).clone(),
-                                        (*rhs).clone(),
-                                        (*edge).clone(),
-                                        usages,
-                                    ));
-                                }
+            if let Some((identifier, rhs)) = edge.label.as_var_assignment() {
+                if identifier.as_ref() != "player" && !modified_edges.contains(edge) {
+                    if let Some(current_definitions) = reaching_definitions.get(&edge.lhs) {
+                        let vars_in_rhs = rhs.used_variables();
+                        let defs_on_assignment =
+                            used_definitions(current_definitions, &vars_in_rhs);
+                        if let Some(usages) = can_be_inlined(
+                            &next_edges,
+                            &reaching_definitions,
+                            edge,
+                            identifier,
+                            &defs_on_assignment,
+                        ) {
+                            if usages.is_empty()
+                                || !edge
+                                    .bindings()
+                                    .iter()
+                                    .any(|binding| vars_in_rhs.contains(binding.0))
+                            {
+                                modified_edges.extend(usages.iter().cloned());
+                                to_inline.insert((
+                                    (*identifier).clone(),
+                                    (*rhs).clone(),
+                                    (*edge).clone(),
+                                    usages,
+                                ));
                             }
                         }
                     }
@@ -58,6 +60,7 @@ impl Game<Arc<str>> {
                     edge.skip();
                 } else if usages.contains(edge) {
                     edge.label = substiture_variable(&edge.label, to_replace, new_expr);
+                    // edge.label = edge.label.substitute_variable(to_replace, &new_expr);
                 }
             }
         }
@@ -71,15 +74,13 @@ fn substiture_variable(
     to_replace: &Arc<str>,
     new_expr: &Expression<Arc<str>>,
 ) -> Label<Arc<str>> {
-    if let Label::Assignment { lhs, rhs } = label {
-        let lhs = match lhs.as_ref() {
-            Expression::Reference { identifier } if identifier == to_replace => (*lhs).clone(),
-            _ => Arc::new(lhs.substitute_variable(to_replace, new_expr)),
-        };
-        let rhs = Arc::new(rhs.substitute_variable(to_replace, new_expr));
-        Label::Assignment { lhs, rhs }
-    } else {
-        label.substitute_variable(to_replace, new_expr)
+    match label.as_var_assignment() {
+        Some((identifier, rhs)) if identifier == to_replace => {
+            let lhs = Arc::new(Expression::new(identifier.clone()));
+            let rhs = Arc::new(rhs.substitute_variable(to_replace, new_expr));
+            Label::Assignment { lhs, rhs }
+        }
+        _ => label.substitute_variable(to_replace, new_expr),
     }
 }
 
@@ -98,17 +99,13 @@ fn can_be_inlined(
         if seen.insert(lhs) {
             if let Some(edges) = maybe_edges {
                 for edge in edges {
-                    let vars_in_label = vars_in_label(&edge.label);
+                    let vars_in_label = edge.label.used_variables();
                     if vars_in_label.contains(id) {
                         let defs_on_usage = reaching_definitions.get(lhs).unwrap();
-                        let defs_on_usage: BTreeMap<_, _> = group_definitions(defs_on_usage)
-                            .into_iter()
-                            .filter(|(var, _)| vars_in_label.contains(var))
-                            .collect();
+                        let defs_on_usage = used_definitions(defs_on_usage, &vars_in_label);
                         if !can_replace_usage(id, def_edge, defs_on_assignment, &defs_on_usage) {
                             return None;
                         }
-                        dbg!("inserting");
                         to_inline.insert((*edge).clone());
                     }
                     if !is_reassigned(&edge.label, id) {
@@ -128,83 +125,44 @@ fn can_be_inlined(
     Some(to_inline)
 }
 
-fn group_definitions(
+fn used_definitions(
     defs: &BTreeSet<(Arc<str>, Option<Edge<Arc<str>>>)>,
+    variables: &BTreeSet<&Arc<str>>,
 ) -> BTreeMap<Arc<str>, BTreeSet<Option<Edge<Arc<str>>>>> {
-    let mut grouped = BTreeMap::new();
+    let mut grouped_defs = BTreeMap::new();
     for (var, edge) in defs {
-        grouped
-            .entry(var.clone())
-            .or_insert_with(BTreeSet::new)
-            .insert((*edge).clone());
+        if variables.contains(var) {
+            grouped_defs
+                .entry(var.clone())
+                .or_insert_with(BTreeSet::new)
+                .insert((*edge).clone());
+        }
     }
-    grouped
+    grouped_defs
 }
 
 fn can_replace_usage(
-    id: &Arc<str>,
+    to_replace: &Arc<str>,
     def_edge: &Edge<Arc<str>>,
     defs_on_assignment: &BTreeMap<Arc<str>, BTreeSet<Option<Edge<Arc<str>>>>>,
     defs_on_usage: &BTreeMap<Arc<str>, BTreeSet<Option<Edge<Arc<str>>>>>,
 ) -> bool {
-    defs_on_usage
-        .get(id)
-        .expect(id)
-        .iter()
-        .all(|def| def.as_ref().is_some_and(|def| def == def_edge))
-        && defs_on_assignment.iter().all(|(var, on_def)| {
-            if var == id {
-                true
-            } else {
-                defs_on_usage
-                    .get(var)
-                    .is_some_and(|on_use| on_def == on_use)
-            }
-        })
+    defs_on_usage.get(to_replace).is_some_and(|defs| {
+        defs.iter()
+            .all(|def| def.as_ref().is_some_and(|def| def == def_edge))
+    }) && defs_on_assignment.iter().all(|(var, on_def)| {
+        var == to_replace
+            || defs_on_usage
+                .get(var)
+                .is_some_and(|on_use| on_def == on_use)
+    })
 }
 
 fn is_reassigned(label: &Label<Arc<str>>, id: &Arc<str>) -> bool {
-    match label {
-        Label::Assignment { lhs, .. } => {
-            if let Expression::Reference { identifier } = lhs.as_ref() {
-                identifier == id
-            } else {
-                false
-            }
-        }
+    match label.as_var_assignment() {
+        Some((identifier, _)) => identifier == id,
         _ => false,
     }
-}
-
-fn vars_in_label(label: &Label<Arc<str>>) -> BTreeSet<Arc<str>> {
-    match label {
-        Label::Assignment { lhs, rhs } => {
-            let mut vars = vars_in_expression(lhs);
-            vars.extend(vars_in_expression(rhs));
-            vars
-        }
-        Label::Comparison { lhs, rhs, .. } => {
-            let mut vars = vars_in_expression(lhs);
-            vars.extend(vars_in_expression(rhs));
-            vars
-        }
-        _ => BTreeSet::new(),
-    }
-}
-
-fn vars_in_expression(expression: &Expression<Arc<str>>) -> BTreeSet<Arc<str>> {
-    let mut vars = BTreeSet::new();
-    match expression {
-        Expression::Access { lhs, rhs, .. } => {
-            vars.extend(vars_in_expression(lhs));
-            vars.extend(vars_in_expression(rhs));
-        }
-        Expression::Cast { rhs, .. } => vars.extend(vars_in_expression(rhs)),
-        Expression::Reference { identifier } => {
-            vars.insert(identifier.clone());
-        }
-    }
-    vars
 }
 
 #[cfg(test)]

@@ -2,9 +2,8 @@ use crate::ast::{Game, Label};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-type Id = Arc<str>;
-type Node = crate::ast::Node<Id>;
-type Edge = crate::ast::Edge<Id>;
+type Node = crate::ast::Node<Arc<str>>;
+type Edge = crate::ast::Edge<Arc<str>>;
 
 pub struct Flow<'a> {
     nodes: BTreeSet<&'a Node>,
@@ -13,10 +12,13 @@ pub struct Flow<'a> {
 }
 
 impl<'a> Flow<'a> {
-    pub fn new(game: &'a Game<Id>) -> Self {
+    pub fn new(game: &'a Game<Arc<str>>) -> Self {
         let mut reachability_edges = BTreeMap::new();
         for edge in game.edges.iter() {
             if let Label::Reachability { lhs, .. } = &edge.label {
+                // Create a `fake` edge simulating start of reachability check
+                // node0, node1: ? start -> target;
+                // node0 is predecessor of start
                 let skip_edge = Edge::skip_edge(edge.lhs.clone(), lhs.clone());
                 reachability_edges
                     .entry(lhs)
