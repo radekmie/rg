@@ -60,7 +60,6 @@ impl Game<Arc<str>> {
                     edge.skip();
                 } else if usages.contains(edge) {
                     edge.label = substiture_variable(&edge.label, to_replace, new_expr);
-                    // edge.label = edge.label.substitute_variable(to_replace, &new_expr);
                 }
             }
         }
@@ -194,6 +193,22 @@ mod test {
         };
     }
 
+    macro_rules! no_changes {
+        ($name:ident, $actual:expr) => {
+            #[test]
+            fn $name() {
+                let mut actual = parse($actual);
+                let expect = actual.clone();
+                actual.inline_assignment().unwrap();
+
+                assert_eq!(
+                    actual, expect,
+                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
+                );
+            }
+        };
+    }
+
     test!(
         small,
         "begin, t2: x = y;
@@ -207,4 +222,73 @@ mod test {
         t5, t6: a2 = d;
         t6, end: a2 == y;"
     );
+
+    test!(
+        only_skip,
+        "begin, t1: x = y[z];
+        t1, t2: y = z;
+        t2, end: y == z;",
+        "begin, t1: ;
+        t1, t2: ;
+        t2, end: z == z;"
+    );
+
+    test!(
+        in_lhs,
+        "begin, t1: x = y[z];
+        t1, t2: a[x] = x;
+        t2, end: x = z;",
+        "begin, t1: ;
+        t1, t2: a[y[z]] = y[z];
+        t2, end: ;"
+    );
+
+    test!(
+        double_assignment,
+        "begin, t1: x = y[z];
+        t1, t2: x == z;
+        t2, t3: x = z[y];
+        t3, end: x == y;",
+        "begin, t1: ;
+        t1, t2: y[z] == z;
+        t2, t3: ;
+        t3, end: z[y] == y;"
+    );
+
+    test!(
+        binding_no_usages,
+        "begin, t1(z: Pos): x = y[z];
+        t1, end: y == z;",
+        "begin, t1(z: Pos): ;
+        t1, end: y == z;"
+    );
+
+    test!(
+        reachability,
+        "begin, t1: x = y[z];
+        t1, t2: ? e1 -> e2;
+        t2, end: z = x;
+        e1, e2: y = x;",
+        "begin, t1: ;
+        t1, t2: ? e1 -> e2;
+        t2, end: z = y[z];
+        e1, e2: y = y[z];"
+    );
+
+    no_changes!(
+        reassigned_var,
+        "begin, t1: y[z] = z; 
+        t1, t2: x = y[z];
+        t2, t3: y[z] = z;
+        t3, end: y == x;"
+    );
+
+    no_changes!(
+        binding,
+        "begin, t1(p: Pos): x = y[p];
+        t1(p: Pos), t1: ;
+        t1, end: z == x;"
+    );
+
+    // TODO: Add tests with forks
 }

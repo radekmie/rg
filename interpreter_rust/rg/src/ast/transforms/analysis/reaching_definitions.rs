@@ -1,5 +1,5 @@
 use super::framework::{Instance, Parameters};
-use crate::ast::{Edge, Expression, Game, Label};
+use crate::ast::{Edge, Game, Label};
 use std::{collections::BTreeSet, sync::Arc};
 
 pub struct ReachingDefinitions;
@@ -24,17 +24,11 @@ impl Parameters<Domain> for ReachingDefinitions {
     }
 
     fn kill(&self, input: Domain, edge: &Edge<Arc<str>>) -> Domain {
-        match &edge.label {
-            Label::Assignment { lhs, .. } => {
-                if let Expression::Reference { identifier } = lhs.as_ref() {
-                    input
-                        .into_iter()
-                        .filter(|(id, _)| id != identifier)
-                        .collect()
-                } else {
-                    input
-                }
-            }
+        match &edge.label.as_var_assignment() {
+            Some((identifier, _)) => input
+                .into_iter()
+                .filter(|(id, _)| id != *identifier)
+                .collect(),
             _ => input,
         }
     }
@@ -42,7 +36,7 @@ impl Parameters<Domain> for ReachingDefinitions {
     fn gen(&self, mut input: Domain, edge: &Edge<Arc<str>>) -> Domain {
         match &edge.label {
             Label::Assignment { lhs, .. } => {
-                if let Expression::Reference { identifier } = lhs.as_ref() {
+                if let Some(identifier) = lhs.access_identifier() {
                     input.insert((identifier.clone(), Some(edge.clone())));
                     input
                 } else {

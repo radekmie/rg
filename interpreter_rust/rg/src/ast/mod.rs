@@ -221,6 +221,7 @@ impl<Id: Clone + PartialEq> Label<Id> {
 impl<Id: Ord> Label<Id> {
     pub fn used_variables(&self) -> BTreeSet<&Id> {
         match self {
+            Label::Assignment { lhs, rhs } if lhs.is_reference() => rhs.used_variables(),
             Label::Assignment { lhs, rhs } => {
                 let mut vars = lhs.used_variables();
                 vars.extend(rhs.used_variables());
@@ -495,6 +496,14 @@ impl<Id> Expression<Id> {
             _ => self,
         }
     }
+
+    pub fn access_identifier(&self) -> Option<&Id> {
+        match self {
+            Expression::Access { lhs, .. } => lhs.access_identifier(),
+            Expression::Reference { identifier } => Some(identifier),
+            _ => None,
+        }
+    }
 }
 
 impl<Id: Clone + PartialEq> Expression<Id> {
@@ -649,6 +658,10 @@ impl<Id: PartialEq> Expression<Id> {
             (Self::Reference { identifier: x }, Self::Reference { identifier: y }) => x == y,
             _ => false,
         }
+    }
+
+    pub fn is_reference(&self) -> bool {
+        matches!(self, Self::Reference { .. })
     }
 }
 
