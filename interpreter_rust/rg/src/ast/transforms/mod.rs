@@ -1,6 +1,5 @@
 mod add_builtins;
 mod add_explicit_casts;
-mod analysis;
 mod calculate_simple_apply;
 mod calculate_tag_indexes;
 mod calculate_uniques;

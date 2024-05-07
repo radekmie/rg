@@ -1,3 +1,4 @@
+mod analysis;
 mod display;
 mod transforms;
 mod validators;
