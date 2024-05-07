@@ -63,7 +63,7 @@ impl<Id> Edge<Id> {
         self.label = Label::Skip { span: self.span };
     }
 
-    pub fn skip_edge(lhs: Node<Id>, rhs: Node<Id>) -> Self {
+    pub fn new_skip(lhs: Node<Id>, rhs: Node<Id>) -> Self {
         Self::new(Span::none(), lhs, rhs, Label::Skip { span: Span::none() })
     }
 }
@@ -148,6 +148,10 @@ impl<Id> Label<Id> {
         matches!(self, Self::Assignment { .. })
     }
 
+    pub fn is_map_assignment(&self) -> bool {
+        matches!(self, Self::Assignment { lhs, .. } if lhs.uncast().is_access())
+    }
+
     pub fn is_tag(&self) -> bool {
         matches!(self, Self::Tag { .. })
     }
@@ -158,7 +162,7 @@ impl<Id> Label<Id> {
 
     pub fn as_var_assignment(&self) -> Option<(&Id, &Arc<Expression<Id>>)> {
         if let Self::Assignment { lhs, rhs } = self {
-            if let Expression::Reference { identifier } = lhs.as_ref() {
+            if let Some(identifier) = lhs.access_identifier() {
                 return Some((identifier, rhs));
             }
         }
@@ -216,18 +220,30 @@ impl<Id: Clone + PartialEq> Label<Id> {
             _ => self.clone(),
         }
     }
+
+    /// Like `substitute_variable`, but does not replace `x` in `x = z` or `x[y] = z`
+    pub fn substitute_variable_readonly(&self, id: &Id, expression: &Expression<Id>) -> Self {
+        match self {
+            Self::Assignment { lhs, rhs } => {
+                let lhs = Arc::new(lhs.substitute_variable_readonly(id, expression));
+                let rhs = Arc::new(rhs.substitute_variable(id, expression));
+                Self::Assignment { lhs, rhs }
+            }
+            _ => self.substitute_variable(id, expression),
+        }
+    }
 }
 
 impl<Id: Ord> Label<Id> {
     pub fn used_variables(&self) -> BTreeSet<&Id> {
         match self {
-            Label::Assignment { lhs, rhs } if lhs.is_reference() => rhs.used_variables(),
-            Label::Assignment { lhs, rhs } => {
+            Self::Assignment { lhs, rhs } if lhs.is_reference() => rhs.used_variables(),
+            Self::Assignment { lhs, rhs } => {
                 let mut vars = lhs.used_variables();
                 vars.extend(rhs.used_variables());
                 vars
             }
-            Label::Comparison { lhs, rhs, .. } => {
+            Self::Comparison { lhs, rhs, .. } => {
                 let mut vars = lhs.used_variables();
                 vars.extend(rhs.used_variables());
                 vars
@@ -486,6 +502,10 @@ impl<Id> Expression<Id> {
         Self::Reference { identifier }
     }
 
+    pub fn is_access(&self) -> bool {
+        matches!(self, Self::Access { .. })
+    }
+
     pub fn is_cast_and(&self, fn_: impl FnOnce(&Arc<Type<Id>>, &Arc<Self>) -> bool) -> bool {
         matches!(self, Self::Cast { lhs, rhs, .. } if fn_(lhs, rhs))
     }
@@ -499,9 +519,9 @@ impl<Id> Expression<Id> {
 
     pub fn access_identifier(&self) -> Option<&Id> {
         match self {
-            Expression::Access { lhs, .. } => lhs.access_identifier(),
-            Expression::Reference { identifier } => Some(identifier),
-            _ => None,
+            Self::Access { lhs, .. } => lhs.access_identifier(),
+            Self::Cast { rhs, .. } => rhs.access_identifier(),
+            Self::Reference { identifier } => Some(identifier),
         }
     }
 }
@@ -591,18 +611,36 @@ impl<Id: Clone + PartialEq> Expression<Id> {
             },
         }
     }
+
+    pub fn substitute_variable_readonly(&self, identifier: &Id, expression: &Self) -> Self {
+        match self {
+            Self::Access { lhs, rhs, .. } => Self::Access {
+                span: Span::none(),
+                lhs: Arc::new(lhs.substitute_variable_readonly(identifier, expression)),
+                rhs: Arc::new(rhs.substitute_variable(identifier, expression)),
+            },
+            Self::Cast { lhs, rhs, .. } => Self::Cast {
+                span: Span::none(),
+                lhs: lhs.clone(),
+                rhs: Arc::new(rhs.substitute_variable_readonly(identifier, expression)),
+            },
+            Self::Reference { identifier } => Self::Reference {
+                identifier: identifier.clone(),
+            },
+        }
+    }
 }
 
 impl<Id: Ord> Expression<Id> {
     pub fn used_variables(&self) -> BTreeSet<&Id> {
         let mut vars = BTreeSet::new();
         match self {
-            Expression::Access { lhs, rhs, .. } => {
+            Self::Access { lhs, rhs, .. } => {
                 vars.extend(lhs.used_variables());
                 vars.extend(rhs.used_variables());
             }
-            Expression::Cast { rhs, .. } => vars.extend(rhs.used_variables()),
-            Expression::Reference { identifier } => {
+            Self::Cast { rhs, .. } => vars.extend(rhs.used_variables()),
+            Self::Reference { identifier } => {
                 vars.insert(identifier);
             }
         }

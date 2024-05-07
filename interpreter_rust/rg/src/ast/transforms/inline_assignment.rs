@@ -1,11 +1,11 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::Arc,
-};
+use crate::ast::{Edge, Error, Game, Label, Node};
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
-use crate::ast::{Edge, Error, Expression, Game, Label, Node};
+type Id = Arc<str>;
+type ReachingDefinitions = BTreeSet<(Id, Option<Edge<Id>>)>;
 
-impl Game<Arc<str>> {
+impl Game<Id> {
     /// For each assignment to a variable `x = expr` :
     ///   - collect references to `x`, until it's reassigned
     ///   - check if `x` can be inlined
@@ -16,50 +16,56 @@ impl Game<Arc<str>> {
     /// 2. On every usage of `x` until its reassigned:
     ///   - the only reaching definition of `x` is from that assignment
     ///   - all variables in `expr` have the same values as in the assignment
-    pub fn inline_assignment(&mut self) -> Result<(), Error<Arc<str>>> {
+    pub fn inline_assignment(&mut self) -> Result<(), Error<Id>> {
         let reaching_definitions = self.reaching_definitions(false);
         let next_edges = self.next_edges();
         let mut to_inline = BTreeSet::new();
         let mut modified_edges = BTreeSet::new();
         for edge in &self.edges {
             if let Some((identifier, rhs)) = edge.label.as_var_assignment() {
-                if identifier.as_ref() != "player" && !modified_edges.contains(edge) {
-                    if let Some(current_definitions) = reaching_definitions.get(&edge.lhs) {
-                        let vars_in_rhs = rhs.used_variables();
-                        let defs_on_assignment =
-                            used_definitions(current_definitions, &vars_in_rhs);
-                        if let Some(usages) = can_be_inlined(
-                            &next_edges,
-                            &reaching_definitions,
-                            edge,
-                            identifier,
-                            &defs_on_assignment,
-                        ) {
-                            if usages.is_empty()
-                                || !edge
-                                    .bindings()
-                                    .iter()
-                                    .any(|binding| vars_in_rhs.contains(binding.0))
-                            {
-                                modified_edges.extend(usages.iter().cloned());
-                                to_inline.insert((
-                                    (*identifier).clone(),
-                                    (*rhs).clone(),
-                                    (*edge).clone(),
-                                    usages,
-                                ));
-                            }
+                if edge.label.is_map_assignment()
+                    || edge.label.is_player_assignment()
+                    || modified_edges.contains(edge)
+                {
+                    continue;
+                }
+                if let Some(current_definitions) = reaching_definitions.get(&edge.lhs) {
+                    let vars_in_rhs = rhs.used_variables();
+                    let defs_on_assignment = used_definitions(current_definitions, &vars_in_rhs);
+                    if let Some(usages) = maybe_inline_assignment(
+                        &next_edges,
+                        &reaching_definitions,
+                        edge,
+                        identifier,
+                        &defs_on_assignment,
+                    ) {
+                        if edge
+                            .bindings()
+                            .iter()
+                            .any(|binding| vars_in_rhs.contains(binding.0))
+                            && !usages.is_empty()
+                        {
+                            continue;
                         }
+                        modified_edges.extend(usages.iter().cloned());
+                        to_inline.insert((
+                            (*identifier).clone(),
+                            (*rhs).clone(),
+                            (*edge).clone(),
+                            usages,
+                        ));
                     }
                 }
             }
         }
-        for (to_replace, new_expr, to_skip, usages) in to_inline.iter() {
+        for (to_replace, new_expr, to_skip, usages) in to_inline {
             for edge in &mut self.edges {
-                if edge == to_skip {
+                if *edge == to_skip {
                     edge.skip();
                 } else if usages.contains(edge) {
-                    edge.label = substiture_variable(&edge.label, to_replace, new_expr);
+                    edge.label = edge
+                        .label
+                        .substitute_variable_readonly(&to_replace, &new_expr);
                 }
             }
         }
@@ -68,28 +74,13 @@ impl Game<Arc<str>> {
     }
 }
 
-fn substiture_variable(
-    label: &Label<Arc<str>>,
-    to_replace: &Arc<str>,
-    new_expr: &Expression<Arc<str>>,
-) -> Label<Arc<str>> {
-    match label.as_var_assignment() {
-        Some((identifier, rhs)) if identifier == to_replace => {
-            let lhs = Arc::new(Expression::new(identifier.clone()));
-            let rhs = Arc::new(rhs.substitute_variable(to_replace, new_expr));
-            Label::Assignment { lhs, rhs }
-        }
-        _ => label.substitute_variable(to_replace, new_expr),
-    }
-}
-
-fn can_be_inlined(
-    next_edges: &BTreeMap<&Node<Arc<str>>, BTreeSet<&Edge<Arc<str>>>>,
-    reaching_definitions: &BTreeMap<Node<Arc<str>>, BTreeSet<(Arc<str>, Option<Edge<Arc<str>>>)>>,
-    def_edge: &Edge<Arc<str>>,
-    id: &Arc<str>,
-    defs_on_assignment: &BTreeMap<Arc<str>, BTreeSet<Option<Edge<Arc<str>>>>>,
-) -> Option<BTreeSet<Edge<Arc<str>>>> {
+fn maybe_inline_assignment(
+    next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>>,
+    reaching_definitions: &BTreeMap<Node<Id>, ReachingDefinitions>,
+    def_edge: &Edge<Id>,
+    id: &Id,
+    defs_on_assignment: &BTreeMap<Id, BTreeSet<Option<Edge<Id>>>>,
+) -> Option<BTreeSet<Edge<Id>>> {
     let mut queue = vec![&def_edge.rhs];
     let mut seen = BTreeSet::new();
     let mut to_inline = BTreeSet::new();
@@ -125,9 +116,9 @@ fn can_be_inlined(
 }
 
 fn used_definitions(
-    defs: &BTreeSet<(Arc<str>, Option<Edge<Arc<str>>>)>,
-    variables: &BTreeSet<&Arc<str>>,
-) -> BTreeMap<Arc<str>, BTreeSet<Option<Edge<Arc<str>>>>> {
+    defs: &ReachingDefinitions,
+    variables: &BTreeSet<&Id>,
+) -> BTreeMap<Id, BTreeSet<Option<Edge<Id>>>> {
     let mut grouped_defs = BTreeMap::new();
     for (var, edge) in defs {
         if variables.contains(var) {
@@ -141,10 +132,10 @@ fn used_definitions(
 }
 
 fn can_replace_usage(
-    to_replace: &Arc<str>,
-    def_edge: &Edge<Arc<str>>,
-    defs_on_assignment: &BTreeMap<Arc<str>, BTreeSet<Option<Edge<Arc<str>>>>>,
-    defs_on_usage: &BTreeMap<Arc<str>, BTreeSet<Option<Edge<Arc<str>>>>>,
+    to_replace: &Id,
+    def_edge: &Edge<Id>,
+    defs_on_assignment: &BTreeMap<Id, BTreeSet<Option<Edge<Id>>>>,
+    defs_on_usage: &BTreeMap<Id, BTreeSet<Option<Edge<Id>>>>,
 ) -> bool {
     defs_on_usage.get(to_replace).is_some_and(|defs| {
         defs.iter()
@@ -157,7 +148,7 @@ fn can_replace_usage(
     })
 }
 
-fn is_reassigned(label: &Label<Arc<str>>, id: &Arc<str>) -> bool {
+fn is_reassigned(label: &Label<Id>, id: &Id) -> bool {
     match label.as_var_assignment() {
         Some((identifier, _)) => identifier == id,
         _ => false,

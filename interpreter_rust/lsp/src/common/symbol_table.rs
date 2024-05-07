@@ -120,7 +120,7 @@ impl SymbolTableBuilder {
     }
 
     pub fn add_occ_with_flag(&mut self, identifier: &Identifier, flag: Flag) {
-        if !identifier.is_none() && !(identifier.is_numeric() && flag != Flag::Function) {
+        if !(identifier.is_none() || identifier.is_numeric() && flag != Flag::Function) {
             let occ = self.occ_with_flag(identifier, flag);
             if occ.symbol.is_none() {
                 self.errors.push(Error::symbol_table_error(

@@ -1,17 +1,20 @@
+use super::flow::Flow;
 use super::framework::{Instance, Parameters};
-use crate::ast::{Edge, Game, Label};
-use std::{collections::BTreeSet, sync::Arc};
+use crate::ast::{Edge, Game, Node};
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 pub struct ReachingDefinitions;
 
-type Domain = BTreeSet<(Arc<str>, Option<Edge<Arc<str>>>)>;
+type Id = Arc<str>;
+type Domain = BTreeSet<(Id, Option<Edge<Id>>)>;
 
 impl Parameters<Domain> for ReachingDefinitions {
-    fn bot(&self) -> Domain {
-        BTreeSet::new()
+    fn bot() -> Domain {
+        Domain::default()
     }
 
-    fn extreme(&self, program: &Game<Arc<str>>) -> Domain {
+    fn extreme(program: &Game<Id>) -> Domain {
         program
             .variables
             .iter()
@@ -19,13 +22,14 @@ impl Parameters<Domain> for ReachingDefinitions {
             .collect()
     }
 
-    fn join(&self, a: Domain, b: Domain) -> Domain {
-        a.union(&b).cloned().collect()
+    fn join(mut a: Domain, b: Domain) -> Domain {
+        a.extend(b);
+        a
     }
 
-    fn kill(&self, input: Domain, edge: &Edge<Arc<str>>) -> Domain {
+    fn kill(input: Domain, edge: &Edge<Id>) -> Domain {
         match &edge.label.as_var_assignment() {
-            Some((identifier, _)) => input
+            Some((identifier, _)) if !&edge.label.is_map_assignment() => input
                 .into_iter()
                 .filter(|(id, _)| id != *identifier)
                 .collect(),
@@ -33,23 +37,34 @@ impl Parameters<Domain> for ReachingDefinitions {
         }
     }
 
-    fn gen(&self, mut input: Domain, edge: &Edge<Arc<str>>) -> Domain {
-        match &edge.label {
-            Label::Assignment { lhs, .. } => {
-                if let Some(identifier) = lhs.access_identifier() {
-                    input.insert((identifier.clone(), Some(edge.clone())));
-                    input
-                } else {
-                    input
-                }
-            }
-            _ => input,
+    fn gen(mut input: Domain, edge: &Edge<Id>) -> Domain {
+        if let Some((identifier, _)) = edge.label.as_var_assignment() {
+            input.insert((identifier.clone(), Some(edge.clone())));
         }
+        input
     }
 }
 
-impl Instance<Domain> for ReachingDefinitions {
-    fn name() -> &'static str {
-        "Reaching Definitions"
+impl Instance<Domain, Self> for ReachingDefinitions {}
+
+impl Game<Id> {
+    pub fn reaching_definitions(&self, debug: bool) -> BTreeMap<Node<Id>, Domain> {
+        let flow = Flow::new(self);
+        let result = ReachingDefinitions.analyse(&flow, self);
+        if debug {
+            for (node, defs) in &result {
+                println!("Node: {node}");
+                println!("Definitions: ");
+                for (id, edge) in defs {
+                    if let Some(edge) = edge {
+                        println!("  {id} :  \"{edge}\"");
+                    } else {
+                        println!("  {id} : None");
+                    }
+                }
+                println!();
+            }
+        }
+        result
     }
 }
