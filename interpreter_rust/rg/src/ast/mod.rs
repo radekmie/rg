@@ -47,6 +47,10 @@ pub struct Edge<Id> {
 }
 
 impl<Id> Edge<Id> {
+    pub fn has_bindings(&self) -> bool {
+        self.lhs.has_bindings() || self.rhs.has_bindings()
+    }
+
     pub fn new(span: Span, lhs: Node<Id>, rhs: Node<Id>, label: Label<Id>) -> Self {
         Self {
             span,
@@ -56,16 +60,12 @@ impl<Id> Edge<Id> {
         }
     }
 
-    pub fn has_bindings(&self) -> bool {
-        self.lhs.has_bindings() || self.rhs.has_bindings()
+    pub fn new_skip(lhs: Node<Id>, rhs: Node<Id>) -> Self {
+        Self::new(Span::none(), lhs, rhs, Label::Skip { span: Span::none() })
     }
 
     pub fn skip(&mut self) {
         self.label = Label::Skip { span: self.span };
-    }
-
-    pub fn new_skip(lhs: Node<Id>, rhs: Node<Id>) -> Self {
-        Self::new(Span::none(), lhs, rhs, Label::Skip { span: Span::none() })
     }
 }
 
@@ -145,6 +145,15 @@ impl<Id> Default for Label<Id> {
 }
 
 impl<Id> Label<Id> {
+    pub fn as_var_assignment(&self) -> Option<(&Id, &Arc<Expression<Id>>)> {
+        if let Self::Assignment { lhs, rhs } = self {
+            if let Some(identifier) = lhs.access_identifier() {
+                return Some((identifier, rhs));
+            }
+        }
+        None
+    }
+
     pub fn is_assignment(&self) -> bool {
         matches!(self, Self::Assignment { .. })
     }
@@ -153,21 +162,12 @@ impl<Id> Label<Id> {
         matches!(self, Self::Assignment { lhs, .. } if lhs.uncast().is_access())
     }
 
-    pub fn is_tag(&self) -> bool {
-        matches!(self, Self::Tag { .. })
-    }
-
     pub fn is_skip(&self) -> bool {
         matches!(self, Self::Skip { .. })
     }
 
-    pub fn as_var_assignment(&self) -> Option<(&Id, &Arc<Expression<Id>>)> {
-        if let Self::Assignment { lhs, rhs } = self {
-            if let Some(identifier) = lhs.access_identifier() {
-                return Some((identifier, rhs));
-            }
-        }
-        None
+    pub fn is_tag(&self) -> bool {
+        matches!(self, Self::Tag { .. })
     }
 }
 
@@ -499,6 +499,14 @@ pub enum Expression<Id> {
 }
 
 impl<Id> Expression<Id> {
+    pub fn access_identifier(&self) -> Option<&Id> {
+        match self {
+            Self::Access { lhs, .. } => lhs.access_identifier(),
+            Self::Cast { rhs, .. } => rhs.access_identifier(),
+            Self::Reference { identifier } => Some(identifier),
+        }
+    }
+
     pub fn new(identifier: Id) -> Self {
         Self::Reference { identifier }
     }
@@ -511,18 +519,14 @@ impl<Id> Expression<Id> {
         matches!(self, Self::Cast { lhs, rhs, .. } if fn_(lhs, rhs))
     }
 
+    pub fn is_reference(&self) -> bool {
+        matches!(self, Self::Reference { .. })
+    }
+
     pub fn uncast(&self) -> &Self {
         match self {
             Self::Cast { rhs, .. } => rhs.uncast(),
             _ => self,
-        }
-    }
-
-    pub fn access_identifier(&self) -> Option<&Id> {
-        match self {
-            Self::Access { lhs, .. } => lhs.access_identifier(),
-            Self::Cast { rhs, .. } => rhs.access_identifier(),
-            Self::Reference { identifier } => Some(identifier),
         }
     }
 }
@@ -697,10 +701,6 @@ impl<Id: PartialEq> Expression<Id> {
             (Self::Reference { identifier: x }, Self::Reference { identifier: y }) => x == y,
             _ => false,
         }
-    }
-
-    pub fn is_reference(&self) -> bool {
-        matches!(self, Self::Reference { .. })
     }
 }
 

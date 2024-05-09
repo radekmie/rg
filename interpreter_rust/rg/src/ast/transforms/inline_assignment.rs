@@ -29,33 +29,39 @@ impl Game<Id> {
                 {
                     continue;
                 }
-                if let Some(current_definitions) = reaching_definitions.get(&edge.lhs) {
-                    let vars_in_rhs = rhs.used_variables();
-                    let defs_on_assignment = used_definitions(current_definitions, &vars_in_rhs);
-                    if let Some(usages) = maybe_inline_assignment(
-                        &next_edges,
-                        &reaching_definitions,
-                        edge,
-                        identifier,
-                        &defs_on_assignment,
-                    ) {
-                        if edge
-                            .bindings()
-                            .iter()
-                            .any(|binding| vars_in_rhs.contains(binding.0))
-                            && !usages.is_empty()
-                        {
-                            continue;
-                        }
-                        modified_edges.extend(usages.iter().cloned());
-                        to_inline.insert((
-                            (*identifier).clone(),
-                            (*rhs).clone(),
-                            (*edge).clone(),
-                            usages,
-                        ));
-                    }
+
+                let Some(current_definitions) = reaching_definitions.get(&edge.lhs) else {
+                    continue;
+                };
+
+                let vars_in_rhs = rhs.used_variables();
+                let defs_on_assignment = used_definitions(current_definitions, &vars_in_rhs);
+                let Some(usages) = maybe_inline_assignment(
+                    &next_edges,
+                    &reaching_definitions,
+                    edge,
+                    identifier,
+                    &defs_on_assignment,
+                ) else {
+                    continue;
+                };
+
+                if edge
+                    .bindings()
+                    .iter()
+                    .any(|binding| vars_in_rhs.contains(binding.0))
+                    && !usages.is_empty()
+                {
+                    continue;
                 }
+
+                modified_edges.extend(usages.iter().cloned());
+                to_inline.insert((
+                    (*identifier).clone(),
+                    (*rhs).clone(),
+                    (*edge).clone(),
+                    usages,
+                ));
             }
         }
         for (to_replace, new_expr, to_skip, usages) in to_inline {
@@ -85,33 +91,40 @@ fn maybe_inline_assignment(
     let mut seen = BTreeSet::new();
     let mut to_inline = BTreeSet::new();
     while let Some(lhs) = queue.pop() {
-        let maybe_edges = next_edges.get(&lhs);
-        if seen.insert(lhs) {
-            if let Some(edges) = maybe_edges {
-                for edge in edges {
-                    let vars_in_label = edge.label.used_variables();
-                    if vars_in_label.contains(id) {
-                        let defs_on_usage = reaching_definitions.get(lhs).unwrap();
-                        let defs_on_usage = used_definitions(defs_on_usage, &vars_in_label);
-                        if !can_replace_usage(id, def_edge, defs_on_assignment, &defs_on_usage) {
-                            return None;
-                        }
-                        to_inline.insert((*edge).clone());
-                    }
-                    if !is_reassigned(&edge.label, id) {
-                        if !seen.contains(&edge.rhs) {
-                            queue.push(&edge.rhs);
-                        }
-                        if let Label::Reachability { lhs, .. } = &edge.label {
-                            if !seen.contains(lhs) {
-                                queue.push(lhs);
-                            }
-                        }
+        if !seen.insert(lhs) {
+            continue;
+        }
+
+        let Some(edges) = next_edges.get(&lhs) else {
+            continue;
+        };
+
+        for edge in edges {
+            let vars_in_label = edge.label.used_variables();
+            if vars_in_label.contains(id) {
+                let defs_on_usage = reaching_definitions.get(lhs).unwrap();
+                let defs_on_usage = used_definitions(defs_on_usage, &vars_in_label);
+                if !can_replace_usage(id, def_edge, defs_on_assignment, &defs_on_usage) {
+                    return None;
+                }
+
+                to_inline.insert((*edge).clone());
+            }
+
+            if !is_reassigned(&edge.label, id) {
+                if !seen.contains(&edge.rhs) {
+                    queue.push(&edge.rhs);
+                }
+
+                if let Label::Reachability { lhs, .. } = &edge.label {
+                    if !seen.contains(lhs) {
+                        queue.push(lhs);
                     }
                 }
             }
         }
     }
+
     Some(to_inline)
 }
 
@@ -119,16 +132,16 @@ fn used_definitions(
     defs: &ReachingDefinitions,
     variables: &BTreeSet<&Id>,
 ) -> BTreeMap<Id, BTreeSet<Option<Edge<Id>>>> {
-    let mut grouped_defs = BTreeMap::new();
-    for (var, edge) in defs {
-        if variables.contains(var) {
+    defs.iter().filter(|(var, _)| variables.contains(var)).fold(
+        BTreeMap::new(),
+        |mut grouped_defs, (var, edge)| {
             grouped_defs
                 .entry(var.clone())
-                .or_insert_with(BTreeSet::new)
+                .or_default()
                 .insert((*edge).clone());
-        }
-    }
-    grouped_defs
+            grouped_defs
+        },
+    )
 }
 
 fn can_replace_usage(
@@ -149,10 +162,7 @@ fn can_replace_usage(
 }
 
 fn is_reassigned(label: &Label<Id>, id: &Id) -> bool {
-    match label.as_var_assignment() {
-        Some((identifier, _)) => identifier == id,
-        _ => false,
-    }
+    matches!(label.as_var_assignment(), Some((identifier, _)) if identifier == id)
 }
 
 #[cfg(test)]
@@ -186,17 +196,7 @@ mod test {
 
     macro_rules! no_changes {
         ($name:ident, $actual:expr) => {
-            #[test]
-            fn $name() {
-                let mut actual = parse($actual);
-                let expect = actual.clone();
-                actual.inline_assignment().unwrap();
-
-                assert_eq!(
-                    actual, expect,
-                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
-                );
-            }
+            test!($name, $actual, $actual);
         };
     }
 

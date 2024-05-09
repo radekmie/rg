@@ -1,14 +1,13 @@
-use crate::ast::{Game, Label};
+use crate::ast::{Edge, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-type Node = crate::ast::Node<Arc<str>>;
-type Edge = crate::ast::Edge<Arc<str>>;
+type Id = Arc<str>;
 
 pub struct Flow<'a> {
-    pub nodes: BTreeSet<&'a Node>,
-    prev_edges: BTreeMap<&'a Node, BTreeSet<&'a Edge>>,
-    reachability_edges: BTreeMap<&'a Node, BTreeSet<Edge>>,
+    pub nodes: BTreeSet<&'a Node<Id>>,
+    prev_edges: BTreeMap<&'a Node<Id>, BTreeSet<&'a Edge<Id>>>,
+    reachability_edges: BTreeMap<&'a Node<Id>, BTreeSet<Edge<Id>>>,
 }
 
 impl<'a> Flow<'a> {
@@ -33,18 +32,14 @@ impl<'a> Flow<'a> {
         }
     }
 
-    pub fn predecessors(&self, node: &Node) -> BTreeSet<&Edge> {
+    pub fn predecessors(&self, node: &Node<Id>) -> BTreeSet<&Edge<Id>> {
         let mut result = BTreeSet::new();
-        if let Some(prev_edges) = self.prev_edges.get(node) {
-            result.extend(prev_edges.iter());
-        }
-        if let Some(reachability_edges) = self.reachability_edges.get(node) {
-            result.extend(reachability_edges.iter());
-        }
+        result.extend(self.prev_edges.get(node).into_iter().flatten());
+        result.extend(self.reachability_edges.get(node).into_iter().flatten());
         result
     }
 
-    pub fn entry(&self) -> Node {
-        Node::new(Arc::from("begin"))
+    pub fn entry(&self) -> Node<Id> {
+        Node::new(Id::from("begin"))
     }
 }

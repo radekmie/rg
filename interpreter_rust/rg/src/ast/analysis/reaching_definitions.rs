@@ -29,7 +29,7 @@ impl Parameters<Domain> for ReachingDefinitions {
 
     fn kill(input: Domain, edge: &Edge<Id>) -> Domain {
         match &edge.label.as_var_assignment() {
-            Some((identifier, _)) if !&edge.label.is_map_assignment() => input
+            Some((identifier, _)) if !edge.label.is_map_assignment() => input
                 .into_iter()
                 .filter(|(id, _)| id != *identifier)
                 .collect(),
@@ -56,11 +56,10 @@ impl Game<Id> {
                 println!("Node: {node}");
                 println!("Definitions: ");
                 for (id, edge) in defs {
-                    if let Some(edge) = edge {
-                        println!("  {id} :  \"{edge}\"");
-                    } else {
-                        println!("  {id} : None");
-                    }
+                    edge.as_ref().map_or_else(
+                        || println!("  {id} :  None"),
+                        |edge| println!("  {id} :  \"{edge}\""),
+                    );
                 }
                 println!();
             }
