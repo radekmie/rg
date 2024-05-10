@@ -1,20 +1,21 @@
 use super::flow::Flow;
-use super::framework::{Instance, Parameters};
+use super::framework::Analysis;
 use crate::ast::{Edge, Game, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
+type Id = Arc<str>;
+
 pub struct ReachingDefinitions;
 
-type Id = Arc<str>;
-type Domain = BTreeSet<(Id, Option<Edge<Id>>)>;
+impl Analysis for ReachingDefinitions {
+    type Domain = BTreeSet<(Id, Option<Edge<Id>>)>;
 
-impl Parameters<Domain> for ReachingDefinitions {
-    fn bot() -> Domain {
-        Domain::default()
+    fn bot() -> Self::Domain {
+        Self::Domain::default()
     }
 
-    fn extreme(program: &Game<Id>) -> Domain {
+    fn extreme(program: &Game<Id>) -> Self::Domain {
         program
             .variables
             .iter()
@@ -22,12 +23,12 @@ impl Parameters<Domain> for ReachingDefinitions {
             .collect()
     }
 
-    fn join(mut a: Domain, b: Domain) -> Domain {
+    fn join(mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
         a.extend(b);
         a
     }
 
-    fn kill(input: Domain, edge: &Edge<Id>) -> Domain {
+    fn kill(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
         match &edge.label.as_var_assignment() {
             Some((identifier, _)) if !edge.label.is_map_assignment() => input
                 .into_iter()
@@ -37,7 +38,7 @@ impl Parameters<Domain> for ReachingDefinitions {
         }
     }
 
-    fn gen(mut input: Domain, edge: &Edge<Id>) -> Domain {
+    fn gen(mut input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
         if let Some((identifier, _)) = edge.label.as_var_assignment() {
             input.insert((identifier.clone(), Some(edge.clone())));
         }
@@ -45,10 +46,11 @@ impl Parameters<Domain> for ReachingDefinitions {
     }
 }
 
-impl Instance<Domain, Self> for ReachingDefinitions {}
-
 impl Game<Id> {
-    pub fn reaching_definitions(&self, debug: bool) -> BTreeMap<Node<Id>, Domain> {
+    pub fn reaching_definitions(
+        &self,
+        debug: bool,
+    ) -> BTreeMap<Node<Id>, <ReachingDefinitions as Analysis>::Domain> {
         let flow = Flow::new(self);
         let result = ReachingDefinitions.analyse(&flow, self);
         if debug {

@@ -6,52 +6,59 @@ use std::sync::Arc;
 
 type Id = Arc<str>;
 
-pub trait Parameters<Domain: Clone> {
-    fn bot() -> Domain;
-    fn extreme(program: &Game<Id>) -> Domain;
-    fn gen(input: Domain, edge: &Edge<Id>) -> Domain;
-    fn join(a: Domain, b: Domain) -> Domain;
-    fn kill(input: Domain, edge: &Edge<Id>) -> Domain;
-    fn transfer(input: Domain, edge: &Edge<Id>) -> Domain {
+pub trait Analysis {
+    type Domain: Clone + PartialEq;
+
+    fn analyse(&self, flow: &Flow, game: &Game<Id>) -> BTreeMap<Node<Id>, Self::Domain> {
+        let mut worker = Worker::<Self>::new(flow, game);
+        worker.run();
+        worker.result
+    }
+
+    fn bot() -> Self::Domain;
+
+    fn extreme(program: &Game<Id>) -> Self::Domain;
+
+    fn gen(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain;
+
+    fn join(a: Self::Domain, b: Self::Domain) -> Self::Domain;
+
+    fn kill(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain;
+
+    fn transfer(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
         Self::gen(Self::kill(input, edge), edge)
     }
 }
 
-pub trait Instance<Domain: Clone + PartialEq, P: Parameters<Domain>> {
-    fn analyse(&self, flow: &Flow, game: &Game<Id>) -> BTreeMap<Node<Id>, Domain> {
-        Worker::<Domain, P>::analyse(flow, game)
-    }
+struct Worker<'a, I: Analysis + ?Sized> {
+    flow: &'a Flow<'a>,
+    result: BTreeMap<Node<Id>, I::Domain>,
+    _parameters: PhantomData<I>,
 }
 
-struct Worker<'a, Domain: Clone, P: Parameters<Domain>> {
-    cfg: &'a Flow<'a>,
-    result: BTreeMap<Node<Id>, Domain>,
-    _parameters: PhantomData<P>,
-}
-
-impl<'a, Domain: Clone + PartialEq, P: Parameters<Domain>> Worker<'a, Domain, P> {
-    fn new(cfg: &'a Flow<'a>, game: &Game<Id>) -> Self {
+impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
+    fn new(flow: &'a Flow<'a>, game: &Game<Id>) -> Self {
         Worker {
-            cfg,
-            result: BTreeMap::from([(cfg.entry(), P::extreme(game))]),
+            flow,
+            result: BTreeMap::from([(flow.entry(), I::extreme(game))]),
             _parameters: PhantomData,
         }
     }
 
-    fn knowledge(&self, node: &Node<Id>) -> Domain {
-        self.result.get(node).cloned().unwrap_or_else(P::bot)
+    fn knowledge(&self, node: &Node<Id>) -> I::Domain {
+        self.result.get(node).cloned().unwrap_or_else(I::bot)
     }
 
-    fn summarize_predecessors(&self, node: &Node<Id>, old_input: &Domain) -> Domain {
-        let incoming_edges = self.cfg.predecessors(node);
+    fn summarize_predecessors(&self, node: &Node<Id>, old_input: &I::Domain) -> I::Domain {
+        let incoming_edges = self.flow.predecessors(node);
         if incoming_edges.is_empty() {
             return old_input.clone();
         }
 
         incoming_edges
             .iter()
-            .map(|edge| P::transfer(self.knowledge(&edge.lhs), edge))
-            .fold(P::bot(), P::join)
+            .map(|edge| I::transfer(self.knowledge(&edge.lhs), edge))
+            .fold(I::bot(), I::join)
     }
 
     fn transfer(&mut self, node: &Node<Id>) -> bool {
@@ -64,7 +71,7 @@ impl<'a, Domain: Clone + PartialEq, P: Parameters<Domain>> Worker<'a, Domain, P>
 
     fn step(&mut self) -> bool {
         let mut changed = false;
-        for node in &self.cfg.nodes {
+        for node in &self.flow.nodes {
             if self.transfer(node) {
                 changed = true;
             }
@@ -74,11 +81,5 @@ impl<'a, Domain: Clone + PartialEq, P: Parameters<Domain>> Worker<'a, Domain, P>
 
     fn run(&mut self) {
         while self.step() {}
-    }
-
-    pub fn analyse(cfg: &'a Flow<'a>, game: &Game<Id>) -> BTreeMap<Node<Id>, Domain> {
-        let mut worker = Self::new(cfg, game);
-        worker.run();
-        worker.result
     }
 }
