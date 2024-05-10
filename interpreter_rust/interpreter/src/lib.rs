@@ -75,6 +75,8 @@ struct Flags {
     expand_generator_nodes: bool,
     #[serde(rename = "inlineReachability")]
     inline_reachability: bool,
+    #[serde(rename = "inlineAssignment")]
+    inline_assignment: bool,
     #[serde(rename = "joinForkSuffixes")]
     join_fork_suffixes: bool,
     #[serde(rename = "mangleSymbols")]
@@ -202,6 +204,7 @@ pub fn analyze_rg(
         pass!(rust expand_generator_nodes);
         pass!(rust join_fork_suffixes);
         pass!(node inline_reachability);
+        pass!(rust inline_assignment);
         pass!(rust prune_singleton_types);
         pass!(rust prune_unreachable_nodes);
         pass!(rust mangle_symbols);

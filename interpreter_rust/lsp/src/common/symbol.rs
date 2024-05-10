@@ -23,7 +23,7 @@ impl Symbol {
     }
 
     pub fn from_id(identifier: &Identifier, flag: Flag, type_: Type) -> Option<Self> {
-        if identifier.is_none() || identifier.is_numeric() {
+        if identifier.is_none() || (identifier.is_numeric() && flag != Flag::Function) {
             None
         } else {
             let id = identifier.identifier.clone();
@@ -71,6 +71,7 @@ impl Positioned for Symbol {
 pub enum Type {
     Hrg(Arc<hrg::ast::Type<Identifier>>),
     Rg(Arc<rg::ast::Type<Identifier>>),
+    #[allow(clippy::enum_variant_names)]
     NoType,
 }
 
