@@ -49,7 +49,7 @@ impl Game<Id> {
                     return None; // multiple paths found
                 }
                 for edge in edges {
-                    if previous.contains(&edge.rhs) || edge.label.is_assignment() {
+                    if edge.has_bindings() || previous.contains(&edge.rhs) || edge.label.is_assignment() {
                         return None;
                     }
                     result.insert((*edge).clone());
@@ -163,4 +163,12 @@ mod test {
             test!($name, $actual, $actual);
         };
     }
+
+    no_changes!(
+        reachability_with_generator,
+        "type T = { null };
+        begin, end: ? a -> c;
+        a, b(t: T): t == null;
+        b(t: T), c: t == null;"
+    );
 }
