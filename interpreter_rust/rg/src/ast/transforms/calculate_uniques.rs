@@ -1,60 +1,17 @@
-use crate::ast::{Error, Game, Label, Pragma};
-use std::collections::{BTreeMap, BTreeSet};
+use crate::ast::analysis::ReachingPaths;
+use crate::ast::{Error, Game, Pragma};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 use utils::position::Span;
 
 impl Game<Arc<str>> {
     pub fn calculate_uniques(&mut self) -> Result<(), Error<Arc<str>>> {
-        let next_edges: BTreeMap<_, BTreeSet<_>> =
-            self.edges
-                .iter()
-                .fold(BTreeMap::new(), |mut next_edges, edge| {
-                    next_edges.entry(&edge.lhs).or_default().insert(edge);
-                    next_edges
-                });
-
-        let mut unique_nodes: BTreeSet<_> = self
-            .edges
-            .iter()
-            .flat_map(|edge| [&edge.lhs, &edge.rhs])
-            .cloned()
+        let reaching_paths = self.analyse::<ReachingPaths>();
+        let mut unique_nodes: BTreeSet<_> = reaching_paths
+            .into_iter()
+            .filter(|(_, paths)| paths.iter().all(|path| !path.has_duplicate))
+            .map(|(node, _)| node)
             .collect();
-
-        let nodes: BTreeSet<_> = self
-            .edges
-            .iter()
-            .filter_map(|edge| {
-                if edge.label.is_player_assignment() || edge.label.is_tag() {
-                    Some(&edge.rhs)
-                } else if let Label::Reachability { lhs, .. } = &edge.label {
-                    Some(lhs)
-                } else if edge.lhs.is_begin() {
-                    Some(&edge.lhs)
-                } else {
-                    None
-                }
-            })
-            .cloned()
-            .collect();
-
-        for node in nodes {
-            let mut seen = BTreeSet::new();
-            let mut queue = vec![node];
-            while let Some(lhs) = queue.pop() {
-                let maybe_edges = next_edges.get(&lhs);
-                if seen.insert(lhs) {
-                    if let Some(edges) = maybe_edges {
-                        for edge in edges {
-                            if seen.contains(&edge.rhs) {
-                                unique_nodes.remove(&edge.rhs);
-                            } else if !edge.label.is_player_assignment() && !edge.label.is_tag() {
-                                queue.push(edge.rhs.clone());
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
         self.pragmas.retain(|pragma| {
             if let Pragma::Unique { nodes, .. } = pragma {
@@ -75,4 +32,55 @@ impl Game<Arc<str>> {
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::ast::Game;
+    use crate::parsing::parser::parse_with_errors;
+    use map_id::MapId;
+    use std::sync::Arc;
+
+    fn parse(input: &str) -> Game<Arc<str>> {
+        let (game, errors) = parse_with_errors(input);
+        assert!(errors.is_empty(), "Parse errors: {errors:?}");
+        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
+    }
+
+    macro_rules! test {
+        ($name:ident, $actual:expr, $expect:expr) => {
+            #[test]
+            fn $name() {
+                let mut actual = parse($actual);
+                let expect = parse($expect);
+                actual.calculate_uniques().unwrap();
+
+                assert_eq!(
+                    actual, expect,
+                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
+                );
+            }
+        };
+    }
+
+    test!(
+        small_unique,
+        "begin, x: ; x, end: ;",
+        "begin, x: ; x, end: ; @unique begin end x;"
+    );
+
+    test!(
+        small_loop,
+        "begin, x: ; x, y: ; y, x: ; y, end: ;",
+        "begin, x: ; x, y: ; y, x: ; y, end: ; @unique begin;"
+    );
+
+    test!(
+        tictactoe,
+        include_str!("../../../../../examples/ticTacToe.rg"),
+        concat!(
+            "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endcheckline endmove move nextturn preend set turn win win1 win2;",
+            include_str!("../../../../../examples/ticTacToe.rg")
+        )
+    );
 }

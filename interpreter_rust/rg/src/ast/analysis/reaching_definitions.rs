@@ -1,7 +1,6 @@
-use super::flow::Flow;
-use super::framework::Analysis;
-use crate::ast::{Edge, Game, Node};
-use std::collections::{BTreeMap, BTreeSet};
+use super::Analysis;
+use crate::ast::{Edge, Game};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 type Id = Arc<str>;
@@ -43,29 +42,5 @@ impl Analysis for ReachingDefinitions {
             input.insert((identifier.clone(), Some(edge.clone())));
         }
         input
-    }
-}
-
-impl Game<Id> {
-    pub fn reaching_definitions(
-        &self,
-        debug: bool,
-    ) -> BTreeMap<Node<Id>, <ReachingDefinitions as Analysis>::Domain> {
-        let flow = Flow::new(self);
-        let result = ReachingDefinitions.analyse(&flow, self);
-        if debug {
-            for (node, defs) in &result {
-                println!("Node: {node}");
-                println!("Definitions: ");
-                for (id, edge) in defs {
-                    edge.as_ref().map_or_else(
-                        || println!("  {id} :  None"),
-                        |edge| println!("  {id} :  \"{edge}\""),
-                    );
-                }
-                println!();
-            }
-        }
-        result
     }
 }

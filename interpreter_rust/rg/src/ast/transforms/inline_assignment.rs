@@ -1,9 +1,9 @@
+use crate::ast::analysis::{Analysis, ReachingDefinitions};
 use crate::ast::{Edge, Error, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 type Id = Arc<str>;
-type ReachingDefinitions = BTreeSet<(Id, Option<Edge<Id>>)>;
 
 impl Game<Id> {
     /// For each assignment to a variable `x = expr` :
@@ -17,7 +17,7 @@ impl Game<Id> {
     ///   - the only reaching definition of `x` is from that assignment
     ///   - all variables in `expr` have the same values as in the assignment
     pub fn inline_assignment(&mut self) -> Result<(), Error<Id>> {
-        let reaching_definitions = self.reaching_definitions(false);
+        let reaching_definitions = self.analyse::<ReachingDefinitions>();
         let next_edges = self.next_edges();
         let mut to_inline = BTreeSet::new();
         let mut modified_edges = BTreeSet::new();
@@ -82,7 +82,7 @@ impl Game<Id> {
 
 fn maybe_inline_assignment(
     next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>>,
-    reaching_definitions: &BTreeMap<Node<Id>, ReachingDefinitions>,
+    reaching_definitions: &BTreeMap<Node<Id>, <ReachingDefinitions as Analysis>::Domain>,
     def_edge: &Edge<Id>,
     id: &Id,
     defs_on_assignment: &BTreeMap<Id, BTreeSet<Option<Edge<Id>>>>,
@@ -129,7 +129,7 @@ fn maybe_inline_assignment(
 }
 
 fn used_definitions(
-    defs: &ReachingDefinitions,
+    defs: &<ReachingDefinitions as Analysis>::Domain,
     variables: &BTreeSet<&Id>,
 ) -> BTreeMap<Id, BTreeSet<Option<Edge<Id>>>> {
     defs.iter().filter(|(var, _)| variables.contains(var)).fold(

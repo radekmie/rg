@@ -1,34 +1,12 @@
-use crate::ast::{Error, Game, Label, Node};
-use std::collections::BTreeSet;
+use crate::ast::analysis::ReachingPaths;
+use crate::ast::{Error, Game};
 use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn prune_unreachable_nodes(&mut self) -> Result<(), Error<Arc<str>>> {
-        let next_edges = self.next_edges();
-        let mut seen = BTreeSet::new();
-        let mut queue = vec![Node::new(Arc::from("begin"))];
-        while let Some(lhs) = queue.pop() {
-            let maybe_edges = next_edges.get(&lhs);
-            if seen.insert(lhs) {
-                if let Some(edges) = maybe_edges {
-                    for edge in edges {
-                        if !seen.contains(&edge.rhs) {
-                            queue.push(edge.rhs.clone());
-                        }
-
-                        if let Label::Reachability { lhs, .. } = &edge.label {
-                            if !seen.contains(lhs) {
-                                queue.push(lhs.clone());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
+        let reaching_paths = self.analyse::<ReachingPaths>();
         self.edges
-            .retain(|edge| seen.contains(&edge.lhs) && seen.contains(&edge.rhs));
-
+            .retain(|edge| reaching_paths.get(&edge.lhs).is_some());
         Ok(())
     }
 }
