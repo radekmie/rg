@@ -203,7 +203,7 @@ pub fn analyze_rg(
         pass!(rust add_explicit_casts);
         pass!(rust expand_generator_nodes);
         pass!(rust join_fork_suffixes);
-        pass!(node inline_reachability);
+        pass!(rust inline_reachability);
         pass!(rust inline_assignment);
         pass!(rust prune_singleton_types);
         pass!(rust prune_unreachable_nodes);
