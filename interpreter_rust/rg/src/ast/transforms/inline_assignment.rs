@@ -23,10 +23,7 @@ impl Game<Id> {
         let mut modified_edges = BTreeSet::new();
         for edge in &self.edges {
             if let Some((identifier, rhs)) = edge.label.as_var_assignment() {
-                if edge.label.is_map_assignment()
-                    || edge.label.is_player_assignment()
-                    || modified_edges.contains(edge)
-                {
+                if edge.label.is_player_assignment() || modified_edges.contains(edge) {
                     continue;
                 }
 
@@ -45,13 +42,11 @@ impl Game<Id> {
                 ) else {
                     continue;
                 };
-
-                if edge
+                let uses_binding = edge
                     .bindings()
                     .iter()
-                    .any(|binding| vars_in_rhs.contains(binding.0))
-                    && !usages.is_empty()
-                {
+                    .any(|binding| vars_in_rhs.contains(binding.0));
+                if (uses_binding || edge.label.is_map_assignment()) && !usages.is_empty() {
                     continue;
                 }
 
@@ -279,6 +274,20 @@ mod test {
         "begin, t1(p: Pos): x = y[p];
         t1(p: Pos), t1: ;
         t1, end: z == x;"
+    );
+
+    test!(
+        skip_map_assignment,
+        "begin, t1: x[y] = z;
+        t1, end: ;",
+        "begin, t1: ;
+        t1, end: ;"
+    );
+
+    no_changes!(
+        dont_inline_map_assignment,
+        "begin, t1: x[y] = z;
+        t1, end: x[z] == 2;"
     );
 
     // TODO: Add tests with forks
