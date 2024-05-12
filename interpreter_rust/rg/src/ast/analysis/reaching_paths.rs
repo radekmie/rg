@@ -7,27 +7,6 @@ type Id = Arc<str>;
 
 pub struct ReachingPaths;
 
-#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
-pub struct Path {
-    has_duplicate: bool,
-    nodes: BTreeSet<Node<Id>>,
-}
-
-impl Path {
-    pub fn has_duplicate(&self) -> bool {
-        self.has_duplicate
-    }
-
-    pub fn push(&mut self, node: &Node<Id>) {
-        if !self.has_duplicate {
-            self.has_duplicate = self.nodes.contains(node);
-            if !self.has_duplicate {
-                self.nodes.insert(node.clone());
-            }
-        }
-    }
-}
-
 impl Analysis for ReachingPaths {
     type Domain = BTreeSet<Path>;
 
@@ -59,5 +38,26 @@ impl Analysis for ReachingPaths {
                 path
             })
             .collect()
+    }
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
+pub struct Path {
+    has_duplicate: bool,
+    nodes: BTreeSet<Node<Id>>,
+}
+
+impl Path {
+    pub fn has_duplicate(&self) -> bool {
+        self.has_duplicate
+    }
+
+    pub fn push(&mut self, node: &Node<Id>) {
+        if !self.has_duplicate {
+            self.has_duplicate = self.nodes.contains(node);
+            if !self.has_duplicate {
+                self.nodes.insert(node.clone());
+            }
+        }
     }
 }

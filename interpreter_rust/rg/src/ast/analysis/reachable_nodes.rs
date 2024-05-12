@@ -9,6 +9,8 @@ pub struct ReachableNodes;
 impl Analysis for ReachableNodes {
     type Domain = bool;
 
+    const FLOW_WITH_REACHABILITY: bool = false;
+
     fn bot() -> Self::Domain {
         Self::Domain::default()
     }
