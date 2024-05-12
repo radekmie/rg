@@ -4,26 +4,11 @@ use std::sync::Arc;
 
 type Id = Arc<str>;
 
-/**
- * Return a subautomaton of [edges] that:
- * 1. contains [start] and [target]
- * 2. for any node except [target] contains all outgoing nodes
- * 3. contains no edges from [target]
- * 4. for any initial environment, at most one path can reach [target] from [start]
- *    - limited analysis, may reject some valid results here
- * 4.1. and none of them change the environment (currently: no assignments allowed)
- *
- * @param {ast.EdgeDeclaration[]} edges - considered automaton
- * @param {ast.EdgeName} start - origin of the search
- * @param {ast.EdgeName} target - target of the search
- * @returns {Result<ast.EdgeDeclaration[], string>} Subautomaton of 'edges' or an error
- */
 impl Game<Id> {
     pub fn inline_reachability(&mut self) -> Result<(), Error<Id>> {
         for edge in self.edges.clone() {
             if let Label::Reachability { lhs, rhs, .. } = &edge.label {
                 if let Some(subgraph) = self.find_acceptable_paths(lhs, rhs) {
-                    dbg!(&edge);
                     self.substitute_reachability(edge.clone(), subgraph);
                 }
             }
@@ -31,6 +16,13 @@ impl Game<Id> {
         Ok(())
     }
 
+    /// Return a subautomaton of [edges] that:
+    /// 1. contains [start] and [target]
+    /// 2. for any node except [target] contains all outgoing nodes
+    /// 3. contains no edges from [target]
+    /// 4. for any initial environment, at most one path can reach [target] from [start]
+    ///    - limited analysis, may reject some valid results here
+    /// 4.1. and none of them change the environment (currently: no assignments allowed)
     fn find_acceptable_paths(
         &self,
         start: &Node<Id>,
@@ -70,8 +62,15 @@ impl Game<Id> {
             ..
         } = edge.label.clone()
         {
+            let mut nodes = self
+                .nodes()
+                .iter()
+                .map(|n| (*n).clone())
+                .collect::<BTreeSet<_>>();
+
             self.remove_edge(&edge);
-            let new_start = gen_fresh_node(format!("rechability_{start}_{target}"), self.nodes());
+            let new_start = gen_fresh_node(format!("reachability_{start}_{target}"), &nodes);
+            nodes.insert(new_start.clone());
 
             let mut mapping = BTreeMap::new();
             mapping.insert(start, new_start.clone());
@@ -85,7 +84,8 @@ impl Game<Id> {
                 if let Some(lhs) = mapping.get(&edge.lhs) {
                     edge.lhs = lhs.clone();
                 } else {
-                    let lhs = gen_fresh_node(edge.lhs.to_string(), self.nodes());
+                    let lhs = gen_fresh_node(edge.lhs.to_string(), &nodes);
+                    nodes.insert(lhs.clone());
                     mapping.insert(edge.lhs.clone(), lhs.clone());
                     edge.lhs = lhs;
                 }
@@ -93,7 +93,8 @@ impl Game<Id> {
                 if let Some(rhs) = mapping.get(&edge.rhs) {
                     edge.rhs = rhs.clone();
                 } else {
-                    let rhs = gen_fresh_node(edge.rhs.to_string(), self.nodes());
+                    let rhs = gen_fresh_node(edge.rhs.to_string(), &nodes);
+                    nodes.insert(rhs.clone());
                     mapping.insert(edge.rhs.clone(), rhs.clone());
                     edge.rhs = rhs;
                 }
@@ -107,14 +108,14 @@ impl Game<Id> {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn gen_fresh_node(node: String, nodes: BTreeSet<&Node<Id>>) -> Node<Id> {
-    for x in 0..nodes.len() {
-        let fresh_node: Node<Id> = Node::new(Id::from(format!("__gen_{node}_{x}")));
+fn gen_fresh_node(node: String, nodes: &BTreeSet<Node<Id>>) -> Node<Id> {
+    for x in 1..nodes.len() {
+        let fresh_node: Node<Id> = Node::new(Id::from(format!("__gen_{x}_{node}")));
         if !nodes.contains(&fresh_node) {
             return fresh_node;
         }
     }
-    let name = format!("__gen_{node}_{}", nodes.len());
+    let name = format!("__gen_{}_{node}", nodes.len());
     Node::new(Id::from(name))
 }
 
@@ -164,6 +165,157 @@ mod test {
             test!($name, $actual, $actual);
         };
     }
+
+    test!(
+        basic1,
+        "a, b: ? x -> y;
+        x, y: 1 == 1;",
+        "x, y: 1 == 1;
+        a, __gen_1_reachability_x_y: ;
+        __gen_1_reachability_x_y, b: 1 == 1;"
+    );
+
+    test!(
+        basic2,
+        "a, b: ? x -> z;
+        x, y: 1 == 1;
+        y, z: 2 == 2;",
+        "x, y: 1 == 1;
+        y, z: 2 == 2;
+        a, __gen_1_reachability_x_z: ;
+        __gen_1_reachability_x_z, __gen_1_y: 1 == 1;
+        __gen_1_y, b: 2 == 2;"
+    );
+
+    test!(
+        basic3,
+        "a, b: ? x -> z;
+        x, y: ;
+        y, z: 2 == 2;",
+        "x, y: ;
+        y, z: 2 == 2;
+        a, __gen_1_reachability_x_z: ;
+        __gen_1_y, b: 2 == 2;
+        __gen_1_reachability_x_z, __gen_1_y: ;"
+    );
+
+    test!(
+        basic4,
+        "a, b: ? x -> z;
+        x, y: 1 == 1;
+        y, z: ;",
+        "x, y: 1 == 1;
+        y, z: ;
+        a, __gen_1_reachability_x_z: ;
+        __gen_1_reachability_x_z, __gen_1_y: 1 == 1;
+        __gen_1_y, b: ;"
+    );
+
+    test!(
+        exclusive_comparison,
+        "x, y: ? a -> d;
+        a, b: 1 == 1;
+        a, c: 1 != 1;
+        b, d: ;
+        c, d: ;",
+        "a, b: 1 == 1;
+        a, c: 1 != 1;
+        b, d: ;
+        c, d: ;
+        x, __gen_1_reachability_a_d: ;
+        __gen_1_reachability_a_d, __gen_1_b: 1 == 1;
+        __gen_1_reachability_a_d, __gen_1_c: 1 != 1;
+        __gen_1_b, y: ;
+        __gen_1_c, y: ;"
+    );
+
+    no_changes!(
+        non_exclusive_comparison,
+        "type T = {1, 2};
+        var v: T = 1;
+        x, y: ? a -> d;
+        a, b: v == 1;
+        a, c: v != 2;
+        b, d: ;
+        c, d: ;"
+    );
+
+    test!(
+        exclusive_reachability_step,
+        "x, y: ? a -> d;
+        a, b: ? e -> f;
+        a, c: ! e -> f;
+        b, d: ;
+        c, d: ;
+        e, f: ;",
+        "b, d: ;
+        c, d: ;
+        e, f: ;
+        x, __gen_1_reachability_a_d: ;
+        __gen_1_reachability_a_d, __gen_1_b: ? e -> f;
+        __gen_1_reachability_a_d, __gen_1_c: ! e -> f;
+        __gen_1_b, y: ;
+        __gen_1_c, y: ;
+        a, __gen_1_reachability_e_f: ;
+        __gen_1_reachability_e_f, b: ;
+        a, __gen_2_reachability_e_f: ;
+        __gen_2_reachability_e_f, c: ;"
+    );
+
+    test!(
+        exclusive_reachability_step2,
+        "b, d: ;
+        c, d: ;
+        e, f: ;
+        x, __gen_1_reachability_a_d: ;
+        __gen_1_reachability_a_d, __gen_1_b: ? e -> f;
+        __gen_1_reachability_a_d, __gen_1_c: ! e -> f;
+        __gen_1_b, y: ;
+        __gen_1_c, y: ;
+        a, __gen_1_reachability_e_f: ;
+        __gen_1_reachability_e_f, b: ;
+        a, __gen_2_reachability_e_f: ;
+        __gen_2_reachability_e_f, c: ;",
+        "b, d: ;
+        c, d: ;
+        e, f: ;
+        x, __gen_1_reachability_a_d: ;
+        __gen_1_b, y: ;
+        __gen_1_c, y: ;
+        a, __gen_1_reachability_e_f: ;
+        __gen_1_reachability_e_f, b: ;
+        a, __gen_2_reachability_e_f: ;
+        __gen_2_reachability_e_f, c: ;
+        __gen_1_reachability_a_d, __gen_3_reachability_e_f: ;
+        __gen_3_reachability_e_f, __gen_1_b: ;
+        __gen_1_reachability_a_d, __gen_4_reachability_e_f: ;
+        __gen_4_reachability_e_f, __gen_1_c: ;"
+    );
+
+    no_changes!(
+        non_exclusive_reachability,
+        "x, y: ? a -> d;
+        a, b: ? e -> f;
+        a, c: ! e -> g;
+        b, d: ;
+        c, d: ;
+        e, f: ;
+        e, g: ;"
+    );
+
+    test!(
+        dont_copy_trailing_edges,
+        "x, y: ? a -> c;
+        a, b: 0 == 0;
+        b, c: 1 == 1;
+        c, d: 2 == 2;",
+        "a, b: 0 == 0;
+        b, c: 1 == 1;
+        c, d: 2 == 2;
+        x, __gen_1_reachability_a_c: ;
+        __gen_1_reachability_a_c, __gen_1_b: 0 == 0;
+        __gen_1_b, y: 1 == 1;"
+    );
 
     no_changes!(
         reachability_with_generator,
