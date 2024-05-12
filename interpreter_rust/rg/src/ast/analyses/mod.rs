@@ -15,8 +15,6 @@ type Id = Arc<str>;
 pub trait Analysis {
     type Domain: Clone + PartialEq;
 
-    const FLOW_WITH_REACHABILITY: bool = true;
-
     fn bot() -> Self::Domain;
 
     fn extreme(program: &Game<Id>) -> Self::Domain;
@@ -33,8 +31,8 @@ pub trait Analysis {
 }
 
 impl Game<Id> {
-    pub fn analyse<A: Analysis>(&self) -> BTreeMap<Node<Id>, A::Domain> {
-        let flow = Flow::new(self, A::FLOW_WITH_REACHABILITY);
+    pub fn analyse<A: Analysis>(&self, with_reachability: bool) -> BTreeMap<Node<Id>, A::Domain> {
+        let flow = Flow::new(self, with_reachability);
         let mut worker = Worker::<A>::new(self, &flow);
         worker.run();
         worker.result

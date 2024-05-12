@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn prune_unreachable_nodes(&mut self) -> Result<(), Error<Arc<str>>> {
-        let reaching_paths = self.analyse::<ReachableNodes>();
+        let reaching_paths = self.analyse::<ReachableNodes>(true);
         self.edges.retain(|edge| {
             reaching_paths
                 .get(&edge.lhs)

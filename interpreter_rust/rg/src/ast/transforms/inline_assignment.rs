@@ -17,7 +17,7 @@ impl Game<Id> {
     ///   - the only reaching definition of `x` is from that assignment
     ///   - all variables in `expr` have the same values as in the assignment
     pub fn inline_assignment(&mut self) -> Result<(), Error<Id>> {
-        let reaching_definitions = self.analyse::<ReachingDefinitions>();
+        let reaching_definitions = self.analyse::<ReachingDefinitions>(true);
         let next_edges = self.next_edges();
         let mut to_inline = BTreeSet::new();
         let mut modified_edges = BTreeSet::new();
