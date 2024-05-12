@@ -112,11 +112,7 @@ pub fn analyze_hrg(source: &str) -> Result<Array, String> {
 }
 
 #[wasm_bindgen(js_name = analyzeRg)]
-pub fn analyze_rg(
-    source: &str,
-    flags: &str,
-    inline_reachability: &Function,
-) -> Result<Array, String> {
+pub fn analyze_rg(source: &str, flags: &str) -> Result<Array, String> {
     let mut steps = vec![];
 
     macro_rules! step {
@@ -203,7 +199,7 @@ pub fn analyze_rg(
         pass!(rust add_explicit_casts);
         pass!(rust expand_generator_nodes);
         pass!(rust join_fork_suffixes);
-        pass!(node inline_reachability);
+        pass!(rust inline_reachability);
         pass!(rust inline_assignment);
         pass!(rust prune_singleton_types);
         pass!(rust prune_unreachable_nodes);

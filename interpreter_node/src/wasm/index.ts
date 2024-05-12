@@ -69,12 +69,7 @@ export async function analyzeHrg(source: string) {
 export async function analyzeRg(source: string, flags: Settings['flags']) {
   const steps = await workerMethod(
     'analyzeRg',
-    // @ts-expect-error: Workaround for passing functions to Web Worker.
-    [
-      source,
-      JSON.stringify(flags),
-      '$$TRANSFORMATOR$$inlineReachability' as unknown as () => unknown,
-    ],
+    [source, JSON.stringify(flags)],
     utils.noop,
   );
   return steps.map(step => JSON.parse(step)) as AnalyzedGameStep[];
