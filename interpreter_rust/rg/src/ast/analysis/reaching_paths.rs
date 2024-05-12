@@ -9,20 +9,22 @@ pub struct ReachingPaths;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Path {
-    pub has_duplicate: bool,
-    nodes: Vec<Node<Id>>,
+    has_duplicate: bool,
+    nodes: BTreeSet<Node<Id>>,
 }
 
 impl Path {
-    pub fn push(&mut self, node: &Node<Id>) {
-        if !self.has_duplicate {
-            self.has_duplicate = self.contains(node);
-            self.nodes.push(node.clone());
-        }
+    pub fn has_duplicate(&self) -> bool {
+        self.has_duplicate
     }
 
-    pub fn contains(&self, node: &Node<Id>) -> bool {
-        self.nodes.contains(node)
+    pub fn push(&mut self, node: &Node<Id>) {
+        if !self.has_duplicate {
+            self.has_duplicate = self.nodes.contains(node);
+            if !self.has_duplicate {
+                self.nodes.insert(node.clone());
+            }
+        }
     }
 }
 

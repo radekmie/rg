@@ -9,7 +9,7 @@ impl Game<Arc<str>> {
         let reaching_paths = self.analyse::<ReachingPaths>(true);
         let mut unique_nodes: BTreeSet<_> = reaching_paths
             .into_iter()
-            .filter(|(_, paths)| paths.iter().all(|path| !path.has_duplicate))
+            .filter(|(_, paths)| paths.iter().all(|path| !path.has_duplicate()))
             .map(|(node, _)| node)
             .collect();
 
