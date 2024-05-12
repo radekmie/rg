@@ -95,52 +95,31 @@ impl<Id: Clone + PartialEq> Game<Id> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::Game;
-    use crate::parsing::parser::parse_with_errors;
-    use map_id::MapId;
-    use std::sync::Arc;
+    use crate::test_transform;
 
-    fn parse(input: &str) -> Game<Arc<str>> {
-        let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Parse errors: {errors:?}");
-        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
-    }
-
-    macro_rules! test {
-        ($name:ident, $actual:expr, $expect:expr) => {
-            #[test]
-            fn $name() {
-                let mut actual = parse($actual);
-                actual.add_explicit_casts().unwrap();
-                let expect = parse($expect);
-
-                assert_eq!(
-                    actual, expect,
-                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
-                );
-            }
-        };
-    }
-
-    test!(
+    test_transform!(
+        add_explicit_casts,
         reference_1,
         "type T = { 1 }; var t: T = 1; x, y: t == t;",
         "type T = { 1 }; var t: T = 1; x, y: T(t) == T(t);"
     );
 
-    test!(
+    test_transform!(
+        add_explicit_casts,
         reference_2,
         "type T = { 1 }; var t: T = 1; x, y: T(t) == t;",
         "type T = { 1 }; var t: T = 1; x, y: T(t) == T(t);"
     );
 
-    test!(
+    test_transform!(
+        add_explicit_casts,
         reference_3,
         "type T = { 1 }; var t: T = 1; x, y: t == T(t);",
         "type T = { 1 }; var t: T = 1; x, y: T(t) == T(t);"
     );
 
-    test!(
+    test_transform!(
+        add_explicit_casts,
         reference_4,
         "type T = { 1 }; var t: T = 1; x, y: T(t) == T(t);",
         "type T = { 1 }; var t: T = 1; x, y: T(t) == T(t);"

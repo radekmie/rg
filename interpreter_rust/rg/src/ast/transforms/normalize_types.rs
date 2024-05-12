@@ -101,69 +101,40 @@ impl Variable<Arc<str>> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::Game;
-    use crate::parsing::parser::parse_with_errors;
-    use map_id::MapId;
-    use std::sync::Arc;
+    use crate::test_transform;
 
-    fn parse(input: &str) -> Game<Arc<str>> {
-        let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Parse errors: {errors:?}");
-        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
-    }
+    test_transform!(normalize_types, set, "type X = { a };");
 
-    macro_rules! test {
-        ($name:ident { $($actual:tt)* } { $($expect:tt)* }) => {
-            #[test]
-            fn $name() {
-                let mut actual = parse(stringify!($($actual)*));
-                actual.normalize_types().unwrap();
-                let expect = parse(stringify!($($expect)*));
-
-                assert_eq!(actual, expect, "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n");
-            }
-        };
-    }
-
-    test!(
-        set
-        { type X = { a }; }
-        { type X = { a }; }
+    test_transform!(
+        normalize_types,
+        arrow2,
+        "type X = { a } -> { b };",
+        "type X = Type1 -> Type2;
+        type Type1 = { a };
+        type Type2 = { b };"
     );
 
-    test!(
-        arrow2
-        { type X = { a } -> { b }; }
-        {
-            type X = Type1 -> Type2;
-            type Type1 = { a };
-            type Type2 = { b };
-        }
+    test_transform!(
+        normalize_types,
+        arrow3,
+        "type X = { a } -> { b } -> { c };",
+        "type X = Type1 -> Type4;
+        type Type1 = { a };
+        type Type2 = { b };
+        type Type3 = { c };
+        type Type4 = Type2 -> Type3;"
     );
 
-    test!(
-        arrow3
-        { type X = { a } -> { b } -> { c }; }
-        {
-            type X = Type1 -> Type4;
-            type Type1 = { a };
-            type Type2 = { b };
-            type Type3 = { c };
-            type Type4 = Type2 -> Type3;
-        }
-    );
-
-    test!(
-        arrow4
-        { type X = { a } -> { b } -> { c } -> { d }; }
-        {
-            type X = Type1 -> Type6;
-            type Type1 = { a };
-            type Type2 = { b };
-            type Type3 = { c };
-            type Type4 = { d };
-            type Type5 = Type3 -> Type4;
-            type Type6 = Type2 -> Type5;
-        }
+    test_transform!(
+        normalize_types,
+        arrow4,
+        "type X = { a } -> { b } -> { c } -> { d };",
+        "type X = Type1 -> Type6;
+        type Type1 = { a };
+        type Type2 = { b };
+        type Type3 = { c };
+        type Type4 = { d };
+        type Type5 = Type3 -> Type4;
+        type Type6 = Type2 -> Type5;"
     );
 }

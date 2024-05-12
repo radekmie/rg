@@ -132,41 +132,10 @@ fn are_edges_exclusive(edges: &BTreeSet<&Edge<Id>>) -> bool {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::transforms::inline_reachability::Id;
-    use crate::ast::Game;
-    use crate::parsing::parser::parse_with_errors;
-    use map_id::MapId;
-    use std::sync::Arc;
+    use crate::test_transform;
 
-    fn parse(input: &str) -> Game<Arc<str>> {
-        let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Parse errors: {errors:?}");
-        game.map_id(&mut |id| Id::from(id.identifier.as_str()))
-    }
-
-    macro_rules! test {
-        ($name:ident, $actual:expr, $expect:expr) => {
-            #[test]
-            fn $name() {
-                let mut actual = parse($actual);
-                let expect = parse($expect);
-                actual.inline_reachability().unwrap();
-
-                assert_eq!(
-                    actual, expect,
-                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
-                );
-            }
-        };
-    }
-
-    macro_rules! no_changes {
-        ($name:ident, $actual:expr) => {
-            test!($name, $actual, $actual);
-        };
-    }
-
-    test!(
+    test_transform!(
+        inline_reachability,
         basic1,
         "a, b: ? x -> y;
         x, y: 1 == 1;",
@@ -175,7 +144,8 @@ mod test {
         __gen_1_reachability_x_y, b: 1 == 1;"
     );
 
-    test!(
+    test_transform!(
+        inline_reachability,
         basic2,
         "a, b: ? x -> z;
         x, y: 1 == 1;
@@ -187,7 +157,8 @@ mod test {
         __gen_1_y, b: 2 == 2;"
     );
 
-    test!(
+    test_transform!(
+        inline_reachability,
         basic3,
         "a, b: ? x -> z;
         x, y: ;
@@ -199,7 +170,8 @@ mod test {
         __gen_1_reachability_x_z, __gen_1_y: ;"
     );
 
-    test!(
+    test_transform!(
+        inline_reachability,
         basic4,
         "a, b: ? x -> z;
         x, y: 1 == 1;
@@ -211,7 +183,8 @@ mod test {
         __gen_1_y, b: ;"
     );
 
-    test!(
+    test_transform!(
+        inline_reachability,
         exclusive_comparison,
         "x, y: ? a -> d;
         a, b: 1 == 1;
@@ -229,7 +202,8 @@ mod test {
         __gen_1_c, y: ;"
     );
 
-    no_changes!(
+    test_transform!(
+        inline_reachability,
         non_exclusive_comparison,
         "type T = {1, 2};
         var v: T = 1;
@@ -240,7 +214,8 @@ mod test {
         c, d: ;"
     );
 
-    test!(
+    test_transform!(
+        inline_reachability,
         exclusive_reachability_step,
         "x, y: ? a -> d;
         a, b: ? e -> f;
@@ -262,7 +237,8 @@ mod test {
         __gen_2_reachability_e_f, c: ;"
     );
 
-    test!(
+    test_transform!(
+        inline_reachability,
         exclusive_reachability_step2,
         "b, d: ;
         c, d: ;
@@ -292,7 +268,8 @@ mod test {
         __gen_4_reachability_e_f, __gen_1_c: ;"
     );
 
-    no_changes!(
+    test_transform!(
+        inline_reachability,
         non_exclusive_reachability,
         "x, y: ? a -> d;
         a, b: ? e -> f;
@@ -303,7 +280,8 @@ mod test {
         e, g: ;"
     );
 
-    test!(
+    test_transform!(
+        inline_reachability,
         dont_copy_trailing_edges,
         "x, y: ? a -> c;
         a, b: 0 == 0;
@@ -317,7 +295,8 @@ mod test {
         __gen_1_b, y: 1 == 1;"
     );
 
-    no_changes!(
+    test_transform!(
+        inline_reachability,
         reachability_with_generator,
         "type T = { null };
         begin, end: ? a -> c;

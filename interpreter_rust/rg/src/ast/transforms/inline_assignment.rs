@@ -162,40 +162,10 @@ fn is_reassigned(label: &Label<Id>, id: &Id) -> bool {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::Game;
-    use crate::parsing::parser::parse_with_errors;
-    use map_id::MapId;
-    use std::sync::Arc;
+    use crate::test_transform;
 
-    fn parse(input: &str) -> Game<Arc<str>> {
-        let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Parse errors: {errors:?}");
-        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
-    }
-
-    macro_rules! test {
-        ($name:ident, $actual:expr, $expect:expr) => {
-            #[test]
-            fn $name() {
-                let mut actual = parse($actual);
-                let expect = parse($expect);
-                actual.inline_assignment().unwrap();
-
-                assert_eq!(
-                    actual, expect,
-                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
-                );
-            }
-        };
-    }
-
-    macro_rules! no_changes {
-        ($name:ident, $actual:expr) => {
-            test!($name, $actual, $actual);
-        };
-    }
-
-    test!(
+    test_transform!(
+        inline_assignment,
         small,
         "begin, t2: x = y;
         t2, t3: z = d;
@@ -209,7 +179,8 @@ mod test {
         t6, end: a2 == y;"
     );
 
-    test!(
+    test_transform!(
+        inline_assignment,
         only_skip,
         "begin, t1: x = y[z];
         t1, t2: y = z;
@@ -219,7 +190,8 @@ mod test {
         t2, end: z == z;"
     );
 
-    test!(
+    test_transform!(
+        inline_assignment,
         in_lhs,
         "begin, t1: x = y[z];
         t1, t2: a[x] = x;
@@ -229,7 +201,8 @@ mod test {
         t2, end: ;"
     );
 
-    test!(
+    test_transform!(
+        inline_assignment,
         double_assignment,
         "begin, t1: x = y[z];
         t1, t2: x == z;
@@ -241,7 +214,8 @@ mod test {
         t3, end: z[y] == y;"
     );
 
-    test!(
+    test_transform!(
+        inline_assignment,
         binding_no_usages,
         "begin, t1(z: Pos): x = y[z];
         t1, end: y == z;",
@@ -249,7 +223,8 @@ mod test {
         t1, end: y == z;"
     );
 
-    test!(
+    test_transform!(
+        inline_assignment,
         reachability,
         "begin, t1: x = y[z];
         t1, t2: ? e1 -> e2;
@@ -261,7 +236,8 @@ mod test {
         e1, e2: y = y[z];"
     );
 
-    no_changes!(
+    test_transform!(
+        inline_assignment,
         reassigned_var,
         "begin, t1: y[z] = z; 
         t1, t2: x = y[z];
@@ -269,14 +245,16 @@ mod test {
         t3, end: y == x;"
     );
 
-    no_changes!(
+    test_transform!(
+        inline_assignment,
         binding,
         "begin, t1(p: Pos): x = y[p];
         t1(p: Pos), t1: ;
         t1, end: z == x;"
     );
 
-    test!(
+    test_transform!(
+        inline_assignment,
         skip_map_assignment,
         "begin, t1: x[y] = z;
         t1, end: ;",
@@ -284,7 +262,8 @@ mod test {
         t1, end: ;"
     );
 
-    no_changes!(
+    test_transform!(
+        inline_assignment,
         dont_inline_map_assignment,
         "begin, t1: x[y] = z;
         t1, end: x[z] == 2;"

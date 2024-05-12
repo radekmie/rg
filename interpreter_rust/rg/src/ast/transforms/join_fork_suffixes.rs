@@ -117,34 +117,10 @@ impl<Id: Clone + Ord> Game<Id> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::Game;
-    use crate::parsing::parser::parse_with_errors;
-    use map_id::MapId;
-    use std::sync::Arc;
+    use crate::test_transform;
 
-    fn parse(input: &str) -> Game<Arc<str>> {
-        let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Parse errors: {errors:?}");
-        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
-    }
-
-    macro_rules! test {
-        ($name:ident, $actual:expr, $expect:expr) => {
-            #[test]
-            fn $name() {
-                let mut actual = parse($actual);
-                let expect = parse($expect);
-                actual.join_fork_suffixes().unwrap();
-
-                assert_eq!(
-                    actual, expect,
-                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
-                );
-            }
-        };
-    }
-
-    test!(
+    test_transform!(
+        join_fork_suffixes,
         small,
         "begin, end: ;
         1, l1: 1 == 1;
@@ -163,7 +139,8 @@ mod test {
         r1, l2: 5 == 5;"
     );
 
-    test!(
+    test_transform!(
+        join_fork_suffixes,
         bigger,
         "begin, a0: branch0 == branch0;
         a5, end: 5 == 5;
@@ -205,7 +182,8 @@ mod test {
         begin, a0: branch3 == branch3;"
     );
 
-    test!(
+    test_transform!(
+        join_fork_suffixes,
         dont_join_multiple_outgoing,
         "begin, end: ;
         1, l1: 1 == 1;
@@ -229,7 +207,8 @@ mod test {
         r2, 4: 0 == 0;"
     );
 
-    test!(
+    test_transform!(
+        join_fork_suffixes,
         dont_join_multiple_outgoing_single,
         "begin, end: ;
         1, l1: 1 == 1;
@@ -251,7 +230,8 @@ mod test {
         l2, 4: 0 == 0;"
     );
 
-    test!(
+    test_transform!(
+        join_fork_suffixes,
         dont_join_multiple_incoming,
         "begin, end: ;
         1, l1: 1 == 1;
@@ -275,7 +255,8 @@ mod test {
         4, r2: 0 == 0;"
     );
 
-    test!(
+    test_transform!(
+        join_fork_suffixes,
         dont_join_multiple_incoming_single,
         "begin, end: ;
         1, l1: 1 == 1;
@@ -296,7 +277,8 @@ mod test {
         r1, l2: 5 == 5;"
     );
 
-    test!(
+    test_transform!(
+        join_fork_suffixes,
         intermediate_multi_edges,
         "begin, end: ;
         1, l1: 0 == 0;
@@ -310,7 +292,8 @@ mod test {
         2, 3: 7 == 7;"
     );
 
-    test!(
+    test_transform!(
+        join_fork_suffixes,
         shape_from_breakthrough,
         "begin, end: ;
         11, 9: 3 == 3;
@@ -333,7 +316,8 @@ mod test {
         9, 18: 2 == 2;"
     );
 
-    test!(
+    test_transform!(
+        join_fork_suffixes,
         last_reachability,
         "begin, end: ;
         x, y: ? 1 -> 3;
@@ -351,7 +335,8 @@ mod test {
         1, 1a: 2 == 2;"
     );
 
-    test!(
+    test_transform!(
+        join_fork_suffixes,
         dont_join_inner_reachability,
         "begin, end: ;
         x, y: ? 1 -> 2a;

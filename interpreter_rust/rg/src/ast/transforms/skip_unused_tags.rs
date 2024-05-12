@@ -20,34 +20,10 @@ impl Game<Arc<str>> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::Game;
-    use crate::parsing::parser::parse_with_errors;
-    use map_id::MapId;
-    use std::sync::Arc;
+    use crate::test_transform;
 
-    fn parse(input: &str) -> Game<Arc<str>> {
-        let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Parse errors: {errors:?}");
-        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
-    }
-
-    macro_rules! test {
-        ($name:ident, $actual:expr, $expect:expr) => {
-            #[test]
-            fn $name() {
-                let mut actual = parse($actual);
-                let expect = parse($expect);
-                actual.skip_unused_tags().unwrap();
-
-                assert_eq!(
-                    actual, expect,
-                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
-                );
-            }
-        };
-    }
-
-    test!(
+    test_transform!(
+        skip_unused_tags,
         small,
         "begin, end: ;
         t1, t2: $ 1;
@@ -57,7 +33,8 @@ mod test {
         t2, t3: ;"
     );
 
-    test!(
+    test_transform!(
+        skip_unused_tags,
         reachability,
         "begin, end: ? t1 -> t2;
         t1, t2: $ 1;
@@ -67,7 +44,8 @@ mod test {
         t2, t3: ;"
     );
 
-    test!(
+    test_transform!(
+        skip_unused_tags,
         used_tag,
         "begin, t2: ? t1 -> t2;
         t1, t2: $ 1;

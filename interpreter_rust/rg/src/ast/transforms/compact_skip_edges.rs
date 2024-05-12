@@ -244,66 +244,47 @@ fn get_edges_using_binding(
 
 #[cfg(test)]
 mod test {
-    use crate::ast::Game;
-    use crate::parsing::parser::parse_with_errors;
-    use map_id::MapId;
-    use std::sync::Arc;
+    use crate::test_transform;
 
-    fn parse(input: &str) -> Game<Arc<str>> {
-        let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Parse errors: {errors:?}");
-        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
-    }
+    test_transform!(compact_skip_edges, empty, "begin, end: ;", "begin, end: ;");
 
-    macro_rules! test {
-        ($name:ident, $actual:expr, $expect:expr) => {
-            #[test]
-            fn $name() {
-                let mut actual = parse($actual);
-                let expect = parse($expect);
-                actual.compact_skip_edges().unwrap();
-
-                assert_eq!(
-                    actual, expect,
-                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
-                );
-            }
-        };
-    }
-
-    test!(empty, "begin, end: ;", "begin, end: ;");
-
-    test!(
+    test_transform!(
+        compact_skip_edges,
         prefix,
         "begin, b: ; b, c: 1 == 1; c, end: 2 == 2;",
         "begin, c: 1 == 1; c, end: 2 == 2;"
     );
 
-    test!(
+    test_transform!(
+        compact_skip_edges,
         infix,
         "begin, b: 1 == 1; b, c: ; c, end: 2 == 2;",
         "begin, c: 1 == 1; c, end: 2 == 2;"
     );
 
-    test!(
+    test_transform!(
+        compact_skip_edges,
         suffix,
         "begin, b: 1 == 1; b, c: 2 == 2; c, end: ;",
         "begin, b: 1 == 1; b, end: 2 == 2;"
     );
 
-    test!(
+    test_transform!(
+        compact_skip_edges,
         player_assignment_prefix,
         "begin, b: player = x; b, c(t:T): ; c(t:T), end: ;",
         "begin, b: player = x; b, c(t:T): ; c(t:T), end: ;"
     );
 
-    test!(
+    test_transform!(
+        compact_skip_edges,
         player_assignment_suffix,
         "begin, b(t:T): ; b(t:T), c: ; c, end: player = x;",
         "begin, b(t:T): ; b(t:T), c: ; c, end: player = x;"
     );
 
-    test!(
+    test_transform!(
+        compact_skip_edges,
         simple_loop,
         "
             begin, loop: ;
@@ -322,7 +303,8 @@ mod test {
         "
     );
 
-    test!(
+    test_transform!(
+        compact_skip_edges,
         simple_loop_with_binds_single,
         "
             type X = { x };
@@ -344,7 +326,8 @@ mod test {
         "
     );
 
-    test!(
+    test_transform!(
+        compact_skip_edges,
         simple_loop_with_binds_multiple,
         "
             type X = { x };
@@ -370,7 +353,8 @@ mod test {
         "
     );
 
-    test!(
+    test_transform!(
+        compact_skip_edges,
         complex_loop_with_binds,
         "
             type T = { a, b };
@@ -401,7 +385,8 @@ mod test {
         "
     );
 
-    test!(
+    test_transform!(
+        compact_skip_edges,
         disconnected_reachability,
         "
             begin, foo: ? a -> e;
@@ -424,7 +409,8 @@ mod test {
         "
     );
 
-    test!(
+    test_transform!(
+        compact_skip_edges,
         linear_ordered,
         "
             begin, x1(p: Position): 1 == 1;
@@ -442,7 +428,8 @@ mod test {
         "
     );
 
-    test!(
+    test_transform!(
+        compact_skip_edges,
         linear_unordered,
         "
             begin, x1(p: Position): 1 == 1;
@@ -460,7 +447,7 @@ mod test {
         "
     );
 
-    test!(
+    test_transform!(compact_skip_edges,
         canonical_form,
         "type T = { 0, 1 }; var t: T = 0; a, b(x: T): x == t; c, d(x: T): x == t;",
         "type T = { 0, 1 }; var t: T = 0; a, b(bind_1: T): bind_1 == t; c, d(bind_2: T): bind_2 == t;"

@@ -36,46 +36,24 @@ impl Game<Arc<str>> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::Game;
-    use crate::parsing::parser::parse_with_errors;
-    use map_id::MapId;
-    use std::sync::Arc;
+    use crate::test_transform;
 
-    fn parse(input: &str) -> Game<Arc<str>> {
-        let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Parse errors: {errors:?}");
-        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
-    }
-
-    macro_rules! test {
-        ($name:ident, $actual:expr, $expect:expr) => {
-            #[test]
-            fn $name() {
-                let mut actual = parse($actual);
-                let expect = parse($expect);
-                actual.calculate_uniques().unwrap();
-
-                assert_eq!(
-                    actual, expect,
-                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
-                );
-            }
-        };
-    }
-
-    test!(
+    test_transform!(
+        calculate_uniques,
         small_unique,
         "begin, x: ; x, end: ;",
         "begin, x: ; x, end: ; @unique begin end x;"
     );
 
-    test!(
+    test_transform!(
+        calculate_uniques,
         small_loop,
         "begin, x: ; x, y: ; y, x: ; y, end: ;",
         "begin, x: ; x, y: ; y, x: ; y, end: ; @unique begin;"
     );
 
-    test!(
+    test_transform!(
+        calculate_uniques,
         tictactoe,
         include_str!("../../../../../examples/ticTacToe.rg"),
         concat!(
