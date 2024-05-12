@@ -52,6 +52,10 @@ program
     '--skipSelfComparisons',
     'replaces all self comparisons (e.g., `x == x`) with skip edges',
   )
+  .option(
+    '--skipUnusedTags',
+    'replaces all tags in reachability with skip edges',
+  )
   .configureHelp({ sortSubcommands: true });
 
 function addCommand(
@@ -95,6 +99,7 @@ function addCommand(
           reuseFunctions: !!options.reuseFunctions,
           skipSelfAssignments: !!options.skipSelfAssignments,
           skipSelfComparisons: !!options.skipSelfComparisons,
+          skipUnusedTags: !!options.skipUnusedTags,
         },
       });
 

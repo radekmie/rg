@@ -6,7 +6,7 @@ use utils::position::Span;
 
 impl Game<Arc<str>> {
     pub fn calculate_uniques(&mut self) -> Result<(), Error<Arc<str>>> {
-        let reaching_paths = self.analyse::<ReachingPaths>();
+        let reaching_paths = self.analyse::<ReachingPaths>(true);
         let mut unique_nodes: BTreeSet<_> = reaching_paths
             .into_iter()
             .filter(|(_, paths)| paths.iter().all(|path| !path.has_duplicate))

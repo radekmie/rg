@@ -1,7 +1,9 @@
+mod reachable_nodes;
 mod reaching_definitions;
 mod reaching_paths;
 
 use crate::ast::{Edge, Game, Label, Node};
+pub use reachable_nodes::ReachableNodes;
 pub use reaching_definitions::ReachingDefinitions;
 pub use reaching_paths::ReachingPaths;
 use std::collections::{BTreeMap, BTreeSet};
@@ -29,18 +31,24 @@ pub trait Analysis {
 }
 
 impl Game<Id> {
-    pub fn analyse<A: Analysis>(&self) -> BTreeMap<Node<Id>, A::Domain> {
-        let flow = Flow::new(self);
+    pub fn analyse<A: Analysis>(&self, with_reachability: bool) -> BTreeMap<Node<Id>, A::Domain> {
+        let flow = Flow::new(self, with_reachability);
         let mut worker = Worker::<A>::new(self, &flow);
         worker.run();
         worker.result
     }
 }
 
-struct Flow<'a> {
-    nodes: BTreeSet<&'a Node<Id>>,
-    prev_edges: BTreeMap<&'a Node<Id>, BTreeSet<&'a Edge<Id>>>,
-    reachability_edges: BTreeMap<&'a Node<Id>, BTreeSet<Edge<Id>>>,
+enum Flow<'a> {
+    Forward {
+        nodes: BTreeSet<&'a Node<Id>>,
+        prev_edges: BTreeMap<&'a Node<Id>, BTreeSet<&'a Edge<Id>>>,
+    },
+    ForwardReachability {
+        nodes: BTreeSet<&'a Node<Id>>,
+        prev_edges: BTreeMap<&'a Node<Id>, BTreeSet<&'a Edge<Id>>>,
+        reachability_edges: BTreeMap<&'a Node<Id>, BTreeSet<Edge<Id>>>,
+    },
 }
 
 impl<'a> Flow<'a> {
@@ -48,32 +56,57 @@ impl<'a> Flow<'a> {
         Node::new(Id::from("begin"))
     }
 
-    fn new(game: &'a Game<Arc<str>>) -> Self {
-        let mut reachability_edges = BTreeMap::new();
-        for edge in &game.edges {
-            if let Label::Reachability { lhs, .. } = &edge.label {
-                // Create a `fake` edge simulating start of reachability check
-                // node0, node1: ? start -> target;
-                // node0 is predecessor of start
-                let skip_edge = Edge::new_skip(edge.lhs.clone(), lhs.clone());
-                reachability_edges
-                    .entry(lhs)
-                    .or_insert_with(BTreeSet::new)
-                    .insert(skip_edge);
+    fn new(game: &'a Game<Arc<str>>, with_reachability: bool) -> Self {
+        if with_reachability {
+            let mut reachability_edges = BTreeMap::new();
+            for edge in &game.edges {
+                if let Label::Reachability { lhs, .. } = &edge.label {
+                    // Create a `fake` edge simulating start of reachability check
+                    // node0, node1: ? start -> target;
+                    // node0 is predecessor of start
+                    let skip_edge = Edge::new_skip(edge.lhs.clone(), lhs.clone());
+                    reachability_edges
+                        .entry(lhs)
+                        .or_insert_with(BTreeSet::new)
+                        .insert(skip_edge);
+                }
             }
-        }
-        Self {
-            nodes: game.nodes(),
-            prev_edges: game.prev_edges(),
-            reachability_edges,
+            Self::ForwardReachability {
+                nodes: game.nodes(),
+                prev_edges: game.prev_edges(),
+                reachability_edges,
+            }
+        } else {
+            Self::Forward {
+                nodes: game.nodes(),
+                prev_edges: game.prev_edges(),
+            }
         }
     }
 
     fn predecessors(&self, node: &Node<Id>) -> BTreeSet<&Edge<Id>> {
-        let mut result = BTreeSet::new();
-        result.extend(self.prev_edges.get(node).into_iter().flatten());
-        result.extend(self.reachability_edges.get(node).into_iter().flatten());
-        result
+        match self {
+            Flow::Forward { prev_edges, .. } => prev_edges
+                .get(node)
+                .map_or(BTreeSet::new(), |edges| (*edges).clone()),
+            Flow::ForwardReachability {
+                prev_edges,
+                reachability_edges,
+                ..
+            } => {
+                let mut result = BTreeSet::new();
+                result.extend(prev_edges.get(node).into_iter().flatten());
+                result.extend(reachability_edges.get(node).into_iter().flatten());
+                result
+            }
+        }
+    }
+
+    fn nodes(&self) -> &BTreeSet<&Node<Id>> {
+        match self {
+            Flow::Forward { nodes, .. } => nodes,
+            Flow::ForwardReachability { nodes, .. } => nodes,
+        }
     }
 }
 
@@ -102,7 +135,7 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
 
     fn step(&mut self) -> bool {
         let mut changed = false;
-        for node in &self.flow.nodes {
+        for node in self.flow.nodes() {
             if self.transfer(node) {
                 changed = true;
             }

@@ -7,7 +7,7 @@ type Id = Arc<str>;
 
 pub struct ReachingPaths;
 
-#[derive(Clone, Default, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Path {
     pub has_duplicate: bool,
     nodes: Vec<Node<Id>>,
@@ -16,9 +16,13 @@ pub struct Path {
 impl Path {
     pub fn push(&mut self, node: &Node<Id>) {
         if !self.has_duplicate {
-            self.has_duplicate = self.nodes.contains(node);
+            self.has_duplicate = self.contains(node);
             self.nodes.push(node.clone());
         }
+    }
+
+    pub fn contains(&self, node: &Node<Id>) -> bool {
+        self.nodes.contains(node)
     }
 }
 
