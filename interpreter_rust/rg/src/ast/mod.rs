@@ -1,4 +1,4 @@
-mod analysis;
+mod analyses;
 mod display;
 mod transforms;
 mod validators;

@@ -1,4 +1,4 @@
-use crate::ast::analysis::{Analysis, ReachingDefinitions};
+use crate::ast::analyses::{Analysis, ReachingDefinitions};
 use crate::ast::{Edge, Error, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;

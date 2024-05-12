@@ -1,4 +1,4 @@
-use crate::ast::analysis::ReachableNodes;
+use crate::ast::analyses::ReachableNodes;
 use crate::ast::{Error, Game};
 use std::sync::Arc;
 

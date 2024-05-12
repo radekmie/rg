@@ -1,4 +1,4 @@
-use crate::ast::analysis::ReachingPaths;
+use crate::ast::analyses::ReachingPaths;
 use crate::ast::{Error, Game, Pragma};
 use std::collections::BTreeSet;
 use std::sync::Arc;
