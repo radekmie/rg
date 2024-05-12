@@ -112,11 +112,7 @@ pub fn analyze_hrg(source: &str) -> Result<Array, String> {
 }
 
 #[wasm_bindgen(js_name = analyzeRg)]
-pub fn analyze_rg(
-    source: &str,
-    flags: &str,
-    inline_reachability: &Function,
-) -> Result<Array, String> {
+pub fn analyze_rg(source: &str, flags: &str) -> Result<Array, String> {
     let mut steps = vec![];
 
     macro_rules! step {

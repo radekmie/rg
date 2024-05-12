@@ -1,10 +1,9 @@
 use crate::ast::{Edge, Error, Game, Label, Node};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::Arc,
-};
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 type Id = Arc<str>;
+
 /**
  * Return a subautomaton of [edges] that:
  * 1. contains [start] and [target]
@@ -23,9 +22,8 @@ impl Game<Id> {
     pub fn inline_reachability(&mut self) -> Result<(), Error<Id>> {
         for edge in self.edges.clone() {
             if let Label::Reachability { lhs, rhs, .. } = &edge.label {
-                let subgraph = self.find_acceptable_paths(lhs, rhs);
-                if let Some(subgraph) = subgraph {
-                    dbg!(edge.clone());
+                if let Some(subgraph) = self.find_acceptable_paths(lhs, rhs) {
+                    dbg!(&edge);
                     self.substitute_reachability(edge.clone(), subgraph);
                 }
             }
@@ -43,13 +41,15 @@ impl Game<Id> {
         let mut result = BTreeSet::new();
         while let Some((lhs, mut previous)) = queue.pop() {
             previous.insert(lhs);
-            let maybe_edges = next_edges.get(&lhs);
-            if let Some(edges) = maybe_edges {
+            if let Some(edges) = next_edges.get(&lhs) {
                 if !are_edges_exclusive(edges) {
                     return None; // multiple paths found
                 }
                 for edge in edges {
-                    if edge.has_bindings() || previous.contains(&edge.rhs) || edge.label.is_assignment() {
+                    if edge.has_bindings()
+                        || previous.contains(&edge.rhs)
+                        || edge.label.is_assignment()
+                    {
                         return None;
                     }
                     result.insert((*edge).clone());
@@ -71,8 +71,7 @@ impl Game<Id> {
         } = edge.label.clone()
         {
             self.remove_edge(&edge);
-            let new_start =
-                gen_fresh_node(format!("rechability_{}_{}", start, target), self.nodes());
+            let new_start = gen_fresh_node(format!("rechability_{start}_{target}"), self.nodes());
 
             let mut mapping = BTreeMap::new();
             mapping.insert(start, new_start.clone());
@@ -107,20 +106,21 @@ impl Game<Id> {
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn gen_fresh_node(node: String, nodes: BTreeSet<&Node<Id>>) -> Node<Id> {
     for x in 0..nodes.len() {
-        let fresh_node: Node<Id> = Node::new(Arc::from(format!("__gen_{x}_{node}")));
+        let fresh_node: Node<Id> = Node::new(Id::from(format!("__gen_{node}_{x}")));
         if !nodes.contains(&fresh_node) {
             return fresh_node;
         }
     }
     let name = format!("__gen_{node}_{}", nodes.len());
-    Node::new(Arc::from(name))
+    Node::new(Id::from(name))
 }
 
 fn are_edges_exclusive(edges: &BTreeSet<&Edge<Id>>) -> bool {
-    for edge in edges.iter() {
-        for other in edges.iter() {
+    for edge in edges {
+        for other in edges {
             if edge != other && !edge.is_exclusive_with(other) {
                 return false;
             }
@@ -131,6 +131,7 @@ fn are_edges_exclusive(edges: &BTreeSet<&Edge<Id>>) -> bool {
 
 #[cfg(test)]
 mod test {
+    use crate::ast::transforms::inline_reachability::Id;
     use crate::ast::Game;
     use crate::parsing::parser::parse_with_errors;
     use map_id::MapId;
@@ -139,7 +140,7 @@ mod test {
     fn parse(input: &str) -> Game<Arc<str>> {
         let (game, errors) = parse_with_errors(input);
         assert!(errors.is_empty(), "Parse errors: {errors:?}");
-        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
+        game.map_id(&mut |id| Id::from(id.identifier.as_str()))
     }
 
     macro_rules! test {
