@@ -958,8 +958,11 @@ function copyPath(
       label: edge.label,
     });
 
-    // Skip tags.
-    if (distance < 5) {
+    // Skip switch-generated edges:
+    //   - coordGenerator == coord
+    //   - $ coordGenerator
+    //   - $ index_N
+    if (distance <= 3) {
       copiedEdge.lhs.parts.splice(1, Infinity);
       copiedEdge.rhs.parts.splice(1, Infinity);
       copiedEdge.label = rg.Skip({});
