@@ -26,6 +26,7 @@ export type Settings = {
     reuseFunctions: boolean;
     skipSelfAssignments: boolean;
     skipSelfComparisons: boolean;
+    skipUnusedTags: boolean;
   };
 };
 
@@ -46,4 +47,5 @@ export const noFlagsEnabled: Settings['flags'] = {
   reuseFunctions: false,
   skipSelfAssignments: false,
   skipSelfComparisons: false,
+  skipUnusedTags: false,
 };
