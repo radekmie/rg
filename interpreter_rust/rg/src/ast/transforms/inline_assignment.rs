@@ -23,7 +23,11 @@ impl Game<Id> {
         let mut modified_edges = BTreeSet::new();
         for edge in &self.edges {
             if let Some((identifier, rhs)) = edge.label.as_var_assignment() {
-                if edge.label.is_player_assignment() || modified_edges.contains(edge) {
+                if edge.label.is_player_assignment()
+                    || modified_edges.contains(edge)
+                    || (edge.label.is_goals_assignment()
+                        && self.are_connected(&edge.rhs, &Node::new(Id::from("end"))))
+                {
                     continue;
                 }
 
@@ -267,6 +271,24 @@ mod test {
         dont_inline_map_assignment,
         "begin, t1: x[y] = z;
         t1, end: x[z] == 2;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        skip_goals_assignment,
+        "begin, t1: ? a -> b;
+        a, b: goals[x] = y;
+        t1, end: ;",
+        "begin, t1: ? a -> b;
+        a, b: ;
+        t1, end: ;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        dont_inline_goals_assignment,
+        "begin, t1: goals[x] = y;
+        t1, end: x == y;"
     );
 
     // TODO: Add tests with forks

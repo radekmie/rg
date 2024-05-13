@@ -305,6 +305,10 @@ impl<Id: PartialEq> Label<Id> {
 }
 
 impl Label<Arc<str>> {
+    pub fn is_goals_assignment(&self) -> bool {
+        matches!(self, Self::Assignment { lhs, .. } if lhs.access_identifier().map_or(false, |x| &**x == "goals"))
+    }
+
     pub fn is_player_assignment(&self) -> bool {
         matches!(self, Self::Assignment { lhs, .. } if lhs.uncast().is_player_reference())
     }
