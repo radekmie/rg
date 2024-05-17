@@ -13,5 +13,12 @@ rand = "0.8.5"
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 utils = { path = "../utils" }
 
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+harness = false
+name = "transforms"
+
 [lints]
 workspace = true
