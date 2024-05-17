@@ -6,7 +6,7 @@ use crate::ast::{Edge, Game, Label, Node};
 pub use reachable_nodes::ReachableNodes;
 pub use reaching_definitions::ReachingDefinitions;
 pub use reaching_paths::ReachingPaths;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -43,6 +43,7 @@ struct Flow<'a> {
     nodes: BTreeSet<&'a Node<Id>>,
     prev_edges: BTreeMap<&'a Node<Id>, BTreeSet<&'a Edge<Id>>>,
     reachability_edges: Option<BTreeMap<&'a Node<Id>, BTreeSet<Edge<Id>>>>,
+    infl: BTreeMap<&'a Node<Id>, BTreeSet<&'a Node<Id>>>,
 }
 
 impl<'a> Flow<'a> {
@@ -51,28 +52,38 @@ impl<'a> Flow<'a> {
     }
 
     fn new(game: &'a Game<Arc<str>>, with_reachability: bool) -> Self {
-        let reachability_edges = with_reachability.then(|| {
-            let mut reachability_edges = BTreeMap::new();
+        let mut infl: BTreeMap<_, _> = game
+            .next_edges()
+            .into_iter()
+            .map(|(k, v)| (k, v.iter().map(|e| &e.rhs).collect()))
+            .collect();
+
+        let mut reachability_edges = None;
+        if with_reachability {
+            let mut edges = BTreeMap::new();
             for edge in &game.edges {
                 if let Label::Reachability { lhs, .. } = &edge.label {
                     // Create a `fake` edge simulating start of reachability check
                     // node0, node1: ? start -> target;
                     // node0 is predecessor of start
                     let skip_edge = Edge::new_skip(edge.lhs.clone(), lhs.clone());
-                    reachability_edges
+                    edges
                         .entry(lhs)
                         .or_insert_with(BTreeSet::new)
                         .insert(skip_edge);
+                    infl.entry(&edge.lhs)
+                        .or_insert_with(BTreeSet::new)
+                        .insert(lhs);
                 }
             }
-
-            reachability_edges
-        });
+            reachability_edges = Some(edges);
+        }
 
         Self {
             nodes: game.nodes(),
             prev_edges: game.prev_edges(),
             reachability_edges,
+            infl,
         }
     }
 
@@ -88,12 +99,17 @@ impl<'a> Flow<'a> {
     fn nodes(&self) -> &BTreeSet<&Node<Id>> {
         &self.nodes
     }
+
+    fn next_nodes(&self, node: &Node<Id>) -> Option<&BTreeSet<&Node<Id>>> {
+        self.infl.get(node)
+    }
 }
 
 struct Worker<'a, A: Analysis + ?Sized> {
     flow: &'a Flow<'a>,
     result: BTreeMap<Node<Id>, A::Domain>,
     _parameters: PhantomData<A>,
+    worklist: VecDeque<&'a Node<Id>>,
 }
 
 impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
@@ -102,25 +118,24 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
     }
 
     fn new(game: &'a Game<Arc<str>>, flow: &'a Flow<'a>) -> Self {
+        let worklist = flow.nodes().iter().cloned().collect();
         Worker {
             flow,
             result: BTreeMap::from([(flow.entry(), I::extreme(game))]),
             _parameters: PhantomData,
+            worklist,
         }
     }
 
     fn run(&mut self) {
-        while self.step() {}
-    }
-
-    fn step(&mut self) -> bool {
-        let mut changed = false;
-        for node in self.flow.nodes() {
-            if self.transfer(node) {
-                changed = true;
+        while let Some(node) = self.worklist.pop_front() {
+            let changed = self.transfer(node);
+            if changed {
+                if let Some(next_nodes) = self.flow.next_nodes(node) {
+                    self.worklist.extend(next_nodes.iter());
+                }
             }
         }
-        changed
     }
 
     fn summarize_predecessors(&self, node: &Node<Id>, old_input: &I::Domain) -> I::Domain {
