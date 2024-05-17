@@ -302,6 +302,10 @@ impl<Id: PartialEq> Label<Id> {
     pub fn is_self_comparison(&self) -> bool {
         matches!(self, Self::Comparison { lhs, rhs, negated } if !negated && lhs.is_equal_reference(rhs))
     }
+
+    pub fn is_tag_and(&self, fn_: impl FnOnce(&Id) -> bool) -> bool {
+        matches!(self, Self::Tag { symbol } if fn_(symbol))
+    }
 }
 
 impl Label<Arc<str>> {
@@ -328,6 +332,12 @@ impl<Id> Node<Id> {
             span: Span::none(),
             parts: vec![NodePart::new(identifier)],
         }
+    }
+
+    /// Returns the only edge ending at `node` or `None` if there are multiple or no such edges.
+    pub fn binding(&self) -> Option<Binding<Id>> {
+        let mut iterator = self.bindings();
+        iterator.next().filter(|_| iterator.next().is_none())
     }
 
     pub fn bindings(&self) -> impl Iterator<Item = Binding<Id>> {
@@ -561,6 +571,10 @@ impl<Id> Expression<Id> {
 
     pub fn is_reference(&self) -> bool {
         matches!(self, Self::Reference { .. })
+    }
+
+    pub fn is_reference_and(&self, fn_: impl FnOnce(&Id) -> bool) -> bool {
+        matches!(self, Self::Reference { identifier } if fn_(identifier))
     }
 
     pub fn uncast(&self) -> &Self {

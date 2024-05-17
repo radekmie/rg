@@ -24,6 +24,7 @@ export type Settings = {
     pruneSingletonTypes: boolean;
     pruneUnreachableNodes: boolean;
     reuseFunctions: boolean;
+    skipGeneratorComparisons: boolean;
     skipSelfAssignments: boolean;
     skipSelfComparisons: boolean;
     skipUnusedTags: boolean;
@@ -45,6 +46,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   pruneSingletonTypes: false,
   pruneUnreachableNodes: false,
   reuseFunctions: false,
+  skipGeneratorComparisons: false,
   skipSelfAssignments: false,
   skipSelfComparisons: false,
   skipUnusedTags: false,

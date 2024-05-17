@@ -87,6 +87,8 @@ struct Flags {
     prune_singleton_types: bool,
     #[serde(rename = "pruneUnreachableNodes")]
     prune_unreachable_nodes: bool,
+    #[serde(rename = "skipGeneratorComparisons")]
+    skip_generator_comparisons: bool,
     #[serde(rename = "skipSelfAssignments")]
     skip_self_assignments: bool,
     #[serde(rename = "skipSelfComparisons")]
@@ -197,6 +199,7 @@ pub fn analyze_rg(source: &str, flags: &str) -> Result<Array, String> {
         pass!(rust normalize_types);
         pass!(rust skip_self_assignments);
         pass!(rust skip_self_comparisons);
+        pass!(rust skip_generator_comparisons);
         pass!(rust skip_unused_tags);
         pass!(rust compact_skip_edges);
         pass!(rust add_explicit_casts);
