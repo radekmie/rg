@@ -40,6 +40,7 @@ impl Game<Id> {
 }
 
 struct Flow<'a> {
+    next_nodes: BTreeMap<&'a Node<Id>, BTreeSet<&'a Node<Id>>>,
     nodes: BTreeSet<&'a Node<Id>>,
     prev_edges: BTreeMap<&'a Node<Id>, BTreeSet<&'a Edge<Id>>>,
     reachability_edges: Option<BTreeMap<&'a Node<Id>, BTreeSet<Edge<Id>>>>,
@@ -51,18 +52,22 @@ impl<'a> Flow<'a> {
     }
 
     fn new(game: &'a Game<Arc<str>>, with_reachability: bool) -> Self {
+        let mut next_nodes: BTreeMap<_, BTreeSet<_>> = game
+            .next_edges()
+            .into_iter()
+            .map(|(k, v)| (k, v.iter().map(|e| &e.rhs).collect()))
+            .collect();
+
         let reachability_edges = with_reachability.then(|| {
-            let mut reachability_edges = BTreeMap::new();
+            let mut reachability_edges: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
             for edge in &game.edges {
                 if let Label::Reachability { lhs, .. } = &edge.label {
                     // Create a `fake` edge simulating start of reachability check
                     // node0, node1: ? start -> target;
                     // node0 is predecessor of start
                     let skip_edge = Edge::new_skip(edge.lhs.clone(), lhs.clone());
-                    reachability_edges
-                        .entry(lhs)
-                        .or_insert_with(BTreeSet::new)
-                        .insert(skip_edge);
+                    reachability_edges.entry(lhs).or_default().insert(skip_edge);
+                    next_nodes.entry(&edge.lhs).or_default().insert(lhs);
                 }
             }
 
@@ -70,6 +75,7 @@ impl<'a> Flow<'a> {
         });
 
         Self {
+            next_nodes,
             nodes: game.nodes(),
             prev_edges: game.prev_edges(),
             reachability_edges,
@@ -84,15 +90,12 @@ impl<'a> Flow<'a> {
         }
         result
     }
-
-    fn nodes(&self) -> &BTreeSet<&Node<Id>> {
-        &self.nodes
-    }
 }
 
 struct Worker<'a, A: Analysis + ?Sized> {
     flow: &'a Flow<'a>,
     result: BTreeMap<Node<Id>, A::Domain>,
+    worklist: BTreeSet<&'a Node<Id>>,
     _parameters: PhantomData<A>,
 }
 
@@ -105,22 +108,19 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
         Worker {
             flow,
             result: BTreeMap::from([(flow.entry(), I::extreme(game))]),
+            worklist: flow.nodes.clone(),
             _parameters: PhantomData,
         }
     }
 
     fn run(&mut self) {
-        while self.step() {}
-    }
-
-    fn step(&mut self) -> bool {
-        let mut changed = false;
-        for node in self.flow.nodes() {
+        while let Some(node) = self.worklist.pop_first() {
             if self.transfer(node) {
-                changed = true;
+                if let Some(next_nodes) = self.flow.next_nodes.get(node) {
+                    self.worklist.extend(next_nodes.iter());
+                }
             }
         }
-        changed
     }
 
     fn summarize_predecessors(&self, node: &Node<Id>, old_input: &I::Domain) -> I::Domain {
