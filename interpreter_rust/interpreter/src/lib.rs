@@ -199,8 +199,8 @@ pub fn analyze_rg(source: &str, flags: &str) -> Result<Array, String> {
         pass!(rust normalize_types);
         pass!(rust skip_self_assignments);
         pass!(rust skip_self_comparisons);
-        pass!(rust skip_generator_comparisons);
         pass!(rust skip_unused_tags);
+        pass!(rust skip_generator_comparisons);
         pass!(rust compact_skip_edges);
         pass!(rust add_explicit_casts);
         pass!(rust expand_generator_nodes);

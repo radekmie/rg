@@ -334,7 +334,7 @@ impl<Id> Node<Id> {
         }
     }
 
-    /// Returns the only edge ending at `node` or `None` if there are multiple or no such edges.
+    /// Returns the only binding at given node, or `None` if there are multiple or no bindings.
     pub fn binding(&self) -> Option<Binding<Id>> {
         let mut iterator = self.bindings();
         iterator.next().filter(|_| iterator.next().is_none())
