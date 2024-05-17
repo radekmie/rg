@@ -82,10 +82,6 @@ impl<'a> Flow<'a> {
         }
     }
 
-    fn next_nodes(&self, node: &Node<Id>) -> Option<&BTreeSet<&Node<Id>>> {
-        self.next_nodes.get(node)
-    }
-
     fn predecessors(&self, node: &Node<Id>) -> BTreeSet<&Edge<Id>> {
         let mut result = BTreeSet::new();
         result.extend(self.prev_edges.get(node).into_iter().flatten());
@@ -120,7 +116,7 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
     fn run(&mut self) {
         while let Some(node) = self.worklist.pop_first() {
             if self.transfer(node) {
-                if let Some(next_nodes) = self.flow.next_nodes(node) {
+                if let Some(next_nodes) = self.flow.next_nodes.get(node) {
                     self.worklist.extend(next_nodes.iter());
                 }
             }
