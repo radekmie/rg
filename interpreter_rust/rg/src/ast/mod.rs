@@ -460,7 +460,7 @@ impl<Id: Clone + Ord> NodePart<Id> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Error<Id> {
     pub game: Game<Id>,
     pub reason: ErrorReason<Id>,
@@ -473,7 +473,7 @@ impl<Id: Display> From<Error<Id>> for String {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum ErrorReason<Id> {
     ArrowTypeExpected {
         got: Arc<Type<Id>>,
@@ -507,6 +507,12 @@ pub enum ErrorReason<Id> {
         expected: Arc<Type<Id>>,
         identifier: Id,
         resolved: Arc<Type<Id>>,
+    },
+    UnexpectedConstant {
+        identifier: Id,
+    },
+    UnexpectedVariable {
+        identifier: Id,
     },
     Unreachable {
         lhs: Node<Id>,
@@ -888,21 +894,6 @@ impl<Id: Clone + PartialEq> Game<Id> {
             .map(|(_, type_)| type_)
             .or_else(|| self.resolve_constant(identifier).map(|x| &x.type_))
             .or_else(|| self.resolve_variable(identifier).map(|x| &x.type_))
-    }
-
-    pub fn is_assignable_identifier(
-        &self,
-        lhs: &Type<Id>,
-        rhs: &Id,
-        is_strict: bool,
-    ) -> Result<bool, Error<Id>> {
-        if let Some(rhs) = self.infer_or_none(rhs, None) {
-            self.is_assignable_type(lhs, rhs, is_strict)
-        } else if let Type::Set { identifiers, .. } = lhs.resolve(self)? {
-            Ok(identifiers.contains(rhs))
-        } else {
-            Ok(false)
-        }
     }
 
     pub fn is_assignable_type(
