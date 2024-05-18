@@ -46,7 +46,7 @@ program
   )
   .option(
     '--skipGeneratorComparisons',
-    'skips all comparisons to a generator (e.g. `x, y(t: T): t == null',
+    'skips all comparisons to a generator (e.g., `x, y(t: T): t == null`)',
   )
   .option(
     '--skipSelfAssignments',

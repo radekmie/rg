@@ -7,8 +7,8 @@
 ### Dependencies
 
 - [Node.js](https://nodejs.org/en/) 18.15.0
-- [Rust](https://www.rust-lang.org) 1.68.0
-- [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) 0.10.3
+- [Rust](https://www.rust-lang.org) 1.75.0
+- [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) 0.11.0
 
 #### Manual installation
 
@@ -25,7 +25,7 @@ nvm install 18.15.0
 # Rust via rustup
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.bashrc
-rustup install 1.68.0
+rustup install 1.75.0
 
 # wasm-pack
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -79,27 +79,35 @@ npm test
 | :---------------------------------------------- | :----------------------: | :----------------------: |
 | Parser of GDL (Game Description Language)       | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Parser of RG (Regular Games)                    | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Parser of HRG (High-level Regular Games)        |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Parser of HRG (High-level Regular Games)        | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Parser of RBG (Regular Board Games)             |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Interpreter of the IST (Interpreter State Tree) | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Translation of RG into IST                      | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Translation of GDL into RG                      | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Translation of HRG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Translation of RBG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
-| Transformation `addBuiltins`                    | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `addExplicitCasts`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `calculateSimpleApply`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `calculateTagIndexes`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `calculateUniques`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `compactSkipEdges`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `expandGeneratorNodes`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `joinForkSuffixes`               |    :heavy_check_mark:    | :heavy_multiplication_x: |
+| Transformation `inlineAssignment`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `inlineReachability`             | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `joinForkSuffixes`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `mangleSymbols`                  | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `normalizeTypes`                 | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `pruneSingletonTypes`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `pruneUnreachableNodes`          | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `reuseFunctions`                 | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `skipGeneratorComparisons`       | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `skipSelfAssignments`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `skipSelfComparisons`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `skipUnusedTags`                 | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Validator `check_maps`                          | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Validator `check_multiple_edges`                | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Validator `check_reachabilities`                | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Validator `check_types`                         | :heavy_multiplication_x: |    :heavy_check_mark:    |
 
 ## `interpreter_rust`
 
@@ -159,33 +167,36 @@ npm test
 Usage: node lib/cli [options] [command]
 
 Options:
-  --addExplicitCasts       add type casts to all expressions
-  --calculateSimpleApply   calculate missing @simpleApply pragmas automatically
-  --calculateTagIndexes    calculate missing @tagIndex and @tagMaxIndex pragmas automatically
-  --calculateUniques       calculate missing @unique pragmas automatically
-  --compactSkipEdges       optimize automaton by compacting skip edges
-  --expandGeneratorNodes   expand generator nodes
-  --inlineReachability     inline reachability when possible
-  --joinForkSuffixes       join paths with identical labels leading to the same node
-  --mangleSymbols          mangle all user-defined symbols
-  --normalizeTypes         normalize all types so Arrow types appear only in type definitions and are at most one level deep
-  --pruneSingletonTypes    prune singleton types (i.e., Set types with one element)
-  --pruneUnreachableNodes  prune unused nodes
-  --reuseFunctions         reuse subautomatons when translating function calls (.hrg only)
-  --skipSelfAssignments    replaces all self assignments (e.g., `x = x`) with skip edges
-  --skipSelfComparisons    replaces all self comparisons (e.g., `x == x`) with skip edges
-  -h, --help               display help for command
+  --addExplicitCasts          add type casts to all expressions
+  --calculateSimpleApply      calculate missing @simpleApply pragmas automatically
+  --calculateTagIndexes       calculate missing @tagIndex and @tagMaxIndex pragmas automatically
+  --calculateUniques          calculate missing @unique pragmas automatically
+  --compactSkipEdges          optimize automaton by compacting skip edges
+  --expandGeneratorNodes      expand generator nodes
+  --inlineAssignment          inline assignment when possible
+  --inlineReachability        inline reachability when possible
+  --joinForkSuffixes          join paths with identical labels leading to the same node
+  --mangleSymbols             mangle all user-defined symbols
+  --normalizeTypes            normalize all types so Arrow types appear only in type definitions and are at most one level deep
+  --pruneSingletonTypes       prune singleton types (i.e., Set types with one element)
+  --pruneUnreachableNodes     prune unreachable nodes
+  --reuseFunctions            reuse subautomatons when translating function calls (.hrg only)
+  --skipGeneratorComparisons  skips all comparisons to a generator (e.g., `x, y(t: T): t == null`)
+  --skipSelfAssignments       replaces all self assignments (e.g., `x = x`) with skip edges
+  --skipSelfComparisons       replaces all self comparisons (e.g., `x == x`) with skip edges
+  --skipUnusedTags            replaces all tags in reachability with skip edges
+  -h, --help                  display help for command
 
 Commands:
-  help [command]          display help for command
-  hrg-ast <file>          print .hrg Abstract Syntax Tree
-  hrg-cst <file>          print .hrg Concrete Syntax Tree
-  hrg-source <file>       print .hrg source
-  rbg-ast <file>          print .rbg Abstract Syntax Tree
-  rbg-cst <file>          print .rbg Concrete Syntax Tree
-  rbg-source <file>       print .rbg source
-  rg-ast <file>           print .rg  Abstract Syntax Tree
-  rg-perf <file> <depth>  run   .rg  tree depth check
-  rg-run <file> <plays>   run   .rg  simulations
-  rg-source <file>        print .rg  source
+  help [command]              display help for command
+  hrg-ast <file>              print .hrg Abstract Syntax Tree
+  hrg-cst <file>              print .hrg Concrete Syntax Tree
+  hrg-source <file>           print .hrg source
+  rbg-ast <file>              print .rbg Abstract Syntax Tree
+  rbg-cst <file>              print .rbg Concrete Syntax Tree
+  rbg-source <file>           print .rbg source
+  rg-ast <file>               print .rg  Abstract Syntax Tree
+  rg-perf <file> <depth>      run   .rg  tree depth check
+  rg-run <file> <plays>       run   .rg  simulations
+  rg-source <file>            print .rg  source
 ```
