@@ -1,9 +1,10 @@
 use crate::ast::analyses::{Analysis, ReachingDefinitions};
-use crate::ast::{Edge, Error, Game, Label, Node};
+use crate::ast::{Edge, Error, Expression, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 type Id = Arc<str>;
+type ToInline = (Id, Arc<Expression<Id>>, Edge<Id>, BTreeSet<Edge<Id>>);
 
 impl Game<Id> {
     /// For each assignment to a variable `x = expr` :
@@ -17,16 +18,37 @@ impl Game<Id> {
     ///   - the only reaching definition of `x` is from that assignment
     ///   - all variables in `expr` have the same values as in the assignment
     pub fn inline_assignment(&mut self) -> Result<(), Error<Id>> {
+        let to_inline = self.collect_to_inline();
+        for (to_replace, new_expr, to_skip, usages) in to_inline {
+            for edge in &mut self.edges {
+                if *edge == to_skip {
+                    edge.skip();
+                } else if usages.contains(edge) {
+                    edge.label = edge
+                        .label
+                        .substitute_variable_readonly(&to_replace, &new_expr);
+                }
+            }
+        }
+
+        self.skip_unused_variables()?;
+
+        Ok(())
+    }
+
+    fn collect_to_inline(&self) -> BTreeSet<ToInline> {
         let reaching_definitions = self.analyse::<ReachingDefinitions>(true);
         let next_edges = self.next_edges();
+        let is_reachable = self.is_reachable();
         let mut to_inline = BTreeSet::new();
         let mut modified_edges = BTreeSet::new();
+
         for edge in &self.edges {
             if let Some((identifier, rhs)) = edge.label.as_var_assignment() {
                 if edge.label.is_player_assignment()
                     || modified_edges.contains(edge)
                     || (edge.label.is_goals_assignment()
-                        && self.are_connected(&edge.rhs, &Node::new(Id::from("end"))))
+                        && is_reachable(&edge.rhs, &Node::new(Id::from("end"))))
                 {
                     continue;
                 }
@@ -63,18 +85,31 @@ impl Game<Id> {
                 ));
             }
         }
-        for (to_replace, new_expr, to_skip, usages) in to_inline {
-            for edge in &mut self.edges {
-                if *edge == to_skip {
+        to_inline
+    }
+
+    fn skip_unused_variables(&mut self) -> Result<(), Error<Id>> {
+        let mut unused_variables: BTreeSet<_> = self
+            .variables
+            .iter()
+            .map(|x| x.identifier.clone())
+            .filter(|id| id.as_ref() != "player" && id.as_ref() != "goals")
+            .collect();
+        for edge in &self.edges {
+            let mut used_variables = edge.label.used_variables();
+            if let Some((identifier, _)) = edge.label.as_var_assignment() {
+                used_variables.retain(|var| *var != identifier);
+            }
+            unused_variables.retain(|var| !used_variables.contains(var));
+        }
+
+        for edge in &mut self.edges {
+            if let Some((identifier, _)) = edge.label.as_var_assignment() {
+                if unused_variables.contains(identifier) {
                     edge.skip();
-                } else if usages.contains(edge) {
-                    edge.label = edge
-                        .label
-                        .substitute_variable_readonly(&to_replace, &new_expr);
                 }
             }
         }
-
         Ok(())
     }
 }

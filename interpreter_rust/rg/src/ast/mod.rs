@@ -1055,6 +1055,15 @@ impl<Id: Ord> Game<Id> {
             })
     }
 
+    pub fn next_nodes(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Node<Id>>> {
+        self.edges
+            .iter()
+            .fold(BTreeMap::new(), |mut next_nodes, edge| {
+                next_nodes.entry(&edge.lhs).or_default().insert(&edge.rhs);
+                next_nodes
+            })
+    }
+
     pub fn prev_edges(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>> {
         self.edges
             .iter()
@@ -1104,6 +1113,31 @@ impl<Id: PartialEq> Game<Id> {
 
     pub fn remove_edge(&mut self, edge: &Edge<Id>) {
         self.edges.retain(|x| x != edge);
+    }
+}
+
+impl<Id: PartialEq + Ord> Game<Id> {
+    pub fn is_reachable(&self) -> impl Fn(&Node<Id>, &Node<Id>) -> bool + '_ {
+        let next_nodes = self.next_nodes();
+        move |a: &Node<_>, b: &Node<_>| -> bool {
+            let mut seen = BTreeSet::new();
+            let mut queue = vec![a];
+            while let Some(lhs) = queue.pop() {
+                if let Some(rhss) = next_nodes.get(lhs) {
+                    for rhs in rhss {
+                        if !seen.contains(rhs) {
+                            if rhs == &b {
+                                return true;
+                            }
+
+                            seen.insert(rhs);
+                            queue.push(rhs);
+                        }
+                    }
+                }
+            }
+            false
+        }
     }
 }
 
