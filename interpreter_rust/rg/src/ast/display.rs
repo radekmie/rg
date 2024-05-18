@@ -152,12 +152,6 @@ impl<Id: Display> Display for ErrorReason<Id> {
                 writeln!(f, "  Expected: {expected}")?;
                 write!(f, "  Resolved: {resolved}")
             }
-            Self::UnexpectedConstant { identifier } => {
-                write!(f, "Unexpected constant {identifier}.")
-            }
-            Self::UnexpectedVariable { identifier } => {
-                write!(f, "Unexpected variable {identifier}.")
-            }
             Self::Unreachable { lhs, rhs } => write!(f, "{rhs} is not reachable from {lhs}."),
             Self::UnresolvedConstant { identifier } => {
                 write!(f, "Unresolved constant {identifier}.")

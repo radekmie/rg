@@ -1,7 +1,7 @@
 use crate::ast::{Constant, Edge, Error, ErrorReason, Game, Label, Type, Value, Variable};
-use std::sync::Arc;
+use std::{mem::take, sync::Arc};
 
-impl<Id: Clone + PartialEq> Constant<Id> {
+impl<Id: Clone + PartialEq + std::fmt::Debug> Constant<Id> {
     fn check_type(&self, game: &Game<Id>) -> Result<(), Error<Id>> {
         self.value.check_type(game, &self.type_)
     }
@@ -39,44 +39,34 @@ impl<Id: Clone + PartialEq> Label<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq> Game<Id> {
+impl<Id: Clone + PartialEq + std::fmt::Debug> Game<Id> {
     pub fn check_types(&self) -> Result<(), Error<Id>> {
-        for constant in &self.constants {
-            constant.check_type(self)?;
-        }
-
         for edge in &self.edges {
             edge.check_type(self)?;
         }
 
-        for variable in &self.variables {
-            variable.check_type(self)?;
+        let mut game = self.clone();
+        let variables = take(&mut game.variables);
+        for constant in take(&mut game.constants) {
+            constant.check_type(&game)?;
+            game.constants.push(constant);
+        }
+
+        for variable in variables {
+            variable.check_type(&game)?;
+            game.variables.push(variable);
         }
 
         Ok(())
     }
 
-    fn check_is_statically_assignable(
+    fn check_is_assignable_identifier(
         &self,
         lhs: &Arc<Type<Id>>,
         rhs: &Id,
     ) -> Result<(), Error<Id>> {
-        if let Type::Set { identifiers, .. } = lhs.resolve(self)? {
-            if identifiers.contains(rhs) {
-                return Ok(());
-            }
-        }
-
-        if self.resolve_constant(rhs).is_some() {
-            return self.make_error(ErrorReason::UnexpectedConstant {
-                identifier: rhs.clone(),
-            });
-        }
-
-        if self.resolve_variable(rhs).is_some() {
-            return self.make_error(ErrorReason::UnexpectedVariable {
-                identifier: rhs.clone(),
-            });
+        if self.is_assignable_identifier(lhs, rhs)? {
+            return Ok(());
         }
 
         self.make_error(ErrorReason::AssignmentTypeMismatch {
@@ -86,10 +76,10 @@ impl<Id: Clone + PartialEq> Game<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq> Value<Id> {
+impl<Id: Clone + PartialEq + std::fmt::Debug> Value<Id> {
     fn check_type(&self, game: &Game<Id>, type_: &Arc<Type<Id>>) -> Result<(), Error<Id>> {
         match self {
-            Self::Element { identifier } => game.check_is_statically_assignable(type_, identifier),
+            Self::Element { identifier } => game.check_is_assignable_identifier(type_, identifier),
             Self::Map { entries, .. } => {
                 let Type::Arrow {
                     lhs: key_type,
@@ -102,7 +92,7 @@ impl<Id: Clone + PartialEq> Value<Id> {
                 for entry in entries {
                     entry.value.check_type(game, value_type)?;
                     if let Some(identifier) = &entry.identifier {
-                        game.check_is_statically_assignable(key_type, identifier)?;
+                        game.check_is_assignable_identifier(key_type, identifier)?;
                     }
                 }
 
@@ -112,7 +102,7 @@ impl<Id: Clone + PartialEq> Value<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq> Variable<Id> {
+impl<Id: Clone + PartialEq + std::fmt::Debug> Variable<Id> {
     fn check_type(&self, game: &Game<Id>) -> Result<(), Error<Id>> {
         self.default_value.check_type(game, &self.type_)
     }
@@ -120,14 +110,37 @@ impl<Id: Clone + PartialEq> Variable<Id> {
 
 #[cfg(test)]
 mod test {
+    use crate::ast::{Span, Type};
     use crate::test_validator;
+
+    test_validator!(
+        check_types,
+        constant_using_constant,
+        "type T = { 0 }; const x: T = 0; const y: T -> T = { :x };",
+        Ok(())
+    );
+
+    test_validator!(
+        check_types,
+        constant_using_constant_reverse,
+        "type T = { 0 }; const y: T -> T = { :x }; const x: T = 0;",
+        Err(ErrorReason::AssignmentTypeMismatch {
+            lhs: Arc::from(Type::TypeReference {
+                identifier: Arc::from("T")
+            }),
+            rhs: Arc::from(Type::Set {
+                span: Span::none(),
+                identifiers: vec![Arc::from("x")]
+            })
+        })
+    );
 
     test_validator!(
         check_types,
         unresolved_type,
         "var t: T = t;",
         Err(ErrorReason::UnresolvedType {
-            identifier: "T".into()
+            identifier: Arc::from("T")
         })
     );
 
@@ -135,8 +148,14 @@ mod test {
         check_types,
         self_reference_constant,
         "type T = { 0 }; const t: T = t;",
-        Err(ErrorReason::UnexpectedConstant {
-            identifier: "t".into()
+        Err(ErrorReason::AssignmentTypeMismatch {
+            lhs: Arc::from(Type::TypeReference {
+                identifier: Arc::from("T")
+            }),
+            rhs: Arc::from(Type::Set {
+                span: Span::none(),
+                identifiers: vec![Arc::from("t")]
+            })
         })
     );
 
@@ -151,8 +170,14 @@ mod test {
         check_types,
         self_reference_variable,
         "type T = { 0 }; var t: T = t;",
-        Err(ErrorReason::UnexpectedVariable {
-            identifier: "t".into()
+        Err(ErrorReason::AssignmentTypeMismatch {
+            lhs: Arc::from(Type::TypeReference {
+                identifier: Arc::from("T")
+            }),
+            rhs: Arc::from(Type::Set {
+                span: Span::none(),
+                identifiers: vec![Arc::from("t")]
+            })
         })
     );
 

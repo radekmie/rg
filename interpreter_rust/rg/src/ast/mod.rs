@@ -508,12 +508,6 @@ pub enum ErrorReason<Id> {
         identifier: Id,
         resolved: Arc<Type<Id>>,
     },
-    UnexpectedConstant {
-        identifier: Id,
-    },
-    UnexpectedVariable {
-        identifier: Id,
-    },
     Unreachable {
         lhs: Node<Id>,
         rhs: Node<Id>,
@@ -894,6 +888,22 @@ impl<Id: Clone + PartialEq> Game<Id> {
             .map(|(_, type_)| type_)
             .or_else(|| self.resolve_constant(identifier).map(|x| &x.type_))
             .or_else(|| self.resolve_variable(identifier).map(|x| &x.type_))
+    }
+
+    pub fn is_assignable_identifier(
+        &self,
+        lhs: &Arc<Type<Id>>,
+        rhs: &Id,
+    ) -> Result<bool, Error<Id>> {
+        if let Some(rhs) = self.infer_or_none(rhs, None) {
+            // If `rhs` resolves to some type, it has to be assignable.
+            self.is_assignable_type(lhs, rhs, false)
+        } else if let Type::Set { identifiers, .. } = lhs.resolve(self)? {
+            // If the `lhs` is a `Set`, `rhs` has to be its element.
+            Ok(identifiers.contains(rhs))
+        } else {
+            Ok(false)
+        }
     }
 
     pub fn is_assignable_type(
