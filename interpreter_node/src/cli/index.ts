@@ -45,6 +45,10 @@ program
     'reuse subautomatons when translating function calls (.hrg only)',
   )
   .option(
+    '--skipGeneratorComparisons',
+    'skips all comparisons to a generator (e.g. `x, y(t: T): t == null',
+  )
+  .option(
     '--skipSelfAssignments',
     'replaces all self assignments (e.g., `x = x`) with skip edges',
   )
@@ -97,6 +101,7 @@ function addCommand(
           pruneSingletonTypes: !!options.pruneSingletonTypes,
           pruneUnreachableNodes: !!options.pruneUnreachableNodes,
           reuseFunctions: !!options.reuseFunctions,
+          skipGeneratorComparisons: !!options.skipGeneratorComparisons,
           skipSelfAssignments: !!options.skipSelfAssignments,
           skipSelfComparisons: !!options.skipSelfComparisons,
           skipUnusedTags: !!options.skipUnusedTags,
