@@ -45,6 +45,7 @@ impl<Id: Clone + PartialEq + std::fmt::Debug> Game<Id> {
             edge.check_type(self)?;
         }
 
+        // Constants can reference only previously defined constants.
         let mut game = self.clone();
         let variables = take(&mut game.variables);
         for constant in take(&mut game.constants) {
@@ -52,9 +53,9 @@ impl<Id: Clone + PartialEq + std::fmt::Debug> Game<Id> {
             game.constants.push(constant);
         }
 
+        // Cariables can reference only constants.
         for variable in variables {
             variable.check_type(&game)?;
-            game.variables.push(variable);
         }
 
         Ok(())
@@ -115,6 +116,15 @@ mod test {
 
     test_validator!(
         check_types,
+        unresolved_type,
+        "var t: T = t;",
+        Err(ErrorReason::UnresolvedType {
+            identifier: Arc::from("T")
+        })
+    );
+
+    test_validator!(
+        check_types,
         constant_using_constant,
         "type T = { 0 }; const x: T = 0; const y: T -> T = { :x };",
         Ok(())
@@ -137,10 +147,60 @@ mod test {
 
     test_validator!(
         check_types,
-        unresolved_type,
-        "var t: T = t;",
-        Err(ErrorReason::UnresolvedType {
-            identifier: Arc::from("T")
+        constant_using_variable,
+        "type T = { 0 }; var x: T = 0; const y: T -> T = { :x };",
+        Err(ErrorReason::AssignmentTypeMismatch {
+            lhs: Arc::from(Type::TypeReference {
+                identifier: Arc::from("T")
+            }),
+            rhs: Arc::from(Type::Set {
+                span: Span::none(),
+                identifiers: vec![Arc::from("x")]
+            })
+        })
+    );
+
+    test_validator!(
+        check_types,
+        variable_using_constant,
+        "type T = { 0 }; const x: T = 0; var y: T -> T = { :x };",
+        Ok(())
+    );
+
+    test_validator!(
+        check_types,
+        variable_using_constant_reverse,
+        "type T = { 0 }; var y: T -> T = { :x }; const x: T = 0;",
+        Ok(())
+    );
+
+    test_validator!(
+        check_types,
+        variable_using_variable,
+        "type T = { 0 }; var x: T = 0; var y: T -> T = { :x };",
+        Err(ErrorReason::AssignmentTypeMismatch {
+            lhs: Arc::from(Type::TypeReference {
+                identifier: Arc::from("T")
+            }),
+            rhs: Arc::from(Type::Set {
+                span: Span::none(),
+                identifiers: vec![Arc::from("x")]
+            })
+        })
+    );
+
+    test_validator!(
+        check_types,
+        variable_using_variable_reverse,
+        "type T = { 0 }; var y: T -> T = { :x }; var x: T = 0;",
+        Err(ErrorReason::AssignmentTypeMismatch {
+            lhs: Arc::from(Type::TypeReference {
+                identifier: Arc::from("T")
+            }),
+            rhs: Arc::from(Type::Set {
+                span: Span::none(),
+                identifiers: vec![Arc::from("x")]
+            })
         })
     );
 
