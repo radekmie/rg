@@ -14,7 +14,7 @@ fn load(path: &str) -> Game<Arc<str>> {
 
 fn scenario(criterion: &mut Criterion, path: &str) {
     let game = load(path);
-    let mut group = criterion.benchmark_group(path);
+    let mut group = criterion.benchmark_group(format!("transforms/{path}"));
 
     macro_rules! bench {
         ($fn:ident) => {
@@ -30,9 +30,10 @@ fn scenario(criterion: &mut Criterion, path: &str) {
     bench!(prune_unreachable_nodes);
 }
 
-fn prune_unreachable_nodes(criterion: &mut Criterion) {
+fn transforms(criterion: &mut Criterion) {
+    scenario(criterion, "breakthrough.rg");
     scenario(criterion, "ticTacToe.rg");
 }
 
-criterion_group!(benches, prune_unreachable_nodes);
+criterion_group!(benches, transforms);
 criterion_main!(benches);

@@ -1,4 +1,4 @@
-mod ist;
+pub mod ist;
 
 use hrg::ast::Game as HrgGame;
 use hrg::parsing::parser::parse_with_errors as unsafe_parse_hrg;
@@ -60,7 +60,7 @@ pub fn safe_serialize_rg_ast(game: &RgGame<Arc<str>>) -> Result<String, String> 
 }
 
 #[derive(Deserialize)]
-struct Flags {
+pub struct Flags {
     #[serde(rename = "addExplicitCasts")]
     add_explicit_casts: bool,
     #[serde(rename = "calculateSimpleApply")]
@@ -97,6 +97,52 @@ struct Flags {
     skip_unused_tags: bool,
 }
 
+impl Flags {
+    pub fn all() -> Self {
+        Self {
+            add_explicit_casts: true,
+            calculate_simple_apply: true,
+            calculate_tag_indexes: true,
+            calculate_uniques: true,
+            compact_skip_edges: true,
+            expand_generator_nodes: true,
+            inline_assignment: true,
+            inline_reachability: true,
+            join_fork_suffixes: true,
+            mangle_symbols: true,
+            normalize_types: true,
+            prune_singleton_types: true,
+            prune_unreachable_nodes: true,
+            skip_generator_comparisons: true,
+            skip_self_assignments: true,
+            skip_self_comparisons: true,
+            skip_unused_tags: true,
+        }
+    }
+
+    pub fn none() -> Self {
+        Self {
+            add_explicit_casts: false,
+            calculate_simple_apply: false,
+            calculate_tag_indexes: false,
+            calculate_uniques: false,
+            compact_skip_edges: false,
+            expand_generator_nodes: false,
+            inline_assignment: false,
+            inline_reachability: false,
+            join_fork_suffixes: false,
+            mangle_symbols: false,
+            normalize_types: false,
+            prune_singleton_types: false,
+            prune_unreachable_nodes: false,
+            skip_generator_comparisons: false,
+            skip_self_assignments: false,
+            skip_self_comparisons: false,
+            skip_unused_tags: false,
+        }
+    }
+}
+
 #[wasm_bindgen(js_name = analyzeHrg)]
 pub fn analyze_hrg(source: &str) -> Result<Array, String> {
     let array = Array::new();
@@ -115,32 +161,17 @@ pub fn analyze_hrg(source: &str) -> Result<Array, String> {
     Ok(array)
 }
 
-#[wasm_bindgen(js_name = analyzeRg)]
-pub fn analyze_rg(source: &str, flags: &str) -> Result<Array, String> {
-    let mut steps = vec![];
-
+pub fn analyze_rg_inner(
+    source: &str,
+    flags: &Flags,
+    mut callback: Option<impl FnMut(String)>,
+) -> Result<RgGame<Arc<str>>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
-            let step = json!({ $($json)+ });
-            steps.push(to_string(&step).map_err(|error| error.to_string())?);
-        }};
-    }
-
-    macro_rules! quit {
-        () => {{
-            let array = Array::new();
-            for step in steps {
-                array.push(&step.into());
+            if let Some(callback) = callback.as_mut() {
+                let step = json!({ $($json)+ });
+                callback(to_string(&step).map_err(|error| error.to_string())?);
             }
-
-            return Ok(array);
-        }};
-    }
-
-    macro_rules! fail {
-        ($error:expr) => {{
-            step!({ "kind": "error", "value": $error });
-            quit!();
         }};
     }
 
@@ -148,7 +179,11 @@ pub fn analyze_rg(source: &str, flags: &str) -> Result<Array, String> {
         ($expr:expr) => {
             match $expr {
                 Ok(expr) => expr,
-                Err(error) => fail!(error.to_string()),
+                Err(error) => {
+                    let error = error.to_string();
+                    step!({ "kind": "error", "value": error });
+                    return Err(error);
+                },
             }
         };
     }
@@ -160,7 +195,6 @@ pub fn analyze_rg(source: &str, flags: &str) -> Result<Array, String> {
         }};
     }
 
-    let flags = check!(from_str::<Flags>(flags));
     let mut game = check!(safe_parse_rg_source(source));
     game_step!(game, "");
 
@@ -208,7 +242,15 @@ pub fn analyze_rg(source: &str, flags: &str) -> Result<Array, String> {
     assert_eq!(check!(safe_parse_rg_source(&game.to_string())), game);
 
     step!({ "kind": "graphviz", "value": game.to_graphviz() });
-    quit!()
+    Ok(game)
+}
+
+#[wasm_bindgen(js_name = analyzeRg)]
+pub fn analyze_rg(source: &str, flags: &str) -> Result<Array, String> {
+    let mut steps = vec![];
+    let flags = from_str::<Flags>(flags).unwrap();
+    analyze_rg_inner(source, &flags, Some(|step| steps.push(step)))?;
+    Ok(steps.into_iter().map(JsValue::from).collect())
 }
 
 #[wasm_bindgen(js_name = parseGdl)]

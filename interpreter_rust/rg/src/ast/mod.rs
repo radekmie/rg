@@ -82,7 +82,7 @@ impl<Id: Clone + Ord> Edge<Id> {
 
 impl<Id: Display> Edge<Id> {
     pub fn to_graphviz(&self) -> String {
-        let Edge {
+        let Self {
             label, lhs, rhs, ..
         } = self;
         format!("  \"{lhs}\" -> \"{rhs}\" [label=\"{label}\"];")
@@ -851,9 +851,9 @@ impl<Id: Display> Game<Id> {
         graphviz.push_str("digraph {\n");
         for edge in &self.edges {
             graphviz.push_str(&edge.to_graphviz());
-            graphviz.push_str("\n");
+            graphviz.push('\n');
         }
-        graphviz.push_str("}");
+        graphviz.push('}');
         graphviz
     }
 }
