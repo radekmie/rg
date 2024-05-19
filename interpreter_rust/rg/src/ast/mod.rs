@@ -80,6 +80,15 @@ impl<Id: Clone + Ord> Edge<Id> {
     }
 }
 
+impl<Id: Display> Edge<Id> {
+    pub fn to_graphviz(&self) -> String {
+        let Edge {
+            label, lhs, rhs, ..
+        } = self;
+        format!("  \"{lhs}\" -> \"{rhs}\" [label=\"{label}\"];")
+    }
+}
+
 impl<Id: Ord> Edge<Id> {
     pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
         self.lhs.bindings().chain(self.rhs.bindings()).collect()
@@ -833,6 +842,19 @@ impl<Id: Clone> Game<Id> {
             game: self.clone(),
             reason,
         })
+    }
+}
+
+impl<Id: Display> Game<Id> {
+    pub fn to_graphviz(&self) -> String {
+        let mut graphviz = String::new();
+        graphviz.push_str("digraph {\n");
+        for edge in &self.edges {
+            graphviz.push_str(&edge.to_graphviz());
+            graphviz.push_str("\n");
+        }
+        graphviz.push_str("}");
+        graphviz
     }
 }
 

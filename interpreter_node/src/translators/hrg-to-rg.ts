@@ -383,11 +383,12 @@ function translateAutomatonFunction(
     if (variable) {
       utils.assert(
         utils.isEqual(type, variable.type),
-        `Argument "${arg.identifier}" of function "${
-          automatonFunction.name
-        }" has a different type than an already existing variable (${rg.serializeType(
-          type,
-        )} != ${rg.serializeType(variable.type)})`,
+        () =>
+          `Argument "${arg.identifier}" of function "${
+            automatonFunction.name
+          }" has a different type than an already existing variable (${rg.serializeType(
+            type,
+          )} != ${rg.serializeType(variable.type)})`,
       );
     } else {
       context.rg.variables.push(

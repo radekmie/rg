@@ -209,13 +209,14 @@ export async function parse(source: string, settings: Settings) {
       steps.shift();
     }
 
-    game.steps.push(...steps);
+    const graphviz = steps.pop();
+    utils.assert(graphviz?.kind === 'graphviz', 'Graphviz step expected');
 
-    const graphvizRg = rg.ast.graphviz(game.astRg);
+    game.steps.push(...steps);
     game.steps.unshift(
       { kind: 'bench', value: game.astRg },
-      { kind: 'automaton', value: graphvizRg },
-      { kind: 'graphviz', value: graphvizRg },
+      { kind: 'automaton', value: graphviz.value },
+      graphviz,
     );
   } catch (error) {
     // If the analysis failed, ignore register this error.

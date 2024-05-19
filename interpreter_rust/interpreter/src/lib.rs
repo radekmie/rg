@@ -173,51 +173,41 @@ pub fn analyze_rg(source: &str, flags: &str) -> Result<Array, String> {
         let copy = game.clone();
 
         macro_rules! pass {
-            ($fn:ident $block:block) => {
+            ($fn:ident) => {
                 if flags.$fn {
-                    $block
+                    check!(game.$fn());
                     if game != copy {
                         game_step!(game, stringify!($fn));
                         continue;
                     }
                 }
             };
-            (node $fn:ident) => {
-                pass!($fn {
-                    let ast = check!(safe_serialize_rg_ast(&game));
-                    let ast = $fn.call1(&JsValue::null(), &ast.into()).unwrap().as_string().unwrap();
-                    game = check!(safe_parse_rg_ast(&ast));
-                });
-            };
-            (rust $fn:ident) => {
-                pass!($fn {
-                    check!(game.$fn());
-                });
-            };
         }
 
-        pass!(rust normalize_types);
-        pass!(rust skip_self_assignments);
-        pass!(rust skip_self_comparisons);
-        pass!(rust skip_unused_tags);
-        pass!(rust skip_generator_comparisons);
-        pass!(rust compact_skip_edges);
-        pass!(rust add_explicit_casts);
-        pass!(rust expand_generator_nodes);
-        pass!(rust join_fork_suffixes);
-        pass!(rust inline_reachability);
-        pass!(rust inline_assignment);
-        pass!(rust prune_singleton_types);
-        pass!(rust prune_unreachable_nodes);
-        pass!(rust mangle_symbols);
-        pass!(rust calculate_simple_apply);
-        pass!(rust calculate_tag_indexes);
-        pass!(rust calculate_uniques);
+        pass!(normalize_types);
+        pass!(skip_self_assignments);
+        pass!(skip_self_comparisons);
+        pass!(skip_unused_tags);
+        pass!(skip_generator_comparisons);
+        pass!(compact_skip_edges);
+        pass!(add_explicit_casts);
+        pass!(expand_generator_nodes);
+        pass!(join_fork_suffixes);
+        pass!(inline_reachability);
+        pass!(inline_assignment);
+        pass!(prune_singleton_types);
+        pass!(prune_unreachable_nodes);
+        pass!(mangle_symbols);
+        pass!(calculate_simple_apply);
+        pass!(calculate_tag_indexes);
+        pass!(calculate_uniques);
 
         break;
     }
 
     assert_eq!(check!(safe_parse_rg_source(&game.to_string())), game);
+
+    step!({ "kind": "graphviz", "value": game.to_graphviz() });
     quit!()
 }
 
