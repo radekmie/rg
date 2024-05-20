@@ -1,5 +1,5 @@
 
-// Moves form: Position (LL + LR + RL + RR)
+// Moves form: Position (LL + L + R + RR)
 
 // Domains
 domain Piece = blackknight | empty | whiteknight
@@ -77,11 +77,11 @@ graph move(me: Player) {
     branch {
       position = left(position)
       position = left(position)
-      $ L
+      $ LL
     } or {
       position = right(position)
       position = right(position)
-      $ R
+      $ RR
     }
   }
   assert(position != null)
