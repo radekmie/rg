@@ -27,6 +27,7 @@ fn scenario(criterion: &mut Criterion, path: &str) {
     }
 
     bench!(calculate_uniques);
+    bench!(inline_assignment);
     bench!(prune_unreachable_nodes);
 }
 

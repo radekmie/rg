@@ -1,6 +1,6 @@
 use super::Analysis;
 use crate::ast::{Edge, Game};
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 type Id = Arc<str>;
@@ -8,7 +8,7 @@ type Id = Arc<str>;
 pub struct ReachingDefinitions;
 
 impl Analysis for ReachingDefinitions {
-    type Domain = BTreeSet<(Id, Option<Edge<Id>>)>;
+    type Domain = BTreeMap<Id, Option<Edge<Id>>>;
 
     fn bot() -> Self::Domain {
         Self::Domain::default()
@@ -27,19 +27,13 @@ impl Analysis for ReachingDefinitions {
         a
     }
 
-    fn kill(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
-        match &edge.label.as_var_assignment() {
-            Some((identifier, _)) if !edge.label.is_map_assignment() => input
-                .into_iter()
-                .filter(|(id, _)| id != *identifier)
-                .collect(),
-            _ => input,
-        }
+    fn kill(input: Self::Domain, _edge: &Edge<Id>) -> Self::Domain {
+        input
     }
 
     fn gen(mut input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
         if let Some((identifier, _)) = edge.label.as_var_assignment() {
-            input.insert((identifier.clone(), Some(edge.clone())));
+            input.insert(identifier.clone(), Some(edge.clone()));
         }
         input
     }
