@@ -83,7 +83,7 @@ var board: Board = {
 var pos: Position = v00;
 
 
-begin, turn: ;
+begin, move: ;
 
 turn, move: ? move -> moved;
 turn, lose: ! move -> moved;
