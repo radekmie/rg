@@ -108,18 +108,18 @@ selectPos, setPos(position:Position): $ position;
 setPos(position:Position), checkOwn: pos = Position(position);
 checkOwn, selectDir: board[pos] == pieceOfPlayer[currentPlayer];
 
-selectDir, forwardDirCheck: $ F;
-forwardDirCheck, forwardDirSet: board[Position(FDirOfPlayer[currentPlayer][pos])] == Piece(e);
+selectDir, forwardDirCheck: board[Position(FDirOfPlayer[currentPlayer][pos])] == Piece(e);
+forwardDirCheck, forwardDirSet: $ F;
 forwardDirSet, forwardMove: board[pos] = Piece(e);
 forwardMove, moved: pos = Position(FDirOfPlayer[currentPlayer][pos]);
 
-selectDir, leftDirCheck: $ L;
-leftDirCheck, leftDirSet: opponentOrEmpty[currentPlayer][board[LDirOfPlayer[currentPlayer][pos]]] == Bool(1);
+selectDir, leftDirCheck: opponentOrEmpty[currentPlayer][board[LDirOfPlayer[currentPlayer][pos]]] == Bool(1);
+leftDirCheck, leftDirSet: $ L;
 leftDirSet, leftMove: board[pos] = Piece(e);
 leftMove, moved: pos = Position(LDirOfPlayer[currentPlayer][pos]);
 
-selectDir, rightDirCheck: $ R;
-rightDirCheck, rightDirSet: opponentOrEmpty[currentPlayer][board[RDirOfPlayer[currentPlayer][pos]]] == Bool(1);
+selectDir, rightDirCheck: opponentOrEmpty[currentPlayer][board[RDirOfPlayer[currentPlayer][pos]]] == Bool(1);
+rightDirCheck, rightDirSet: $ R;
 rightDirSet, rightMove: board[pos] = Piece(e);
 rightMove, moved: pos = Position(RDirOfPlayer[currentPlayer][pos]);
 
