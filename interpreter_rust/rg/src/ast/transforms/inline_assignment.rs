@@ -291,5 +291,50 @@ mod test {
         t1, end: x == y;"
     );
 
+    test_transform!(
+        inline_assignment,
+        dont_inline_fork,
+        "begin, a2: y = 3;
+        a2, a3: ;
+        a2, a4: y = 1;
+        a3, a5: ;
+        a4, a5: ;
+        a5, end: y == A(3);"
+    );
+
+    test_transform!(
+        inline_assignment,
+        dont_inline_loop,
+        "type A = {1,2,3};
+        const cord: A -> A = {:1};
+        var y: A = 2;
+        begin, a2: y = 3;
+        a2, a3: ;
+        a3, a4: y = cord[y];
+        a4, a2: ;
+        a4, end: y == A(3);"
+    );
+
+    test_transform!(
+        inline_assignment,
+        inline_loop,
+        "type A = {1,2,3};
+        const cord: A -> A = {:1};
+        var y: A = 2;
+        begin, a2: y = 3;
+        a2, a3: ;
+        a3, a4: y = cord[y];
+        a4, a2: y = 2;
+        a4, end: y == A(3);",
+        "type A = {1,2,3};
+        const cord: A -> A = {:1};
+        var y: A = 2;
+        begin, a2: y = 3;
+        a2, a3: ;
+        a3, a4: ;
+        a4, a2: y = 2;
+        a4, end: cord[y] == A(3);"
+    );
+
     // TODO: Add tests with forks
 }
