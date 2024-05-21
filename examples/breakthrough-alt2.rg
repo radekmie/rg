@@ -114,7 +114,7 @@ forwardDirSet, forwardMove: board[pos] = Piece(e);
 forwardMove, moved: pos = Position(FDirOfPlayer[currentPlayer][pos]);
 
 selectDir, leftDirCheck: $ L;
-leftDirCheck, leftDirGrab: opponentOrEmpty[currentPlayer][board[LDirOfPlayer[currentPlayer][pos]]] == Bool(1);
+leftDirCheck, leftDirSet: opponentOrEmpty[currentPlayer][board[LDirOfPlayer[currentPlayer][pos]]] == Bool(1);
 leftDirSet, leftMove: board[pos] = Piece(e);
 leftMove, moved: pos = Position(LDirOfPlayer[currentPlayer][pos]);
 
