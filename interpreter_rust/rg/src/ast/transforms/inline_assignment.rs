@@ -291,5 +291,16 @@ mod test {
         t1, end: x == y;"
     );
 
+    test_transform!(
+        inline_assignment,
+        dont_inline_fork,
+        "begin, a2: y = 3;
+        a2, a3: ;
+        a2, a4: y = 1;
+        a3, a5: ;
+        a4, a5: ;
+        a5, end: y == A(3);"
+    );
+
     // TODO: Add tests with forks
 }
