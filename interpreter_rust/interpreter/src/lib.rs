@@ -87,6 +87,10 @@ pub struct Flags {
     prune_singleton_types: bool,
     #[serde(rename = "pruneUnreachableNodes")]
     prune_unreachable_nodes: bool,
+    #[serde(rename = "removeUnusedConstants")]
+    remove_unused_constants: bool,
+    #[serde(rename = "removeUnusedVariables")]
+    remove_unused_variables: bool,
     #[serde(rename = "skipGeneratorComparisons")]
     skip_generator_comparisons: bool,
     #[serde(rename = "skipSelfAssignments")]
@@ -113,6 +117,8 @@ impl Flags {
             normalize_types: true,
             prune_singleton_types: true,
             prune_unreachable_nodes: true,
+            remove_unused_constants: true,
+            remove_unused_variables: true,
             skip_generator_comparisons: true,
             skip_self_assignments: true,
             skip_self_comparisons: true,
@@ -135,6 +141,8 @@ impl Flags {
             normalize_types: false,
             prune_singleton_types: false,
             prune_unreachable_nodes: false,
+            remove_unused_constants: false,
+            remove_unused_variables: false,
             skip_generator_comparisons: false,
             skip_self_assignments: false,
             skip_self_comparisons: false,
@@ -231,6 +239,8 @@ pub fn analyze_rg_inner(
         pass!(inline_assignment);
         pass!(prune_singleton_types);
         pass!(prune_unreachable_nodes);
+        pass!(remove_unused_variables);
+        pass!(remove_unused_constants);
         pass!(mangle_symbols);
         pass!(calculate_simple_apply);
         pass!(calculate_tag_indexes);

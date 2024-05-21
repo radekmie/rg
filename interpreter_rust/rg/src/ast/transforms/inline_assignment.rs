@@ -31,15 +31,13 @@ impl Game<Id> {
             }
         }
 
-        self.skip_unused_variables()?;
-
         Ok(())
     }
 
     fn collect_to_inline(&self) -> BTreeSet<ToInline> {
         let reaching_definitions = self.analyse::<ReachingDefinitions>(true);
         let next_edges = self.next_edges();
-        let is_reachable = self.is_reachable();
+        let is_reachable = self.make_is_reachable();
         let mut to_inline = BTreeSet::new();
         let mut modified_edges = BTreeSet::new();
 
@@ -86,31 +84,6 @@ impl Game<Id> {
             }
         }
         to_inline
-    }
-
-    fn skip_unused_variables(&mut self) -> Result<(), Error<Id>> {
-        let mut unused_variables: BTreeSet<_> = self
-            .variables
-            .iter()
-            .map(|x| x.identifier.clone())
-            .filter(|id| id.as_ref() != "player" && id.as_ref() != "goals")
-            .collect();
-        for edge in &self.edges {
-            let mut used_variables = edge.label.used_variables();
-            if let Some((identifier, _)) = edge.label.as_var_assignment() {
-                used_variables.retain(|var| *var != identifier);
-            }
-            unused_variables.retain(|var| !used_variables.contains(var));
-        }
-
-        for edge in &mut self.edges {
-            if let Some((identifier, _)) = edge.label.as_var_assignment() {
-                if unused_variables.contains(identifier) {
-                    edge.skip();
-                }
-            }
-        }
-        Ok(())
     }
 }
 
@@ -323,7 +296,8 @@ mod test {
         inline_assignment,
         dont_inline_goals_assignment,
         "begin, t1: goals[x] = y;
-        t1, end: x == y;"
+        t1, t2: x == y;
+        t2, end: x == y;"
     );
 
     test_transform!(

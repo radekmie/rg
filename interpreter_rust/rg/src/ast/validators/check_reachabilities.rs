@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn check_reachabilities(&self) -> Result<(), Error<Arc<str>>> {
-        let is_reachable = self.is_reachable();
+        let is_reachable = self.make_is_reachable();
 
         let begin = Node::new(Arc::from("begin"));
         let end = Node::new(Arc::from("end"));

@@ -1039,6 +1039,29 @@ impl<Id: Clone + PartialEq> Game<Id> {
 }
 
 impl<Id: Ord> Game<Id> {
+    pub fn make_is_reachable(&self) -> impl Fn(&Node<Id>, &Node<Id>) -> bool + '_ {
+        let next_nodes = self.next_nodes();
+        move |a: &Node<_>, b: &Node<_>| -> bool {
+            let mut seen = BTreeSet::new();
+            let mut queue = vec![a];
+            while let Some(lhs) = queue.pop() {
+                if let Some(rhss) = next_nodes.get(lhs) {
+                    for rhs in rhss {
+                        if !seen.contains(rhs) {
+                            if rhs == &b {
+                                return true;
+                            }
+
+                            seen.insert(rhs);
+                            queue.push(rhs);
+                        }
+                    }
+                }
+            }
+            false
+        }
+    }
+
     pub fn nodes(&self) -> BTreeSet<&Node<Id>> {
         self.edges
             .iter()
@@ -1113,31 +1136,6 @@ impl<Id: PartialEq> Game<Id> {
 
     pub fn remove_edge(&mut self, edge: &Edge<Id>) {
         self.edges.retain(|x| x != edge);
-    }
-}
-
-impl<Id: PartialEq + Ord> Game<Id> {
-    pub fn is_reachable(&self) -> impl Fn(&Node<Id>, &Node<Id>) -> bool + '_ {
-        let next_nodes = self.next_nodes();
-        move |a: &Node<_>, b: &Node<_>| -> bool {
-            let mut seen = BTreeSet::new();
-            let mut queue = vec![a];
-            while let Some(lhs) = queue.pop() {
-                if let Some(rhss) = next_nodes.get(lhs) {
-                    for rhs in rhss {
-                        if !seen.contains(rhs) {
-                            if rhs == &b {
-                                return true;
-                            }
-
-                            seen.insert(rhs);
-                            queue.push(rhs);
-                        }
-                    }
-                }
-            }
-            false
-        }
     }
 }
 
@@ -1349,6 +1347,24 @@ pub enum Value<Id> {
 impl<Id> Value<Id> {
     pub fn new(identifier: Id) -> Self {
         Self::Element { identifier }
+    }
+}
+
+impl<Id: Ord> Value<Id> {
+    pub fn used_variables(&self) -> BTreeSet<&Id> {
+        let mut vars = BTreeSet::new();
+        match self {
+            Self::Element { identifier } => {
+                vars.insert(identifier);
+            }
+            Self::Map { entries, .. } => {
+                let mut vars = BTreeSet::new();
+                for entry in entries {
+                    vars.extend(entry.value.used_variables());
+                }
+            }
+        }
+        vars
     }
 }
 
