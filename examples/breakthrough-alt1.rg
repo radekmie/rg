@@ -104,7 +104,7 @@ var board: Board = {
 var pos: PositionOrNull = null;
 
 
-begin, turn: ;
+begin, move: ;
 
 turn, move: ? move -> moved;
 turn, lose: ! move -> moved;
