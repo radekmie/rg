@@ -1351,16 +1351,30 @@ impl<Id> Value<Id> {
 }
 
 impl<Id: Ord> Value<Id> {
-    pub fn used_variables(&self) -> BTreeSet<&Id> {
+    /// Test:
+    /// ```
+    /// use rg::ast::{Value, ValueEntry};
+    /// use std::collections::BTreeSet;
+    /// let value = Value::Map { span: Default::default(), entries: vec![
+    ///     ValueEntry::new(Default::default(), Some("a"), Value::Element { identifier: "b" }.into()),
+    ///     ValueEntry::new(Default::default(), None, Value::Element { identifier: "d" }.into()),
+    /// ]};
+    /// let mut vars = BTreeSet::new();
+    /// vars.insert(&"a");
+    /// vars.insert(&"b");
+    /// vars.insert(&"d");
+    /// assert_eq!(value.identifiers(), vars);
+    /// ```
+    pub fn identifiers(&self) -> BTreeSet<&Id> {
         let mut vars = BTreeSet::new();
         match self {
             Self::Element { identifier } => {
                 vars.insert(identifier);
             }
             Self::Map { entries, .. } => {
-                let mut vars = BTreeSet::new();
                 for entry in entries {
-                    vars.extend(entry.value.used_variables());
+                    entry.identifier.as_ref().map(|x| vars.insert(x));
+                    vars.extend(entry.value.identifiers());
                 }
             }
         }

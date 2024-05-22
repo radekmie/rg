@@ -1,16 +1,16 @@
-use std::{collections::BTreeSet, sync::Arc};
-
 use crate::ast::{Error, Game};
+use std::collections::BTreeSet;
+use std::sync::Arc;
+
+const IMPORTANT_VARIABLES: [&str; 3] = ["player", "goals", "visible"];
 
 impl Game<Arc<str>> {
-    pub fn remove_unused_variables(&mut self) -> Result<(), Error<Arc<str>>> {
+    pub fn prune_unused_variables(&mut self) -> Result<(), Error<Arc<str>>> {
         let mut unused_variables: BTreeSet<_> = self
             .variables
             .iter()
+            .filter(|id| !IMPORTANT_VARIABLES.contains(&id.identifier.as_ref()))
             .map(|x| x.identifier.clone())
-            .filter(|id| {
-                id.as_ref() != "player" && id.as_ref() != "goals" && id.as_ref() != "visible"
-            })
             .collect();
 
         for edge in &self.edges {

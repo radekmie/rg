@@ -40,8 +40,8 @@ program
     'prune singleton types (i.e., Set types with one element)',
   )
   .option('--pruneUnreachableNodes', 'prune unreachable nodes')
-  .option('--removeUnusedConstants', 'remove unused constants')
-  .option('--removeUnusedVariables', 'remove unused variables')
+  .option('--pruneUnusedConstants', 'prune unused constants')
+  .option('--pruneUnusedVariables', 'prune unused variables')
   .option(
     '--reuseFunctions',
     'reuse subautomatons when translating function calls (.hrg only)',
@@ -102,8 +102,8 @@ function addCommand(
           normalizeTypes: !!options.normalizeTypes,
           pruneSingletonTypes: !!options.pruneSingletonTypes,
           pruneUnreachableNodes: !!options.pruneUnreachableNodes,
-          removeUnusedConstants: !!options.removeUnusedConstants,
-          removeUnusedVariables: !!options.removeUnusedVariables,
+          pruneUnusedConstants: !!options.pruneUnusedConstants,
+          pruneUnusedVariables: !!options.pruneUnusedVariables,
           reuseFunctions: !!options.reuseFunctions,
           skipGeneratorComparisons: !!options.skipGeneratorComparisons,
           skipSelfAssignments: !!options.skipSelfAssignments,

@@ -99,8 +99,8 @@ npm test
 | Transformation `normalizeTypes`                 | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `pruneSingletonTypes`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `pruneUnreachableNodes`          | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `removeUnusedConstants`          | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `removeUnusedVariables`          | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `pruneUnusedConstants`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `pruneUnusedVariables`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `reuseFunctions`                 | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `skipGeneratorComparisons`       | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `skipSelfAssignments`            | :heavy_multiplication_x: |    :heavy_check_mark:    |

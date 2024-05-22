@@ -1,14 +1,13 @@
+use crate::ast::{Error, Game};
 use std::collections::BTreeSet;
 
-use crate::ast::{Error, Game};
-
 impl<Id: PartialEq + Ord + Clone> Game<Id> {
-    pub fn remove_unused_constants(&mut self) -> Result<(), Error<Id>> {
+    pub fn prune_unused_constants(&mut self) -> Result<(), Error<Id>> {
         let used_constantss = self
             .variables
             .iter()
-            .map(|x| x.default_value.used_variables())
-            .chain(self.constants.iter().map(|x| x.value.used_variables()))
+            .map(|x| x.default_value.identifiers())
+            .chain(self.constants.iter().map(|x| x.value.identifiers()))
             .chain(self.edges.iter().map(|x| x.label.used_variables()));
 
         let mut unused_constants: BTreeSet<_> = self
