@@ -1039,6 +1039,29 @@ impl<Id: Clone + PartialEq> Game<Id> {
 }
 
 impl<Id: Ord> Game<Id> {
+    pub fn make_is_reachable(&self) -> impl Fn(&Node<Id>, &Node<Id>) -> bool + '_ {
+        let next_nodes = self.next_nodes();
+        move |a: &Node<_>, b: &Node<_>| -> bool {
+            let mut seen = BTreeSet::new();
+            let mut queue = vec![a];
+            while let Some(lhs) = queue.pop() {
+                if let Some(rhss) = next_nodes.get(lhs) {
+                    for rhs in rhss {
+                        if !seen.contains(rhs) {
+                            if rhs == &b {
+                                return true;
+                            }
+
+                            seen.insert(rhs);
+                            queue.push(rhs);
+                        }
+                    }
+                }
+            }
+            false
+        }
+    }
+
     pub fn nodes(&self) -> BTreeSet<&Node<Id>> {
         self.edges
             .iter()
@@ -1052,6 +1075,15 @@ impl<Id: Ord> Game<Id> {
             .fold(BTreeMap::new(), |mut next_edges, edge| {
                 next_edges.entry(&edge.lhs).or_default().insert(edge);
                 next_edges
+            })
+    }
+
+    pub fn next_nodes(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Node<Id>>> {
+        self.edges
+            .iter()
+            .fold(BTreeMap::new(), |mut next_nodes, edge| {
+                next_nodes.entry(&edge.lhs).or_default().insert(&edge.rhs);
+                next_nodes
             })
     }
 
@@ -1315,6 +1347,38 @@ pub enum Value<Id> {
 impl<Id> Value<Id> {
     pub fn new(identifier: Id) -> Self {
         Self::Element { identifier }
+    }
+}
+
+impl<Id: Ord> Value<Id> {
+    /// Test:
+    /// ```
+    /// use rg::ast::{Value, ValueEntry};
+    /// use std::collections::BTreeSet;
+    /// let value = Value::Map { span: Default::default(), entries: vec![
+    ///     ValueEntry::new(Default::default(), Some("a"), Value::Element { identifier: "b" }.into()),
+    ///     ValueEntry::new(Default::default(), None, Value::Element { identifier: "d" }.into()),
+    /// ]};
+    /// let mut vars = BTreeSet::new();
+    /// vars.insert(&"a");
+    /// vars.insert(&"b");
+    /// vars.insert(&"d");
+    /// assert_eq!(value.identifiers(), vars);
+    /// ```
+    pub fn identifiers(&self) -> BTreeSet<&Id> {
+        let mut vars = BTreeSet::new();
+        match self {
+            Self::Element { identifier } => {
+                vars.insert(identifier);
+            }
+            Self::Map { entries, .. } => {
+                for entry in entries {
+                    entry.identifier.as_ref().map(|x| vars.insert(x));
+                    vars.extend(entry.value.identifiers());
+                }
+            }
+        }
+        vars
     }
 }
 

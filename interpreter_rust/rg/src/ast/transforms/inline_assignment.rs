@@ -1,9 +1,10 @@
 use crate::ast::analyses::{Analysis, ReachingDefinitions};
-use crate::ast::{Edge, Error, Game, Label, Node};
+use crate::ast::{Edge, Error, Expression, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 type Id = Arc<str>;
+type ToInline = (Id, Arc<Expression<Id>>, Edge<Id>, BTreeSet<Edge<Id>>);
 
 impl Game<Id> {
     /// For each assignment to a variable `x = expr` :
@@ -17,16 +18,35 @@ impl Game<Id> {
     ///   - the only reaching definition of `x` is from that assignment
     ///   - all variables in `expr` have the same values as in the assignment
     pub fn inline_assignment(&mut self) -> Result<(), Error<Id>> {
+        let to_inline = self.collect_to_inline();
+        for (to_replace, new_expr, to_skip, usages) in to_inline {
+            for edge in &mut self.edges {
+                if *edge == to_skip {
+                    edge.skip();
+                } else if usages.contains(edge) {
+                    edge.label = edge
+                        .label
+                        .substitute_variable_readonly(&to_replace, &new_expr);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn collect_to_inline(&self) -> BTreeSet<ToInline> {
         let reaching_definitions = self.analyse::<ReachingDefinitions>(true);
         let next_edges = self.next_edges();
+        let is_reachable = self.make_is_reachable();
         let mut to_inline = BTreeSet::new();
         let mut modified_edges = BTreeSet::new();
+
         for edge in &self.edges {
             if let Some((identifier, rhs)) = edge.label.as_var_assignment() {
                 if edge.label.is_player_assignment()
                     || modified_edges.contains(edge)
                     || (edge.label.is_goals_assignment()
-                        && self.are_connected(&edge.rhs, &Node::new(Id::from("end"))))
+                        && is_reachable(&edge.rhs, &Node::new(Id::from("end"))))
                 {
                     continue;
                 }
@@ -63,19 +83,7 @@ impl Game<Id> {
                 ));
             }
         }
-        for (to_replace, new_expr, to_skip, usages) in to_inline {
-            for edge in &mut self.edges {
-                if *edge == to_skip {
-                    edge.skip();
-                } else if usages.contains(edge) {
-                    edge.label = edge
-                        .label
-                        .substitute_variable_readonly(&to_replace, &new_expr);
-                }
-            }
-        }
-
-        Ok(())
+        to_inline
     }
 }
 
@@ -288,7 +296,8 @@ mod test {
         inline_assignment,
         dont_inline_goals_assignment,
         "begin, t1: goals[x] = y;
-        t1, end: x == y;"
+        t1, t2: x == y;
+        t2, end: x == y;"
     );
 
     test_transform!(

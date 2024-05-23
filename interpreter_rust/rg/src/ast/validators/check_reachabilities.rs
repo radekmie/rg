@@ -1,37 +1,9 @@
 use crate::ast::{Error, ErrorReason, Game, Label, Node};
-use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn check_reachabilities(&self) -> Result<(), Error<Arc<str>>> {
-        let next_nodes: BTreeMap<_, BTreeSet<_>> =
-            self.edges
-                .iter()
-                .fold(BTreeMap::new(), |mut next_nodes, edge| {
-                    next_nodes.entry(&edge.lhs).or_default().insert(&edge.rhs);
-                    next_nodes
-                });
-
-        let is_reachable = |a: &Node<_>, b: &Node<_>| -> bool {
-            let mut seen = BTreeSet::new();
-            let mut queue = vec![a];
-            while let Some(lhs) = queue.pop() {
-                if let Some(rhss) = next_nodes.get(lhs) {
-                    for rhs in rhss {
-                        if !seen.contains(rhs) {
-                            if rhs == &b {
-                                return true;
-                            }
-
-                            seen.insert(rhs);
-                            queue.push(rhs);
-                        }
-                    }
-                }
-            }
-
-            false
-        };
+        let is_reachable = self.make_is_reachable();
 
         let begin = Node::new(Arc::from("begin"));
         let end = Node::new(Arc::from("end"));

@@ -52,11 +52,7 @@ impl<'a> Flow<'a> {
     }
 
     fn new(game: &'a Game<Arc<str>>, with_reachability: bool) -> Self {
-        let mut next_nodes: BTreeMap<_, BTreeSet<_>> = game
-            .next_edges()
-            .into_iter()
-            .map(|(k, v)| (k, v.iter().map(|e| &e.rhs).collect()))
-            .collect();
+        let mut next_nodes = game.next_nodes();
 
         let reachability_edges = with_reachability.then(|| {
             let mut reachability_edges: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
