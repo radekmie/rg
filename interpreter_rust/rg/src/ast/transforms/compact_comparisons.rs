@@ -8,51 +8,36 @@ impl Game<Id> {
         let mut to_compat = vec![];
 
         for node in self.nodes() {
-            let Some(next_node) = self.next_node(node) else {
-                continue;
-            };
-            let Some((expr, ids)) = self.same_id_comparisons(node) else {
-                continue;
-            };
-            let Some(unused_members) = expr
-                .infer(&self, self.outgoing_edges(node).next())
-                .ok()
-                .and_then(|type_| {
-                    self.get_type_members(&type_).map(|members| {
-                        members
-                            .iter()
-                            .filter(|id| !ids.contains(id))
-                            .cloned()
-                            .collect::<Vec<_>>()
-                    })
-                })
+            let Some(((expr, unused_members), edge)) = self
+                .outgoing_edges(node)
+                .find_map(|edge| self.try_compact_edge(edge).zip(Some(edge)))
             else {
                 continue;
             };
-
-            if unused_members.len() < ids.len() {
-                to_compat.push((
-                    node.clone(),
-                    next_node.clone(),
-                    expr.clone(),
-                    unused_members,
-                ));
-            }
+            to_compat.push((edge.clone(), expr, unused_members));
         }
 
         if to_compat.is_empty() {
             return Ok(());
         }
 
-        self.edges
-            .retain(|edge| !to_compat.iter().any(|(node, _, _, _)| edge.lhs == *node));
+        self.edges.retain(|edge| {
+            !to_compat.iter().any(|(old_edge, expr, _)| {
+                edge.lhs == old_edge.lhs && edge.rhs == old_edge.rhs && {
+                    let Label::Comparison { lhs, rhs, .. } = &edge.label else {
+                        return false;
+                    };
+                    lhs == expr || rhs == expr
+                }
+            })
+        });
 
-        for (node, next_node, expr, unused_members) in to_compat {
+        for (edge, expr, unused_members) in to_compat {
             let nodes = unused_members
                 .iter()
-                .map(|id| Node::new(Id::from(format!("__gen_{node}_{id}"))));
-            let lhss = iter::once(node.clone()).chain(nodes.clone());
-            let rhss = nodes.chain(iter::once(next_node));
+                .map(|id| Node::new(Id::from(format!("__gen_{}_{expr}_{id}", edge.lhs))));
+            let lhss = iter::once(edge.lhs.clone()).chain(nodes.clone());
+            let rhss = nodes.chain(iter::once(edge.rhs.clone()));
             let labels = unused_members
                 .iter()
                 .map(|id| Label::Comparison {
@@ -72,7 +57,7 @@ impl Game<Id> {
         Ok(())
     }
 
-    fn get_type_members<'a>(&'a self, type_: &'a Type<Arc<str>>) -> Option<&'a Vec<Id>> {
+    fn get_type_members<'a>(&'a self, type_: &'a Type<Id>) -> Option<&'a Vec<Id>> {
         match type_ {
             Type::Set { identifiers, .. } => Some(identifiers),
             Type::TypeReference { identifier } => self
@@ -83,46 +68,75 @@ impl Game<Id> {
         }
     }
 
-    fn same_id_comparisons<'a>(
+    fn try_compact_edge<'a>(&self, edge: &'a Edge<Id>) -> Option<(Arc<Expression<Id>>, Vec<Id>)> {
+        let (expr, ids) = self.lhs_or_rhs(edge)?;
+        let type_ = expr.infer(&self, Some(edge)).ok()?;
+        let type_members = self.get_type_members(&type_)?;
+        if ids.iter().any(|id| !type_members.contains(id)) {
+            None
+        } else {
+            if type_members.iter().filter(|id| !ids.contains(&id)).count() >= ids.len() {
+                None
+            } else {
+                let unused_members = type_members
+                    .iter()
+                    .filter(|id| !ids.contains(&id))
+                    .cloned()
+                    .collect();
+                Some((expr.clone(), unused_members))
+            }
+        }
+    }
+
+    fn lhs_or_rhs<'a>(
         &'a self,
-        node: &'a Node<Id>,
+        edge: &'a Edge<Id>,
     ) -> Option<(&'a Arc<Expression<Id>>, Vec<&'a Id>)> {
-        let edge = self.outgoing_edges(node).next()?;
-        let Label::Comparison {
-            lhs,
-            rhs,
-            negated: false,
-        } = &edge.label
-        else {
+        let Label::Comparison { lhs, rhs, negated } = &edge.label else {
             return None;
         };
-        get_compared_to(lhs, self.outgoing_edges(node))
+        if *negated {
+            return None;
+        }
+        get_same_comparisons(lhs, edge, self.outgoing_edges(&edge.lhs))
             .map(|ids| (lhs, ids))
-            .or_else(|| get_compared_to(rhs, self.outgoing_edges(node)).map(|ids| (rhs, ids)))
+            .or_else(|| {
+                get_same_comparisons(rhs, edge, self.outgoing_edges(&edge.lhs))
+                    .map(|ids| (rhs, ids))
+            })
     }
 }
 
-fn get_compared_to<'a>(
-    expr: &Arc<Expression<Id>>,
-    edges: impl Iterator<Item = &'a Edge<Arc<str>>>,
+fn get_same_comparisons<'a>(
+    expr: &'a Arc<Expression<Id>>,
+    same_as: &'a Edge<Id>,
+    edges: impl Iterator<Item = &'a Edge<Id>>,
 ) -> Option<Vec<&'a Id>> {
-    edges
-        .map(|edge| {
-            let Label::Comparison {
-                lhs,
-                rhs,
-                negated: false,
-            } = &edge.label
-            else {
-                return None;
+    let same_comparisons: Vec<_> = edges
+        .filter(|edge| {
+            let Label::Comparison { lhs, rhs, .. } = &edge.label else {
+                return false;
             };
-            if lhs == expr {
-                rhs.uncast().as_reference()
-            } else if rhs == expr {
-                lhs.uncast().as_reference()
-            } else {
-                None
-            }
+            lhs == expr || rhs == expr
         })
-        .collect()
+        .collect();
+    if same_comparisons.len() < 2 || same_comparisons.iter().any(|edge| edge.rhs != same_as.rhs) {
+        None
+    } else {
+        same_comparisons
+            .into_iter()
+            .map(|edge| {
+                let Label::Comparison { lhs, rhs, negated } = &edge.label else {
+                    return None;
+                };
+                if *negated {
+                    None
+                } else if lhs == expr {
+                    rhs.as_reference()
+                } else {
+                    lhs.as_reference()
+                }
+            })
+            .collect()
+    }
 }
