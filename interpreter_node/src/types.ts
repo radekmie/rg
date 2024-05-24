@@ -14,6 +14,7 @@ export type Settings = {
     calculateSimpleApply: boolean;
     calculateTagIndexes: boolean;
     calculateUniques: boolean;
+    compactComparisons: boolean;
     compactSkipEdges: boolean;
     expandGeneratorNodes: boolean;
     inlineReachability: boolean;
@@ -36,6 +37,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   calculateSimpleApply: false,
   calculateTagIndexes: false,
   calculateUniques: false,
+  compactComparisons: false,
   normalizeTypes: false,
   compactSkipEdges: false,
   expandGeneratorNodes: false,

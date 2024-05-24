@@ -51,9 +51,9 @@ impl<Id> Edge<Id> {
         self.lhs.has_bindings() || self.rhs.has_bindings()
     }
 
-    pub fn new(span: Span, lhs: Node<Id>, rhs: Node<Id>, label: Label<Id>) -> Self {
+    pub fn new(lhs: Node<Id>, rhs: Node<Id>, label: Label<Id>) -> Self {
         Self {
-            span,
+            span: Span::none(),
             label,
             lhs,
             rhs,
@@ -61,7 +61,7 @@ impl<Id> Edge<Id> {
     }
 
     pub fn new_skip(lhs: Node<Id>, rhs: Node<Id>) -> Self {
-        Self::new(Span::none(), lhs, rhs, Label::Skip { span: Span::none() })
+        Self::new(lhs, rhs, Label::Skip { span: Span::none() })
     }
 
     pub fn skip(&mut self) {
@@ -205,6 +205,10 @@ impl<Id> Label<Id> {
 
     pub fn is_tag(&self) -> bool {
         matches!(self, Self::Tag { .. })
+    }
+
+    pub fn new_skip() -> Self {
+        Self::Skip { span: Span::none() }
     }
 }
 
@@ -563,6 +567,13 @@ impl<Id> Expression<Id> {
             Self::Access { lhs, .. } => lhs.access_identifier(),
             Self::Cast { rhs, .. } => rhs.access_identifier(),
             Self::Reference { identifier } => Some(identifier),
+        }
+    }
+
+    pub fn as_reference(&self) -> Option<&Id> {
+        match self {
+            Self::Reference { identifier } => Some(identifier),
+            _ => None,
         }
     }
 
@@ -1055,6 +1066,20 @@ impl<Id: Ord> Game<Id> {
             })
     }
 
+    /// Returns the only edge starting from `node` or `None` if there are multiple or no such edges.
+    pub fn next_node<'a>(&'a self, node: &'a Node<Id>) -> Option<&'a Node<Id>> {
+        let next_nodes = self.next_nodes(node);
+        if next_nodes.len() == 1 {
+            next_nodes.first().map(|node| *node)
+        } else {
+            None
+        }
+    }
+
+    pub fn next_nodes<'a>(&'a self, node: &'a Node<Id>) -> BTreeSet<&'a Node<Id>> {
+        self.outgoing_edges(node).map(|edge| &edge.rhs).collect()
+    }
+
     pub fn prev_edges(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>> {
         self.edges
             .iter()
@@ -1244,6 +1269,14 @@ impl<Id> Type<Id> {
 
     pub fn is_set(&self) -> bool {
         matches!(self, Self::Set { .. })
+    }
+
+    pub fn size(&self) -> usize {
+        match self {
+            Type::Arrow { .. } => todo!(),
+            Type::Set { identifiers, .. } => identifiers.len(),
+            Type::TypeReference { .. } => 1,
+        }
     }
 
     pub fn new(identifier: Id) -> Self {
