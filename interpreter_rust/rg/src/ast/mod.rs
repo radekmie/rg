@@ -362,6 +362,10 @@ impl<Id> Node<Id> {
     pub fn has_bindings(&self) -> bool {
         self.bindings().next().is_some()
     }
+
+    pub fn literal(&self) -> &Id {
+        self.parts.first().unwrap().identifier()
+    }
 }
 
 impl<Id: PartialEq> Node<Id> {

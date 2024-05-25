@@ -37,9 +37,13 @@ impl Game<Id> {
         let nodes: BTreeSet<_> = self.nodes().iter().map(|n| (*n).clone()).collect();
 
         for (edge, expr, unused_members) in to_compat {
-            let nodes = unused_members
-                .iter()
-                .map(|id| gen_fresh_node(format!("{expr}_{id}_{}", edge.lhs), &nodes));
+            let nodes = unused_members.iter().map(|id| {
+                let mut node =
+                    gen_fresh_node(format!("{}_{expr}_{id}", edge.lhs.literal()), &nodes);
+                let mut bindings: Vec<_> = edge.lhs.parts.iter().skip(1).cloned().collect();
+                node.parts.append(&mut bindings);
+                node
+            });
             let lhss = iter::once(edge.lhs.clone()).chain(nodes.clone());
             let rhss = nodes.chain(iter::once(edge.rhs.clone()));
             let labels = unused_members
@@ -140,4 +144,136 @@ fn get_same_comparisons<'a>(
             })
             .collect()
     }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::test_transform;
+
+    test_transform!(
+        compact_comparisons,
+        small,
+        "type A = {1,2,3};
+        var x: A = 1;
+        begin, end: x == 1;
+        begin, end: x == 2;",
+        "type A = {1,2,3};
+        var x: A = 1;
+        begin, __gen_0_begin_x_3: x != 3;
+        __gen_0_begin_x_3, end: ;"
+    );
+
+    test_transform!(
+        compact_comparisons,
+        no_compact,
+        "type A = {1,2,3};
+        var x: A = 1;
+        begin, end: x == 1;
+        begin, end: x != 3;"
+    );
+
+    test_transform!(
+        compact_comparisons,
+        skip_compat,
+        "type A = {1,2,3};
+        var x: A = 1;
+        begin, end: x == 1;
+        begin, end: x == 2;
+        begin, end: x == 3;",
+        "type A = { 1, 2, 3 };
+        var x: A = 1;
+        begin, end: ;"
+    );
+
+    test_transform!(
+        compact_comparisons,
+        no_compact_skip,
+        "type A = {1,2,3};
+        var x: A = 1;
+        begin, end: x == 1;
+        begin, end: x != 2;
+        begin, end: x == 3;",
+        "type A = { 1, 2, 3 };
+        var x: A = 1;
+        begin, end: x == 1;
+        begin, end: x != 2;
+        begin, end: x == 3;"
+    );
+
+    test_transform!(
+        compact_comparisons,
+        not_member,
+        "type A = {1,2,3};
+        var x: A = 1;
+        begin, end: x == 1;
+        begin, end: x == abc;"
+    );
+
+    test_transform!(
+        compact_comparisons,
+        not_identifier,
+        "type A = {1,2,3};
+        var x: A = 1;
+        begin, end: x == 1;
+        begin, end: x == a[1];
+        begin, end: x == 3;"
+    );
+
+    test_transform!(
+        compact_comparisons,
+        different_sides,
+        "type A = {1,2,3};
+        var x: A = 1;
+        begin, end: x == 1;
+        begin, end: 2 == x;",
+        "type A = { 1, 2, 3 };
+        var x: A = 1;
+        begin, __gen_0_begin_x_3: x != 3;
+        __gen_0_begin_x_3, end: ;"
+    );
+
+    test_transform!(
+        compact_comparisons,
+        multiple_expressions,
+        "type A = {1,2,3};
+        var x: A = 1;
+        var y: A = 2;
+        begin, end: x == 1;
+        begin, end: x == 2;
+        begin, end: y == 2;",
+        "type A = { 1, 2, 3 };
+        var x: A = 1;
+        var y: A = 2;
+        begin, end: y == 2;
+        begin, __gen_1_begin_x_3: x != 3;
+        __gen_1_begin_x_3, end: ;"
+    );
+
+    test_transform!(
+        compact_comparisons,
+        chain,
+        "type A = {1,2,3,4, 5};
+        var x: A = 1;
+        begin, end: x == 1;
+        begin, end: x == 2;
+        begin, end: x == 3;",
+        "type A = { 1, 2, 3, 4, 5 };
+        var x: A = 1;
+        begin, __gen_0_begin_x_4: x != 4;
+        __gen_0_begin_x_4, __gen_0_begin_x_5: x != 5;
+        __gen_0_begin_x_5, end: ;"
+    );
+
+    test_transform!(
+        compact_comparisons,
+        chain_binding,
+        "type A = {1,2,3,4, 5};
+        begin(x: A), end: x == 1;
+        begin(x: A), end: x == 2;
+        begin(x: A), end: x == 3;",
+        "type A = { 1, 2, 3, 4, 5 };
+        begin(x: A), __gen_0_begin_x_4(x: A): x != 4;
+        __gen_0_begin_x_4(x: A), __gen_0_begin_x_5(x: A): x != 5;
+        __gen_0_begin_x_5(x: A), end: ;"
+    );
 }
