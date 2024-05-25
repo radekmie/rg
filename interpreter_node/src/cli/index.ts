@@ -27,6 +27,10 @@ program
   .option('--inlineAssignment', 'inline assignment when possible')
   .option('--inlineReachability', 'inline reachability when possible')
   .option(
+    '--joinForkPrefixes',
+    'join paths with identical labels from the same node',
+  )
+  .option(
     '--joinForkSuffixes',
     'join paths with identical labels leading to the same node',
   )
@@ -97,6 +101,7 @@ function addCommand(
           expandGeneratorNodes: !!options.expandGeneratorNodes,
           inlineReachability: !!options.inlineReachability,
           inlineAssignment: !!options.inlineAssignment,
+          joinForkPrefixes: !!options.joinForkPrefixes,
           joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,
           normalizeTypes: !!options.normalizeTypes,
