@@ -1,12 +1,14 @@
-use crate::ast::{Edge, Error, Expression, Game, Label, Node, Type};
-use std::{iter, sync::Arc};
+use super::gen_fresh_node;
+use crate::ast::{Edge, Error, Expression, Game, Label, Type};
+use std::collections::BTreeSet;
+use std::iter;
+use std::sync::Arc;
 
 type Id = Arc<str>;
 
 impl Game<Id> {
     pub fn compact_comparisons(&mut self) -> Result<(), Error<Id>> {
         let mut to_compat = vec![];
-
         for node in self.nodes() {
             let Some(((expr, unused_members), edge)) = self
                 .outgoing_edges(node)
@@ -32,10 +34,12 @@ impl Game<Id> {
             })
         });
 
+        let nodes: BTreeSet<_> = self.nodes().iter().map(|n| (*n).clone()).collect();
+
         for (edge, expr, unused_members) in to_compat {
             let nodes = unused_members
                 .iter()
-                .map(|id| Node::new(Id::from(format!("__gen_{}_{expr}_{id}", edge.lhs))));
+                .map(|id| gen_fresh_node(format!("{expr}_{id}_{}", edge.lhs), &nodes));
             let lhss = iter::once(edge.lhs.clone()).chain(nodes.clone());
             let rhss = nodes.chain(iter::once(edge.rhs.clone()));
             let labels = unused_members
