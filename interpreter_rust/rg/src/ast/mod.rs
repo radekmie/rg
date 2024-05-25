@@ -1066,20 +1066,6 @@ impl<Id: Ord> Game<Id> {
             })
     }
 
-    /// Returns the only edge starting from `node` or `None` if there are multiple or no such edges.
-    pub fn next_node<'a>(&'a self, node: &'a Node<Id>) -> Option<&'a Node<Id>> {
-        let next_nodes = self.next_nodes(node);
-        if next_nodes.len() == 1 {
-            next_nodes.first().map(|node| *node)
-        } else {
-            None
-        }
-    }
-
-    pub fn next_nodes<'a>(&'a self, node: &'a Node<Id>) -> BTreeSet<&'a Node<Id>> {
-        self.outgoing_edges(node).map(|edge| &edge.rhs).collect()
-    }
-
     pub fn prev_edges(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>> {
         self.edges
             .iter()
@@ -1273,9 +1259,9 @@ impl<Id> Type<Id> {
 
     pub fn size(&self) -> usize {
         match self {
-            Type::Arrow { .. } => todo!(),
-            Type::Set { identifiers, .. } => identifiers.len(),
-            Type::TypeReference { .. } => 1,
+            Self::Arrow { .. } => todo!(),
+            Self::Set { identifiers, .. } => identifiers.len(),
+            Self::TypeReference { .. } => 1,
         }
     }
 

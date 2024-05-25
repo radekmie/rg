@@ -62,29 +62,26 @@ impl Game<Id> {
             Type::Set { identifiers, .. } => Some(identifiers),
             Type::TypeReference { identifier } => self
                 .resolve_typedef(identifier)
-                .map(|type_| self.get_type_members(&type_.type_))
-                .flatten(),
-            _ => None,
+                .and_then(|type_| self.get_type_members(&type_.type_)),
+            Type::Arrow { .. } => None,
         }
     }
 
-    fn try_compact_edge<'a>(&self, edge: &'a Edge<Id>) -> Option<(Arc<Expression<Id>>, Vec<Id>)> {
+    fn try_compact_edge(&self, edge: &Edge<Id>) -> Option<(Arc<Expression<Id>>, Vec<Id>)> {
         let (expr, ids) = self.lhs_or_rhs(edge)?;
-        let type_ = expr.infer(&self, Some(edge)).ok()?;
+        let type_ = expr.infer(self, Some(edge)).ok()?;
         let type_members = self.get_type_members(&type_)?;
-        if ids.iter().any(|id| !type_members.contains(id)) {
+        if ids.iter().any(|id| !type_members.contains(id))
+            || type_members.iter().filter(|id| !ids.contains(id)).count() >= ids.len()
+        {
             None
         } else {
-            if type_members.iter().filter(|id| !ids.contains(&id)).count() >= ids.len() {
-                None
-            } else {
-                let unused_members = type_members
-                    .iter()
-                    .filter(|id| !ids.contains(&id))
-                    .cloned()
-                    .collect();
-                Some((expr.clone(), unused_members))
-            }
+            let unused_members = type_members
+                .iter()
+                .filter(|id| !ids.contains(id))
+                .cloned()
+                .collect();
+            Some((expr.clone(), unused_members))
         }
     }
 
