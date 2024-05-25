@@ -34,7 +34,7 @@ impl Game<Id> {
             })
         });
 
-        let nodes: BTreeSet<_> = self.nodes().iter().map(|n| (*n).clone()).collect();
+        let nodes: BTreeSet<_> = self.nodes().into_iter().cloned().collect();
 
         for (edge, expr, unused_members) in to_compat {
             let nodes = unused_members.iter().map(|id| {

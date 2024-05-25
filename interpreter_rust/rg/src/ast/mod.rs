@@ -61,7 +61,7 @@ impl<Id> Edge<Id> {
     }
 
     pub fn new_skip(lhs: Node<Id>, rhs: Node<Id>) -> Self {
-        Self::new(lhs, rhs, Label::Skip { span: Span::none() })
+        Self::new(lhs, rhs, Label::new_skip())
     }
 
     pub fn skip(&mut self) {
@@ -364,7 +364,7 @@ impl<Id> Node<Id> {
     }
 
     pub fn literal(&self) -> &Id {
-        self.parts.first().unwrap().identifier()
+        self.parts[0].identifier()
     }
 }
 

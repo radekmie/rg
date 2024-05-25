@@ -1,7 +1,3 @@
-use super::Node;
-use std::collections::BTreeSet;
-use std::sync::Arc;
-
 mod add_builtins;
 mod add_explicit_casts;
 mod calculate_simple_apply;
@@ -21,6 +17,10 @@ mod skip_generator_comparisons;
 mod skip_self_assignments;
 mod skip_self_comparisons;
 mod skip_unused_tags;
+
+use super::Node;
+use std::collections::BTreeSet;
+use std::sync::Arc;
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn gen_fresh_node(suffix: String, nodes: &BTreeSet<Node<Arc<str>>>) -> Node<Arc<str>> {
