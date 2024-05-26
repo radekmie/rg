@@ -8,6 +8,7 @@ mod compact_skip_edges;
 mod expand_generator_nodes;
 mod inline_assignment;
 mod inline_reachability;
+mod join_fork_prefixes;
 mod join_fork_suffixes;
 mod mangle_symbols;
 mod normalize_types;

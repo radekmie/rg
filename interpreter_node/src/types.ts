@@ -19,6 +19,7 @@ export type Settings = {
     expandGeneratorNodes: boolean;
     inlineReachability: boolean;
     inlineAssignment: boolean;
+    joinForkPrefixes: boolean;
     joinForkSuffixes: boolean;
     mangleSymbols: boolean;
     normalizeTypes: boolean;
@@ -45,6 +46,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   expandGeneratorNodes: false,
   inlineReachability: false,
   inlineAssignment: false,
+  joinForkPrefixes: false,
   joinForkSuffixes: false,
   mangleSymbols: false,
   pruneSingletonTypes: false,
