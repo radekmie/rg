@@ -71,6 +71,8 @@ pub struct Flags {
     calculate_uniques: bool,
     #[serde(rename = "compactSkipEdges")]
     compact_skip_edges: bool,
+    #[serde(rename = "compactComparisons")]
+    compact_comparisons: bool,
     #[serde(rename = "expandGeneratorNodes")]
     expand_generator_nodes: bool,
     #[serde(rename = "inlineReachability")]
@@ -108,6 +110,7 @@ impl Flags {
             calculate_simple_apply: true,
             calculate_tag_indexes: true,
             calculate_uniques: true,
+            compact_comparisons: true,
             compact_skip_edges: true,
             expand_generator_nodes: true,
             inline_assignment: true,
@@ -132,6 +135,7 @@ impl Flags {
             calculate_simple_apply: false,
             calculate_tag_indexes: false,
             calculate_uniques: false,
+            compact_comparisons: false,
             compact_skip_edges: false,
             expand_generator_nodes: false,
             inline_assignment: false,
@@ -235,6 +239,7 @@ pub fn analyze_rg_inner(
         pass!(add_explicit_casts);
         pass!(expand_generator_nodes);
         pass!(join_fork_suffixes);
+        pass!(compact_comparisons);
         pass!(inline_reachability);
         pass!(inline_assignment);
         pass!(prune_singleton_types);

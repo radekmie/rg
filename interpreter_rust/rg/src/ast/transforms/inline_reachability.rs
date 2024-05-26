@@ -1,3 +1,4 @@
+use super::gen_fresh_node;
 use crate::ast::{Edge, Error, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -62,11 +63,7 @@ impl Game<Id> {
             ..
         } = edge.label.clone()
         {
-            let mut nodes = self
-                .nodes()
-                .iter()
-                .map(|n| (*n).clone())
-                .collect::<BTreeSet<_>>();
+            let mut nodes: BTreeSet<_> = self.nodes().iter().map(|n| (*n).clone()).collect();
 
             self.remove_edge(&edge);
             let new_start = gen_fresh_node(format!("reachability_{start}_{target}"), &nodes);
@@ -105,18 +102,6 @@ impl Game<Id> {
             }
         }
     }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn gen_fresh_node(node: String, nodes: &BTreeSet<Node<Id>>) -> Node<Id> {
-    for x in 1..nodes.len() {
-        let fresh_node: Node<Id> = Node::new(Id::from(format!("__gen_{x}_{node}")));
-        if !nodes.contains(&fresh_node) {
-            return fresh_node;
-        }
-    }
-    let name = format!("__gen_{}_{node}", nodes.len());
-    Node::new(Id::from(name))
 }
 
 fn are_edges_exclusive(edges: &BTreeSet<&Edge<Id>>) -> bool {

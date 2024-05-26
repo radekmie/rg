@@ -3,6 +3,7 @@ mod add_explicit_casts;
 mod calculate_simple_apply;
 mod calculate_tag_indexes;
 mod calculate_uniques;
+mod compact_comparisons;
 mod compact_skip_edges;
 mod expand_generator_nodes;
 mod inline_assignment;
@@ -18,6 +19,22 @@ mod skip_generator_comparisons;
 mod skip_self_assignments;
 mod skip_self_comparisons;
 mod skip_unused_tags;
+
+use super::Node;
+use std::collections::BTreeSet;
+use std::sync::Arc;
+
+#[allow(clippy::needless_pass_by_value)]
+pub fn gen_fresh_node(suffix: String, nodes: &BTreeSet<Node<Arc<str>>>) -> Node<Arc<str>> {
+    for x in 1..nodes.len() {
+        let fresh_node: Node<Arc<str>> = Node::new(Arc::from(format!("__gen_{x}_{suffix}")));
+        if !nodes.contains(&fresh_node) {
+            return fresh_node;
+        }
+    }
+    let name = format!("__gen_{}_{suffix}", nodes.len());
+    Node::new(Arc::from(name))
+}
 
 #[cfg(test)]
 mod test {

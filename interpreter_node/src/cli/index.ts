@@ -93,6 +93,7 @@ function addCommand(
           calculateSimpleApply: !!options.calculateSimpleApply,
           calculateTagIndexes: !!options.calculateTagIndexes,
           calculateUniques: !!options.calculateUniques,
+          compactComparisons: !!options.compactComparisons,
           compactSkipEdges: !!options.compactSkipEdges,
           expandGeneratorNodes: !!options.expandGeneratorNodes,
           inlineReachability: !!options.inlineReachability,

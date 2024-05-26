@@ -51,9 +51,9 @@ impl<Id> Edge<Id> {
         self.lhs.has_bindings() || self.rhs.has_bindings()
     }
 
-    pub fn new(span: Span, lhs: Node<Id>, rhs: Node<Id>, label: Label<Id>) -> Self {
+    pub fn new(lhs: Node<Id>, rhs: Node<Id>, label: Label<Id>) -> Self {
         Self {
-            span,
+            span: Span::none(),
             label,
             lhs,
             rhs,
@@ -61,7 +61,7 @@ impl<Id> Edge<Id> {
     }
 
     pub fn new_skip(lhs: Node<Id>, rhs: Node<Id>) -> Self {
-        Self::new(Span::none(), lhs, rhs, Label::Skip { span: Span::none() })
+        Self::new(lhs, rhs, Label::new_skip())
     }
 
     pub fn skip(&mut self) {
@@ -205,6 +205,10 @@ impl<Id> Label<Id> {
 
     pub fn is_tag(&self) -> bool {
         matches!(self, Self::Tag { .. })
+    }
+
+    pub fn new_skip() -> Self {
+        Self::Skip { span: Span::none() }
     }
 }
 
@@ -357,6 +361,10 @@ impl<Id> Node<Id> {
 
     pub fn has_bindings(&self) -> bool {
         self.bindings().next().is_some()
+    }
+
+    pub fn literal(&self) -> &Id {
+        self.parts[0].identifier()
     }
 }
 
@@ -563,6 +571,13 @@ impl<Id> Expression<Id> {
             Self::Access { lhs, .. } => lhs.access_identifier(),
             Self::Cast { rhs, .. } => rhs.access_identifier(),
             Self::Reference { identifier } => Some(identifier),
+        }
+    }
+
+    pub fn as_reference(&self) -> Option<&Id> {
+        match self {
+            Self::Reference { identifier } => Some(identifier),
+            _ => None,
         }
     }
 
@@ -1276,6 +1291,14 @@ impl<Id> Type<Id> {
 
     pub fn is_set(&self) -> bool {
         matches!(self, Self::Set { .. })
+    }
+
+    pub fn size(&self) -> usize {
+        match self {
+            Self::Arrow { .. } => todo!(),
+            Self::Set { identifiers, .. } => identifiers.len(),
+            Self::TypeReference { .. } => 1,
+        }
     }
 
     pub fn new(identifier: Id) -> Self {
