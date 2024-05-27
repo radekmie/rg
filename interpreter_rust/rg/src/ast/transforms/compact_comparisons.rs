@@ -5,18 +5,19 @@ use std::iter;
 use std::sync::Arc;
 
 type Id = Arc<str>;
+type ToCompact = (Arc<Expression<Id>>, Arc<Type<Id>>, Vec<Id>);
 
 impl Game<Id> {
     pub fn compact_comparisons(&mut self) -> Result<(), Error<Id>> {
         let mut to_compat = vec![];
         for node in self.nodes() {
-            let Some(((expr, unused_members), edge)) = self
+            let Some(((expr, type_, unused_members), edge)) = self
                 .outgoing_edges(node)
                 .find_map(|edge| self.try_compact_edge(edge).zip(Some(edge)))
             else {
                 continue;
             };
-            to_compat.push((edge.clone(), expr, unused_members));
+            to_compat.push((edge.clone(), expr, type_, unused_members));
         }
 
         if to_compat.is_empty() {
@@ -24,7 +25,7 @@ impl Game<Id> {
         }
 
         self.edges.retain(|edge| {
-            !to_compat.iter().any(|(old_edge, expr, _)| {
+            !to_compat.iter().any(|(old_edge, expr, _, _)| {
                 edge.lhs == old_edge.lhs && edge.rhs == old_edge.rhs && {
                     let Label::Comparison { lhs, rhs, .. } = &edge.label else {
                         return false;
@@ -36,7 +37,7 @@ impl Game<Id> {
 
         let nodes: BTreeSet<_> = self.nodes().into_iter().cloned().collect();
 
-        for (edge, expr, unused_members) in to_compat {
+        for (edge, expr, type_, unused_members) in to_compat {
             let nodes = unused_members.iter().map(|id| {
                 let mut node =
                     gen_fresh_node(format!("{}_{expr}_{id}", edge.lhs.literal()), &nodes);
@@ -50,7 +51,10 @@ impl Game<Id> {
                 .iter()
                 .map(|id| Label::Comparison {
                     lhs: expr.clone(),
-                    rhs: Arc::new(Expression::new(id.clone())),
+                    rhs: Arc::new(Expression::new_cast(
+                        type_.clone(),
+                        Arc::new(Expression::new(id.clone())),
+                    )),
                     negated: true,
                 })
                 .chain(iter::once(Label::new_skip()));
@@ -75,7 +79,7 @@ impl Game<Id> {
         }
     }
 
-    fn try_compact_edge(&self, edge: &Edge<Id>) -> Option<(Arc<Expression<Id>>, Vec<Id>)> {
+    fn try_compact_edge(&self, edge: &Edge<Id>) -> Option<ToCompact> {
         let (expr, ids) = self.lhs_or_rhs(edge)?;
         let type_ = expr.infer(self, Some(edge)).ok()?;
         let type_members = self.get_type_members(&type_)?;
@@ -89,7 +93,7 @@ impl Game<Id> {
                 .filter(|id| !ids.contains(id))
                 .cloned()
                 .collect();
-            Some((expr.clone(), unused_members))
+            Some((expr.clone(), type_.clone(), unused_members))
         }
     }
 
@@ -137,9 +141,9 @@ fn get_same_comparisons<'a>(
                 if *negated {
                     None
                 } else if lhs == expr {
-                    rhs.as_reference()
+                    rhs.uncast().as_reference()
                 } else {
-                    lhs.as_reference()
+                    lhs.uncast().as_reference()
                 }
             })
             .collect()
@@ -159,7 +163,20 @@ mod test {
         begin, end: x == 2;",
         "type A = {1,2,3};
         var x: A = 1;
-        begin, __gen_0_begin_x_3: x != 3;
+        begin, __gen_0_begin_x_3: x != A(3);
+        __gen_0_begin_x_3, end: ;"
+    );
+
+    test_transform!(
+        compact_comparisons,
+        with_cast,
+        "type A = {1,2,3};
+        var x: A = 1;
+        begin, end: x == 1;
+        begin, end: x == A(2);",
+        "type A = {1,2,3};
+        var x: A = 1;
+        begin, __gen_0_begin_x_3: x != A(3);
         __gen_0_begin_x_3, end: ;"
     );
 
@@ -169,7 +186,7 @@ mod test {
         "type A = {1,2,3};
         var x: A = 1;
         begin, end: x == 1;
-        begin, end: x != 3;"
+        begin, end: x != A(3);"
     );
 
     test_transform!(
@@ -228,7 +245,7 @@ mod test {
         begin, end: 2 == x;",
         "type A = { 1, 2, 3 };
         var x: A = 1;
-        begin, __gen_0_begin_x_3: x != 3;
+        begin, __gen_0_begin_x_3: x != A(3);
         __gen_0_begin_x_3, end: ;"
     );
 
@@ -245,7 +262,7 @@ mod test {
         var x: A = 1;
         var y: A = 2;
         begin, end: y == 2;
-        begin, __gen_1_begin_x_3: x != 3;
+        begin, __gen_1_begin_x_3: x != A(3);
         __gen_1_begin_x_3, end: ;"
     );
 
@@ -259,8 +276,8 @@ mod test {
         begin, end: x == 3;",
         "type A = { 1, 2, 3, 4, 5 };
         var x: A = 1;
-        begin, __gen_0_begin_x_4: x != 4;
-        __gen_0_begin_x_4, __gen_0_begin_x_5: x != 5;
+        begin, __gen_0_begin_x_4: x != A(4);
+        __gen_0_begin_x_4, __gen_0_begin_x_5: x != A(5);
         __gen_0_begin_x_5, end: ;"
     );
 
@@ -272,8 +289,8 @@ mod test {
         begin(x: A), end: x == 2;
         begin(x: A), end: x == 3;",
         "type A = { 1, 2, 3, 4, 5 };
-        begin(x: A), __gen_0_begin_x_4(x: A): x != 4;
-        __gen_0_begin_x_4(x: A), __gen_0_begin_x_5(x: A): x != 5;
+        begin(x: A), __gen_0_begin_x_4(x: A): x != A(4);
+        __gen_0_begin_x_4(x: A), __gen_0_begin_x_5(x: A): x != A(5);
         __gen_0_begin_x_5(x: A), end: ;"
     );
 }

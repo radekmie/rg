@@ -585,6 +585,14 @@ impl<Id> Expression<Id> {
         Self::Reference { identifier }
     }
 
+    pub fn new_cast(lhs: Arc<Type<Id>>, rhs: Arc<Self>) -> Self {
+        Self::Cast {
+            span: Span::none(),
+            lhs,
+            rhs,
+        }
+    }
+
     pub fn is_access(&self) -> bool {
         matches!(self, Self::Access { .. })
     }
