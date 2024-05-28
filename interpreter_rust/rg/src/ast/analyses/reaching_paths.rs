@@ -34,7 +34,7 @@ impl Analysis for ReachingPaths {
         input
             .into_iter()
             .map(|mut path| {
-                path.push(&edge.lhs);
+                path.push(edge);
                 path
             })
             .collect()
@@ -43,20 +43,20 @@ impl Analysis for ReachingPaths {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Path {
-    has_duplicate: bool,
-    nodes: BTreeSet<Node<Id>>,
+    pub has_duplicate: bool,
+    pub nodes: BTreeSet<Node<Id>>,
+    pub variables: BTreeSet<Id>,
 }
 
 impl Path {
-    pub fn has_duplicate(&self) -> bool {
-        self.has_duplicate
-    }
-
-    pub fn push(&mut self, node: &Node<Id>) {
+    pub fn push(&mut self, edge: &Edge<Id>) {
         if !self.has_duplicate {
-            self.has_duplicate = self.nodes.contains(node);
+            self.has_duplicate = self.nodes.contains(&edge.lhs);
             if !self.has_duplicate {
-                self.nodes.insert(node.clone());
+                self.nodes.insert(edge.lhs.clone());
+                if let Some((variable, _)) = edge.label.as_var_assignment() {
+                    self.variables.insert(variable.clone());
+                }
             }
         }
     }

@@ -9,7 +9,7 @@ impl Game<Arc<str>> {
         let reaching_paths = self.analyse::<ReachingPaths>(true);
         let mut unique_nodes: BTreeSet<_> = reaching_paths
             .into_iter()
-            .filter(|(_, paths)| paths.iter().all(|path| !path.has_duplicate()))
+            .filter(|(_, paths)| paths.iter().all(|path| !path.has_duplicate))
             .map(|(node, _)| node)
             .collect();
 
@@ -50,6 +50,13 @@ mod test {
         small_loop,
         "begin, x: ; x, y: ; y, x: ; y, end: ;",
         "begin, x: ; x, y: ; y, x: ; y, end: ; @unique begin;"
+    );
+
+    test_transform!(
+        calculate_uniques,
+        repeat_example,
+        "begin, a: ; a, a: x = y[x]; a, end: x == z;",
+        "begin, a: ; a, a: x = y[x]; a, end: x == z; @unique begin end;"
     );
 
     test_transform!(
