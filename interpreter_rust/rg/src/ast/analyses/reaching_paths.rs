@@ -1,5 +1,5 @@
 use super::Analysis;
-use crate::ast::{Edge, Game, Node};
+use crate::ast::{Edge, Game, Label, Node};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -26,6 +26,18 @@ impl Analysis for ReachingPaths {
     fn kill(mut input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
         if edge.label.is_player_assignment() || edge.label.is_tag() {
             input.clear();
+        } else if let Label::Comparison {
+            lhs,
+            rhs,
+            negated: false,
+        } = &edge.label
+        {
+            if let Some(lhs) = lhs.uncast().as_reference() {
+                input.retain(|path| !path.variables.contains(lhs));
+            }
+            if let Some(rhs) = rhs.uncast().as_reference() {
+                input.retain(|path| !path.variables.contains(rhs));
+            }
         }
         input
     }

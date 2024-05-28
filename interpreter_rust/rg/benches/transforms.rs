@@ -34,6 +34,7 @@ fn scenario(criterion: &mut Criterion, path: &str) {
     }
 
     bench!(add_explicit_casts);
+    bench!(calculate_repeats);
     bench!(calculate_simple_apply);
     bench!(calculate_tag_indexes);
     bench!(calculate_uniques);

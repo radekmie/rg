@@ -51,4 +51,40 @@ mod test {
         "begin, a: ; a, a: x = y[x]; a, end: x == z;",
         "begin, a: ; a, a: x = y[x]; a, end: x == z; @repeat a : x;"
     );
+
+    test_transform!(
+        calculate_repeats,
+        hex_loop,
+        "begin, end: ? 24 -> 25;
+        24, 27: ;
+        26, 25: ! 46 -> 47;
+        27, 26: ;
+        27, 32: coord = direction[coord][E];
+        27, 32: coord = direction[coord][NE];
+        27, 32: coord = direction[coord][NW];
+        27, 32: coord = direction[coord][SE];
+        27, 32: coord = direction[coord][SW];
+        27, 32: coord = direction[coord][W];
+        28, 26: ;
+        28, 27: ;
+        30, 28: board[coord] == r;
+        32, 30: coord != null;
+        46, 47: direction[coord][NW] != null;",
+        "begin, end: ? 24 -> 25;
+        24, 27: ;
+        26, 25: ! 46 -> 47;
+        27, 26: ;
+        27, 32: coord = direction[coord][E];
+        27, 32: coord = direction[coord][NE];
+        27, 32: coord = direction[coord][NW];
+        27, 32: coord = direction[coord][SE];
+        27, 32: coord = direction[coord][SW];
+        27, 32: coord = direction[coord][W];
+        28, 26: ;
+        28, 27: ;
+        30, 28: board[coord] == r;
+        32, 30: coord != null;
+        46, 47: direction[coord][NW] != null;
+        @repeat 25 26 27 28 30 32 : coord;"
+    );
 }
