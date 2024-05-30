@@ -8,8 +8,11 @@ type Id = Arc<str>;
 impl Game<Id> {
     pub fn inline_reachability(&mut self) -> Result<(), Error<Id>> {
         for edge in self.edges.clone() {
-            if let Label::Reachability { lhs, rhs, .. } = &edge.label {
-                if let Some(subgraph) = self.find_acceptable_paths(lhs, rhs) {
+            if let Label::Reachability {
+                lhs, rhs, negated, ..
+            } = &edge.label
+            {
+                if let Some(subgraph) = self.find_rechability_paths(lhs, rhs, *negated) {
                     self.substitute_reachability(edge.clone(), subgraph);
                 }
             }
@@ -24,6 +27,27 @@ impl Game<Id> {
     /// 4. for any initial environment, at most one path can reach [target] from [start]
     ///    - limited analysis, may reject some valid results here
     /// 4.1. and none of them change the environment (currently: no assignments allowed)
+    /// 5. If the reachability is negated, the path consists of one edge
+    fn find_rechability_paths(
+        &self,
+        start: &Node<Id>,
+        target: &Node<Id>,
+        negated: bool,
+    ) -> Option<BTreeSet<Edge<Id>>> {
+        if negated {
+            let mut direct_path = self
+                .edges
+                .iter()
+                .filter(|e| e.lhs == *start && e.rhs == *target && !e.label.is_assignment());
+            let edge = direct_path
+                .next()
+                .filter(|_| direct_path.next().is_none())?;
+            Some(BTreeSet::from([edge.clone()]))
+        } else {
+            self.find_acceptable_paths(start, target)
+        }
+    }
+
     fn find_acceptable_paths(
         &self,
         start: &Node<Id>,
@@ -262,7 +286,15 @@ mod test {
         b, d: ;
         c, d: ;
         e, f: ;
-        e, g: ;"
+        e, g: ;",
+        "x, y: ? a -> d;
+        a, b: ? e -> f;
+        b, d: ;
+        c, d: ;
+        e, f: ;
+        e, g: ;
+        a, __gen_1_reachability_e_g: ;
+        __gen_1_reachability_e_g, c: ;"
     );
 
     test_transform!(
@@ -287,5 +319,23 @@ mod test {
         begin, end: ? a -> c;
         a, b(t: T): t == null;
         b(t: T), c: t == null;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        negated,
+        "a, b: ! x -> y;
+        x, y: 1 == 1;",
+        "x, y: 1 == 1;
+        a, __gen_1_reachability_x_y: ;
+        __gen_1_reachability_x_y, b: 1 != 1;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        long_negated,
+        "a, b: ! x -> y;
+        x, x1: 1 == 1;
+        x1, y: ;"
     );
 }
