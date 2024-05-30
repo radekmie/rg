@@ -1,7 +1,6 @@
 use super::gen_fresh_node;
 use crate::ast::{Edge, Error, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
-use std::iter;
 use std::sync::Arc;
 
 type Id = Arc<str>;
@@ -43,7 +42,7 @@ impl Game<Id> {
             let edge = direct_path
                 .next()
                 .filter(|_| direct_path.next().is_none())?;
-            Some(BTreeSet::from_iter(iter::once(edge.clone())))
+            Some(BTreeSet::from([edge.clone()]))
         } else {
             self.find_acceptable_paths(start, target)
         }
