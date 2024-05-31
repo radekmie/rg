@@ -75,11 +75,16 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
                 add_from_statement(table, statement);
             }
         }
-        Statement::Pragma { identifier: _ } => {
-            // table.add_occ_with_flag(identifier, Flag::Pragma);
+        Statement::Pragma { identifier } => {
+            table.add_occ(identifier);
         }
-        Statement::Tag { symbol: _ } => {
-            // table.add_occ_with_flag(symbol, Flag::Tag);
+        Statement::Tag { symbol } => {
+            if !symbol.is_none() && !symbol.is_numeric() {
+                let occ = table.occ_from_id(symbol);
+                if !occ.symbol.is_none() {
+                    table.occurrences.push(occ)
+                }
+            }
         }
         Statement::When { expression, body } => {
             add_from_expression(table, expression);
