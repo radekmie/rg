@@ -70,9 +70,12 @@ main,goRight: ;
 goRight,goRight: pos = Position(right[pos]);
 goRight,main: ;
 
-main, win: pos == v77;
-win, setScore: goals[player] = Score(100);
+main, win1: pos == v66;
+win1, setScore: goals[player] = Score(100);
+main, win2: pos == v77;
+win2, setScore: goals[player] = Score(100);
 setScore, end: player = PlayerOrKeeper(keeper);
 
-@unique begin win setScore end;
+@unique begin win1 win2 end;
 // @repeat main,goUp,goDown,goLeft,goRight: pos;
+// @repeat setScore: ;
