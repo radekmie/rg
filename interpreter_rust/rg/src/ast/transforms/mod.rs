@@ -46,6 +46,15 @@ mod test {
             test_transform!($fn, $name, $actual, $actual);
         };
 
+        ($fn:ident, $name:ident, file $path:expr, $pragma:expr) => {
+            test_transform!(
+                $fn,
+                $name,
+                include_str!($path),
+                concat!(include_str!($path), $pragma)
+            );
+        };
+
         ($fn:ident, $name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {

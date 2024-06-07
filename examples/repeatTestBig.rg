@@ -75,7 +75,3 @@ win1, setScore: goals[player] = Score(100);
 main, win2: pos == v77;
 win2, setScore: goals[player] = Score(100);
 setScore, end: player = PlayerOrKeeper(keeper);
-
-@unique begin win1 win2 end;
-// @repeat main,goUp,goDown,goLeft,goRight: pos;
-// @repeat setScore: ;

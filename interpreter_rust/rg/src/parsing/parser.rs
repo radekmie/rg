@@ -321,7 +321,7 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
                 tag("repeat"),
                 cut(many1(preceded_whitespace(node))),
                 preceded_whitespace(tag(":")),
-                cut(many1(preceded_whitespace(identifier))),
+                cut(many0(preceded_whitespace(identifier))),
                 preceded_whitespace(tag(";")),
             )),
             |(tag, nodes, _, identifiers, semicolon)| Pragma::Repeat {

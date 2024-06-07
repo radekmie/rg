@@ -6,18 +6,20 @@ use utils::position::Span;
 
 impl Game<Arc<str>> {
     pub fn calculate_repeats(&mut self) -> Result<(), Error<Arc<str>>> {
-        let reaching_paths = self.analyse::<ReachingPaths>(true);
-        for (node, paths) in reaching_paths {
-            if !paths.iter().any(|path| path.has_duplicate) {
-                continue;
-            }
-
-            let identifiers: Vec<_> = paths
+        let reaching_paths = self.analyse::<ReachingPaths>(false);
+        for (node, variables) in reaching_paths {
+            let has_none_repeat = variables.get(&None) == Some(&true);
+            let identifiers: Vec<_> = variables
                 .into_iter()
-                .flat_map(|path| path.variables)
+                .filter(|(_, is_repeated)| *is_repeated)
+                .filter_map(|(variable, _)| variable)
                 .collect::<BTreeSet<_>>()
                 .into_iter()
                 .collect();
+
+            if identifiers.is_empty() && !has_none_repeat {
+                continue;
+            }
 
             if let Some(Pragma::Repeat { nodes, .. }) = self.pragmas.iter_mut().find(
                 |x| matches!(x, Pragma::Repeat { identifiers: ids, .. } if *ids == identifiers),
@@ -54,6 +56,13 @@ mod test {
 
     test_transform!(
         calculate_repeats,
+        small_loop,
+        "begin, x: ; x, y: ; y, x: ; y, end: ;",
+        "begin, x: ; x, y: ; y, x: ; y, end: ; @repeat end x y : ;"
+    );
+
+    test_transform!(
+        calculate_repeats,
         hex_loop,
         "begin, end: ? 24 -> 25;
         24, 27: ;
@@ -86,5 +95,26 @@ mod test {
         32, 30: coord != null;
         46, 47: direction[coord][NW] != null;
         @repeat 25 26 27 28 30 32 : coord;"
+    );
+
+    test_transform!(
+        calculate_repeats,
+        repeat_test,
+        file "../../../../../examples/repeatTest.rg",
+        "@repeat selectDir4 : pos;"
+    );
+
+    test_transform!(
+        calculate_repeats,
+        repeat_test_big,
+        file "../../../../../examples/repeatTestBig.rg",
+        "@repeat goDown goLeft goRight goUp main : pos; @repeat setScore :;"
+    );
+
+    test_transform!(
+        calculate_repeats,
+        tictactoe,
+        file "../../../../../examples/ticTacToe.rg",
+        "@repeat end endcheckline : ; @repeat move preend turn : playerTurn;"
     );
 }

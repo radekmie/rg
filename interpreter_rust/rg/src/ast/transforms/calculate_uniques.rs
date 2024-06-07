@@ -6,10 +6,10 @@ use utils::position::Span;
 
 impl Game<Arc<str>> {
     pub fn calculate_uniques(&mut self) -> Result<(), Error<Arc<str>>> {
-        let reaching_paths = self.analyse::<ReachingPaths>(true);
+        let reaching_paths = self.analyse::<ReachingPaths>(false);
         let mut unique_nodes: BTreeSet<_> = reaching_paths
             .into_iter()
-            .filter(|(_, paths)| paths.iter().all(|path| !path.has_duplicate))
+            .filter(|(_, variables)| !variables.values().any(|is_repeated| *is_repeated))
             .map(|(node, _)| node)
             .collect();
 
@@ -61,11 +61,24 @@ mod test {
 
     test_transform!(
         calculate_uniques,
+        repeat_test,
+        file "../../../../../examples/repeatTest.rg",
+        "@unique begin end setScore win;"
+    );
+
+    test_transform!(
+        calculate_uniques,
+        repeat_test_big,
+        file "../../../../../examples/repeatTestBig.rg",
+        "@unique begin end win1 win2;"
+    );
+
+    test_transform!(
+        calculate_uniques,
         tictactoe,
-        include_str!("../../../../../examples/ticTacToe.rg"),
-        concat!(
-            "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endcheckline endmove move nextturn preend set turn win win1 win2;",
-            include_str!("../../../../../examples/ticTacToe.rg")
-        )
+        file "../../../../../examples/ticTacToe.rg",
+        "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord)                  endmove      nextturn        set      win win1 win2;"
+        // TODO: Ideally everything would be `@unique`.
+        // "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endcheckline endmove move nextturn preend set turn win win1 win2;"
     );
 }

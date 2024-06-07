@@ -1,25 +1,31 @@
 use super::Analysis;
-use crate::ast::{Edge, Game, Label, Node};
-use std::collections::BTreeSet;
+use crate::ast::{Edge, Game, Label};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 type Id = Arc<str>;
 
+const IMPORTANT_VARIABLES: [&str; 3] = ["player", "goals", "visible"];
+
 pub struct ReachingPaths;
 
 impl Analysis for ReachingPaths {
-    type Domain = BTreeSet<Path>;
+    type Domain = BTreeMap<Option<Id>, bool>;
 
     fn bot() -> Self::Domain {
         Self::Domain::default()
     }
 
     fn extreme(_program: &Game<Id>) -> Self::Domain {
-        Self::Domain::from([Path::default()])
+        Self::Domain::default()
     }
 
     fn join(mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
-        a.extend(b);
+        for (variable, is_repeated) in b.into_iter() {
+            a.entry(variable)
+                .and_modify(|is_repeated| *is_repeated = true)
+                .or_insert(is_repeated);
+        }
         a
     }
 
@@ -33,43 +39,27 @@ impl Analysis for ReachingPaths {
         } = &edge.label
         {
             if let Some(lhs) = lhs.uncast().as_reference() {
-                input.retain(|path| !path.variables.contains(lhs));
+                input.retain(|variable, _| variable.as_ref() != Some(lhs));
             }
             if let Some(rhs) = rhs.uncast().as_reference() {
-                input.retain(|path| !path.variables.contains(rhs));
+                input.retain(|variable, _| variable.as_ref() != Some(rhs));
             }
+            input.remove(&None);
         }
         input
     }
 
-    fn gen(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
-        input
-            .into_iter()
-            .map(|mut path| {
-                path.push(edge);
-                path
-            })
-            .collect()
-    }
-}
-
-#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
-pub struct Path {
-    pub has_duplicate: bool,
-    pub nodes: BTreeSet<Node<Id>>,
-    pub variables: BTreeSet<Id>,
-}
-
-impl Path {
-    pub fn push(&mut self, edge: &Edge<Id>) {
-        if !self.has_duplicate {
-            self.has_duplicate = self.nodes.contains(&edge.lhs);
-            if !self.has_duplicate {
-                self.nodes.insert(edge.lhs.clone());
-                if let Some((variable, _)) = edge.label.as_var_assignment() {
-                    self.variables.insert(variable.clone());
-                }
+    fn gen(mut input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
+        if let Some((variable, _)) = edge.label.as_var_assignment() {
+            if !IMPORTANT_VARIABLES.contains(&variable.as_ref()) {
+                input
+                    .entry(Some(variable.clone()))
+                    .and_modify(|is_repeated| *is_repeated = true)
+                    .or_default();
             }
         }
+
+        input.entry(None).or_default();
+        input
     }
 }
