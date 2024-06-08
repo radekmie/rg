@@ -42,42 +42,42 @@ mod test {
         calculate_uniques,
         small_unique,
         "begin, x: ; x, end: ;",
-        "begin, x: ; x, end: ; @unique begin end x;"
+        adds "@unique begin end x;"
     );
 
     test_transform!(
         calculate_uniques,
         small_loop,
         "begin, x: ; x, y: ; y, x: ; y, end: ;",
-        "begin, x: ; x, y: ; y, x: ; y, end: ; @unique begin;"
+        adds "@unique begin;"
     );
 
     test_transform!(
         calculate_uniques,
         repeat_example,
         "begin, a: ; a, a: x = y[x]; a, end: x == z;",
-        "begin, a: ; a, a: x = y[x]; a, end: x == z; @unique begin end;"
+        adds "@unique begin end;"
     );
 
     test_transform!(
         calculate_uniques,
         repeat_test,
-        file "../../../../../examples/repeatTest.rg",
-        "@unique begin end setScore win;"
+        include_str!("../../../../../examples/repeatTest.rg"),
+        adds "@unique begin end setScore win;"
     );
 
     test_transform!(
         calculate_uniques,
         repeat_test_big,
-        file "../../../../../examples/repeatTestBig.rg",
-        "@unique begin end win1 win2;"
+        include_str!("../../../../../examples/repeatTestBig.rg"),
+        adds "@unique begin end win1 win2;"
     );
 
     test_transform!(
         calculate_uniques,
         tictactoe,
-        file "../../../../../examples/ticTacToe.rg",
-        "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end              endmove      nextturn        set      win win1 win2;"
+        include_str!("../../../../../examples/ticTacToe.rg"),
+        adds "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end              endmove      nextturn        set      win win1 win2;"
         // TODO: Ideally everything would be `@unique`.
         // "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endcheckline endmove move nextturn preend set turn win win1 win2;"
     );

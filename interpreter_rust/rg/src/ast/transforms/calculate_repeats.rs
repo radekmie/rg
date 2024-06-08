@@ -51,14 +51,14 @@ mod test {
         calculate_repeats,
         repeat_example,
         "begin, a: ; a, a: x = y[x]; a, end: x == z;",
-        "begin, a: ; a, a: x = y[x]; a, end: x == z; @repeat a : x;"
+        adds "@repeat a : x;"
     );
 
     test_transform!(
         calculate_repeats,
         small_loop,
         "begin, x: ; x, y: ; y, x: ; y, end: ;",
-        "begin, x: ; x, y: ; y, x: ; y, end: ; @repeat end x y : ;"
+        adds "@repeat end x y : ;"
     );
 
     test_transform!(
@@ -79,42 +79,27 @@ mod test {
         30, 28: board[coord] == r;
         32, 30: coord != null;
         46, 47: direction[coord][NW] != null;",
-        "begin, end: ? 24 -> 25;
-        24, 27: ;
-        26, 25: ! 46 -> 47;
-        27, 26: ;
-        27, 32: coord = direction[coord][E];
-        27, 32: coord = direction[coord][NE];
-        27, 32: coord = direction[coord][NW];
-        27, 32: coord = direction[coord][SE];
-        27, 32: coord = direction[coord][SW];
-        27, 32: coord = direction[coord][W];
-        28, 26: ;
-        28, 27: ;
-        30, 28: board[coord] == r;
-        32, 30: coord != null;
-        46, 47: direction[coord][NW] != null;
-        @repeat 25 26 27 28 30 32 : coord;"
+        adds "@repeat 25 26 27 28 30 32 : coord;"
     );
 
     test_transform!(
         calculate_repeats,
         repeat_test,
-        file "../../../../../examples/repeatTest.rg",
-        "@repeat selectDir4 : pos;"
+        include_str!("../../../../../examples/repeatTest.rg"),
+        adds "@repeat selectDir4 : pos;"
     );
 
     test_transform!(
         calculate_repeats,
         repeat_test_big,
-        file "../../../../../examples/repeatTestBig.rg",
-        "@repeat goDown goLeft goRight goUp main : pos; @repeat setScore :;"
+        include_str!("../../../../../examples/repeatTestBig.rg"),
+        adds "@repeat goDown goLeft goRight goUp main : pos; @repeat setScore :;"
     );
 
     test_transform!(
         calculate_repeats,
         tictactoe,
-        file "../../../../../examples/ticTacToe.rg",
-        "@repeat endcheckline : ; @repeat move preend turn : playerTurn;"
+        include_str!("../../../../../examples/ticTacToe.rg"),
+        adds "@repeat endcheckline : ; @repeat move preend turn : playerTurn;"
     );
 }
