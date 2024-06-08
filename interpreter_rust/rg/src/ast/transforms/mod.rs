@@ -73,8 +73,9 @@ mod test {
                 let expect = parse($expect);
                 actual.$fn().unwrap();
 
-                assert_eq!(
-                    actual, expect,
+                // `assert_eq` prints the entire structs and it's not helpful.
+                assert!(
+                    actual == expect,
                     "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
                 );
             }

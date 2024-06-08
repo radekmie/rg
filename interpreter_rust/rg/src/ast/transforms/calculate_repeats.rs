@@ -115,6 +115,6 @@ mod test {
         calculate_repeats,
         tictactoe,
         file "../../../../../examples/ticTacToe.rg",
-        "@repeat end endcheckline : ; @repeat move preend turn : playerTurn;"
+        "@repeat endcheckline : ; @repeat move preend turn : playerTurn;"
     );
 }

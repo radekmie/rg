@@ -57,9 +57,10 @@ impl Analysis for ReachingPaths {
                     .and_modify(|is_repeated| *is_repeated = true)
                     .or_default();
             }
+        } else {
+            input.entry(None).or_default();
         }
 
-        input.entry(None).or_default();
         input
     }
 }
