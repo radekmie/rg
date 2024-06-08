@@ -9,7 +9,7 @@ impl Game<Arc<str>> {
         let reaching_paths = self.analyse::<ReachingPaths>(false);
         let mut unique_nodes: BTreeSet<_> = reaching_paths
             .into_iter()
-            .filter(|(_, variables)| !variables.values().any(|is_repeated| *is_repeated))
+            .filter(|(_, variables)| variables.values().all(|reached| !reached.is_repeated))
             .map(|(node, _)| node)
             .collect();
 
@@ -77,8 +77,6 @@ mod test {
         calculate_uniques,
         tictactoe,
         include_str!("../../../../../examples/ticTacToe.rg"),
-        adds "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end              endmove      nextturn        set      win win1 win2;"
-        // TODO: Ideally everything would be `@unique`.
-        // "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endcheckline endmove move nextturn preend set turn win win1 win2;"
+        adds "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endcheckline endmove move nextturn preend set turn win win1 win2;"
     );
 }

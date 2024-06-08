@@ -8,10 +8,12 @@ impl Game<Arc<str>> {
     pub fn calculate_repeats(&mut self) -> Result<(), Error<Arc<str>>> {
         let reaching_paths = self.analyse::<ReachingPaths>(false);
         for (node, variables) in reaching_paths {
-            let has_none_repeat = variables.get(&None) == Some(&true);
+            let has_none_repeat = variables
+                .get(&None)
+                .is_some_and(|reached| reached.is_repeated);
             let identifiers: Vec<_> = variables
                 .into_iter()
-                .filter(|(_, is_repeated)| *is_repeated)
+                .filter(|(_, reached)| reached.is_repeated)
                 .filter_map(|(variable, _)| variable)
                 .collect::<BTreeSet<_>>()
                 .into_iter()
@@ -99,7 +101,6 @@ mod test {
     test_transform!(
         calculate_repeats,
         tictactoe,
-        include_str!("../../../../../examples/ticTacToe.rg"),
-        adds "@repeat endcheckline : ; @repeat move preend turn : playerTurn;"
+        include_str!("../../../../../examples/ticTacToe.rg")
     );
 }
