@@ -9,12 +9,13 @@ impl From<ast::Game<Arc<str>>> for ist::Game<Arc<str>> {
         let mut ist = Self {
             constants: BTreeMap::default(),
             edges: BTreeMap::default(),
+            repeats: BTreeMap::default(),
             types: BTreeMap::default(),
             uniques: BTreeSet::default(),
             variables: BTreeMap::default(),
         };
 
-        build_uniques(&mut ist, ast.pragmas);
+        build_pragmas(&mut ist, ast.pragmas);
         build_typedefs(&mut ist, ast.typedefs);
         build_constants(&mut ist, ast.constants);
         build_variables(&mut ist, ast.variables);
@@ -102,6 +103,26 @@ fn build_expression(
             ist::Expression::Literal {
                 value: Rc::new(ist::Value::Element { value: identifier }),
             }
+        }
+    }
+}
+
+fn build_pragmas(game: &mut ist::Game<Arc<str>>, pragmas: Vec<ast::Pragma<Arc<str>>>) {
+    for pragma in pragmas {
+        match pragma {
+            ast::Pragma::Repeat {
+                nodes, identifiers, ..
+            } => {
+                for node in nodes {
+                    game.repeats.insert(build_node(node), identifiers.clone());
+                }
+            }
+            ast::Pragma::Unique { nodes, .. } => {
+                for node in nodes {
+                    game.uniques.insert(build_node(node));
+                }
+            }
+            _ => {}
         }
     }
 }
@@ -213,16 +234,6 @@ fn build_typedefs(game: &mut ist::Game<Arc<str>>, typedefs: Vec<ast::Typedef<Arc
         );
 
         build_typedefs(game, unresolved_typedefs);
-    }
-}
-
-fn build_uniques(game: &mut ist::Game<Arc<str>>, pragmas: Vec<ast::Pragma<Arc<str>>>) {
-    for pragma in pragmas {
-        if let ast::Pragma::Unique { nodes, .. } = pragma {
-            for node in nodes {
-                game.uniques.insert(build_node(node));
-            }
-        }
     }
 }
 

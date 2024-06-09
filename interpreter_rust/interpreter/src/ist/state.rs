@@ -1,6 +1,4 @@
-use crate::ist::{
-    EdgeLabel, Expression, Game, RuntimeId, Value, LABEL_END, LABEL_GOALS, LABEL_PLAYER,
-};
+use super::{EdgeLabel, Expression, Game, RuntimeId, Value, LABEL_END, LABEL_GOALS, LABEL_PLAYER};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
@@ -101,7 +99,7 @@ impl State {
             game,
             return_queue: Vec::default(),
             search_queue: vec![self.clone()],
-            visited_states: BTreeSet::default(),
+            visited_states: VisitedStates::new(game),
         }
     }
 
@@ -124,7 +122,7 @@ pub struct StateNext<'a> {
     game: &'a Game<RuntimeId>,
     return_queue: Vec<State>,
     search_queue: Vec<State>,
-    visited_states: BTreeSet<State>,
+    visited_states: VisitedStates<'a>,
 }
 
 impl Iterator for StateNext<'_> {
@@ -145,8 +143,7 @@ impl Iterator for StateNext<'_> {
             }
 
             if let Some(state) = search_queue.pop() {
-                if !game.uniques.contains(&state.position) && !visited_states.insert(state.clone())
-                {
+                if visited_states.visited(&state) {
                     continue;
                 }
 
@@ -242,5 +239,45 @@ impl Iterator for StateNextDepth<'_> {
         }
 
         None
+    }
+}
+
+struct VisitedStates<'a> {
+    game: &'a Game<RuntimeId>,
+    #[allow(clippy::type_complexity)]
+    states: BTreeMap<(RuntimeId, Rc<Vec<RuntimeId>>), BTreeSet<Vec<Option<Rc<Value<RuntimeId>>>>>>,
+}
+
+impl<'a> VisitedStates<'a> {
+    fn new(game: &'a Game<RuntimeId>) -> Self {
+        Self {
+            game,
+            states: BTreeMap::default(),
+        }
+    }
+
+    fn visited(&mut self, state: &State) -> bool {
+        if self.game.uniques.contains(&state.position) {
+            return false;
+        }
+
+        let values: Vec<_> = if let Some(variables) = self.game.repeats.get(&state.position) {
+            variables
+                .iter()
+                .map(|variable| state.values.get(variable).cloned())
+                .collect()
+        } else {
+            self.game
+                .variables
+                .keys()
+                .map(|variable| state.values.get(variable).cloned())
+                .collect()
+        };
+
+        !self
+            .states
+            .entry((state.position, state.tags.clone()))
+            .or_default()
+            .insert(values)
     }
 }

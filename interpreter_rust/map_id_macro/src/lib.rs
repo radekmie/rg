@@ -14,6 +14,9 @@ pub fn derive_map_id(input: TokenStream) -> TokenStream {
         let target = is_self.then_some(quote! { self. });
         match format!("{}", quote! { #ty }).as_str() {
             "Id" => quote! { map(&#target #ident) },
+            "BTreeMap < Id, Vec < Id > >" => {
+                quote! { #target #ident.iter().map(|(k, v)| (map(k), v.iter().map(|x| map(x)).collect())).collect() }
+            }
             "BTreeSet < Id >" => quote! { #target #ident.iter().map(|x| map(x)).collect() },
             "Option < Id >" => quote! { #target #ident.as_ref().map(|x| map(x)) },
             "Vec < Id >" => quote! { #target #ident.iter().map(|x| map(x)).collect() },
