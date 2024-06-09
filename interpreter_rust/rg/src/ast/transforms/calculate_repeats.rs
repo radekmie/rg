@@ -1,4 +1,4 @@
-use crate::ast::analyses::ReachingPaths;
+use crate::ast::analyses::ReachingAssignments;
 use crate::ast::{Error, Game, Pragma};
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -6,7 +6,7 @@ use utils::position::Span;
 
 impl Game<Arc<str>> {
     pub fn calculate_repeats(&mut self) -> Result<(), Error<Arc<str>>> {
-        let reaching_paths = self.analyse::<ReachingPaths>(false);
+        let reaching_paths = self.analyse::<ReachingAssignments>(false);
         for (node, variables) in reaching_paths {
             let has_none_repeat = variables
                 .get(&None)

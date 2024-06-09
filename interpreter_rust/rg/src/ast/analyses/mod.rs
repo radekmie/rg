@@ -1,11 +1,11 @@
 mod reachable_nodes;
+mod reaching_assignments;
 mod reaching_definitions;
-mod reaching_paths;
 
 use crate::ast::{Edge, Game, Label, Node};
 pub use reachable_nodes::ReachableNodes;
+pub use reaching_assignments::ReachingAssignments;
 pub use reaching_definitions::ReachingDefinitions;
-pub use reaching_paths::ReachingPaths;
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
 use std::sync::Arc;

@@ -8,22 +8,22 @@ type Id = Arc<str>;
 const IMPORTANT_VARIABLES: [&str; 3] = ["player", "goals", "visible"];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Reached {
+pub struct Assignment {
     pub is_repeated: bool,
-    node: BTreeSet<Node<Id>>,
+    sources: BTreeSet<Node<Id>>,
 }
 
-impl Reached {
+impl Assignment {
     fn add(&mut self, node: &Node<Id>) {
-        if self.node.contains(node) {
+        if self.sources.contains(node) {
             self.is_repeated = true;
         } else {
-            self.node.insert(node.clone());
+            self.sources.insert(node.clone());
         }
     }
 
     fn join(&mut self, other: &Self) {
-        for node in &other.node {
+        for node in &other.sources {
             self.add(node);
         }
     }
@@ -31,15 +31,15 @@ impl Reached {
     fn new(node: &Node<Id>) -> Self {
         Self {
             is_repeated: false,
-            node: BTreeSet::from([node.clone()]),
+            sources: BTreeSet::from([node.clone()]),
         }
     }
 }
 
-pub struct ReachingPaths;
+pub struct ReachingAssignments;
 
-impl Analysis for ReachingPaths {
-    type Domain = BTreeMap<Option<Id>, Reached>;
+impl Analysis for ReachingAssignments {
+    type Domain = BTreeMap<Option<Id>, Assignment>;
 
     fn bot() -> Self::Domain {
         Self::Domain::default()
@@ -84,10 +84,12 @@ impl Analysis for ReachingPaths {
                 input
                     .entry(Some(variable.clone()))
                     .and_modify(|a_reached| a_reached.add(&edge.lhs))
-                    .or_insert_with(|| Reached::new(&edge.lhs));
+                    .or_insert_with(|| Assignment::new(&edge.lhs));
             }
         } else {
-            input.entry(None).or_insert_with(|| Reached::new(&edge.lhs));
+            input
+                .entry(None)
+                .or_insert_with(|| Assignment::new(&edge.lhs));
         }
 
         input
