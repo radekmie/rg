@@ -62,6 +62,7 @@ impl Expression<RuntimeId> {
 pub struct Game<Id: Ord> {
     pub constants: BTreeMap<Id, Rc<Value<Id>>>,
     pub edges: BTreeMap<Id, Vec<Edge<Id>>>,
+    pub repeats: BTreeMap<Id, Vec<Id>>,
     pub types: BTreeMap<Id, Rc<Type<Id>>>,
     pub uniques: BTreeSet<Id>,
     pub variables: BTreeMap<Id, Variable<Id>>,
