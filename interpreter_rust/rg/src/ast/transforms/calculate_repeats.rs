@@ -53,7 +53,7 @@ mod test {
         calculate_repeats,
         repeat_example,
         "begin, a: ; a, a: x = y[x]; a, end: x == z;",
-        adds "@repeat a : x;"
+        adds "@repeat a : x; @repeat end :;"
     );
 
     test_transform!(
@@ -95,12 +95,13 @@ mod test {
         calculate_repeats,
         repeat_test_big,
         include_str!("../../../../../examples/repeatTestBig.rg"),
-        adds "@repeat goDown goLeft goRight goUp main : pos; @repeat setScore :;"
+        adds "@repeat goDown goLeft goRight goUp main : pos; @repeat setScore win1 win2 :;"
     );
 
     test_transform!(
         calculate_repeats,
         tictactoe,
-        include_str!("../../../../../examples/ticTacToe.rg")
+        include_str!("../../../../../examples/ticTacToe.rg"),
+        adds "@repeat endcheckline :;"
     );
 }

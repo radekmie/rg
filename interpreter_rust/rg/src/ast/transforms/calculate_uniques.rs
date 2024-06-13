@@ -56,7 +56,7 @@ mod test {
         calculate_uniques,
         repeat_example,
         "begin, a: ; a, a: x = y[x]; a, end: x == z;",
-        adds "@unique begin end;"
+        adds "@unique begin;"
     );
 
     test_transform!(
@@ -70,13 +70,13 @@ mod test {
         calculate_uniques,
         repeat_test_big,
         include_str!("../../../../../examples/repeatTestBig.rg"),
-        adds "@unique begin end win1 win2;"
+        adds "@unique begin end;"
     );
 
     test_transform!(
         calculate_uniques,
         tictactoe,
         include_str!("../../../../../examples/ticTacToe.rg"),
-        adds "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endcheckline endmove move nextturn preend set turn win win1 win2;"
+        adds "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endmove move nextturn preend set turn win win1 win2;"
     );
 }

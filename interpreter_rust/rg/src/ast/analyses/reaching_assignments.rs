@@ -73,7 +73,6 @@ impl Analysis for ReachingAssignments {
             if let Some(rhs) = rhs.uncast().as_reference() {
                 input.retain(|variable, _| variable.as_ref() != Some(rhs));
             }
-            input.remove(&None);
         }
         input
     }
