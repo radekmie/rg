@@ -63,6 +63,8 @@ pub fn safe_serialize_rg_ast(game: &RgGame<Arc<str>>) -> Result<String, String> 
 pub struct Flags {
     #[serde(rename = "addExplicitCasts")]
     add_explicit_casts: bool,
+    #[serde(rename = "calculateRepeats")]
+    calculate_repeats: bool,
     #[serde(rename = "calculateSimpleApply")]
     calculate_simple_apply: bool,
     #[serde(rename = "calculateTagIndexes")]
@@ -109,6 +111,7 @@ impl Flags {
     pub fn all() -> Self {
         Self {
             add_explicit_casts: true,
+            calculate_repeats: true,
             calculate_simple_apply: true,
             calculate_tag_indexes: true,
             calculate_uniques: true,
@@ -135,6 +138,7 @@ impl Flags {
     pub fn none() -> Self {
         Self {
             add_explicit_casts: false,
+            calculate_repeats: false,
             calculate_simple_apply: false,
             calculate_tag_indexes: false,
             calculate_uniques: false,
@@ -252,6 +256,7 @@ pub fn analyze_rg_inner(
         pass!(prune_unused_variables);
         pass!(prune_unused_constants);
         pass!(mangle_symbols);
+        pass!(calculate_repeats);
         pass!(calculate_simple_apply);
         pass!(calculate_tag_indexes);
         pass!(calculate_uniques);

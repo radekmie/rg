@@ -87,6 +87,7 @@ npm test
 | Translation of HRG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Translation of RBG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
 | Transformation `addExplicitCasts`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `calculateRepeats`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `calculateSimpleApply`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `calculateTagIndexes`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `calculateUniques`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
@@ -170,6 +171,7 @@ Usage: node lib/cli [options] [command]
 
 Options:
   --addExplicitCasts          add type casts to all expressions
+  --calculateRepeats          calculate missing @repeat pragmas automatically
   --calculateSimpleApply      calculate missing @simpleApply pragmas automatically
   --calculateTagIndexes       calculate missing @tagIndex and @tagMaxIndex pragmas automatically
   --calculateUniques          calculate missing @unique pragmas automatically

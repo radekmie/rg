@@ -11,6 +11,10 @@ program
   .name('node lib/cli')
   .option('--addExplicitCasts', 'add type casts to all expressions')
   .option(
+    '--calculateRepeats',
+    'calculate missing @repeat pragmas automatically',
+  )
+  .option(
     '--calculateSimpleApply',
     'calculate missing @simpleApply pragmas automatically',
   )
@@ -94,14 +98,15 @@ function addCommand(
         extension: extension as Language,
         flags: {
           addExplicitCasts: !!options.addExplicitCasts,
+          calculateRepeats: !!options.calculateRepeats,
           calculateSimpleApply: !!options.calculateSimpleApply,
           calculateTagIndexes: !!options.calculateTagIndexes,
           calculateUniques: !!options.calculateUniques,
           compactComparisons: !!options.compactComparisons,
           compactSkipEdges: !!options.compactSkipEdges,
           expandGeneratorNodes: !!options.expandGeneratorNodes,
-          inlineReachability: !!options.inlineReachability,
           inlineAssignment: !!options.inlineAssignment,
+          inlineReachability: !!options.inlineReachability,
           joinForkPrefixes: !!options.joinForkPrefixes,
           joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,

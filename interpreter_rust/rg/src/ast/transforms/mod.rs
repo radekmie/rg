@@ -1,5 +1,6 @@
 mod add_builtins;
 mod add_explicit_casts;
+mod calculate_repeats;
 mod calculate_simple_apply;
 mod calculate_tag_indexes;
 mod calculate_uniques;
@@ -45,6 +46,10 @@ mod test {
             test_transform!($fn, $name, $actual, $actual);
         };
 
+        ($fn:ident, $name:ident, $actual:expr, adds $extra:expr) => {
+            test_transform!($fn, $name, $actual, concat!($actual, $extra));
+        };
+
         ($fn:ident, $name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {
@@ -63,8 +68,9 @@ mod test {
                 let expect = parse($expect);
                 actual.$fn().unwrap();
 
-                assert_eq!(
-                    actual, expect,
+                // `assert_eq` prints the entire structs and it's not helpful.
+                assert!(
+                    actual == expect,
                     "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
                 );
             }

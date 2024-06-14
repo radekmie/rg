@@ -18,6 +18,3 @@ selectDir4, win: pos == Position(v4);
 
 win, setScore: goals[player] = Score(100);
 setScore, end: player = PlayerOrKeeper(keeper);
-
-@unique begin win setScore;
-// @repeat select4: pos;

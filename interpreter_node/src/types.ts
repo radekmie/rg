@@ -11,6 +11,7 @@ export type Settings = {
   extension: Language;
   flags: {
     addExplicitCasts: boolean;
+    calculateRepeats: boolean;
     calculateSimpleApply: boolean;
     calculateTagIndexes: boolean;
     calculateUniques: boolean;
@@ -37,18 +38,19 @@ export type Settings = {
 
 export const noFlagsEnabled: Settings['flags'] = {
   addExplicitCasts: false,
+  calculateRepeats: false,
   calculateSimpleApply: false,
   calculateTagIndexes: false,
   calculateUniques: false,
   compactComparisons: false,
-  normalizeTypes: false,
   compactSkipEdges: false,
   expandGeneratorNodes: false,
-  inlineReachability: false,
   inlineAssignment: false,
+  inlineReachability: false,
   joinForkPrefixes: false,
   joinForkSuffixes: false,
   mangleSymbols: false,
+  normalizeTypes: false,
   pruneSingletonTypes: false,
   pruneUnreachableNodes: false,
   pruneUnusedConstants: false,
