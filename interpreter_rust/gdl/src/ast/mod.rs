@@ -125,6 +125,10 @@ impl<Id> Term<Id> {
             True(proposition) => proposition.has_variable(),
         }
     }
+
+    pub fn is_init(&self) -> bool {
+        matches!(self, Term::Init(_))
+    }
 }
 
 impl<Id: PartialEq> Term<Id> {

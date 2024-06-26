@@ -297,53 +297,55 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
     let mut variables = BTreeSet::new();
     for term in gdl.subterms() {
-        if let Term::Next(term) = term {
+        if let Term::Init(term) | Term::Next(term) = term {
             if let Term::Custom(AtomOrVariable::Atom(id), arguments) = term.as_ref() {
-                if arguments.is_empty() && variables.insert(id) {
-                    connect(
-                        rg,
-                        gdl,
-                        &Term::Next(Arc::new(Term::Custom(
-                            AtomOrVariable::Atom(id.clone()),
-                            vec![],
-                        ))),
-                        Id::from(format!("next_{}", variables.len() - 1)),
-                        Id::from(format!("next_{}_0", variables.len())),
-                        true,
-                    );
-
-                    connect(
-                        rg,
-                        gdl,
-                        &Term::Next(Arc::new(Term::Custom(
-                            AtomOrVariable::Atom(id.clone()),
-                            vec![],
-                        ))),
-                        Id::from(format!("next_{}", variables.len() - 1)),
-                        Id::from(format!("next_{}_1", variables.len())),
-                        false,
-                    );
-
-                    rg.edges.push(Edge {
-                        span: Span::none(),
-                        lhs: Node::new(Id::from(format!("next_{}_0", variables.len()))),
-                        rhs: Node::new(Id::from(format!("next_{}", variables.len()))),
-                        label: Label::Assignment {
-                            lhs: Arc::from(Expression::new(Id::from(format!("{id}_next")))),
-                            rhs: Arc::from(Expression::new(Id::from("0"))),
-                        },
-                    });
-
-                    rg.edges.push(Edge {
-                        span: Span::none(),
-                        lhs: Node::new(Id::from(format!("next_{}_1", variables.len()))),
-                        rhs: Node::new(Id::from(format!("next_{}", variables.len()))),
-                        label: Label::Assignment {
-                            lhs: Arc::from(Expression::new(Id::from(format!("{id}_next")))),
-                            rhs: Arc::from(Expression::new(Id::from("1"))),
-                        },
-                    });
+                if !variables.insert(id) || !arguments.is_empty() || term.is_init() {
+                    continue;
                 }
+
+                connect(
+                    rg,
+                    gdl,
+                    &Term::Next(Arc::new(Term::Custom(
+                        AtomOrVariable::Atom(id.clone()),
+                        vec![],
+                    ))),
+                    Id::from(format!("next_{}", variables.len() - 1)),
+                    Id::from(format!("next_{}_0", variables.len())),
+                    true,
+                );
+
+                connect(
+                    rg,
+                    gdl,
+                    &Term::Next(Arc::new(Term::Custom(
+                        AtomOrVariable::Atom(id.clone()),
+                        vec![],
+                    ))),
+                    Id::from(format!("next_{}", variables.len() - 1)),
+                    Id::from(format!("next_{}_1", variables.len())),
+                    false,
+                );
+
+                rg.edges.push(Edge {
+                    span: Span::none(),
+                    lhs: Node::new(Id::from(format!("next_{}_0", variables.len()))),
+                    rhs: Node::new(Id::from(format!("next_{}", variables.len()))),
+                    label: Label::Assignment {
+                        lhs: Arc::from(Expression::new(Id::from(format!("{id}_next")))),
+                        rhs: Arc::from(Expression::new(Id::from("0"))),
+                    },
+                });
+
+                rg.edges.push(Edge {
+                    span: Span::none(),
+                    lhs: Node::new(Id::from(format!("next_{}_1", variables.len()))),
+                    rhs: Node::new(Id::from(format!("next_{}", variables.len()))),
+                    label: Label::Assignment {
+                        lhs: Arc::from(Expression::new(Id::from(format!("{id}_next")))),
+                        rhs: Arc::from(Expression::new(Id::from("1"))),
+                    },
+                });
             }
         }
     }
@@ -561,8 +563,8 @@ fn connect(
                 lhs: lhs.clone(),
                 rhs: rhs.clone(),
                 label: Label::Comparison {
-                    lhs: Arc::from(Expression::new(begin.clone())),
-                    rhs: Arc::from(Expression::new(begin.clone())),
+                    lhs: Arc::from(Expression::new(Id::from("0"))),
+                    rhs: Arc::from(Expression::new(Id::from("0"))),
                     negated: true,
                 },
             });
