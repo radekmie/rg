@@ -213,7 +213,7 @@ impl Game<Arc<str>> {
 }
 
 fn get_edges_using_binding(
-    edges: &Vec<Edge<Arc<str>>>,
+    edges: &[Edge<Arc<str>>],
     starting_edge_index: usize,
     binding: &Arc<str>,
 ) -> BTreeSet<usize> {

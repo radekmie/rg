@@ -20,7 +20,7 @@ pub fn provide(uri: &Url, span: &Span, game: &Ast, text: &str) -> Option<CodeAct
                 .collect();
             Some(actions)
         }
-        Ast::Hrg(_) => None,
+        Ast::Hrg => None,
     }
 }
 

@@ -92,7 +92,7 @@ impl Delta {
 pub fn semantic_tokens_full(document: &Document) -> Vec<SemanticToken> {
     let keywords = match &document.tree {
         Ast::Rg(game) => ast_tokens(game),
-        Ast::Hrg(_) => vec![],
+        Ast::Hrg => vec![],
     };
     let symbols = symbol_table_tokens(&document.symbol_table);
     let mut tokens = [&keywords[..], &symbols[..]].concat();

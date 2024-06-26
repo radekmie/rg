@@ -55,7 +55,7 @@ pub fn completions(
 ) -> Option<CompletionResponse> {
     let items = match game {
         Ast::Rg(game) => completion_items_rg(pos, game, symbol_table),
-        Ast::Hrg(_) => completion_items_hrg(symbol_table),
+        Ast::Hrg => completion_items_hrg(symbol_table),
     };
     if items.is_empty() {
         None

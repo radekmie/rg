@@ -14,7 +14,7 @@ pub struct Document {
 
 pub enum Ast {
     Rg(rg::ast::Game<Identifier>),
-    Hrg(hrg::ast::Game<Identifier>),
+    Hrg,
 }
 
 impl Document {
@@ -45,7 +45,7 @@ impl Document {
         parse_errors.append(&mut symbol_table_errors);
         (
             Self {
-                tree: Ast::Hrg(game),
+                tree: Ast::Hrg,
                 symbol_table,
                 text,
             },

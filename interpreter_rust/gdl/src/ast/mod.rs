@@ -127,7 +127,7 @@ impl<Id> Term<Id> {
     }
 
     pub fn is_init(&self) -> bool {
-        matches!(self, Term::Init(_))
+        matches!(self, Self::Init(_))
     }
 }
 
