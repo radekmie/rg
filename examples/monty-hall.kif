@@ -1,0 +1,35 @@
+role(candidate)
+role(random)
+
+init(closed(1))
+init(closed(2))
+init(closed(3))
+init(step(1))
+
+legal(random, hide_car(D)) :- true(step(1)) & true(closed(D))
+legal(random, open_door(D)) :- true(step(2)) & true(closed(D)) & ~true(car(D)) & ~true(chosen(D))
+legal(random, noop) :- true(step(3))
+
+legal(candidate, choose(D)) :- true(step(1)) & true(closed(D))
+legal(candidate, noop) :- true(step(2))
+legal(candidate, noop) :- true(step(3))
+legal(candidate, switch) :- true(step(3))
+
+sees(candidate, D) :- does(random, open_door(D))
+sees(candidate, D) :- true(step(3)) & true(car(D))
+
+next(car(D)) :- does(random, hide_car(D))
+next(car(D)) :- true(car(D))
+next(closed(D)) :- true(closed(D)) & ~does(random, open_door(D))
+next(chosen(D)) :- does(candidate, choose(D))
+next(chosen(D)) :- true(chosen(D)) & ~does(candidate, switch)
+next(chosen(D)) :- does(candidate, switch) & true(closed(D)) & ~true(chosen(D))
+next(step(2)) :- true(step(1))
+next(step(3)) :- true(step(2))
+next(step(4)) :- true(step(3))
+
+terminal :- true(step(4))
+
+goal(candidate, 100) :- true(chosen(D)) & true(car(D))
+goal(candidate, 0) :- true(chosen(D)) & ~true(car(D))
+goal(random, 0)
