@@ -6,7 +6,6 @@ edition = "2021"
 
 [dependencies]
 futures = "0.3.21"
-getrandom = { version = "0.2.8", features = ["js"] }
 js-sys = "0.3.57"
 lsp = { path = "../lsp" }
 tower-lsp = { version = "0.20.0", default-features = false, features = ["runtime-agnostic"] }
