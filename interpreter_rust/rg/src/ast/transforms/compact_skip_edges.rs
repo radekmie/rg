@@ -10,6 +10,9 @@ impl Game<Arc<str>> {
             self.make_bindings_unique();
         }
 
+        // Remove multi-edges.
+        self.edges.dedup();
+
         while let Some((x, y)) = self.compact_skip_edge_backward() {
             self.edges[x].rhs = self.edges[y].rhs.clone();
             self.edges.remove(y);
@@ -447,9 +450,20 @@ mod test {
         "
     );
 
-    test_transform!(compact_skip_edges,
+    test_transform!(
+        compact_skip_edges,
         canonical_form,
         "type T = { 0, 1 }; var t: T = 0; a, b(x: T): x == t; c, d(x: T): x == t;",
         "type T = { 0, 1 }; var t: T = 0; a, b(bind_1: T): bind_1 == t; c, d(bind_2: T): bind_2 == t;"
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        multi_edge,
+        "a, b: 1 == 1;
+        a, b: 1 == 1;
+        a, b: 2 == 2;",
+        "a, b: 1 == 1;
+        a, b: 2 == 2;"
     );
 }
