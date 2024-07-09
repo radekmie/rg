@@ -106,34 +106,6 @@ impl<Id: PartialEq> Edge<Id> {
     pub fn has_binding(&self, identifier: &Id) -> bool {
         self.get_binding(identifier).is_some()
     }
-
-    pub fn is_exclusive_with(&self, other: &Self) -> bool {
-        match (&self.label, &other.label) {
-            (
-                Label::Comparison { lhs, rhs, negated },
-                Label::Comparison {
-                    lhs: lhs2,
-                    rhs: rhs2,
-                    negated: negated2,
-                },
-            ) => lhs == lhs2 && rhs == rhs2 && negated != negated2,
-            (
-                Label::Reachability {
-                    lhs, rhs, negated, ..
-                },
-                Label::Reachability {
-                    lhs: lhs2,
-                    rhs: rhs2,
-                    negated: negated2,
-                    ..
-                },
-            ) => lhs == lhs2 && rhs == rhs2 && negated != negated2,
-            // (Label::Assignment { lhs, rhs }, Label::Assignment { lhs: lhs2, rhs: rhs2 }) => {
-            //     lhs == lhs2 && rhs != rhs2;
-            // },
-            _ => false,
-        }
-    }
 }
 
 impl Edge<Arc<str>> {
