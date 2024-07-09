@@ -13,6 +13,10 @@ impl Game<Arc<str>> {
         // Remove multi-edges.
         self.edges.dedup();
 
+        while let Some(x) = self.remove_obsolite_edges() {
+            self.edges.remove(x);
+        }
+
         while let Some((x, y)) = self.compact_skip_edge_backward() {
             self.edges[x].rhs = self.edges[y].rhs.clone();
             self.edges.remove(y);
@@ -128,6 +132,21 @@ impl Game<Arc<str>> {
                 && self.incoming_edges(&x.lhs).next().is_none()
                 && self.outgoing_edges(&x.lhs).all(|y| y == x)
                 && !self.is_reachability_target(&x.lhs)
+            {
+                return Some(x_index);
+            }
+        }
+
+        None
+    }
+
+    // If there is a skip edge from a to b, all other edges from a to b are obsolete.
+    fn remove_obsolite_edges(&self) -> Option<usize> {
+        for (x_index, x) in self.edges.iter().enumerate() {
+            if !x.label.is_skip()
+                && self
+                    .incoming_edges(&x.rhs)
+                    .any(|e| e.lhs == x.lhs && e.label.is_skip())
             {
                 return Some(x_index);
             }
@@ -465,5 +484,14 @@ mod test {
         a, b: 2 == 2;",
         "a, b: 1 == 1;
         a, b: 2 == 2;"
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        skip_and_comparisson,
+        "a, b: ;
+        a, b: 1 == 1;
+        b, c: 2 == 2;",
+        "a, c: 2 == 2;"
     );
 }
