@@ -7,6 +7,7 @@ import BreakthroughRg from 'bundle-text:../../../../examples/breakthrough.rg';
 import Connect4Hrg from 'bundle-text:../../../../examples/connect4.hrg';
 import Connect4Gdl from 'bundle-text:../../../../examples/connect4.kif';
 import Connect4Rbg from 'bundle-text:../../../../examples/connect4.rbg';
+import GomokuFreestyleHrg from 'bundle-text:../../../../examples/gomoku-freestyle.hrg';
 import Hex2Rbg from 'bundle-text:../../../../examples/hex2.rbg';
 import Hex9Rbg from 'bundle-text:../../../../examples/hex9.rbg';
 import KnightthroughHrg from 'bundle-text:../../../../examples/knightthrough.hrg';
@@ -28,6 +29,7 @@ export const presets = [
   ['Connect4', Connect4Hrg, Language.hrg] as const,
   ['Connect4', Connect4Gdl, Language.gdl] as const,
   ['Connect4', Connect4Rbg, Language.rbg] as const,
+  ['Gomoku (freestyle)', GomokuFreestyleHrg, Language.hrg] as const,
   ['Hex2', Hex2Rbg, Language.rbg] as const,
   ['Hex9', Hex9Rbg, Language.rbg] as const,
   ['Knightthrough', KnightthroughHrg, Language.hrg] as const,
