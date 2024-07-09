@@ -35,14 +35,10 @@ impl Game<Id> {
         negated: bool,
     ) -> Option<BTreeSet<Edge<Id>>> {
         if negated {
-            let mut direct_path = self
-                .edges
-                .iter()
-                .filter(|e| e.lhs == *start && e.rhs == *target && !e.label.is_assignment());
-            let edge = direct_path
-                .next()
-                .filter(|_| direct_path.next().is_none())?;
-            Some(BTreeSet::from([edge.clone()]))
+            let direct_path = self
+                .outgoing_edge(start)
+                .filter(|e| e.rhs == *target && !e.label.is_assignment())?;
+            Some(BTreeSet::from([direct_path.clone()]))
         } else {
             self.find_acceptable_paths(start, target)
         }
@@ -286,15 +282,7 @@ mod test {
         b, d: ;
         c, d: ;
         e, f: ;
-        e, g: ;",
-        "x, y: ? a -> d;
-        a, b: ? e -> f;
-        b, d: ;
-        c, d: ;
-        e, f: ;
-        e, g: ;
-        a, __gen_1_reachability_e_g: ;
-        __gen_1_reachability_e_g, c: ;"
+        e, g: ;"
     );
 
     test_transform!(
@@ -337,5 +325,15 @@ mod test {
         "a, b: ! x -> y;
         x, x1: 1 == 1;
         x1, y: ;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        negated_fork,
+        "a, b: 1 == 1;
+        a, c: ;
+        c, b: 2 == 2;
+        x, y1: ? a -> b;
+        x, y2: ! a -> b;"
     );
 }
