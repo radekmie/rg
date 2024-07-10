@@ -10,10 +10,7 @@ impl Game<Arc<str>> {
             self.make_bindings_unique();
         }
 
-        // Remove multi-edges.
-        self.edges.dedup();
-
-        while let Some(x) = self.remove_obsolite_edges() {
+        while let Some(x) = self.find_obsolete_edge() {
             self.edges.remove(x);
         }
 
@@ -141,14 +138,12 @@ impl Game<Arc<str>> {
     }
 
     // If there is a skip edge from a to b, all other edges from a to b are obsolete.
-    fn remove_obsolite_edges(&self) -> Option<usize> {
-        for (x_index, x) in self.edges.iter().enumerate() {
-            if !x.label.is_skip()
-                && self
-                    .incoming_edges(&x.rhs)
-                    .any(|e| e.lhs == x.lhs && e.label.is_skip())
-            {
-                return Some(x_index);
+    fn find_obsolete_edge(&self) -> Option<usize> {
+        for (x_index, x) in self.edges.iter().filter(|e| e.label.is_skip()).enumerate() {
+            for (y_index, y) in self.edges.iter().enumerate() {
+                if x.lhs == y.lhs && x.rhs == y.rhs && x_index != y_index {
+                    return Some(y_index);
+                }
             }
         }
 
@@ -478,12 +473,12 @@ mod test {
 
     test_transform!(
         compact_skip_edges,
-        multi_edge,
-        "a, b: 1 == 1;
-        a, b: 1 == 1;
-        a, b: 2 == 2;",
-        "a, b: 1 == 1;
-        a, b: 2 == 2;"
+        multi_skip_edge,
+        "a, b: ;
+        a, b: ;
+        a, c: 1 == 1;",
+        "a, b: ;
+        a, c: 1 == 1;"
     );
 
     test_transform!(
