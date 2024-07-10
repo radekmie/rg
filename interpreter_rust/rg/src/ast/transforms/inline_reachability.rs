@@ -24,9 +24,7 @@ impl Game<Id> {
     /// 1. contains [start] and [target]
     /// 2. for any node except [target] contains all outgoing nodes
     /// 3. contains no edges from [target]
-    /// 4. for any initial environment, at most one path can reach [target] from [start]
-    ///    - limited analysis, may reject some valid results here
-    /// 4.1. and none of them change the environment (currently: no assignments allowed)
+    /// 4. no assignments allowed
     /// 5. If the reachability is negated, the path consists of one edge
     fn find_rechability_paths(
         &self,
@@ -35,14 +33,10 @@ impl Game<Id> {
         negated: bool,
     ) -> Option<BTreeSet<Edge<Id>>> {
         if negated {
-            let mut direct_path = self
-                .edges
-                .iter()
-                .filter(|e| e.lhs == *start && e.rhs == *target && !e.label.is_assignment());
-            let edge = direct_path
-                .next()
-                .filter(|_| direct_path.next().is_none())?;
-            Some(BTreeSet::from([edge.clone()]))
+            let direct_path = self
+                .outgoing_edge(start)
+                .filter(|e| e.rhs == *target && !e.label.is_assignment())?;
+            Some(BTreeSet::from([direct_path.clone()]))
         } else {
             self.find_acceptable_paths(start, target)
         }
@@ -59,9 +53,6 @@ impl Game<Id> {
         while let Some((lhs, mut previous)) = queue.pop() {
             previous.insert(lhs);
             if let Some(edges) = next_edges.get(&lhs) {
-                if !are_edges_exclusive(edges) {
-                    return None; // multiple paths found
-                }
                 for edge in edges {
                     if edge.has_bindings()
                         || previous.contains(&edge.rhs)
@@ -126,17 +117,6 @@ impl Game<Id> {
             }
         }
     }
-}
-
-fn are_edges_exclusive(edges: &BTreeSet<&Edge<Id>>) -> bool {
-    for edge in edges {
-        for other in edges {
-            if edge != other && !edge.is_exclusive_with(other) {
-                return false;
-            }
-        }
-    }
-    true
 }
 
 #[cfg(test)]
@@ -220,7 +200,18 @@ mod test {
         a, b: v == 1;
         a, c: v != 2;
         b, d: ;
-        c, d: ;"
+        c, d: ;",
+        "type T = { 1, 2 };
+        var v: T = 1;
+        a, b: v == 1;
+        a, c: v != 2;
+        b, d: ;
+        c, d: ;
+        x, __gen_1_reachability_a_d: ;
+        __gen_1_reachability_a_d, __gen_1_b: v == 1;
+        __gen_1_reachability_a_d, __gen_1_c: v != 2;
+        __gen_1_b, y: ;
+        __gen_1_c, y: ;"
     );
 
     test_transform!(
@@ -287,14 +278,19 @@ mod test {
         c, d: ;
         e, f: ;
         e, g: ;",
-        "x, y: ? a -> d;
-        a, b: ? e -> f;
+        "a, c: ! e -> g;
         b, d: ;
         c, d: ;
         e, f: ;
         e, g: ;
-        a, __gen_1_reachability_e_g: ;
-        __gen_1_reachability_e_g, c: ;"
+        x, __gen_1_reachability_a_d: ;
+        __gen_1_reachability_a_d, __gen_1_b: ? e -> f;
+        __gen_1_reachability_a_d, __gen_1_c: ! e -> g;
+        __gen_1_b, y: ;
+        __gen_1_c, y: ;
+        a, __gen_1_reachability_e_f: ;
+        __gen_1_reachability_e_f, b: ;
+        __gen_1_reachability_e_f, __gen_1_g: ;"
     );
 
     test_transform!(
@@ -337,5 +333,23 @@ mod test {
         "a, b: ! x -> y;
         x, x1: 1 == 1;
         x1, y: ;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        negated_fork,
+        "a, b: 1 == 1;
+        a, c: ;
+        c, b: 2 == 2;
+        x, y1: ? a -> b;
+        x, y2: ! a -> b;",
+        "a, b: 1 == 1;
+        a, c: ;
+        c, b: 2 == 2;
+        x, y2: ! a -> b;
+        x, __gen_1_reachability_a_b: ;
+        __gen_1_reachability_a_b, y1: 1 == 1;
+        __gen_1_c, y1: 2 == 2;
+        __gen_1_reachability_a_b, __gen_1_c: ;"
     );
 }

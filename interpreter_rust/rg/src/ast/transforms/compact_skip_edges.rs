@@ -10,6 +10,10 @@ impl Game<Arc<str>> {
             self.make_bindings_unique();
         }
 
+        while let Some(x) = self.find_obsolete_edge() {
+            self.edges.remove(x);
+        }
+
         while let Some((x, y)) = self.compact_skip_edge_backward() {
             self.edges[x].rhs = self.edges[y].rhs.clone();
             self.edges.remove(y);
@@ -127,6 +131,19 @@ impl Game<Arc<str>> {
                 && !self.is_reachability_target(&x.lhs)
             {
                 return Some(x_index);
+            }
+        }
+
+        None
+    }
+
+    // If there is a skip edge from a to b, all other edges from a to b are obsolete.
+    fn find_obsolete_edge(&self) -> Option<usize> {
+        for (x_index, x) in self.edges.iter().filter(|e| e.label.is_skip()).enumerate() {
+            for (y_index, y) in self.edges.iter().enumerate() {
+                if x.lhs == y.lhs && x.rhs == y.rhs && x_index != y_index {
+                    return Some(y_index);
+                }
             }
         }
 
@@ -447,9 +464,29 @@ mod test {
         "
     );
 
-    test_transform!(compact_skip_edges,
+    test_transform!(
+        compact_skip_edges,
         canonical_form,
         "type T = { 0, 1 }; var t: T = 0; a, b(x: T): x == t; c, d(x: T): x == t;",
         "type T = { 0, 1 }; var t: T = 0; a, b(bind_1: T): bind_1 == t; c, d(bind_2: T): bind_2 == t;"
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        multi_skip_edge,
+        "a, b: ;
+        a, b: ;
+        a, c: 1 == 1;",
+        "a, b: ;
+        a, c: 1 == 1;"
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        skip_and_comparisson,
+        "a, b: ;
+        a, b: 1 == 1;
+        b, c: 2 == 2;",
+        "a, c: 2 == 2;"
     );
 }
