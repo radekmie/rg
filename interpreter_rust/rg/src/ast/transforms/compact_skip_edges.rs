@@ -139,7 +139,7 @@ impl Game<Arc<str>> {
 
     // If there is a skip edge from a to b, all other edges from a to b are obsolete.
     fn find_obsolete_edge(&self) -> Option<usize> {
-        for (x_index, x) in self.edges.iter().filter(|e| e.label.is_skip()).enumerate() {
+        for (x_index, x) in self.edges.iter().enumerate().filter(|(_, e)| e.label.is_skip()) {
             for (y_index, y) in self.edges.iter().enumerate() {
                 if x.lhs == y.lhs && x.rhs == y.rhs && x_index != y_index {
                     return Some(y_index);
