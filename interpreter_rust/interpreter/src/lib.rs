@@ -43,8 +43,7 @@ pub fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> 
 pub fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
     let (game, errors) = unsafe_parse_rg(source);
     if errors.is_empty() {
-        let mut game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
-        game.add_builtins()?;
+        let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
         Ok(game)
     } else {
         Err(errors
@@ -216,7 +215,13 @@ pub fn analyze_rg_inner(
     }
 
     let mut game = check!(safe_parse_rg_source(source));
-    game_step!(game, "");
+
+    // Builtins may not be required.
+    let copy = game.clone();
+    game.add_builtins()?;
+    if copy != game {
+        game_step!(game, "add_builtins");
+    }
 
     loop {
         check!(game.check_maps());

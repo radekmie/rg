@@ -204,11 +204,6 @@ export async function parse(source: string, settings: Settings) {
     }
 
     const steps = await wasm.analyzeRg(game.sourceRg, flags);
-    if (extension !== L.rg) {
-      steps.shift();
-      steps.shift();
-    }
-
     const graphviz = steps.pop();
     utils.assert(graphviz?.kind === 'graphviz', 'Graphviz step expected');
 
