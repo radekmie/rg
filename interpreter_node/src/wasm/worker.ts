@@ -28,6 +28,7 @@ const methods = {
   runRg,
   serializeRg,
 };
+
 self.addEventListener('message', ({ data }) => {
   initPromise
     .then(() => {

@@ -62,17 +62,23 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
 }
 
 export async function analyzeHrg(source: string) {
-  const steps = await workerMethod('analyzeHrg', [source], utils.noop);
-  return steps.map(step => parseHrg(step)) as AnalyzedGameStep[];
+  const steps: AnalyzedGameStep[] = [];
+  await workerMethod('analyzeHrg', [source], (step: string) => {
+    steps.push(parseHrg(step));
+  });
+  return steps;
 }
 
 export async function analyzeRg(source: string, flags: Settings['flags']) {
-  const steps = await workerMethod(
+  const steps: AnalyzedGameStep[] = [];
+  await workerMethod(
     'analyzeRg',
     [source, JSON.stringify(flags)],
-    utils.noop,
+    (step: string) => {
+      steps.push(JSON.parse(step));
+    },
   );
-  return steps.map(step => JSON.parse(step)) as AnalyzedGameStep[];
+  return steps;
 }
 
 export async function parseGdl(source: string) {

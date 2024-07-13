@@ -163,21 +163,24 @@ impl Flags {
 }
 
 #[wasm_bindgen(js_name = analyzeHrg)]
-pub fn analyze_hrg(source: &str) -> Result<Array, String> {
-    let array = Array::new();
+pub fn analyze_hrg(source: &str, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
+    let this = JsValue::null();
+    macro_rules! step {
+        ({ $($json:tt)+ }) => {{
+            let step = json!({ $($json)+ });
+            let message = to_string(&step).map_err(|error| error.to_string())?;
+            callback.call1(&this, &JsValue::from(message)).unwrap();
+        }};
+    }
+
     let game = safe_parse_hrg_source(source)?;
-    let step = json!({ "kind": "ast", "language": "hrg", "value": game});
-    let step = to_string(&step).map_err(|error| error.to_string())?;
-    array.push(&step.into());
+    step!({ "kind": "ast", "language": "hrg", "value": game});
     let serialized = game.to_string();
     assert_eq!(safe_parse_hrg_source(&serialized)?, game);
-    let step =
-        json!({ "kind": "source", "language": "hrg", "value": serialized, "title": "formatted"});
-    let step = to_string(&step).map_err(|error| error.to_string())?;
-    array.push(&step.into());
+    step!({ "kind": "source", "language": "hrg", "value": serialized, "title": "formatted"});
 
-    Ok(array)
+    Ok(())
 }
 
 pub fn analyze_rg_inner(
@@ -276,11 +279,14 @@ pub fn analyze_rg_inner(
 }
 
 #[wasm_bindgen(js_name = analyzeRg)]
-pub fn analyze_rg(source: &str, flags: &str) -> Result<Array, String> {
-    let mut steps = vec![];
+pub fn analyze_rg(source: &str, flags: &str, callback: &Function) -> Result<(), String> {
     let flags = from_str::<Flags>(flags).unwrap();
-    analyze_rg_inner(source, &flags, Some(|step| steps.push(step)))?;
-    Ok(steps.into_iter().map(JsValue::from).collect())
+    let this = JsValue::null();
+    let callback = Some(|step| {
+        callback.call1(&this, &JsValue::from(step)).unwrap();
+    });
+    analyze_rg_inner(source, &flags, callback)?;
+    Ok(())
 }
 
 #[wasm_bindgen(js_name = parseGdl)]
