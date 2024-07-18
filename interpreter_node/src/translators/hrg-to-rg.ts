@@ -988,52 +988,6 @@ function translateCondition(
             : context.$randomEdgeName(automatonPrefix);
           let automatonCurrentEdgeName = automatonStartEdgeName;
 
-          const variable = `${automatonFunction.name}_return`;
-          if (context.$settings.flags.reuseFunctions) {
-            if (
-              context.rg.variables.some(
-                ({ identifier }) => identifier === variable,
-              )
-            ) {
-              const typeDeclaration = context.rg.types.find(
-                ({ identifier }) => identifier === variable,
-              );
-              utils.assert(typeDeclaration, `Type "${variable}" not found.`);
-              utils.assert(
-                typeDeclaration.type.kind === 'Set',
-                `Type "${variable}" has invalid type.`,
-              );
-              typeDeclaration.type.identifiers.push(callId);
-            } else {
-              context.rg.types.push(
-                rg.TypeDeclaration({
-                  identifier: variable,
-                  type: rg.Set({ identifiers: [callId] }),
-                }),
-              );
-              context.rg.variables.push(
-                rg.VariableDeclaration({
-                  identifier: variable,
-                  type: rg.TypeReference({ identifier: variable }),
-                  defaultValue: rg.Element({ identifier: callId }),
-                }),
-              );
-            }
-          }
-
-          if (context.$settings.flags.reuseFunctions) {
-            const callEdgeName = context.$randomEdgeName(automatonPrefix);
-            context.$connect(
-              automatonCurrentEdgeName,
-              callEdgeName,
-              rg.Assignment({
-                lhs: rg.Reference({ identifier: variable }),
-                rhs: rg.Reference({ identifier: callId }),
-              }),
-              bindings,
-            );
-            automatonCurrentEdgeName = callEdgeName;
-          }
 
           for (const arg of call.args) {
             const argEdgeName = context.$randomEdgeName(automatonPrefix);
@@ -1098,28 +1052,6 @@ function translateCondition(
             );
           }
 
-          if (context.$settings.flags.reuseFunctions) {
-            const callEdgeName = rg.EdgeName({
-              parts: [
-                rg.Literal({
-                  identifier: context.$random(
-                    `${automatonFunction.name}_return`,
-                  ),
-                }),
-              ],
-            });
-            context.$connect(
-              automatonEndEdgeName,
-              callEdgeName,
-              rg.Comparison({
-                lhs: rg.Reference({ identifier: variable }),
-                rhs: rg.Reference({ identifier: callId }),
-                negated: false,
-              }),
-              bindings,
-            );
-            automatonEndEdgeName = callEdgeName;
-          }
 
           if (thenEdgeName) {
             context.$connect(
