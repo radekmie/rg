@@ -1164,7 +1164,15 @@ pub enum Pragma<Id> {
     SimpleApply {
         #[serde(skip)]
         span: Span,
-        #[serde(rename = "edgeNames")]
+        node: Node<Id>,
+        tags: Vec<Id>,
+        nodes: Vec<Node<Id>>,
+    },
+    SimpleApplyExhaustive {
+        #[serde(skip)]
+        span: Span,
+        node: Node<Id>,
+        tags: Vec<Id>,
         nodes: Vec<Node<Id>>,
     },
     TagIndex {
@@ -1192,11 +1200,13 @@ pub enum Pragma<Id> {
 impl<Id> Pragma<Id> {
     pub fn nodes(&self) -> impl Iterator<Item = &Node<Id>> {
         match self {
-            Self::Disjoint { node, nodes, .. } | Self::DisjointExhaustive { node, nodes, .. } => {
+            Self::Disjoint { node, nodes, .. }
+            | Self::DisjointExhaustive { node, nodes, .. }
+            | Self::SimpleApply { node, nodes, .. }
+            | Self::SimpleApplyExhaustive { node, nodes, .. } => {
                 Some(node).into_iter().chain(nodes)
             }
             Self::Repeat { nodes, .. }
-            | Self::SimpleApply { nodes, .. }
             | Self::TagIndex { nodes, .. }
             | Self::TagMaxIndex { nodes, .. }
             | Self::Unique { nodes, .. } => None.into_iter().chain(nodes),
@@ -1211,8 +1221,13 @@ impl<Id: Ord> Pragma<Id> {
 }
 
 impl Pragma<Arc<str>> {
-    pub fn substitute_bindings_mut(&mut self, mappings: &[Mapping<Arc<str>>]) {
-        if let Self::Disjoint { node, .. } | Self::DisjointExhaustive { node, .. } = self {
+    /// Substitute bindings in-place if possible and yield substituted `Self`s instead.
+    pub fn substitute_bindings_mut(&mut self, mappings: &[Mapping<Arc<str>>]) -> Option<Vec<Self>> {
+        if let Self::Disjoint { node, .. }
+        | Self::DisjointExhaustive { node, .. }
+        | Self::SimpleApply { node, .. }
+        | Self::SimpleApplyExhaustive { node, .. } = self
+        {
             let mut node_variants = mappings
                 .iter()
                 .map(|mapping| node.substitute_bindings(mapping))
@@ -1229,7 +1244,6 @@ impl Pragma<Arc<str>> {
             Self::Disjoint { nodes, .. }
             | Self::DisjointExhaustive { nodes, .. }
             | Self::Repeat { nodes, .. }
-            | Self::SimpleApply { nodes, .. }
             | Self::TagIndex { nodes, .. }
             | Self::TagMaxIndex { nodes, .. }
             | Self::Unique { nodes, .. } => {
@@ -1239,7 +1253,55 @@ impl Pragma<Arc<str>> {
                     .collect::<BTreeSet<_>>()
                     .into_iter()
                     .collect();
+                None
             }
+            // TODO: Can we deduplicate this code?
+            Self::SimpleApply {
+                node,
+                nodes,
+                span,
+                tags,
+            } => Some(
+                mappings
+                    .iter()
+                    .map(|mapping| Self::SimpleApply {
+                        node: node.clone(),
+                        nodes: nodes
+                            .iter()
+                            .map(|node| node.substitute_bindings(mapping))
+                            .collect(),
+                        tags: tags
+                            .iter()
+                            .map(|tag| mapping.get(tag).unwrap_or(tag))
+                            .cloned()
+                            .collect(),
+                        span: *span,
+                    })
+                    .collect(),
+            ),
+            Self::SimpleApplyExhaustive {
+                node,
+                nodes,
+                span,
+                tags,
+            } => Some(
+                mappings
+                    .iter()
+                    .map(|mapping| Self::SimpleApplyExhaustive {
+                        node: node.clone(),
+                        nodes: nodes
+                            .iter()
+                            .map(|node| node.substitute_bindings(mapping))
+                            .collect(),
+                        tags: tags
+                            .iter()
+                            .map(|tag| mapping.get(tag).unwrap_or(tag))
+                            .cloned()
+                            .collect(),
+                        span: *span,
+                    })
+                    .collect(),
+            ),
         }
     }
 }

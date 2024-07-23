@@ -172,7 +172,7 @@ Usage: node lib/cli [options] [command]
 Options:
   --addExplicitCasts          add type casts to all expressions
   --calculateRepeats          calculate missing @repeat pragmas automatically
-  --calculateSimpleApply      calculate missing @simpleApply pragmas automatically
+  --calculateSimpleApply      calculate missing @simpleApply and @simpleApplyExhaustive pragmas automatically
   --calculateTagIndexes       calculate missing @tagIndex and @tagMaxIndex pragmas automatically
   --calculateUniques          calculate missing @unique pragmas automatically
   --compactSkipEdges          optimize automaton by compacting skip edges

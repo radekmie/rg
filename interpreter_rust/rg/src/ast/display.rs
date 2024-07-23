@@ -228,8 +228,21 @@ impl<Id: Display> Display for Pragma<Id> {
                     .try_for_each(|identifier| write!(f, " {identifier}"))?;
                 write!(f, ";")
             }
-            Self::SimpleApply { nodes, .. } => {
-                write!(f, "@simpleApply")?;
+            Self::SimpleApply {
+                node, nodes, tags, ..
+            } => {
+                write!(f, "@simpleApply {node}")?;
+                tags.iter().try_for_each(|tag| write!(f, " {tag}"))?;
+                write!(f, " :")?;
+                nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
+                write!(f, ";")
+            }
+            Self::SimpleApplyExhaustive {
+                node, nodes, tags, ..
+            } => {
+                write!(f, "@simpleApplyExhaustive {node}")?;
+                tags.iter().try_for_each(|tag| write!(f, " {tag}"))?;
+                write!(f, " :")?;
                 nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, ";")
             }

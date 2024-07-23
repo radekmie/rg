@@ -135,7 +135,8 @@ win, score: goals[currentPlayer] = Score(100);
 score, finish: goals[opponent[currentPlayer]] = Score(0);
 finish, end: player = PlayerOrKeeper(keeper);
 
-@simpleApply selectPos selectedPos(p:Position) setPos(p:Position) setFinished checkOwn forward selectDirection directionForward directionOK directionLeft directionLeftChecked directionRight directionRightChecked moved done;
+// TODO: Add new-style @simpleApply.
+// @simpleApply selectPos selectedPos(p:Position) setPos(p:Position) setFinished checkOwn forward selectDirection directionForward directionOK directionLeft directionLeftChecked directionRight directionRightChecked moved done;
 
 @disjointExhaustive turn:move lose;
 @disjointExhaustive wincheck:continue win;

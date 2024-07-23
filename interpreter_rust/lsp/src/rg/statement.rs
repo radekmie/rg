@@ -93,6 +93,7 @@ impl Statement for Pragma<Identifier> {
             Self::DisjointExhaustive { .. } => "@disjointExhaustive",
             Self::Repeat { .. } => "@repeat",
             Self::SimpleApply { .. } => "@simpleApply",
+            Self::SimpleApplyExhaustive { .. } => "@simpleApplyExhaustive",
             Self::TagIndex { .. } => "@tagIndex",
             Self::TagMaxIndex { .. } => "@tagMaxIndex",
             Self::Unique { .. } => "@unique",

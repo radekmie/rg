@@ -16,7 +16,7 @@ program
   )
   .option(
     '--calculateSimpleApply',
-    'calculate missing @simpleApply pragmas automatically',
+    'calculate missing @simpleApply and @simpleApplyExhaustive pragmas automatically',
   )
   .option(
     '--calculateTagIndexes',

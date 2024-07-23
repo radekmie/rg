@@ -19,14 +19,16 @@ impl Game<Arc<str>> {
             );
         }
 
-        for index in 0..self.pragmas.len() {
+        for index in (0..self.pragmas.len()).rev() {
             let bindings = self.pragmas[index].bindings();
             if bindings.is_empty() {
                 continue;
             }
 
             let mappings = self.create_mappings(bindings.into_iter())?;
-            self.pragmas[index].substitute_bindings_mut(&mappings);
+            if let Some(pragmas) = self.pragmas[index].substitute_bindings_mut(&mappings) {
+                self.pragmas.splice(index..index + 1, pragmas);
+            }
         }
 
         Ok(())
@@ -55,5 +57,21 @@ mod test {
         pragma2,
         "type T = { a, b }; @unique y(t1: T)(t2: T);",
         "type T = { a, b }; @unique y__bind__a__bind__a y__bind__a__bind__b y__bind__b__bind__a y__bind__b__bind__b;"
+    );
+
+    test_transform!(
+        expand_generator_nodes,
+        pragma3,
+        "type T = { a, b }; @simpleApply x u : y(t: T);",
+        // TODO: Can we merge these into one?
+        // "type T = { a, b }; @simpleApply x u : y__bind__a y__bind__b;"
+        "type T = { a, b }; @simpleApply x u : y__bind__a; @simpleApply x u : y__bind__b;"
+    );
+
+    test_transform!(
+        expand_generator_nodes,
+        pragma4,
+        "type T = { a, b }; @simpleApply x t : y(t: T);",
+        "type T = { a, b }; @simpleApply x a : y__bind__a; @simpleApply x b : y__bind__b;"
     );
 }

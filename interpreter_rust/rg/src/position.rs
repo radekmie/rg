@@ -59,6 +59,7 @@ impl<Id> Positioned for Pragma<Id> {
             | Self::DisjointExhaustive { span, .. }
             | Self::Repeat { span, .. }
             | Self::SimpleApply { span, .. }
+            | Self::SimpleApplyExhaustive { span, .. }
             | Self::TagIndex { span, .. }
             | Self::TagMaxIndex { span, .. }
             | Self::Unique { span, .. } => *span,

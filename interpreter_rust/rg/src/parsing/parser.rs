@@ -290,20 +290,6 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
     let pragma = alt((
         map(
             tuple((
-                tag("disjoint"),
-                cut(preceded_whitespace(node)),
-                preceded_whitespace(tag(":")),
-                cut(many1(preceded_whitespace(node))),
-                preceded_whitespace(tag(";")),
-            )),
-            |(tag, node, _, nodes, semicolon)| Pragma::Disjoint {
-                span: Span::from((&tag, &semicolon)),
-                node,
-                nodes,
-            },
-        ),
-        map(
-            tuple((
                 tag("disjointExhaustive"),
                 cut(preceded_whitespace(node)),
                 preceded_whitespace(tag(":")),
@@ -311,6 +297,20 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
                 preceded_whitespace(tag(";")),
             )),
             |(tag, node, _, nodes, semicolon)| Pragma::DisjointExhaustive {
+                span: Span::from((&tag, &semicolon)),
+                node,
+                nodes,
+            },
+        ),
+        map(
+            tuple((
+                tag("disjoint"),
+                cut(preceded_whitespace(node)),
+                preceded_whitespace(tag(":")),
+                cut(many1(preceded_whitespace(node))),
+                preceded_whitespace(tag(";")),
+            )),
+            |(tag, node, _, nodes, semicolon)| Pragma::Disjoint {
                 span: Span::from((&tag, &semicolon)),
                 node,
                 nodes,
@@ -332,13 +332,34 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
         ),
         map(
             tuple((
-                tag("simpleApply"),
+                tag("simpleApplyExhaustive"),
+                cut(preceded_whitespace(node)),
+                cut(many0(preceded_whitespace(identifier))),
+                cut(preceded_whitespace(tag(":"))),
                 cut(many1(preceded_whitespace(node))),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, nodes, semicolon)| Pragma::SimpleApply {
+            |(tag, node, tags, _, nodes, semicolon)| Pragma::SimpleApplyExhaustive {
                 span: Span::from((&tag, &semicolon)),
+                node,
                 nodes,
+                tags,
+            },
+        ),
+        map(
+            tuple((
+                tag("simpleApply"),
+                cut(preceded_whitespace(node)),
+                cut(many0(preceded_whitespace(identifier))),
+                cut(preceded_whitespace(tag(":"))),
+                cut(many1(preceded_whitespace(node))),
+                preceded_whitespace(tag(";")),
+            )),
+            |(tag, node, tags, _, nodes, semicolon)| Pragma::SimpleApply {
+                span: Span::from((&tag, &semicolon)),
+                node,
+                nodes,
+                tags,
             },
         ),
         map(

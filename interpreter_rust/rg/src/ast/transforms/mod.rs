@@ -59,8 +59,9 @@ mod test {
                 use std::sync::Arc;
 
                 fn parse(source: &str) -> Game<Arc<str>> {
-                    let (game, errors) = parse_with_errors(source);
+                    let (mut game, errors) = parse_with_errors(source);
                     assert!(errors.is_empty(), "Parse errors: {errors:?}");
+                    game.pragmas.sort_unstable();
                     game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
                 }
 
