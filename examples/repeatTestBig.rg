@@ -1,6 +1,6 @@
 // Cycle on selectDir4. Need to change pos to v4. Only one move giving score 100.
 
-type Player = {player};
+type Player = {tester};
 type Score = {0, 100};
 type Direction = Position -> Position;
 
@@ -52,7 +52,7 @@ v60:v70,v61:v71,v62:v72,v63:v73,v64:v74,v65:v75,v66:v76,v67:v77};
 
 var pos: Position = v00;
 
-begin,main: player = PlayerOrKeeper(player);
+begin,main: player = PlayerOrKeeper(tester);
 
 main,goUp: ;
 goUp,goUp: pos = Position(up[pos]);
