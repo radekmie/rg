@@ -179,6 +179,10 @@ impl<Id> Label<Id> {
         matches!(self, Self::Tag { .. })
     }
 
+    pub fn is_tag_and(&self, fn_: impl FnOnce(&Id) -> bool) -> bool {
+        matches!(self, Self::Tag { symbol } if fn_(symbol))
+    }
+
     pub fn new_skip() -> Self {
         Self::Skip { span: Span::none() }
     }
@@ -286,10 +290,6 @@ impl<Id: PartialEq> Label<Id> {
 
     pub fn is_self_comparison(&self) -> bool {
         matches!(self, Self::Comparison { lhs, rhs, negated } if !negated && lhs.is_equal_reference(rhs))
-    }
-
-    pub fn is_tag_and(&self, fn_: impl FnOnce(&Id) -> bool) -> bool {
-        matches!(self, Self::Tag { symbol } if fn_(symbol))
     }
 }
 
