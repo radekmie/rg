@@ -14,6 +14,7 @@ mod join_fork_prefixes;
 mod join_fork_suffixes;
 mod mangle_symbols;
 mod normalize_types;
+mod propagate_constants;
 mod prune_singleton_types;
 mod prune_unreachable_nodes;
 mod prune_unused_constants;

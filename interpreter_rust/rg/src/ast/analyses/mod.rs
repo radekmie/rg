@@ -1,8 +1,10 @@
+mod constants_analysis;
 mod reachable_nodes;
 mod reaching_assignments;
 mod reaching_definitions;
 
 use crate::ast::{Edge, Game, Label, Node};
+pub use constants_analysis::ConstantsAnalysis;
 pub use reachable_nodes::ReachableNodes;
 pub use reaching_assignments::ReachingAssignments;
 pub use reaching_definitions::ReachingDefinitions;
@@ -14,19 +16,22 @@ type Id = Arc<str>;
 
 pub trait Analysis {
     type Domain: Clone + PartialEq;
+    type Context: PartialEq;
 
     fn bot() -> Self::Domain;
 
     fn extreme(program: &Game<Id>) -> Self::Domain;
 
-    fn gen(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain;
+    fn gen(input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain;
+
+    fn get_context(program: &Game<Id>) -> Self::Context;
 
     fn join(a: Self::Domain, b: Self::Domain) -> Self::Domain;
 
-    fn kill(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain;
+    fn kill(input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain;
 
-    fn transfer(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
-        Self::gen(Self::kill(input, edge), edge)
+    fn transfer(input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain {
+        Self::gen(Self::kill(input, edge, ctx), edge, ctx)
     }
 }
 
@@ -93,6 +98,7 @@ struct Worker<'a, A: Analysis + ?Sized> {
     result: BTreeMap<Node<Id>, A::Domain>,
     worklist: BTreeSet<&'a Node<Id>>,
     _parameters: PhantomData<A>,
+    ctx: A::Context,
 }
 
 impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
@@ -106,6 +112,7 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
             result: BTreeMap::from([(flow.entry(), I::extreme(game))]),
             worklist: flow.nodes.clone(),
             _parameters: PhantomData,
+            ctx: I::get_context(game),
         }
     }
 
@@ -127,7 +134,7 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
 
         incoming_edges
             .iter()
-            .map(|edge| I::transfer(self.knowledge(&edge.lhs), edge))
+            .map(|edge| I::transfer(self.knowledge(&edge.lhs), edge, &self.ctx))
             .fold(I::bot(), I::join)
     }
 
