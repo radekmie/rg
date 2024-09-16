@@ -1006,19 +1006,22 @@ function copyPath(
   }
 
   copyIfOnPath(originalFrom);
-  return rg.Reachability({
-    lhs: prefixEdgeName(originalFrom),
-    rhs: prefixEdgeName(originalTo),
-    negated: true,
-  });
+  return { lhs: prefixEdgeName(originalFrom), rhs: prefixEdgeName(originalTo) };
 }
 
 // eslint-disable-next-line complexity -- Simplify it later.
 function terminateOnZeroMoves(context: Context) {
-  // 1. For every `_, A: player = *`.
-  //   2. Find all paths from `A` to `C` ending in `D, _: player = *`.
-  //   3. Add new edges from `A` to `end` with all `! B -> D`, where `B` is a fresh node between `A` and `C`.
-  for (const { rhs: A, label } of context.rg.edges) {
+  const moves: {
+    edge: rg.EdgeDeclaration;
+    lhs: rg.EdgeName;
+    rhs: rg.EdgeName;
+  }[] = [];
+
+  // 1. For every `A, B: player = P`, where `P != keeper`.
+  //   2. Find all paths from `B` to `D` ending in `E, _: player = *`.
+  //   3. Add new edges from `B` to `end` with all `! C -> E`, where `C` is a fresh node between `B` and `D`.
+  for (const edge of context.rg.edges) {
+    const { rhs: B, label } = edge;
     if (
       label.kind !== 'Assignment' ||
       label.lhs.kind !== 'Reference' ||
@@ -1030,8 +1033,8 @@ function terminateOnZeroMoves(context: Context) {
     const visited = new Set<string>();
     const reachablePlayerAssignments: rg.EdgeName[] = [];
 
-    for (const { rhs: B } of rg.lib.outgoing(context.rg.edges, A)) {
-      const queue = [B];
+    for (const { rhs: C } of rg.lib.outgoing(context.rg.edges, B)) {
+      const queue = [C];
       for (let node: rg.EdgeName | undefined; (node = queue.pop()); ) {
         for (const edge of rg.lib.outgoing(context.rg.edges, node)) {
           if (
@@ -1055,16 +1058,48 @@ function terminateOnZeroMoves(context: Context) {
       continue;
     }
 
-    let currentPrev = A;
-    let currentNext = context.$randomEdgeName();
-    for (const B of reachablePlayerAssignments) {
-      context.$connect(currentPrev, currentNext, copyPath(context, A, B));
-      currentPrev = currentNext;
-      currentNext = context.$randomEdgeName();
-    }
+    switch (reachablePlayerAssignments.length) {
+      case 0:
+        continue;
+      case 1: {
+        const { lhs, rhs } = copyPath(
+          context,
+          B,
+          reachablePlayerAssignments[0],
+        );
+        moves.push({ edge, lhs, rhs });
+        break;
+      }
+      default: {
+        const checkFrom = context.$randomEdgeName();
+        const checkTo = context.$randomEdgeName();
+        for (const C of reachablePlayerAssignments) {
+          const { lhs, rhs } = copyPath(context, B, C);
+          context.$connect(
+            checkFrom,
+            checkTo,
+            rg.Reachability({ lhs, rhs, negated: false }),
+          );
+        }
 
+        moves.push({ edge, lhs: checkFrom, rhs: checkTo });
+        break;
+      }
+    }
+  }
+
+  for (const { edge, lhs, rhs } of moves) {
+    const { label, lhs: A, rhs: B } = edge;
+    utils.remove(context.rg.edges, edge);
+
+    const check = context.$randomEdgeName();
+    context.$connect(A, check, rg.Reachability({ lhs, rhs, negated: false }));
+    context.$connect(check, B, label);
+
+    const assign = context.$randomEdgeName();
+    context.$connect(A, assign, rg.Reachability({ lhs, rhs, negated: true }));
     context.$connect(
-      currentPrev,
+      assign,
       rg.EdgeName({ parts: [rg.Literal({ identifier: 'end' })] }),
       rg.Assignment({
         lhs: rg.Reference({ identifier: 'player' }),
