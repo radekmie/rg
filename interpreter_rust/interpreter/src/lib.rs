@@ -219,6 +219,9 @@ pub fn analyze_rg_inner(
 
     let mut game = check!(safe_parse_rg_source(source));
 
+    // Add AST for the original source
+    step!({ "kind": "ast", "language": "rg", "value": game, "title": "original" });
+
     // Builtins may not be required.
     let copy = game.clone();
     game.add_builtins()?;
