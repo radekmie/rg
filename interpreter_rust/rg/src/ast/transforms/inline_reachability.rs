@@ -2,6 +2,7 @@ use super::gen_fresh_node;
 use crate::ast::{Edge, Error, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
+use utils::position::Span;
 
 type Id = Arc<str>;
 
@@ -38,6 +39,18 @@ impl Game<Id> {
                 .filter(|e| e.rhs == *target && !e.label.is_assignment())?;
             Some(BTreeSet::from([direct_path.clone()]))
         } else {
+            let negated_label = Label::Reachability {
+                span: Span::none(),
+                lhs: start.clone(),
+                rhs: target.clone(),
+                negated: true,
+            };
+            // Do not inline `? a -> b` if `! a -> b` exists and cannot be inlined
+            if self.edges.iter().any(|edge| edge.label == negated_label)
+                && self.find_rechability_paths(start, target, true).is_none()
+            {
+                return None;
+            }
             self.find_acceptable_paths(start, target)
         }
     }
@@ -337,19 +350,41 @@ mod test {
 
     test_transform!(
         inline_reachability,
-        negated_fork,
+        option_direct1,
+        "a, b: ? x -> y;
+        c, d: ! x -> y;
+        x, y: 1 == 1;",
+        "x, y: 1 == 1;
+        a, __gen_1_reachability_x_y: ;
+        __gen_1_reachability_x_y, b: 1 == 1;
+        c, __gen_2_reachability_x_y: ;
+        __gen_2_reachability_x_y, d: 1 != 1;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        option_direct2,
+        "a, b: ? x -> y;
+        c, d: ! x -> y;
+        x, x1: 1 == 1;
+        x1, y: ;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        option_direct_fork,
         "a, b: 1 == 1;
         a, c: ;
         c, b: 2 == 2;
         x, y1: ? a -> b;
-        x, y2: ! a -> b;",
-        "a, b: 1 == 1;
-        a, c: ;
-        c, b: 2 == 2;
-        x, y2: ! a -> b;
-        x, __gen_1_reachability_a_b: ;
-        __gen_1_reachability_a_b, y1: 1 == 1;
-        __gen_1_c, y1: 2 == 2;
-        __gen_1_reachability_a_b, __gen_1_c: ;"
+        x, y2: ! a -> b;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        option_direct_assignment,
+        "a, b: ? x -> y;
+        a, c: ! x -> y;
+        x, y: v = 1;"
     );
 }
