@@ -1,9 +1,9 @@
 use map_id::MapId;
 use nom_locate::LocatedSpan;
 use std::cmp::Ordering;
-use std::fmt::{Display, Formatter, Result};
+use std::fmt::{Debug, Display, Formatter, Result};
 
-#[derive(Copy, Clone, Debug, Default, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, PartialOrd, Ord, PartialEq, Eq)]
 pub struct Position {
     pub line: usize,
     pub column: usize,
@@ -40,6 +40,13 @@ impl<'a, T> From<&LocatedSpan<&'a str, T>> for Position {
     }
 }
 
+impl Debug for Position {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let Self { line, column } = self;
+        write!(f, "{line}:{column}")
+    }
+}
+
 impl Display for Position {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { line, column } = self;
@@ -47,10 +54,21 @@ impl Display for Position {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Default)]
 pub struct Span {
     pub start: Position,
     pub end: Position,
+}
+
+impl Debug for Span {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let Self { start, end } = self;
+        if start == end {
+            write!(f, "({start})")
+        } else {
+            write!(f, "({start}, {end})")
+        }
+    }
 }
 
 impl Display for Span {

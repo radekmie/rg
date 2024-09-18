@@ -14,7 +14,7 @@ impl Analysis for ReachableNodes {
         Self::Domain::default()
     }
 
-    fn extreme(_program: &Game<Id>) -> Self::Domain {
+    fn extreme(_program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
         true
     }
 
@@ -30,7 +30,5 @@ impl Analysis for ReachableNodes {
         input
     }
 
-    fn get_context(_program: &Game<super::Id>) -> Self::Context {
-        ()
-    }
+    fn get_context(_program: &Game<super::Id>) -> Self::Context {}
 }

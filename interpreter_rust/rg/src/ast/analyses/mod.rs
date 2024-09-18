@@ -20,7 +20,7 @@ pub trait Analysis {
 
     fn bot() -> Self::Domain;
 
-    fn extreme(program: &Game<Id>) -> Self::Domain;
+    fn extreme(program: &Game<Id>, ctx: &Self::Context) -> Self::Domain;
 
     fn gen(input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain;
 
@@ -107,12 +107,13 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
     }
 
     fn new(game: &'a Game<Arc<str>>, flow: &'a Flow<'a>) -> Self {
+        let ctx = I::get_context(game);
         Worker {
             flow,
-            result: BTreeMap::from([(flow.entry(), I::extreme(game))]),
+            result: BTreeMap::from([(flow.entry(), I::extreme(game, &ctx))]),
             worklist: flow.nodes.clone(),
             _parameters: PhantomData,
-            ctx: I::get_context(game),
+            ctx,
         }
     }
 
@@ -128,14 +129,12 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
 
     fn summarize_predecessors(&self, node: &Node<Id>, old_input: &I::Domain) -> I::Domain {
         let incoming_edges = self.flow.predecessors(node);
-        if incoming_edges.is_empty() {
-            return old_input.clone();
-        }
 
         incoming_edges
             .iter()
             .map(|edge| I::transfer(self.knowledge(&edge.lhs), edge, &self.ctx))
-            .fold(I::bot(), I::join)
+            .reduce(I::join)
+            .unwrap_or_else(|| old_input.clone())
     }
 
     fn transfer(&mut self, node: &Node<Id>) -> bool {

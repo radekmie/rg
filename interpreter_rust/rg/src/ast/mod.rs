@@ -946,8 +946,13 @@ impl<'a, Id: Clone + Ord + 'a> Game<Id> {
 }
 
 impl<Id: Clone + PartialEq> Game<Id> {
+    pub fn find_type(&self, f: impl Fn(&Type<Id>) -> bool) -> Option<&Arc<Type<Id>>> {
+        self.typedefs.iter().find(|x| f(&x.type_)).map(|x| &x.type_)
+    }
+
     pub fn infer(&self, identifier: &Id, edge: Option<&Edge<Id>>) -> Arc<Type<Id>> {
         self.infer_or_none(identifier, edge)
+            .or_else(|| self.find_type(|type_| type_.contains(identifier)))
             .cloned()
             .unwrap_or_else(|| {
                 Arc::new(Type::Set {
@@ -1476,6 +1481,10 @@ impl<Id: Clone + PartialEq> Type<Id> {
 }
 
 impl<Id: PartialEq> Type<Id> {
+    pub fn contains(&self, identifier: &Id) -> bool {
+        matches!(self, Self::Set { identifiers, .. } if identifiers.contains(identifier))
+    }
+
     pub fn is_reference(&self, identifier: &Id) -> bool {
         matches!(self, Self::TypeReference { identifier: x } if x == identifier)
     }
@@ -1517,6 +1526,37 @@ pub enum Value<Id> {
 impl<Id> Value<Id> {
     pub fn new(identifier: Id) -> Self {
         Self::Element { identifier }
+    }
+
+    pub fn as_identifier(&self) -> Option<&Id> {
+        match self {
+            Self::Element { identifier } => Some(identifier),
+            Self::Map { .. } => None,
+        }
+    }
+}
+
+impl<Id: PartialEq> Value<Id> {
+    pub fn get_entry(&self, identifier: &Id) -> Option<&Value<Id>> {
+        match self {
+            Value::Map { entries, .. } => {
+                let entry = entries
+                    .iter()
+                    .find(|entry| entry.identifier.as_ref().is_some_and(|id| id == identifier))
+                    .or_else(|| entries.iter().find(|entry| entry.identifier.is_none()));
+                entry.map(|entry| entry.value.as_ref())
+            }
+            Value::Element { .. } => None,
+        }
+    }
+}
+
+impl<Id: Clone> Value<Id> {
+    pub fn to_expression(self) -> Option<Expression<Id>> {
+        match self {
+            Self::Element { identifier } => Some(Expression::new(identifier)),
+            Self::Map { .. } => None,
+        }
     }
 }
 

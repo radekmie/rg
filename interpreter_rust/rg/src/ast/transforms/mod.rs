@@ -55,10 +55,10 @@ mod test {
         ($fn:ident, $name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                use crate::ast::Game;
-                use crate::parsing::parser::parse_with_errors;
                 use map_id::MapId;
                 use std::sync::Arc;
+                use $crate::ast::Game;
+                use $crate::parsing::parser::parse_with_errors;
 
                 fn parse(source: &str) -> Game<Arc<str>> {
                     let (mut game, errors) = parse_with_errors(source);

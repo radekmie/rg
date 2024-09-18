@@ -15,7 +15,7 @@ impl Analysis for ReachingDefinitions {
         Self::Domain::default()
     }
 
-    fn extreme(program: &Game<Id>) -> Self::Domain {
+    fn extreme(program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
         program
             .variables
             .iter()
@@ -45,7 +45,5 @@ impl Analysis for ReachingDefinitions {
         input
     }
 
-    fn get_context(_program: &Game<super::Id>) -> Self::Context {
-        ()
-    }
+    fn get_context(_program: &Game<super::Id>) -> Self::Context {}
 }
