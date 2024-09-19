@@ -112,6 +112,35 @@ impl Game<Arc<str>> {
             }
         }
 
+        // Merge all pairs of
+        //   @simpleApply x : ...xs y;
+        //   @simpleApply y ...ts : ...ys;
+        // Into
+        //   @simpleApply x ...ts : ...xs y ...ys;
+        // If there's exactly one `@simpleApply x : ...;`.
+        for index_x in (1..pragmas.len()).rev() {
+            let (prev, next) = pragmas.split_at_mut(index_x);
+            let ((x, xs, tag), next) = next.split_first_mut().unwrap();
+            if tag.is_some() || prev.iter().chain(next.iter()).any(|(node, _, _)| node == x) {
+                continue;
+            }
+
+            let Some(y) = xs.last() else { continue; };
+
+            let mut any_matched = false;
+            for (y2, ys, _) in prev.iter_mut().chain(next) {
+                if y == y2 {
+                    *y2 = x.clone();
+                    ys.splice(0..0, xs.iter().cloned());
+                    any_matched = true;
+                }
+            }
+
+            if any_matched {
+                pragmas.swap_remove(index_x);
+            }
+        }
+
         for (node, nodes, tag) in pragmas {
             let pragma = Pragma::SimpleApply {
                 span: Span::none(),
