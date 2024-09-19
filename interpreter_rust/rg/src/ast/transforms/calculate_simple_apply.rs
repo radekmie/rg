@@ -125,7 +125,9 @@ impl Game<Arc<str>> {
                 continue;
             }
 
-            let Some(y) = xs.last() else { continue; };
+            let Some(y) = xs.last() else {
+                continue;
+            };
 
             let mut any_matched = false;
             for (y2, ys, _) in prev.iter_mut().chain(next) {

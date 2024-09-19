@@ -844,10 +844,37 @@ impl<Id: Display> Game<Id> {
     pub fn to_graphviz(&self) -> String {
         let mut graphviz = String::new();
         graphviz.push_str("digraph {\n");
+        graphviz.push_str("  pad=0.25;\n");
+        graphviz.push_str("  edge [fontname=Helvetica];\n");
+        graphviz.push_str("  node [fillcolor=\"#f0f0f0\", fontname=Helvetica, penwidth=0, shape=box, style=\"filled,rounded\"];\n");
+
         for edge in &self.edges {
             graphviz.push_str(&edge.to_graphviz());
             graphviz.push('\n');
         }
+
+        for pragma in &self.pragmas {
+            if let Pragma::Repeat { nodes, .. }
+            | Pragma::TagIndex { nodes, .. }
+            | Pragma::Unique { nodes, .. } = pragma
+            {
+                graphviz.push_str("  ");
+                for (index, node) in nodes.iter().enumerate() {
+                    let separator = if index == 0 { "" } else { ", " };
+                    graphviz.push_str(&format!("{separator}\"{node}\""));
+                }
+
+                match pragma {
+                    Pragma::Repeat { .. } => graphviz.push_str(" [fillcolor=\"#f6f7c4\"];\n"),
+                    Pragma::TagIndex { index, .. } => {
+                        graphviz.push_str(&format!(" [penwidth={}];\n", 1 + index));
+                    }
+                    Pragma::Unique { .. } => graphviz.push_str(" [fillcolor=\"#caedff\"];\n"),
+                    _ => {}
+                }
+            }
+        }
+
         graphviz.push('}');
         graphviz
     }
