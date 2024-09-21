@@ -1117,6 +1117,50 @@ impl<Id: Ord> Game<Id> {
                 prev_edges
             })
     }
+
+    pub fn to_stats(&self) -> String {
+        let edges = self.edges.len();
+        let nodes = self.nodes().len();
+        let repeat_nodes = self
+            .pragmas
+            .iter()
+            .filter_map(|pragma| {
+                if let Pragma::Repeat { nodes, .. } = pragma {
+                    Some(nodes)
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .collect::<BTreeSet<_>>();
+        let unique_nodes = self
+            .pragmas
+            .iter()
+            .filter_map(|pragma| {
+                if let Pragma::Unique { nodes, .. } = pragma {
+                    Some(nodes)
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .collect::<BTreeSet<_>>();
+        let repeat_or_unique_nodes = repeat_nodes.union(&unique_nodes).collect::<BTreeSet<_>>();
+
+        format!(
+            "edges: {edges}\n\
+            nodes: {nodes}\n\
+            @repeat or @unique nodes: {} ({:.2}%)\n\
+            @repeat nodes: {} ({:.2}%)\n\
+            @unique nodes: {} ({:.2}%)\n",
+            repeat_or_unique_nodes.len(),
+            100.0 * repeat_or_unique_nodes.len() as f32 / nodes as f32,
+            repeat_nodes.len(),
+            100.0 * repeat_nodes.len() as f32 / nodes as f32,
+            unique_nodes.len(),
+            100.0 * unique_nodes.len() as f32 / nodes as f32,
+        )
+    }
 }
 
 impl<Id: PartialEq> Game<Id> {

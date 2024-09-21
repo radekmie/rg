@@ -13,12 +13,13 @@ export type AnalyzedGameStep = { title?: string } & (
   | { kind: 'ast'; language: L.rbg; value: rbg.ast.Game }
   | { kind: 'ast'; language: L.rg; value: rg.ast.GameDeclaration }
   | { kind: 'automaton'; value: string }
-  | { kind: 'bench'; value: rg.ast.GameDeclaration }
+  | { kind: 'bench'; stats: string; value: rg.ast.GameDeclaration }
   | { kind: 'cst'; language: L.hrg; value: CstNode }
   | { kind: 'cst'; language: L.rbg; value: CstNode }
   | { kind: 'error'; value: unknown }
   | { kind: 'graphviz'; value: string }
   | { kind: 'source'; language: L; value: string }
+  | { kind: 'stats'; value: string }
 );
 
 export class AnalyzedGame {
@@ -206,10 +207,12 @@ export async function parse(source: string, settings: Settings) {
     const steps = await wasm.analyzeRg(game.sourceRg, flags);
     const graphviz = steps.pop();
     utils.assert(graphviz?.kind === 'graphviz', 'Graphviz step expected');
+    const stats = steps.pop();
+    utils.assert(stats?.kind === 'stats', 'Stats step expected');
 
     game.steps.push(...steps);
     game.steps.unshift(
-      { kind: 'bench', value: game.astRg },
+      { kind: 'bench', stats: stats.value, value: game.astRg },
       { kind: 'automaton', value: graphviz.value },
       graphviz,
     );

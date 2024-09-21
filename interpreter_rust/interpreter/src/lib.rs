@@ -277,6 +277,7 @@ pub fn analyze_rg_inner(
 
     assert_eq!(check!(safe_parse_rg_source(&game.to_string())), game);
 
+    step!({ "kind": "stats", "value": game.to_stats() });
     step!({ "kind": "graphviz", "value": game.to_graphviz() });
     Ok(game)
 }

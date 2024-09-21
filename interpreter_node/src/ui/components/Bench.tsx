@@ -4,6 +4,7 @@ import {
   Elevation,
   FormGroup,
   Intent,
+  Label,
   NumericInput,
 } from '@blueprintjs/core';
 import { useCallback, useMemo, useState } from 'react';
@@ -98,11 +99,18 @@ function BenchBlock({
   );
 }
 
-export type BenchProps = { gameDeclaration: rg.ast.GameDeclaration };
+export type BenchProps = {
+  gameDeclaration: rg.ast.GameDeclaration;
+  stats: string;
+};
 
-export function Bench({ gameDeclaration }: BenchProps) {
+export function Bench({ gameDeclaration, stats }: BenchProps) {
   return (
     <section className={styles.wrapScroll}>
+      <Card className={styles.block} elevation={Elevation.TWO}>
+        <Label>Statistics</Label>
+        <pre>{stats}</pre>
+      </Card>
       <BenchBlock
         action={rg.ast.run}
         actionText="Run"

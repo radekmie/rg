@@ -34,7 +34,7 @@ export function Application() {
         content = <Graphviz source={step.value} />;
         break;
       case 'bench':
-        content = <Bench gameDeclaration={step.value} />;
+        content = <Bench gameDeclaration={step.value} stats={step.stats} />;
         break;
       case 'source':
         content = (

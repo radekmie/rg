@@ -7,7 +7,12 @@ body {
 }
 
 .block pre {
+  margin-bottom: 0;
   overflow-x: auto;
+}
+
+.block pre:empty {
+  margin-top: 0;
 }
 
 .grid,

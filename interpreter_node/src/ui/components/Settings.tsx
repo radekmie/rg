@@ -75,6 +75,7 @@ export function Settings({
           error: 'Error',
           graphviz: 'Automaton.graphviz',
           source: 'src.',
+          stats: 'Stats',
         }[step.kind];
 
         if ('language' in step) {
