@@ -183,12 +183,6 @@ impl<Id> Label<Id> {
         matches!(self, Self::Tag { symbol } if fn_(symbol))
     }
 
-    pub fn new_skip() -> Self {
-        Self::Skip { span: Span::none() }
-    }
-}
-
-impl<Id: Clone + Ord> Label<Id> {
     pub fn negate(&mut self) {
         match self {
             Self::Comparison { negated, .. } => *negated = !*negated,
@@ -197,6 +191,12 @@ impl<Id: Clone + Ord> Label<Id> {
         }
     }
 
+    pub fn new_skip() -> Self {
+        Self::Skip { span: Span::none() }
+    }
+}
+
+impl<Id: Clone + Ord> Label<Id> {
     pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
         match self {
             Self::Assignment { lhs, rhs } => Self::Assignment {
@@ -282,6 +282,40 @@ impl<Id: Ord> Label<Id> {
 impl<Id: PartialEq> Label<Id> {
     pub fn has_variable(&self, identifier: &Id) -> bool {
         matches!(self, Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } if lhs.has_variable(identifier) || rhs.has_variable(identifier))
+    }
+
+    pub fn is_negated(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                Self::Comparison {
+                    lhs: l1,
+                    rhs: r1,
+                    negated: n1,
+                    ..
+                },
+                Self::Comparison {
+                    lhs: l2,
+                    rhs: r2,
+                    negated: n2,
+                    ..
+                },
+            ) => l1 == l2 && r1 == r2 && n1 != n2,
+            (
+                Self::Reachability {
+                    lhs: l1,
+                    rhs: r1,
+                    negated: n1,
+                    ..
+                },
+                Self::Reachability {
+                    lhs: l2,
+                    rhs: r2,
+                    negated: n2,
+                    ..
+                },
+            ) => l1 == l2 && r1 == r2 && n1 != n2,
+            _ => false,
+        }
     }
 
     pub fn is_self_assignment(&self) -> bool {

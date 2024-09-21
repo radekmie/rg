@@ -11,6 +11,10 @@ program
   .name('node lib/cli')
   .option('--addExplicitCasts', 'add type casts to all expressions')
   .option(
+    '--calculateDisjoints',
+    'calculate missing @disjoint and @disjointExhaustive pragmas automatically',
+  )
+  .option(
     '--calculateRepeats',
     'calculate missing @repeat pragmas automatically',
   )
@@ -98,6 +102,7 @@ function addCommand(
         extension: extension as Language,
         flags: {
           addExplicitCasts: !!options.addExplicitCasts,
+          calculateDisjoints: !!options.calculateDisjoints,
           calculateRepeats: !!options.calculateRepeats,
           calculateSimpleApply: !!options.calculateSimpleApply,
           calculateTagIndexes: !!options.calculateTagIndexes,

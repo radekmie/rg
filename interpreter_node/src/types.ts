@@ -11,6 +11,7 @@ export type Settings = {
   extension: Language;
   flags: {
     addExplicitCasts: boolean;
+    calculateDisjoints: boolean;
     calculateRepeats: boolean;
     calculateSimpleApply: boolean;
     calculateTagIndexes: boolean;
@@ -38,6 +39,7 @@ export type Settings = {
 
 export const noFlagsEnabled: Settings['flags'] = {
   addExplicitCasts: false,
+  calculateDisjoints: false,
   calculateRepeats: false,
   calculateSimpleApply: false,
   calculateTagIndexes: false,

@@ -120,6 +120,3 @@ lose, win: turnPlayer = opponent[turnPlayer];
 win, score: goals[turnPlayer] = Score(100);
 score, finish: goals[opponent[turnPlayer]] = Score(0);
 finish, end: player = PlayerOrKeeper(keeper);
-
-@disjointExhaustive turn:move lose;
-@disjointExhaustive wincheck:continue win;
