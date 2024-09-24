@@ -9,12 +9,12 @@ impl Game<Arc<str>> {
             .edges
             .iter()
             .filter_map(|edge| {
-                if edge.lhs.is_begin() {
-                    Some(&edge.lhs)
-                } else if edge.label.is_player_assignment() || edge.label.is_tag() {
+                if edge.label.is_player_assignment() || edge.label.is_tag() {
                     Some(&edge.rhs)
                 } else if let Label::Reachability { lhs, .. } = &edge.label {
                     Some(lhs)
+                } else if edge.lhs.is_begin() {
+                    Some(&edge.lhs)
                 } else {
                     None
                 }
@@ -75,34 +75,51 @@ impl Game<Arc<str>> {
 
             if paths_to_players.len() <= 1 {
                 if paths_to_players.len() == 1 {
-                    pragmas.push((node.clone(), paths_to_players.pop_first().unwrap().1, None));
+                    pragmas.push((
+                        node.clone(),
+                        vec![],
+                        paths_to_players.pop_first().unwrap().1,
+                        true,
+                    ));
                 }
 
                 for (tag, mut paths) in paths_to_tags.into_iter() {
                     if paths.len() == 1 {
-                        pragmas.push((node.clone(), paths.pop_first().unwrap().1, Some(tag)));
+                        pragmas.push((
+                            node.clone(),
+                            vec![tag],
+                            paths.pop_first().unwrap().1,
+                            false,
+                        ));
                     }
                 }
             }
         }
 
         // Merge all pairs of
-        //   @simpleApply x : ...xs;
-        //   @simpleApply y ...ts : ...ys x;
+        //   @simpleApply x ...xtags : ...xs;
+        //   @simpleApply y ...ytags : ...ys x;
         // Into
-        //   @simpleApply y ...ts : ...ys x ...xs;
-        // If there's exactly one `@simpleApply x : ...;`.
-        for index_x in (1..pragmas.len()).rev() {
+        //   @simpleApply y ...ytags ...xtags : ...ys x ...xs;
+        // If there's exactly one `@simpleApply x : ...;` and there's no
+        // `player` assignment merged on the resulting path (except the end).
+        for index_x in (0..pragmas.len()).rev() {
             let (prev, next) = pragmas.split_at_mut(index_x);
-            let ((x, xs, tag), next) = next.split_first_mut().unwrap();
-            if tag.is_some() || prev.iter().chain(next.iter()).any(|(node, _, _)| node == x) {
+            let ((x, xtags, xs, xplayer), next) = next.split_first_mut().unwrap();
+            if prev
+                .iter()
+                .chain(next.iter())
+                .any(|(node, _, _, _)| node == x)
+            {
                 continue;
             }
 
             let mut any_matched = false;
-            for (_, ys, _) in prev.iter_mut().chain(next) {
-                if ys.last() == Some(x) {
+            for (_, ytags, ys, yplayer) in prev.iter_mut().chain(next) {
+                if ys.last() == Some(x) && (!*xplayer || !*yplayer) {
+                    ytags.extend_from_slice(xtags);
                     ys.extend_from_slice(xs);
+                    *yplayer |= *xplayer;
                     any_matched = true;
                 }
             }
@@ -112,44 +129,14 @@ impl Game<Arc<str>> {
             }
         }
 
-        // Merge all pairs of
-        //   @simpleApply x : ...xs y;
-        //   @simpleApply y ...ts : ...ys;
-        // Into
-        //   @simpleApply x ...ts : ...xs y ...ys;
-        // If there's exactly one `@simpleApply x : ...;`.
-        for index_x in (1..pragmas.len()).rev() {
-            let (prev, next) = pragmas.split_at_mut(index_x);
-            let ((x, xs, tag), next) = next.split_first_mut().unwrap();
-            if tag.is_some() || prev.iter().chain(next.iter()).any(|(node, _, _)| node == x) {
-                continue;
-            }
-
-            let Some(y) = xs.last() else {
-                continue;
-            };
-
-            let mut any_matched = false;
-            for (y2, ys, _) in prev.iter_mut().chain(next) {
-                if y == y2 {
-                    *y2 = x.clone();
-                    ys.splice(0..0, xs.iter().cloned());
-                    any_matched = true;
-                }
-            }
-
-            if any_matched {
-                pragmas.swap_remove(index_x);
-            }
-        }
-
-        for (node, nodes, tag) in pragmas {
+        for (node, tags, nodes, _) in pragmas {
             let pragma = Pragma::SimpleApply {
                 span: Span::none(),
                 node,
-                tags: tag.into_iter().collect(),
+                tags,
                 nodes,
             };
+
             if let Err(index) = self.pragmas.binary_search(&pragma) {
                 self.pragmas.insert(index, pragma);
             }
@@ -157,4 +144,41 @@ impl Game<Arc<str>> {
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::test_transform;
+
+    test_transform!(
+        calculate_simple_apply,
+        complext_1,
+        include_str!("../../../../../examples/simpleApplyTest1.rg"),
+        adds "
+            @simpleApply doneB dummytag : extraB preend;
+            @simpleApply moveA 0 : tagA0 doneA moveB;
+            @simpleApply moveA 1 : tagA1 doneA moveB;
+            @simpleApply preend : end;
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        complext_2,
+        include_str!("../../../../../examples/simpleApplyTest2.rg"),
+        adds "
+            @simpleApply moveA 0 : tagA0 doneA moveB;
+            @simpleApply moveA 1 : tagA1 doneA moveB;
+            @simpleApply moveB 0 dummytag : tagB0same tagB0 doneB extraB preend;
+            @simpleApply moveB 1 dummytag : tagB1same tagB1 doneB extraB preend;
+            @simpleApply preend : end;
+        "
+    );
+
+    // test_transform!(
+    //     calculate_simple_apply,
+    //     complext_3,
+    //     include_str!("../../../../../examples/simpleApplyTest3.rg"),
+    //     adds "@simpleApply moveB 1 : tagB1same tagB1 doneB extraB preend;"
+    // );
 }
