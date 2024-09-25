@@ -85,11 +85,7 @@ graph move(me: Player) {
     }
   }
   assert(position != null)
-  branch {
-    assert(board[position] == empty)
-  } or {
-    assert(board[position] == piece(opponent(me)))
-  }
+  assert(board[position] != piece(me))
 }
 
 graph turn() {
