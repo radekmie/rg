@@ -265,8 +265,8 @@ mod test {
         var x: A = 3;
         begin, a: 3 == 1;
         begin, b: A(3) == 2;
-        a, c: ;
-        b, c: y = 2;"
+        a, c: y = 3;
+        b, c: y = 3;"
     );
 
     test_transform!(

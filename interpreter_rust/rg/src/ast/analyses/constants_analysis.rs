@@ -126,10 +126,12 @@ fn as_constant_comparisson(
     {
         let lhs = lhs.uncast();
         let rhs = rhs.uncast();
-        if lhs.is_reference_and(|id| !edge.has_binding(id) && ctx.is_variable(id)) {
+        let can_be_replaced =
+            |id: &Id| !edge.has_binding(id) && ctx.is_variable(id) && !knowledge.contains_key(id);
+        if lhs.is_reference_and(can_be_replaced) {
             let value = evaluate_constant(rhs, knowledge, ctx, edge)?;
             return lhs.as_reference().map(|id| (id.clone(), value));
-        } else if rhs.is_reference_and(|id| !edge.has_binding(id) && ctx.is_variable(id)) {
+        } else if rhs.is_reference_and(can_be_replaced) {
             let value = evaluate_constant(lhs, knowledge, ctx, edge)?;
             return rhs.as_reference().map(|id| (id.clone(), value));
         }
@@ -465,7 +467,7 @@ mod test {
         "begin:
             x = a
         end:
-            x = c"
+            x = a"
     );
 
     test!(
@@ -478,7 +480,7 @@ mod test {
             x = a
             y = b
         end:
-            x = b
+            x = a
             y = b"
     );
 
@@ -501,9 +503,17 @@ mod test {
         "type A = {a,b,c};
         var x: A = a;
         var y: A -> A = { b: a, :b };
-        begin, end: x == y[x];",
-        "begin:
+        begin, a1: x = c;
+        a1, c: ;
+        begin, c: ;
+        c, end: x == y[a];",
+        "a1:
+            x = c
+            y = { b: a, :b }
+        begin:
             x = a
+            y = { b: a, :b }
+        c:
             y = { b: a, :b }
         end:
             x = b
@@ -524,5 +534,22 @@ mod test {
             y = b
         end:
             y = b"
+    );
+
+    test!(
+        comparisson6,
+        "type A = {a,b,c};
+        var x: A = a;
+        begin, a1: x = c;
+        begin, b1: ;
+        a1, b1: ;
+        b1, end: x == b;",
+        "a1:
+            x = c
+        b1:
+        begin:
+            x = a
+        end:
+            x = b"
     );
 }
