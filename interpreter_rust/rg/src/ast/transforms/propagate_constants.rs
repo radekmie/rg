@@ -48,18 +48,12 @@ impl Game<Id> {
                         variables,
                         constant_vars: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
                     };
-                    let lhs_opt = eval_expression(lhs, &context, &edge_clone);
-                    let rhs_opt = eval_expression(rhs, &context, &edge_clone);
-                    if let Some(new_rhs) = rhs_opt {
-                        if let Some(new_lhs) = lhs_opt {
-                            if new_lhs == new_rhs {
-                                edge.skip();
-                            } else {
-                                *rhs = Arc::new(new_rhs);
-                            }
-                        } else {
-                            *rhs = Arc::new(new_rhs);
-                        }
+                    let new_lhs = eval_expression1(lhs, &context, &edge_clone);
+                    let new_rhs = eval_expression1(rhs, &context, &edge_clone);
+                    if new_lhs == new_rhs {
+                        edge.skip();
+                    } else {
+                        *rhs = Arc::new(new_rhs);
                     }
                 }
                 Label::Comparison { lhs, rhs, .. } => {
@@ -68,14 +62,10 @@ impl Game<Id> {
                         variables,
                         constant_vars: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
                     };
-                    let lhs_opt = eval_expression(lhs, &context, &edge_clone);
-                    let rhs_opt = eval_expression(rhs, &context, &edge_clone);
-                    if let Some(new_lhs) = lhs_opt {
-                        *lhs = Arc::new(new_lhs);
-                    }
-                    if let Some(new_rhs) = rhs_opt {
-                        *rhs = Arc::new(new_rhs);
-                    }
+                    let new_lhs = eval_expression1(lhs, &context, &edge_clone);
+                    let new_rhs = eval_expression1(rhs, &context, &edge_clone);
+                    *lhs = Arc::new(new_lhs);
+                    *rhs = Arc::new(new_rhs);
                 }
                 _ => (),
             }
@@ -85,82 +75,87 @@ impl Game<Id> {
     }
 }
 
-fn eval_expression(
-    expression: &Arc<Expression<Id>>,
-    context: &'_ Context,
+fn eval_expression1(
+    expression: &Expression<Id>,
+    context: &Context,
     edge: &Edge<Id>,
-) -> Option<Expression<Id>> {
-    match expression.as_ref() {
-        Expression::Access { span, lhs, rhs } => {
-            let lhs_val = eval_value(lhs, context, edge);
-            let rhs_val = eval_value(rhs, context, edge);
-            match (lhs_val, rhs_val) {
-                (Some(Value::Map { entries, .. }), Some(Value::Element { identifier })) => {
-                    let entry = entries
-                        .iter()
-                        .find(|entry| {
-                            entry
-                                .identifier
-                                .as_ref()
-                                .is_some_and(|id| *id == identifier)
-                        })
-                        .or_else(|| entries.iter().find(|entry| entry.identifier.is_none()));
-
-                    entry.and_then(|entry| entry.value.as_ref().clone().to_expression())
+) -> Expression<Id> {
+    match expression {
+        Expression::Access { lhs, rhs, span } => {
+            // 1. Try as value and map
+            let map_value = eval_as_map(lhs, context, edge).and_then(|lhs_val| {
+                eval_as_identifier(rhs, context, edge).map(|rhs_val| (lhs_val, rhs_val))
+            });
+            if let Some((lhs_val, rhs_val)) = map_value {
+                let entry = lhs_val.get_entry(&rhs_val);
+                entry
+                    .and_then(|value| value.clone().as_expression())
+                    .unwrap_or_else(|| expression.clone())
+            } else {
+                let lhs = eval_expression1(lhs, context, edge);
+                let rhs = eval_expression1(rhs, context, edge);
+                Expression::Access {
+                    span: *span,
+                    lhs: Arc::new(lhs),
+                    rhs: Arc::new(rhs),
                 }
-                (
-                    Some(Value::Element {
-                        identifier: l_identifier,
-                    }),
-                    Some(Value::Element {
-                        identifier: r_identifier,
-                    }),
-                ) => Some(Expression::Access {
-                    span: *span,
-                    lhs: Arc::new(Expression::new(l_identifier)),
-                    rhs: Arc::new(Expression::new(r_identifier)),
-                }),
-                (Some(Value::Element { identifier }), None) => Some(Expression::Access {
-                    span: *span,
-                    lhs: Arc::new(Expression::new(identifier)),
-                    rhs: rhs.clone(),
-                }),
-                (None, Some(Value::Element { identifier })) => Some(Expression::Access {
-                    span: *span,
-                    lhs: lhs.clone(),
-                    rhs: Arc::new(Expression::new(identifier)),
-                }),
-                _ => None,
             }
         }
         Expression::Cast { span, lhs, rhs } => {
-            let rhs = eval_expression(rhs, context, edge)?;
-            Some(Expression::Cast {
+            let rhs = eval_expression1(rhs, context, edge);
+            Expression::Cast {
                 span: *span,
                 lhs: lhs.clone(),
                 rhs: Arc::new(rhs),
+            }
+        }
+        Expression::Reference { identifier } => context
+            .get(identifier, edge)
+            .and_then(Value::as_expression)
+            .unwrap_or_else(|| expression.clone()),
+    }
+}
+
+fn eval_as_map(
+    expression: &Expression<Id>,
+    context: &Context,
+    edge: &Edge<Id>,
+) -> Option<Value<Id>> {
+    match expression {
+        Expression::Access { lhs, rhs, .. } => {
+            eval_as_map(lhs, context, edge).and_then(|value_map| {
+                let identifier = eval_as_identifier(rhs, context, edge)?;
+                value_map
+                    .get_entry(&identifier)
+                    .filter(|value| value.is_map())
+                    .cloned()
             })
         }
-        Expression::Reference { .. } => {
-            eval_value(expression, context, edge).and_then(Value::to_expression)
+        Expression::Cast { rhs, .. } => eval_as_map(rhs, context, edge),
+        Expression::Reference { identifier } => {
+            context.get(identifier, edge).filter(Value::is_map)
         }
     }
 }
 
-fn eval_value(
-    expression: &Arc<Expression<Id>>,
+fn eval_as_identifier(
+    expression: &Expression<Id>,
     context: &Context,
     edge: &Edge<Id>,
-) -> Option<Value<Id>> {
-    match expression.as_ref() {
+) -> Option<Id> {
+    match expression {
         Expression::Access { lhs, rhs, .. } => {
-            let rhs = eval_value(rhs, context, edge)?;
-            let lhs = eval_value(lhs, context, edge)?;
-            rhs.as_identifier()
-                .and_then(|identifier| lhs.get_entry(identifier).cloned())
+            eval_as_map(lhs, context, edge).and_then(|value_map| {
+                let identifier = eval_as_identifier(rhs, context, edge)?;
+                value_map
+                    .get_entry(&identifier)
+                    .and_then(|value| value.clone().to_identifier())
+            })
         }
-        Expression::Cast { rhs, .. } => eval_value(rhs, context, edge),
-        Expression::Reference { identifier } => context.get(identifier, edge),
+        Expression::Cast { rhs, .. } => eval_as_identifier(rhs, context, edge),
+        Expression::Reference { identifier } => context
+            .get(identifier, edge)
+            .and_then(Value::to_identifier),
     }
 }
 
@@ -274,31 +269,73 @@ mod test {
         b, c: y = 3;"
     );
 
-    // test_transform!(
-    //     propagate_constants,
-    //     small6,
-    //     "turn_11, end: ;",
-    //     "x, z: ;"
-    // );
+    test_transform!(
+        propagate_constants,
+        small6,
+        "type A = {1,2,3,4};
+        type AA = A -> A;
+        const down: AA = {4:3, 3:2, :1};
+        var board: A -> A = {4:3, :2};
+        var x: A = 3;
+        begin, a(bind_1: AA): x = bind_1[down[3]];",
+        "type A = { 1, 2, 3, 4 };
+        type AA = A -> A;
+        const down: AA = { 4: 3, 3: 2, :1 };
+        var board: A -> A = { 4: 3, :2 };
+        var x: A = 3;
+        begin, a(bind_1: AA): x = bind_1[2];"
+    );
 
-    // test_transform!(
-    //     propagate_constants,
-    //     small7,
-    //     "turn_11, end: ;",
-    //     "x, z: ;"
-    // );
+    test_transform!(
+        propagate_constants,
+        small7,
+        "type A = {1,2,3,4};
+        type AA = A -> A;
+        const down: AA = {4:3, 3:2, :1};
+        var board: A -> A -> A = {4:{:3}, :{2:2, :3}};
+        var x: A = 3;
+        begin, a(bind_1: A): x = board[1][down[x]];",
+        "type A = { 1, 2, 3, 4 };
+        type AA = A -> A;
+        const down: AA = { 4: 3, 3: 2, :1 };
+        var board: A -> A -> A = { 4: { :3 }, :{ 2: 2, :3 } };
+        var x: A = 3;
+        begin, a(bind_1: A): x = 2;"
+    );
 
-    // test_transform!(
-    //     propagate_constants,
-    //     small8,
-    //     "turn_11, end: ;",
-    //     "x, z: ;"
-    // );
+    test_transform!(
+        propagate_constants,
+        small8,
+        "type A = {1,2,3,4};
+        type AA = A -> A;
+        const down: AA = {4:3, 3:2, :1};
+        var board: A -> A -> A -> A = { :{2:{:2}, :{:3}}};
+        var x: A = 3;
+        begin, a(bind_1: A): x = board[1][bind_1][down[x]];",
+        "type A = { 1, 2, 3, 4 };
+        type AA = A -> A;
+        const down: AA = { 4: 3, 3: 2, :1 };
+        var board: A -> A -> A -> A = { :{ 2: { :2 }, :{ :3 } } };
+        var x: A = 3;
+        begin, a(bind_1: A): x = board[1][bind_1][2];"
+    );
 
-    // test_transform!(
-    //     propagate_constants,
-    //     small9,
-    //     "turn_11, end: ;",
-    //     "x, z: ;"
-    // );
+    test_transform!(
+        propagate_constants,
+        small9,
+        "type A = {1,2,3,4};
+        type AA = A -> A;
+        var board: A -> A = {4:3, :2};
+        var x: A = 3;
+        begin, a(bind_1: A): board[1] = bind_1;
+        begin, b: x = board[2];
+        a(bind_1: A), a: x = board[2];",
+        "type A = { 1, 2, 3, 4 };
+        type AA = A -> A;
+        var board: A -> A = { 4: 3, :2 };
+        var x: A = 3;
+        begin, a(bind_1: A): board[1] = bind_1;
+        begin, b: x = 2;
+        a(bind_1: A), a: x = board[2];"
+    );
 }

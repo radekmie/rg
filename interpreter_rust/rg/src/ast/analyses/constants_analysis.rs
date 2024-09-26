@@ -158,7 +158,7 @@ fn dereference_constant(value: &ConstantValue, ctx: &Context) -> ConstantValue {
         }
         Value::Map { entries, span } => {
             let mut entries = entries.clone();
-            for entry in entries.iter_mut() {
+            for entry in &mut entries {
                 entry.value = dereference_constant(&entry.value, ctx);
             }
             Arc::new(Value::Map {

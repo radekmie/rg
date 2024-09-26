@@ -1528,34 +1528,47 @@ impl<Id> Value<Id> {
         Self::Element { identifier }
     }
 
+    pub fn as_expression(self) -> Option<Expression<Id>> {
+        match self {
+            Self::Element { identifier } => Some(Expression::new(identifier)),
+            Self::Map { .. } => None,
+        }
+    }
+
     pub fn as_identifier(&self) -> Option<&Id> {
         match self {
             Self::Element { identifier } => Some(identifier),
             Self::Map { .. } => None,
         }
     }
+
+    pub fn to_identifier(self) -> Option<Id> {
+        match self {
+            Self::Element { identifier } => Some(identifier),
+            Self::Map { .. } => None,
+        }
+    }
+
+    pub fn is_element(&self) -> bool {
+        matches!(self, Self::Element { .. })
+    }
+
+    pub fn is_map(&self) -> bool {
+        matches!(self, Self::Map { .. })
+    }
 }
 
 impl<Id: PartialEq> Value<Id> {
-    pub fn get_entry(&self, identifier: &Id) -> Option<&Value<Id>> {
+    pub fn get_entry(&self, identifier: &Id) -> Option<&Self> {
         match self {
-            Value::Map { entries, .. } => {
+            Self::Map { entries, .. } => {
                 let entry = entries
                     .iter()
                     .find(|entry| entry.identifier.as_ref().is_some_and(|id| id == identifier))
                     .or_else(|| entries.iter().find(|entry| entry.identifier.is_none()));
                 entry.map(|entry| entry.value.as_ref())
             }
-            Value::Element { .. } => None,
-        }
-    }
-}
-
-impl<Id: Clone> Value<Id> {
-    pub fn to_expression(self) -> Option<Expression<Id>> {
-        match self {
-            Self::Element { identifier } => Some(Expression::new(identifier)),
-            Self::Map { .. } => None,
+            Self::Element { .. } => None,
         }
     }
 }
