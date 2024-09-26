@@ -93,7 +93,7 @@ fn as_constant_assignment(
     ctx: &Context,
 ) -> Option<(Id, ConstantValue)> {
     let (id, expr) = edge.label.as_var_assignment()?;
-    if edge.label.is_map_assignment() {
+    if edge.label.is_map_assignment() || edge.has_binding(id) {
         return None;
     }
     let value = evaluate_constant(expr, knowledge, ctx, edge)?;
@@ -124,7 +124,6 @@ fn evaluate_constant(
             .constants
             .get(identifier)
             .cloned()
-            // .map(|value| dereference_constant(value.clone(), ctx))
             .or(Some(Arc::new(Value::new(identifier.clone())))),
     }
 }
@@ -381,5 +380,43 @@ mod test {
             position = null"
     );
 
-    // TODO: Add tests for binding shadowing
+    test!(
+        binding_loop3,
+        "type Alpha = {a1,b1,c1,d1};
+        var alpha: Alpha = d1;
+        begin, 1: ;
+        1, 2(bind_1: Alpha): bind_1 = c1;
+        2(bind_1: Alpha), 3: alpha = bind_1;
+        3, 4: $ bind_2;
+        4, 1: ;
+        3, end: ;",
+        "1:
+        2(bind_1: Alpha):
+        3:
+        4:
+        begin:
+            alpha = d1
+        end:"
+    );
+
+    test!(
+        binding_loop4,
+        "type Alpha = {a1,b1,c1,d1};
+        var bind_1: Alpha = a1;
+        var alpha: Alpha = d1;
+        begin, 1: ;
+        1, 2(bind_1: Alpha): bind_1 = c1;
+        2(bind_1: Alpha), 3: alpha = bind_1;
+        3, 4: $ bind_2;
+        4, 1: ;
+        3, end: ;",
+        "1:
+        2(bind_1: Alpha):
+        3:
+        4:
+        begin:
+            alpha = d1
+            bind_1 = a1
+        end:"
+    );
 }

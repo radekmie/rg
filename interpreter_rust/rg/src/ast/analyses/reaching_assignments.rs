@@ -132,7 +132,7 @@ impl Analysis for ReachingAssignments {
                 }
             }
             Label::Skip { .. } => {
-                , _ctx: &Self::Context                input
+                input
                     .entry(None)
                     .or_insert_with(|| Assignment::new(&edge.lhs));
             }
