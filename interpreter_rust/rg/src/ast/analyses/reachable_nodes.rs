@@ -29,6 +29,4 @@ impl Analysis for ReachableNodes {
     fn gen(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
         input
     }
-
-    fn get_context(_program: &Game<super::Id>) -> Self::Context {}
 }

@@ -53,23 +53,6 @@ impl Analysis for ConstantsAnalysis {
         a
     }
 
-    fn kill(input: Self::Domain, edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
-        match &edge.label.as_var_assignment() {
-            Some((identifier, _)) => input
-                .into_iter()
-                .filter(|(id, _)| id != *identifier)
-                .collect(),
-            _ => input,
-        }
-    }
-
-    fn gen(mut input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain {
-        if let Some((identifier, value)) = as_constant_assignment(edge, &input, ctx) {
-            input.insert(identifier, value);
-        }
-        input
-    }
-
     fn get_context(program: &Game<Id>) -> Self::Context {
         let mut ctx = Self::Context::default();
         for constant in &program.constants {

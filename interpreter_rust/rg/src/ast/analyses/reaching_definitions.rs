@@ -44,6 +44,4 @@ impl Analysis for ReachingDefinitions {
         }
         input
     }
-
-    fn get_context(_program: &Game<super::Id>) -> Self::Context {}
 }

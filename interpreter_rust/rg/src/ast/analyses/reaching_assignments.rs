@@ -140,6 +140,4 @@ impl Analysis for ReachingAssignments {
         }
         input
     }
-
-    fn get_context(_program: &Game<super::Id>) -> Self::Context {}
 }

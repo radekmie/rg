@@ -16,19 +16,25 @@ type Id = Arc<str>;
 
 pub trait Analysis {
     type Domain: Clone + PartialEq;
-    type Context: PartialEq;
+    type Context: PartialEq + Default;
 
     fn bot() -> Self::Domain;
 
     fn extreme(program: &Game<Id>, ctx: &Self::Context) -> Self::Domain;
 
-    fn gen(input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain;
+    fn gen(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
+        input
+    }
 
-    fn get_context(program: &Game<Id>) -> Self::Context;
+    fn get_context(_program: &Game<Id>) -> Self::Context {
+        Self::Context::default()
+    }
 
     fn join(a: Self::Domain, b: Self::Domain) -> Self::Domain;
 
-    fn kill(input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain;
+    fn kill(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
+        input
+    }
 
     fn transfer(input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain {
         Self::gen(Self::kill(input, edge, ctx), edge, ctx)
