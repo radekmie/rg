@@ -1538,15 +1538,15 @@ impl<Id> Value<Id> {
         }
     }
 
+    pub fn is_map(&self) -> bool {
+        matches!(self, Self::Map { .. })
+    }
+
     pub fn to_identifier(&self) -> Option<&Id> {
         match self {
             Self::Element { identifier } => Some(identifier),
             Self::Map { .. } => None,
         }
-    }
-
-    pub fn is_map(&self) -> bool {
-        matches!(self, Self::Map { .. })
     }
 }
 

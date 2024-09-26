@@ -82,7 +82,7 @@ fn eval_expression(
 ) -> Expression<Id> {
     match expression {
         Expression::Access { lhs, rhs, span } => {
-            // 1. Try as value and map
+            // First, try to evaluate lhs as Value::Map and rhs as Value::Identifier
             let map_value = eval_as_map(lhs, context, edge).and_then(|lhs_val| {
                 eval_as_identifier(rhs, context, edge).map(|rhs_val| (lhs_val, rhs_val))
             });
@@ -231,17 +231,19 @@ mod test {
         const down: AA = {4:3, 3:2, :1};
         var board: A -> A = {4:3, :2};
         var x: A = 3;
-        begin, a(x: A): x == down[board[2]];
+        begin, b: ;
+        b, a(x: A): x == down[board[2]];
         a(x: A), a: $ x;
-        a, begin: x == 4;",
+        a, b: x == 4;",
         "type A = { 1, 2, 3, 4 };
         type AA = A -> A;
         const down: AA = { 4: 3, 3: 2, :1 };
         var board: A -> A = { 4: 3, :2 };
         var x: A = 3;
-        begin, a(x: A): x == 1;
+        begin, b: ;
+        b, a(x: A): x == down[board[2]];
         a(x: A), a: $ x;
-        a, begin: 3 == 4;"
+        a, b: x == 4;"
     );
 
     test_transform!(
@@ -263,8 +265,8 @@ mod test {
         var x: A = 3;
         begin, a: 3 == 1;
         begin, b: A(3) == 2;
-        a, c: y = 3;
-        b, c: y = 3;"
+        a, c: ;
+        b, c: y = 2;"
     );
 
     test_transform!(

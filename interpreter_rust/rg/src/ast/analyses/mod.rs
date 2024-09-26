@@ -67,7 +67,7 @@ struct Flow<'a> {
 }
 
 impl<'a> Flow<'a> {
-    fn entry(&self) -> Node<Id> {
+    fn entry() -> Node<Id> {
         Node::new(Id::from("begin"))
     }
 
@@ -124,7 +124,7 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
         let ctx = I::get_context(game);
         Worker {
             flow,
-            result: BTreeMap::from([(flow.entry(), I::extreme(game, &ctx))]),
+            result: BTreeMap::from([(Flow::entry(), I::extreme(game, &ctx))]),
             worklist: flow.nodes.clone(),
             ctx,
         }

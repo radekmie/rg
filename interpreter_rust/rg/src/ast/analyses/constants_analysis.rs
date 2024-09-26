@@ -1,5 +1,5 @@
 use super::Analysis;
-use crate::ast::{Edge, Expression, Game, Value};
+use crate::ast::{Edge, Expression, Game, Label, Value};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -10,6 +10,16 @@ type ConstantValue = Arc<Value<Id>>;
 pub struct Context {
     pub variables: BTreeSet<Id>,
     pub constants: BTreeMap<Id, ConstantValue>,
+}
+
+impl Context {
+    fn is_variable(&self, id: &Id) -> bool {
+        self.variables.contains(id)
+    }
+
+    fn get_constant(&self, id: &Id) -> Option<&ConstantValue> {
+        self.constants.get(id)
+    }
 }
 
 pub struct ConstantsAnalysis;
@@ -36,7 +46,7 @@ impl Analysis for ConstantsAnalysis {
     }
 
     fn join(mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
-        // Join the two maps, don't remove the key only if it is present in both maps with the same value
+        // Join the two maps, keep only keys present in both maps with the same value
         for (key, value) in &b {
             if let Some(a_value) = a.get(key) {
                 if a_value != value {
@@ -75,6 +85,9 @@ impl Analysis for ConstantsAnalysis {
         if let Some((identifier, value)) = as_constant_assignment(edge, &input, ctx) {
             input.insert(identifier, value);
             input
+        } else if let Some((identifier, value)) = as_constant_comparisson(edge, &input, ctx) {
+            input.insert(identifier, value);
+            input
         } else {
             match &edge.label.as_var_assignment() {
                 Some((identifier, _)) => input
@@ -100,6 +113,30 @@ fn as_constant_assignment(
     Some((id.clone(), value))
 }
 
+fn as_constant_comparisson(
+    edge: &Edge<Id>,
+    knowledge: &BTreeMap<Id, ConstantValue>,
+    ctx: &Context,
+) -> Option<(Id, ConstantValue)> {
+    if let Label::Comparison {
+        lhs,
+        rhs,
+        negated: false,
+    } = &edge.label
+    {
+        let lhs = lhs.uncast();
+        let rhs = rhs.uncast();
+        if lhs.is_reference_and(|id| !edge.has_binding(id) && ctx.is_variable(id)) {
+            let value = evaluate_constant(rhs, knowledge, ctx, edge)?;
+            return lhs.as_reference().map(|id| (id.clone(), value));
+        } else if rhs.is_reference_and(|id| !edge.has_binding(id) && ctx.is_variable(id)) {
+            let value = evaluate_constant(lhs, knowledge, ctx, edge)?;
+            return rhs.as_reference().map(|id| (id.clone(), value));
+        }
+    }
+    None
+}
+
 fn evaluate_constant(
     expr: &Expression<Id>,
     knowledge: &BTreeMap<Id, ConstantValue>,
@@ -117,12 +154,11 @@ fn evaluate_constant(
         }
         Expression::Cast { rhs, .. } => evaluate_constant(rhs, knowledge, ctx, edge),
         Expression::Reference { identifier } if edge.has_binding(identifier) => None,
-        Expression::Reference { identifier } if ctx.variables.contains(identifier) => {
+        Expression::Reference { identifier } if ctx.is_variable(identifier) => {
             knowledge.get(identifier).cloned()
         }
         Expression::Reference { identifier } => ctx
-            .constants
-            .get(identifier)
+            .get_constant(identifier)
             .cloned()
             .or(Some(Arc::new(Value::new(identifier.clone())))),
     }
@@ -339,6 +375,7 @@ mod test {
         3, end: ;",
         "1:
         2(bind_2: Alpha):
+            alpha = d1
         3:
         4:
         begin:
@@ -418,5 +455,74 @@ mod test {
             alpha = d1
             bind_1 = a1
         end:"
+    );
+
+    test!(
+        comparisson1,
+        "type A = {a,b,c};
+        var x: A = a;
+        begin, end: c == x;",
+        "begin:
+            x = a
+        end:
+            x = c"
+    );
+
+    test!(
+        comparisson2,
+        "type A = {a,b,c};
+        var x: A = a;
+        var y: A = b;
+        begin, end: x == y;",
+        "begin:
+            x = a
+            y = b
+        end:
+            x = b
+            y = b"
+    );
+
+    test!(
+        comparisson3,
+        "type A = {a,b,c};
+        var x: A = a;
+        var y: A = b;
+        begin, end: x != y;",
+        "begin:
+            x = a
+            y = b
+        end:
+            x = a
+            y = b"
+    );
+
+    test!(
+        comparisson4,
+        "type A = {a,b,c};
+        var x: A = a;
+        var y: A -> A = { b: a, :b };
+        begin, end: x == y[x];",
+        "begin:
+            x = a
+            y = { b: a, :b }
+        end:
+            x = b
+            y = { b: a, :b }"
+    );
+
+    test!(
+        comparisson5,
+        "type A = {a,b,c};
+        var x: A = a;
+        var y: A = b;
+        begin, a(bind_1: A): x = bind_1;
+        a(bind_1: A), end: x == bind_1;",
+        "a(bind_1: A):
+            y = b
+        begin:
+            x = a
+            y = b
+        end:
+            y = b"
     );
 }
