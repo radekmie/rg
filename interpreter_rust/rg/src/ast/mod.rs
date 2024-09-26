@@ -321,10 +321,6 @@ impl<Id: PartialEq> Label<Id> {
     pub fn is_self_assignment(&self) -> bool {
         matches!(self, Self::Assignment { lhs, rhs } if lhs.is_equal_reference(rhs))
     }
-
-    pub fn is_self_comparison(&self) -> bool {
-        matches!(self, Self::Comparison { lhs, rhs, negated } if !negated && lhs.is_equal_reference(rhs))
-    }
 }
 
 impl Label<Arc<str>> {
@@ -1535,22 +1531,18 @@ impl<Id> Value<Id> {
         }
     }
 
-    pub fn as_identifier(&self) -> Option<&Id> {
+    pub fn as_identifier(self) -> Option<Id> {
         match self {
             Self::Element { identifier } => Some(identifier),
             Self::Map { .. } => None,
         }
     }
 
-    pub fn to_identifier(self) -> Option<Id> {
+    pub fn to_identifier(&self) -> Option<&Id> {
         match self {
             Self::Element { identifier } => Some(identifier),
             Self::Map { .. } => None,
         }
-    }
-
-    pub fn is_element(&self) -> bool {
-        matches!(self, Self::Element { .. })
     }
 
     pub fn is_map(&self) -> bool {

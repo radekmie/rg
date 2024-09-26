@@ -132,7 +132,7 @@ fn evaluate_constant(
         Expression::Access { lhs, rhs, .. } => {
             let lhs = evaluate_constant(lhs, knowledge, ctx, edge)?;
             let rhs = evaluate_constant(rhs, knowledge, ctx, edge)?;
-            rhs.as_identifier().and_then(|identifier| {
+            rhs.to_identifier().and_then(|identifier| {
                 lhs.get_entry(identifier)
                     .map(|entry| Arc::new(entry.clone()))
             })

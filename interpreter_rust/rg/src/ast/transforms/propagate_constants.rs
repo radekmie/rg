@@ -48,8 +48,8 @@ impl Game<Id> {
                         variables,
                         constant_vars: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
                     };
-                    let new_lhs = eval_expression1(lhs, &context, &edge_clone);
-                    let new_rhs = eval_expression1(rhs, &context, &edge_clone);
+                    let new_lhs = eval_expression(lhs, &context, &edge_clone);
+                    let new_rhs = eval_expression(rhs, &context, &edge_clone);
                     if new_lhs == new_rhs {
                         edge.skip();
                     } else {
@@ -62,8 +62,8 @@ impl Game<Id> {
                         variables,
                         constant_vars: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
                     };
-                    let new_lhs = eval_expression1(lhs, &context, &edge_clone);
-                    let new_rhs = eval_expression1(rhs, &context, &edge_clone);
+                    let new_lhs = eval_expression(lhs, &context, &edge_clone);
+                    let new_rhs = eval_expression(rhs, &context, &edge_clone);
                     *lhs = Arc::new(new_lhs);
                     *rhs = Arc::new(new_rhs);
                 }
@@ -75,7 +75,7 @@ impl Game<Id> {
     }
 }
 
-fn eval_expression1(
+fn eval_expression(
     expression: &Expression<Id>,
     context: &Context,
     edge: &Edge<Id>,
@@ -92,8 +92,8 @@ fn eval_expression1(
                     .and_then(|value| value.clone().as_expression())
                     .unwrap_or_else(|| expression.clone())
             } else {
-                let lhs = eval_expression1(lhs, context, edge);
-                let rhs = eval_expression1(rhs, context, edge);
+                let lhs = eval_expression(lhs, context, edge);
+                let rhs = eval_expression(rhs, context, edge);
                 Expression::Access {
                     span: *span,
                     lhs: Arc::new(lhs),
@@ -102,7 +102,7 @@ fn eval_expression1(
             }
         }
         Expression::Cast { span, lhs, rhs } => {
-            let rhs = eval_expression1(rhs, context, edge);
+            let rhs = eval_expression(rhs, context, edge);
             Expression::Cast {
                 span: *span,
                 lhs: lhs.clone(),
@@ -132,9 +132,7 @@ fn eval_as_map(
             })
         }
         Expression::Cast { rhs, .. } => eval_as_map(rhs, context, edge),
-        Expression::Reference { identifier } => {
-            context.get(identifier, edge).filter(Value::is_map)
-        }
+        Expression::Reference { identifier } => context.get(identifier, edge).filter(Value::is_map),
     }
 }
 
@@ -149,13 +147,13 @@ fn eval_as_identifier(
                 let identifier = eval_as_identifier(rhs, context, edge)?;
                 value_map
                     .get_entry(&identifier)
-                    .and_then(|value| value.clone().to_identifier())
+                    .and_then(|value| value.clone().as_identifier())
             })
         }
         Expression::Cast { rhs, .. } => eval_as_identifier(rhs, context, edge),
-        Expression::Reference { identifier } => context
-            .get(identifier, edge)
-            .and_then(Value::to_identifier),
+        Expression::Reference { identifier } => {
+            context.get(identifier, edge).and_then(Value::as_identifier)
+        }
     }
 }
 
