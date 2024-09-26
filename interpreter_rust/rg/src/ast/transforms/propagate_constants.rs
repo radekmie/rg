@@ -1,14 +1,15 @@
 use crate::ast::analyses::ConstantsAnalysis;
-use crate::ast::{Constant, Edge, Error, Expression, Game, Label, Value, Variable};
-use std::collections::BTreeMap;
+use crate::ast::{Edge, Error, Expression, Game, Label, Value};
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 type Id = Arc<str>;
-type ConstantVars = BTreeMap<Id, Arc<Value<Id>>>;
+type ConstantValue = Arc<Value<Id>>;
+type ConstantVars = BTreeMap<Id, ConstantValue>;
 
 struct Context<'a> {
-    constants: &'a Vec<Constant<Id>>,
-    variables: &'a Vec<Variable<Id>>,
+    constants: &'a BTreeMap<Id, ConstantValue>,
+    variables: &'a BTreeSet<Id>,
     constant_vars: &'a ConstantVars,
 }
 
@@ -16,15 +17,14 @@ impl Context<'_> {
     fn get(&self, identifier: &Id, edge: &Edge<Id>) -> Option<Value<Id>> {
         if edge.has_binding(identifier) {
             None
-        } else if self.variables.iter().any(|v| &v.identifier == identifier) {
+        } else if self.variables.contains(identifier) {
             self.constant_vars
                 .get(identifier)
                 .map(|value| value.as_ref().clone())
         } else {
             self.constants
-                .iter()
-                .find(|c| &c.identifier == identifier)
-                .map(|c| c.value.as_ref().clone())
+                .get(identifier)
+                .map(|value| value.as_ref().clone())
                 .or_else(|| Some(Value::new(identifier.clone())))
         }
     }
@@ -32,10 +32,10 @@ impl Context<'_> {
 
 impl Game<Id> {
     pub fn propagate_constants(&mut self) -> Result<(), Error<Id>> {
-        let analysis = self.analyse::<ConstantsAnalysis>(true);
+        let (analysis, context) = self.analyse_with_context::<ConstantsAnalysis>(true);
         let default_constant_vars = &BTreeMap::new();
-        let constants = &self.constants;
-        let variables = &self.variables;
+        let constants = &context.constants;
+        let variables = &context.variables;
         for edge in &mut self.edges {
             if edge.label.is_player_assignment() {
                 continue;
@@ -335,5 +335,22 @@ mod test {
         begin, a(bind_1: A): board[1] = bind_1;
         begin, b: x = 2;
         a(bind_1: A), a: x = board[2];"
+    );
+
+    test_transform!(
+        propagate_constants,
+        const_dependency,
+        "type A = {a,b,c};
+        const cst1: A = a;
+        const cst2: A = cst1;
+        const cst3: A -> A -> A = { b: { :cst2 }, :{ :cst1 } };
+        var x: A -> A -> A = cst3;
+        begin, end: x = cst3[b][c];",
+        "type A = { a, b, c };
+        const cst1: A = a;
+        const cst2: A = cst1;
+        const cst3: A -> A -> A = { b: { :cst2 }, :{ :cst1 } };
+        var x: A -> A -> A = cst3;
+        begin, end: x = a;"
     );
 }

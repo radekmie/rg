@@ -9,7 +9,6 @@ pub use reachable_nodes::ReachableNodes;
 pub use reaching_assignments::ReachingAssignments;
 pub use reaching_definitions::ReachingDefinitions;
 use std::collections::{BTreeMap, BTreeSet};
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 type Id = Arc<str>;
@@ -47,6 +46,16 @@ impl Game<Id> {
         let mut worker = Worker::<A>::new(self, &flow);
         worker.run();
         worker.result
+    }
+
+    pub fn analyse_with_context<A: Analysis>(
+        &self,
+        with_reachability: bool,
+    ) -> (BTreeMap<Node<Id>, A::Domain>, A::Context) {
+        let flow = Flow::new(self, with_reachability);
+        let mut worker = Worker::<A>::new(self, &flow);
+        worker.run();
+        (worker.result, worker.ctx)
     }
 }
 
@@ -99,12 +108,11 @@ impl<'a> Flow<'a> {
     }
 }
 
-struct Worker<'a, A: Analysis + ?Sized> {
+struct Worker<'a, I: Analysis + ?Sized> {
     flow: &'a Flow<'a>,
-    result: BTreeMap<Node<Id>, A::Domain>,
+    result: BTreeMap<Node<Id>, I::Domain>,
     worklist: BTreeSet<&'a Node<Id>>,
-    _parameters: PhantomData<A>,
-    ctx: A::Context,
+    ctx: I::Context,
 }
 
 impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
@@ -118,7 +126,6 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
             flow,
             result: BTreeMap::from([(flow.entry(), I::extreme(game, &ctx))]),
             worklist: flow.nodes.clone(),
-            _parameters: PhantomData,
             ctx,
         }
     }

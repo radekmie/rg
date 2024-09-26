@@ -8,8 +8,8 @@ type ConstantValue = Arc<Value<Id>>;
 
 #[derive(Default, PartialEq, Eq)]
 pub struct Context {
-    variables: BTreeSet<Id>,
-    constants: BTreeMap<Id, ConstantValue>,
+    pub variables: BTreeSet<Id>,
+    pub constants: BTreeMap<Id, ConstantValue>,
 }
 
 pub struct ConstantsAnalysis;
@@ -59,15 +59,10 @@ impl Analysis for ConstantsAnalysis {
             let value = dereference_constant(&constant.value, &ctx);
             ctx.constants.insert(constant.identifier.clone(), value);
         }
-        let bindings = program
-            .edges
-            .iter()
-            .flat_map(|e| e.bindings().iter().map(|b| b.0.clone()).collect::<Vec<_>>());
         let variables = program
             .variables
             .iter()
             .map(|v| v.identifier.clone())
-            .chain(bindings)
             .collect();
         ctx.variables = variables;
         ctx
