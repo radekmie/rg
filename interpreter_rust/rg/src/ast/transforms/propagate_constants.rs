@@ -36,6 +36,8 @@ impl Game<Id> {
         let default_constant_vars = &BTreeMap::new();
         let constants = &context.constants;
         let variables = &context.variables;
+        let mut unreachable_edges = Vec::new();
+
         for edge in &mut self.edges {
             if edge.label.is_player_assignment() {
                 continue;
@@ -50,26 +52,51 @@ impl Game<Id> {
                     };
                     let new_lhs = eval_expression(lhs, &context, &edge_clone);
                     let new_rhs = eval_expression(rhs, &context, &edge_clone);
+
                     if new_lhs == new_rhs {
                         edge.skip();
                     } else {
                         *rhs = Arc::new(new_rhs);
                     }
                 }
-                Label::Comparison { lhs, rhs, .. } => {
+                Label::Comparison { lhs, rhs, negated } => {
                     let context = Context {
                         constants,
                         variables,
                         constant_vars: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
                     };
-                    let new_lhs = eval_expression(lhs, &context, &edge_clone);
-                    let new_rhs = eval_expression(rhs, &context, &edge_clone);
-                    *lhs = Arc::new(new_lhs);
-                    *rhs = Arc::new(new_rhs);
+                    *lhs = Arc::new(eval_expression(lhs, &context, &edge_clone));
+                    *rhs = Arc::new(eval_expression(rhs, &context, &edge_clone));
+
+                    let lhs_value = lhs
+                        .uncast()
+                        .as_reference()
+                        .and_then(|id| context.get(id, &edge_clone));
+                    let rhs_value = rhs
+                        .uncast()
+                        .as_reference()
+                        .and_then(|id| context.get(id, &edge_clone));
+
+                    // Skip or remove comparisons between constants
+                    if let (Some(lhs_value), Some(rhs_value)) = (lhs_value, rhs_value) {
+                        if lhs_value == rhs_value {
+                            if *negated {
+                                unreachable_edges.push(edge.clone());
+                            } else {
+                                edge.skip();
+                            }
+                        } else if *negated {
+                            edge.skip();
+                        } else {
+                            unreachable_edges.push(edge.clone());
+                        }
+                    }
                 }
                 _ => (),
             }
         }
+
+        self.edges.retain(|edge| !unreachable_edges.contains(edge));
 
         Ok(())
     }
@@ -263,8 +290,6 @@ mod test {
         const down: AA = { 4: 3, 3: 2, :1 };
         var y: A = 1;
         var x: A = 3;
-        begin, a: 3 == 1;
-        begin, b: A(3) == 2;
         a, c: y = 3;
         b, c: y = 3;"
     );
@@ -354,5 +379,31 @@ mod test {
         const cst3: A -> A -> A = { b: { :cst2 }, :{ :cst1 } };
         var x: A -> A -> A = cst3;
         begin, end: x = a;"
+    );
+
+    test_transform!(
+        propagate_constants,
+        constant_comparisons1,
+        "type A = {1,2,3,4};
+        begin, end: ;
+        a, b: 1 == 1;
+        a, c: 1 != 1;
+        a, d: 1 == 2;
+        a, e: 1 != 2;",
+        "type A = { 1, 2, 3, 4 };
+        begin, end: ;
+        a, b: ;
+        a, e: ;"
+    );
+
+    test_transform!(
+        propagate_constants,
+        constant_comparisons2,
+        "type A = {1,2,3,4};
+        begin, end: ;
+        a(bind_1: A), b: bind_1 == 1;
+        a(bind_1: A), c: bind_1 != 1;
+        a(bind_1: A), d: bind_1 == 2;
+        a(bind_1: A), e: bind_1 != 2;"
     );
 }

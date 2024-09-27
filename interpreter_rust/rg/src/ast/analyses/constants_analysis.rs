@@ -85,7 +85,7 @@ impl Analysis for ConstantsAnalysis {
         if let Some((identifier, value)) = as_constant_assignment(edge, &input, ctx) {
             input.insert(identifier, value);
             input
-        } else if let Some((identifier, value)) = as_constant_comparisson(edge, &input, ctx) {
+        } else if let Some((identifier, value)) = as_constant_comparison(edge, &input, ctx) {
             input.insert(identifier, value);
             input
         } else {
@@ -113,7 +113,7 @@ fn as_constant_assignment(
     Some((id.clone(), value))
 }
 
-fn as_constant_comparisson(
+fn as_constant_comparison(
     edge: &Edge<Id>,
     knowledge: &BTreeMap<Id, ConstantValue>,
     ctx: &Context,
@@ -460,7 +460,7 @@ mod test {
     );
 
     test!(
-        comparisson1,
+        comparison1,
         "type A = {a,b,c};
         var x: A = a;
         begin, end: c == x;",
@@ -471,7 +471,7 @@ mod test {
     );
 
     test!(
-        comparisson2,
+        comparison2,
         "type A = {a,b,c};
         var x: A = a;
         var y: A = b;
@@ -485,7 +485,7 @@ mod test {
     );
 
     test!(
-        comparisson3,
+        comparison3,
         "type A = {a,b,c};
         var x: A = a;
         var y: A = b;
@@ -499,7 +499,7 @@ mod test {
     );
 
     test!(
-        comparisson4,
+        comparison4,
         "type A = {a,b,c};
         var x: A = a;
         var y: A -> A = { b: a, :b };
@@ -521,7 +521,7 @@ mod test {
     );
 
     test!(
-        comparisson5,
+        comparison5,
         "type A = {a,b,c};
         var x: A = a;
         var y: A = b;
@@ -537,7 +537,7 @@ mod test {
     );
 
     test!(
-        comparisson6,
+        comparison6,
         "type A = {a,b,c};
         var x: A = a;
         begin, a1: x = c;
