@@ -406,4 +406,30 @@ mod test {
         a(bind_1: A), d: bind_1 == 2;
         a(bind_1: A), e: bind_1 != 2;"
     );
+
+    test_transform!(
+        propagate_constants,
+        player_constant1,
+        "type Player = {white, black};
+        var player: Player = white;
+        begin, a: player = black;
+        a, end: player == black;",
+        "type Player = { white, black };
+        var player: Player = white;
+        begin, a: player = black;
+        a, end: ;"
+    );
+
+    test_transform!(
+        propagate_constants,
+        player_constant2,
+        "type Player = {white, black};
+        var player: Player = white;
+        begin, a: player = white;
+        a, end: player == white;",
+        "type Player = { white, black };
+        var player: Player = white;
+        begin, a: player = white;
+        a, end: ;"
+    );
 }
