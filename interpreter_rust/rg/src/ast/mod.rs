@@ -861,6 +861,12 @@ pub struct Game<Id> {
     pub variables: Vec<Variable<Id>>,
 }
 
+impl<Id> Game<Id> {
+    pub fn find_type(&self, f: impl Fn(&Type<Id>) -> bool) -> Option<&Arc<Type<Id>>> {
+        self.typedefs.iter().find(|x| f(&x.type_)).map(|x| &x.type_)
+    }
+}
+
 impl<Id: Clone> Game<Id> {
     pub fn make_error<T>(&self, reason: ErrorReason<Id>) -> Result<T, Error<Id>> {
         Err(Error {
@@ -942,10 +948,6 @@ impl<'a, Id: Clone + Ord + 'a> Game<Id> {
 }
 
 impl<Id: Clone + PartialEq> Game<Id> {
-    pub fn find_type(&self, f: impl Fn(&Type<Id>) -> bool) -> Option<&Arc<Type<Id>>> {
-        self.typedefs.iter().find(|x| f(&x.type_)).map(|x| &x.type_)
-    }
-
     pub fn infer(&self, identifier: &Id, edge: Option<&Edge<Id>>) -> Arc<Type<Id>> {
         self.infer_or_none(identifier, edge)
             .or_else(|| self.find_type(|type_| type_.contains(identifier)))
