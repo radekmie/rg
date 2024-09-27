@@ -15,11 +15,22 @@ body {
   margin-top: 0;
 }
 
+.flags label {
+  margin-bottom: 0;
+}
+
+.flags label:first-child {
+  font-weight: bold;
+}
+
+.flags label:not(:first-child) {
+  margin-left: 1rem;
+}
+
 .grid,
 .main {
   display: grid;
   grid-template-columns: 50% 50%;
-  grid-template-rows: 100% 100%;
 }
 
 .main {
@@ -27,18 +38,8 @@ body {
   width: 100vw;
 }
 
-.noOutline select {
+.select select {
   outline: none;
-}
-
-.options label {
-  display: inline-block;
-  margin: 0 2ch 0 0;
-}
-
-.options label:first-child {
-  font-weight: bold;
-  width: 9ch;
 }
 
 .panel {
@@ -48,6 +49,10 @@ body {
 
 .panel:first-child {
   border-right: 0.1rem solid;
+}
+
+.radio label {
+  display: inline-block;
 }
 
 .settings {
