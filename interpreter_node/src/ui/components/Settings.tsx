@@ -160,7 +160,7 @@ export function Settings({
             <div className={styles.flags} key={label}>
               <Checkbox
                 checked={checked === flags.length}
-                indeterminate={checked > 1 && checked !== flags.length}
+                indeterminate={!!checked && checked !== flags.length}
                 label={label}
                 name={flags.join()}
                 onChange={onFlag}
