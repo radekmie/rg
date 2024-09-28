@@ -56,13 +56,15 @@ impl Game<Id> {
                 };
 
                 let vars_in_rhs = rhs.used_variables();
-                let defs_on_assignment = used_definitions(current_definitions, &vars_in_rhs);
+                let defs_on_assignment =
+                    used_definitions(current_definitions, &vars_in_rhs, identifier);
                 let Some(usages) = maybe_inline_assignment(
                     &next_edges,
                     &reaching_definitions,
                     edge,
                     identifier,
                     &defs_on_assignment,
+                    &vars_in_rhs,
                 ) else {
                     continue;
                 };
@@ -93,6 +95,7 @@ fn maybe_inline_assignment(
     def_edge: &Edge<Id>,
     id: &Id,
     defs_on_assignment: &BTreeMap<Id, BTreeSet<Option<Edge<Id>>>>,
+    vars_in_definition: &BTreeSet<&Id>,
 ) -> Option<BTreeSet<Edge<Id>>> {
     let mut queue = vec![&def_edge.rhs];
     let mut seen = BTreeSet::new();
@@ -110,7 +113,7 @@ fn maybe_inline_assignment(
             let vars_in_label = edge.label.used_variables();
             if vars_in_label.contains(id) {
                 let defs_on_usage = reaching_definitions.get(lhs).unwrap();
-                let defs_on_usage = used_definitions(defs_on_usage, &vars_in_label);
+                let defs_on_usage = used_definitions(defs_on_usage, vars_in_definition, id);
                 if !can_replace_usage(id, def_edge, defs_on_assignment, &defs_on_usage) {
                     return None;
                 }
@@ -138,17 +141,17 @@ fn maybe_inline_assignment(
 fn used_definitions(
     defs: &<ReachingDefinitions as Analysis>::Domain,
     variables: &BTreeSet<&Id>,
+    identifier: &Id,
 ) -> BTreeMap<Id, BTreeSet<Option<Edge<Id>>>> {
-    defs.iter().filter(|(var, _)| variables.contains(var)).fold(
-        BTreeMap::new(),
-        |mut grouped_defs, (var, edge)| {
+    defs.iter()
+        .filter(|(var, _)| variables.contains(var) || var == identifier)
+        .fold(BTreeMap::new(), |mut grouped_defs, (var, edge)| {
             grouped_defs
                 .entry(var.clone())
                 .or_default()
                 .insert((*edge).clone());
             grouped_defs
-        },
-    )
+        })
 }
 
 fn can_replace_usage(
@@ -343,6 +346,23 @@ mod test {
         a3, a4: ;
         a4, a2: y = 2;
         a4, end: cord[y] == A(3);"
+    );
+
+    test_transform!(
+        inline_assignment,
+        knightthrough_small,
+        "begin, rules_begin: ;
+        rules_begin, move_10: position = direction[me][position];
+        move_10, turn_6: position = down[position];
+        turn_6, turn_9: position != null;
+        turn_9, end: ;
+        turn_9, rules_begin: ;",
+        "begin, rules_begin: ;
+        rules_begin, move_10: ;
+        move_10, turn_6: position = down[direction[me][position]];
+        turn_6, turn_9: position != null;
+        turn_9, end: ;
+        turn_9, rules_begin: ;"
     );
 
     // TODO: Add tests with forks
