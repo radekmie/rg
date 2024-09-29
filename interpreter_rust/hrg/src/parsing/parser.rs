@@ -97,8 +97,8 @@ fn statement(input: Input) -> Result<Statement<Identifier>> {
         branch,
         call,
         forall,
-        loop_,
         if_,
+        loop_,
         while_,
         tag_statement,
     )))(input)
