@@ -275,8 +275,8 @@ fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
     if !table.is_defined("not") {
         table.symbols.push(make_builtin("not", Flag::Function));
     }
-    if !table.is_defined("assert") {
-        table.symbols.push(make_builtin("assert", Flag::Function));
+    if !table.is_defined("check") {
+        table.symbols.push(make_builtin("check", Flag::Function));
     }
     if !table.is_defined("reachable") {
         table

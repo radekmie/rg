@@ -505,10 +505,10 @@ function translateAutomatonStatements(
       }
       case 'AutomatonCall':
         switch (automatonStatement.identifier) {
-          case 'assert': {
+          case 'check': {
             utils.assert(
               automatonStatement.args.length === 1,
-              'assert() expects 1 argument',
+              'check() expects 1 argument',
             );
             const localEdgeName = context.$randomEdgeName(prefix);
             translateCondition(

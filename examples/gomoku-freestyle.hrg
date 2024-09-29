@@ -55,111 +55,111 @@ position : Position
 graph win(piece: Piece) {
   
   branch { // 2x upLeft 2x downRight / 3x upLeft 1x downRight / 4x upLeft
-    assert(board[upLeft(position)] == piece)
-    assert(board[upLeft(upLeft(position))] == piece)
+    check(board[upLeft(position)] == piece)
+    check(board[upLeft(upLeft(position))] == piece)
     branch {
-      assert(board[upLeft(upLeft(upLeft(position)))] == piece)
+      check(board[upLeft(upLeft(upLeft(position)))] == piece)
       // 3x upLeft
       branch {
-        assert(board[upLeft(upLeft(upLeft(upLeft(position))))] == piece)
+        check(board[upLeft(upLeft(upLeft(upLeft(position))))] == piece)
       } or {
-        assert(board[downRight(position)] == piece)
+        check(board[downRight(position)] == piece)
       }
     } or {
-      assert(board[downRight(position)] == piece)
-      assert(board[downRight(downRight(position))] == piece)
+      check(board[downRight(position)] == piece)
+      check(board[downRight(downRight(position))] == piece)
     }
   } or { // 2x left 2x right / 3x left 1x right / 4x left
-    assert(board[left(position)] == piece)
-    assert(board[left(left(position))] == piece)
+    check(board[left(position)] == piece)
+    check(board[left(left(position))] == piece)
     branch {
-      assert(board[left(left(left(position)))] == piece)
+      check(board[left(left(left(position)))] == piece)
       branch {
-        assert(board[left(left(left(left(position))))] == piece)
+        check(board[left(left(left(left(position))))] == piece)
       } or {
-        assert(board[right(position)] == piece)
+        check(board[right(position)] == piece)
       }
     } or {
-      assert(board[right(position)] == piece)
-      assert(board[right(right(position))] == piece)
+      check(board[right(position)] == piece)
+      check(board[right(right(position))] == piece)
     }
   } or { // 2x downLeft 2x upRight / 3x downLeft 1x upRight / 4x downLeft
-    assert(board[downLeft(position)] == piece)
-    assert(board[downLeft(downLeft(position))] == piece)
+    check(board[downLeft(position)] == piece)
+    check(board[downLeft(downLeft(position))] == piece)
     branch {
-      assert(board[downLeft(downLeft(downLeft(position)))] == piece)
+      check(board[downLeft(downLeft(downLeft(position)))] == piece)
       branch {
-        assert(board[downLeft(downLeft(downLeft(downLeft(position))))] == piece)
+        check(board[downLeft(downLeft(downLeft(downLeft(position))))] == piece)
       } or {
-        assert(board[upRight(position)] == piece)
+        check(board[upRight(position)] == piece)
       }
     } or {
-      assert(board[upRight(position)] == piece)
-      assert(board[upRight(upRight(position))] == piece)
+      check(board[upRight(position)] == piece)
+      check(board[upRight(upRight(position))] == piece)
     }
   } or { // 2x down 2x up / 3x down 1x up / 4x down
-    assert(board[down(position)] == piece)
-    assert(board[down(down(position))] == piece)
+    check(board[down(position)] == piece)
+    check(board[down(down(position))] == piece)
     branch {
-      assert(board[down(down(down(position)))] == piece)
+      check(board[down(down(down(position)))] == piece)
       branch {
-        assert(board[down(down(down(down(position))))] == piece)
+        check(board[down(down(down(down(position))))] == piece)
       } or {
-        assert(board[up(position)] == piece)
+        check(board[up(position)] == piece)
       }
     } or {
-      assert(board[up(position)] == piece)
-      assert(board[up(up((position)))] == piece)
+      check(board[up(position)] == piece)
+      check(board[up(up((position)))] == piece)
     }
   } or { // 3x up 1x down / 4x up
-    assert(board[up(position)] == piece)
-    assert(board[up(up(position))] == piece)
-    assert(board[up(up(up(position)))] == piece)
+    check(board[up(position)] == piece)
+    check(board[up(up(position))] == piece)
+    check(board[up(up(up(position)))] == piece)
     branch {
-      assert(board[up(up(up(up(position))))] == piece)
+      check(board[up(up(up(up(position))))] == piece)
     } or {
-      assert(board[down(position)] == piece)
+      check(board[down(position)] == piece)
     }
   } or { // 3x downRight 1x upLeft / 4x downRight
-    assert(board[downRight(position)] == piece)
-    assert(board[downRight(downRight(position))] == piece)
-    assert(board[downRight(downRight(downRight(position)))] == piece)
+    check(board[downRight(position)] == piece)
+    check(board[downRight(downRight(position))] == piece)
+    check(board[downRight(downRight(downRight(position)))] == piece)
     branch {
-      assert(board[downRight(downRight(downRight(downRight(position))))] == piece)
+      check(board[downRight(downRight(downRight(downRight(position))))] == piece)
     } or {
-      assert(board[upLeft(position)] == piece)
+      check(board[upLeft(position)] == piece)
     }
   } or { // 3x right 1x left / 4x right
-    assert(board[right(position)] == piece)
-    assert(board[right(right(position))] == piece)
-    assert(board[right(right(right(position)))] == piece)
+    check(board[right(position)] == piece)
+    check(board[right(right(position))] == piece)
+    check(board[right(right(right(position)))] == piece)
     branch {
-      assert(board[right(right(right(right(position))))] == piece)
+      check(board[right(right(right(right(position))))] == piece)
     } or {
-      assert(board[left(position)] == piece)
+      check(board[left(position)] == piece)
     }
   } or { // 3x upRight 1x left / 4x upRight
-    assert(board[upRight(position)] == piece)
-    assert(board[upRight(upRight(position))] == piece)
-    assert(board[upRight(upRight(upRight(position)))] == piece)
+    check(board[upRight(position)] == piece)
+    check(board[upRight(upRight(position))] == piece)
+    check(board[upRight(upRight(upRight(position)))] == piece)
     branch {
-      assert(board[upRight(upRight(upRight(upRight(position))))] == piece)
+      check(board[upRight(upRight(upRight(upRight(position))))] == piece)
     } or {
-      assert(board[downLeft(position)] == piece)
+      check(board[downLeft(position)] == piece)
     }
   }
 }
 
 graph findNonempty() {
   forall p:Position {
-    assert(p != null && board[p] == empty)
+    check(p != null && board[p] == empty)
   }
 }
 
 graph turn(me: Player, op: Player, piece: Piece) {
   player = me
   forall p:Position {// TODO Make it XPosition
-    assert(p != null && board[p] == empty)
+    check(p != null && board[p] == empty)
     position = p
     $ p
   }
