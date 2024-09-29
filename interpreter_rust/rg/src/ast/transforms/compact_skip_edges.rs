@@ -82,8 +82,7 @@ impl Game<Arc<str>> {
     ///   2. b has no other incoming nor outgoing edges
     ///   3. b has no bindings
     ///   4. b is not a reachability target
-    ///   5. there's no other edge between a and c (multiedges are not allowed)
-    ///   6. y != Assignment of `player` OR a has no bindings
+    ///   5. y != Assignment of `player` OR a has no bindings
     fn compact_skip_edge_forward(&self) -> Option<(usize, usize)> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
@@ -94,7 +93,6 @@ impl Game<Arc<str>> {
                 for (y_index, y) in self.edges.iter().enumerate() {
                     if x.rhs == y.lhs
                         && (!x.lhs.has_bindings() || !y.label.is_player_assignment())
-                        && !self.are_connected(&x.lhs, &y.rhs)
                         && self.outgoing_edges(&x.rhs).all(|z| z == y)
                     {
                         return Some((x_index, y_index));
@@ -493,5 +491,15 @@ mod test {
         a, b: 1 == 1;
         b, c: 2 == 2;",
         "a, c: 2 == 2;"
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        multi_skip_forward,
+        "a, b: ;
+        a, c: 1 == 1;
+        b, c: 2 == 2;",
+        "a, c: 1 == 1;
+        a, c: 2 == 2;"
     );
 }
