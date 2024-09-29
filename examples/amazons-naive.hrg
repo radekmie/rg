@@ -135,7 +135,7 @@ graph turn() {
   player = me
   move(me)
   player = keeper
-  when not(reachable(move(opponent(me)))) {
+  if not(reachable(move(opponent(me)))) {
     goals[me] = 100
     goals[opponent(me)] = 0
     end()

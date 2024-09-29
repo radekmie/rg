@@ -49,6 +49,13 @@ export type AutomatonFunctionArgument = {
   type: Type;
 };
 
+export const AutomatonIf = creator<AutomatonIf>('AutomatonIf');
+export type AutomatonIf = {
+  kind: 'AutomatonIf';
+  expression: Expression;
+  body: AutomatonStatement[];
+};
+
 export const AutomatonLoop = creator<AutomatonLoop>('AutomatonLoop');
 export type AutomatonLoop = {
   kind: 'AutomatonLoop';
@@ -67,12 +74,6 @@ export type AutomatonTag = {
   symbol: string;
 };
 
-export const AutomatonWhen = creator<AutomatonWhen>('AutomatonWhen');
-export type AutomatonWhen = {
-  kind: 'AutomatonWhen';
-  expression: Expression;
-  body: AutomatonStatement[];
-};
 
 export const AutomatonWhile = creator<AutomatonWhile>('AutomatonWhile');
 export type AutomatonWhile = {
@@ -327,10 +328,10 @@ export type AutomatonStatement =
   | AutomatonBranch
   | AutomatonCall
   | AutomatonForall
+  | AutomatonIf
   | AutomatonLoop
   | AutomatonPragma
   | AutomatonTag
-  | AutomatonWhen
   | AutomatonWhile;
 export type DomainElement = DomainGenerator | DomainLiteral;
 export type DomainValue = DomainRange | DomainSet;

@@ -68,13 +68,10 @@ fn loop_(input: Input) -> Result<Statement<Identifier>> {
     })(input)
 }
 
-fn when(input: Input) -> Result<Statement<Identifier>> {
+fn if_(input: Input) -> Result<Statement<Identifier>> {
     map(
-        pair(
-            preceded(tag("when"), expression),
-            in_braces(many0(statement)),
-        ),
-        |(expression, body)| Statement::When { expression, body },
+        pair(preceded(tag("if"), expression), in_braces(many0(statement))),
+        |(expression, body)| Statement::If { expression, body },
     )(input)
 }
 
@@ -101,7 +98,7 @@ fn statement(input: Input) -> Result<Statement<Identifier>> {
         call,
         forall,
         loop_,
-        when,
+        if_,
         while_,
         tag_statement,
     )))(input)

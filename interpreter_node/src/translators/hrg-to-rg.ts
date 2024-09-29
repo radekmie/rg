@@ -808,6 +808,32 @@ function translateAutomatonStatements(
         currentEdgeName = afterEdgeName;
         continue;
       }
+      case 'AutomatonIf': {
+        const thenEdgeName = context.$randomEdgeName(prefix);
+        const elseEdgeName = context.$randomEdgeName(prefix);
+        translateCondition(
+          context,
+          automatonStatement.expression,
+          currentEdgeName,
+          thenEdgeName,
+          elseEdgeName,
+          prefix,
+          bindings,
+        );
+        translateAutomatonStatements(context, {
+          automatonStatements: automatonStatement.body,
+          bindings,
+          breakEdgeName,
+          continueEdgeName,
+          endEdgeName,
+          entryEdgeName: thenEdgeName,
+          nextEdgeName,
+          prefix,
+          returnEdgeName: elseEdgeName,
+        });
+        currentEdgeName = elseEdgeName;
+        continue;
+      }
       case 'AutomatonLoop': {
         const localEdgeName = context.$randomEdgeName(prefix);
         translateAutomatonStatements(context, {
@@ -861,32 +887,6 @@ function translateAutomatonStatements(
           bindings,
         );
         currentEdgeName = localEdgeName;
-        continue;
-      }
-      case 'AutomatonWhen': {
-        const thenEdgeName = context.$randomEdgeName(prefix);
-        const elseEdgeName = context.$randomEdgeName(prefix);
-        translateCondition(
-          context,
-          automatonStatement.expression,
-          currentEdgeName,
-          thenEdgeName,
-          elseEdgeName,
-          prefix,
-          bindings,
-        );
-        translateAutomatonStatements(context, {
-          automatonStatements: automatonStatement.body,
-          bindings,
-          breakEdgeName,
-          continueEdgeName,
-          endEdgeName,
-          entryEdgeName: thenEdgeName,
-          nextEdgeName,
-          prefix,
-          returnEdgeName: elseEdgeName,
-        });
-        currentEdgeName = elseEdgeName;
         continue;
       }
       case 'AutomatonWhile':

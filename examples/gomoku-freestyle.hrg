@@ -165,12 +165,12 @@ graph turn(me: Player, op: Player, piece: Piece) {
   }
   board[position] = piece
   player = keeper
-  when reachable(win(piece)) {
+  if reachable(win(piece)) {
     goals[me] = 100
     goals[op] = 0
     end()
   }
-  when not(reachable(findNonempty())) {// Draw
+  if not(reachable(findNonempty())) {// Draw
     end()
   }
 }

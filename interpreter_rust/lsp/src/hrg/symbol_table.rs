@@ -70,6 +70,12 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
                 add_from_statement(table, statement);
             }
         }
+        Statement::If { expression, body } => {
+            add_from_expression(table, expression);
+            for statement in body {
+                add_from_statement(table, statement);
+            }
+        }
         Statement::Loop { body } => {
             for statement in body {
                 add_from_statement(table, statement);
@@ -84,12 +90,6 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
                 if occ.symbol.is_some() {
                     table.occurrences.push(occ);
                 }
-            }
-        }
-        Statement::When { expression, body } => {
-            add_from_expression(table, expression);
-            for statement in body {
-                add_from_statement(table, statement);
             }
         }
         Statement::While { expression, body } => {

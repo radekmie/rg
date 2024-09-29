@@ -28,17 +28,17 @@ pub enum Statement<Id> {
         type_: Arc<Type<Id>>,
         body: Vec<Statement<Id>>,
     },
+    #[serde(rename = "AutomatonIf")]
+    If {
+        expression: Arc<Expression<Id>>,
+        body: Vec<Statement<Id>>,
+    },
     #[serde(rename = "AutomatonLoop")]
     Loop { body: Vec<Statement<Id>> },
     #[serde(rename = "AutomatonPragma")]
     Pragma { identifier: Id },
     #[serde(rename = "AutomatonTag")]
     Tag { symbol: Id },
-    #[serde(rename = "AutomatonWhen")]
-    When {
-        expression: Arc<Expression<Id>>,
-        body: Vec<Statement<Id>>,
-    },
     #[serde(rename = "AutomatonWhile")]
     While {
         expression: Arc<Expression<Id>>,

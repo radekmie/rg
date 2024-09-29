@@ -34,7 +34,7 @@ impl Symbols {
                     .for_each(|statement| self.add_from_statement(statement));
             }),
             Statement::Loop { body }
-            | Statement::When { body, .. }
+            | Statement::If { body, .. }
             | Statement::While { body, .. } => body
                 .iter()
                 .for_each(|statement| self.add_from_statement(statement)),

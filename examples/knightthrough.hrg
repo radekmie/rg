@@ -93,7 +93,7 @@ graph turn() {
   move(me)
   board[position] = piece(me)
   player = keeper
-  when direction(me)(position) == null || not(reachable(move(opponent(me)))) {
+  if direction(me)(position) == null || not(reachable(move(opponent(me)))) {
     goals[me] = 100
     goals[opponent(me)] = 0
     end()
