@@ -59,7 +59,7 @@ position : Position
 // Automaton
 graph move(me: Player) {
   forall p:Position {
-    assert(p != null && board[p] == piece(me))
+    check(p != null && board[p] == piece(me))
     board[p] = empty
     position = direction(me)(p)
     $ p
@@ -84,8 +84,8 @@ graph move(me: Player) {
       $ RR
     }
   }
-  assert(position != null)
-  assert(board[position] != piece(me))
+  check(position != null)
+  check(board[position] != piece(me))
 }
 
 graph turn() {
@@ -93,7 +93,7 @@ graph turn() {
   move(me)
   board[position] = piece(me)
   player = keeper
-  when direction(me)(position) == null || not(reachable(move(opponent(me)))) {
+  if direction(me)(position) == null || not(reachable(move(opponent(me)))) {
     goals[me] = 100
     goals[opponent(me)] = 0
     end()

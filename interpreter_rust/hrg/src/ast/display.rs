@@ -311,6 +311,11 @@ fn write_statement<Id: Display>(
             write_statements(f, body, indent + 2)?;
             write_rbrace(f, indent)
         }
+        Statement::If { expression, body } => {
+            writeln!(f, "if {expression} {{")?;
+            write_statements(f, body, indent + 2)?;
+            write_rbrace(f, indent)
+        }
         Statement::Loop { body } => {
             writeln!(f, "loop {{")?;
             write_statements(f, body, indent + 2)?;
@@ -320,11 +325,6 @@ fn write_statement<Id: Display>(
 
         Statement::Tag { symbol } => write!(f, "$ {symbol}"),
 
-        Statement::When { expression, body } => {
-            writeln!(f, "when {expression} {{")?;
-            write_statements(f, body, indent + 2)?;
-            write_rbrace(f, indent)
-        }
         Statement::While { expression, body } => {
             writeln!(f, "while {expression} {{")?;
             write_statements(f, body, indent + 2)?;

@@ -78,29 +78,29 @@ position : Position
 // Automaton
 graph queenShift() {
   forall di:DirIndex {
-  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  position = direction(di)(position) check(position != null) check(board[position] == empty)
   branch {} or {
-  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  position = direction(di)(position) check(position != null) check(board[position] == empty)
   branch {} or {
-  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  position = direction(di)(position) check(position != null) check(board[position] == empty)
   branch {} or {
-  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  position = direction(di)(position) check(position != null) check(board[position] == empty)
   branch {} or {
-  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  position = direction(di)(position) check(position != null) check(board[position] == empty)
   branch {} or {
-  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  position = direction(di)(position) check(position != null) check(board[position] == empty)
   branch {} or {
-  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  position = direction(di)(position) check(position != null) check(board[position] == empty)
   branch {} or {
-  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  position = direction(di)(position) check(position != null) check(board[position] == empty)
   branch {} or {
-  position = direction(di)(position) assert(position != null) assert(board[position] == empty)
+  position = direction(di)(position) check(position != null) check(board[position] == empty)
   }}}}}}}}}
 }
 
 graph move(me: Player) {
   forall p:Position {
-    assert(p != null && board[p] == piece(me))
+    check(p != null && board[p] == piece(me))
     position = p
     $ p
   }
@@ -108,7 +108,7 @@ graph move(me: Player) {
   
   queenShift()
   forall p:Position {// An experimental way to emit the chosen position
-    assert(p == position)
+    check(p == position)
     $ p
   }
   //player = keeper // split2 option
@@ -117,7 +117,7 @@ graph move(me: Player) {
   //player = me // split2 option
   queenShift()
   forall p:Position {
-    assert(p == position)
+    check(p == position)
     $ p
   }
   board[position] = arrow
@@ -127,7 +127,7 @@ graph turn() {
   player = me
   move(me)
   player = keeper
-  when not(reachable(move(opponent(me)))) {
+  if not(reachable(move(opponent(me)))) {
     goals[me] = 100
     goals[opponent(me)] = 0
     end()
