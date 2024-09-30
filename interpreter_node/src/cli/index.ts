@@ -54,6 +54,7 @@ program
   .option('--pruneUnreachableNodes', 'prune unreachable nodes')
   .option('--pruneUnusedConstants', 'prune unused constants')
   .option('--pruneUnusedVariables', 'prune unused variables')
+  .option('--removeUnusedBindings', 'remove unused bindings from nodes')
   .option(
     '--reuseFunctions',
     'reuse subautomatons when translating function calls (.hrg only)',
@@ -120,6 +121,7 @@ function addCommand(
           pruneUnreachableNodes: !!options.pruneUnreachableNodes,
           pruneUnusedConstants: !!options.pruneUnusedConstants,
           pruneUnusedVariables: !!options.pruneUnusedVariables,
+          removeUnusedBindings: !!options.removeUnusedBindings,
           reuseFunctions: !!options.reuseFunctions,
           skipGeneratorComparisons: !!options.skipGeneratorComparisons,
           skipSelfAssignments: !!options.skipSelfAssignments,

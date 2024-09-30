@@ -33,7 +33,7 @@ impl Symbols {
                 arm.iter()
                     .for_each(|statement| self.add_from_statement(statement));
             }),
-            Statement::If { body, ..}
+            Statement::If { body, .. }
             | Statement::Loop { body }
             | Statement::While { body, .. } => body
                 .iter()

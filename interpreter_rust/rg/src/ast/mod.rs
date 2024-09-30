@@ -284,6 +284,10 @@ impl<Id: PartialEq> Label<Id> {
         matches!(self, Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } if lhs.has_variable(identifier) || rhs.has_variable(identifier))
     }
 
+    pub fn has_binding(&self, binding: &Id) -> bool {
+        self.has_variable(binding) || self.is_tag_and(|tag| tag == binding)
+    }
+
     pub fn is_negated(&self, other: &Self) -> bool {
         match (self, other) {
             (
@@ -351,6 +355,14 @@ impl<Id> Node<Id> {
             span: Span::none(),
             parts: vec![NodePart::new(identifier)],
         }
+    }
+
+    pub fn add_binding(&mut self, identifier: Id, type_: Arc<Type<Id>>) {
+        self.parts.push(NodePart::Binding {
+            span: Span::none(),
+            identifier,
+            type_,
+        });
     }
 
     /// Returns the only binding at given node, or `None` if there are multiple or no bindings.
@@ -1045,6 +1057,17 @@ impl<Id: Clone + PartialEq> Game<Id> {
             });
         };
         Ok(constant)
+    }
+
+    pub fn rename_node(&mut self, node: &Node<Id>, new_node: &Node<Id>) {
+        for edge in &mut self.edges {
+            if &edge.lhs == node {
+                edge.lhs = new_node.clone();
+            }
+            if &edge.rhs == node {
+                edge.rhs = new_node.clone();
+            }
+        }
     }
 
     pub fn resolve_type_or_fail<'a>(

@@ -21,6 +21,7 @@ const availableOptions: { label: string; flags: Flag[] }[] = [
       'pruneUnreachableNodes',
       'pruneUnusedConstants',
       'pruneUnusedVariables',
+      'removeUnusedBindings',
       'reuseFunctions',
       'skipGeneratorComparisons',
       'skipSelfAssignments',

@@ -29,6 +29,7 @@ export type Settings = {
     pruneUnreachableNodes: boolean;
     pruneUnusedConstants: boolean;
     pruneUnusedVariables: boolean;
+    removeUnusedBindings: boolean;
     reuseFunctions: boolean;
     skipGeneratorComparisons: boolean;
     skipSelfAssignments: boolean;
@@ -57,6 +58,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   pruneUnreachableNodes: false,
   pruneUnusedConstants: false,
   pruneUnusedVariables: false,
+  removeUnusedBindings: false,
   reuseFunctions: false,
   skipGeneratorComparisons: false,
   skipSelfAssignments: false,

@@ -18,6 +18,7 @@ mod prune_singleton_types;
 mod prune_unreachable_nodes;
 mod prune_unused_constants;
 mod prune_unused_variables;
+mod remove_unused_bindings;
 mod skip_generator_comparisons;
 mod skip_self_assignments;
 mod skip_self_comparisons;
