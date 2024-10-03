@@ -23,7 +23,7 @@ impl Game<Arc<str>> {
             .collect();
 
         let mut pragmas = vec![];
-        for node in nodes {
+        'outer: for node in nodes {
             let mut paths_to_edges: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
             let mut paths_to_players: BTreeMap<_, _> = BTreeMap::new();
             let mut paths_to_tags: BTreeMap<_, BTreeSet<(_, _, _)>> = BTreeMap::new();
@@ -46,6 +46,11 @@ impl Game<Arc<str>> {
                             assignments.push(edge.label.clone());
                             if lhs.uncast().is_player_reference() {
                                 paths_to_players.entry(rhs.clone()).or_insert(path);
+
+                                // This will not be `@simpleApply`.
+                                if paths_to_players.len() == 2 {
+                                    continue 'outer;
+                                }
                             } else {
                                 queue.push((edge.rhs.clone(), path, assignments));
                             }
