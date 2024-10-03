@@ -245,15 +245,18 @@ impl Iterator for StateNextDepth<'_> {
 struct VisitedStates<'a> {
     game: &'a Game<RuntimeId>,
     #[allow(clippy::type_complexity)]
-    states: BTreeMap<(RuntimeId, Rc<Vec<RuntimeId>>), BTreeSet<Vec<Option<Rc<Value<RuntimeId>>>>>>,
+    states: Option<
+        BTreeSet<(
+            RuntimeId,
+            Rc<Vec<RuntimeId>>,
+            Vec<Option<Rc<Value<RuntimeId>>>>,
+        )>,
+    >,
 }
 
 impl<'a> VisitedStates<'a> {
     fn new(game: &'a Game<RuntimeId>) -> Self {
-        Self {
-            game,
-            states: BTreeMap::default(),
-        }
+        Self { game, states: None }
     }
 
     fn visited(&mut self, state: &State) -> bool {
@@ -274,10 +277,10 @@ impl<'a> VisitedStates<'a> {
                 .collect()
         };
 
-        !self
-            .states
-            .entry((state.position, state.tags.clone()))
-            .or_default()
-            .insert(values)
+        !self.states.get_or_insert_with(BTreeSet::new).insert((
+            state.position,
+            state.tags.clone(),
+            values,
+        ))
     }
 }
