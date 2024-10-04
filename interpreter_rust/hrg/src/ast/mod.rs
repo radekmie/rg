@@ -118,6 +118,7 @@ pub enum Binop {
     Gte,
     Lt,
     Lte,
+    Mod,
     Ne,
     Or,
     Sub,

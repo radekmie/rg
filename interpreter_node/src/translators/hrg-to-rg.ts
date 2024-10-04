@@ -291,6 +291,13 @@ function evaluateExpression(
             }),
           ),
       });
+    case 'ExpressionMod': {
+      const lhs = evaluateExpressionIdentifier(expression.lhs, binding);
+      const rhs = evaluateExpressionIdentifier(expression.rhs, binding);
+      return hrg.ValueElement({
+        identifier: String((Number(lhs) + Number(rhs)) % Number(rhs)),
+      });
+    }
     case 'ExpressionNe':
       throw new Error('Not implemented (ExpressionNe).');
     case 'ExpressionSub': {
@@ -988,7 +995,6 @@ function translateCondition(
             : context.$randomEdgeName(automatonPrefix);
           let automatonCurrentEdgeName = automatonStartEdgeName;
 
-
           for (const arg of call.args) {
             const argEdgeName = context.$randomEdgeName(automatonPrefix);
             context.$connect(
@@ -1021,7 +1027,7 @@ function translateCondition(
             bindings,
           );
 
-          let automatonEndEdgeName = rg.EdgeName({
+          const automatonEndEdgeName = rg.EdgeName({
             parts: [
               rg.Literal({
                 identifier: context.$settings.flags.reuseFunctions
@@ -1051,7 +1057,6 @@ function translateCondition(
               `${automatonPrefix}_`,
             );
           }
-
 
           if (thenEdgeName) {
             context.$connect(

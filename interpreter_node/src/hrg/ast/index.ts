@@ -74,7 +74,6 @@ export type AutomatonTag = {
   symbol: string;
 };
 
-
 export const AutomatonWhile = creator<AutomatonWhile>('AutomatonWhile');
 export type AutomatonWhile = {
   kind: 'AutomatonWhile';
@@ -209,6 +208,13 @@ export type ExpressionMap = {
   pattern: Pattern;
   expression: Expression;
   domains: DomainValue[];
+};
+
+export const ExpressionMod = creator<ExpressionMod>('ExpressionMod');
+export type ExpressionMod = {
+  kind: 'ExpressionMod';
+  lhs: Expression;
+  rhs: Expression;
 };
 
 export const ExpressionNe = creator<ExpressionNe>('ExpressionNe');
@@ -349,6 +355,7 @@ export type Expression =
   | ExpressionLt
   | ExpressionLte
   | ExpressionMap
+  | ExpressionMod
   | ExpressionNe
   | ExpressionOr
   | ExpressionSub;
