@@ -32,10 +32,10 @@ impl From<ast::Game<Arc<str>>> for ist::Game<Arc<str>> {
             variables_indexes: BTreeMap::default(),
         };
 
-        build_pragmas(&mut context, ast.pragmas);
         build_typedefs(&mut context, ast.typedefs);
         build_constants(&mut context, ast.constants);
         build_variables(&mut context, ast.variables);
+        build_pragmas(&mut context, ast.pragmas);
         build_edges(&mut context, ast.edges);
 
         // Make sure no placeholders are left.

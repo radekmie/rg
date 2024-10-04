@@ -22,11 +22,11 @@ pub fn prepare_ist(
     Ok((game, interner))
 }
 
-pub fn safe_parse_rg_ast(ast: &str) -> Result<RgGame<Arc<str>>, String> {
+fn safe_parse_rg_ast(ast: &str) -> Result<RgGame<Arc<str>>, String> {
     from_str::<RgGame<Arc<str>>>(ast).map_err(|error| error.to_string())
 }
 
-pub fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> {
+fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> {
     let (game, errors) = unsafe_parse_hrg(source);
     if errors.is_empty() {
         let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
@@ -40,7 +40,7 @@ pub fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> 
     }
 }
 
-pub fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
+fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
     let (game, errors) = unsafe_parse_rg(source);
     if errors.is_empty() {
         let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
@@ -54,7 +54,7 @@ pub fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
     }
 }
 
-pub fn safe_serialize_rg_ast(game: &RgGame<Arc<str>>) -> Result<String, String> {
+fn safe_serialize_rg_ast(game: &RgGame<Arc<str>>) -> Result<String, String> {
     to_string(game).map_err(|error| error.to_string())
 }
 
