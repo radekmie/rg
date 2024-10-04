@@ -1134,6 +1134,8 @@ function translateCondition(
       throw new Error('Not implemented (ExpressionLte).');
     case 'ExpressionMap':
       throw new Error('Not implemented (ExpressionMap).');
+    case 'ExpressionMod':
+      throw new Error('Not implemented (ExpressionMod).');
     case 'ExpressionNe':
       if (thenEdgeName) {
         context.$connect(
@@ -1249,13 +1251,15 @@ function translateExpression(expression: hrg.Expression): rg.Expression {
     case 'ExpressionAnd':
       throw new Error('Not implemented (ExpressionAnd).');
     case 'ExpressionCall':
-      return expression.args.reduce<rg.Expression>(
+      return expression.args.reduce(
         (expression, arg) =>
           rg.Access({ lhs: expression, rhs: translateExpression(arg) }),
         translateExpression(expression.expression),
       );
     case 'ExpressionConstructor':
-      throw new Error('Not implemented (ExpressionConstructor).');
+      return rg.Reference({
+        identifier: serializeValue(evaluateExpression(expression, {})),
+      });
     case 'ExpressionEq':
       throw new Error('Not implemented (ExpressionEq).');
     case 'ExpressionGt':
@@ -1272,6 +1276,8 @@ function translateExpression(expression: hrg.Expression): rg.Expression {
       throw new Error('Not implemented (ExpressionLte).');
     case 'ExpressionMap':
       throw new Error('Not implemented (ExpressionMap).');
+    case 'ExpressionMod':
+      throw new Error('Not implemented (ExpressionMod).');
     case 'ExpressionNe':
       throw new Error('Not implemented (ExpressionNe).');
     case 'ExpressionOr':
