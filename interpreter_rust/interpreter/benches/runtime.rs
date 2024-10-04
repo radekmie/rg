@@ -30,7 +30,11 @@ fn runtime(criterion: &mut Criterion) {
         "breakthrough",
         &[".hrg.reuse.rg", ".hrg.rg", ".rbg.rg", ".rg", "-opt.rg"],
     );
-    scenario(criterion, "ticTacToe", &[".kif.rg", ".rbg.rg", ".rg"]);
+    scenario(
+        criterion,
+        "ticTacToe",
+        &[".hrg.reuse.rg", ".hrg.rg", ".kif.rg", ".rbg.rg", ".rg"],
+    );
 }
 
 criterion_group!(benches, runtime);
