@@ -197,7 +197,7 @@ impl Game<Arc<str>> {
                     continue;
                 }
 
-                let mapping = BTreeMap::from([(binding.clone(), fresh)]);
+                let mapping = BTreeMap::from([(binding.clone(), (fresh, type_.clone()))]);
                 for y in edges_to_rename {
                     edges[y] = edges[y].rename_variables(&mapping);
                 }
@@ -213,7 +213,7 @@ impl Game<Arc<str>> {
         // Iterate over indexes to eliminate multiple ownership.
         let edges = &mut self.edges;
         for x in 0..edges.len() {
-            for (binding, _) in edges[x].clone().bindings() {
+            for (binding, type_) in edges[x].clone().bindings() {
                 if mapped.contains(&(x, binding.clone())) {
                     continue;
                 }
@@ -222,7 +222,7 @@ impl Game<Arc<str>> {
 
                 // TODO: All `bind_*` bindings should be renamed before for safety.
                 let fresh: Arc<str> = Arc::from(format!("bind_{index}"));
-                let mapping = BTreeMap::from([(binding.clone(), fresh.clone())]);
+                let mapping = BTreeMap::from([(binding.clone(), (fresh.clone(), type_.clone()))]);
                 for y in get_edges_using_binding(edges, x, binding) {
                     mapped.insert((y, fresh.clone()));
                     edges[y] = edges[y].rename_variables(&mapping);
@@ -396,10 +396,10 @@ mod test {
             var v: T = a;
             begin, a: ;
             a, c(t: T): T(t) != T(a);
-            c(t: T), d: v = t;
+            c(t: T), d: v = T(t);
             d, end: ;
             d, g(t: T): T(t) != T(a);
-            g(t: T), h: v = t;
+            g(t: T), h: v = T(t);
             h, a: ;
             h, end: ;
         "
@@ -471,7 +471,7 @@ mod test {
         compact_skip_edges,
         canonical_form,
         "type T = { 0, 1 }; var t: T = 0; a, b(x: T): x == t; c, d(x: T): x == t;",
-        "type T = { 0, 1 }; var t: T = 0; a, b(bind_1: T): bind_1 == t; c, d(bind_2: T): bind_2 == t;"
+        "type T = { 0, 1 }; var t: T = 0; a, b(bind_1: T): T(bind_1) == t; c, d(bind_2: T): T(bind_2) == t;"
     );
 
     test_transform!(

@@ -12,7 +12,7 @@ use std::sync::Arc;
 use utils::position::Span;
 
 pub type Binding<'a, Id> = (&'a Id, &'a Arc<Type<Id>>);
-pub type Mapping<Id> = BTreeMap<Id, Id>;
+pub type Mapping<Id> = BTreeMap<Id, (Id, Arc<Type<Id>>)>;
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename = "ConstantDeclaration", tag = "kind")]
@@ -209,7 +209,10 @@ impl<Id: Clone + Ord> Label<Id> {
                 negated: *negated,
             },
             Self::Tag { symbol } => Self::Tag {
-                symbol: mapping.get(symbol).unwrap_or(symbol).clone(),
+                symbol: mapping
+                    .get(symbol)
+                    .map_or(symbol, |(symbol, _)| symbol)
+                    .clone(),
             },
             _ => self.clone(),
         }
@@ -407,7 +410,9 @@ impl Node<Arc<str>> {
             .parts
             .iter()
             .map(|node_part| match node_part {
-                NodePart::Binding { identifier, .. } => mapping.get(identifier).unwrap(),
+                NodePart::Binding { identifier, .. } => {
+                    mapping.get(identifier).map(|(symbol, _)| symbol).unwrap()
+                }
                 NodePart::Literal { identifier } => identifier,
             })
             .cloned()
@@ -470,7 +475,7 @@ impl<Id: Clone + Ord> NodePart<Id> {
             identifier, type_, ..
         } = self
         {
-            if let Some(identifier) = mapping.get(identifier) {
+            if let Some((identifier, _)) = mapping.get(identifier) {
                 return Self::Binding {
                     span: Span::none(),
                     identifier: identifier.clone(),
@@ -753,14 +758,27 @@ impl<Id: Clone + Ord> Expression<Id> {
                 lhs: Arc::new(lhs.rename_variables(mapping)),
                 rhs: Arc::new(rhs.rename_variables(mapping)),
             },
-            Self::Cast { lhs, rhs, .. } => Self::Cast {
-                span: Span::none(),
-                lhs: lhs.clone(),
-                rhs: Arc::new(rhs.rename_variables(mapping)),
-            },
-            Self::Reference { identifier } => Self::Reference {
-                identifier: mapping.get(identifier).unwrap_or(identifier).clone(),
-            },
+            Self::Cast { lhs, rhs, .. } => {
+                let rhs = rhs.rename_variables(mapping);
+
+                // If the inner expression already has the same cast, skip the
+                // outer one.
+                if rhs.is_cast_and(|type_, _| type_ == lhs) {
+                    rhs
+                } else {
+                    Self::Cast {
+                        span: Span::none(),
+                        lhs: lhs.clone(),
+                        rhs: Arc::new(rhs),
+                    }
+                }
+            }
+            Self::Reference { identifier } => mapping.get(identifier).map_or_else(
+                || Self::new(identifier.clone()),
+                |(identifier, type_)| {
+                    Self::new_cast(type_.clone(), Arc::from(Self::new(identifier.clone())))
+                },
+            ),
         }
     }
 }
@@ -934,7 +952,7 @@ impl<'a, Id: Clone + Ord + 'a> Game<Id> {
                 .flat_map(|mapping| {
                     values.iter().map(move |value| {
                         let mut mapping = mapping.clone();
-                        mapping.insert(identifier.clone(), value.clone());
+                        mapping.insert(identifier.clone(), (value.clone(), type_.clone()));
                         mapping
                     })
                 })
@@ -1377,7 +1395,7 @@ impl Pragma<Arc<str>> {
                             .collect(),
                         tags: tags
                             .iter()
-                            .map(|tag| mapping.get(tag).unwrap_or(tag))
+                            .map(|tag| mapping.get(tag).map_or(tag, |(tag, _)| tag))
                             .cloned()
                             .collect(),
                         span: *span,
@@ -1400,7 +1418,7 @@ impl Pragma<Arc<str>> {
                             .collect(),
                         tags: tags
                             .iter()
-                            .map(|tag| mapping.get(tag).unwrap_or(tag))
+                            .map(|tag| mapping.get(tag).map_or(tag, |(tag, _)| tag))
                             .cloned()
                             .collect(),
                         span: *span,
