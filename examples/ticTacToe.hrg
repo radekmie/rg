@@ -26,6 +26,10 @@ next_v : Position -> Position
 next_v(P(3, J)) = P(1, J)
 next_v(P(I, J)) = P(I + 1, J)
 
+op : Player -> Player
+op(x) = o
+op(o) = x
+
 graph findNonempty() {
   forall p:Position {
     check(board[p] == empty)
@@ -50,7 +54,7 @@ graph win(position: Position) {
   }
 }
 
-graph turn(me: Player, op: Player) {
+graph turn(me: Player) {
   player = me
   forall p:Position {
     check(board[p] == empty)
@@ -62,7 +66,7 @@ graph turn(me: Player, op: Player) {
   player = keeper
   if reachable(win(position)) {
     goals[me] = 100
-    goals[op] = 0
+    goals[op[me]] = 0
     end()
   }
 
@@ -73,7 +77,7 @@ graph turn(me: Player, op: Player) {
 
 graph rules() {
   loop {
-    turn(x, o)
-    turn(o, x)
+    turn(x)
+    turn(o)
   }
 }
