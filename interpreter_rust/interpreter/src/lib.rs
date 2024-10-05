@@ -82,6 +82,8 @@ pub struct Flags {
     inline_reachability: bool,
     #[serde(rename = "inlineAssignment")]
     inline_assignment: bool,
+    #[serde(rename = "joinExclusiveEdges")]
+    join_exclusive_edges: bool,
     #[serde(rename = "joinForkPrefixes")]
     join_fork_prefixes: bool,
     #[serde(rename = "joinForkSuffixes")]
@@ -122,6 +124,7 @@ impl Flags {
             expand_generator_nodes: true,
             inline_assignment: true,
             inline_reachability: true,
+            join_exclusive_edges: true,
             join_fork_prefixes: true,
             join_fork_suffixes: true,
             mangle_symbols: true,
@@ -150,6 +153,7 @@ impl Flags {
             expand_generator_nodes: false,
             inline_assignment: false,
             inline_reachability: false,
+            join_exclusive_edges: false,
             join_fork_prefixes: false,
             join_fork_suffixes: false,
             mangle_symbols: false,
@@ -261,6 +265,7 @@ pub fn analyze_rg_inner(
         pass!(compact_skip_edges);
         pass!(add_explicit_casts);
         pass!(expand_generator_nodes);
+        pass!(join_exclusive_edges);
         pass!(join_fork_prefixes);
         pass!(join_fork_suffixes);
         pass!(compact_comparisons);
