@@ -1,66 +1,29 @@
+use crate::ast::{Error, Game};
 use std::collections::BTreeSet;
 
-use crate::ast::{Error, Game, Label};
-
-impl<Id: PartialEq + Clone + Ord> Game<Id> {
+impl<Id: PartialEq> Game<Id> {
     pub fn join_exclusive_edges(&mut self) -> Result<(), Error<Id>> {
-        let mut to_skip = Vec::new();
+        let mut to_ignore = BTreeSet::new();
         let mut to_remove = BTreeSet::new();
-        for (idx, edge) in self.edges.iter().enumerate() {
-            if to_remove.contains(edge) {
-                continue;
-            }
-            if let Label::Comparison { lhs, rhs, negated } = &edge.label {
-                for other_edge in &self.edges {
-                    if let Label::Comparison {
-                        lhs: other_lhs,
-                        rhs: other_rhs,
-                        negated: other_negated,
-                    } = &other_edge.label
-                    {
-                        if edge.lhs == other_edge.lhs
-                            && edge.rhs == other_edge.rhs
-                            && lhs == other_lhs
-                            && rhs == other_rhs
-                            && negated != other_negated
-                        {
-                            to_skip.push(idx);
-                            to_remove.insert(other_edge.clone());
-                        }
-                    }
-                }
-            }
 
-            if let Label::Reachability {
-                lhs, rhs, negated, ..
-            } = &edge.label
-            {
-                for other_edge in &self.edges {
-                    if let Label::Reachability {
-                        lhs: other_lhs,
-                        rhs: other_rhs,
-                        negated: other_negated,
-                        ..
-                    } = &other_edge.label
-                    {
-                        if edge.lhs == other_edge.lhs
-                            && edge.rhs == other_edge.rhs
-                            && lhs == other_lhs
-                            && rhs == other_rhs
-                            && negated != other_negated
-                        {
-                            to_skip.push(idx);
-                            to_remove.insert(other_edge.clone());
-                        }
+        for (i, x) in self.edges.iter().enumerate() {
+            if !to_remove.contains(&i) && (x.label.is_comparison() || x.label.is_reachability()) {
+                for (j, y) in self.edges.iter().enumerate() {
+                    if x.lhs == y.lhs && x.rhs == y.rhs && x.label.is_negated(&y.label) {
+                        to_ignore.insert(i);
+                        to_remove.insert(j);
                     }
                 }
             }
         }
 
-        for idx in to_skip {
-            self.edges[idx].skip();
+        for index in to_ignore {
+            self.edges[index].skip();
         }
-        self.edges.retain(|edge| !to_remove.contains(edge));
+
+        for index in to_remove.into_iter().rev() {
+            self.edges.remove(index);
+        }
 
         Ok(())
     }

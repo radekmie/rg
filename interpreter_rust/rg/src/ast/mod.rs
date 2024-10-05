@@ -167,8 +167,16 @@ impl<Id> Label<Id> {
         matches!(self, Self::Assignment { .. })
     }
 
+    pub fn is_comparison(&self) -> bool {
+        matches!(self, Self::Comparison { .. })
+    }
+
     pub fn is_map_assignment(&self) -> bool {
         matches!(self, Self::Assignment { lhs, .. } if lhs.uncast().is_access())
+    }
+
+    pub fn is_reachability(&self) -> bool {
+        matches!(self, Self::Reachability { .. })
     }
 
     pub fn is_skip(&self) -> bool {
