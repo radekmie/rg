@@ -94,12 +94,12 @@ pub struct Flags {
     prune_singleton_types: bool,
     #[serde(rename = "pruneUnreachableNodes")]
     prune_unreachable_nodes: bool,
+    #[serde(rename = "pruneUnusedBindings")]
+    prune_unused_bindings: bool,
     #[serde(rename = "pruneUnusedConstants")]
     prune_unused_constants: bool,
     #[serde(rename = "pruneUnusedVariables")]
     prune_unused_variables: bool,
-    #[serde(rename = "removeUnusedBindings")]
-    remove_unused_bindings: bool,
     #[serde(rename = "skipGeneratorComparisons")]
     skip_generator_comparisons: bool,
     #[serde(rename = "skipSelfAssignments")]
@@ -130,9 +130,9 @@ impl Flags {
             normalize_types: true,
             prune_singleton_types: true,
             prune_unreachable_nodes: true,
+            prune_unused_bindings: true,
             prune_unused_constants: true,
             prune_unused_variables: true,
-            remove_unused_bindings: true,
             skip_generator_comparisons: true,
             skip_self_assignments: true,
             skip_self_comparisons: true,
@@ -159,9 +159,9 @@ impl Flags {
             normalize_types: false,
             prune_singleton_types: false,
             prune_unreachable_nodes: false,
+            prune_unused_bindings: false,
             prune_unused_constants: false,
             prune_unused_variables: false,
-            remove_unused_bindings: false,
             skip_generator_comparisons: false,
             skip_self_assignments: false,
             skip_self_comparisons: false,
@@ -263,7 +263,6 @@ pub fn analyze_rg_inner(
         pass!(skip_unused_tags);
         pass!(skip_generator_comparisons);
         pass!(compact_skip_edges);
-        pass!(remove_unused_bindings);
         pass!(add_explicit_casts);
         pass!(expand_generator_nodes);
         pass!(join_fork_prefixes);
@@ -275,6 +274,7 @@ pub fn analyze_rg_inner(
         pass!(prune_unreachable_nodes);
         pass!(prune_unused_variables);
         pass!(prune_unused_constants);
+        pass!(prune_unused_bindings);
         pass!(mangle_symbols);
         pass!(calculate_disjoints);
         pass!(calculate_repeats);

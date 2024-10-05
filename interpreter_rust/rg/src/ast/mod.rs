@@ -280,12 +280,12 @@ impl<Id: Ord> Label<Id> {
 }
 
 impl<Id: PartialEq> Label<Id> {
-    pub fn has_variable(&self, identifier: &Id) -> bool {
-        matches!(self, Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } if lhs.has_variable(identifier) || rhs.has_variable(identifier))
-    }
-
     pub fn has_binding(&self, binding: &Id) -> bool {
         self.has_variable(binding) || self.is_tag_and(|tag| tag == binding)
+    }
+
+    pub fn has_variable(&self, identifier: &Id) -> bool {
+        matches!(self, Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } if lhs.has_variable(identifier) || rhs.has_variable(identifier))
     }
 
     pub fn is_negated(&self, other: &Self) -> bool {
@@ -350,13 +350,6 @@ pub struct Node<Id> {
 }
 
 impl<Id> Node<Id> {
-    pub fn new(identifier: Id) -> Self {
-        Self {
-            span: Span::none(),
-            parts: vec![NodePart::new(identifier)],
-        }
-    }
-
     pub fn add_binding(&mut self, identifier: Id, type_: Arc<Type<Id>>) {
         self.parts.push(NodePart::Binding {
             span: Span::none(),
@@ -383,6 +376,13 @@ impl<Id> Node<Id> {
 
     pub fn literal(&self) -> &Id {
         self.parts[0].identifier()
+    }
+
+    pub fn new(identifier: Id) -> Self {
+        Self {
+            span: Span::none(),
+            parts: vec![NodePart::new(identifier)],
+        }
     }
 }
 
@@ -1067,6 +1067,18 @@ impl<Id: Clone + PartialEq> Game<Id> {
             if &edge.rhs == node {
                 edge.rhs = new_node.clone();
             }
+            if let Label::Reachability { lhs, rhs, .. } = &mut edge.label {
+                if lhs == node {
+                    *lhs = new_node.clone();
+                }
+                if rhs == node {
+                    *rhs = new_node.clone();
+                }
+            }
+        }
+
+        for pragma in &mut self.pragmas {
+            pragma.rename_node(node, new_node);
         }
     }
 
@@ -1345,6 +1357,37 @@ impl<Id> Pragma<Id> {
 impl<Id: Ord> Pragma<Id> {
     pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
         self.nodes().flat_map(Node::bindings).collect()
+    }
+}
+
+impl<Id: Clone + PartialEq> Pragma<Id> {
+    pub fn rename_node(&mut self, old_node: &Node<Id>, new_node: &Node<Id>) {
+        if let Self::Disjoint { node, .. }
+        | Self::DisjointExhaustive { node, .. }
+        | Self::SimpleApply { node, .. }
+        | Self::SimpleApplyExhaustive { node, .. } = self
+        {
+            if node == old_node {
+                *node = new_node.clone();
+            }
+        };
+
+        match self {
+            Self::Disjoint { nodes, .. }
+            | Self::DisjointExhaustive { nodes, .. }
+            | Self::SimpleApply { nodes, .. }
+            | Self::SimpleApplyExhaustive { nodes, .. }
+            | Self::Repeat { nodes, .. }
+            | Self::TagIndex { nodes, .. }
+            | Self::TagMaxIndex { nodes, .. }
+            | Self::Unique { nodes, .. } => {
+                for node in nodes {
+                    if node == old_node {
+                        *node = new_node.clone();
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -27,9 +27,9 @@ export type Settings = {
     normalizeTypes: boolean;
     pruneSingletonTypes: boolean;
     pruneUnreachableNodes: boolean;
+    pruneUnusedBindings: boolean;
     pruneUnusedConstants: boolean;
     pruneUnusedVariables: boolean;
-    removeUnusedBindings: boolean;
     reuseFunctions: boolean;
     skipGeneratorComparisons: boolean;
     skipSelfAssignments: boolean;
@@ -56,9 +56,9 @@ export const noFlagsEnabled: Settings['flags'] = {
   normalizeTypes: false,
   pruneSingletonTypes: false,
   pruneUnreachableNodes: false,
+  pruneUnusedBindings: false,
   pruneUnusedConstants: false,
   pruneUnusedVariables: false,
-  removeUnusedBindings: false,
   reuseFunctions: false,
   skipGeneratorComparisons: false,
   skipSelfAssignments: false,
