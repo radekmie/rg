@@ -96,6 +96,8 @@ pub struct Flags {
     prune_singleton_types: bool,
     #[serde(rename = "pruneUnreachableNodes")]
     prune_unreachable_nodes: bool,
+    #[serde(rename = "pruneUnusedBindings")]
+    prune_unused_bindings: bool,
     #[serde(rename = "pruneUnusedConstants")]
     prune_unused_constants: bool,
     #[serde(rename = "pruneUnusedVariables")]
@@ -131,6 +133,7 @@ impl Flags {
             normalize_types: true,
             prune_singleton_types: true,
             prune_unreachable_nodes: true,
+            prune_unused_bindings: true,
             prune_unused_constants: true,
             prune_unused_variables: true,
             skip_generator_comparisons: true,
@@ -160,6 +163,7 @@ impl Flags {
             normalize_types: false,
             prune_singleton_types: false,
             prune_unreachable_nodes: false,
+            prune_unused_bindings: false,
             prune_unused_constants: false,
             prune_unused_variables: false,
             skip_generator_comparisons: false,
@@ -275,6 +279,7 @@ pub fn analyze_rg_inner(
         pass!(prune_unreachable_nodes);
         pass!(prune_unused_variables);
         pass!(prune_unused_constants);
+        pass!(prune_unused_bindings);
         pass!(mangle_symbols);
         pass!(calculate_disjoints);
         pass!(calculate_repeats);

@@ -20,6 +20,7 @@ const availableOptions: { label: string; flags: Flag[] }[] = [
       'joinForkSuffixes',
       'pruneSingletonTypes',
       'pruneUnreachableNodes',
+      'pruneUnusedBindings',
       'pruneUnusedConstants',
       'pruneUnusedVariables',
       'reuseFunctions',

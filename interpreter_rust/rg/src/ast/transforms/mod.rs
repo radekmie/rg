@@ -17,6 +17,7 @@ mod mangle_symbols;
 mod normalize_types;
 mod prune_singleton_types;
 mod prune_unreachable_nodes;
+mod prune_unused_bindings;
 mod prune_unused_constants;
 mod prune_unused_variables;
 mod skip_generator_comparisons;

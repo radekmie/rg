@@ -53,6 +53,7 @@ program
     'prune singleton types (i.e., Set types with one element)',
   )
   .option('--pruneUnreachableNodes', 'prune unreachable nodes')
+  .option('--pruneUnusedBindings', 'prune unused bindings from nodes')
   .option('--pruneUnusedConstants', 'prune unused constants')
   .option('--pruneUnusedVariables', 'prune unused variables')
   .option(
@@ -120,6 +121,7 @@ function addCommand(
           normalizeTypes: !!options.normalizeTypes,
           pruneSingletonTypes: !!options.pruneSingletonTypes,
           pruneUnreachableNodes: !!options.pruneUnreachableNodes,
+          pruneUnusedBindings: !!options.pruneUnusedBindings,
           pruneUnusedConstants: !!options.pruneUnusedConstants,
           pruneUnusedVariables: !!options.pruneUnusedVariables,
           reuseFunctions: !!options.reuseFunctions,
