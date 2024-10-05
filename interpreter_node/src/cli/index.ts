@@ -34,6 +34,7 @@ program
   .option('--expandGeneratorNodes', 'expand generator nodes')
   .option('--inlineAssignment', 'inline assignment when possible')
   .option('--inlineReachability', 'inline reachability when possible')
+  .option('--joinExclusiveEdges', 'joins multiedges with exclusive labels')
   .option(
     '--joinForkPrefixes',
     'join paths with identical labels from the same node',
@@ -113,6 +114,7 @@ function addCommand(
           expandGeneratorNodes: !!options.expandGeneratorNodes,
           inlineAssignment: !!options.inlineAssignment,
           inlineReachability: !!options.inlineReachability,
+          joinExclusiveEdges: !!options.joinExclusiveEdges,
           joinForkPrefixes: !!options.joinForkPrefixes,
           joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,

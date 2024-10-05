@@ -15,6 +15,7 @@ const availableOptions: { label: string; flags: Flag[] }[] = [
       'compactSkipEdges',
       'inlineAssignment',
       'inlineReachability',
+      'joinExclusiveEdges',
       'joinForkPrefixes',
       'joinForkSuffixes',
       'pruneSingletonTypes',
