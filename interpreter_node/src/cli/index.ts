@@ -128,6 +128,10 @@ function addCommand(
         },
       });
 
+      if (game.error) {
+        throw game.error;
+      }
+
       await operation(game, ...args);
 
       // Worker keeps the reference, so we have to exit manually.

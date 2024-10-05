@@ -124,6 +124,17 @@ pub enum Binop {
     Sub,
 }
 
+impl Binop {
+    pub fn precedence(&self) -> usize {
+        match self {
+            Self::Or => 0,
+            Self::And => 1,
+            Self::Eq | Self::Gt | Self::Gte | Self::Lt | Self::Lte | Self::Ne => 2,
+            Self::Add | Self::Mod | Self::Sub => 3,
+        }
+    }
+}
+
 impl<OldId, NewId> MapId<Self, OldId, NewId> for Binop {
     fn map_id(&self, _map: &mut impl FnMut(&OldId) -> NewId) -> Self {
         *self
@@ -250,10 +261,6 @@ pub struct Game<Id> {
     pub domains: Vec<DomainDeclaration<Id>>,
     pub functions: Vec<FunctionDeclaration<Id>>,
     pub variables: Vec<VariableDeclaration<Id>>,
-    #[serde(skip_serializing, default = "empty_vec")]
+    #[serde(skip_serializing, default = "Vec::new")]
     pub types: Vec<TypeDeclaration<Id>>,
-}
-
-fn empty_vec<Id>() -> Vec<TypeDeclaration<Id>> {
-    Vec::new()
 }

@@ -471,7 +471,7 @@ mod test {
         );
         assert_eq!(
             input,
-            game.to_string().strip_suffix('\n').unwrap(),
+            game.to_string().trim(),
             "Failed to parse:\n{game}\nExpected:\n{input}"
         );
     }

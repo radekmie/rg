@@ -383,3 +383,43 @@ pub fn parse_expression(input: &str) -> Arc<Expression<Identifier>> {
     let (_, expression) = all_consuming(expression)(input).expect("Parser cannot fail");
     expression
 }
+
+#[cfg(test)]
+mod test {
+    use super::parse_with_errors;
+
+    fn check_parse(input: &str) {
+        let (game, errors) = parse_with_errors(input);
+        assert!(
+            errors.is_empty(),
+            "Failed to parse:\n{input}\nErrors:\n{}",
+            errors
+                .into_iter()
+                .map(|error| error.to_string())
+                .collect::<Vec<_>>()
+                .join("\n")
+        );
+        assert_eq!(
+            input,
+            game.to_string().trim(),
+            "Failed to parse:\n{game}\nExpected:\n{input}"
+        );
+    }
+
+    #[test]
+    fn operator_precedence() {
+        check_parse(
+            "next_d1 : Position -> Position\n\
+            next_d1(P(I, J)) = if I == J\n  \
+              then P((I + 1) % 3, (J + 1) % 3)\n  \
+              else P(I, J)",
+        );
+        check_parse(
+            "graph foo() {\n  \
+              if direction(me)(position) == null || not(reachable(move(opponent(me)))) {\n    \
+                end()\n  \
+              }\n\
+            }",
+        );
+    }
+}

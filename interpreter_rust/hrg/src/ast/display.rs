@@ -180,16 +180,10 @@ fn write_expression<Id: Display>(
 ) -> Result {
     match expression {
         Expression::Access { lhs, rhs } => write!(f, "{lhs}[{rhs}]"),
-        Expression::BinExpr {
-            lhs,
-            op,
-            rhs,
-        } => {
-            write!(f, "(")?;
-            write_expression(f, lhs, indent)?;
-            write!(f, ") {op} (")?;
-            write_expression(f, rhs, indent)?;
-            write!(f, ")")
+        Expression::BinExpr { lhs, op, rhs } => {
+            write_expr_parens(f, *op, lhs, indent)?;
+            write!(f, " {op} ")?;
+            write_expr_parens(f, *op, rhs, indent)
         }
         Expression::Call { expression, args } => {
             write!(f, "{expression}(")?;
@@ -231,6 +225,22 @@ fn write_expression<Id: Display>(
             write!(f, "else ")?;
             write_expression(f, else_.as_ref(), indent + 2)
         }
+    }
+}
+
+fn write_expr_parens<Id: Display>(
+    f: &mut Formatter<'_>,
+    op_outer: Binop,
+    expr: &Expression<Id>,
+    indent: usize,
+) -> Result {
+    match expr {
+        Expression::BinExpr { op, .. } if op_outer.precedence() >= op.precedence() => {
+            write!(f, "(")?;
+            write_expression(f, expr, indent)?;
+            write!(f, ")")
+        }
+        _ => write_expression(f, expr, indent),
     }
 }
 
