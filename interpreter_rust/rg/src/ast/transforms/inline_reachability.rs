@@ -14,7 +14,11 @@ impl Game<Id> {
             } = &edge.label
             {
                 if let Some(subgraph) = self.find_rechability_paths(lhs, rhs, *negated) {
-                    self.substitute_reachability(edge.clone(), subgraph);
+                    if subgraph.is_empty() {
+                        self.remove_edge(&edge);
+                    } else {
+                        self.substitute_reachability(edge.clone(), subgraph);
+                    }
                 }
             }
         }
@@ -34,10 +38,20 @@ impl Game<Id> {
         negated: bool,
     ) -> Option<BTreeSet<Edge<Id>>> {
         if negated {
-            let direct_path = self
+            let edge = self
                 .outgoing_edge(start)
-                .filter(|e| e.rhs == *target && !e.label.is_assignment())?;
-            Some(BTreeSet::from([direct_path.clone()]))
+                .filter(|edge| edge.rhs == *target)?;
+            match &edge.label {
+                // Do not inline negated assignments.
+                Label::Assignment { .. } => None,
+                // Copy (and negate) the comparison or reachability.
+                Label::Comparison { .. } | Label::Reachability { .. } => {
+                    Some(BTreeSet::from([edge.clone()]))
+                }
+                // Skips and tags are always passable, so a negated reachability
+                // should never pass them - the edge should be removed.
+                Label::Skip { .. } | Label::Tag { .. } => Some(BTreeSet::new()),
+            }
         } else {
             let negated_label = Label::Reachability {
                 span: Span::none(),
@@ -245,9 +259,7 @@ mod test {
         __gen_1_b, y: ;
         __gen_1_c, y: ;
         a, __gen_1_reachability_e_f: ;
-        __gen_1_reachability_e_f, b: ;
-        a, __gen_2_reachability_e_f: ;
-        __gen_2_reachability_e_f, c: ;"
+        __gen_1_reachability_e_f, b: ;"
     );
 
     test_transform!(
@@ -262,9 +274,7 @@ mod test {
         __gen_1_b, y: ;
         __gen_1_c, y: ;
         a, __gen_1_reachability_e_f: ;
-        __gen_1_reachability_e_f, b: ;
-        a, __gen_2_reachability_e_f: ;
-        __gen_2_reachability_e_f, c: ;",
+        __gen_1_reachability_e_f, b: ;",
         "b, d: ;
         c, d: ;
         e, f: ;
@@ -273,12 +283,8 @@ mod test {
         __gen_1_c, y: ;
         a, __gen_1_reachability_e_f: ;
         __gen_1_reachability_e_f, b: ;
-        a, __gen_2_reachability_e_f: ;
-        __gen_2_reachability_e_f, c: ;
-        __gen_1_reachability_a_d, __gen_3_reachability_e_f: ;
-        __gen_3_reachability_e_f, __gen_1_b: ;
-        __gen_1_reachability_a_d, __gen_4_reachability_e_f: ;
-        __gen_4_reachability_e_f, __gen_1_c: ;"
+        __gen_1_reachability_a_d, __gen_2_reachability_e_f: ;
+        __gen_2_reachability_e_f, __gen_1_b: ;"
     );
 
     test_transform!(
@@ -338,6 +344,22 @@ mod test {
         "x, y: 1 == 1;
         a, __gen_1_reachability_x_y: ;
         __gen_1_reachability_x_y, b: 1 != 1;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        negated_skip,
+        "a, b: ! x -> y;
+        x, y: ;",
+        "x, y: ;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        negated_tag,
+        "a, b: ! x -> y;
+        x, y: $ a;",
+        "x, y: $ a;"
     );
 
     test_transform!(
