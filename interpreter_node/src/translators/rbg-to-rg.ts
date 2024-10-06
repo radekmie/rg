@@ -383,9 +383,9 @@ function translateAtomContent(
       const nextCoord = rg.Access({
         lhs: rg.Access({
           lhs: rg.Reference({ identifier: 'direction' }),
-          rhs: rg.Reference({ identifier: 'coord' }),
+          rhs: rg.Reference({ identifier: content.label }),
         }),
-        rhs: rg.Reference({ identifier: content.label }),
+        rhs: rg.Reference({ identifier: 'coord' }),
       });
 
       context.$connect(
@@ -495,13 +495,18 @@ function translateGame(context: Context) {
     }),
   );
 
+  const defaultDirection = rg.ValueEntry({
+    identifier: null,
+    value: rg.Element({ identifier: 'null' }),
+  });
+
   context.rg.constants.push(
     rg.ConstantDeclaration({
       identifier: 'direction',
       type: rg.Arrow({
-        lhs: rg.TypeReference({ identifier: 'Coord' }),
+        lhs: rg.TypeReference({ identifier: 'Label' }),
         rhs: rg.Arrow({
-          lhs: rg.TypeReference({ identifier: 'Label' }),
+          lhs: rg.TypeReference({ identifier: 'Coord' }),
           rhs: rg.TypeReference({ identifier: 'Coord' }),
         }),
       }),
@@ -509,34 +514,34 @@ function translateGame(context: Context) {
         entries: [
           rg.ValueEntry({
             identifier: null,
-            value: rg.Map({
-              entries: [
-                rg.ValueEntry({
-                  identifier: null,
-                  value: rg.Element({ identifier: 'null' }),
-                }),
-              ],
-            }),
+            value: rg.Map({ entries: [defaultDirection] }),
           }),
-          ...context.rbg.board.map(node =>
-            rg.ValueEntry({
-              identifier: node.node,
-              value: rg.Map({
-                entries: [
+          ...context.rbg.board
+            .flatMap(node =>
+              node.edges.map(edge => ({
+                identifier: edge.label,
+                valueEntry: rg.ValueEntry({
+                  identifier: node.node,
+                  value: rg.Element({ identifier: edge.node }),
+                }),
+              })),
+            )
+            .reduce<rg.ValueEntry[]>((entries, { identifier, valueEntry }) => {
+              const existing = utils.find(entries, { identifier });
+              if (existing) {
+                utils.assert(existing.value.kind === 'Map', 'Expected Map.');
+                existing.value.entries.push(valueEntry);
+              } else {
+                entries.push(
                   rg.ValueEntry({
-                    identifier: null,
-                    value: rg.Element({ identifier: 'null' }),
+                    identifier,
+                    value: rg.Map({ entries: [defaultDirection, valueEntry] }),
                   }),
-                  ...node.edges.map(edge =>
-                    rg.ValueEntry({
-                      identifier: edge.label,
-                      value: rg.Element({ identifier: edge.node }),
-                    }),
-                  ),
-                ],
-              }),
-            }),
-          ),
+                );
+              }
+
+              return entries;
+            }, []),
         ],
       }),
     }),
