@@ -1,5 +1,6 @@
 use crate::ast::{Edge, Error, Game, Node};
-use std::{collections::BTreeSet, sync::Arc};
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 type Id = Arc<str>;
 type ToInline = (Node<Id>, Vec<Edge<Id>>, Vec<Node<Id>>);
@@ -35,41 +36,67 @@ impl Game<Id> {
     }
 
     fn find_to_join_prefixes(&self) -> Vec<ToInline> {
-        let mut used = BTreeSet::new();
         let next_edges = self.next_edges();
+        let default_set = BTreeSet::new();
         let mut edges_to_join = vec![];
-        for edge in &self.edges {
-            if edge.has_bindings()
-                || used.contains(&edge.lhs)
-                || !self.incoming_edges(&edge.lhs).all(|e| e.lhs == edge.lhs)
-            {
-                continue;
-            }
-            let from_same_node = next_edges.get(&edge.lhs).unwrap();
-            let to_join: Vec<Edge<Id>> = from_same_node
+        // Start of the fork prefix
+        for node in self.nodes() {
+            // Get all outgoing edges that do not have bindings
+            let next_edges = next_edges
+                .get(&node)
+                .unwrap_or(&default_set)
                 .iter()
-                .filter(|e| e.label == edge.label && e.rhs != edge.rhs && !e.has_bindings())
-                .map(|e| (**e).clone())
-                .collect();
-            if to_join.is_empty() {
-                continue;
+                .filter(|e| !e.has_bindings());
+            // Group outgoing edges by label
+            let mut group_by_label = BTreeMap::new();
+            for edge in next_edges {
+                group_by_label
+                    .entry(edge.label.clone())
+                    .or_insert_with(Vec::new)
+                    .push(edge);
             }
-            let to_add: Vec<_> = {
-                let new_set = BTreeSet::new();
-                let from_rhs = next_edges.get(&edge.rhs).unwrap_or(&new_set);
-                to_join
-                    .iter()
-                    .filter(|e| {
-                        !from_rhs
-                            .iter()
-                            .any(|from_rhs| from_rhs.label.is_skip() && from_rhs.rhs == e.rhs)
-                    })
-                    .map(|e| e.rhs.clone())
-                    .collect()
-            };
-            used.insert(edge.lhs.clone());
-            edges_to_join.push((edge.rhs.clone(), to_join, to_add));
+            for (_, edges) in group_by_label {
+                if edges.len() < 2 {
+                    continue;
+                }
+                // Remove all but the first edge
+                // Add skip edges from the first edge to the rest
+                if let [head, tail @ ..] = &edges[..] {
+                    let node = head.rhs.clone();
+                    let to_add = tail.iter().map(|e| e.rhs.clone()).collect::<Vec<_>>();
+                    let to_remove = tail.iter().map(|e| (**e).clone()).collect::<Vec<_>>();
+                    edges_to_join.push((node, to_remove, to_add));
+                }
+            }
         }
+
         edges_to_join
     }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::test_transform;
+
+    test_transform!(
+        join_fork_prefixes,
+        small1,
+        "begin, a: ;
+        a, b: 1 == 1;
+        a, c: 1 == 1;
+        b, end: 2 == 2;",
+        "begin, a: ;
+        a, b: 1 == 1;
+        b, end: 2 == 2;
+        b, c: ;"
+    );
+
+    test_transform!(
+        join_fork_prefixes,
+        small2,
+        "begin, a: ;
+        begin, b: ;",
+        "begin, a: ;
+        a, b: ;"
+    );
 }
