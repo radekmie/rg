@@ -14,13 +14,17 @@ impl Game<Arc<str>> {
             self.edges.remove(x);
         }
 
-        while let Some((x, y)) = self.compact_skip_edge_backward() {
-            self.edges[x].rhs = self.edges[y].rhs.clone();
+        while let Some((xs, y)) = self.compact_skip_edge_backward() {
+            for x in xs {
+                self.edges[x].rhs = self.edges[y].rhs.clone();
+            }
             self.edges.remove(y);
         }
 
-        while let Some((x, y)) = self.compact_skip_edge_forward() {
-            self.edges[y].lhs = self.edges[x].lhs.clone();
+        while let Some((x, ys)) = self.compact_skip_edge_forward() {
+            for y in ys {
+                self.edges[y].lhs = self.edges[x].lhs.clone();
+            }
             self.edges.remove(x);
         }
 
@@ -48,19 +52,26 @@ impl Game<Arc<str>> {
     ///   3. b has no other incoming nor outgoing edges
     ///   4. b has no bindings
     ///   5. b is not a reachability target
-    fn compact_skip_edge_backward(&self) -> Option<(usize, usize)> {
+    fn compact_skip_edge_backward(&self) -> Option<(Vec<usize>, usize)> {
         for (y_index, y) in self.edges.iter().enumerate() {
             if y.label.is_skip()
                 && !y.lhs.has_bindings()
                 && self.outgoing_edges(&y.lhs).all(|z| z == y)
                 && !self.is_reachability_target(&y.lhs)
             {
-                for (x_index, x) in self.edges.iter().enumerate() {
+                for x in &self.edges {
                     if x.rhs == y.lhs
                         && (!y.rhs.has_bindings() || !x.label.is_player_assignment())
-                        && self.incoming_edges(&y.lhs).all(|z| z == x)
+                        && self.incoming_edges(&y.lhs).all(|z| z.lhs == x.lhs)
                     {
-                        return Some((x_index, y_index));
+                        let x_indexes = self
+                            .edges
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, z)| z.lhs == x.lhs && z.rhs == x.rhs)
+                            .map(|(index, _)| index)
+                            .collect();
+                        return Some((x_indexes, y_index));
                     }
                 }
             }
@@ -83,19 +94,26 @@ impl Game<Arc<str>> {
     ///   3. b has no bindings
     ///   4. b is not a reachability target
     ///   5. y != Assignment of `player` OR a has no bindings
-    fn compact_skip_edge_forward(&self) -> Option<(usize, usize)> {
+    fn compact_skip_edge_forward(&self) -> Option<(usize, Vec<usize>)> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
                 && !x.rhs.has_bindings()
                 && self.incoming_edges(&x.rhs).all(|z| z == x)
                 && !self.is_reachability_target(&x.rhs)
             {
-                for (y_index, y) in self.edges.iter().enumerate() {
+                for y in &self.edges {
                     if x.rhs == y.lhs
                         && (!x.lhs.has_bindings() || !y.label.is_player_assignment())
-                        && self.outgoing_edges(&x.rhs).all(|z| z == y)
+                        && self.outgoing_edges(&x.rhs).all(|z| z.rhs == y.rhs)
                     {
-                        return Some((x_index, y_index));
+                        let y_indexes = self
+                            .edges
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, z)| z.lhs == y.lhs && z.rhs == y.rhs)
+                            .map(|(index, _)| index)
+                            .collect();
+                        return Some((x_index, y_indexes));
                     }
                 }
             }

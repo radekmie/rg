@@ -5,18 +5,25 @@ use std::sync::Arc;
 use utils::position::Span;
 
 type Id = Arc<str>;
+type NextEdges<'a> = BTreeMap<&'a Node<Id>, BTreeSet<&'a Edge<Id>>>;
 
 impl Game<Id> {
     pub fn inline_reachability(&mut self) -> Result<(), Error<Id>> {
-        for edge in self.edges.clone() {
+        let self_clone = self.clone();
+        let next_edges = self_clone.next_edges();
+        for edge in &self_clone.edges {
             if let Label::Reachability {
                 lhs, rhs, negated, ..
             } = &edge.label
             {
-                if let Some(subgraph) = self.find_rechability_paths(lhs, rhs, *negated) {
+                if let Some((subgraph, defined_vars)) =
+                    self.find_rechability_paths(lhs, rhs, *negated, &next_edges)
+                {
                     if subgraph.is_empty() {
-                        self.remove_edge(&edge);
-                    } else {
+                        self.remove_edge(edge);
+                    } else if defined_vars.is_empty()
+                        || check_used_variables(&edge.rhs, defined_vars, &next_edges)
+                    {
                         self.substitute_reachability(edge.clone(), subgraph);
                     }
                 }
@@ -29,14 +36,14 @@ impl Game<Id> {
     /// 1. contains [start] and [target]
     /// 2. for any node except [target] contains all outgoing nodes
     /// 3. contains no edges from [target]
-    /// 4. no assignments allowed
     /// 5. If the reachability is negated, the path consists of one edge
     fn find_rechability_paths(
         &self,
         start: &Node<Id>,
         target: &Node<Id>,
         negated: bool,
-    ) -> Option<BTreeSet<Edge<Id>>> {
+        next_edges: &NextEdges,
+    ) -> Option<(BTreeSet<Edge<Id>>, BTreeSet<Id>)> {
         if negated {
             let edge = self
                 .outgoing_edge(start)
@@ -46,11 +53,11 @@ impl Game<Id> {
                 Label::Assignment { .. } => None,
                 // Copy (and negate) the comparison or reachability.
                 Label::Comparison { .. } | Label::Reachability { .. } => {
-                    Some(BTreeSet::from([edge.clone()]))
+                    Some((BTreeSet::from([edge.clone()]), BTreeSet::new()))
                 }
                 // Skips and tags are always passable, so a negated reachability
                 // should never pass them - the edge should be removed.
-                Label::Skip { .. } | Label::Tag { .. } => Some(BTreeSet::new()),
+                Label::Skip { .. } | Label::Tag { .. } => Some((BTreeSet::new(), BTreeSet::new())),
             }
         } else {
             let negated_label = Label::Reachability {
@@ -61,11 +68,13 @@ impl Game<Id> {
             };
             // Do not inline `? a -> b` if `! a -> b` exists and cannot be inlined
             if self.edges.iter().any(|edge| edge.label == negated_label)
-                && self.find_rechability_paths(start, target, true).is_none()
+                && self
+                    .find_rechability_paths(start, target, true, next_edges)
+                    .is_none()
             {
                 return None;
             }
-            self.find_acceptable_paths(start, target)
+            self.find_acceptable_paths(start, target, next_edges)
         }
     }
 
@@ -73,19 +82,20 @@ impl Game<Id> {
         &self,
         start: &Node<Id>,
         target: &Node<Id>,
-    ) -> Option<BTreeSet<Edge<Id>>> {
-        let next_edges = self.next_edges();
+        next_edges: &NextEdges,
+    ) -> Option<(BTreeSet<Edge<Id>>, BTreeSet<Id>)> {
+        let mut defined_vars = BTreeSet::new();
         let mut queue = vec![(start, BTreeSet::new())];
         let mut result = BTreeSet::new();
         while let Some((lhs, mut previous)) = queue.pop() {
             previous.insert(lhs);
             if let Some(edges) = next_edges.get(&lhs) {
                 for edge in edges {
-                    if edge.has_bindings()
-                        || previous.contains(&edge.rhs)
-                        || edge.label.is_assignment()
-                    {
+                    if edge.has_bindings() || previous.contains(&edge.rhs) {
                         return None;
+                    }
+                    if let Some((id, _)) = edge.label.as_var_assignment() {
+                        defined_vars.insert(id.clone());
                     }
                     result.insert((*edge).clone());
                     if edge.rhs != *target {
@@ -94,7 +104,7 @@ impl Game<Id> {
                 }
             }
         }
-        Some(result)
+        Some((result, defined_vars))
     }
 
     fn substitute_reachability(&mut self, mut edge: Edge<Id>, subgraph: BTreeSet<Edge<Id>>) {
@@ -144,6 +154,36 @@ impl Game<Id> {
             }
         }
     }
+}
+
+/// If the subgraph contains assignments,
+/// they should not be used in the rest of the graph before beeing reassigned.
+fn check_used_variables(
+    start: &Node<Id>,
+    mut defined_vars: BTreeSet<Id>,
+    next_edges: &NextEdges,
+) -> bool {
+    let mut queue = vec![(start, BTreeSet::new())];
+    while let Some((lhs, mut previous)) = queue.pop() {
+        previous.insert(lhs);
+        if let Some(edges) = next_edges.get(&lhs) {
+            for edge in edges {
+                if previous.contains(&edge.rhs) {
+                    continue;
+                }
+                if defined_vars.iter().any(|id| edge.label.has_variable(id)) {
+                    return false;
+                }
+                match edge.label.as_var_assignment() {
+                    Some((id, _)) if !edge.label.is_map_assignment() => {
+                        defined_vars.remove(id);
+                    }
+                    _ => (),
+                }
+            }
+        }
+    }
+    true
 }
 
 #[cfg(test)]
