@@ -25,6 +25,7 @@ export type Settings = {
     joinForkPrefixes: boolean;
     joinForkSuffixes: boolean;
     mangleSymbols: boolean;
+    normalizeConstants: boolean;
     normalizeTypes: boolean;
     pruneSingletonTypes: boolean;
     pruneUnreachableNodes: boolean;
@@ -55,6 +56,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   joinForkPrefixes: false,
   joinForkSuffixes: false,
   mangleSymbols: false,
+  normalizeConstants: false,
   normalizeTypes: false,
   pruneSingletonTypes: false,
   pruneUnreachableNodes: false,

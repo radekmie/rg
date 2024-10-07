@@ -45,6 +45,10 @@ program
   )
   .option('--mangleSymbols', 'mangle all user-defined symbols')
   .option(
+    '--normalizeConstants',
+    'normalize all constants so Maps appear only in the top level',
+  )
+  .option(
     '--normalizeTypes',
     'normalize all types so Arrow types appear only in type definitions and are at most one level deep',
   )
@@ -118,6 +122,7 @@ function addCommand(
           joinForkPrefixes: !!options.joinForkPrefixes,
           joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,
+          normalizeConstants: !!options.normalizeConstants,
           normalizeTypes: !!options.normalizeTypes,
           pruneSingletonTypes: !!options.pruneSingletonTypes,
           pruneUnreachableNodes: !!options.pruneUnreachableNodes,

@@ -46,6 +46,7 @@ const availableOptions: { label: string; flags: Flag[] }[] = [
       'addExplicitCasts',
       'expandGeneratorNodes',
       'mangleSymbols',
+      'normalizeConstants',
       'normalizeTypes',
     ],
   },

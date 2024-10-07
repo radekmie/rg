@@ -45,6 +45,7 @@ fn scenario(criterion: &mut Criterion, path: &str) {
     bench!(inline_reachability);
     bench!(join_fork_suffixes);
     bench!(mangle_symbols);
+    bench!(normalize_constants);
     bench!(normalize_types);
     bench!(prune_singleton_types);
     bench!(prune_unreachable_nodes);

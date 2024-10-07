@@ -90,6 +90,8 @@ pub struct Flags {
     join_fork_suffixes: bool,
     #[serde(rename = "mangleSymbols")]
     mangle_symbols: bool,
+    #[serde(rename = "normalizeConstants")]
+    normalize_constants: bool,
     #[serde(rename = "normalizeTypes")]
     normalize_types: bool,
     #[serde(rename = "pruneSingletonTypes")]
@@ -130,6 +132,7 @@ impl Flags {
             join_fork_prefixes: true,
             join_fork_suffixes: true,
             mangle_symbols: true,
+            normalize_constants: true,
             normalize_types: true,
             prune_singleton_types: true,
             prune_unreachable_nodes: true,
@@ -160,6 +163,7 @@ impl Flags {
             join_fork_prefixes: false,
             join_fork_suffixes: false,
             mangle_symbols: false,
+            normalize_constants: false,
             normalize_types: false,
             prune_singleton_types: false,
             prune_unreachable_nodes: false,
@@ -262,6 +266,7 @@ pub fn analyze_rg_inner(
         }
 
         pass!(normalize_types);
+        pass!(normalize_constants);
         pass!(skip_self_assignments);
         pass!(skip_self_comparisons);
         pass!(skip_unused_tags);
