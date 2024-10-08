@@ -76,8 +76,8 @@ impl Assignment {
 pub struct ReachingAssignments;
 
 impl Analysis for ReachingAssignments {
-    type Domain = BTreeMap<Option<Id>, Assignment>;
     type Context = ();
+    type Domain = BTreeMap<Option<Id>, Assignment>;
 
     fn bot() -> Self::Domain {
         Self::Domain::default()

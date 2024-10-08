@@ -8,8 +8,8 @@ type Id = Arc<str>;
 pub struct ReachingDefinitions;
 
 impl Analysis for ReachingDefinitions {
-    type Domain = BTreeSet<(Id, Option<Edge<Id>>)>;
     type Context = ();
+    type Domain = BTreeSet<(Id, Option<Edge<Id>>)>;
 
     fn bot() -> Self::Domain {
         Self::Domain::default()

@@ -14,8 +14,8 @@ use std::sync::Arc;
 type Id = Arc<str>;
 
 pub trait Analysis {
-    type Domain: Clone + PartialEq;
     type Context: PartialEq + Default;
+    type Domain: Clone + PartialEq;
 
     fn bot() -> Self::Domain;
 
@@ -42,10 +42,7 @@ pub trait Analysis {
 
 impl Game<Id> {
     pub fn analyse<A: Analysis>(&self, with_reachability: bool) -> BTreeMap<Node<Id>, A::Domain> {
-        let flow = Flow::new(self, with_reachability);
-        let mut worker = Worker::<A>::new(self, &flow);
-        worker.run();
-        worker.result
+        self.analyse_with_context::<A>(with_reachability).0
     }
 
     pub fn analyse_with_context<A: Analysis>(
@@ -108,25 +105,26 @@ impl<'a> Flow<'a> {
     }
 }
 
-struct Worker<'a, I: Analysis + ?Sized> {
+struct Worker<'a, A: Analysis + ?Sized> {
+    ctx: A::Context,
     flow: &'a Flow<'a>,
-    result: BTreeMap<Node<Id>, I::Domain>,
+    result: BTreeMap<Node<Id>, A::Domain>,
     worklist: BTreeSet<&'a Node<Id>>,
-    ctx: I::Context,
 }
 
-impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
-    fn knowledge(&self, node: &Node<Id>) -> I::Domain {
-        self.result.get(node).cloned().unwrap_or_else(I::bot)
+impl<'a, A: Analysis + ?Sized> Worker<'a, A> {
+    fn knowledge(&self, node: &Node<Id>) -> A::Domain {
+        self.result.get(node).cloned().unwrap_or_else(A::bot)
     }
 
     fn new(game: &'a Game<Arc<str>>, flow: &'a Flow<'a>) -> Self {
-        let ctx = I::get_context(game);
+        let ctx = A::get_context(game);
+        let result = BTreeMap::from([(Flow::entry(), A::extreme(game, &ctx))]);
         Worker {
-            flow,
-            result: BTreeMap::from([(Flow::entry(), I::extreme(game, &ctx))]),
-            worklist: flow.nodes.clone(),
             ctx,
+            flow,
+            result,
+            worklist: flow.nodes.clone(),
         }
     }
 
@@ -140,13 +138,12 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
         }
     }
 
-    fn summarize_predecessors(&self, node: &Node<Id>, old_input: &I::Domain) -> I::Domain {
+    fn summarize_predecessors(&self, node: &Node<Id>, old_input: &A::Domain) -> A::Domain {
         let incoming_edges = self.flow.predecessors(node);
-
         incoming_edges
             .iter()
-            .map(|edge| I::transfer(self.knowledge(&edge.lhs), edge, &self.ctx))
-            .reduce(I::join)
+            .map(|edge| A::transfer(self.knowledge(&edge.lhs), edge, &self.ctx))
+            .reduce(A::join)
             .unwrap_or_else(|| old_input.clone())
     }
 

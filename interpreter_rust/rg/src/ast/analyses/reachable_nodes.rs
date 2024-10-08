@@ -7,8 +7,8 @@ type Id = Arc<str>;
 pub struct ReachableNodes;
 
 impl Analysis for ReachableNodes {
-    type Domain = bool;
     type Context = ();
+    type Domain = bool;
 
     fn bot() -> Self::Domain {
         Self::Domain::default()

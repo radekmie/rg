@@ -4,29 +4,28 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 type Id = Arc<str>;
-type ConstantValue = Arc<Value<Id>>;
 
 #[derive(Default, PartialEq, Eq)]
 pub struct Context {
+    pub constants: BTreeMap<Id, Arc<Value<Id>>>,
     pub variables: BTreeSet<Id>,
-    pub constants: BTreeMap<Id, ConstantValue>,
 }
 
 impl Context {
-    fn is_variable(&self, id: &Id) -> bool {
-        self.variables.contains(id)
+    fn get_constant(&self, id: &Id) -> Option<&Arc<Value<Id>>> {
+        self.constants.get(id)
     }
 
-    fn get_constant(&self, id: &Id) -> Option<&ConstantValue> {
-        self.constants.get(id)
+    fn is_variable(&self, id: &Id) -> bool {
+        self.variables.contains(id)
     }
 }
 
 pub struct ConstantsAnalysis;
 
 impl Analysis for ConstantsAnalysis {
-    type Domain = BTreeMap<Id, ConstantValue>;
     type Context = Context;
+    type Domain = BTreeMap<Id, Arc<Value<Id>>>;
 
     fn bot() -> Self::Domain {
         Self::Domain::default()
@@ -46,20 +45,8 @@ impl Analysis for ConstantsAnalysis {
     }
 
     fn join(mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
-        // Join the two maps, keep only keys present in both maps with the same value
-        for (key, value) in &b {
-            if let Some(a_value) = a.get(key) {
-                if a_value != value {
-                    a.remove(key);
-                }
-            }
-        }
-
-        for key in a.clone().keys() {
-            if !b.contains_key(key) {
-                a.remove(key);
-            }
-        }
+        // Keep only keys present in both maps with the same value.
+        a.retain(|key, value| b.get(key) == Some(value));
         a
     }
 
@@ -69,12 +56,12 @@ impl Analysis for ConstantsAnalysis {
             let value = dereference_constant(&constant.value, &ctx);
             ctx.constants.insert(constant.identifier.clone(), value);
         }
-        let variables = program
+
+        ctx.variables = program
             .variables
             .iter()
             .map(|v| v.identifier.clone())
             .collect();
-        ctx.variables = variables;
         ctx
     }
 
@@ -82,42 +69,40 @@ impl Analysis for ConstantsAnalysis {
     // x = 1;
     // x = y[x]; <- here `kill` removes `x` from `input` before `gen`, so `x` in lhs is not recognised as a constant
     fn transfer(mut input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain {
-        if let Some((identifier, value)) = as_constant_assignment(edge, &input, ctx) {
+        if let Some((identifier, value)) = as_constant_assignment(edge, &input, ctx)
+            .or_else(|| as_constant_comparison(edge, &input, ctx))
+        {
             input.insert(identifier, value);
-            input
-        } else if let Some((identifier, value)) = as_constant_comparison(edge, &input, ctx) {
-            input.insert(identifier, value);
-            input
-        } else {
-            match &edge.label.as_var_assignment() {
-                Some((identifier, _)) => input
-                    .into_iter()
-                    .filter(|(id, _)| id != *identifier)
-                    .collect(),
-                _ => input,
-            }
+        } else if let Some((identifier, _)) = &edge.label.as_var_assignment() {
+            input.remove(*identifier);
         }
+
+        input
     }
 }
 
 fn as_constant_assignment(
     edge: &Edge<Id>,
-    knowledge: &BTreeMap<Id, ConstantValue>,
+    knowledge: &BTreeMap<Id, Arc<Value<Id>>>,
     ctx: &Context,
-) -> Option<(Id, ConstantValue)> {
-    let (id, expr) = edge.label.as_var_assignment()?;
-    if edge.label.is_map_assignment() || edge.has_binding(id) {
+) -> Option<(Id, Arc<Value<Id>>)> {
+    if edge.label.is_map_assignment() {
         return None;
     }
-    let value = evaluate_constant(expr, knowledge, ctx, edge)?;
-    Some((id.clone(), value))
+
+    let (id, expr) = edge.label.as_var_assignment()?;
+    if edge.has_binding(id) {
+        return None;
+    }
+
+    Some((id.clone(), evaluate_constant(expr, knowledge, ctx, edge)?))
 }
 
 fn as_constant_comparison(
     edge: &Edge<Id>,
-    knowledge: &BTreeMap<Id, ConstantValue>,
+    knowledge: &BTreeMap<Id, Arc<Value<Id>>>,
     ctx: &Context,
-) -> Option<(Id, ConstantValue)> {
+) -> Option<(Id, Arc<Value<Id>>)> {
     if let Label::Comparison {
         lhs,
         rhs,
@@ -126,25 +111,29 @@ fn as_constant_comparison(
     {
         let lhs = lhs.uncast();
         let rhs = rhs.uncast();
+
         let can_be_replaced =
             |id: &Id| !edge.has_binding(id) && ctx.is_variable(id) && !knowledge.contains_key(id);
         if lhs.is_reference_and(can_be_replaced) {
             let value = evaluate_constant(rhs, knowledge, ctx, edge)?;
             return lhs.as_reference().map(|id| (id.clone(), value));
-        } else if rhs.is_reference_and(can_be_replaced) {
+        }
+
+        if rhs.is_reference_and(can_be_replaced) {
             let value = evaluate_constant(lhs, knowledge, ctx, edge)?;
             return rhs.as_reference().map(|id| (id.clone(), value));
         }
     }
+
     None
 }
 
 fn evaluate_constant(
     expr: &Expression<Id>,
-    knowledge: &BTreeMap<Id, ConstantValue>,
+    knowledge: &BTreeMap<Id, Arc<Value<Id>>>,
     ctx: &Context,
     edge: &Edge<Id>,
-) -> Option<ConstantValue> {
+) -> Option<Arc<Value<Id>>> {
     match expr {
         Expression::Access { lhs, rhs, .. } => {
             let lhs = evaluate_constant(lhs, knowledge, ctx, edge)?;
@@ -162,26 +151,27 @@ fn evaluate_constant(
         Expression::Reference { identifier } => ctx
             .get_constant(identifier)
             .cloned()
-            .or(Some(Arc::new(Value::new(identifier.clone())))),
+            .or_else(|| Some(Arc::new(Value::new(identifier.clone())))),
     }
 }
 
-fn dereference_constant(value: &ConstantValue, ctx: &Context) -> ConstantValue {
+fn dereference_constant(value: &Arc<Value<Id>>, ctx: &Context) -> Arc<Value<Id>> {
     match value.as_ref() {
         Value::Element { identifier } if ctx.constants.contains_key(identifier) => {
             ctx.constants[identifier].clone()
         }
+        Value::Element { .. } => value.clone(),
         Value::Map { entries, span } => {
             let mut entries = entries.clone();
             for entry in &mut entries {
                 entry.value = dereference_constant(&entry.value, ctx);
             }
+
             Arc::new(Value::Map {
                 entries,
                 span: *span,
             })
         }
-        Value::Element { .. } => value.clone(),
     }
 }
 

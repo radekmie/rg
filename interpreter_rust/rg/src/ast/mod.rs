@@ -861,12 +861,6 @@ pub struct Game<Id> {
     pub variables: Vec<Variable<Id>>,
 }
 
-impl<Id> Game<Id> {
-    pub fn find_type(&self, f: impl Fn(&Type<Id>) -> bool) -> Option<&Arc<Type<Id>>> {
-        self.typedefs.iter().find(|x| f(&x.type_)).map(|x| &x.type_)
-    }
-}
-
 impl<Id: Clone> Game<Id> {
     pub fn make_error<T>(&self, reason: ErrorReason<Id>) -> Result<T, Error<Id>> {
         Err(Error {
@@ -950,7 +944,11 @@ impl<'a, Id: Clone + Ord + 'a> Game<Id> {
 impl<Id: Clone + PartialEq> Game<Id> {
     pub fn infer(&self, identifier: &Id, edge: Option<&Edge<Id>>) -> Arc<Type<Id>> {
         self.infer_or_none(identifier, edge)
-            .or_else(|| self.find_type(|type_| type_.contains(identifier)))
+            .or_else(|| {
+                self.typedefs
+                    .iter()
+                    .find_map(|x| x.type_.contains(identifier).then_some(&x.type_))
+            })
             .cloned()
             .unwrap_or_else(|| {
                 Arc::new(Type::Set {
@@ -1522,26 +1520,12 @@ pub enum Value<Id> {
 }
 
 impl<Id> Value<Id> {
-    pub fn new(identifier: Id) -> Self {
-        Self::Element { identifier }
-    }
-
-    pub fn as_expression(self) -> Option<Expression<Id>> {
-        match self {
-            Self::Element { identifier } => Some(Expression::new(identifier)),
-            Self::Map { .. } => None,
-        }
-    }
-
-    pub fn as_identifier(self) -> Option<Id> {
-        match self {
-            Self::Element { identifier } => Some(identifier),
-            Self::Map { .. } => None,
-        }
-    }
-
     pub fn is_map(&self) -> bool {
         matches!(self, Self::Map { .. })
+    }
+
+    pub fn new(identifier: Id) -> Self {
+        Self::Element { identifier }
     }
 
     pub fn to_identifier(&self) -> Option<&Id> {
@@ -1555,14 +1539,12 @@ impl<Id> Value<Id> {
 impl<Id: PartialEq> Value<Id> {
     pub fn get_entry(&self, identifier: &Id) -> Option<&Self> {
         match self {
-            Self::Map { entries, .. } => {
-                let entry = entries
-                    .iter()
-                    .find(|entry| entry.identifier.as_ref().is_some_and(|id| id == identifier))
-                    .or_else(|| entries.iter().find(|entry| entry.identifier.is_none()));
-                entry.map(|entry| entry.value.as_ref())
-            }
             Self::Element { .. } => None,
+            Self::Map { entries, .. } => entries
+                .iter()
+                .find(|entry| entry.identifier.as_ref() == Some(identifier))
+                .or_else(|| entries.iter().find(|entry| entry.identifier.is_none()))
+                .map(|entry| entry.value.as_ref()),
         }
     }
 }
