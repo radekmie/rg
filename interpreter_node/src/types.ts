@@ -21,13 +21,16 @@ export type Settings = {
     expandGeneratorNodes: boolean;
     inlineReachability: boolean;
     inlineAssignment: boolean;
+    joinExclusiveEdges: boolean;
     joinForkPrefixes: boolean;
     joinForkSuffixes: boolean;
     mangleSymbols: boolean;
+    normalizeConstants: boolean;
     normalizeTypes: boolean;
     propagateConstants: boolean;
     pruneSingletonTypes: boolean;
     pruneUnreachableNodes: boolean;
+    pruneUnusedBindings: boolean;
     pruneUnusedConstants: boolean;
     pruneUnusedVariables: boolean;
     reuseFunctions: boolean;
@@ -50,13 +53,16 @@ export const noFlagsEnabled: Settings['flags'] = {
   expandGeneratorNodes: false,
   inlineAssignment: false,
   inlineReachability: false,
+  joinExclusiveEdges: false,
   joinForkPrefixes: false,
   joinForkSuffixes: false,
   mangleSymbols: false,
+  normalizeConstants: false,
   normalizeTypes: false,
   propagateConstants: false,
   pruneSingletonTypes: false,
   pruneUnreachableNodes: false,
+  pruneUnusedBindings: false,
   pruneUnusedConstants: false,
   pruneUnusedVariables: false,
   reuseFunctions: false,

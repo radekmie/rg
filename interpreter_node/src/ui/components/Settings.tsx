@@ -1,21 +1,56 @@
-import {
-  Callout,
-  Checkbox,
-  HTMLSelect,
-  Intent,
-  Label,
-  Radio,
-  RadioGroup,
-} from '@blueprintjs/core';
+import { Callout, Checkbox, HTMLSelect, Intent } from '@blueprintjs/core';
 import { ChangeEvent, FormEvent, useCallback, useMemo } from 'react';
 
-import { Flag, Language, Settings, noFlagsEnabled } from '../../types';
+import { Flag, Settings } from '../../types';
 import { presets } from '../const/presets';
 import { useApplicationState } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
 
 const availablePresets = presets.map(game => game.name);
-const availableFlags = Object.keys(noFlagsEnabled);
+const availableOptions: { label: string; flags: Flag[] }[] = [
+  {
+    label: 'Optimizations',
+    flags: [
+      'compactComparisons',
+      'compactSkipEdges',
+      'inlineAssignment',
+      'inlineReachability',
+      'joinExclusiveEdges',
+      'joinForkPrefixes',
+      'joinForkSuffixes',
+      'pruneSingletonTypes',
+      'pruneUnreachableNodes',
+      'pruneUnusedBindings',
+      'pruneUnusedConstants',
+      'pruneUnusedVariables',
+      'reuseFunctions',
+      'skipGeneratorComparisons',
+      'skipSelfAssignments',
+      'skipSelfComparisons',
+      'skipUnusedTags',
+    ],
+  },
+  {
+    label: 'Pragmas',
+    flags: [
+      'calculateDisjoints',
+      'calculateRepeats',
+      'calculateSimpleApply',
+      'calculateTagIndexes',
+      'calculateUniques',
+    ],
+  },
+  {
+    label: 'Other',
+    flags: [
+      'addExplicitCasts',
+      'expandGeneratorNodes',
+      'mangleSymbols',
+      'normalizeConstants',
+      'normalizeTypes',
+    ],
+  },
+];
 
 export type SettingsProps = {
   preset: string;
@@ -36,30 +71,32 @@ export function Settings({
   settings,
   view,
 }: SettingsProps) {
-  const onExtension = useCallback(
-    ({ currentTarget: { value } }: FormEvent<HTMLInputElement>) => {
-      setSettings(x => ({ ...x, extension: value as Language }));
-    },
-    [setSettings],
-  );
-
   const onFlag = useCallback(
     ({ currentTarget: { checked, name } }: FormEvent<HTMLInputElement>) => {
-      setSettings(x => ({ ...x, flags: { ...x.flags, [name]: checked } }));
+      setSettings(x => ({
+        ...x,
+        flags: name.split(',').reduce(
+          (flags, flag) => {
+            flags[flag as Flag] = checked;
+            return flags;
+          },
+          { ...x.flags },
+        ),
+      }));
     },
     [setSettings],
   );
 
   const onPreset = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      setPreset(event.currentTarget.value);
+    ({ currentTarget: { value } }: ChangeEvent<HTMLSelectElement>) => {
+      setPreset(value);
     },
     [setPreset],
   );
 
   const onView = useCallback(
-    (event: ChangeEvent<HTMLSelectElement>) => {
-      setView(+event.currentTarget.value);
+    ({ currentTarget: { value } }: ChangeEvent<HTMLSelectElement>) => {
+      setView(+value);
     },
     [setView],
   );
@@ -97,13 +134,13 @@ export function Settings({
     <>
       <div className={styles.grid}>
         <HTMLSelect
-          className={styles.noOutline}
+          className={styles.select}
           onChange={onPreset}
           options={availablePresets}
           value={preset}
         />
         <HTMLSelect
-          className={styles.noOutline}
+          className={styles.select}
           onChange={onView}
           options={availableViews}
           value={view}
@@ -120,27 +157,29 @@ export function Settings({
             : Intent.SUCCESS
         }
       >
-        <RadioGroup
-          className={styles.options}
-          label="Extension"
-          onChange={onExtension}
-          selectedValue={settings.extension}
-        >
-          {Object.entries(Language).map(([label, value]) => (
-            <Radio key={value} label={label} value={value} />
-          ))}
-        </RadioGroup>
-        {availableFlags.map((flag, index) => (
-          <div className={styles.options} key={flag}>
-            <Label>{index === 0 ? 'Flags' : ''}</Label>
-            <Checkbox
-              checked={settings.flags[flag as Flag]}
-              label={`--${flag}`}
-              name={flag}
-              onChange={onFlag}
-            />
-          </div>
-        ))}
+        {availableOptions.map(({ flags, label }) => {
+          const checked = flags.filter(flag => settings.flags[flag]).length;
+          return (
+            <div className={styles.flags} key={label}>
+              <Checkbox
+                checked={checked === flags.length}
+                indeterminate={!!checked && checked !== flags.length}
+                label={label}
+                name={flags.join()}
+                onChange={onFlag}
+              />
+              {flags.map(flag => (
+                <Checkbox
+                  checked={settings.flags[flag]}
+                  key={flag}
+                  label={`--${flag}`}
+                  name={flag}
+                  onChange={onFlag}
+                />
+              ))}
+            </div>
+          );
+        })}
       </Callout>
     </>
   );

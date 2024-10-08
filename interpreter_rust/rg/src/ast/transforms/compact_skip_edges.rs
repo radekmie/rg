@@ -82,8 +82,7 @@ impl Game<Arc<str>> {
     ///   2. b has no other incoming nor outgoing edges
     ///   3. b has no bindings
     ///   4. b is not a reachability target
-    ///   5. there's no other edge between a and c (multiedges are not allowed)
-    ///   6. y != Assignment of `player` OR a has no bindings
+    ///   5. y != Assignment of `player` OR a has no bindings
     fn compact_skip_edge_forward(&self) -> Option<(usize, usize)> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
@@ -94,7 +93,6 @@ impl Game<Arc<str>> {
                 for (y_index, y) in self.edges.iter().enumerate() {
                     if x.rhs == y.lhs
                         && (!x.lhs.has_bindings() || !y.label.is_player_assignment())
-                        && !self.are_connected(&x.lhs, &y.rhs)
                         && self.outgoing_edges(&x.rhs).all(|z| z == y)
                     {
                         return Some((x_index, y_index));
@@ -199,7 +197,7 @@ impl Game<Arc<str>> {
                     continue;
                 }
 
-                let mapping = BTreeMap::from([(binding.clone(), fresh)]);
+                let mapping = BTreeMap::from([(binding.clone(), (fresh, type_.clone()))]);
                 for y in edges_to_rename {
                     edges[y] = edges[y].rename_variables(&mapping);
                 }
@@ -215,7 +213,7 @@ impl Game<Arc<str>> {
         // Iterate over indexes to eliminate multiple ownership.
         let edges = &mut self.edges;
         for x in 0..edges.len() {
-            for (binding, _) in edges[x].clone().bindings() {
+            for (binding, type_) in edges[x].clone().bindings() {
                 if mapped.contains(&(x, binding.clone())) {
                     continue;
                 }
@@ -224,7 +222,7 @@ impl Game<Arc<str>> {
 
                 // TODO: All `bind_*` bindings should be renamed before for safety.
                 let fresh: Arc<str> = Arc::from(format!("bind_{index}"));
-                let mapping = BTreeMap::from([(binding.clone(), fresh.clone())]);
+                let mapping = BTreeMap::from([(binding.clone(), (fresh.clone(), type_.clone()))]);
                 for y in get_edges_using_binding(edges, x, binding) {
                     mapped.insert((y, fresh.clone()));
                     edges[y] = edges[y].rename_variables(&mapping);
@@ -398,10 +396,10 @@ mod test {
             var v: T = a;
             begin, a: ;
             a, c(t: T): T(t) != T(a);
-            c(t: T), d: v = t;
+            c(t: T), d: v = T(t);
             d, end: ;
             d, g(t: T): T(t) != T(a);
-            g(t: T), h: v = t;
+            g(t: T), h: v = T(t);
             h, a: ;
             h, end: ;
         "
@@ -473,7 +471,7 @@ mod test {
         compact_skip_edges,
         canonical_form,
         "type T = { 0, 1 }; var t: T = 0; a, b(x: T): x == t; c, d(x: T): x == t;",
-        "type T = { 0, 1 }; var t: T = 0; a, b(bind_1: T): bind_1 == t; c, d(bind_2: T): bind_2 == t;"
+        "type T = { 0, 1 }; var t: T = 0; a, b(bind_1: T): T(bind_1) == t; c, d(bind_2: T): T(bind_2) == t;"
     );
 
     test_transform!(
@@ -493,5 +491,15 @@ mod test {
         a, b: 1 == 1;
         b, c: 2 == 2;",
         "a, c: 2 == 2;"
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        multi_skip_forward,
+        "a, b: ;
+        a, c: 1 == 1;
+        b, c: 2 == 2;",
+        "a, c: 1 == 1;
+        a, c: 2 == 2;"
     );
 }

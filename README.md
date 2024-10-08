@@ -98,6 +98,7 @@ npm test
 | Transformation `inlineReachability`             | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `joinForkSuffixes`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `mangleSymbols`                  | :heavy_multiplication_x: |    :heavy_check_mark:    |
+| Transformation `normalizeConstants`             | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `normalizeTypes`                 | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `pruneSingletonTypes`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
 | Transformation `pruneUnreachableNodes`          | :heavy_multiplication_x: |    :heavy_check_mark:    |
@@ -183,6 +184,7 @@ Options:
   --inlineReachability        inline reachability when possible
   --joinForkSuffixes          join paths with identical labels leading to the same node
   --mangleSymbols             mangle all user-defined symbols
+  --normalizeConstants        normalize all constants so Maps appear only in the top level
   --normalizeTypes            normalize all types so Arrow types appear only in type definitions and are at most one level deep
   --pruneSingletonTypes       prune singleton types (i.e., Set types with one element)
   --pruneUnreachableNodes     prune unreachable nodes

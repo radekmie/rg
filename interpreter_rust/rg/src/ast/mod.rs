@@ -12,7 +12,7 @@ use std::sync::Arc;
 use utils::position::Span;
 
 pub type Binding<'a, Id> = (&'a Id, &'a Arc<Type<Id>>);
-pub type Mapping<Id> = BTreeMap<Id, Id>;
+pub type Mapping<Id> = BTreeMap<Id, (Id, Arc<Type<Id>>)>;
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename = "ConstantDeclaration", tag = "kind")]
@@ -167,8 +167,16 @@ impl<Id> Label<Id> {
         matches!(self, Self::Assignment { .. })
     }
 
+    pub fn is_comparison(&self) -> bool {
+        matches!(self, Self::Comparison { .. })
+    }
+
     pub fn is_map_assignment(&self) -> bool {
         matches!(self, Self::Assignment { lhs, .. } if lhs.uncast().is_access())
+    }
+
+    pub fn is_reachability(&self) -> bool {
+        matches!(self, Self::Reachability { .. })
     }
 
     pub fn is_skip(&self) -> bool {
@@ -209,7 +217,10 @@ impl<Id: Clone + Ord> Label<Id> {
                 negated: *negated,
             },
             Self::Tag { symbol } => Self::Tag {
-                symbol: mapping.get(symbol).unwrap_or(symbol).clone(),
+                symbol: mapping
+                    .get(symbol)
+                    .map_or(symbol, |(symbol, _)| symbol)
+                    .clone(),
             },
             _ => self.clone(),
         }
@@ -280,6 +291,10 @@ impl<Id: Ord> Label<Id> {
 }
 
 impl<Id: PartialEq> Label<Id> {
+    pub fn has_binding(&self, binding: &Id) -> bool {
+        self.has_variable(binding) || self.is_tag_and(|tag| tag == binding)
+    }
+
     pub fn has_variable(&self, identifier: &Id) -> bool {
         matches!(self, Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } if lhs.has_variable(identifier) || rhs.has_variable(identifier))
     }
@@ -342,11 +357,12 @@ pub struct Node<Id> {
 }
 
 impl<Id> Node<Id> {
-    pub fn new(identifier: Id) -> Self {
-        Self {
+    pub fn add_binding(&mut self, identifier: Id, type_: Arc<Type<Id>>) {
+        self.parts.push(NodePart::Binding {
             span: Span::none(),
-            parts: vec![NodePart::new(identifier)],
-        }
+            identifier,
+            type_,
+        });
     }
 
     /// Returns the only binding at given node, or `None` if there are multiple or no bindings.
@@ -367,6 +383,13 @@ impl<Id> Node<Id> {
 
     pub fn literal(&self) -> &Id {
         self.parts[0].identifier()
+    }
+
+    pub fn new(identifier: Id) -> Self {
+        Self {
+            span: Span::none(),
+            parts: vec![NodePart::new(identifier)],
+        }
     }
 }
 
@@ -403,7 +426,9 @@ impl Node<Arc<str>> {
             .parts
             .iter()
             .map(|node_part| match node_part {
-                NodePart::Binding { identifier, .. } => mapping.get(identifier).unwrap(),
+                NodePart::Binding { identifier, .. } => {
+                    mapping.get(identifier).map(|(symbol, _)| symbol).unwrap()
+                }
                 NodePart::Literal { identifier } => identifier,
             })
             .cloned()
@@ -466,7 +491,7 @@ impl<Id: Clone + Ord> NodePart<Id> {
             identifier, type_, ..
         } = self
         {
-            if let Some(identifier) = mapping.get(identifier) {
+            if let Some((identifier, _)) = mapping.get(identifier) {
                 return Self::Binding {
                     span: Span::none(),
                     identifier: identifier.clone(),
@@ -749,14 +774,27 @@ impl<Id: Clone + Ord> Expression<Id> {
                 lhs: Arc::new(lhs.rename_variables(mapping)),
                 rhs: Arc::new(rhs.rename_variables(mapping)),
             },
-            Self::Cast { lhs, rhs, .. } => Self::Cast {
-                span: Span::none(),
-                lhs: lhs.clone(),
-                rhs: Arc::new(rhs.rename_variables(mapping)),
-            },
-            Self::Reference { identifier } => Self::Reference {
-                identifier: mapping.get(identifier).unwrap_or(identifier).clone(),
-            },
+            Self::Cast { lhs, rhs, .. } => {
+                let rhs = rhs.rename_variables(mapping);
+
+                // If the inner expression already has the same cast, skip the
+                // outer one.
+                if rhs.is_cast_and(|type_, _| type_ == lhs) {
+                    rhs
+                } else {
+                    Self::Cast {
+                        span: Span::none(),
+                        lhs: lhs.clone(),
+                        rhs: Arc::new(rhs),
+                    }
+                }
+            }
+            Self::Reference { identifier } => mapping.get(identifier).map_or_else(
+                || Self::new(identifier.clone()),
+                |(identifier, type_)| {
+                    Self::new_cast(type_.clone(), Arc::from(Self::new(identifier.clone())))
+                },
+            ),
         }
     }
 }
@@ -930,7 +968,7 @@ impl<'a, Id: Clone + Ord + 'a> Game<Id> {
                 .flat_map(|mapping| {
                     values.iter().map(move |value| {
                         let mut mapping = mapping.clone();
-                        mapping.insert(identifier.clone(), value.clone());
+                        mapping.insert(identifier.clone(), (value.clone(), type_.clone()));
                         mapping
                     })
                 })
@@ -1046,6 +1084,29 @@ impl<Id: Clone + PartialEq> Game<Id> {
             });
         };
         Ok(constant)
+    }
+
+    pub fn rename_node(&mut self, node: &Node<Id>, new_node: &Node<Id>) {
+        for edge in &mut self.edges {
+            if &edge.lhs == node {
+                edge.lhs = new_node.clone();
+            }
+            if &edge.rhs == node {
+                edge.rhs = new_node.clone();
+            }
+            if let Label::Reachability { lhs, rhs, .. } = &mut edge.label {
+                if lhs == node {
+                    *lhs = new_node.clone();
+                }
+                if rhs == node {
+                    *rhs = new_node.clone();
+                }
+            }
+        }
+
+        for pragma in &mut self.pragmas {
+            pragma.rename_node(node, new_node);
+        }
     }
 
     pub fn resolve_type_or_fail<'a>(
@@ -1326,6 +1387,37 @@ impl<Id: Ord> Pragma<Id> {
     }
 }
 
+impl<Id: Clone + PartialEq> Pragma<Id> {
+    pub fn rename_node(&mut self, old_node: &Node<Id>, new_node: &Node<Id>) {
+        if let Self::Disjoint { node, .. }
+        | Self::DisjointExhaustive { node, .. }
+        | Self::SimpleApply { node, .. }
+        | Self::SimpleApplyExhaustive { node, .. } = self
+        {
+            if node == old_node {
+                *node = new_node.clone();
+            }
+        };
+
+        match self {
+            Self::Disjoint { nodes, .. }
+            | Self::DisjointExhaustive { nodes, .. }
+            | Self::SimpleApply { nodes, .. }
+            | Self::SimpleApplyExhaustive { nodes, .. }
+            | Self::Repeat { nodes, .. }
+            | Self::TagIndex { nodes, .. }
+            | Self::TagMaxIndex { nodes, .. }
+            | Self::Unique { nodes, .. } => {
+                for node in nodes {
+                    if node == old_node {
+                        *node = new_node.clone();
+                    }
+                }
+            }
+        }
+    }
+}
+
 impl Pragma<Arc<str>> {
     /// Substitute bindings in-place if possible and yield substituted `Self`s instead.
     pub fn substitute_bindings_mut(&mut self, mappings: &[Mapping<Arc<str>>]) -> Option<Vec<Self>> {
@@ -1378,7 +1470,7 @@ impl Pragma<Arc<str>> {
                             .collect(),
                         tags: tags
                             .iter()
-                            .map(|tag| mapping.get(tag).unwrap_or(tag))
+                            .map(|tag| mapping.get(tag).map_or(tag, |(tag, _)| tag))
                             .cloned()
                             .collect(),
                         span: *span,
@@ -1401,7 +1493,7 @@ impl Pragma<Arc<str>> {
                             .collect(),
                         tags: tags
                             .iter()
-                            .map(|tag| mapping.get(tag).unwrap_or(tag))
+                            .map(|tag| mapping.get(tag).map_or(tag, |(tag, _)| tag))
                             .cloned()
                             .collect(),
                         span: *span,

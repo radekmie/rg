@@ -49,6 +49,13 @@ export type AutomatonFunctionArgument = {
   type: Type;
 };
 
+export const AutomatonIf = creator<AutomatonIf>('AutomatonIf');
+export type AutomatonIf = {
+  kind: 'AutomatonIf';
+  expression: Expression;
+  body: AutomatonStatement[];
+};
+
 export const AutomatonLoop = creator<AutomatonLoop>('AutomatonLoop');
 export type AutomatonLoop = {
   kind: 'AutomatonLoop';
@@ -65,13 +72,6 @@ export const AutomatonTag = creator<AutomatonTag>('AutomatonTag');
 export type AutomatonTag = {
   kind: 'AutomatonTag';
   symbol: string;
-};
-
-export const AutomatonWhen = creator<AutomatonWhen>('AutomatonWhen');
-export type AutomatonWhen = {
-  kind: 'AutomatonWhen';
-  expression: Expression;
-  body: AutomatonStatement[];
 };
 
 export const AutomatonWhile = creator<AutomatonWhile>('AutomatonWhile');
@@ -210,6 +210,13 @@ export type ExpressionMap = {
   domains: DomainValue[];
 };
 
+export const ExpressionMod = creator<ExpressionMod>('ExpressionMod');
+export type ExpressionMod = {
+  kind: 'ExpressionMod';
+  lhs: Expression;
+  rhs: Expression;
+};
+
 export const ExpressionNe = creator<ExpressionNe>('ExpressionNe');
 export type ExpressionNe = {
   kind: 'ExpressionNe';
@@ -327,10 +334,10 @@ export type AutomatonStatement =
   | AutomatonBranch
   | AutomatonCall
   | AutomatonForall
+  | AutomatonIf
   | AutomatonLoop
   | AutomatonPragma
   | AutomatonTag
-  | AutomatonWhen
   | AutomatonWhile;
 export type DomainElement = DomainGenerator | DomainLiteral;
 export type DomainValue = DomainRange | DomainSet;
@@ -348,6 +355,7 @@ export type Expression =
   | ExpressionLt
   | ExpressionLte
   | ExpressionMap
+  | ExpressionMod
   | ExpressionNe
   | ExpressionOr
   | ExpressionSub;

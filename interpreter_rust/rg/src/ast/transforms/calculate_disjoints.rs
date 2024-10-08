@@ -7,7 +7,7 @@ impl Game<Arc<str>> {
     pub fn calculate_disjoints(&mut self) -> Result<(), Error<Arc<str>>> {
         let mut pragmas = vec![];
         for (node, edges) in self.next_edges() {
-            if edges.len() == 1 {
+            if edges.len() == 1 || node.has_bindings() {
                 continue;
             }
 

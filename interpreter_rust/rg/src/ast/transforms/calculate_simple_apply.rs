@@ -23,7 +23,7 @@ impl Game<Arc<str>> {
             .collect();
 
         let mut pragmas = vec![];
-        for node in nodes {
+        'outer: for node in nodes {
             let mut paths_to_edges: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
             let mut paths_to_players: BTreeMap<_, _> = BTreeMap::new();
             let mut paths_to_tags: BTreeMap<_, BTreeSet<(_, _, _)>> = BTreeMap::new();
@@ -46,6 +46,11 @@ impl Game<Arc<str>> {
                             assignments.push(edge.label.clone());
                             if lhs.uncast().is_player_reference() {
                                 paths_to_players.entry(rhs.clone()).or_insert(path);
+
+                                // This will not be `@simpleApply`.
+                                if paths_to_players.len() == 2 {
+                                    continue 'outer;
+                                }
                             } else {
                                 queue.push((edge.rhs.clone(), path, assignments));
                             }
@@ -116,6 +121,34 @@ impl Game<Arc<str>> {
             }
         }
 
+        // @simpleApply{,Exhaustive} cannot start in a node with binds. If it
+        // does, we move it to the first node without one (or remove it entirely
+        // if there's none).
+        //
+        // TODO: It could break the pragma when the node is moved "behind" the
+        // tag, but it should not happen in practice.
+        pragmas.retain_mut(|(node, _, nodes, _, _)| {
+            if node.has_bindings() {
+                match nodes.iter().position(|x| !x.has_bindings()) {
+                    None => return false,
+                    Some(index) if index == nodes.len() => return false,
+                    Some(index) => {
+                        *node = nodes.drain(0..=index).last().unwrap();
+                    }
+                }
+            }
+
+            true
+        });
+
+        // @simpleApply{,Exhaustive} cannot have a bind that is not bound with
+        // any of the tags.
+        pragmas.retain(|(_, tags, nodes, _, _)| {
+            nodes
+                .iter()
+                .all(|node| node.bindings().all(|bind| tags.contains(bind.0)))
+        });
+
         for (node, tags, nodes, _, is_exhaustive) in pragmas {
             let pragma = if is_exhaustive {
                 Pragma::SimpleApplyExhaustive {
@@ -145,6 +178,62 @@ impl Game<Arc<str>> {
 #[cfg(test)]
 mod test {
     use crate::test_transform;
+
+    test_transform!(
+        calculate_simple_apply,
+        no_binds_in_node,
+        "
+            begin, rules_begin: ;
+            rules_begin, move_begin: player = me;
+            move_begin, move_1(p: Position): ;
+            move_1(p: Position), move_4(p: Position): p != null;
+            move_4(p: Position), move_3(p: Position): board[p] == piece[me];
+            move_3(p: Position), move_5(p: Position): board[p] = empty;
+            move_5(p: Position), move_6(p: Position): position = direction[me][p];
+            move_6(p: Position), move_7(p: Position): $ p;
+            move_7(p: Position), move_2(p: Position): ;
+            move_2(p: Position), move_8: ;
+            move_8, move_10: ;
+            move_10, move_12: position = left[direction[me][position]];
+            move_12, move_11: $ L;
+            move_10, move_14: position = right[direction[me][position]];
+            move_14, move_11: $ R;
+            move_11, move_9: ;
+            move_8, move_18: position = left[left[position]];
+            move_18, move_16: $ LL;
+            move_8, move_21: position = right[right[position]];
+            move_21, move_16: $ RR;
+            move_16, move_9: ;
+            move_9, move_23: position != null;
+            move_23, move_end: board[position] != piece[me];
+            move_end, turn_5: board[position] = piece[me];
+            turn_5, turn_6: player = keeper;
+        ",
+        adds "
+            @simpleApplyExhaustive begin : rules_begin move_begin;
+            @simpleApplyExhaustive move_8 L : move_10 move_12 move_11 move_9 move_23 move_end turn_5 turn_6;
+            @simpleApplyExhaustive move_8 LL : move_18 move_16 move_9 move_23 move_end turn_5 turn_6;
+            @simpleApplyExhaustive move_8 R : move_10 move_14 move_11 move_9 move_23 move_end turn_5 turn_6;
+            @simpleApplyExhaustive move_8 RR : move_21 move_16 move_9 move_23 move_end turn_5 turn_6;
+            @simpleApplyExhaustive move_begin p : move_1(p: Position) move_4(p: Position) move_3(p: Position) move_5(p: Position) move_6(p: Position) move_7(p: Position);
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        no_free_binds,
+        "
+            begin, 4: ;
+            4, 9(bind_2: Coord): Coord(bind_2) != Coord(null);
+            9(bind_2: Coord), 11: coord = bind_2;
+            11, 14: board[coord] == w;
+            14, 15: board[coord] = e;
+            15, 16(bind_3: Coord): bind_3 == coord;
+            16(bind_3: Coord), 17: $ bind_3;
+            17, 12: $ index_2;
+            12, end: ;
+        "
+    );
 
     test_transform!(
         calculate_simple_apply,

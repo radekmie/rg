@@ -71,6 +71,7 @@ impl Display for Binop {
             Self::And => write!(f, "&&"),
             Self::Or => write!(f, "||"),
             Self::Eq => write!(f, "=="),
+            Self::Mod => write!(f, "%"),
             Self::Ne => write!(f, "!="),
             Self::Lt => write!(f, "<"),
             Self::Gt => write!(f, ">"),
@@ -179,25 +180,11 @@ fn write_expression<Id: Display>(
 ) -> Result {
     match expression {
         Expression::Access { lhs, rhs } => write!(f, "{lhs}[{rhs}]"),
-        Expression::BinExpr {
-            lhs,
-            op: Binop::And,
-            rhs,
-        } => {
-            write_expr_parens(f, lhs, indent)?;
-            write!(f, " && ")?;
-            write_expr_parens(f, rhs, indent)
+        Expression::BinExpr { lhs, op, rhs } => {
+            write_expr_parens(f, *op, lhs, indent)?;
+            write!(f, " {op} ")?;
+            write_expr_parens(f, *op, rhs, indent)
         }
-        Expression::BinExpr {
-            lhs,
-            op: Binop::Or,
-            rhs,
-        } => {
-            write_expr_parens(f, lhs, indent)?;
-            write!(f, " || ")?;
-            write_expr_parens(f, rhs, indent)
-        }
-        Expression::BinExpr { lhs, op, rhs } => write!(f, "{lhs} {op} {rhs}"),
         Expression::Call { expression, args } => {
             write!(f, "{expression}(")?;
             write_with_separator(f, args, ", ")?;
@@ -243,11 +230,12 @@ fn write_expression<Id: Display>(
 
 fn write_expr_parens<Id: Display>(
     f: &mut Formatter<'_>,
+    op_outer: Binop,
     expr: &Expression<Id>,
     indent: usize,
 ) -> Result {
     match expr {
-        Expression::BinExpr { op: Binop::Or, .. } => {
+        Expression::BinExpr { op, .. } if op_outer.precedence() >= op.precedence() => {
             write!(f, "(")?;
             write_expression(f, expr, indent)?;
             write!(f, ")")
@@ -311,6 +299,11 @@ fn write_statement<Id: Display>(
             write_statements(f, body, indent + 2)?;
             write_rbrace(f, indent)
         }
+        Statement::If { expression, body } => {
+            writeln!(f, "if {expression} {{")?;
+            write_statements(f, body, indent + 2)?;
+            write_rbrace(f, indent)
+        }
         Statement::Loop { body } => {
             writeln!(f, "loop {{")?;
             write_statements(f, body, indent + 2)?;
@@ -320,11 +313,6 @@ fn write_statement<Id: Display>(
 
         Statement::Tag { symbol } => write!(f, "$ {symbol}"),
 
-        Statement::When { expression, body } => {
-            writeln!(f, "when {expression} {{")?;
-            write_statements(f, body, indent + 2)?;
-            write_rbrace(f, indent)
-        }
         Statement::While { expression, body } => {
             writeln!(f, "while {expression} {{")?;
             write_statements(f, body, indent + 2)?;

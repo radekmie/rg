@@ -4,47 +4,72 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 use std::sync::Arc;
 
+struct Context<Id: Ord> {
+    constants_indexes: BTreeMap<Id, usize>,
+    game: ist::Game<Id>,
+    variables_indexes: BTreeMap<Id, usize>,
+}
+
 impl From<ast::Game<Arc<str>>> for ist::Game<Arc<str>> {
     fn from(ast: ast::Game<Arc<str>>) -> Self {
-        let mut ist = Self {
-            constants: BTreeMap::default(),
-            edges: BTreeMap::default(),
-            repeats: BTreeMap::default(),
-            types: BTreeMap::default(),
-            uniques: BTreeSet::default(),
-            variables: BTreeMap::default(),
+        let placeholder_value = Rc::new(ist::Value::Element {
+            value: Arc::from(""),
+        });
+
+        let mut context = Context {
+            constants_indexes: BTreeMap::default(),
+            game: Self {
+                constants: Vec::default(),
+                edges: BTreeMap::default(),
+                initial_goals: placeholder_value.clone(),
+                initial_player: placeholder_value.clone(),
+                initial_values: Rc::default(),
+                initial_visible: placeholder_value.clone(),
+                repeats: BTreeMap::default(),
+                types: BTreeMap::default(),
+                uniques: BTreeSet::default(),
+            },
+            variables_indexes: BTreeMap::default(),
         };
 
-        build_pragmas(&mut ist, ast.pragmas);
-        build_typedefs(&mut ist, ast.typedefs);
-        build_constants(&mut ist, ast.constants);
-        build_variables(&mut ist, ast.variables);
-        build_edges(&mut ist, ast.edges);
+        build_typedefs(&mut context, ast.typedefs);
+        build_constants(&mut context, ast.constants);
+        build_variables(&mut context, ast.variables);
+        build_pragmas(&mut context, ast.pragmas);
+        build_edges(&mut context, ast.edges);
 
-        ist
+        // Make sure no placeholders are left.
+        assert_ne!(context.game.initial_goals, placeholder_value);
+        assert_ne!(context.game.initial_player, placeholder_value);
+        assert_ne!(context.game.initial_visible, placeholder_value);
+
+        context.game
     }
 }
 
-fn build_constants(game: &mut ist::Game<Arc<str>>, constants: Vec<ast::Constant<Arc<str>>>) {
+fn build_constants(context: &mut Context<Arc<str>>, constants: Vec<ast::Constant<Arc<str>>>) {
     for constant in constants {
-        let type_ = build_type_or_fail(game, &constant.type_);
-        let value = build_value(game, &type_, &constant.value);
-        game.constants.insert(constant.identifier, value);
+        let type_ = build_type_or_fail(context, &constant.type_);
+        let value = build_value(context, &type_, &constant.value);
+        context
+            .constants_indexes
+            .insert(constant.identifier, context.game.constants.len());
+        context.game.constants.push(value);
     }
 }
 
 fn build_label(
-    game: &mut ist::Game<Arc<str>>,
+    context: &mut Context<Arc<str>>,
     label: ast::Label<Arc<str>>,
 ) -> ist::EdgeLabel<Arc<str>> {
     match label {
         ast::Label::Assignment { lhs, rhs } => ist::EdgeLabel::Assignment {
-            lhs: build_expression(game, &lhs),
-            rhs: build_expression(game, &rhs),
+            lhs: build_expression(context, &lhs),
+            rhs: build_expression(context, &rhs),
         },
         ast::Label::Comparison { lhs, rhs, negated } => ist::EdgeLabel::Comparison {
-            lhs: build_expression(game, &lhs),
-            rhs: build_expression(game, &rhs),
+            lhs: build_expression(context, &lhs),
+            rhs: build_expression(context, &rhs),
             negated,
         },
         ast::Label::Reachability {
@@ -67,13 +92,15 @@ fn build_node(mut node: ast::Node<Arc<str>>) -> Arc<str> {
     identifier
 }
 
-fn build_edges(game: &mut ist::Game<Arc<str>>, edges: Vec<ast::Edge<Arc<str>>>) {
+fn build_edges(context: &mut Context<Arc<str>>, edges: Vec<ast::Edge<Arc<str>>>) {
     for edge in edges {
         let lhs = build_node(edge.lhs);
         let rhs = build_node(edge.rhs);
-        let label = build_label(game, edge.label);
+        let label = build_label(context, edge.label);
 
-        game.edges
+        context
+            .game
+            .edges
             .entry(lhs)
             .or_default()
             .push(ist::Edge { label, next: rhs });
@@ -81,23 +108,30 @@ fn build_edges(game: &mut ist::Game<Arc<str>>, edges: Vec<ast::Edge<Arc<str>>>) 
 }
 
 fn build_expression(
-    game: &mut ist::Game<Arc<str>>,
+    context: &mut Context<Arc<str>>,
     expression: &ast::Expression<Arc<str>>,
 ) -> ist::Expression<Arc<str>> {
     match expression {
         ast::Expression::Access { lhs, rhs, .. } => ist::Expression::Access {
-            lhs: Rc::new(build_expression(game, lhs)),
-            rhs: Rc::new(build_expression(game, rhs)),
+            lhs: Rc::new(build_expression(context, lhs)),
+            rhs: Rc::new(build_expression(context, rhs)),
         },
-        ast::Expression::Cast { rhs, .. } => build_expression(game, rhs),
+        ast::Expression::Cast { rhs, .. } => build_expression(context, rhs),
         ast::Expression::Reference { identifier } => {
-            let identifier = identifier.clone();
-            if game.constants.contains_key(&identifier) {
-                return ist::Expression::ConstantReference { identifier };
+            match identifier.as_ref() {
+                "goals" => return ist::Expression::GoalsReference,
+                "player" => return ist::Expression::PlayerReference,
+                "visible" => return ist::Expression::VisibleReference,
+                _ => {}
             }
 
-            if game.variables.contains_key(&identifier) {
-                return ist::Expression::VariableReference { identifier };
+            let identifier = identifier.clone();
+            if let Some(&index) = context.constants_indexes.get(&identifier) {
+                return ist::Expression::ConstantReference { index };
+            }
+
+            if let Some(&index) = context.variables_indexes.get(&identifier) {
+                return ist::Expression::VariableReference { index };
             }
 
             ist::Expression::Literal {
@@ -107,19 +141,30 @@ fn build_expression(
     }
 }
 
-fn build_pragmas(game: &mut ist::Game<Arc<str>>, pragmas: Vec<ast::Pragma<Arc<str>>>) {
+fn build_pragmas(context: &mut Context<Arc<str>>, pragmas: Vec<ast::Pragma<Arc<str>>>) {
     for pragma in pragmas {
         match pragma {
             ast::Pragma::Repeat {
                 nodes, identifiers, ..
             } => {
+                let variables: Rc<Vec<_>> = Rc::new(
+                    identifiers
+                        .into_iter()
+                        .filter_map(|identifier| context.variables_indexes.get(&identifier))
+                        .cloned()
+                        .collect(),
+                );
+
                 for node in nodes {
-                    game.repeats.insert(build_node(node), identifiers.clone());
+                    context
+                        .game
+                        .repeats
+                        .insert(build_node(node), variables.clone());
                 }
             }
             ast::Pragma::Unique { nodes, .. } => {
                 for node in nodes {
-                    game.uniques.insert(build_node(node));
+                    context.game.uniques.insert(build_node(node));
                 }
             }
             _ => {}
@@ -128,17 +173,17 @@ fn build_pragmas(game: &mut ist::Game<Arc<str>>, pragmas: Vec<ast::Pragma<Arc<st
 }
 
 fn build_value(
-    game: &mut ist::Game<Arc<str>>,
+    context: &mut Context<Arc<str>>,
     type_: &ist::Type<Arc<str>>,
     value: &ast::Value<Arc<str>>,
 ) -> Rc<ist::Value<Arc<str>>> {
     match value {
         ast::Value::Element { identifier } => {
             let identifier = identifier.clone();
-            game.constants
-                .get(&identifier)
-                .cloned()
-                .unwrap_or_else(|| Rc::new(ist::Value::Element { value: identifier }))
+            context.constants_indexes.get(&identifier).map_or_else(
+                || Rc::new(ist::Value::Element { value: identifier }),
+                |&index| context.game.constants[index].clone(),
+            )
         }
         ast::Value::Map { entries, .. } => {
             let ist::Type::Arrow { rhs, .. } = type_ else {
@@ -157,7 +202,7 @@ fn build_value(
             assert!(default_value.is_some(), "Map is missing default value.");
 
             Rc::new(ist::Value::Map {
-                default: build_value(game, rhs, default_value.unwrap()),
+                default: build_value(context, rhs, default_value.unwrap()),
                 values: Rc::new(
                     entries
                         .iter()
@@ -166,7 +211,7 @@ fn build_value(
                                  identifier, value, ..
                              }| {
                                 identifier.as_ref().map(|identifier| {
-                                    (identifier.clone(), build_value(game, rhs, value))
+                                    (identifier.clone(), build_value(context, rhs, value))
                                 })
                             },
                         )
@@ -178,18 +223,18 @@ fn build_value(
 }
 
 fn build_type(
-    game: &mut ist::Game<Arc<str>>,
+    context: &mut Context<Arc<str>>,
     type_: &ast::Type<Arc<str>>,
 ) -> Option<Rc<ist::Type<Arc<str>>>> {
     match type_ {
-        ast::Type::Arrow { lhs, rhs } => {
-            game.types
-                .get::<str>(&lhs.to_string())
-                .cloned()
-                .and_then(|lhs| {
-                    build_type(game, rhs).map(|rhs| Rc::new(ist::Type::Arrow { lhs, rhs }))
-                })
-        }
+        ast::Type::Arrow { lhs, rhs } => context
+            .game
+            .types
+            .get::<str>(&lhs.to_string())
+            .cloned()
+            .and_then(|lhs| {
+                build_type(context, rhs).map(|rhs| Rc::new(ist::Type::Arrow { lhs, rhs }))
+            }),
         ast::Type::Set { identifiers, .. } => Some(Rc::new(ist::Type::Set {
             values: identifiers
                 .iter()
@@ -200,26 +245,28 @@ fn build_type(
                 })
                 .collect(),
         })),
-        ast::Type::TypeReference { identifier } => game.types.get::<str>(identifier).cloned(),
+        ast::Type::TypeReference { identifier } => {
+            context.game.types.get::<str>(identifier).cloned()
+        }
     }
 }
 
 fn build_type_or_fail(
-    game: &mut ist::Game<Arc<str>>,
+    context: &mut Context<Arc<str>>,
     type_: &ast::Type<Arc<str>>,
 ) -> Rc<ist::Type<Arc<str>>> {
-    build_type(game, type_).unwrap_or_else(|| {
+    build_type(context, type_).unwrap_or_else(|| {
         panic!("Unresolved type {type_}. (Builtins are not automatically added yet.)")
     })
 }
 
-fn build_typedefs(game: &mut ist::Game<Arc<str>>, typedefs: Vec<ast::Typedef<Arc<str>>>) {
+fn build_typedefs(context: &mut Context<Arc<str>>, typedefs: Vec<ast::Typedef<Arc<str>>>) {
     let typedefs_len = typedefs.len();
     let unresolved_typedefs = typedefs
         .into_iter()
-        .filter_map(|typedef| match build_type(game, &typedef.type_) {
+        .filter_map(|typedef| match build_type(context, &typedef.type_) {
             Some(type_) => {
-                game.types.insert(typedef.identifier, type_);
+                context.game.types.insert(typedef.identifier, type_);
                 None
             }
             None => Some(typedef),
@@ -233,15 +280,35 @@ fn build_typedefs(game: &mut ist::Game<Arc<str>>, typedefs: Vec<ast::Typedef<Arc
             "Unresolved type: {unresolved_typedef}"
         );
 
-        build_typedefs(game, unresolved_typedefs);
+        build_typedefs(context, unresolved_typedefs);
     }
 }
 
-fn build_variables(game: &mut ist::Game<Arc<str>>, variables: Vec<ast::Variable<Arc<str>>>) {
-    for variable in variables {
-        let type_ = build_type_or_fail(game, &variable.type_);
-        let default = build_value(game, &type_, &variable.default_value);
-        game.variables
-            .insert(variable.identifier, ist::Variable { default, type_ });
+fn build_variables(context: &mut Context<Arc<str>>, variables: Vec<ast::Variable<Arc<str>>>) {
+    let mut typed_initial_values: Vec<_> = variables
+        .into_iter()
+        .filter_map(|variable| {
+            let type_ = build_type_or_fail(context, &variable.type_);
+            let initial = build_value(context, &type_, &variable.default_value);
+            match variable.identifier.as_ref() {
+                "goals" => context.game.initial_goals = initial,
+                "player" => context.game.initial_player = initial,
+                "visible" => context.game.initial_visible = initial,
+                _ => return Some((type_.size(), variable.identifier, initial)),
+            }
+
+            None
+        })
+        .collect();
+
+    // Sort by type size. In practice smaller types compare faster and thus want
+    // have them earlier in the values list.
+    typed_initial_values.sort_unstable();
+
+    for (_, identifier, initial) in typed_initial_values {
+        context
+            .variables_indexes
+            .insert(identifier, context.game.initial_values.len());
+        Rc::make_mut(&mut context.game.initial_values).push(initial);
     }
 }

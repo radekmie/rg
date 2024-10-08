@@ -1,4 +1,4 @@
-use interpreter::{prepare_ist, safe_parse_rg_source};
+use interpreter::{analyze_rg_inner, prepare_ist, Flags};
 use map_id::MapId;
 use rand::thread_rng;
 use std::env::args;
@@ -9,8 +9,7 @@ fn main() -> Result<(), String> {
     let args = args().collect::<Vec<_>>();
     let file = args.get(1).expect("game.rg file expected.");
     let source = read_to_string(file).map_err(|error| error.to_string())?;
-    let mut game = safe_parse_rg_source(source.as_str())?;
-    game.add_builtins()?;
+    let game = analyze_rg_inner(source.as_str(), &Flags::none(), None::<fn(_)>)?;
     let (game, interner) = prepare_ist(game)?;
 
     match args.get(2).expect("Operation expected.").as_str() {

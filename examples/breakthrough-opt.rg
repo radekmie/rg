@@ -100,8 +100,8 @@ var pos: Position = v00;
 
 begin, move: ;
 
-turn, move: ? move -> moved;
-turn, lose: ! move -> moved;
+turn, move: ? selectPos -> selectDir;
+turn, lose: ! selectPos -> selectDir;
 
 move, selectPos: player = PlayerOrKeeper(currentPlayer);
 

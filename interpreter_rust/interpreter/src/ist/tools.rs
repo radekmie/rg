@@ -1,7 +1,5 @@
 use super::state::State;
-use crate::ist::{
-    Game, RuntimeId, Value, LABEL_BEGIN, LABEL_END, LABEL_GOALS, LABEL_KEEPER, LABEL_PLAYER,
-};
+use crate::ist::{Game, RuntimeId, Value, LABEL_BEGIN, LABEL_END, LABEL_KEEPER};
 use rand::seq::IteratorRandom;
 use rand::Rng;
 use std::collections::BTreeMap;
@@ -15,23 +13,19 @@ pub fn new_ist_interner() -> ISTInterner {
     let mut interner = Interner::default();
     interner.intern_as(&Arc::from("begin"), LABEL_BEGIN);
     interner.intern_as(&Arc::from("end"), LABEL_END);
-    interner.intern_as(&Arc::from("goals"), LABEL_GOALS);
     interner.intern_as(&Arc::from("keeper"), LABEL_KEEPER);
-    interner.intern_as(&Arc::from("player"), LABEL_PLAYER);
     interner
 }
 
 impl Game<RuntimeId> {
     pub fn initial_state(&self) -> State {
         State {
+            goals: self.initial_goals.clone(),
+            player: self.initial_player.clone(),
             position: LABEL_BEGIN,
             tags: Rc::default(),
-            values: Rc::new(
-                self.variables
-                    .iter()
-                    .map(|(name, variable)| (*name, variable.default.clone()))
-                    .collect(),
-            ),
+            values: self.initial_values.clone(),
+            visible: self.initial_visible.clone(),
         }
     }
 
@@ -47,7 +41,7 @@ impl Game<RuntimeId> {
         &self,
         rng: &mut R,
         plays: usize,
-        callback: &impl Fn((usize, f32, f32, &BTreeMap<Value<RuntimeId>, usize>)),
+        callback: &impl Fn((usize, f32, f32, &BTreeMap<Rc<Value<RuntimeId>>, usize>)),
     ) {
         fn avg(counter: &BTreeMap<usize, usize>) -> f32 {
             let (x0, n0) = counter
@@ -64,7 +58,7 @@ impl Game<RuntimeId> {
         let step = 1f32.max(10f32.powf((plays as f32 / 100f32).log10().floor())) as usize;
 
         // Initialize counters.
-        let mut goals: BTreeMap<Value<RuntimeId>, usize> = BTreeMap::default();
+        let mut goals: BTreeMap<Rc<Value<RuntimeId>>, usize> = BTreeMap::default();
         let mut moves: BTreeMap<usize, usize> = BTreeMap::default();
         let mut turns: BTreeMap<usize, usize> = BTreeMap::default();
 
@@ -74,11 +68,11 @@ impl Game<RuntimeId> {
             loop {
                 let states = state.next_states_depth(self, 1, false).collect::<Vec<_>>();
                 if states.is_empty() {
-                    increase(&mut goals, state.get_goals().clone());
+                    increase(&mut goals, state.goals.clone());
                     break;
                 }
 
-                if !state.get_player().is_keeper() {
+                if !state.player.is_keeper() {
                     increase(&mut moves, states.len());
                     turn += 1;
                 }

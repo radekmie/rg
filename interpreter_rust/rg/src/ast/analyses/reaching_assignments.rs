@@ -115,29 +115,28 @@ impl Analysis for ReachingAssignments {
         input
     }
 
-    fn gen(mut input: Self::Domain, edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
-        match &edge.label {
-            Label::Assignment { .. } => {
-                let variable = edge.label.as_var_assignment().unwrap().0;
-                if !IMPORTANT_VARIABLES.contains(&variable.as_ref()) {
-                    input
-                        .entry(Some(variable.clone()))
-                        .and_modify(|a_reached| a_reached.add_source(&edge.lhs))
-                        .or_insert_with(|| Assignment::new(&edge.lhs));
-                }
-            }
-            Label::Comparison { .. } | Label::Reachability { .. } => {
-                for assignment in input.values_mut() {
-                    assignment.add_condition(&edge.label);
-                }
-            }
-            Label::Skip { .. } => {
+    fn gen(
+        mut input: Self::Domain,
+        Edge { label, lhs, .. }: &Edge<Id>,
+        _ctx: &Self::Context,
+    ) -> Self::Domain {
+        if label.is_assignment() {
+            let variable = label.as_var_assignment().unwrap().0;
+            if !IMPORTANT_VARIABLES.contains(&variable.as_ref()) {
                 input
-                    .entry(None)
-                    .or_insert_with(|| Assignment::new(&edge.lhs));
+                    .entry(Some(variable.clone()))
+                    .and_modify(|a_reached| a_reached.add_source(lhs))
+                    .or_insert_with(|| Assignment::new(lhs));
             }
-            Label::Tag { .. } => {}
+        } else if !label.is_tag() {
+            input.entry(None).or_insert_with(|| Assignment::new(lhs));
+            if !label.is_skip() {
+                for assignment in input.values_mut() {
+                    assignment.add_condition(label);
+                }
+            }
         }
+
         input
     }
 }

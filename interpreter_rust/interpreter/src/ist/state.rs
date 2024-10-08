@@ -1,20 +1,26 @@
-use super::{EdgeLabel, Expression, Game, RuntimeId, Value, LABEL_END, LABEL_GOALS, LABEL_PLAYER};
-use std::collections::{BTreeMap, BTreeSet};
+use super::{EdgeLabel, Expression, Game, RuntimeId, Value, LABEL_END};
+use std::collections::BTreeSet;
 use std::rc::Rc;
 
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct State {
+    pub goals: Rc<Value<RuntimeId>>,
+    pub player: Rc<Value<RuntimeId>>,
     pub position: RuntimeId,
     pub tags: Rc<Vec<RuntimeId>>,
-    pub values: Rc<BTreeMap<RuntimeId, Rc<Value<RuntimeId>>>>,
+    pub values: Rc<Vec<Rc<Value<RuntimeId>>>>,
+    pub visible: Rc<Value<RuntimeId>>,
 }
 
 impl State {
     pub fn clone_at(&self, position: RuntimeId) -> Self {
         Self {
+            goals: self.goals.clone(),
+            player: self.goals.clone(),
             position,
             tags: self.tags.clone(),
             values: self.values.clone(),
+            visible: self.visible.clone(),
         }
     }
 
@@ -33,9 +39,12 @@ impl State {
                 };
                 values.get(value).unwrap_or(default)
             }
-            Expression::ConstantReference { identifier } => game.constants.get(identifier).unwrap(),
+            Expression::ConstantReference { index } => &game.constants[*index],
+            Expression::GoalsReference => &self.goals,
             Expression::Literal { value } => value,
-            Expression::VariableReference { identifier } => self.values.get(identifier).unwrap(),
+            Expression::PlayerReference => &self.player,
+            Expression::VariableReference { index } => &self.values[*index],
+            Expression::VisibleReference => &self.visible,
         }
     }
 
@@ -65,19 +74,14 @@ impl State {
                 self.eval_set(game, lhs, map);
             }
             Expression::ConstantReference { .. } => panic!("ConstantReference is immutable."),
+            Expression::GoalsReference => self.goals = set,
             Expression::Literal { .. } => panic!("Literal is immutable."),
-            Expression::VariableReference { identifier } => {
-                Rc::make_mut(&mut self.values).insert(*identifier, set);
+            Expression::PlayerReference => self.player = set,
+            Expression::VariableReference { index } => {
+                Rc::make_mut(&mut self.values)[*index] = set;
             }
+            Expression::VisibleReference => self.visible = set,
         }
-    }
-
-    pub fn get_goals(&self) -> &Value<RuntimeId> {
-        self.values.get(&LABEL_GOALS).unwrap()
-    }
-
-    pub fn get_player(&self) -> &Value<RuntimeId> {
-        self.values.get(&LABEL_PLAYER).unwrap()
     }
 
     pub fn is_final(&self) -> bool {
@@ -148,13 +152,13 @@ impl Iterator for StateNext<'_> {
                 }
 
                 if let Some(edges) = game.edges.get(&state.position) {
-                    let mut reachables: Option<BTreeMap<(RuntimeId, RuntimeId), bool>> = None;
+                    let mut reachables: Option<Vec<(RuntimeId, RuntimeId, bool)>> = None;
                     for edge in edges {
                         let mut state = state.clone_at(edge.next);
                         match &edge.label {
                             EdgeLabel::Assignment { lhs, rhs } => {
                                 state.eval_set(game, lhs, state.eval(game, rhs).clone());
-                                if *break_on_player && lhs.is_player_reference() {
+                                if *break_on_player && *lhs == Expression::PlayerReference {
                                     return_queue.push(state);
                                 } else {
                                     search_queue.push(state);
@@ -169,11 +173,21 @@ impl Iterator for StateNext<'_> {
                                 }
                             }
                             EdgeLabel::Reachability { lhs, rhs, negated } => {
-                                let is_reachable = *reachables
-                                    .get_or_insert_with(BTreeMap::new)
-                                    .entry((*lhs, *rhs))
-                                    .or_insert_with(|| {
-                                        state.clone_at(*lhs).is_reachable(game, *rhs)
+                                let reachables = reachables.get_or_insert_with(Vec::new);
+                                let is_reachable = reachables
+                                    .iter()
+                                    .find_map(|x| {
+                                        if x.0 == *lhs && x.1 == *rhs {
+                                            Some(x.2)
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .unwrap_or_else(|| {
+                                        let is_reachable =
+                                            state.clone_at(*lhs).is_reachable(game, *rhs);
+                                        reachables.push((*lhs, *rhs, is_reachable));
+                                        is_reachable
                                     });
 
                                 if is_reachable != *negated {
@@ -222,7 +236,7 @@ impl Iterator for StateNextDepth<'_> {
                 return Some(state);
             }
 
-            let prev = state.get_player();
+            let prev = &state.player;
             let skip = *ignore_keeper && prev.is_keeper();
             let mut tags_set = BTreeSet::default();
             for mut state in state.next_states(game, true) {
@@ -230,7 +244,7 @@ impl Iterator for StateNextDepth<'_> {
                     continue;
                 }
 
-                let next = state.get_player();
+                let next = &state.player;
                 let is_finish = next.is_keeper() && state.is_final() && !*ignore_keeper;
                 let is_switch = next != prev && !skip;
                 state.tags = Rc::default();
@@ -245,15 +259,12 @@ impl Iterator for StateNextDepth<'_> {
 struct VisitedStates<'a> {
     game: &'a Game<RuntimeId>,
     #[allow(clippy::type_complexity)]
-    states: BTreeMap<(RuntimeId, Rc<Vec<RuntimeId>>), BTreeSet<Vec<Option<Rc<Value<RuntimeId>>>>>>,
+    states: Option<BTreeSet<(RuntimeId, Rc<Vec<RuntimeId>>, Rc<Vec<Rc<Value<RuntimeId>>>>)>>,
 }
 
 impl<'a> VisitedStates<'a> {
     fn new(game: &'a Game<RuntimeId>) -> Self {
-        Self {
-            game,
-            states: BTreeMap::default(),
-        }
+        Self { game, states: None }
     }
 
     fn visited(&mut self, state: &State) -> bool {
@@ -261,23 +272,22 @@ impl<'a> VisitedStates<'a> {
             return false;
         }
 
-        let values: Vec<_> = if let Some(variables) = self.game.repeats.get(&state.position) {
-            variables
-                .iter()
-                .map(|variable| state.values.get(variable).cloned())
-                .collect()
-        } else {
-            self.game
-                .variables
-                .keys()
-                .map(|variable| state.values.get(variable).cloned())
-                .collect()
-        };
+        let values = self.game.repeats.get(&state.position).map_or_else(
+            || state.values.clone(),
+            |indexes| {
+                Rc::new(
+                    indexes
+                        .iter()
+                        .map(|&index| state.values[index].clone())
+                        .collect(),
+                )
+            },
+        );
 
-        !self
-            .states
-            .entry((state.position, state.tags.clone()))
-            .or_default()
-            .insert(values)
+        !self.states.get_or_insert_with(BTreeSet::new).insert((
+            state.position,
+            state.tags.clone(),
+            values,
+        ))
     }
 }

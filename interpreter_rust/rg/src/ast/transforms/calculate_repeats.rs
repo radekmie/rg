@@ -13,7 +13,7 @@ impl Game<Arc<str>> {
                 .is_some_and(|reached| reached.is_repeated);
             let identifiers: Vec<_> = variables
                 .into_iter()
-                .filter(|(_, reached)| reached.is_repeated)
+                .filter(|(_, reached)| has_none_repeat || reached.is_repeated)
                 .filter_map(|(variable, _)| variable)
                 .collect::<BTreeSet<_>>()
                 .into_iter()
@@ -82,6 +82,24 @@ mod test {
         32, 30: coord != null;
         46, 47: direction[coord][NW] != null;",
         adds "@repeat 25 26 27 28 30 32 : coord;"
+    );
+
+    test_transform!(
+        calculate_repeats,
+        overlapping_variable_setters,
+        "
+            var x: Bool = 0;
+            var y: Bool = 0;
+            var z: Bool = 0;
+            a, b: x = 1;
+            b, c1: y != 0;
+            b, c2: y != 1;
+            c1, d1: z = 0;
+            c2, d2: z = 1;
+            d1, e: ;
+            d2, e: ;
+        ",
+        adds "@repeat e : x z;"
     );
 
     test_transform!(

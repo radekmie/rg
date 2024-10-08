@@ -22,11 +22,11 @@ pub fn prepare_ist(
     Ok((game, interner))
 }
 
-pub fn safe_parse_rg_ast(ast: &str) -> Result<RgGame<Arc<str>>, String> {
+fn safe_parse_rg_ast(ast: &str) -> Result<RgGame<Arc<str>>, String> {
     from_str::<RgGame<Arc<str>>>(ast).map_err(|error| error.to_string())
 }
 
-pub fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> {
+fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> {
     let (game, errors) = unsafe_parse_hrg(source);
     if errors.is_empty() {
         let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
@@ -40,7 +40,7 @@ pub fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> 
     }
 }
 
-pub fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
+fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
     let (game, errors) = unsafe_parse_rg(source);
     if errors.is_empty() {
         let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
@@ -54,7 +54,7 @@ pub fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
     }
 }
 
-pub fn safe_serialize_rg_ast(game: &RgGame<Arc<str>>) -> Result<String, String> {
+fn safe_serialize_rg_ast(game: &RgGame<Arc<str>>) -> Result<String, String> {
     to_string(game).map_err(|error| error.to_string())
 }
 
@@ -82,12 +82,16 @@ pub struct Flags {
     inline_reachability: bool,
     #[serde(rename = "inlineAssignment")]
     inline_assignment: bool,
+    #[serde(rename = "joinExclusiveEdges")]
+    join_exclusive_edges: bool,
     #[serde(rename = "joinForkPrefixes")]
     join_fork_prefixes: bool,
     #[serde(rename = "joinForkSuffixes")]
     join_fork_suffixes: bool,
     #[serde(rename = "mangleSymbols")]
     mangle_symbols: bool,
+    #[serde(rename = "normalizeConstants")]
+    normalize_constants: bool,
     #[serde(rename = "normalizeTypes")]
     normalize_types: bool,
     #[serde(rename = "propagateConstants")]
@@ -96,6 +100,8 @@ pub struct Flags {
     prune_singleton_types: bool,
     #[serde(rename = "pruneUnreachableNodes")]
     prune_unreachable_nodes: bool,
+    #[serde(rename = "pruneUnusedBindings")]
+    prune_unused_bindings: bool,
     #[serde(rename = "pruneUnusedConstants")]
     prune_unused_constants: bool,
     #[serde(rename = "pruneUnusedVariables")]
@@ -124,13 +130,16 @@ impl Flags {
             expand_generator_nodes: true,
             inline_assignment: true,
             inline_reachability: true,
+            join_exclusive_edges: true,
             join_fork_prefixes: true,
             join_fork_suffixes: true,
             mangle_symbols: true,
+            normalize_constants: true,
             normalize_types: true,
             propagate_constants: true,
             prune_singleton_types: true,
             prune_unreachable_nodes: true,
+            prune_unused_bindings: true,
             prune_unused_constants: true,
             prune_unused_variables: true,
             skip_generator_comparisons: true,
@@ -153,13 +162,16 @@ impl Flags {
             expand_generator_nodes: false,
             inline_assignment: false,
             inline_reachability: false,
+            join_exclusive_edges: false,
             join_fork_prefixes: false,
             join_fork_suffixes: false,
             mangle_symbols: false,
+            normalize_constants: false,
             normalize_types: false,
             propagate_constants: false,
             prune_singleton_types: false,
             prune_unreachable_nodes: false,
+            prune_unused_bindings: false,
             prune_unused_constants: false,
             prune_unused_variables: false,
             skip_generator_comparisons: false,
@@ -258,6 +270,7 @@ pub fn analyze_rg_inner(
         }
 
         pass!(normalize_types);
+        pass!(normalize_constants);
         pass!(skip_self_assignments);
         pass!(skip_self_comparisons);
         pass!(skip_unused_tags);
@@ -265,6 +278,7 @@ pub fn analyze_rg_inner(
         pass!(compact_skip_edges);
         pass!(add_explicit_casts);
         pass!(expand_generator_nodes);
+        pass!(join_exclusive_edges);
         pass!(join_fork_prefixes);
         pass!(join_fork_suffixes);
         pass!(compact_comparisons);
@@ -275,6 +289,7 @@ pub fn analyze_rg_inner(
         pass!(prune_unreachable_nodes);
         pass!(prune_unused_variables);
         pass!(prune_unused_constants);
+        pass!(prune_unused_bindings);
         pass!(mangle_symbols);
         pass!(calculate_disjoints);
         pass!(calculate_repeats);

@@ -34,6 +34,7 @@ program
   .option('--expandGeneratorNodes', 'expand generator nodes')
   .option('--inlineAssignment', 'inline assignment when possible')
   .option('--inlineReachability', 'inline reachability when possible')
+  .option('--joinExclusiveEdges', 'joins multiedges with exclusive labels')
   .option(
     '--joinForkPrefixes',
     'join paths with identical labels from the same node',
@@ -44,6 +45,10 @@ program
   )
   .option('--mangleSymbols', 'mangle all user-defined symbols')
   .option(
+    '--normalizeConstants',
+    'normalize all constants so Maps appear only in the top level',
+  )
+  .option(
     '--normalizeTypes',
     'normalize all types so Arrow types appear only in type definitions and are at most one level deep',
   )
@@ -53,6 +58,7 @@ program
     'prune singleton types (i.e., Set types with one element)',
   )
   .option('--pruneUnreachableNodes', 'prune unreachable nodes')
+  .option('--pruneUnusedBindings', 'prune unused bindings from nodes')
   .option('--pruneUnusedConstants', 'prune unused constants')
   .option('--pruneUnusedVariables', 'prune unused variables')
   .option(
@@ -113,13 +119,16 @@ function addCommand(
           expandGeneratorNodes: !!options.expandGeneratorNodes,
           inlineAssignment: !!options.inlineAssignment,
           inlineReachability: !!options.inlineReachability,
+          joinExclusiveEdges: !!options.joinExclusiveEdges,
           joinForkPrefixes: !!options.joinForkPrefixes,
           joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,
+          normalizeConstants: !!options.normalizeConstants,
           normalizeTypes: !!options.normalizeTypes,
           propagateConstants: !!options.propagateConstants,
           pruneSingletonTypes: !!options.pruneSingletonTypes,
           pruneUnreachableNodes: !!options.pruneUnreachableNodes,
+          pruneUnusedBindings: !!options.pruneUnusedBindings,
           pruneUnusedConstants: !!options.pruneUnusedConstants,
           pruneUnusedVariables: !!options.pruneUnusedVariables,
           reuseFunctions: !!options.reuseFunctions,
@@ -129,6 +138,10 @@ function addCommand(
           skipUnusedTags: !!options.skipUnusedTags,
         },
       });
+
+      if (game.error) {
+        throw game.error;
+      }
 
       await operation(game, ...args);
 

@@ -291,6 +291,13 @@ function evaluateExpression(
             }),
           ),
       });
+    case 'ExpressionMod': {
+      const lhs = evaluateExpressionIdentifier(expression.lhs, binding);
+      const rhs = evaluateExpressionIdentifier(expression.rhs, binding);
+      return hrg.ValueElement({
+        identifier: String((Number(lhs) + Number(rhs)) % Number(rhs)),
+      });
+    }
     case 'ExpressionNe':
       throw new Error('Not implemented (ExpressionNe).');
     case 'ExpressionSub': {
@@ -505,10 +512,10 @@ function translateAutomatonStatements(
       }
       case 'AutomatonCall':
         switch (automatonStatement.identifier) {
-          case 'assert': {
+          case 'check': {
             utils.assert(
               automatonStatement.args.length === 1,
-              'assert() expects 1 argument',
+              'check() expects 1 argument',
             );
             const localEdgeName = context.$randomEdgeName(prefix);
             translateCondition(
@@ -808,6 +815,32 @@ function translateAutomatonStatements(
         currentEdgeName = afterEdgeName;
         continue;
       }
+      case 'AutomatonIf': {
+        const thenEdgeName = context.$randomEdgeName(prefix);
+        const elseEdgeName = context.$randomEdgeName(prefix);
+        translateCondition(
+          context,
+          automatonStatement.expression,
+          currentEdgeName,
+          thenEdgeName,
+          elseEdgeName,
+          prefix,
+          bindings,
+        );
+        translateAutomatonStatements(context, {
+          automatonStatements: automatonStatement.body,
+          bindings,
+          breakEdgeName,
+          continueEdgeName,
+          endEdgeName,
+          entryEdgeName: thenEdgeName,
+          nextEdgeName,
+          prefix,
+          returnEdgeName: elseEdgeName,
+        });
+        currentEdgeName = elseEdgeName;
+        continue;
+      }
       case 'AutomatonLoop': {
         const localEdgeName = context.$randomEdgeName(prefix);
         translateAutomatonStatements(context, {
@@ -861,32 +894,6 @@ function translateAutomatonStatements(
           bindings,
         );
         currentEdgeName = localEdgeName;
-        continue;
-      }
-      case 'AutomatonWhen': {
-        const thenEdgeName = context.$randomEdgeName(prefix);
-        const elseEdgeName = context.$randomEdgeName(prefix);
-        translateCondition(
-          context,
-          automatonStatement.expression,
-          currentEdgeName,
-          thenEdgeName,
-          elseEdgeName,
-          prefix,
-          bindings,
-        );
-        translateAutomatonStatements(context, {
-          automatonStatements: automatonStatement.body,
-          bindings,
-          breakEdgeName,
-          continueEdgeName,
-          endEdgeName,
-          entryEdgeName: thenEdgeName,
-          nextEdgeName,
-          prefix,
-          returnEdgeName: elseEdgeName,
-        });
-        currentEdgeName = elseEdgeName;
         continue;
       }
       case 'AutomatonWhile':
@@ -988,7 +995,6 @@ function translateCondition(
             : context.$randomEdgeName(automatonPrefix);
           let automatonCurrentEdgeName = automatonStartEdgeName;
 
-
           for (const arg of call.args) {
             const argEdgeName = context.$randomEdgeName(automatonPrefix);
             context.$connect(
@@ -1021,7 +1027,7 @@ function translateCondition(
             bindings,
           );
 
-          let automatonEndEdgeName = rg.EdgeName({
+          const automatonEndEdgeName = rg.EdgeName({
             parts: [
               rg.Literal({
                 identifier: context.$settings.flags.reuseFunctions
@@ -1051,7 +1057,6 @@ function translateCondition(
               `${automatonPrefix}_`,
             );
           }
-
 
           if (thenEdgeName) {
             context.$connect(
@@ -1129,6 +1134,8 @@ function translateCondition(
       throw new Error('Not implemented (ExpressionLte).');
     case 'ExpressionMap':
       throw new Error('Not implemented (ExpressionMap).');
+    case 'ExpressionMod':
+      throw new Error('Not implemented (ExpressionMod).');
     case 'ExpressionNe':
       if (thenEdgeName) {
         context.$connect(
@@ -1244,13 +1251,15 @@ function translateExpression(expression: hrg.Expression): rg.Expression {
     case 'ExpressionAnd':
       throw new Error('Not implemented (ExpressionAnd).');
     case 'ExpressionCall':
-      return expression.args.reduce<rg.Expression>(
+      return expression.args.reduce(
         (expression, arg) =>
           rg.Access({ lhs: expression, rhs: translateExpression(arg) }),
         translateExpression(expression.expression),
       );
     case 'ExpressionConstructor':
-      throw new Error('Not implemented (ExpressionConstructor).');
+      return rg.Reference({
+        identifier: serializeValue(evaluateExpression(expression, {})),
+      });
     case 'ExpressionEq':
       throw new Error('Not implemented (ExpressionEq).');
     case 'ExpressionGt':
@@ -1267,6 +1276,8 @@ function translateExpression(expression: hrg.Expression): rg.Expression {
       throw new Error('Not implemented (ExpressionLte).');
     case 'ExpressionMap':
       throw new Error('Not implemented (ExpressionMap).');
+    case 'ExpressionMod':
+      throw new Error('Not implemented (ExpressionMod).');
     case 'ExpressionNe':
       throw new Error('Not implemented (ExpressionNe).');
     case 'ExpressionOr':
