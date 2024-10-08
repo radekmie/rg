@@ -41,12 +41,12 @@ impl Game<Id> {
         let mut edges_to_join = vec![];
         // Start of the fork prefix
         for node in self.nodes() {
-            // Get all outgoing edges that do not have bindings
+            // Get all outgoing edges that do not have bindings and are not end edges
             let next_edges = next_edges
                 .get(&node)
                 .unwrap_or(&default_set)
                 .iter()
-                .filter(|e| !e.has_bindings());
+                .filter(|e| !e.has_bindings() && next_edges.contains_key(&e.rhs));
             // Group outgoing edges by label
             let mut group_by_label = BTreeMap::new();
             for edge in next_edges {
@@ -84,10 +84,12 @@ mod test {
         "begin, a: ;
         a, b: 1 == 1;
         a, c: 1 == 1;
-        b, end: 2 == 2;",
+        b, end: 2 == 2;
+        c, d: ;",
         "begin, a: ;
         a, b: 1 == 1;
         b, end: 2 == 2;
+        c, d: ;
         b, c: ;"
     );
 
@@ -95,8 +97,56 @@ mod test {
         join_fork_prefixes,
         small2,
         "begin, a: ;
-        begin, b: ;",
+        begin, b: ;"
+    );
+
+    test_transform!(
+        join_fork_prefixes,
+        small3,
         "begin, a: ;
-        a, b: ;"
+        a, f: ;
+        begin, b: ;
+        b, f: ;
+        begin, c: ;
+        c, f: ;
+        begin, d: ;
+        d, f: ;",
+        "begin, a: ;
+        a, f: ;
+        b, f: ;
+        c, f: ;
+        d, f: ;
+        a, b: ;
+        b, c: ;
+        c, d: ;"
+    );
+
+    test_transform!(
+        join_fork_prefixes,
+        small4,
+        "begin, a: ;
+        begin, b: ;
+        b, c: ;"
+    );
+
+    test_transform!(
+        join_fork_prefixes,
+        small5,
+        "begin, a: 1 == 1;
+        begin, b: 1 == 1;
+        begin, c: 2 == 2;
+        begin, d: 2 == 2;
+        a, end: ;
+        b, end: ;
+        c, end: ;
+        d, end: ;",
+        "begin, a: 1 == 1;
+        begin, c: 2 == 2;
+        a, end: ;
+        b, end: ;
+        c, end: ;
+        d, end: ;
+        a, b: ;
+        c, d: ;"
     );
 }
