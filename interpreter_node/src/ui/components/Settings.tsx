@@ -18,6 +18,7 @@ const availableOptions: { label: string; flags: Flag[] }[] = [
       'joinExclusiveEdges',
       'joinForkPrefixes',
       'joinForkSuffixes',
+      'propagateConstants',
       'pruneSingletonTypes',
       'pruneUnreachableNodes',
       'pruneUnusedBindings',
