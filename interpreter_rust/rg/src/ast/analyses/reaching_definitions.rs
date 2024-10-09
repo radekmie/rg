@@ -8,13 +8,14 @@ type Id = Arc<str>;
 pub struct ReachingDefinitions;
 
 impl Analysis for ReachingDefinitions {
+    type Context = ();
     type Domain = BTreeSet<(Id, Option<Edge<Id>>)>;
 
     fn bot() -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn extreme(program: &Game<Id>) -> Self::Domain {
+    fn extreme(program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
         program
             .variables
             .iter()
@@ -27,7 +28,7 @@ impl Analysis for ReachingDefinitions {
         a
     }
 
-    fn kill(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
+    fn kill(input: Self::Domain, edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
         match &edge.label.as_var_assignment() {
             Some((identifier, _)) if !edge.label.is_map_assignment() => input
                 .into_iter()
@@ -37,7 +38,7 @@ impl Analysis for ReachingDefinitions {
         }
     }
 
-    fn gen(mut input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
+    fn gen(mut input: Self::Domain, edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
         if let Some((identifier, _)) = edge.label.as_var_assignment() {
             input.insert((identifier.clone(), Some(edge.clone())));
         }

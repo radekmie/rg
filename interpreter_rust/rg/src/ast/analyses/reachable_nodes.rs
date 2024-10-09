@@ -7,13 +7,14 @@ type Id = Arc<str>;
 pub struct ReachableNodes;
 
 impl Analysis for ReachableNodes {
+    type Context = ();
     type Domain = bool;
 
     fn bot() -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn extreme(_program: &Game<Id>) -> Self::Domain {
+    fn extreme(_program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
         true
     }
 
@@ -21,11 +22,11 @@ impl Analysis for ReachableNodes {
         a || b
     }
 
-    fn kill(input: Self::Domain, _edge: &Edge<Id>) -> Self::Domain {
+    fn kill(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
         input
     }
 
-    fn gen(input: Self::Domain, _edge: &Edge<Id>) -> Self::Domain {
+    fn gen(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
         input
     }
 }

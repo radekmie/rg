@@ -486,7 +486,7 @@ mod test {
 
     test_transform!(
         compact_skip_edges,
-        skip_and_comparisson,
+        skip_and_comparison,
         "a, b: ;
         a, b: 1 == 1;
         b, c: 2 == 2;",

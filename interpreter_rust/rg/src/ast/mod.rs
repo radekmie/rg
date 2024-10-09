@@ -336,10 +336,6 @@ impl<Id: PartialEq> Label<Id> {
     pub fn is_self_assignment(&self) -> bool {
         matches!(self, Self::Assignment { lhs, rhs } if lhs.is_equal_reference(rhs))
     }
-
-    pub fn is_self_comparison(&self) -> bool {
-        matches!(self, Self::Comparison { lhs, rhs, negated } if !negated && lhs.is_equal_reference(rhs))
-    }
 }
 
 impl Label<Arc<str>> {
@@ -986,6 +982,11 @@ impl<'a, Id: Clone + Ord + 'a> Game<Id> {
 impl<Id: Clone + PartialEq> Game<Id> {
     pub fn infer(&self, identifier: &Id, edge: Option<&Edge<Id>>) -> Arc<Type<Id>> {
         self.infer_or_none(identifier, edge)
+            .or_else(|| {
+                self.typedefs
+                    .iter()
+                    .find_map(|x| x.type_.contains(identifier).then_some(&x.type_))
+            })
             .cloned()
             .unwrap_or_else(|| {
                 Arc::new(Type::Set {
@@ -1568,6 +1569,10 @@ impl<Id: Clone + PartialEq> Type<Id> {
 }
 
 impl<Id: PartialEq> Type<Id> {
+    pub fn contains(&self, identifier: &Id) -> bool {
+        matches!(self, Self::Set { identifiers, .. } if identifiers.contains(identifier))
+    }
+
     pub fn is_reference(&self, identifier: &Id) -> bool {
         matches!(self, Self::TypeReference { identifier: x } if x == identifier)
     }
@@ -1607,8 +1612,32 @@ pub enum Value<Id> {
 }
 
 impl<Id> Value<Id> {
+    pub fn is_map(&self) -> bool {
+        matches!(self, Self::Map { .. })
+    }
+
     pub fn new(identifier: Id) -> Self {
         Self::Element { identifier }
+    }
+
+    pub fn to_identifier(&self) -> Option<&Id> {
+        match self {
+            Self::Element { identifier } => Some(identifier),
+            Self::Map { .. } => None,
+        }
+    }
+}
+
+impl<Id: PartialEq> Value<Id> {
+    pub fn get_entry(&self, identifier: &Id) -> Option<&Self> {
+        match self {
+            Self::Element { .. } => None,
+            Self::Map { entries, .. } => entries
+                .iter()
+                .find(|entry| entry.identifier.as_ref() == Some(identifier))
+                .or_else(|| entries.iter().find(|entry| entry.identifier.is_none()))
+                .map(|entry| entry.value.as_ref()),
+        }
     }
 }
 

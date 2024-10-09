@@ -10,10 +10,10 @@ mod test {
         ($fn:ident, $name:ident, $source:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                use crate::ast::ErrorReason;
-                use crate::parsing::parser::parse_with_errors;
                 use map_id::MapId;
                 use std::sync::Arc;
+                use $crate::ast::ErrorReason;
+                use $crate::parsing::parser::parse_with_errors;
 
                 let (game, errors) = parse_with_errors($source);
                 assert!(errors.is_empty(), "Parse errors: {errors:?}");

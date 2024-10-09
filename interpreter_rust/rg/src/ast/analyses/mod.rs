@@ -1,41 +1,58 @@
+mod constants_analysis;
 mod reachable_nodes;
 mod reaching_assignments;
 mod reaching_definitions;
 
 use crate::ast::{Edge, Game, Label, Node};
+pub use constants_analysis::ConstantsAnalysis;
 pub use reachable_nodes::ReachableNodes;
 pub use reaching_assignments::ReachingAssignments;
 pub use reaching_definitions::ReachingDefinitions;
 use std::collections::{BTreeMap, BTreeSet};
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 type Id = Arc<str>;
 
 pub trait Analysis {
+    type Context: PartialEq + Default;
     type Domain: Clone + PartialEq;
 
     fn bot() -> Self::Domain;
 
-    fn extreme(program: &Game<Id>) -> Self::Domain;
+    fn extreme(program: &Game<Id>, ctx: &Self::Context) -> Self::Domain;
 
-    fn gen(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain;
+    fn gen(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
+        input
+    }
+
+    fn get_context(_program: &Game<Id>) -> Self::Context {
+        Self::Context::default()
+    }
 
     fn join(a: Self::Domain, b: Self::Domain) -> Self::Domain;
 
-    fn kill(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain;
+    fn kill(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
+        input
+    }
 
-    fn transfer(input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
-        Self::gen(Self::kill(input, edge), edge)
+    fn transfer(input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain {
+        Self::gen(Self::kill(input, edge, ctx), edge, ctx)
     }
 }
 
 impl Game<Id> {
     pub fn analyse<A: Analysis>(&self, with_reachability: bool) -> BTreeMap<Node<Id>, A::Domain> {
+        self.analyse_with_context::<A>(with_reachability).0
+    }
+
+    pub fn analyse_with_context<A: Analysis>(
+        &self,
+        with_reachability: bool,
+    ) -> (BTreeMap<Node<Id>, A::Domain>, A::Context) {
         let flow = Flow::new(self, with_reachability);
         let mut worker = Worker::<A>::new(self, &flow);
         worker.run();
-        worker.result
+        (worker.result, worker.ctx)
     }
 }
 
@@ -47,7 +64,7 @@ struct Flow<'a> {
 }
 
 impl<'a> Flow<'a> {
-    fn entry(&self) -> Node<Id> {
+    fn entry() -> Node<Id> {
         Node::new(Id::from("begin"))
     }
 
@@ -89,23 +106,25 @@ impl<'a> Flow<'a> {
 }
 
 struct Worker<'a, A: Analysis + ?Sized> {
+    ctx: A::Context,
     flow: &'a Flow<'a>,
     result: BTreeMap<Node<Id>, A::Domain>,
     worklist: BTreeSet<&'a Node<Id>>,
-    _parameters: PhantomData<A>,
 }
 
-impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
-    fn knowledge(&self, node: &Node<Id>) -> I::Domain {
-        self.result.get(node).cloned().unwrap_or_else(I::bot)
+impl<'a, A: Analysis + ?Sized> Worker<'a, A> {
+    fn knowledge(&self, node: &Node<Id>) -> A::Domain {
+        self.result.get(node).cloned().unwrap_or_else(A::bot)
     }
 
     fn new(game: &'a Game<Arc<str>>, flow: &'a Flow<'a>) -> Self {
+        let ctx = A::get_context(game);
+        let result = BTreeMap::from([(Flow::entry(), A::extreme(game, &ctx))]);
         Worker {
+            ctx,
             flow,
-            result: BTreeMap::from([(flow.entry(), I::extreme(game))]),
+            result,
             worklist: flow.nodes.clone(),
-            _parameters: PhantomData,
         }
     }
 
@@ -119,16 +138,13 @@ impl<'a, I: Analysis + ?Sized> Worker<'a, I> {
         }
     }
 
-    fn summarize_predecessors(&self, node: &Node<Id>, old_input: &I::Domain) -> I::Domain {
+    fn summarize_predecessors(&self, node: &Node<Id>, old_input: &A::Domain) -> A::Domain {
         let incoming_edges = self.flow.predecessors(node);
-        if incoming_edges.is_empty() {
-            return old_input.clone();
-        }
-
         incoming_edges
             .iter()
-            .map(|edge| I::transfer(self.knowledge(&edge.lhs), edge))
-            .fold(I::bot(), I::join)
+            .map(|edge| A::transfer(self.knowledge(&edge.lhs), edge, &self.ctx))
+            .reduce(A::join)
+            .unwrap_or_else(|| old_input.clone())
     }
 
     fn transfer(&mut self, node: &Node<Id>) -> bool {

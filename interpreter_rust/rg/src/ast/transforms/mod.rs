@@ -16,6 +16,7 @@ mod join_fork_suffixes;
 mod mangle_symbols;
 mod normalize_constants;
 mod normalize_types;
+mod propagate_constants;
 mod prune_singleton_types;
 mod prune_unreachable_nodes;
 mod prune_unused_bindings;
@@ -57,10 +58,10 @@ mod test {
         ($fn:ident, $name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                use crate::ast::Game;
-                use crate::parsing::parser::parse_with_errors;
                 use map_id::MapId;
                 use std::sync::Arc;
+                use $crate::ast::Game;
+                use $crate::parsing::parser::parse_with_errors;
 
                 fn parse(source: &str) -> Game<Arc<str>> {
                     let (mut game, errors) = parse_with_errors(source);

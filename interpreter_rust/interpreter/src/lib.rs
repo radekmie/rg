@@ -94,6 +94,8 @@ pub struct Flags {
     normalize_constants: bool,
     #[serde(rename = "normalizeTypes")]
     normalize_types: bool,
+    #[serde(rename = "propagateConstants")]
+    propagate_constants: bool,
     #[serde(rename = "pruneSingletonTypes")]
     prune_singleton_types: bool,
     #[serde(rename = "pruneUnreachableNodes")]
@@ -134,6 +136,7 @@ impl Flags {
             mangle_symbols: true,
             normalize_constants: true,
             normalize_types: true,
+            propagate_constants: true,
             prune_singleton_types: true,
             prune_unreachable_nodes: true,
             prune_unused_bindings: true,
@@ -165,6 +168,7 @@ impl Flags {
             mangle_symbols: false,
             normalize_constants: false,
             normalize_types: false,
+            propagate_constants: false,
             prune_singleton_types: false,
             prune_unreachable_nodes: false,
             prune_unused_bindings: false,
@@ -280,6 +284,7 @@ pub fn analyze_rg_inner(
         pass!(compact_comparisons);
         pass!(inline_reachability);
         pass!(inline_assignment);
+        pass!(propagate_constants);
         pass!(prune_singleton_types);
         pass!(prune_unreachable_nodes);
         pass!(prune_unused_variables);

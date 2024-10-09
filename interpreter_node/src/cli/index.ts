@@ -52,6 +52,7 @@ program
     '--normalizeTypes',
     'normalize all types so Arrow types appear only in type definitions and are at most one level deep',
   )
+  .option('--propagateConstants', 'inline constants and skip obvious comparisons')
   .option(
     '--pruneSingletonTypes',
     'prune singleton types (i.e., Set types with one element)',
@@ -124,6 +125,7 @@ function addCommand(
           mangleSymbols: !!options.mangleSymbols,
           normalizeConstants: !!options.normalizeConstants,
           normalizeTypes: !!options.normalizeTypes,
+          propagateConstants: !!options.propagateConstants,
           pruneSingletonTypes: !!options.pruneSingletonTypes,
           pruneUnreachableNodes: !!options.pruneUnreachableNodes,
           pruneUnusedBindings: !!options.pruneUnusedBindings,

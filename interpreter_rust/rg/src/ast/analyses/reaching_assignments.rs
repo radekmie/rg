@@ -76,13 +76,14 @@ impl Assignment {
 pub struct ReachingAssignments;
 
 impl Analysis for ReachingAssignments {
+    type Context = ();
     type Domain = BTreeMap<Option<Id>, Assignment>;
 
     fn bot() -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn extreme(_program: &Game<Id>) -> Self::Domain {
+    fn extreme(_program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
         Self::Domain::default()
     }
 
@@ -95,7 +96,7 @@ impl Analysis for ReachingAssignments {
         a
     }
 
-    fn kill(mut input: Self::Domain, edge: &Edge<Id>) -> Self::Domain {
+    fn kill(mut input: Self::Domain, edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
         if edge.label.is_player_assignment() || edge.label.is_tag() {
             input.clear();
         } else if let Label::Comparison {
@@ -114,7 +115,11 @@ impl Analysis for ReachingAssignments {
         input
     }
 
-    fn gen(mut input: Self::Domain, Edge { label, lhs, .. }: &Edge<Id>) -> Self::Domain {
+    fn gen(
+        mut input: Self::Domain,
+        Edge { label, lhs, .. }: &Edge<Id>,
+        _ctx: &Self::Context,
+    ) -> Self::Domain {
         if label.is_assignment() {
             let variable = label.as_var_assignment().unwrap().0;
             if !IMPORTANT_VARIABLES.contains(&variable.as_ref()) {

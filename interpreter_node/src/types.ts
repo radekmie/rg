@@ -27,6 +27,7 @@ export type Settings = {
     mangleSymbols: boolean;
     normalizeConstants: boolean;
     normalizeTypes: boolean;
+    propagateConstants: boolean;
     pruneSingletonTypes: boolean;
     pruneUnreachableNodes: boolean;
     pruneUnusedBindings: boolean;
@@ -58,6 +59,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   mangleSymbols: false,
   normalizeConstants: false,
   normalizeTypes: false,
+  propagateConstants: false,
   pruneSingletonTypes: false,
   pruneUnreachableNodes: false,
   pruneUnusedBindings: false,
