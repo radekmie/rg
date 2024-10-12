@@ -12,16 +12,51 @@ struct Context<'a> {
 }
 
 impl Context<'_> {
-    fn get(&self, identifier: &Id, edge: &Edge<Id>) -> Option<Arc<Value<Id>>> {
+    fn get_identifier(&self, identifier: &Id, edge: &Edge<Id>) -> Option<Id> {
         if edge.has_binding(identifier) {
             None
         } else if self.variables.contains(identifier) {
-            self.constant_vars.get(identifier).cloned()
-        } else {
-            self.constants
-                .get(identifier)
+            self.dereference_constant(self.constant_vars.get(identifier)?, false)
+                .to_identifier()
                 .cloned()
-                .or_else(|| Some(Arc::new(Value::new(identifier.clone()))))
+        } else {
+            self.dereference_constant(&Value::new(identifier.clone()), false)
+                .to_identifier()
+                .cloned()
+        }
+    }
+
+    fn get_value(&self, identifier: &Id, edge: &Edge<Id>) -> Option<Value<Id>> {
+        if edge.has_binding(identifier) {
+            None
+        } else if self.variables.contains(identifier) {
+            Some(
+                self.dereference_constant(self.constant_vars.get(identifier)?, true)
+                    .clone(),
+            )
+        } else {
+            self.constants.get(identifier).map_or_else(
+                || Some(Value::new(identifier.clone())),
+                |value| Some(self.dereference_constant(value, true).clone()),
+            )
+        }
+    }
+
+    fn dereference_constant<'a>(
+        &'a self,
+        value: &'a Value<Id>,
+        dereference_map: bool,
+    ) -> &'a Value<Id> {
+        match value {
+            Value::Element { identifier } if self.constants.contains_key(identifier) => {
+                let dereferenced = &self.constants[identifier];
+                if dereferenced.is_map() && !dereference_map {
+                    value
+                } else {
+                    self.dereference_constant(dereferenced, dereference_map)
+                }
+            }
+            _ => value,
         }
     }
 }
@@ -70,11 +105,11 @@ impl Game<Id> {
                     let lhs_value = lhs
                         .uncast()
                         .as_reference()
-                        .and_then(|id| context.get(id, &edge_clone));
+                        .and_then(|id| context.get_value(id, &edge_clone));
                     let rhs_value = rhs
                         .uncast()
                         .as_reference()
-                        .and_then(|id| context.get(id, &edge_clone));
+                        .and_then(|id| context.get_value(id, &edge_clone));
 
                     // Skip or remove comparisons between constants
                     if let (Some(lhs_value), Some(rhs_value)) = (lhs_value, rhs_value) {
@@ -109,23 +144,19 @@ fn eval_expression(
     match expression {
         Expression::Access { lhs, rhs, span } => {
             // First, try to evaluate lhs as Value::Map and rhs as Value::Identifier
-            let map_value = eval_as_map(lhs, context, edge).and_then(|lhs_val| {
-                eval_as_identifier(rhs, context, edge).map(|rhs_val| (lhs_val, rhs_val))
-            });
-
-            if let Some((lhs_val, rhs_val)) = map_value {
-                lhs_val
-                    .get_entry(&rhs_val)
-                    .and_then(Value::to_identifier)
-                    .cloned()
-                    .map_or_else(|| expression.clone(), Expression::new)
-            } else {
-                Expression::Access {
+            eval_access(lhs, rhs, context, edge, false).map_or_else(
+                || Expression::Access {
                     span: *span,
                     lhs: Arc::new(eval_expression(lhs, context, edge)),
                     rhs: Arc::new(eval_expression(rhs, context, edge)),
-                }
-            }
+                },
+                |value| {
+                    value
+                        .to_identifier()
+                        .cloned()
+                        .map_or_else(|| expression.clone(), Expression::new)
+                },
+            )
         }
         Expression::Cast { span, lhs, rhs } => Expression::Cast {
             span: *span,
@@ -133,10 +164,23 @@ fn eval_expression(
             rhs: Arc::new(eval_expression(rhs, context, edge)),
         },
         Expression::Reference { identifier } => context
-            .get(identifier, edge)
-            .and_then(|value| value.to_identifier().cloned())
+            .get_identifier(identifier, edge)
             .map_or_else(|| expression.clone(), Expression::new),
     }
+}
+
+fn eval_access(
+    lhs: &Expression<Id>,
+    rhs: &Expression<Id>,
+    context: &Context,
+    edge: &Edge<Id>,
+    dereference_map: bool,
+) -> Option<Value<Id>> {
+    eval_as_map(lhs, context, edge)?
+        .get_entry(&eval_as_identifier(rhs, context, edge)?)
+        // .filter(f)
+        .map(|value| context.dereference_constant(value, dereference_map).clone())
+    // .cloned()
 }
 
 fn eval_as_map(
@@ -145,15 +189,9 @@ fn eval_as_map(
     edge: &Edge<Id>,
 ) -> Option<Value<Id>> {
     match expression {
-        Expression::Access { lhs, rhs, .. } => eval_as_map(lhs, context, edge)?
-            .get_entry(&eval_as_identifier(rhs, context, edge)?)
-            .filter(|value| value.is_map())
-            .cloned(),
+        Expression::Access { lhs, rhs, .. } => eval_access(lhs, rhs, context, edge, true),
         Expression::Cast { rhs, .. } => eval_as_map(rhs, context, edge),
-        Expression::Reference { identifier } => context
-            .get(identifier, edge)
-            .filter(|value| value.is_map())
-            .map(|value| value.as_ref().clone()),
+        Expression::Reference { identifier } => context.get_value(identifier, edge),
     }
 }
 
@@ -163,14 +201,10 @@ fn eval_as_identifier(
     edge: &Edge<Id>,
 ) -> Option<Id> {
     match expression {
-        Expression::Access { lhs, rhs, .. } => eval_as_map(lhs, context, edge)?
-            .get_entry(&eval_as_identifier(rhs, context, edge)?)?
-            .to_identifier()
-            .cloned(),
+        Expression::Access { lhs, rhs, .. } => eval_access(lhs, rhs, context, edge, false)
+            .and_then(|value| value.to_identifier().cloned()),
         Expression::Cast { rhs, .. } => eval_as_identifier(rhs, context, edge),
-        Expression::Reference { identifier } => {
-            context.get(identifier, edge)?.to_identifier().cloned()
-        }
+        Expression::Reference { identifier } => context.get_identifier(identifier, edge),
     }
 }
 
@@ -356,7 +390,7 @@ mod test {
 
     test_transform!(
         propagate_constants,
-        const_dependency,
+        const_dependency1,
         "type A = {a,b,c};
         const cst1: A = a;
         const cst2: A = cst1;
@@ -368,6 +402,92 @@ mod test {
         const cst2: A = cst1;
         const cst3: A -> A -> A = { b: { :cst2 }, :{ :cst1 } };
         var x: A -> A -> A = cst3;
+        begin, end: x = a;"
+    );
+
+    test_transform!(
+        propagate_constants,
+        const_dependency2,
+        "type A = {a,b,c};
+        const cst1: A = a;
+        const cst2: A = cst1;
+        const cst3: A -> A -> A = { b: { a:cst2, :c }, :{ :cst1 } };
+        var x: A -> A -> A = cst3;
+        begin, end: x = cst3[b][cst2];",
+        "type A = { a, b, c };
+        const cst1: A = a;
+        const cst2: A = cst1;
+        const cst3: A -> A -> A = { b: { a:cst2, :c }, :{ :cst1 } };
+        var x: A -> A -> A = cst3;
+        begin, end: x = a;"
+    );
+
+    test_transform!(
+        propagate_constants,
+        const_dependency3,
+        "type A = {a,b,c};
+        const cst1: A = a;
+        const cst2: A = cst1;
+        const board: A -> A = { b: cst2, :c };
+        const cst3: A -> A -> A = { a: board, :{ a:cst2, :c } };
+        var x: A = c;
+        var y: A -> A = { :cst1 };
+        begin, a1: y = cst3[cst2];
+        a1, end: x = y[b];",
+        "type A = {a,b,c};
+        const cst1: A = a;
+        const cst2: A = cst1;
+        const board: A -> A = { b: cst2, :c };
+        const cst3: A -> A -> A = { a: board, :{ a:cst2, :c } };
+        var x: A = c;
+        var y: A -> A = { :cst1 };
+        begin, a1: y = board;
+        a1, end: x = a;"
+    );
+
+    test_transform!(
+        propagate_constants,
+        const_dependency4,
+        "type A = {a,b,c};
+        const cst1: A = a;
+        const cst2: A = cst1;
+        const board: A -> A = { b: cst2, :c };
+        const board1: A -> A = board;
+        const cst3: A -> A -> A = { a: board1, :{ a:cst2, :c } };
+        var x: A = c;
+        var y: A -> A = { :cst1 };
+        begin, a1: y = cst3[cst2];
+        a1, end: x = y[b];",
+        "type A = {a,b,c};
+        const cst1: A = a;
+        const cst2: A = cst1;
+        const board: A -> A = { b: cst2, :c };
+        const board1: A -> A = board;
+        const cst3: A -> A -> A = { a: board1, :{ a:cst2, :c } };
+        var x: A = c;
+        var y: A -> A = { :cst1 };
+        begin, a1: y = board;
+        a1, end: x = a;"
+    );
+
+    test_transform!(
+        propagate_constants,
+        const_dependency5,
+        "type A = {a,b,c};
+        const cst1: A = a;
+        const cst2: A = cst1;
+        const board: A -> A = { b: cst2, :c };
+        const board1: A -> A = board;
+        const cst3: A -> A -> A = { a: board1, :{ a:cst2, :c } };
+        var x: A = c;
+        begin, end: x = cst3[cst2][b];",
+        "type A = {a,b,c};
+        const cst1: A = a;
+        const cst2: A = cst1;
+        const board: A -> A = { b: cst2, :c };
+        const board1: A -> A = board;
+        const cst3: A -> A -> A = { a: board1, :{ a:cst2, :c } };
+        var x: A = c;
         begin, end: x = a;"
     );
 
