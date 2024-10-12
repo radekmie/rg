@@ -35,8 +35,6 @@ impl Game<Arc<str>> {
         // Rename `bind_N: T` into `t: T` if `t` is not referenced.
         self.make_bindings_canonical();
 
-        self.edges.dedup();
-
         Ok(())
     }
 
@@ -423,6 +421,14 @@ mod test {
             h, a: ;
             h, end: ;
         "
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        random5,
+        "begin, a: 1 == 1;
+        begin, b: ;
+        b, a: 1 == 1;"
     );
 
     test_transform!(
