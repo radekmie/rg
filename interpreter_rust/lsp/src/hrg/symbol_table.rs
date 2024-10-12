@@ -286,6 +286,9 @@ fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
     if !table.is_defined("end") {
         table.symbols.push(make_builtin("end", Flag::Function));
     }
+    if !table.is_defined("return") {
+        table.symbols.push(make_builtin("return", Flag::Function));
+    }
 }
 
 pub fn from_game(game: &Game<Identifier>) -> (SymbolTable, Vec<Error>) {
