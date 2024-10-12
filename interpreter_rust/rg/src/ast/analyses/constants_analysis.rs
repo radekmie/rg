@@ -132,13 +132,14 @@ fn evaluate_constant(
     match expr {
         Expression::Access { lhs, rhs, .. } => {
             let lhs = evaluate_constant(lhs, knowledge, ctx, edge)?;
-            let lhs = dereference_constant(&lhs, ctx);
             let rhs = evaluate_constant(rhs, knowledge, ctx, edge)?;
-            let rhs = dereference_constant(&rhs, ctx);
-            rhs.to_identifier().and_then(|identifier| {
-                lhs.get_entry(identifier)
-                    .map(|entry| Arc::new(entry.clone()))
-            })
+            dereference_constant(&rhs, ctx)
+                .to_identifier()
+                .and_then(|identifier| {
+                    dereference_constant(&lhs, ctx)
+                        .get_entry(identifier)
+                        .map(|entry| Arc::new(entry.clone()))
+                })
         }
         Expression::Cast { rhs, .. } => evaluate_constant(rhs, knowledge, ctx, edge),
         Expression::Reference { identifier } if edge.has_binding(identifier) => None,

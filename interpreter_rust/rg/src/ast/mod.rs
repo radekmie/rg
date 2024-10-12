@@ -1628,6 +1628,15 @@ impl<Id> Value<Id> {
     }
 }
 
+impl<Id: Clone> Value<Id> {
+    pub fn as_identifier(self) -> Option<Id> {
+        match self {
+            Self::Element { identifier } => Some(identifier),
+            Self::Map { .. } => None,
+        }
+    }
+}
+
 impl<Id: PartialEq> Value<Id> {
     pub fn get_entry(&self, identifier: &Id) -> Option<&Self> {
         match self {
@@ -1637,23 +1646,6 @@ impl<Id: PartialEq> Value<Id> {
                 .find(|entry| entry.identifier.as_ref() == Some(identifier))
                 .or_else(|| entries.iter().find(|entry| entry.identifier.is_none()))
                 .map(|entry| entry.value.as_ref()),
-        }
-    }
-
-    pub fn to_entry(self, identifier: &Id) -> Option<Arc<Self>> {
-        match self {
-            Self::Element { .. } => None,
-            Self::Map { entries, .. } => if entries
-                .iter()
-                .any(|entry| entry.identifier.as_ref() == Some(identifier))
-            {
-                entries
-                    .into_iter()
-                    .find(|entry| entry.identifier.as_ref() == Some(identifier))
-            } else {
-                entries.into_iter().find(|entry| entry.identifier.is_none())
-            }
-            .map(|entry| entry.value),
         }
     }
 }

@@ -12,6 +12,24 @@ struct Context<'a> {
 }
 
 impl Context<'_> {
+    fn dereference_constant<'a>(
+        &'a self,
+        value: &'a Value<Id>,
+        dereference_map: bool,
+    ) -> &'a Value<Id> {
+        if let Value::Element { identifier } = value {
+            self.constants
+                .get(identifier)
+                .filter(|dereferenced| !dereferenced.is_map() || dereference_map)
+                .map_or_else(
+                    || value,
+                    |dereferenced| self.dereference_constant(dereferenced, dereference_map),
+                )
+        } else {
+            value
+        }
+    }
+
     fn get_identifier(&self, identifier: &Id, edge: &Edge<Id>) -> Option<Id> {
         if edge.has_binding(identifier) {
             None
@@ -39,24 +57,6 @@ impl Context<'_> {
                 || Some(Value::new(identifier.clone())),
                 |value| Some(self.dereference_constant(value, true).clone()),
             )
-        }
-    }
-
-    fn dereference_constant<'a>(
-        &'a self,
-        value: &'a Value<Id>,
-        dereference_map: bool,
-    ) -> &'a Value<Id> {
-        match value {
-            Value::Element { identifier } if self.constants.contains_key(identifier) => {
-                let dereferenced = &self.constants[identifier];
-                if dereferenced.is_map() && !dereference_map {
-                    value
-                } else {
-                    self.dereference_constant(dereferenced, dereference_map)
-                }
-            }
-            _ => value,
         }
     }
 }
@@ -152,8 +152,7 @@ fn eval_expression(
                 },
                 |value| {
                     value
-                        .to_identifier()
-                        .cloned()
+                        .as_identifier()
                         .map_or_else(|| expression.clone(), Expression::new)
                 },
             )
@@ -178,9 +177,7 @@ fn eval_access(
 ) -> Option<Value<Id>> {
     eval_as_map(lhs, context, edge)?
         .get_entry(&eval_as_identifier(rhs, context, edge)?)
-        // .filter(f)
         .map(|value| context.dereference_constant(value, dereference_map).clone())
-    // .cloned()
 }
 
 fn eval_as_map(
@@ -201,8 +198,9 @@ fn eval_as_identifier(
     edge: &Edge<Id>,
 ) -> Option<Id> {
     match expression {
-        Expression::Access { lhs, rhs, .. } => eval_access(lhs, rhs, context, edge, false)
-            .and_then(|value| value.to_identifier().cloned()),
+        Expression::Access { lhs, rhs, .. } => {
+            eval_access(lhs, rhs, context, edge, false).and_then(Value::as_identifier)
+        }
         Expression::Cast { rhs, .. } => eval_as_identifier(rhs, context, edge),
         Expression::Reference { identifier } => context.get_identifier(identifier, edge),
     }
