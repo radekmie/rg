@@ -589,10 +589,10 @@ function translateAutomatonStatements(
             );
             utils.assert(returnEdgeName, 'return() requires returnEdgeName.');
             context.$connect(
-              currentEdgeName,
+              rg.EdgeName({ parts: [...currentEdgeName.parts, ...bindings] }),
               returnEdgeName,
               rg.Skip({}),
-              bindings,
+              [],
             );
             return true;
           }
@@ -834,9 +834,9 @@ function translateAutomatonStatements(
           continueEdgeName,
           endEdgeName,
           entryEdgeName: thenEdgeName,
-          nextEdgeName,
+          nextEdgeName: elseEdgeName,
           prefix,
-          returnEdgeName: elseEdgeName,
+          returnEdgeName,
         });
         currentEdgeName = elseEdgeName;
         continue;
