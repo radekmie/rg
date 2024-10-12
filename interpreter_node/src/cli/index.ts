@@ -48,6 +48,7 @@ program
     'join paths with identical labels leading to the same node',
   )
   .option('--mangleSymbols', 'mangle all user-defined symbols')
+  .option('--mergeAccesses', 'merge nested accesses to constant maps')
   .option(
     '--normalizeConstants',
     'normalize all constants so Maps appear only in the top level',
@@ -130,6 +131,7 @@ function addCommand(
           joinForkPrefixes: !!options.joinForkPrefixes,
           joinForkSuffixes: !!options.joinForkSuffixes,
           mangleSymbols: !!options.mangleSymbols,
+          mergeAccesses: !!options.mergeAccesses,
           normalizeConstants: !!options.normalizeConstants,
           normalizeTypes: !!options.normalizeTypes,
           propagateConstants: !!options.propagateConstants,

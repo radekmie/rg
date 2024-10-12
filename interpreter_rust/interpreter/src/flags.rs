@@ -32,6 +32,8 @@ pub struct Flags {
     pub join_fork_suffixes: bool,
     #[serde(rename = "mangleSymbols")]
     pub mangle_symbols: bool,
+    #[serde(rename = "mergeAccesses")]
+    pub merge_accesses: bool,
     #[serde(rename = "normalizeConstants")]
     pub normalize_constants: bool,
     #[serde(rename = "normalizeTypes")]
@@ -76,6 +78,7 @@ impl Flags {
             join_fork_prefixes: true,
             join_fork_suffixes: true,
             mangle_symbols: true,
+            merge_accesses: true,
             normalize_constants: true,
             normalize_types: true,
             propagate_constants: true,
@@ -108,6 +111,7 @@ impl Flags {
             join_fork_prefixes: false,
             join_fork_suffixes: false,
             mangle_symbols: false,
+            merge_accesses: false,
             normalize_constants: false,
             normalize_types: false,
             propagate_constants: false,
