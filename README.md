@@ -73,47 +73,6 @@ npm run lint
 npm test
 ```
 
-## Features
-
-| Feature                                         |    `interpreter_node`    |    `interpreter_rust`    |
-| :---------------------------------------------- | :----------------------: | :----------------------: |
-| Parser of GDL (Game Description Language)       | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Parser of RG (Regular Games)                    | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Parser of HRG (High-level Regular Games)        | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Parser of RBG (Regular Board Games)             |    :heavy_check_mark:    | :heavy_multiplication_x: |
-| Interpreter of the IST (Interpreter State Tree) | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Translation of RG into IST                      | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Translation of GDL into RG                      | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Translation of HRG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
-| Translation of RBG into RG                      |    :heavy_check_mark:    | :heavy_multiplication_x: |
-| Transformation `addExplicitCasts`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `calculateDisjoints`             | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `calculateRepeats`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `calculateSimpleApply`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `calculateTagIndexes`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `calculateUniques`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `compactSkipEdges`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `expandGeneratorNodes`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `inlineAssignment`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `inlineReachability`             | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `joinForkSuffixes`               | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `mangleSymbols`                  | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `normalizeConstants`             | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `normalizeTypes`                 | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `pruneSingletonTypes`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `pruneUnreachableNodes`          | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `pruneUnusedConstants`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `pruneUnusedVariables`           | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `reuseFunctions`                 | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `skipGeneratorComparisons`       | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `skipSelfAssignments`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `skipSelfComparisons`            | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Transformation `skipUnusedTags`                 | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Validator `check_maps`                          | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Validator `check_multiple_edges`                | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Validator `check_reachabilities`                | :heavy_multiplication_x: |    :heavy_check_mark:    |
-| Validator `check_types`                         | :heavy_multiplication_x: |    :heavy_check_mark:    |
-
 ## `interpreter_rust`
 
 ### Development
@@ -175,19 +134,28 @@ Options:
   --addExplicitCasts          add type casts to all expressions
   --calculateDisjoints        calculate missing @disjoint and @disjointExhaustive pragmas automatically
   --calculateRepeats          calculate missing @repeat pragmas automatically
-  --calculateSimpleApply      calculate missing @simpleApply and @simpleApplyExhaustive pragmas automatically
+  --calculateSimpleApply      calculate missing @simpleApply and @simpleApplyExhaustive pragmas
+                              automatically
   --calculateTagIndexes       calculate missing @tagIndex and @tagMaxIndex pragmas automatically
   --calculateUniques          calculate missing @unique pragmas automatically
+  --compactComparisons        optimize selective comparisons with negations
   --compactSkipEdges          optimize automaton by compacting skip edges
   --expandGeneratorNodes      expand generator nodes
   --inlineAssignment          inline assignment when possible
   --inlineReachability        inline reachability when possible
+  --joinExclusiveEdges        joins multiedges with exclusive labels
+  --joinForkPrefixes          join paths with identical labels from the same node
   --joinForkSuffixes          join paths with identical labels leading to the same node
   --mangleSymbols             mangle all user-defined symbols
   --normalizeConstants        normalize all constants so Maps appear only in the top level
-  --normalizeTypes            normalize all types so Arrow types appear only in type definitions and are at most one level deep
+  --normalizeTypes            normalize all types so Arrow types appear only in type definitions and are
+                              at most one level deep
+  --propagateConstants        inline constants and skip obvious comparisons
   --pruneSingletonTypes       prune singleton types (i.e., Set types with one element)
   --pruneUnreachableNodes     prune unreachable nodes
+  --pruneUnusedBindings       prune unused bindings from nodes
+  --pruneUnusedConstants      prune unused constants
+  --pruneUnusedVariables      prune unused variables
   --reuseFunctions            reuse subautomatons when translating function calls (.hrg only)
   --skipGeneratorComparisons  skips all comparisons to a generator (e.g., `x, y(t: T): t == null`)
   --skipSelfAssignments       replaces all self assignments (e.g., `x = x`) with skip edges

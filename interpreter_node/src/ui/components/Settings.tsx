@@ -24,7 +24,6 @@ const availableOptions: { label: string; flags: Flag[] }[] = [
       'pruneUnusedBindings',
       'pruneUnusedConstants',
       'pruneUnusedVariables',
-      'reuseFunctions',
       'skipGeneratorComparisons',
       'skipSelfAssignments',
       'skipSelfComparisons',
@@ -49,6 +48,7 @@ const availableOptions: { label: string; flags: Flag[] }[] = [
       'mangleSymbols',
       'normalizeConstants',
       'normalizeTypes',
+      'reuseFunctions',
     ],
   },
 ];

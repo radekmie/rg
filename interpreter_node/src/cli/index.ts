@@ -30,6 +30,10 @@ program
     '--calculateUniques',
     'calculate missing @unique pragmas automatically',
   )
+  .option(
+    '--compactComparisons',
+    'optimize selective comparisons with negations',
+  )
   .option('--compactSkipEdges', 'optimize automaton by compacting skip edges')
   .option('--expandGeneratorNodes', 'expand generator nodes')
   .option('--inlineAssignment', 'inline assignment when possible')
@@ -52,7 +56,10 @@ program
     '--normalizeTypes',
     'normalize all types so Arrow types appear only in type definitions and are at most one level deep',
   )
-  .option('--propagateConstants', 'inline constants and skip obvious comparisons')
+  .option(
+    '--propagateConstants',
+    'inline constants and skip obvious comparisons',
+  )
   .option(
     '--pruneSingletonTypes',
     'prune singleton types (i.e., Set types with one element)',

@@ -28,6 +28,7 @@ harness = false
 name = "runtime"
 
 [lib]
+bench = false
 crate-type = ["cdylib", "rlib"]
 
 [lints]

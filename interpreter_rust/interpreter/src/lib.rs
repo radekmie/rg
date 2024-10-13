@@ -1,5 +1,7 @@
+mod flags;
 pub mod ist;
 
+pub use flags::Flags;
 use hrg::ast::Game as HrgGame;
 use hrg::parsing::parser::parse_with_errors as unsafe_parse_hrg;
 use ist::tools::{new_ist_interner, ISTInterner};
@@ -8,7 +10,6 @@ use map_id::MapId;
 use rand::thread_rng;
 use rg::ast::Game as RgGame;
 use rg::parsing::parser::parse_with_errors as unsafe_parse_rg;
-use serde::Deserialize;
 use serde_json::{from_str, json, to_string};
 use std::sync::Arc;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
@@ -56,130 +57,6 @@ fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
 
 fn safe_serialize_rg_ast(game: &RgGame<Arc<str>>) -> Result<String, String> {
     to_string(game).map_err(|error| error.to_string())
-}
-
-#[derive(Deserialize)]
-pub struct Flags {
-    #[serde(rename = "addExplicitCasts")]
-    add_explicit_casts: bool,
-    #[serde(rename = "calculateDisjoints")]
-    calculate_disjoints: bool,
-    #[serde(rename = "calculateRepeats")]
-    calculate_repeats: bool,
-    #[serde(rename = "calculateSimpleApply")]
-    calculate_simple_apply: bool,
-    #[serde(rename = "calculateTagIndexes")]
-    calculate_tag_indexes: bool,
-    #[serde(rename = "calculateUniques")]
-    calculate_uniques: bool,
-    #[serde(rename = "compactSkipEdges")]
-    compact_skip_edges: bool,
-    #[serde(rename = "compactComparisons")]
-    compact_comparisons: bool,
-    #[serde(rename = "expandGeneratorNodes")]
-    expand_generator_nodes: bool,
-    #[serde(rename = "inlineReachability")]
-    inline_reachability: bool,
-    #[serde(rename = "inlineAssignment")]
-    inline_assignment: bool,
-    #[serde(rename = "joinExclusiveEdges")]
-    join_exclusive_edges: bool,
-    #[serde(rename = "joinForkPrefixes")]
-    join_fork_prefixes: bool,
-    #[serde(rename = "joinForkSuffixes")]
-    join_fork_suffixes: bool,
-    #[serde(rename = "mangleSymbols")]
-    mangle_symbols: bool,
-    #[serde(rename = "normalizeConstants")]
-    normalize_constants: bool,
-    #[serde(rename = "normalizeTypes")]
-    normalize_types: bool,
-    #[serde(rename = "propagateConstants")]
-    propagate_constants: bool,
-    #[serde(rename = "pruneSingletonTypes")]
-    prune_singleton_types: bool,
-    #[serde(rename = "pruneUnreachableNodes")]
-    prune_unreachable_nodes: bool,
-    #[serde(rename = "pruneUnusedBindings")]
-    prune_unused_bindings: bool,
-    #[serde(rename = "pruneUnusedConstants")]
-    prune_unused_constants: bool,
-    #[serde(rename = "pruneUnusedVariables")]
-    prune_unused_variables: bool,
-    #[serde(rename = "skipGeneratorComparisons")]
-    skip_generator_comparisons: bool,
-    #[serde(rename = "skipSelfAssignments")]
-    skip_self_assignments: bool,
-    #[serde(rename = "skipSelfComparisons")]
-    skip_self_comparisons: bool,
-    #[serde(rename = "skipUnusedTags")]
-    skip_unused_tags: bool,
-}
-
-impl Flags {
-    pub fn all() -> Self {
-        Self {
-            add_explicit_casts: true,
-            calculate_disjoints: true,
-            calculate_repeats: true,
-            calculate_simple_apply: true,
-            calculate_tag_indexes: true,
-            calculate_uniques: true,
-            compact_comparisons: true,
-            compact_skip_edges: true,
-            expand_generator_nodes: true,
-            inline_assignment: true,
-            inline_reachability: true,
-            join_exclusive_edges: true,
-            join_fork_prefixes: true,
-            join_fork_suffixes: true,
-            mangle_symbols: true,
-            normalize_constants: true,
-            normalize_types: true,
-            propagate_constants: true,
-            prune_singleton_types: true,
-            prune_unreachable_nodes: true,
-            prune_unused_bindings: true,
-            prune_unused_constants: true,
-            prune_unused_variables: true,
-            skip_generator_comparisons: true,
-            skip_self_assignments: true,
-            skip_self_comparisons: true,
-            skip_unused_tags: true,
-        }
-    }
-
-    pub fn none() -> Self {
-        Self {
-            add_explicit_casts: false,
-            calculate_disjoints: false,
-            calculate_repeats: false,
-            calculate_simple_apply: false,
-            calculate_tag_indexes: false,
-            calculate_uniques: false,
-            compact_comparisons: false,
-            compact_skip_edges: false,
-            expand_generator_nodes: false,
-            inline_assignment: false,
-            inline_reachability: false,
-            join_exclusive_edges: false,
-            join_fork_prefixes: false,
-            join_fork_suffixes: false,
-            mangle_symbols: false,
-            normalize_constants: false,
-            normalize_types: false,
-            propagate_constants: false,
-            prune_singleton_types: false,
-            prune_unreachable_nodes: false,
-            prune_unused_bindings: false,
-            prune_unused_constants: false,
-            prune_unused_variables: false,
-            skip_generator_comparisons: false,
-            skip_self_assignments: false,
-            skip_self_comparisons: false,
-            skip_unused_tags: false,
-        }
-    }
 }
 
 #[wasm_bindgen(js_name = analyzeHrg)]
@@ -269,33 +146,46 @@ pub fn analyze_rg_inner(
             };
         }
 
+        // Normalization.
         pass!(normalize_types);
         pass!(normalize_constants);
-        pass!(skip_self_assignments);
-        pass!(skip_self_comparisons);
-        pass!(skip_unused_tags);
-        pass!(skip_generator_comparisons);
-        pass!(compact_skip_edges);
         pass!(add_explicit_casts);
-        pass!(expand_generator_nodes);
+
+        // Inlining.
+        pass!(inline_assignment);
+        pass!(inline_reachability);
+        pass!(propagate_constants);
+
+        // Compact the automaton.
+        pass!(compact_comparisons);
+        pass!(compact_skip_edges);
         pass!(join_exclusive_edges);
         pass!(join_fork_prefixes);
         pass!(join_fork_suffixes);
-        pass!(compact_comparisons);
-        pass!(inline_reachability);
-        pass!(inline_assignment);
-        pass!(propagate_constants);
+        pass!(skip_generator_comparisons);
+        pass!(skip_self_assignments);
+        pass!(skip_self_comparisons);
+        pass!(skip_unused_tags);
+
+        // Pruning.
         pass!(prune_singleton_types);
         pass!(prune_unreachable_nodes);
-        pass!(prune_unused_variables);
-        pass!(prune_unused_constants);
         pass!(prune_unused_bindings);
-        pass!(mangle_symbols);
+        pass!(prune_unused_constants);
+        pass!(prune_unused_variables);
+
+        // Expand generator nodes before calculating pragmas.
+        pass!(expand_generator_nodes);
+
+        // Pragmas (order doesn't matter).
         pass!(calculate_disjoints);
         pass!(calculate_repeats);
         pass!(calculate_simple_apply);
         pass!(calculate_tag_indexes);
         pass!(calculate_uniques);
+
+        // Mangling (last, to ensure best possible error messages before).
+        pass!(mangle_symbols);
 
         break;
     }

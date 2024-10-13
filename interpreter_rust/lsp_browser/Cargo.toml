@@ -22,6 +22,7 @@ features = [
 version = "0.3.65"
 
 [lib]
+bench = false
 crate-type = ["cdylib"]
 
 [lints]

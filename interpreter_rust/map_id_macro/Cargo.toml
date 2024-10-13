@@ -9,6 +9,7 @@ quote = "1.0.23"
 syn = "2.0.68"
 
 [lib]
+bench = false
 proc-macro = true
 
 [lints]
