@@ -31,16 +31,11 @@ impl Analysis for ConstantsAnalysis {
         Self::Domain::default()
     }
 
-    fn extreme(program: &Game<Id>, ctx: &Context) -> Self::Domain {
+    fn extreme(program: &Game<Id>, _ctx: &Context) -> Self::Domain {
         program
             .variables
             .iter()
-            .map(|v| {
-                (
-                    v.identifier.clone(),
-                    dereference_constant(&v.default_value, ctx),
-                )
-            })
+            .map(|v| (v.identifier.clone(), v.default_value.clone()))
             .collect()
     }
 
@@ -53,7 +48,7 @@ impl Analysis for ConstantsAnalysis {
     fn get_context(program: &Game<Id>) -> Self::Context {
         let mut ctx = Self::Context::default();
         for constant in &program.constants {
-            let value = dereference_constant(&constant.value, &ctx);
+            let value = constant.value.clone();
             ctx.constants.insert(constant.identifier.clone(), value);
         }
 
@@ -138,10 +133,13 @@ fn evaluate_constant(
         Expression::Access { lhs, rhs, .. } => {
             let lhs = evaluate_constant(lhs, knowledge, ctx, edge)?;
             let rhs = evaluate_constant(rhs, knowledge, ctx, edge)?;
-            rhs.to_identifier().and_then(|identifier| {
-                lhs.get_entry(identifier)
-                    .map(|entry| Arc::new(entry.clone()))
-            })
+            dereference_constant(&rhs, ctx)
+                .to_identifier()
+                .and_then(|identifier| {
+                    dereference_constant(&lhs, ctx)
+                        .get_entry(identifier)
+                        .map(|entry| Arc::new(entry.clone()))
+                })
         }
         Expression::Cast { rhs, .. } => evaluate_constant(rhs, knowledge, ctx, edge),
         Expression::Reference { identifier } if edge.has_binding(identifier) => None,
@@ -155,23 +153,12 @@ fn evaluate_constant(
     }
 }
 
-fn dereference_constant(value: &Arc<Value<Id>>, ctx: &Context) -> Arc<Value<Id>> {
+fn dereference_constant<'a>(value: &'a Arc<Value<Id>>, ctx: &'a Context) -> &'a Arc<Value<Id>> {
     match value.as_ref() {
         Value::Element { identifier } if ctx.constants.contains_key(identifier) => {
-            ctx.constants[identifier].clone()
+            dereference_constant(&ctx.constants[identifier], ctx)
         }
-        Value::Element { .. } => value.clone(),
-        Value::Map { entries, span } => {
-            let mut entries = entries.clone();
-            for entry in &mut entries {
-                entry.value = dereference_constant(&entry.value, ctx);
-            }
-
-            Arc::new(Value::Map {
-                entries,
-                span: *span,
-            })
-        }
+        _ => value,
     }
 }
 
@@ -231,17 +218,17 @@ mod test {
         begin, a1: y = x;
         a1, end: x = c;",
         "a1:
-            x = a
-            y = a
-            z = { b: a, :c }
+            x = cst1
+            y = cst1
+            z = { b: cst1, :c }
         begin:
-            x = a
+            x = cst1
             y = a
-            z = { b: a, :c }
+            z = { b: cst1, :c }
         end:
             x = c
-            y = a
-            z = { b: a, :c }"
+            y = cst1
+            z = { b: cst1, :c }"
     );
 
     test!(
@@ -309,14 +296,31 @@ mod test {
     );
 
     test!(
-        const_dependency,
+        const_dependency1,
         "type A = {a,b,c};
         const cst1: A = a;
         const cst2: A = cst1;
         const cst3: A -> A -> A = { b: { :cst2 }, :{ :cst1 } };
         var x: A -> A -> A = cst3;",
         "begin:
-            x = { b: { :a }, :{ :a } }"
+            x = cst3"
+    );
+
+    test!(
+        const_dependency2,
+        "type A = {a,b,c};
+        const cst1: A = a;
+        const cst2: A = cst1;
+        const cst3: A -> A -> A = { :{ :cst2 }, a: { :cst1 } };
+        var x: A -> A -> A = cst3;
+        var y: A = cst2;
+        begin, end: y = x[y][y];",
+        "begin:
+            x = cst3
+            y = cst2
+        end:
+            x = cst3
+            y = cst1"
     );
 
     test!(
@@ -328,14 +332,14 @@ mod test {
         begin, a1: x = y;
         begin, a2: x = x;",
         "a1:
-            x = c
-            y = c
+            x = cst1
+            y = cst1
         a2:
             x = b
-            y = c
+            y = cst1
         begin:
             x = b
-            y = c"
+            y = cst1"
     );
 
     test!(
@@ -348,10 +352,10 @@ mod test {
         begin, end: x = y[x];",
         "begin:
             x = b
-            y = { b: c, :b }
+            y = cst2
         end:
-            x = c
-            y = { b: c, :b }"
+            x = cst1
+            y = cst2"
     );
 
     test!(

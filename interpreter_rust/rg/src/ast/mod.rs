@@ -1628,6 +1628,15 @@ impl<Id> Value<Id> {
     }
 }
 
+impl<Id: Clone> Value<Id> {
+    pub fn as_identifier(self) -> Option<Id> {
+        match self {
+            Self::Element { identifier } => Some(identifier),
+            Self::Map { .. } => None,
+        }
+    }
+}
+
 impl<Id: PartialEq> Value<Id> {
     pub fn get_entry(&self, identifier: &Id) -> Option<&Self> {
         match self {
