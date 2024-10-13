@@ -5,6 +5,7 @@ use std::sync::Arc;
 use utils::position::Span;
 
 type Id = Arc<str>;
+type Subgraph = BTreeSet<Edge<Id>>;
 
 impl Game<Id> {
     pub fn inline_reachability(&mut self) -> Result<(), Error<Id>> {
@@ -13,12 +14,10 @@ impl Game<Id> {
                 lhs, rhs, negated, ..
             } = &edge.label
             {
-                if let Some(subgraph) = self.find_rechability_paths(lhs, rhs, *negated) {
-                    if subgraph.is_empty() {
-                        self.remove_edge(&edge);
-                    } else {
-                        self.substitute_reachability(edge.clone(), subgraph);
-                    }
+                if let Some((subgraph, defined_vars)) =
+                    self.find_rechability_paths(lhs, rhs, *negated)
+                {
+                    self.substitute_reachability(edge.clone(), subgraph, defined_vars);
                 }
             }
         }
@@ -29,14 +28,14 @@ impl Game<Id> {
     /// 1. contains [start] and [target]
     /// 2. for any node except [target] contains all outgoing nodes
     /// 3. contains no edges from [target]
-    /// 4. no assignments allowed
+    /// 4. Assignments are allowed only if the variable is reassigned before being used after inlining
     /// 5. If the reachability is negated, the path consists of one edge
     fn find_rechability_paths(
         &self,
         start: &Node<Id>,
         target: &Node<Id>,
         negated: bool,
-    ) -> Option<BTreeSet<Edge<Id>>> {
+    ) -> Option<(Subgraph, Option<BTreeSet<Id>>)> {
         if negated {
             let edge = self
                 .outgoing_edge(start)
@@ -46,11 +45,11 @@ impl Game<Id> {
                 Label::Assignment { .. } => None,
                 // Copy (and negate) the comparison or reachability.
                 Label::Comparison { .. } | Label::Reachability { .. } => {
-                    Some(BTreeSet::from([edge.clone()]))
+                    Some((BTreeSet::from([edge.clone()]), None))
                 }
                 // Skips and tags are always passable, so a negated reachability
                 // should never pass them - the edge should be removed.
-                Label::Skip { .. } | Label::Tag { .. } => Some(BTreeSet::new()),
+                Label::Skip { .. } | Label::Tag { .. } => Some((BTreeSet::new(), None)),
             }
         } else {
             let negated_label = Label::Reachability {
@@ -73,19 +72,20 @@ impl Game<Id> {
         &self,
         start: &Node<Id>,
         target: &Node<Id>,
-    ) -> Option<BTreeSet<Edge<Id>>> {
+    ) -> Option<(Subgraph, Option<BTreeSet<Id>>)> {
         let next_edges = self.next_edges();
+        let mut defined_vars = BTreeSet::new();
         let mut queue = vec![(start, BTreeSet::new())];
         let mut result = BTreeSet::new();
         while let Some((lhs, mut previous)) = queue.pop() {
             previous.insert(lhs);
             if let Some(edges) = next_edges.get(&lhs) {
                 for edge in edges {
-                    if edge.has_bindings()
-                        || previous.contains(&edge.rhs)
-                        || edge.label.is_assignment()
-                    {
+                    if edge.has_bindings() || previous.contains(&edge.rhs) {
                         return None;
+                    }
+                    if let Some((id, _)) = edge.label.as_var_assignment() {
+                        defined_vars.insert(id.clone());
                     }
                     result.insert((*edge).clone());
                     if edge.rhs != *target {
@@ -94,55 +94,100 @@ impl Game<Id> {
                 }
             }
         }
-        Some(result)
+        let defined_vars = Some(defined_vars).filter(|set| !set.is_empty());
+        Some((result, defined_vars))
     }
 
-    fn substitute_reachability(&mut self, mut edge: Edge<Id>, subgraph: BTreeSet<Edge<Id>>) {
-        if let Label::Reachability {
-            lhs: start,
-            rhs: target,
-            negated,
-            ..
-        } = edge.label.clone()
-        {
-            let mut nodes: BTreeSet<_> = self.nodes().iter().map(|n| (*n).clone()).collect();
-
+    fn substitute_reachability(
+        &mut self,
+        mut edge: Edge<Id>,
+        subgraph: Subgraph,
+        defined_vars: Option<BTreeSet<Id>>,
+    ) {
+        if subgraph.is_empty() {
             self.remove_edge(&edge);
-            let new_start = gen_fresh_node(format!("reachability_{start}_{target}"), &nodes);
-            nodes.insert(new_start.clone());
+        } else if defined_vars
+            .into_iter()
+            .all(|defined_vars| self.check_used_variables(&edge.rhs, defined_vars))
+        {
+            if let Label::Reachability {
+                lhs: start,
+                rhs: target,
+                negated,
+                ..
+            } = edge.label.clone()
+            {
+                let mut nodes: BTreeSet<_> = self.nodes().iter().map(|n| (*n).clone()).collect();
 
-            let mut mapping = BTreeMap::new();
-            mapping.insert(start, new_start.clone());
-            mapping.insert(target.clone(), edge.rhs);
+                self.remove_edge(&edge);
+                let new_start = gen_fresh_node(format!("reachability_{start}_{target}"), &nodes);
+                nodes.insert(new_start.clone());
 
-            edge.rhs = new_start;
-            edge.skip();
-            self.add_edge(edge);
+                let mut mapping = BTreeMap::new();
+                mapping.insert(start, new_start.clone());
+                mapping.insert(target.clone(), edge.rhs);
 
-            for mut edge in subgraph {
-                if let Some(lhs) = mapping.get(&edge.lhs) {
-                    edge.lhs = lhs.clone();
-                } else {
-                    let lhs = gen_fresh_node(edge.lhs.to_string(), &nodes);
-                    nodes.insert(lhs.clone());
-                    mapping.insert(edge.lhs.clone(), lhs.clone());
-                    edge.lhs = lhs;
-                }
-
-                if let Some(rhs) = mapping.get(&edge.rhs) {
-                    edge.rhs = rhs.clone();
-                } else {
-                    let rhs = gen_fresh_node(edge.rhs.to_string(), &nodes);
-                    nodes.insert(rhs.clone());
-                    mapping.insert(edge.rhs.clone(), rhs.clone());
-                    edge.rhs = rhs;
-                }
-                if negated {
-                    edge.label.negate();
-                }
+                edge.rhs = new_start;
+                edge.skip();
                 self.add_edge(edge);
+
+                for mut edge in subgraph {
+                    if let Some(lhs) = mapping.get(&edge.lhs) {
+                        edge.lhs = lhs.clone();
+                    } else {
+                        let lhs = gen_fresh_node(edge.lhs.to_string(), &nodes);
+                        nodes.insert(lhs.clone());
+                        mapping.insert(edge.lhs.clone(), lhs.clone());
+                        edge.lhs = lhs;
+                    }
+
+                    if let Some(rhs) = mapping.get(&edge.rhs) {
+                        edge.rhs = rhs.clone();
+                    } else {
+                        let rhs = gen_fresh_node(edge.rhs.to_string(), &nodes);
+                        nodes.insert(rhs.clone());
+                        mapping.insert(edge.rhs.clone(), rhs.clone());
+                        edge.rhs = rhs;
+                    }
+                    if negated {
+                        edge.label.negate();
+                    }
+                    self.add_edge(edge);
+                }
             }
         }
+    }
+
+    /// If the subgraph contains assignments,
+    /// they should not be used in the rest of the graph before beeing reassigned.
+    fn check_used_variables(&self, start: &Node<Id>, mut defined_vars: BTreeSet<Id>) -> bool {
+        let next_edges = self.next_edges();
+        let mut queue = vec![(start, BTreeSet::new())];
+        while let Some((lhs, mut previous)) = queue.pop() {
+            previous.insert(lhs);
+            if let Some(edges) = next_edges.get(&lhs) {
+                for edge in edges {
+                    if previous.contains(&edge.rhs) {
+                        continue;
+                    }
+                    let used_variables = edge.label.used_variables();
+                    if defined_vars.iter().any(|id| used_variables.contains(id)) {
+                        return false;
+                    }
+                    match edge.label.as_var_assignment() {
+                        Some((id, _)) if !edge.label.is_map_assignment() => {
+                            defined_vars.remove(id);
+                            if defined_vars.is_empty() {
+                                return true;
+                            }
+                        }
+                        _ => (),
+                    }
+                    queue.push((&edge.rhs, previous.clone()));
+                }
+            }
+        }
+        true
     }
 }
 
@@ -408,5 +453,50 @@ mod test {
         "a, b: ? x -> y;
         a, c: ! x -> y;
         x, y: v = 1;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        inline_assignment1,
+        "begin, a: ? e -> f;
+        a, end: ;
+        e, f: v = 1;",
+        "a, end: ;
+        e, f: v = 1;
+        begin, __gen_1_reachability_e_f: ;
+        __gen_1_reachability_e_f, a: v = 1;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        inline_assignment2,
+        "begin, a: ? e -> f;
+        a, a1: v = 1;
+        a1, end: v == 1;
+        e, f: v = 1;",
+        "a, a1: v = 1;
+        a1, end: v == 1;
+        e, f: v = 1;
+        begin, __gen_1_reachability_e_f: ;
+        __gen_1_reachability_e_f, a: v = 1;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        inline_assignment3,
+        "begin, a: ? e -> f;
+        a, end: v == 1;
+        e, f: v = 1;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        inline_assignment4,
+        "begin, a: ? e -> f;
+        a, end: v == 1;
+        e, f1: v = 1;
+        e, f2: v = 2;
+        f1, f: ;
+        f2, f: ;"
     );
 }
