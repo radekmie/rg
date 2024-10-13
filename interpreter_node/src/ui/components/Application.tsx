@@ -5,6 +5,7 @@ import { Editor } from './Editor';
 import { Graphviz } from './Graphviz';
 import { Loader } from './Loader';
 import { PrettyPrint } from './PrettyPrint';
+import { Resizer } from './Resizer';
 import { Settings } from './Settings';
 import { useApplicationState } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
@@ -57,6 +58,7 @@ export function Application() {
     <>
       <section className={styles.panel}>
         <Editor onChange={setSource} path={preset} source={source} />
+        <Resizer axis="horizontal" />
       </section>
       <section className={styles.panel}>
         <Settings
@@ -68,7 +70,10 @@ export function Application() {
           settings={settings}
           view={view}
         />
-        {content}
+        <div className={styles.view}>
+          <Resizer axis="vertical" />
+          {content}
+        </div>
       </section>
     </>
   );

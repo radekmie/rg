@@ -30,7 +30,7 @@ body {
 .grid,
 .main {
   display: grid;
-  grid-template-columns: 50% 50%;
+  grid-template-columns: auto 1fr;
 }
 
 .main {
@@ -38,30 +38,75 @@ body {
   width: 100vw;
 }
 
-.select select {
-  outline: none;
-}
-
 .panel {
   display: flex;
-  flex-direction: column;
+  height: 100vh;
 }
 
 .panel:first-child {
-  border-right: 0.1rem solid;
+  width: 50vw;
+}
+
+.panel:last-child {
+  flex-direction: column;
+  overflow-x: hidden;
 }
 
 .radio label {
   display: inline-block;
 }
 
+.resizer {
+  background-color: black;
+  position: relative;
+  touch-action: none;
+}
+
+.resizer::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+}
+
+.resizer[data-resizer="horizontal"] {
+  cursor: col-resize;
+  width: 1px;
+}
+
+.resizer[data-resizer="horizontal"]::before {
+  bottom: 0;
+  left: -10px;
+  right: -10px;
+  top: 0;
+}
+
+.resizer[data-resizer="vertical"] {
+  cursor: row-resize;
+  height: 1px;
+}
+
+.resizer[data-resizer="vertical"]::before {
+  bottom: -10px;
+  left: 0;
+  right: 0;
+  top: -10px;
+}
+
+.select select {
+  outline: none;
+}
+
 .settings {
-  flex: 0 0 7rem;
+  flex: 1 1 0px;
   overflow-y: auto;
 }
 
 .spinner {
   margin-top: 1rem;
+}
+
+.view {
+  height: calc(100vh - 7rem - 30px);
 }
 
 .wrapHidden,
