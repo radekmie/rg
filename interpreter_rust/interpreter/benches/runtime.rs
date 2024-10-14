@@ -12,13 +12,15 @@ fn scenario(criterion: &mut Criterion, name: &str, variants: &[&str]) {
     group.warm_up_time(Duration::from_millis(100));
 
     for variant in variants {
-        let source = read_to_string(format!("../../examples/{name}{variant}")).unwrap();
         for (flags_name, flags) in [("all", Flags::all()), ("none", Flags::none())] {
-            let ast = analyze_rg_inner(source.as_str(), &flags, None::<fn(_)>).unwrap();
-            let ist = prepare_ist(ast).unwrap().0;
             group.bench_function(
                 BenchmarkId::new(variant.to_string(), flags_name),
-                |bencher| bencher.iter(|| ist.run(&mut rng, 1, &|_| {})),
+                |bencher| {
+                    let source = read_to_string(format!("../../examples/{name}{variant}")).unwrap();
+                    let ast = analyze_rg_inner(source.as_str(), &flags, None::<fn(_)>).unwrap();
+                    let ist = prepare_ist(ast).unwrap().0;
+                    bencher.iter(|| ist.run(&mut rng, 1, &|_| {}))
+                },
             );
         }
     }

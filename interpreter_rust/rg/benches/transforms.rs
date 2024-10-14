@@ -16,14 +16,14 @@ fn load(path: &str) -> Game<Arc<str>> {
 }
 
 fn scenario(criterion: &mut Criterion, path: &str) {
-    let game = load(path);
     let mut group = criterion.benchmark_group(format!("transforms/{path}"));
     group.measurement_time(Duration::from_millis(400));
     group.warm_up_time(Duration::from_millis(100));
 
     macro_rules! bench {
         ($fn:ident) => {
-            group.bench_with_input(stringify!($fn), &game, |bencher, game| {
+            group.bench_function(stringify!($fn), |bencher| {
+                let game = load(path);
                 bencher.iter(|| {
                     if let Err(error) = game.clone().$fn() {
                         panic!("{error}");
@@ -39,16 +39,23 @@ fn scenario(criterion: &mut Criterion, path: &str) {
     bench!(calculate_simple_apply);
     bench!(calculate_tag_indexes);
     bench!(calculate_uniques);
+    bench!(compact_comparisons);
     bench!(compact_skip_edges);
     bench!(expand_generator_nodes);
     bench!(inline_assignment);
     bench!(inline_reachability);
+    bench!(join_exclusive_edges);
+    bench!(join_fork_prefixes);
     bench!(join_fork_suffixes);
     bench!(mangle_symbols);
     bench!(normalize_constants);
     bench!(normalize_types);
+    bench!(propagate_constants);
     bench!(prune_singleton_types);
     bench!(prune_unreachable_nodes);
+    bench!(prune_unused_bindings);
+    bench!(prune_unused_constants);
+    bench!(prune_unused_variables);
     bench!(skip_generator_comparisons);
     bench!(skip_self_assignments);
     bench!(skip_self_comparisons);

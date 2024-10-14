@@ -14,16 +14,16 @@ pub struct Flags {
     pub calculate_tag_indexes: bool,
     #[serde(rename = "calculateUniques")]
     pub calculate_uniques: bool,
-    #[serde(rename = "compactSkipEdges")]
-    pub compact_skip_edges: bool,
     #[serde(rename = "compactComparisons")]
     pub compact_comparisons: bool,
+    #[serde(rename = "compactSkipEdges")]
+    pub compact_skip_edges: bool,
     #[serde(rename = "expandGeneratorNodes")]
     pub expand_generator_nodes: bool,
-    #[serde(rename = "inlineReachability")]
-    pub inline_reachability: bool,
     #[serde(rename = "inlineAssignment")]
     pub inline_assignment: bool,
+    #[serde(rename = "inlineReachability")]
+    pub inline_reachability: bool,
     #[serde(rename = "joinExclusiveEdges")]
     pub join_exclusive_edges: bool,
     #[serde(rename = "joinForkPrefixes")]
