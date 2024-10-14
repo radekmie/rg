@@ -1,6 +1,8 @@
-use crate::ast::{Edge, Error, Game, Type};
+use crate::ast::{Edge, Error, Game, Node, Type};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
+
+type EdgeCounts = BTreeMap<Node<Arc<str>>, (usize, usize)>;
 
 impl Game<Arc<str>> {
     pub fn compact_skip_edges(&mut self) -> Result<(), Error<Arc<str>>> {
@@ -14,22 +16,50 @@ impl Game<Arc<str>> {
             self.edges.remove(x);
         }
 
-        while let Some((xs, y)) = self.compact_skip_edge_backward() {
+        let mut edge_counts: EdgeCounts = BTreeMap::new();
+        for Edge { lhs, rhs, .. } in &self.edges {
+            edge_counts.entry(lhs.clone()).or_default().0 += 1;
+            edge_counts.entry(rhs.clone()).or_default().1 += 1;
+        }
+
+        macro_rules! change_edge_count {
+            ($node:expr, $position:tt, $fn:tt) => {
+                if let Some(counts) = edge_counts.get_mut($node) {
+                    counts.$position = counts.$position.$fn(1);
+                }
+            };
+        }
+
+        macro_rules! remove_edge {
+            ($index:expr) => {
+                let edge = self.edges.remove($index);
+                change_edge_count!(&edge.lhs, 0, saturating_sub);
+                change_edge_count!(&edge.rhs, 0, saturating_sub);
+            };
+        }
+
+        while let Some((xs, y)) = self.compact_skip_edge_backward(&edge_counts) {
             for x in xs {
+                change_edge_count!(&self.edges[x].rhs, 1, saturating_sub);
+                change_edge_count!(&self.edges[y].rhs, 1, saturating_add);
                 self.edges[x].rhs = self.edges[y].rhs.clone();
             }
-            self.edges.remove(y);
+
+            remove_edge!(y);
         }
 
-        while let Some((x, ys)) = self.compact_skip_edge_forward() {
+        while let Some((x, ys)) = self.compact_skip_edge_forward(&edge_counts) {
             for y in ys {
+                change_edge_count!(&self.edges[y].lhs, 0, saturating_sub);
+                change_edge_count!(&self.edges[x].lhs, 0, saturating_add);
                 self.edges[y].lhs = self.edges[x].lhs.clone();
             }
-            self.edges.remove(x);
+
+            remove_edge!(x);
         }
 
-        while let Some(x) = self.compact_skip_edge_single() {
-            self.edges.remove(x);
+        while let Some(x) = self.compact_skip_edge_single(&edge_counts) {
+            remove_edge!(x);
         }
 
         // Rename `bind_N: T` into `t: T` if `t` is not referenced.
@@ -52,11 +82,11 @@ impl Game<Arc<str>> {
     ///   3. b has no other incoming nor outgoing edges
     ///   4. b has no bindings
     ///   5. b is not a reachability target
-    fn compact_skip_edge_backward(&self) -> Option<(Vec<usize>, usize)> {
+    fn compact_skip_edge_backward(&self, edge_counts: &EdgeCounts) -> Option<(Vec<usize>, usize)> {
         for (y_index, y) in self.edges.iter().enumerate() {
             if y.label.is_skip()
                 && !y.lhs.has_bindings()
-                && self.outgoing_edges(&y.lhs).all(|z| z == y)
+                && edge_counts[&y.lhs].0 == 1
                 && !self.is_reachability_target(&y.lhs)
             {
                 for x in &self.edges {
@@ -94,11 +124,11 @@ impl Game<Arc<str>> {
     ///   3. b has no bindings
     ///   4. b is not a reachability target
     ///   5. y != Assignment of `player` OR a has no bindings
-    fn compact_skip_edge_forward(&self) -> Option<(usize, Vec<usize>)> {
+    fn compact_skip_edge_forward(&self, edge_counts: &EdgeCounts) -> Option<(usize, Vec<usize>)> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
                 && !x.rhs.has_bindings()
-                && self.incoming_edges(&x.rhs).all(|z| z == x)
+                && edge_counts[&x.rhs].1 == 1
                 && !self.is_reachability_target(&x.rhs)
             {
                 for y in &self.edges {
@@ -137,13 +167,13 @@ impl Game<Arc<str>> {
     ///   4. a has no bindings
     ///   5. a is not `begin`
     ///   6. a is not a reachability target
-    fn compact_skip_edge_single(&self) -> Option<usize> {
+    fn compact_skip_edge_single(&self, edge_counts: &EdgeCounts) -> Option<usize> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
                 && !x.lhs.has_bindings()
                 && !x.lhs.is_begin()
-                && self.incoming_edges(&x.lhs).next().is_none()
-                && self.outgoing_edges(&x.lhs).all(|y| y == x)
+                && edge_counts[&x.lhs].0 == 1
+                && edge_counts[&x.lhs].1 == 0
                 && !self.is_reachability_target(&x.lhs)
             {
                 return Some(x_index);
