@@ -37,7 +37,7 @@ impl<Id: Clone + Ord> Term<Id> {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Unification<'a, Id> {
     Empty,
     Failed,
@@ -47,6 +47,16 @@ pub enum Unification<'a, Id> {
 impl<Id> Unification<'_, Id> {
     pub fn is_empty(&self) -> bool {
         matches!(self, Self::Empty | Self::Failed)
+    }
+}
+
+impl<Id: PartialEq> Unification<'_, Id> {
+    pub fn is_subset(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::NotEmpty(xs), Self::NotEmpty(ys))
+                if xs.len() <= ys.len() && xs.iter().all(|x| ys.contains(x))
+        )
     }
 }
 

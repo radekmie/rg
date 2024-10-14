@@ -30,7 +30,7 @@ impl<Id> AtomOrVariable<Id> {
 pub struct Game<Id>(pub Vec<Rule<Id>>);
 
 impl<Id: PartialEq> Game<Id> {
-    pub fn subterms(&self) -> impl Iterator<Item = &Term<Id>> {
+    pub fn subterms(&self) -> TermIterator<Id> {
         let mut iterator = TermIterator::new();
         iterator.add_game(self);
         iterator
@@ -62,7 +62,7 @@ impl<Id> Rule<Id> {
 }
 
 impl<Id: PartialEq> Rule<Id> {
-    pub fn subterms(&self) -> impl Iterator<Item = &Term<Id>> {
+    pub fn subterms(&self) -> TermIterator<Id> {
         let mut iterator = TermIterator::new();
         iterator.add_rule(self);
         iterator
@@ -129,17 +129,33 @@ impl<Id> Term<Id> {
     pub fn is_init(&self) -> bool {
         matches!(self, Self::Init(_))
     }
+
+    pub fn order(&self) -> usize {
+        match self {
+            Self::Base(_) => 0,
+            Self::Custom(_, _) => 1,
+            Self::Does(_, _) => 2,
+            Self::Goal(_, _) => 3,
+            Self::Init(_) => 4,
+            Self::Input(_, _) => 5,
+            Self::Legal(_, _) => 6,
+            Self::Next(_) => 7,
+            Self::Role(_) => 8,
+            Self::Terminal => 9,
+            Self::True(_) => 10,
+        }
+    }
 }
 
 impl<Id: PartialEq> Term<Id> {
-    pub fn subterms(&self) -> impl Iterator<Item = &Self> {
+    pub fn subterms(&self) -> TermIterator<Id> {
         let mut iterator = TermIterator::new();
         iterator.add_term(self);
         iterator
     }
 }
 
-struct TermIterator<'a, Id> {
+pub struct TermIterator<'a, Id> {
     index: usize,
     queue: Vec<&'a Term<Id>>,
 }

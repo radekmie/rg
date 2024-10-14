@@ -1,5 +1,6 @@
 use super::unify::Unification;
 use crate::ast::{AtomOrVariable, Game, Rule, Term};
+use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -11,43 +12,51 @@ impl<Id: Clone + Ord> Game<Id> {
         }
         rules.sort_unstable();
 
+        // Indication whether rule on this position should be considered for
+        // unification in this iteration.
+        let mut fresh = vec![true; rules.len()];
+
         // Cached subterms partitioned into ones with and without variables.
         let mut subterms: Vec<_> = rules.iter().map(get_subterms).collect();
 
         // Rules grounded in this iteration.
         let mut rules_to_add = vec![];
 
-        // Rules to be reviewed in this iteration.
-        let mut rules_to_review: Vec<_> = (0..rules.len()).collect();
-
         // Static terms used to prune impossible substitutions.
         let static_terms = get_static_terms(&rules);
 
         loop {
             for i in 0..rules.len() {
-                if !subterms[i].0.is_empty() {
+                if subterms[i].0.is_empty() {
                     continue;
                 }
 
+                // Accumulate all unifications of rule `i`. We're interested
+                // only in unique ones with any of the `fresh`. To do less work
+                // in each iteration, ignore the ones we already have a subset
+                // of (e.g., ignore `X-1, Y-2` if we found `X-1` already).
+                let mut unifications = vec![];
                 for j in 0..rules.len() {
-                    if i == j
-                        || subterms[j].0.is_empty()
-                        || (rules_to_review.binary_search(&i).is_err()
-                            && rules_to_review.binary_search(&j).is_err())
-                    {
-                        continue;
-                    }
-
-                    if let Some(unification) = any_unification(&subterms[j].0, &subterms[i].1) {
-                        let mut rule = rules[j].substitute(&unification);
-                        rule.predicates.sort_unstable();
-                        rule.predicates.dedup();
-
-                        let has_failed_static_term = prune_static_terms(&mut rule, &static_terms);
-                        if !has_failed_static_term && rules.binary_search(&rule).is_err() {
-                            if let Err(index) = rules_to_add.binary_search(&rule) {
-                                rules_to_add.insert(index, rule);
+                    if i != j && subterms[j].0.is_empty() && (fresh[i] || fresh[j]) {
+                        if let Some(unification) = any_unification(&subterms[i].0, &subterms[j].1) {
+                            if let Err(index) = unifications.binary_search(&unification) {
+                                if !unifications.iter().any(|u| u.is_subset(&unification)) {
+                                    unifications.insert(index, unification);
+                                }
                             }
+                        }
+                    }
+                }
+
+                for unification in unifications {
+                    let mut rule = rules[i].substitute(&unification);
+                    rule.predicates.sort_unstable();
+                    rule.predicates.dedup();
+
+                    let has_failed_static_term = prune_static_terms(&mut rule, &static_terms);
+                    if !has_failed_static_term && rules.binary_search(&rule).is_err() {
+                        if let Err(index) = rules_to_add.binary_search(&rule) {
+                            rules_to_add.insert(index, rule);
                         }
                     }
                 }
@@ -58,15 +67,16 @@ impl<Id: Clone + Ord> Game<Id> {
                 break;
             }
 
-            rules_to_review.clear();
+            fresh.fill(false);
+            fresh.reserve(rules_to_add.len());
             rules.reserve(rules_to_add.len());
             subterms.reserve(rules_to_add.len());
 
             for rule in rules_to_add.drain(..) {
                 let index = rules.binary_search(&rule).unwrap_err();
-                rules_to_review.push(index);
                 subterms.insert(index, get_subterms(&rule));
                 rules.insert(index, rule);
+                fresh.insert(index, true);
             }
         }
 
@@ -81,10 +91,17 @@ fn any_unification<'a, Id: Clone + Ord>(
     ys: &'a [Term<Id>],
 ) -> Option<Unification<'a, Id>> {
     for x in xs {
+        let xi = x.order();
         for y in ys {
-            let unification = x.unify(y);
-            if !unification.is_empty() {
-                return Some(unification);
+            match xi.cmp(&y.order()) {
+                Ordering::Equal => {
+                    let unification = x.unify(y);
+                    if !unification.is_empty() {
+                        return Some(unification);
+                    }
+                }
+                Ordering::Greater => continue,
+                Ordering::Less => break,
             }
         }
     }
@@ -125,8 +142,11 @@ fn get_static_terms<Id: Clone + Ord>(rules: &[Rule<Id>]) -> BTreeMap<Id, BTreeSe
         .collect()
 }
 
-fn get_subterms<Id: Clone + PartialEq>(rule: &Rule<Id>) -> (Vec<Term<Id>>, Vec<Term<Id>>) {
-    rule.subterms().cloned().partition(Term::has_variable)
+fn get_subterms<Id: Clone + Ord>(rule: &Rule<Id>) -> (Vec<Term<Id>>, Vec<Term<Id>>) {
+    let (mut xs, mut ys): (Vec<_>, _) = rule.subterms().cloned().partition(Term::has_variable);
+    xs.sort_unstable();
+    ys.sort_unstable();
+    (xs, ys)
 }
 
 fn prune_static_terms<Id: Ord>(
