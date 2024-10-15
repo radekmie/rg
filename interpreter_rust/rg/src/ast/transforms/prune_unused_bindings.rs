@@ -163,4 +163,24 @@ mod test {
         begin, a: ;
         a, __gen_1_a_bind_1: ;"
     );
+
+    test_transform!(
+        prune_unused_bindings,
+        another_binding_used,
+        "x, y(t: T)(a: A): ;
+        y(t: T)(a: A), z: coord = a;",
+        "x, __gen_1_y_t(a: A): ;
+        __gen_1_y_t(a: A), z: coord = a;"
+    );
+
+    test_transform!(
+        prune_unused_bindings,
+        second_binding,
+        "20_118_115(bind_18: Coord), 20_118_118: ;
+        20_118_111(bind_19: Coord), 20_118_115(bind_18: Coord): ;
+        20_118_110, 20_118_111(bind_19: Coord): ;",
+        "__gen_1_20_118_115_bind_18, 20_118_118: ;
+        __gen_1_20_118_111_bind_19, __gen_1_20_118_115_bind_18: ;
+        20_118_110, __gen_1_20_118_111_bind_19: ;"
+    );
 }
