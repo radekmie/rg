@@ -13,12 +13,16 @@ fn scenario(criterion: &mut Criterion, name: &str, variants: &[&str]) {
 
     for variant in variants {
         for (flags_name, flags) in [("all", Flags::all()), ("none", Flags::none())] {
+            let mut ist = None;
             group.bench_function(
                 BenchmarkId::new(variant.to_string(), flags_name),
                 |bencher| {
-                    let source = read_to_string(format!("../../examples/{name}{variant}")).unwrap();
-                    let ast = analyze_rg_inner(source.as_str(), &flags, None::<fn(_)>).unwrap();
-                    let ist = prepare_ist(ast).unwrap().0;
+                    let ist = ist.get_or_insert_with(|| {
+                        let source =
+                            read_to_string(format!("../../examples/{name}{variant}")).unwrap();
+                        let ast = analyze_rg_inner(source.as_str(), &flags, None::<fn(_)>).unwrap();
+                        prepare_ist(ast).unwrap().0
+                    });
                     bencher.iter(|| ist.run(&mut rng, 1, &|_| {}))
                 },
             );

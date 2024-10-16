@@ -20,10 +20,11 @@ fn scenario(criterion: &mut Criterion, path: &str) {
     group.measurement_time(Duration::from_millis(400));
     group.warm_up_time(Duration::from_millis(100));
 
+    let mut game = None;
     macro_rules! bench {
         ($fn:ident) => {
             group.bench_function(stringify!($fn), |bencher| {
-                let game = load(path);
+                let game = game.get_or_insert_with(|| load(path));
                 bencher.iter(|| {
                     if let Err(error) = game.clone().$fn() {
                         panic!("{error}");
