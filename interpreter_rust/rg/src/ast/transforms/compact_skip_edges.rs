@@ -34,7 +34,7 @@ impl Game<Arc<str>> {
             ($index:expr) => {
                 let edge = self.edges.remove($index);
                 change_edge_count!(&edge.lhs, 0, saturating_sub);
-                change_edge_count!(&edge.rhs, 0, saturating_sub);
+                change_edge_count!(&edge.rhs, 1, saturating_sub);
             };
         }
 
@@ -575,5 +575,153 @@ mod test {
         b, c: ;",
         "a, c: 1 == 1;
         a, c: 2 == 2;"
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        tictactoe_hrg,
+        "
+            type Piece = { empty, x, o };
+            type Player = { x, o };
+            type Position = { p__0_0, p__0_1, p__0_2, p__1_0, p__1_1, p__1_2, p__2_0, p__2_1, p__2_2 };
+            type Score = { 50, 0, 100 };
+            type turn_return = { turn_call_1, turn_call_2 };
+            type Bool = { 0, 1 };
+            type Goals = Player -> Score;
+            type Visibility = Player -> Bool;
+            type PlayerOrKeeper = { x, o, keeper };
+            const next_d1: Position -> Position = { :p__1_1, p__0_1: p__0_1, p__0_2: p__0_2, p__1_0: p__1_0, p__1_1: p__2_2, p__1_2: p__1_2, p__2_0: p__2_0, p__2_1: p__2_1, p__2_2: p__0_0 };
+            const next_d2: Position -> Position = { :p__0_0, p__0_1: p__0_1, p__0_2: p__1_1, p__1_0: p__1_0, p__1_1: p__2_0, p__1_2: p__1_2, p__2_0: p__0_2, p__2_1: p__2_1, p__2_2: p__2_2 };
+            const next_h: Position -> Position = { :p__0_1, p__0_1: p__0_2, p__0_2: p__0_0, p__1_0: p__1_1, p__1_1: p__1_2, p__1_2: p__1_0, p__2_0: p__2_1, p__2_1: p__2_2, p__2_2: p__2_0 };
+            const next_v: Position -> Position = { :p__1_0, p__0_1: p__1_1, p__0_2: p__1_2, p__1_0: p__2_0, p__1_1: p__2_1, p__1_2: p__2_2, p__2_0: p__0_0, p__2_1: p__0_1, p__2_2: p__0_2 };
+            const op: Player -> Player = { :o, o: x };
+            var board: Position -> Piece = { :empty };
+            var turn_return: turn_return = turn_call_1;
+            var me: Player = x;
+            var position: Position = p__0_0;
+            var goals: Goals = { :50 };
+            var player: PlayerOrKeeper = keeper;
+            var visible: Visibility = { :1 };
+            begin, rules_begin: ;
+            rules_begin, turn_call_1: ;
+            turn_call_1, rules_2: turn_return = turn_call_1;
+            rules_2, rules_3: me = x;
+            rules_3, turn_begin: ;
+            turn_begin, turn_1: player = me;
+            turn_1, turn_2(p: Position): ;
+            turn_2(p: Position), turn_4(p: Position): board[p] == empty;
+            turn_4(p: Position), turn_5(p: Position): board[p] = me;
+            turn_5(p: Position), turn_6(p: Position): position = p;
+            turn_6(p: Position), turn_7(p: Position): $ p;
+            turn_7(p: Position), turn_3(p: Position): ;
+            turn_3(p: Position), turn_8: ;
+            turn_8, turn_9: player = keeper;
+            win_call_1, turn_12_1: position = position;
+            turn_12_1, win_begin: ;
+            win_begin, win_2: position != next_d1[position];
+            win_2, win_3: board[position] == board[next_d1[position]];
+            win_3, win_4: board[position] == board[next_d1[next_d1[position]]];
+            win_4, win_1: ;
+            win_begin, win_5: position != next_d2[position];
+            win_5, win_6: board[position] == board[next_d2[position]];
+            win_6, win_7: board[position] == board[next_d2[next_d2[position]]];
+            win_7, win_1: ;
+            win_begin, win_8: board[position] == board[next_h[position]];
+            win_8, win_9: board[position] == board[next_h[next_h[position]]];
+            win_9, win_1: ;
+            win_begin, win_10: board[position] == board[next_v[position]];
+            win_10, win_11: board[position] == board[next_v[next_v[position]]];
+            win_11, win_1: ;
+            win_1, win_end: ;
+            turn_9, turn_10: ? win_call_1 -> win_end;
+            turn_9, turn_11: ! win_call_1 -> win_end;
+            turn_10, turn_13: goals[me] = 100;
+            turn_13, turn_14: goals[op[me]] = 0;
+            turn_14, end: player = keeper;
+            findNonempty_call_1, findNonempty_begin: ;
+            findNonempty_begin, findNonempty_1(p: Position): ;
+            findNonempty_1(p: Position), findNonempty_3(p: Position): board[p] == empty;
+            findNonempty_3(p: Position), findNonempty_2(p: Position): ;
+            findNonempty_2(p: Position), findNonempty_4: ;
+            findNonempty_4, findNonempty_end: ;
+            turn_11, turn_16: ? findNonempty_call_1 -> findNonempty_end;
+            turn_11, turn_15: ! findNonempty_call_1 -> findNonempty_end;
+            turn_15, end: player = keeper;
+            turn_16, turn_end: ;
+            turn_end, turn_return_1: ;
+            turn_return_1, rules_4: turn_return == turn_call_1;
+            rules_4, turn_call_2: ;
+            turn_call_2, rules_5: turn_return = turn_call_2;
+            rules_5, rules_6: me = o;
+            rules_6, turn_begin: ;
+            turn_end, turn_return_2: ;
+            turn_return_2, rules_7: turn_return == turn_call_2;
+            rules_7, rules_begin: ;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        ",
+        "
+            type Piece = { empty, x, o };
+            type Player = { x, o };
+            type Position = { p__0_0, p__0_1, p__0_2, p__1_0, p__1_1, p__1_2, p__2_0, p__2_1, p__2_2 };
+            type Score = { 50, 0, 100 };
+            type turn_return = { turn_call_1, turn_call_2 };
+            type Bool = { 0, 1 };
+            type Goals = Player -> Score;
+            type Visibility = Player -> Bool;
+            type PlayerOrKeeper = { x, o, keeper };
+            const next_d1: Position -> Position = { :p__1_1, p__0_1: p__0_1, p__0_2: p__0_2, p__1_0: p__1_0, p__1_1: p__2_2, p__1_2: p__1_2, p__2_0: p__2_0, p__2_1: p__2_1, p__2_2: p__0_0 };
+            const next_d2: Position -> Position = { :p__0_0, p__0_1: p__0_1, p__0_2: p__1_1, p__1_0: p__1_0, p__1_1: p__2_0, p__1_2: p__1_2, p__2_0: p__0_2, p__2_1: p__2_1, p__2_2: p__2_2 };
+            const next_h: Position -> Position = { :p__0_1, p__0_1: p__0_2, p__0_2: p__0_0, p__1_0: p__1_1, p__1_1: p__1_2, p__1_2: p__1_0, p__2_0: p__2_1, p__2_1: p__2_2, p__2_2: p__2_0 };
+            const next_v: Position -> Position = { :p__1_0, p__0_1: p__1_1, p__0_2: p__1_2, p__1_0: p__2_0, p__1_1: p__2_1, p__1_2: p__2_2, p__2_0: p__0_0, p__2_1: p__0_1, p__2_2: p__0_2 };
+            const op: Player -> Player = { :o, o: x };
+            var board: Position -> Piece = { :empty };
+            var turn_return: turn_return = turn_call_1;
+            var me: Player = x;
+            var position: Position = p__0_0;
+            var goals: Goals = { :50 };
+            var player: PlayerOrKeeper = keeper;
+            var visible: Visibility = { :1 };
+            begin, rules_begin: ;
+            rules_begin, rules_2: turn_return = turn_call_1;
+            rules_2, turn_begin: me = x;
+            turn_begin, turn_1: player = me;
+            turn_1, turn_2(bind_1: Position): ;
+            turn_2(bind_1: Position), turn_4(bind_1: Position): board[Position(bind_1)] == empty;
+            turn_4(bind_1: Position), turn_5(bind_1: Position): board[Position(bind_1)] = me;
+            turn_5(bind_1: Position), turn_6(bind_1: Position): position = Position(bind_1);
+            turn_6(bind_1: Position), turn_7(bind_1: Position): $ bind_1;
+            turn_7(bind_1: Position), turn_3(bind_1: Position): ;
+            turn_3(bind_1: Position), turn_8: ;
+            turn_8, turn_9: player = keeper;
+            win_call_1, win_begin: position = position;
+            win_begin, win_2: position != next_d1[position];
+            win_2, win_3: board[position] == board[next_d1[position]];
+            win_3, win_1: board[position] == board[next_d1[next_d1[position]]];
+            win_begin, win_5: position != next_d2[position];
+            win_5, win_6: board[position] == board[next_d2[position]];
+            win_6, win_1: board[position] == board[next_d2[next_d2[position]]];
+            win_begin, win_8: board[position] == board[next_h[position]];
+            win_8, win_1: board[position] == board[next_h[next_h[position]]];
+            win_begin, win_10: board[position] == board[next_v[position]];
+            win_10, win_1: board[position] == board[next_v[next_v[position]]];
+            win_1, win_end: ;
+            turn_9, turn_10: ? win_call_1 -> win_end;
+            turn_9, turn_11: ! win_call_1 -> win_end;
+            turn_10, turn_13: goals[me] = 100;
+            turn_13, turn_14: goals[op[me]] = 0;
+            turn_14, end: player = keeper;
+            findNonempty_call_1, findNonempty_1(position: Position): ;
+            findNonempty_1(position: Position), findNonempty_3(position: Position): board[Position(position)] == empty;
+            findNonempty_3(position: Position), findNonempty_2(position: Position): ;
+            findNonempty_2(position: Position), findNonempty_end: ;
+            turn_11, turn_end: ? findNonempty_call_1 -> findNonempty_end;
+            turn_11, turn_15: ! findNonempty_call_1 -> findNonempty_end;
+            turn_15, end: player = keeper;
+            turn_end, turn_call_2: turn_return == turn_call_1;
+            turn_call_2, rules_5: turn_return = turn_call_2;
+            rules_5, turn_begin: me = o;
+            turn_end, rules_begin: turn_return == turn_call_2;
+        "
     );
 }
