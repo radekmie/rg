@@ -87,12 +87,9 @@ impl Game<Id> {
             Expression::Access { lhs, rhs, .. } => {
                 self.simplify_expression(lhs, new_constants);
                 self.simplify_expression(rhs, new_constants);
-                if let Some((identifier, rhs)) = self.maybe_merge_access(lhs, rhs, new_constants) {
-                    *expr = Arc::new(Expression::Access {
-                        span: Span::none(),
-                        lhs: Arc::new(Expression::new(identifier)),
-                        rhs,
-                    });
+                if let Some((identifier, new_rhs)) = self.maybe_merge_access(lhs, rhs, new_constants) {
+                    *lhs = Arc::new(Expression::new(identifier));
+                    *rhs = new_rhs;
                 }
             }
             Expression::Cast { rhs, .. } => self.simplify_expression(rhs, new_constants),
