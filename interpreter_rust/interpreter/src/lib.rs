@@ -155,6 +155,7 @@ pub fn analyze_rg_inner(
         pass!(inline_assignment);
         pass!(inline_reachability);
         pass!(propagate_constants);
+        pass!(merge_accesses);
 
         // Compact the automaton.
         pass!(compact_comparisons);

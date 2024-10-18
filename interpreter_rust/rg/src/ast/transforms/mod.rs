@@ -14,6 +14,7 @@ mod join_exclusive_edges;
 mod join_fork_prefixes;
 mod join_fork_suffixes;
 mod mangle_symbols;
+mod merge_accesses;
 mod normalize_constants;
 mod normalize_types;
 mod propagate_constants;

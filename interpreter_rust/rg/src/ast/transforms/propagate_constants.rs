@@ -540,4 +540,17 @@ mod test {
         begin, a: player = white;
         a, end: ;"
     );
+
+    test_transform!(
+        propagate_constants,
+        inside_subst,
+        "type A = {a,b,c};
+        const up: A -> A = {a: b, :c};
+        const up1: A -> A = up;
+        begin, a(board: A -> A)(x: A): c == board[up1[x]];",
+        "type A = { a, b, c };
+        const up: A -> A = { a: b, :c };
+        const up1: A -> A = up;
+        begin, a(board: A -> A)(x: A): c == board[up[x]];"
+    );
 }
