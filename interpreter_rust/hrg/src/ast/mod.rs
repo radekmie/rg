@@ -35,8 +35,6 @@ pub enum Statement<Id> {
     },
     #[serde(rename = "AutomatonLoop")]
     Loop { body: Vec<Statement<Id>> },
-    #[serde(rename = "AutomatonPragma")]
-    Pragma { identifier: Id },
     #[serde(rename = "AutomatonTag")]
     Tag { symbol: Id },
     #[serde(rename = "AutomatonWhile")]

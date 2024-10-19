@@ -309,10 +309,7 @@ fn write_statement<Id: Display>(
             write_statements(f, body, indent + 2)?;
             write_rbrace(f, indent)
         }
-        Statement::Pragma { identifier } => write!(f, "@{identifier}"),
-
         Statement::Tag { symbol } => write!(f, "$ {symbol}"),
-
         Statement::While { expression, body } => {
             writeln!(f, "while {expression} {{")?;
             write_statements(f, body, indent + 2)?;

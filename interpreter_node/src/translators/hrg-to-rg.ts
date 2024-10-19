@@ -869,34 +869,6 @@ function translateAutomatonStatements(
         currentEdgeName = localEdgeName;
         continue;
       }
-      case 'AutomatonPragma': {
-        const localEdgeName = context.$randomEdgeName(prefix);
-        context.$connect(currentEdgeName, localEdgeName, rg.Skip({}), bindings);
-
-        let pragma: rg.Pragma;
-        switch (automatonStatement.identifier) {
-          case 'any':
-            pragma = rg.PragmaAny({ edgeName: localEdgeName });
-            break;
-          case 'disjoint':
-            pragma = rg.PragmaDisjoint({ edgeName: localEdgeName });
-            break;
-          case 'multiAny':
-            pragma = rg.PragmaMultiAny({ edgeName: localEdgeName });
-            break;
-          case 'unique':
-            pragma = rg.PragmaUnique({ edgeName: localEdgeName });
-            break;
-          default:
-            throw new Error(
-              `Unknown pragma "${automatonStatement.identifier}".`,
-            );
-        }
-
-        context.rg.pragmas.push(pragma);
-        currentEdgeName = localEdgeName;
-        continue;
-      }
       case 'AutomatonTag': {
         const localEdgeName = context.$randomEdgeName(prefix);
         context.$connect(
@@ -1516,6 +1488,7 @@ function translateVariableDefaultValue(
   }
 
   // Build the map.
+  // TODO: Check whether map domains match type domains.
   return translateValue(evaluateExpression(defaultValue, {}));
 }
 

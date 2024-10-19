@@ -81,9 +81,6 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
                 add_from_statement(table, statement);
             }
         }
-        Statement::Pragma { identifier } => {
-            table.add_occ(identifier);
-        }
         Statement::Tag { symbol } => {
             if !symbol.is_none() && !symbol.is_numeric() {
                 let occ = table.occ_from_id(symbol);
