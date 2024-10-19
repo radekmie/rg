@@ -259,32 +259,24 @@ fn add_from_variable_declaration(
     }
 }
 
+const BUILDIN_SYMBOLS: [(&str, Flag); 10] = [
+    ("keeper", Flag::Variable),
+    ("goals", Flag::Variable),
+    ("player", Flag::Variable),
+    ("not", Flag::Function),
+    ("check", Flag::Function),
+    ("reachable", Flag::Function),
+    ("end", Flag::Function),
+    ("return", Flag::Function),
+    ("continue", Flag::Function),
+    ("break", Flag::Function),
+];
+
 fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
-    if !table.is_defined("keeper") {
-        table.symbols.push(make_builtin("keeper", Flag::Variable));
-    }
-    if !table.is_defined("goals") {
-        table.symbols.push(make_builtin("goals", Flag::Variable));
-    }
-    if !table.is_defined("player") {
-        table.symbols.push(make_builtin("player", Flag::Variable));
-    }
-    if !table.is_defined("not") {
-        table.symbols.push(make_builtin("not", Flag::Function));
-    }
-    if !table.is_defined("check") {
-        table.symbols.push(make_builtin("check", Flag::Function));
-    }
-    if !table.is_defined("reachable") {
-        table
-            .symbols
-            .push(make_builtin("reachable", Flag::Function));
-    }
-    if !table.is_defined("end") {
-        table.symbols.push(make_builtin("end", Flag::Function));
-    }
-    if !table.is_defined("return") {
-        table.symbols.push(make_builtin("return", Flag::Function));
+    for (symbol, flag) in BUILDIN_SYMBOLS {
+        if !table.is_defined(symbol) {
+            table.symbols.push(make_builtin(symbol, flag));
+        }
     }
 }
 
