@@ -1311,7 +1311,10 @@ function translateFunctionDeclaration(
   });
 
   function layer(type: rg.Type, values: hrg.Value[]): rg.Value {
-    if (type.kind !== 'Arrow') {
+    if (
+      type.kind !== 'Arrow' ||
+      functionDeclaration.cases[0].args.length === values.length
+    ) {
       const arm = utils.findMap(functionDeclaration.cases, functionCase => {
         const binding = values.reduce<Record<string, hrg.Value> | undefined>(
           (merged, value, index) => {
@@ -1319,8 +1322,7 @@ function translateFunctionDeclaration(
               return undefined;
             }
 
-            const pattern = functionCase.args[index];
-            const binding = evaluateBinding(pattern, value);
+            const binding = evaluateBinding(functionCase.args[index], value);
             return binding && Object.assign(merged, binding);
           },
           {},
