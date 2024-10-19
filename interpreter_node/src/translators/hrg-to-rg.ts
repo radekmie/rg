@@ -30,11 +30,16 @@ function numberToOrd(number: number) {
   return number === 0 ? Ord.Eq : number < 0 ? Ord.Lt : Ord.Gt;
 }
 
+const collator = new Intl.Collator(undefined, { numeric: true });
+function compareIdentifiers(lhs: string, rhs: string) {
+  return numberToOrd(collator.compare(lhs, rhs));
+}
+
 function compareValues(lhs: hrg.Value, rhs: hrg.Value): Ord {
   switch (lhs.kind) {
     case 'ValueConstructor': {
       utils.assert(rhs.kind === 'ValueConstructor', 'Incomparable values.');
-      const ord1 = numberToOrd(lhs.identifier.localeCompare(rhs.identifier));
+      const ord1 = compareIdentifiers(lhs.identifier, rhs.identifier);
       if (ord1 !== Ord.Eq) {
         return ord1;
       }
@@ -55,7 +60,7 @@ function compareValues(lhs: hrg.Value, rhs: hrg.Value): Ord {
     }
     case 'ValueElement':
       utils.assert(rhs.kind === 'ValueElement', 'Incomparable values.');
-      return numberToOrd(lhs.identifier.localeCompare(rhs.identifier));
+      return compareIdentifiers(lhs.identifier, rhs.identifier);
     case 'ValueMap':
       throw new Error('Not implemented.');
   }
@@ -230,7 +235,14 @@ function evaluateEquality(lhs: rg.Value, rhs: rg.Value): boolean {
       utils.assert(rhs.kind === 'Element', 'Equality for different kinds.');
       return lhs.identifier === rhs.identifier;
     case 'Map':
-      throw new Error('Not implemented (Map).');
+      utils.assert(rhs.kind === 'Map', 'Equality for different kinds.');
+      return (
+        lhs.entries.length === rhs.entries.length &&
+        lhs.entries.every(x => {
+          const y = rhs.entries.find(y => y.identifier === x.identifier);
+          return y && evaluateEquality(x.value, y.value);
+        })
+      );
   }
 }
 
@@ -538,10 +550,10 @@ function translateAutomatonStatements(
             );
             utils.assert(breakEdgeName, 'break() requires breakEdgeName.');
             context.$connect(
-              currentEdgeName,
+              rg.EdgeName({ parts: [...currentEdgeName.parts, ...bindings] }),
               breakEdgeName,
               rg.Skip({}),
-              bindings,
+              [],
             );
             return true;
           }
@@ -556,10 +568,10 @@ function translateAutomatonStatements(
               'continue() requires continueEdgeName.',
             );
             context.$connect(
-              currentEdgeName,
+              rg.EdgeName({ parts: [...currentEdgeName.parts, ...bindings] }),
               continueEdgeName,
               rg.Skip({}),
-              bindings,
+              [],
             );
             return true;
           }
@@ -571,13 +583,13 @@ function translateAutomatonStatements(
             );
             utils.assert(endEdgeName, 'end() requires endEdgeName.');
             context.$connect(
-              currentEdgeName,
+              rg.EdgeName({ parts: [...currentEdgeName.parts, ...bindings] }),
               endEdgeName,
               rg.Assignment({
                 lhs: rg.Reference({ identifier: 'player' }),
                 rhs: rg.Reference({ identifier: 'keeper' }),
               }),
-              bindings,
+              [],
             );
             return true;
           }
@@ -896,8 +908,32 @@ function translateAutomatonStatements(
         currentEdgeName = localEdgeName;
         continue;
       }
-      case 'AutomatonWhile':
-        throw new Error('Not implemented (AutomatonWhile).');
+      case 'AutomatonWhile': {
+        const thenEdgeName = context.$randomEdgeName(prefix);
+        const elseEdgeName = context.$randomEdgeName(prefix);
+        translateCondition(
+          context,
+          automatonStatement.expression,
+          currentEdgeName,
+          thenEdgeName,
+          elseEdgeName,
+          prefix,
+          bindings,
+        );
+        translateAutomatonStatements(context, {
+          automatonStatements: automatonStatement.body,
+          bindings,
+          breakEdgeName: elseEdgeName,
+          continueEdgeName: currentEdgeName,
+          endEdgeName,
+          entryEdgeName: thenEdgeName,
+          nextEdgeName: currentEdgeName,
+          prefix,
+          returnEdgeName,
+        });
+        currentEdgeName = elseEdgeName;
+        continue;
+      }
     }
   }
 
@@ -1291,10 +1327,6 @@ function translateFunctionDeclaration(
   context: Context,
   functionDeclaration: hrg.FunctionDeclaration,
 ): rg.ConstantDeclaration {
-  utils.assert(
-    functionDeclaration.cases[0].args.length === 1,
-    'Only simple functions are allowed.',
-  );
   functionDeclaration.cases.forEach(functionCase => {
     utils.assert(
       functionDeclaration.identifier === functionCase.identifier,
@@ -1306,35 +1338,56 @@ function translateFunctionDeclaration(
     );
   });
 
+  function layer(type: rg.Type, values: hrg.Value[]): rg.Value {
+    if (type.kind !== 'Arrow') {
+      const arm = utils.findMap(functionDeclaration.cases, functionCase => {
+        const binding = values.reduce<Record<string, hrg.Value> | undefined>(
+          (merged, value, index) => {
+            if (merged === undefined) {
+              return undefined;
+            }
+
+            const pattern = functionCase.args[index];
+            const binding = evaluateBinding(pattern, value);
+            return binding && Object.assign(merged, binding);
+          },
+          {},
+        );
+
+        return binding ? { binding, functionCase } : undefined;
+      });
+
+      utils.assert(
+        arm,
+        `No case for ${functionDeclaration.identifier}(${values
+          // TODO: It should use pretty print (e.g., `V(2)` instead of `v__2`).
+          .map(serializeValue)
+          .join(', ')}).`,
+      );
+      const value = evaluateExpression(arm.functionCase.body, arm.binding);
+      return rg.Element({ identifier: serializeValue(value) });
+    }
+
+    return constructMap(
+      evaluateTypeValues(context, type.lhs).map(value =>
+        rg.ValueEntry({
+          identifier: serializeValue(value),
+          value: layer(type.rhs, values.concat(value)),
+        }),
+      ),
+    );
+  }
+
   const type = translateType(functionDeclaration.type);
   utils.assert(
     type.kind === 'Arrow',
     'Function is expected to have Arrow type.',
   );
-  const entries = evaluateTypeValues(context, type.lhs).map(value => {
-    utils.assert(value.kind !== 'ValueMap', 'ValueMap is not allowed.');
-    const arm = utils.findMap(functionDeclaration.cases, functionCase => {
-      utils.assert(functionCase.args.length === 1, 'Not implemented.');
-      const pattern = functionCase.args[0];
-      const binding = evaluateBinding(pattern, value);
-      return binding ? { binding, functionCase } : undefined;
-    });
-    utils.assert(arm, `No FunctionCase found for "${value.identifier}".`);
-    const { binding, functionCase } = arm;
-    return rg.ValueEntry({
-      identifier: serializeValue(value),
-      value: rg.Element({
-        identifier: serializeValue(
-          evaluateExpression(functionCase.body, binding),
-        ),
-      }),
-    });
-  });
 
   return rg.ConstantDeclaration({
     identifier: functionDeclaration.identifier,
     type,
-    value: constructMap(entries),
+    value: layer(type, []),
   });
 }
 
@@ -1426,13 +1479,44 @@ function translateVariableDeclaration(
   const type = translateType(variableDeclaration.type);
   return rg.VariableDeclaration({
     identifier: variableDeclaration.identifier,
-    defaultValue: translateValue(
-      variableDeclaration.defaultValue === null
-        ? evaluateDefaultValue(context, type)
-        : evaluateExpression(variableDeclaration.defaultValue, {}),
+    defaultValue: translateVariableDefaultValue(
+      context,
+      variableDeclaration.defaultValue,
+      type,
     ),
     type,
   });
+}
+
+function translateVariableDefaultValue(
+  context: Context,
+  defaultValue: hrg.Expression | null,
+  type: rg.Type,
+) {
+  // If there's none, build one from the type.
+  if (defaultValue === null) {
+    return translateValue(evaluateDefaultValue(context, type));
+  }
+
+  // If it's a map with a wildcard pattern, set it as the default value.
+  if (
+    defaultValue.kind === 'ExpressionMap' &&
+    defaultValue.pattern.kind === 'PatternWildcard'
+  ) {
+    return rg.Map({
+      entries: [
+        rg.ValueEntry({
+          identifier: null,
+          value: translateValue(
+            evaluateExpression(defaultValue.expression, {}),
+          ),
+        }),
+      ],
+    });
+  }
+
+  // Build the map.
+  return translateValue(evaluateExpression(defaultValue, {}));
 }
 
 export default function translate(
