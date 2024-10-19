@@ -1,0 +1,53 @@
+domain Player = x
+domain Score = S(N) where N in 0..10
+domain ScoreOrNull = Score | null
+
+domain Boolean = true | false
+domain Node = V(X) where X in 0..3
+
+distance : Node -> Node -> ScoreOrNull
+distance(V(0), V(1)) = S(1)
+distance(V(0), V(2)) = S(2)
+distance(V(0), V(3)) = S(3)
+distance(V(1), V(2)) = S(2)
+distance(V(1), V(3)) = S(2)
+distance(V(2), V(3)) = S(3)
+distance(V(_), V(_)) = null
+
+sum : Score -> Score -> Score
+sum(S(A), S(B)) = if A + B > 10 then S(10) else S(A + B)
+
+goals : Player -> Score
+goals = { _ = S(0) }
+
+position : Node
+position = V(0)
+
+visited : Node -> Boolean
+visited = { V(X) = false where X in 0..3 }
+
+graph missing() {
+  forall node:Node {
+    check(visited[node] == false)
+  }
+}
+
+graph rules() {
+  visited[position] = true
+
+  player = x
+  while visited[V(3)] != true {
+    forall node:Node {
+      check(visited[node] == false)
+      check(distance(position, node) != null)
+      $ node
+      goals[x] = sum(goals[x], distance(position, node))
+      visited[node] = true
+      position = node
+    }
+  }
+
+  player = keeper
+  check(visited[V(3)] == true)
+  end()
+}

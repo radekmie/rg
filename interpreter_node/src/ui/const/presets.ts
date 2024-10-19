@@ -13,6 +13,8 @@ import Hex9Rbg from 'bundle-text:../../../../examples/hex9.rbg';
 import KnightthroughHrg from 'bundle-text:../../../../examples/knightthrough.hrg';
 import KnightthroughRbg from 'bundle-text:../../../../examples/knightthrough.rbg';
 import MontyHallGdl from 'bundle-text:../../../../examples/monty-hall.kif';
+import SatSolverHrg from 'bundle-text:../../../../examples/sat-solver.hrg';
+import ShortestPathHrg from 'bundle-text:../../../../examples/shortest-path.hrg';
 import TicTacToeHrg from 'bundle-text:../../../../examples/ticTacToe.hrg';
 import TicTacToeGdl from 'bundle-text:../../../../examples/ticTacToe.kif';
 import TicTacToeRbg from 'bundle-text:../../../../examples/ticTacToe.rbg';
@@ -35,6 +37,8 @@ export const presets = [
   ['Hex9', Hex9Rbg, Language.rbg] as const,
   ['Knightthrough', KnightthroughHrg, Language.hrg] as const,
   ['Knightthrough', KnightthroughRbg, Language.rbg] as const,
+  ['SatSolver', SatSolverHrg, Language.hrg] as const,
+  ['ShortestPath', ShortestPathHrg, Language.hrg] as const,
   ['MontyHall', MontyHallGdl, Language.gdl] as const,
   ['TicTacToe', TicTacToeGdl, Language.gdl] as const,
   ['TicTacToe', TicTacToeHrg, Language.hrg] as const,
