@@ -7,6 +7,7 @@ impl Game<Arc<str>> {
         let types: BTreeMap<_, _> = self
             .typedefs
             .iter()
+            .filter(|typedef| typedef.identifier.as_ref() != "Player")
             .filter_map(|typedef| {
                 typedef.type_.as_singleton().map(|id| {
                     let pair = (typedef.identifier.clone(), id.clone());
@@ -82,5 +83,11 @@ mod test {
         inline_values,
         "type T = { 1 }; var t: T = 1; begin, end: t == t;",
         "begin, end: 1 == 1;"
+    );
+
+    test_transform!(
+        prune_singleton_types,
+        ignore_player,
+        "type Player = { 1 }; begin, end: ;"
     );
 }
