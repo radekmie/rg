@@ -1365,6 +1365,10 @@ pub enum Pragma<Id> {
 }
 
 impl<Id> Pragma<Id> {
+    pub fn has_bindings(&self) -> bool {
+        self.nodes().any(Node::has_bindings)
+    }
+
     pub fn nodes(&self) -> impl Iterator<Item = &Node<Id>> {
         match self {
             Self::Disjoint { node, nodes, .. }

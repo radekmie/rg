@@ -1,38 +1,130 @@
-use crate::ast::{Error, Game};
+use crate::ast::{Error, Game, Node, Pragma};
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-impl Game<Arc<str>> {
-    pub fn expand_generator_nodes(&mut self) -> Result<(), Error<Arc<str>>> {
+type Id = Arc<str>;
+
+impl Game<Id> {
+    pub fn expand_generator_nodes(&mut self) -> Result<(), Error<Id>> {
         for index in (0..self.edges.len()).rev() {
             let bindings = self.edges[index].bindings();
-            if bindings.is_empty() {
-                continue;
+            if !bindings.is_empty() {
+                let mappings = self.create_mappings(bindings.into_iter())?;
+                let item = self.edges.remove(index);
+                self.edges.splice(
+                    index..index,
+                    mappings
+                        .into_iter()
+                        .map(|mapping| item.substitute_bindings(&mapping)),
+                );
             }
+        }
 
-            let mappings = self.create_mappings(bindings.into_iter())?;
-            let item = self.edges.remove(index);
-            self.edges.splice(
-                index..index,
-                mappings
-                    .into_iter()
-                    .map(|mapping| item.substitute_bindings(&mapping)),
-            );
+        // First, split pragmas into multiple with distinctive bindings. Thanks
+        // to that, the next step does not suffer from combinatorial explosion.
+        for index in (0..self.pragmas.len()).rev() {
+            if self.pragmas[index].has_bindings() {
+                let pragmas = self.pragmas.remove(index).split_by_bindings();
+                self.pragmas.splice(index..index, pragmas);
+            }
         }
 
         for index in (0..self.pragmas.len()).rev() {
             let bindings = self.pragmas[index].bindings();
-            if bindings.is_empty() {
-                continue;
-            }
-
-            let mappings = self.create_mappings(bindings.into_iter())?;
-            if let Some(pragmas) = self.pragmas[index].substitute_bindings_mut(&mappings) {
-                self.pragmas.splice(index..index + 1, pragmas);
+            if !bindings.is_empty() {
+                let mappings = self.create_mappings(bindings.into_iter())?;
+                if let Some(pragmas) = self.pragmas[index].substitute_bindings_mut(&mappings) {
+                    self.pragmas.splice(index..index + 1, pragmas);
+                }
             }
         }
 
         Ok(())
     }
+}
+
+impl Pragma<Id> {
+    fn split_by_bindings(self) -> Vec<Self> {
+        match self {
+            Self::Disjoint { span, node, nodes } => group_by_bindings(nodes)
+                .map(|nodes| Self::Disjoint {
+                    span,
+                    node: node.clone(),
+                    nodes,
+                })
+                .collect(),
+            Self::DisjointExhaustive { span, node, nodes } => group_by_bindings(nodes)
+                .map(|nodes| Self::DisjointExhaustive {
+                    span,
+                    node: node.clone(),
+                    nodes,
+                })
+                .collect(),
+            Self::Repeat {
+                span,
+                nodes,
+                identifiers,
+            } => group_by_bindings(nodes)
+                .map(|nodes| Self::Repeat {
+                    span,
+                    nodes,
+                    identifiers: identifiers.clone(),
+                })
+                .collect(),
+            Self::SimpleApply {
+                span,
+                node,
+                tags,
+                nodes,
+            } => group_by_bindings(nodes)
+                .map(|nodes| Self::SimpleApply {
+                    span,
+                    node: node.clone(),
+                    tags: tags.clone(),
+                    nodes,
+                })
+                .collect(),
+            Self::SimpleApplyExhaustive {
+                span,
+                node,
+                tags,
+                nodes,
+            } => group_by_bindings(nodes)
+                .map(|nodes| Self::SimpleApplyExhaustive {
+                    span,
+                    node: node.clone(),
+                    tags: tags.clone(),
+                    nodes,
+                })
+                .collect(),
+            Self::TagIndex { span, index, nodes } => group_by_bindings(nodes)
+                .map(|nodes| Self::TagIndex { span, index, nodes })
+                .collect(),
+            Self::TagMaxIndex { span, index, nodes } => group_by_bindings(nodes)
+                .map(|nodes| Self::TagMaxIndex { span, index, nodes })
+                .collect(),
+            Self::Unique { span, nodes } => group_by_bindings(nodes)
+                .map(|nodes| Self::Unique { span, nodes })
+                .collect(),
+        }
+    }
+}
+
+fn group_by_bindings(nodes: Vec<Node<Id>>) -> impl Iterator<Item = Vec<Node<Id>>> {
+    nodes
+        .into_iter()
+        .fold(
+            BTreeMap::new(),
+            |mut grouped: BTreeMap<BTreeSet<_>, Vec<_>>, node| {
+                let bindings = node
+                    .bindings()
+                    .map(|(x, y)| (x.clone(), y.clone()))
+                    .collect();
+                grouped.entry(bindings).or_default().push(node);
+                grouped
+            },
+        )
+        .into_values()
 }
 
 #[cfg(test)]
@@ -63,8 +155,6 @@ mod test {
         expand_generator_nodes,
         pragma3,
         "type T = { a, b }; @simpleApply x u : y(t: T);",
-        // TODO: Can we merge these into one?
-        // "type T = { a, b }; @simpleApply x u : y__bind__a y__bind__b;"
         "type T = { a, b }; @simpleApply x u : y__bind__a; @simpleApply x u : y__bind__b;"
     );
 
@@ -73,5 +163,12 @@ mod test {
         pragma4,
         "type T = { a, b }; @simpleApply x t : y(t: T);",
         "type T = { a, b }; @simpleApply x a : y__bind__a; @simpleApply x b : y__bind__b;"
+    );
+
+    test_transform!(
+        expand_generator_nodes,
+        pragma5,
+        "type T1 = { a, b }; type T2 = { a, b }; @unique x1(t1: T1) x2(t2: T2);",
+        "type T1 = { a, b }; type T2 = { a, b }; @unique x1__bind__a x1__bind__b; @unique x2__bind__a x2__bind__b;"
     );
 }

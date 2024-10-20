@@ -1,6 +1,6 @@
 use crate::ast::analyses::ReachingAssignments;
 use crate::ast::{Error, Game, Pragma};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 use utils::position::Span;
 
@@ -22,21 +22,11 @@ impl Game<Arc<str>> {
             }
         });
 
-        let nodes_per_bindings = unique_nodes.into_iter().fold(
-            BTreeMap::new(),
-            |mut nodes_per_bindings: BTreeMap<BTreeSet<_>, Vec<_>>, node| {
-                let bindings = node
-                    .bindings()
-                    .map(|(x, y)| (x.clone(), y.clone()))
-                    .collect();
-                nodes_per_bindings.entry(bindings).or_default().push(node);
-                nodes_per_bindings
-            },
-        );
-
-        let span = Span::none();
-        for nodes in nodes_per_bindings.into_values() {
-            let pragma = Pragma::Unique { span, nodes };
+        if !unique_nodes.is_empty() {
+            let pragma = Pragma::Unique {
+                span: Span::none(),
+                nodes: unique_nodes.into_iter().collect(),
+            };
             let index = self.pragmas.partition_point(|x| *x < pragma);
             self.pragmas.insert(index, pragma);
         }
@@ -88,21 +78,14 @@ mod test {
         calculate_uniques,
         breakthrough,
         include_str!("../../../../../examples/breakthrough.rg"),
-        adds "
-            @unique begin checkOwn continue directionForward directionLeft directionLeftChecked directionOK directionRight directionRightChecked done end finish forward lose move moved score selectDirection selectPos setFinished turn win wincheck;
-            @unique selectedPos(position: Position) setPos(position: Position);
-        "
+        adds "@unique begin checkOwn continue directionForward directionLeft directionLeftChecked directionOK directionRight directionRightChecked done end finish forward lose move moved score selectDirection selectPos selectedPos(position: Position) setFinished setPos(position: Position) turn win wincheck;"
     );
 
     test_transform!(
         calculate_uniques,
         tictactoe,
         include_str!("../../../../../examples/ticTacToe.rg"),
-        adds "
-            @unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseY end endmove move nextturn preend set turn win win1 win2;
-            @unique chooseX(coordX: Coord);
-            @unique chooseY(coordY: Coord);
-        "
+        adds "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endmove move nextturn preend set turn win win1 win2;"
     );
 
     test_transform!(
