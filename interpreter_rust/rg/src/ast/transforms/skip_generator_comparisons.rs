@@ -101,7 +101,8 @@ mod test {
         binding_in_lhs,
         "x, y(t: T): null == t;
         y(t: T), z: ;",
-        "x, z: ;"
+        "x, y(t: T): ;
+        y(t: T), z: ;"
     );
 
     test_transform!(
