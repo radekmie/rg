@@ -134,8 +134,7 @@ fn ast_tokens(game: &Game<Identifier>) -> Vec<Token> {
 fn symbol_table_tokens(symbol_table: &SymbolTable) -> Vec<Token> {
     let mut tokens = Vec::new();
     for occ in &symbol_table.occurrences {
-        let symbol = symbol_table.get_occ_symbol(occ);
-        if let Some(symbol) = symbol {
+        if let Some((_, symbol)) = symbol_table.get_occ_symbol(occ) {
             let definition_mod = if symbol.pos.equal_span(&occ.pos) {
                 semantic_token_modifier(&SemanticTokenModifier::DEFINITION)
             } else {

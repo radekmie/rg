@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use hrg::ast::{
-    DomainDeclaration, DomainElement, DomainValue, Function, FunctionDeclaration, Game, Statement,
-    Type, TypeDeclaration, VariableDeclaration,
+    DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionDeclaration, Game,
+    Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
 };
 use utils::Identifier;
 
@@ -18,6 +18,10 @@ pub struct Symbols {
 impl Symbols {
     fn add_from_statement(&mut self, stat: &Statement<Identifier>) {
         match stat {
+            Statement::Branch { arms } => arms.iter().for_each(|arm| {
+                arm.iter()
+                    .for_each(|statement| self.add_from_statement(statement));
+            }),
             Statement::Forall {
                 identifier,
                 body,
@@ -29,17 +33,58 @@ impl Symbols {
                 body.iter()
                     .for_each(|statement| self.add_from_statement(statement));
             }
-            Statement::Branch { arms } => arms.iter().for_each(|arm| {
-                arm.iter()
+            Statement::If { body, expression } | Statement::While { body, expression } => {
+                body.iter()
                     .for_each(|statement| self.add_from_statement(statement));
-            }),
-            Statement::If { body, .. }
-            | Statement::Loop { body }
-            | Statement::While { body, .. } => body
+                self.add_from_expression(expression);
+            }
+            Statement::Loop { body } => body
                 .iter()
                 .for_each(|statement| self.add_from_statement(statement)),
+            Statement::Assignment {
+                accessors,
+                expression,
+                ..
+            } => {
+                accessors
+                    .iter()
+                    .for_each(|accessor| self.add_from_expression(accessor));
+                self.add_from_expression(expression);
+            }
+            Statement::Call { args, .. } => {
+                args.iter().for_each(|arg| self.add_from_expression(arg));
+            }
+            Statement::Tag { .. } => {}
+        }
+    }
 
-            _ => {}
+    fn add_from_expression(&mut self, expr: &Expression<Identifier>) {
+        match expr {
+            Expression::Access { lhs, rhs } | Expression::BinExpr { lhs, rhs, .. } => {
+                self.add_from_expression(lhs);
+                self.add_from_expression(rhs);
+            }
+            Expression::Call { expression, args } => {
+                self.add_from_expression(expression);
+                args.iter().for_each(|arg| self.add_from_expression(arg));
+            }
+            Expression::Constructor { args, .. } => {
+                args.iter().for_each(|arg| self.add_from_expression(arg));
+            }
+            Expression::If { cond, then, else_ } => {
+                self.add_from_expression(cond);
+                self.add_from_expression(then);
+                self.add_from_expression(else_);
+            }
+            Expression::Literal { .. } => {}
+            Expression::Map {
+                pattern,
+                expression,
+                ..
+            } => {
+                self.add_from_pattern(pattern);
+                self.add_from_expression(expression);
+            }
         }
     }
 
@@ -91,6 +136,9 @@ impl Symbols {
         if let Some(symbol) = typed(&variable.identifier, Flag::Variable, variable.type_.clone()) {
             self.symbols.push(symbol);
         }
+        if let Some(default_value) = &variable.default_value.as_ref() {
+            self.add_from_expression(default_value);
+        }
     }
 
     fn add_from_function(&mut self, func: &Function<Identifier>) {
@@ -110,6 +158,26 @@ impl Symbols {
     fn add_from_function_decl(&mut self, func: &FunctionDeclaration<Identifier>) {
         if let Some(symbol) = typed(&func.identifier, Flag::Function, func.type_.clone()) {
             self.symbols.push(symbol);
+        }
+        for case in &func.cases {
+            for arg in &case.args {
+                self.add_from_pattern(arg);
+            }
+            self.add_from_expression(&case.body);
+        }
+    }
+
+    fn add_from_pattern(&mut self, pattern: &Pattern<Identifier>) {
+        match pattern {
+            Pattern::Constructor { args, .. } => {
+                args.iter().for_each(|arg| self.add_from_pattern(arg));
+            }
+            Pattern::Variable { identifier } => {
+                if let Some(symbol) = untyped(identifier, Flag::Param) {
+                    self.symbols.push(symbol);
+                }
+            }
+            Pattern::Literal { .. } | Pattern::Wildcard => {}
         }
     }
 

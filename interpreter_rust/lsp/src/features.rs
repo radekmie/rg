@@ -38,8 +38,7 @@ pub fn references(
     position: Position,
     symbol_table: &SymbolTable,
 ) -> Option<Vec<Location>> {
-    let enclosing_symbol = symbol_table.get_symbol_at(&position.to_rg())?;
-    let sym_idx = symbol_table.sym_idx(enclosing_symbol)?;
+    let (sym_idx, enclosing_symbol) = symbol_table.get_symbol_at(&position.to_rg())?;
     let all_occurrences = symbol_table.all_symbol_occurences(sym_idx);
     let all_occurrences: Vec<Location> = all_occurrences
         .into_iter()
@@ -55,7 +54,7 @@ pub fn definitions(
     symbol_table: &SymbolTable,
 ) -> Option<GotoDefinitionResponse> {
     let enclosing_symbol = symbol_table.get_symbol_at(&position.to_rg())?;
-    enclosing_symbol.safe_pos().map(|pos| {
+    enclosing_symbol.1.safe_pos().map(|pos| {
         let location = pos.to_location(uri);
         GotoDefinitionResponse::Scalar(location)
     })
@@ -65,8 +64,7 @@ pub fn document_highlight(
     position: Position,
     symbol_table: &SymbolTable,
 ) -> Option<Vec<DocumentHighlight>> {
-    let enclosing_symbol = symbol_table.get_symbol_at(&position.to_rg())?;
-    let sym_idx = symbol_table.sym_idx(enclosing_symbol)?;
+    let (sym_idx, _) = symbol_table.get_symbol_at(&position.to_rg())?;
     let all_occurrences = symbol_table.all_symbol_occurences(sym_idx);
     Some(
         all_occurrences
@@ -86,10 +84,11 @@ pub fn prepare_rename(
     let enclosing_occ = symbol_table.get_occ_at(&position.to_rg())?;
     let symbol = symbol_table.get_occ_symbol(enclosing_occ)?;
     symbol
+        .1
         .safe_pos()
         .map(|_| PrepareRenameResponse::RangeWithPlaceholder {
             range: enclosing_occ.pos.to_lsp(),
-            placeholder: symbol.id.clone(),
+            placeholder: symbol.1.id.clone(),
         })
 }
 
@@ -99,8 +98,7 @@ pub fn rename(
     symbol_table: &SymbolTable,
     new_name: &str,
 ) -> Option<WorkspaceEdit> {
-    let symbol = symbol_table.get_symbol_at(&position.to_rg())?;
-    let sym_idx = symbol_table.sym_idx(symbol)?;
+    let (sym_idx, symbol) = symbol_table.get_symbol_at(&position.to_rg())?;
     symbol.safe_pos().map(|_| {
         let text_edits = symbol_table
             .all_symbol_occurences(sym_idx)
@@ -135,7 +133,7 @@ pub fn diagnostics(errors: &[Error]) -> Vec<Diagnostic> {
 pub fn hover(position: Position, symbol_table: &SymbolTable) -> Option<Hover> {
     let occ = symbol_table.get_occ_at(&position.to_rg())?;
     let pos = &occ.pos;
-    let enclosing_symbol = symbol_table.get_occ_symbol(occ)?;
+    let (_, enclosing_symbol) = symbol_table.get_occ_symbol(occ)?;
     let str = hover_signature(enclosing_symbol)?;
     let contents = HoverContents::Array(vec![MarkedString::from_language_code(
         "rg".to_string(),

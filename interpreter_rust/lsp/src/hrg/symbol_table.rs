@@ -4,6 +4,7 @@ use hrg::ast::{
     DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg, FunctionCase,
     FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
 };
+use utils::position::Positioned;
 use utils::{Error, Identifier};
 
 use super::symbol::Symbols;
@@ -15,6 +16,9 @@ fn table_builder_from_game(game: &Game<Identifier>) -> SymbolTableBuilder {
         symbols: Symbols::from_game(game),
     };
     add_builtin_symbols(&mut table);
+    table
+        .symbols
+        .sort_by(|a, b| a.span().start.cmp(&b.span().start));
     game.automaton
         .iter()
         .for_each(|function| add_from_function(&mut table, function));
