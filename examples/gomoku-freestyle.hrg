@@ -45,8 +45,7 @@ downRight(_) = null
 
 
 // Variables
-board : Position -> Piece
-board = { V(X, Y) = empty where X in 1..15, Y in 1..15 }
+board : Position -> Piece = { V(X, Y) = empty where X in 1..15, Y in 1..15 }
 
 position : Position
 

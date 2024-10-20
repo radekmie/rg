@@ -323,17 +323,11 @@ fn function_declaration(input: Input) -> Result<FunctionDeclaration<Identifier>>
 }
 
 fn variable_declaration(input: Input) -> Result<VariableDeclaration<Identifier>> {
-    let (input, (id, type_)) = separated_pair(identifier, char(':'), type_)(input)?;
-    let (input, default_value) = opt(ww(preceded(
-        terminated(
-            verify(identifier, |identifier| {
-                identifier.identifier == id.identifier
-            }),
-            ww_char('='),
-        ),
-        expression,
-    )))(input)?;
-    Ok((input, (id, type_, default_value).into()))
+    into(tuple((
+        identifier,
+        preceded(char(':'), type_),
+        opt(preceded(ww_char('='), expression)),
+    )))(input)
 }
 
 pub fn game(input: Input) -> Result<Game<Identifier>> {

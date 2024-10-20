@@ -40,8 +40,7 @@ opponent(_) = white
 
 
 // Variables
-board : Position -> Piece
-board = {
+board : Position -> Piece = {
   V(X, Y) = if Y < 2
     then blackknight
     else if Y > 5
@@ -50,8 +49,7 @@ board = {
   where X in 0..7, Y in 0..7
 }
 
-me : Player
-me = white
+me : Player = white
 
 position : Position
 
