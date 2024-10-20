@@ -112,6 +112,13 @@ impl Analysis for ReachingAssignments {
                 input.retain(|variable, _| variable.as_ref() != Some(rhs));
             }
         }
+
+        // If it was repeated in the previous node, it does not have to be
+        // repeated here.
+        for assignment in input.values_mut() {
+            assignment.is_repeated = false;
+        }
+
         input
     }
 

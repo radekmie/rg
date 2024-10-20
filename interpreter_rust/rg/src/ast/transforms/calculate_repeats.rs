@@ -53,14 +53,14 @@ mod test {
         calculate_repeats,
         repeat_example,
         "begin, a: ; a, a: x = y[x]; a, end: x == z;",
-        adds "@repeat a : x; @repeat end :;"
+        adds "@repeat a : x;"
     );
 
     test_transform!(
         calculate_repeats,
         small_loop,
         "begin, x: ; x, y: ; y, x: ; y, end: ;",
-        adds "@repeat end x y : ;"
+        adds "@repeat x :;"
     );
 
     test_transform!(
@@ -81,7 +81,7 @@ mod test {
         30, 28: board[coord] == r;
         32, 30: coord != null;
         46, 47: direction[coord][NW] != null;",
-        adds "@repeat 25 26 27 28 30 32 : coord;"
+        adds "@repeat 26 27 32 : coord;"
     );
 
     test_transform!(
@@ -104,6 +104,18 @@ mod test {
 
     test_transform!(
         calculate_repeats,
+        repeat_multiple,
+        "
+            begin, choice: x = 0;
+            begin, choice: x = 1;
+            choice, joined: ;
+            joined, end: ;
+        ",
+        adds "@repeat choice : x;"
+    );
+
+    test_transform!(
+        calculate_repeats,
         repeat_test,
         include_str!("../../../../../examples/repeatTest.rg"),
         adds "@repeat selectDir4 : pos;"
@@ -113,7 +125,7 @@ mod test {
         calculate_repeats,
         repeat_test_big,
         include_str!("../../../../../examples/repeatTestBig.rg"),
-        adds "@repeat goDown goLeft goRight goUp main : pos; @repeat setScore win1 win2 :;"
+        adds "@repeat goDown goLeft goRight goUp main : pos; @repeat setScore :;"
     );
 
     test_transform!(

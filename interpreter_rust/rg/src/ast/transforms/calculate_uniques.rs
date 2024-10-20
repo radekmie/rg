@@ -50,14 +50,26 @@ mod test {
         calculate_uniques,
         small_loop,
         "begin, x: ; x, y: ; y, x: ; y, end: ;",
-        adds "@unique begin;"
+        adds "@unique begin end y;"
     );
 
     test_transform!(
         calculate_uniques,
         repeat_example,
         "begin, a: ; a, a: x = y[x]; a, end: x == z;",
-        adds "@unique begin;"
+        adds "@unique begin end;"
+    );
+
+    test_transform!(
+        calculate_uniques,
+        repeat_multiple,
+        "
+            begin, choice: x = 0;
+            begin, choice: x = 1;
+            choice, joined: ;
+            joined, end: ;
+        ",
+        adds "@unique begin end joined;"
     );
 
     test_transform!(
@@ -71,7 +83,7 @@ mod test {
         calculate_uniques,
         repeat_test_big,
         include_str!("../../../../../examples/repeatTestBig.rg"),
-        adds "@unique begin end;"
+        adds "@unique begin end win1 win2;"
     );
 
     test_transform!(
