@@ -4,14 +4,17 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 use std::sync::Arc;
 
-struct Context<Id: Ord> {
+type Id = Arc<str>;
+
+struct Context {
     constants_indexes: BTreeMap<Id, usize>,
     game: ist::Game<Id>,
+    types: BTreeMap<Id, Rc<ist::Type<Id>>>,
     variables_indexes: BTreeMap<Id, usize>,
 }
 
-impl From<ast::Game<Arc<str>>> for ist::Game<Arc<str>> {
-    fn from(ast: ast::Game<Arc<str>>) -> Self {
+impl From<ast::Game<Id>> for ist::Game<Id> {
+    fn from(ast: ast::Game<Id>) -> Self {
         let placeholder_value = Rc::new(ist::Value::Element {
             value: Arc::from(""),
         });
@@ -26,9 +29,9 @@ impl From<ast::Game<Arc<str>>> for ist::Game<Arc<str>> {
                 initial_values: Rc::default(),
                 initial_visible: placeholder_value.clone(),
                 repeats: BTreeMap::default(),
-                types: BTreeMap::default(),
                 uniques: BTreeSet::default(),
             },
+            types: BTreeMap::default(),
             variables_indexes: BTreeMap::default(),
         };
 
@@ -47,7 +50,7 @@ impl From<ast::Game<Arc<str>>> for ist::Game<Arc<str>> {
     }
 }
 
-fn build_constants(context: &mut Context<Arc<str>>, constants: Vec<ast::Constant<Arc<str>>>) {
+fn build_constants(context: &mut Context, constants: Vec<ast::Constant<Id>>) {
     for constant in constants {
         let type_ = build_type_or_fail(context, &constant.type_);
         let value = build_value(context, &type_, &constant.value);
@@ -58,10 +61,7 @@ fn build_constants(context: &mut Context<Arc<str>>, constants: Vec<ast::Constant
     }
 }
 
-fn build_label(
-    context: &mut Context<Arc<str>>,
-    label: ast::Label<Arc<str>>,
-) -> ist::EdgeLabel<Arc<str>> {
+fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<Id> {
     match label {
         ast::Label::Assignment { lhs, rhs } => ist::EdgeLabel::Assignment {
             lhs: build_expression(context, &lhs),
@@ -84,7 +84,7 @@ fn build_label(
     }
 }
 
-fn build_node(mut node: ast::Node<Arc<str>>) -> Arc<str> {
+fn build_node(mut node: ast::Node<Id>) -> Id {
     assert!(node.parts.len() == 1, "Only trivial EdgeName allowed.");
     let Some(ast::NodePart::Literal { identifier }) = node.parts.pop() else {
         panic!("Only trivial EdgeName allowed.")
@@ -92,7 +92,7 @@ fn build_node(mut node: ast::Node<Arc<str>>) -> Arc<str> {
     identifier
 }
 
-fn build_edges(context: &mut Context<Arc<str>>, edges: Vec<ast::Edge<Arc<str>>>) {
+fn build_edges(context: &mut Context, edges: Vec<ast::Edge<Id>>) {
     for edge in edges {
         let lhs = build_node(edge.lhs);
         let rhs = build_node(edge.rhs);
@@ -108,9 +108,9 @@ fn build_edges(context: &mut Context<Arc<str>>, edges: Vec<ast::Edge<Arc<str>>>)
 }
 
 fn build_expression(
-    context: &mut Context<Arc<str>>,
-    expression: &ast::Expression<Arc<str>>,
-) -> ist::Expression<Arc<str>> {
+    context: &mut Context,
+    expression: &ast::Expression<Id>,
+) -> ist::Expression<Id> {
     match expression {
         ast::Expression::Access { lhs, rhs, .. } => ist::Expression::Access {
             lhs: Rc::new(build_expression(context, lhs)),
@@ -141,7 +141,7 @@ fn build_expression(
     }
 }
 
-fn build_pragmas(context: &mut Context<Arc<str>>, pragmas: Vec<ast::Pragma<Arc<str>>>) {
+fn build_pragmas(context: &mut Context, pragmas: Vec<ast::Pragma<Id>>) {
     for pragma in pragmas {
         match pragma {
             ast::Pragma::Repeat {
@@ -173,10 +173,10 @@ fn build_pragmas(context: &mut Context<Arc<str>>, pragmas: Vec<ast::Pragma<Arc<s
 }
 
 fn build_value(
-    context: &mut Context<Arc<str>>,
-    type_: &ist::Type<Arc<str>>,
-    value: &ast::Value<Arc<str>>,
-) -> Rc<ist::Value<Arc<str>>> {
+    context: &mut Context,
+    type_: &ist::Type<Id>,
+    value: &ast::Value<Id>,
+) -> Rc<ist::Value<Id>> {
     match value {
         ast::Value::Element { identifier } => {
             let identifier = identifier.clone();
@@ -222,13 +222,9 @@ fn build_value(
     }
 }
 
-fn build_type(
-    context: &mut Context<Arc<str>>,
-    type_: &ast::Type<Arc<str>>,
-) -> Option<Rc<ist::Type<Arc<str>>>> {
+fn build_type(context: &mut Context, type_: &ast::Type<Id>) -> Option<Rc<ist::Type<Id>>> {
     match type_ {
         ast::Type::Arrow { lhs, rhs } => context
-            .game
             .types
             .get::<str>(&lhs.to_string())
             .cloned()
@@ -245,28 +241,23 @@ fn build_type(
                 })
                 .collect(),
         })),
-        ast::Type::TypeReference { identifier } => {
-            context.game.types.get::<str>(identifier).cloned()
-        }
+        ast::Type::TypeReference { identifier } => context.types.get::<str>(identifier).cloned(),
     }
 }
 
-fn build_type_or_fail(
-    context: &mut Context<Arc<str>>,
-    type_: &ast::Type<Arc<str>>,
-) -> Rc<ist::Type<Arc<str>>> {
+fn build_type_or_fail(context: &mut Context, type_: &ast::Type<Id>) -> Rc<ist::Type<Id>> {
     build_type(context, type_).unwrap_or_else(|| {
         panic!("Unresolved type {type_}. (Builtins are not automatically added yet.)")
     })
 }
 
-fn build_typedefs(context: &mut Context<Arc<str>>, typedefs: Vec<ast::Typedef<Arc<str>>>) {
+fn build_typedefs(context: &mut Context, typedefs: Vec<ast::Typedef<Id>>) {
     let typedefs_len = typedefs.len();
     let unresolved_typedefs = typedefs
         .into_iter()
         .filter_map(|typedef| match build_type(context, &typedef.type_) {
             Some(type_) => {
-                context.game.types.insert(typedef.identifier, type_);
+                context.types.insert(typedef.identifier, type_);
                 None
             }
             None => Some(typedef),
@@ -284,7 +275,7 @@ fn build_typedefs(context: &mut Context<Arc<str>>, typedefs: Vec<ast::Typedef<Ar
     }
 }
 
-fn build_variables(context: &mut Context<Arc<str>>, variables: Vec<ast::Variable<Arc<str>>>) {
+fn build_variables(context: &mut Context, variables: Vec<ast::Variable<Id>>) {
     let mut typed_initial_values: Vec<_> = variables
         .into_iter()
         .filter_map(|variable| {

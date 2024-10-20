@@ -62,7 +62,6 @@ pub struct Game<Id: Ord> {
     pub initial_values: Rc<Vec<Rc<Value<Id>>>>,
     pub initial_visible: Rc<Value<Id>>,
     pub repeats: BTreeMap<Id, Rc<Vec<usize>>>,
-    pub types: BTreeMap<Id, Rc<Type<Id>>>,
     pub uniques: BTreeSet<Id>,
 }
 
