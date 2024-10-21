@@ -25,27 +25,28 @@ left(V(X, Y)) = if X == 1 then null else V(X - 1, Y)
 left(_) = null
 
 upLeft: Position -> Position
-upLeft(p) = up(left(p))
+upLeft(V(X, Y)) = if X == 1 || Y == 15 then null else V(X - 1, Y + 1)
 upLeft(_) = null
 
 upRight: Position -> Position
-upRight(p) = up(right(p))
+upRight(V(X, Y)) = if X == 15 || Y == 15 then null else V(X + 1, Y + 1)
 upRight(_) = null
 
 
 downLeft: Position -> Position
-downLeft(p) = down(left(p))
+downLeft(V(X, Y)) = if X == 1 || Y == 1 then null else V(X - 1, Y - 1)
 downLeft(_) = null
 
 
 downRight: Position -> Position
-downRight(p) = down(right(p))
+downRight(V(X, Y)) = if X == 15 || Y == 1 then null else V(X + 1, Y - 1)
 downRight(_) = null
 
 
 
 // Variables
-board : Position -> Piece = { V(X, Y) = empty where X in 1..15, Y in 1..15 }
+board : Position -> Piece
+board = { V(X, Y) = empty where X in 1..15, Y in 1..15 }
 
 position : Position
 
