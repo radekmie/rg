@@ -4,8 +4,7 @@ domain Player = x
 domain Score = 0 | 1
 domain Variable = x | y | z
 
-values : Variable -> BooleanOrNull
-values = { _ = null }
+values : Variable -> BooleanOrNull = { _ = null }
 
 graph verify() {
   // (X v Y v Z) ^ (X) ^ (!Y) ^ (!Z)

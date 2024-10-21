@@ -38,8 +38,8 @@ fn add_maybe_edge_param(
     if !identifier.is_none() && !identifier.is_numeric() {
         let span = identifier.span();
         let sym_idx = table
-            .find_symbol(&identifier.identifier, &Some(Flag::Param), owner)
-            .or_else(|| table.find_symbol(&identifier.identifier, &None, &None));
+            .find_symbol(identifier, &Some(Flag::Param), owner)
+            .or_else(|| table.find_symbol(identifier, &None, &None));
         if sym_idx.is_some() {
             table.occurrences.push(Occurrence::new(span, sym_idx));
         } else if create_error {

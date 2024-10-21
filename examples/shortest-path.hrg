@@ -17,14 +17,11 @@ distance(V(_), V(_)) = null
 sum : Score -> Score -> Score
 sum(S(A), S(B)) = if A + B > 10 then S(10) else S(A + B)
 
-goals : Player -> Score
-goals = { _ = S(0) }
+goals : Player -> Score = { _ = S(0) }
 
-position : Node
-position = V(0)
+position : Node = V(0)
 
-visited : Node -> Boolean
-visited = { V(X) = false where X in 0..3 }
+visited : Node -> Boolean = { V(X) = false where X in 0..3 }
 
 graph missing() {
   forall node:Node {

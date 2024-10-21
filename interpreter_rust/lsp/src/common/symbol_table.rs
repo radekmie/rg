@@ -33,17 +33,14 @@ impl SymbolTable {
             .find(|occ| occ.pos.encloses_position(pos))
     }
 
-    pub fn get_occ_symbol(&self, occ: &Occurrence) -> Option<&Symbol> {
-        occ.symbol.and_then(|idx| self.symbols.get(idx))
+    pub fn get_occ_symbol(&self, occ: &Occurrence) -> Option<(usize, &Symbol)> {
+        occ.symbol
+            .and_then(|idx| self.symbols.get(idx).map(|sym| (idx, sym)))
     }
 
-    pub fn get_symbol_at(&self, pos: &Position) -> Option<&Symbol> {
+    pub fn get_symbol_at(&self, pos: &Position) -> Option<(usize, &Symbol)> {
         self.get_occ_at(pos)
             .and_then(|occ| self.get_occ_symbol(occ))
-    }
-
-    pub fn sym_idx(&self, symbol: &Symbol) -> Option<usize> {
-        self.symbols.iter().position(|sym| sym == symbol)
     }
 
     pub fn all_symbol_occurences(&self, symbol_idx: usize) -> Vec<Occurrence> {
@@ -64,7 +61,7 @@ impl Display for SymbolTable {
 
         writeln!(f, "Occurrences:\n")?;
         for occ in &self.occurrences {
-            let symbol = self.get_occ_symbol(occ).unwrap();
+            let (_, symbol) = self.get_occ_symbol(occ).unwrap();
             writeln!(f, "{}  {symbol}", occ.pos)?;
         }
 
@@ -82,12 +79,15 @@ impl SymbolTableBuilder {
     /** The last symbol with matching id defined before this position is used. */
     pub fn find_symbol(
         &self,
-        id: &str,
+        id: &Identifier,
         flag: &Option<Flag>,
         owner: &Option<usize>,
     ) -> Option<usize> {
-        self.symbols.iter().position(|symbol| {
-            symbol.id == id
+        self.symbols.iter().rposition(|symbol| {
+            symbol.id == id.identifier
+                && (symbol.span().start <= id.span().start
+                    || symbol.flag == Flag::Function
+                    || symbol.flag == Flag::Type)
                 && flag.as_ref().map_or(true, |f| symbol.flag == *f)
                 && owner.as_ref().map_or(true, |o| symbol.is_owned_by(*o))
         })
@@ -95,13 +95,13 @@ impl SymbolTableBuilder {
 
     pub fn occ_from_id(&self, identifier: &Identifier) -> Occurrence {
         let span = identifier.span();
-        let symbol_idx = self.find_symbol(&identifier.identifier, &None, &None);
+        let symbol_idx = self.find_symbol(identifier, &None, &None);
         Occurrence::new(span, symbol_idx)
     }
 
     pub fn occ_with_flag(&self, identifier: &Identifier, flag: Flag) -> Occurrence {
         let span = identifier.span();
-        let symbol_idx = self.find_symbol(&identifier.identifier, &Some(flag), &None);
+        let symbol_idx = self.find_symbol(identifier, &Some(flag), &None);
         Occurrence::new(span, symbol_idx)
     }
 
@@ -141,7 +141,7 @@ impl SymbolTableBuilder {
     ) {
         if !identifier.is_none() && !identifier.is_numeric() {
             let span = identifier.span();
-            let symbol_idx = self.find_symbol(&identifier.identifier, &Some(flag), owner);
+            let symbol_idx = self.find_symbol(identifier, &Some(flag), owner);
             if symbol_idx.is_none() {
                 self.errors.push(Error::symbol_table_error(
                     &identifier.identifier,
