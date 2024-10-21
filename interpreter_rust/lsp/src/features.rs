@@ -53,8 +53,8 @@ pub fn definitions(
     position: Position,
     symbol_table: &SymbolTable,
 ) -> Option<GotoDefinitionResponse> {
-    let enclosing_symbol = symbol_table.get_symbol_at(&position.to_rg())?;
-    enclosing_symbol.1.safe_pos().map(|pos| {
+    let enclosing_symbol = symbol_table.get_symbol_at(&position.to_rg())?.1;
+    enclosing_symbol.safe_pos().map(|pos| {
         let location = pos.to_location(uri);
         GotoDefinitionResponse::Scalar(location)
     })
@@ -64,7 +64,7 @@ pub fn document_highlight(
     position: Position,
     symbol_table: &SymbolTable,
 ) -> Option<Vec<DocumentHighlight>> {
-    let (sym_idx, _) = symbol_table.get_symbol_at(&position.to_rg())?;
+    let sym_idx = symbol_table.get_symbol_at(&position.to_rg())?.0;
     let all_occurrences = symbol_table.all_symbol_occurences(sym_idx);
     Some(
         all_occurrences
@@ -82,13 +82,12 @@ pub fn prepare_rename(
     symbol_table: &SymbolTable,
 ) -> Option<PrepareRenameResponse> {
     let enclosing_occ = symbol_table.get_occ_at(&position.to_rg())?;
-    let symbol = symbol_table.get_occ_symbol(enclosing_occ)?;
+    let symbol = symbol_table.get_occ_symbol(enclosing_occ)?.1;
     symbol
-        .1
         .safe_pos()
         .map(|_| PrepareRenameResponse::RangeWithPlaceholder {
             range: enclosing_occ.pos.to_lsp(),
-            placeholder: symbol.1.id.clone(),
+            placeholder: symbol.id.clone(),
         })
 }
 
@@ -133,7 +132,7 @@ pub fn diagnostics(errors: &[Error]) -> Vec<Diagnostic> {
 pub fn hover(position: Position, symbol_table: &SymbolTable) -> Option<Hover> {
     let occ = symbol_table.get_occ_at(&position.to_rg())?;
     let pos = &occ.pos;
-    let (_, enclosing_symbol) = symbol_table.get_occ_symbol(occ)?;
+    let enclosing_symbol = symbol_table.get_occ_symbol(occ)?.1;
     let str = hover_signature(enclosing_symbol)?;
     let contents = HoverContents::Array(vec![MarkedString::from_language_code(
         "rg".to_string(),
