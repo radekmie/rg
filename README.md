@@ -6,9 +6,9 @@
 
 ### Dependencies
 
-- [Node.js](https://nodejs.org/en/) 18.15.0
-- [Rust](https://www.rust-lang.org) 1.75.0
-- [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) 0.11.0
+- [Node.js](https://nodejs.org/en/) 20.12.2
+- [Rust](https://www.rust-lang.org) 1.81.0
+- [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) 0.13.1
 
 #### Manual installation
 
@@ -20,12 +20,12 @@ apt install curl gcc libssl-dev pkg-config
 # Node.js via nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
 source ~/.bashrc
-nvm install 18.15.0
+nvm install 20.12.2
 
 # Rust via rustup
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.bashrc
-rustup install 1.75.0
+rustup install 1.81.0
 
 # wasm-pack
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
