@@ -11,12 +11,22 @@ impl Game<Arc<str>> {
                 continue;
             }
 
-            if let Some(nodes) = get_disjoint(edges) {
-                pragmas.push(Pragma::DisjointExhaustive {
-                    span: Span::none(),
-                    node: node.clone(),
-                    nodes,
-                });
+            if let Some((is_exhaustive, nodes)) = get_disjoint(edges) {
+                let pragma = if is_exhaustive {
+                    Pragma::DisjointExhaustive {
+                        span: Span::none(),
+                        node: node.clone(),
+                        nodes,
+                    }
+                } else {
+                    Pragma::Disjoint {
+                        span: Span::none(),
+                        node: node.clone(),
+                        nodes,
+                    }
+                };
+
+                pragmas.push(pragma);
             }
         }
 
@@ -31,14 +41,14 @@ impl Game<Arc<str>> {
     }
 }
 
-fn get_disjoint(mut edges: BTreeSet<&Edge<Arc<str>>>) -> Option<Vec<Node<Arc<str>>>> {
+fn get_disjoint(mut edges: BTreeSet<&Edge<Arc<str>>>) -> Option<(bool, Vec<Node<Arc<str>>>)> {
     let e1 = edges.pop_first().unwrap();
 
     // If-else.
     if edges.len() == 1 {
         if let Some(e2) = edges.first() {
             if e1.rhs != e2.rhs && e1.label.is_negated(&e2.label) {
-                return Some(vec![e1.rhs.clone(), e2.rhs.clone()]);
+                return Some((true, vec![e1.rhs.clone(), e2.rhs.clone()]));
             }
         }
     }
@@ -74,7 +84,8 @@ fn get_disjoint(mut edges: BTreeSet<&Edge<Arc<str>>>) -> Option<Vec<Node<Arc<str
                 return None;
             }
 
-            return Some(nodes);
+            // TODO: Check whether `nodes.len()` matches the number possible values.
+            return Some((false, nodes));
         }
     }
 
@@ -123,14 +134,14 @@ mod test {
         calculate_disjoints,
         switch_2,
         "begin, a: x == 0; begin, b: x == 1; a, end: ; b, end: ;",
-        adds "@disjointExhaustive begin : a b;"
+        adds "@disjoint begin : a b;"
     );
 
     test_transform!(
         calculate_disjoints,
         switch_3,
         "begin, a: x == 0; begin, b: x == 1; begin, c: x == 2; a, end: ; b, end: ; c, end: ;",
-        adds "@disjointExhaustive begin : a b c;"
+        adds "@disjoint begin : a b c;"
     );
 
     test_transform!(
