@@ -620,15 +620,16 @@ function translateAutomatonStatements(
             if (context.$settings.flags.reuseFunctions) {
               const callId = context.$random(`${automatonFunction.name}_call`);
               const variable = `${automatonFunction.name}_return`;
+              const type = `${variable}_type`;
               if (
                 context.rg.variables.some(
                   ({ identifier }) => identifier === variable,
                 )
               ) {
                 const typeDeclaration = context.rg.types.find(
-                  ({ identifier }) => identifier === variable,
+                  ({ identifier }) => identifier === type,
                 );
-                utils.assert(typeDeclaration, `Type "${variable}" not found.`);
+                utils.assert(typeDeclaration, `Type "${type}" not found.`);
                 utils.assert(
                   typeDeclaration.type.kind === 'Set',
                   `Type "${variable}" has invalid type.`,
@@ -637,14 +638,14 @@ function translateAutomatonStatements(
               } else {
                 context.rg.types.push(
                   rg.TypeDeclaration({
-                    identifier: variable,
+                    identifier: type,
                     type: rg.Set({ identifiers: [callId] }),
                   }),
                 );
                 context.rg.variables.push(
                   rg.VariableDeclaration({
                     identifier: variable,
-                    type: rg.TypeReference({ identifier: variable }),
+                    type: rg.TypeReference({ identifier: type }),
                     defaultValue: rg.Element({ identifier: callId }),
                   }),
                 );
