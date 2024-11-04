@@ -1,7 +1,8 @@
 // Set key=0 or 1, then win if it is 1.
 // Win stats: 50
 
-//@disjoint setKey : setZero setOne
+//@disjoint readKey : readZero readOne
+//@disjointExhaustive readHidden : readDone win draw;
 
 //@simpleApplyExhaustive setKey 0: setZero setKeyDone readKey;
 //@simpleApplyExhaustive setKey 1: setZero setKeyDone readKey;
