@@ -115,7 +115,16 @@ fn merge_values(outer_map: &Value<Id>, inner_map: &Value<Id>) -> Option<Value<Id
             ))
         })
         .collect();
-    entries.map(|entries| Value::Map {
+    let mut entries: Vec<_> = entries?;
+    let default_value = entries
+        .iter()
+        .find(|entry| entry.identifier.is_none())?
+        .value
+        .clone();
+    // Remove entries that map to default value
+    entries.retain(|entry| entry.identifier.is_none() || entry.value != default_value);
+
+    Some(Value::Map {
         span: Span::none(),
         entries,
     })
@@ -159,10 +168,10 @@ mod test {
         const __gen_MapCC___gen_MapBC_MapAB: A -> C = { 1: 3, :1 };
         const __gen_MapCC___gen_MapCC_MapCC: C -> C = { 1: 1, 2: 2, :3 };
         const __gen_MapCC___gen_MapCC___gen_MapCC_MapCC: C -> C = { 1: 2, 2: 3, :1 };
-        const __gen_MapAB_MapAA: A -> B = { 1: 1, 2: 2, :2 };
-        const __gen_MapBC___gen_MapAB_MapAA: A -> C = { 1: 2, 2: 3, :3 };
-        const __gen_MapCC___gen_MapBC___gen_MapAB_MapAA: A -> C = { 1: 3, 2: 1, :1 };
-        const __gen_MapCC_MapBC: B -> C = { 1: 3, 2: 1, :1 };
+        const __gen_MapAB_MapAA: A -> B = { 1: 1, :2 };
+        const __gen_MapBC___gen_MapAB_MapAA: A -> C = { 1: 2, :3 };
+        const __gen_MapCC___gen_MapBC___gen_MapAB_MapAA: A -> C = { 1: 3, :1 };
+        const __gen_MapCC_MapBC: B -> C = { 1: 3, :1 };
         var x: C = 1;
         begin, a1: x = __gen_MapBC_MapAB[1];
         begin, a2: x = __gen_MapBC_MapAB[2];
