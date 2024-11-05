@@ -50,7 +50,9 @@ fn hoist(
                     .iter()
                     // We cannot use `find` + `map_or_else` as we want to mutate
                     // `game.constants` inside of the `*_else` function.
-                    .find_map(|x| (x.value == *value).then(|| x.identifier.clone()))
+                    .find_map(|x| {
+                        (x.value == *value && x.type_ == *type_).then(|| x.identifier.clone())
+                    })
                     .unwrap_or_else(|| {
                         // First unused one.
                         let identifier = (1..)
@@ -91,6 +93,18 @@ mod test {
         const Y: Bool -> Bool -> Bool = { :{ :0 } };",
         "const X: Bool -> Bool = { :0 };
         const Y: Bool -> Bool -> Bool = { :X };"
+    );
+
+    test_transform!(
+        normalize_constants,
+        dont_reuse_different_type,
+        "type A = { a, b, c };
+        const X: A -> Bool = { :0 };
+        const Y: Bool -> Bool -> Bool = { :{ :0 } };",
+        "type A = { a, b, c };
+        const Hoisted_1: Bool -> Bool = { :0 };
+        const X: A -> Bool = { :0 };
+        const Y: Bool -> Bool -> Bool = { :Hoisted_1 };"
     );
 
     test_transform!(
