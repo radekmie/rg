@@ -60,6 +60,10 @@ impl<Id> Edge<Id> {
         }
     }
 
+    pub fn is_conditional(&self) -> bool {
+        self.label.is_comparison() || self.label.is_reachability()
+    }
+
     pub fn new_skip(lhs: Node<Id>, rhs: Node<Id>) -> Self {
         Self::new(lhs, rhs, Label::new_skip())
     }
