@@ -1713,6 +1713,14 @@ impl<Id> ValueEntry<Id> {
             value,
         }
     }
+
+    pub fn new_default(value: Arc<Value<Id>>) -> Self {
+        Self {
+            span: Span::none(),
+            identifier: None,
+            value,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

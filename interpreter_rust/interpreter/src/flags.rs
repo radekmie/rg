@@ -30,6 +30,8 @@ pub struct Flags {
     pub join_fork_prefixes: bool,
     #[serde(rename = "joinForkSuffixes")]
     pub join_fork_suffixes: bool,
+    #[serde(rename = "joinGenerators")]
+    pub join_generators: bool,
     #[serde(rename = "mangleSymbols")]
     pub mangle_symbols: bool,
     #[serde(rename = "mergeAccesses")]
@@ -77,6 +79,7 @@ impl Flags {
             join_exclusive_edges: true,
             join_fork_prefixes: true,
             join_fork_suffixes: true,
+            join_generators: true,
             mangle_symbols: true,
             merge_accesses: true,
             normalize_constants: true,
@@ -110,6 +113,7 @@ impl Flags {
             join_exclusive_edges: false,
             join_fork_prefixes: false,
             join_fork_suffixes: false,
+            join_generators: false,
             mangle_symbols: false,
             merge_accesses: false,
             normalize_constants: false,
