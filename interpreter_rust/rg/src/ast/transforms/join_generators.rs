@@ -6,6 +6,8 @@ use std::sync::Arc;
 use utils::position::Span;
 
 type Id = Arc<str>;
+type NodeEdges = (Node<Id>, Vec<Edge<Id>>);
+type TypeValue = (Arc<Type<Id>>, Arc<Value<Id>>);
 const BOOL_FALSE: &str = "0";
 const BOOL_TRUE: &str = "1";
 const BOOL_TYPE: &str = "Bool";
@@ -24,7 +26,7 @@ impl Game<Id> {
                 continue;
             }
 
-            let Some((id, target, edges_to_remove, type_, value)) =
+            let Some((id, (target, edges_to_remove), (type_, value))) =
                 self.collect_binding_comparisons(outgoing_edges, &next_edges)
             else {
                 continue;
@@ -119,7 +121,7 @@ impl Game<Id> {
         &self,
         edges: &BTreeSet<&Edge<Id>>,
         next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>>,
-    ) -> Option<(Id, Node<Id>, Vec<Edge<Id>>, Arc<Type<Id>>, Arc<Value<Id>>)> {
+    ) -> Option<(Id, NodeEdges, TypeValue)> {
         let first = edges.iter().next()?;
         let Label::Comparison { lhs, .. } = &first.label else {
             return None;
@@ -127,7 +129,7 @@ impl Game<Id> {
         let identifier = lhs.uncast().as_reference()?;
         let mut generators = vec![];
         let mut edges_to_remove = vec![];
-        for edge in edges.iter() {
+        for edge in edges {
             if let Label::Comparison { lhs, rhs, negated } = &edge.label {
                 if *negated || lhs.uncast().as_reference()? != identifier {
                     return None;
@@ -149,10 +151,8 @@ impl Game<Id> {
 
         Some((
             identifier.clone(),
-            target,
-            edges_to_remove,
-            Arc::new(type_),
-            Arc::new(value),
+            (target, edges_to_remove),
+            (Arc::new(type_), Arc::new(value)),
         ))
     }
 
@@ -168,10 +168,8 @@ impl Game<Id> {
             if binding == rhs {
                 return type_.values(self).ok();
             }
-        } else {
-            if self.resolve_constant(rhs).is_none() && self.resolve_variable(rhs).is_none() {
-                return Some(vec![rhs.clone()]);
-            }
+        } else if self.resolve_constant(rhs).is_none() && self.resolve_variable(rhs).is_none() {
+            return Some(vec![rhs.clone()]);
         }
         None
     }
