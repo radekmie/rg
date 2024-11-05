@@ -191,19 +191,13 @@ fn merge_generators(generators: Vec<(Id, Vec<Id>)>) -> (Type<Id>, Value<Id>) {
     let mut entries: Vec<_> = possible_outcomes
         .into_iter()
         .map(|(condition, possible_outcomes)| {
-            let mut entries: Vec<_> = all_outcomes
-                .clone()
+            let mut entries: Vec<_> = possible_outcomes
                 .into_iter()
                 .map(|outcome| {
-                    let value = if possible_outcomes.contains(&outcome) {
-                        BOOL_TRUE
-                    } else {
-                        BOOL_FALSE
-                    };
                     ValueEntry::new(
                         Span::none(),
                         Some(outcome),
-                        Arc::from(Value::new(Arc::from(value))),
+                        Arc::from(Value::new(Arc::from(BOOL_TRUE))),
                     )
                 })
                 .collect();
