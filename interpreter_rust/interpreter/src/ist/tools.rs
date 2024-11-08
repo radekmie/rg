@@ -32,12 +32,13 @@ impl Game<RuntimeId> {
         }
     }
 
-    pub fn perf(&self, depth: usize, callback: &impl Fn(usize)) {
-        callback(
-            self.initial_state()
-                .next_states_depth(self, depth, true)
-                .count(),
-        );
+    pub fn perf(&self, depth: usize, callback: &impl Fn(usize, f32)) {
+        let now = Instant::now();
+        let count = self
+            .initial_state()
+            .next_states_depth(self, depth, true)
+            .count();
+        callback(count, now.elapsed().as_micros() as f32 / 1e3);
     }
 
     pub fn run<Id: Clone + Display + Ord, R: Rng>(
@@ -109,7 +110,7 @@ impl Game<RuntimeId> {
                         // TODO: `log10` would be much faster, but was incorrect
                         // for some numbers due to precision.
                         3.max(format!("{:.3}", moves.$index).len())
-                            .max(format!("{:.3}", times.$index).len())
+                            .max(format!("{:.3}", times.$index as f32 / 1e3).len())
                             .max(format!("{:.3}", turns.$index).len())
                     };
                 }
@@ -117,18 +118,18 @@ impl Game<RuntimeId> {
                 let w0 = width!(0);
                 let w1 = width!(1);
                 let w2 = width!(2);
-                let w3 = width!(3);
+                let w3 = width!(3).max(7);
 
                 macro_rules! line {
-                    ($ident:ident, $extra:expr) => {
+                    ($ident:ident, $scale:expr, $suffix:expr) => {
                         format!(
                             "  {}  {:w0$}  {:w2$.3}  {:w3$.3}  {:w1$} {}",
                             stringify!($ident),
-                            $ident.0,
-                            $ident.2,
-                            $ident.3,
-                            $ident.1,
-                            $extra,
+                            $ident.0 as f32 / $scale as f32,
+                            $ident.2 as f32 / $scale as f32,
+                            $ident.3 as f32 / $scale as f32,
+                            $ident.1 as f32 / $scale as f32,
+                            $suffix,
                             w0 = w0,
                             w1 = w1,
                             w2 = w2,
@@ -150,9 +151,9 @@ impl Game<RuntimeId> {
                         w2 = w2,
                         w3 = w3
                     ),
-                    line!(moves, ""),
-                    line!(turns, ""),
-                    line!(times, "[µs]"),
+                    line!(moves, 1, ""),
+                    line!(turns, 1, ""),
+                    line!(times, 1e3, "[ms]"),
                     format!("  scores"),
                 ];
 

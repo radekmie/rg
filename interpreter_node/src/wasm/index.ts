@@ -104,7 +104,7 @@ function parseHrg(step: string) {
 export async function perfRg(
   gameDeclaration: rg.ast.GameDeclaration,
   depth: number,
-  callback: (count: number) => void,
+  callback: (count: number, time: number) => void,
 ) {
   const ast = JSON.stringify(gameDeclaration);
   await workerMethod('perfRg', [ast, depth], callback);

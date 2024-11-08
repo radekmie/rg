@@ -3,10 +3,6 @@ import * as wasm from '../../wasm';
 
 export type Logger = { log: (message: string) => void };
 
-function format(number: number) {
-  return number.toFixed(3);
-}
-
 export async function run(
   gameDeclaration: ast.GameDeclaration,
   plays = 1,
@@ -21,10 +17,8 @@ export async function perf(
   logger: Logger,
 ) {
   for (let depth = 0; depth <= maxDepth; ++depth) {
-    const now = performance.now();
-    await wasm.perfRg(gameDeclaration, depth, count => {
-      const end = performance.now();
-      logger.log(`perf(depth: ${depth}) = ${count} in ${format(end - now)}ms`);
+    await wasm.perfRg(gameDeclaration, depth, (count, time) => {
+      logger.log(`perf(depth: ${depth}) = ${count} in ${time}ms`);
     });
   }
 }

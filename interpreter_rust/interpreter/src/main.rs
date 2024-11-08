@@ -2,7 +2,6 @@ use interpreter::{analyze_rg_inner, prepare_ist, Flags};
 use rand::thread_rng;
 use std::env::args;
 use std::fs::read_to_string;
-use std::time::Instant;
 
 fn main() -> Result<(), String> {
     let args = args().collect::<Vec<_>>();
@@ -18,14 +17,8 @@ fn main() -> Result<(), String> {
                 .map_or(10, |depth| depth.parse::<usize>().unwrap());
 
             for depth in 0..=depth {
-                let start = Instant::now();
-                game.perf(depth, &|count| {
-                    println!(
-                        "perf(depth: {}) = {} in {:.3}ms",
-                        depth,
-                        count,
-                        start.elapsed().as_nanos() as f32 / 1e6
-                    );
+                game.perf(depth, &|count, time| {
+                    println!("perf(depth: {depth}) = {count} in {time:.3}ms",);
                 });
             }
         }

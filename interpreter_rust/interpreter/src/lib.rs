@@ -224,8 +224,8 @@ pub fn perf_rg(ast: &str, depth: usize, callback: &Function) -> Result<(), Strin
     console_error_panic_hook::set_once();
     let game = prepare_ist(safe_parse_rg_ast(ast)?)?.0;
     let this = JsValue::null();
-    game.perf(depth, &|count| {
-        callback.call1(&this, &count.into()).unwrap();
+    game.perf(depth, &|count, time| {
+        callback.call2(&this, &count.into(), &time.into()).unwrap();
     });
 
     Ok(())
