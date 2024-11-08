@@ -1,5 +1,4 @@
 use interpreter::{analyze_rg_inner, prepare_ist, Flags};
-use map_id::MapId;
 use rand::thread_rng;
 use std::env::args;
 use std::fs::read_to_string;
@@ -36,31 +35,8 @@ fn main() -> Result<(), String> {
                 .get(3)
                 .map_or(10, |plays| plays.parse::<usize>().unwrap());
 
-            let start = Instant::now();
-            game.run(&mut rng, plays, &|(plays, moves, turns, goals)| {
-                println!(
-                    "{esc}c\
-                     after {} plays:\n  \
-                     avg. moves: {:.3}\n  \
-                     avg. turns: {:.3}\n  \
-                     avg. times: {:.3}ms\n  \
-                     avg. goals:\n\
-                     {}",
-                    plays,
-                    moves,
-                    turns,
-                    start.elapsed().as_nanos() as f32 / 1e6 / plays as f32,
-                    goals
-                        .iter()
-                        .map(|(value, count)| format!(
-                            "    {:5.2}% of {}",
-                            *count as f32 * 1e2 / plays as f32,
-                            value.map_id(&mut |id| interner.recall(id).unwrap())
-                        ))
-                        .collect::<Vec<_>>()
-                        .join("\n"),
-                    esc = 27 as char
-                );
+            game.run(&mut rng, &interner, plays, &|lines| {
+                println!("{esc}c{}", lines.join("\n"), esc = 27 as char);
             });
         }
         _ => panic!("Unknown operation."),

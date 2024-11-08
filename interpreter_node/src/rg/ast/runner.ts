@@ -12,16 +12,7 @@ export async function run(
   plays = 1,
   logger: Logger,
 ) {
-  const now = performance.now();
-  await wasm.runRg(gameDeclaration, plays, (plays, moves, turns, goals) => {
-    const end = performance.now();
-    logger.log(`after ${plays} plays:`);
-    logger.log(`  avg. moves: ${format(moves)}`);
-    logger.log(`  avg. turns: ${format(turns)}`);
-    logger.log(`  avg. times: ${format((end - now) / plays)}ms`);
-    logger.log('  avg. scores:');
-    goals.split('\n').forEach(logger.log);
-  });
+  await wasm.runRg(gameDeclaration, plays, lines => lines.forEach(logger.log));
 }
 
 export async function perf(

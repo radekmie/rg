@@ -237,32 +237,11 @@ pub fn run_rg(ast: &str, plays: usize, callback: &Function) -> Result<(), String
     let (game, interner) = prepare_ist(safe_parse_rg_ast(ast)?)?;
     let this = JsValue::null();
     let mut rng = thread_rng();
-    game.run(&mut rng, plays, &|(plays, moves, turns, goals)| {
-        let mut sorted_goals = goals
-            .iter()
-            .map(|(value, count)| (value.map_id(&mut |id| interner.recall(id).unwrap()), count))
-            .collect::<Vec<_>>();
-        sorted_goals.sort();
+    game.run(&mut rng, &interner, plays, &|lines| {
         callback
-            .apply(
+            .call1(
                 &this,
-                &Array::from_iter::<[&JsValue; 4]>([
-                    &plays.into(),
-                    &moves.into(),
-                    &turns.into(),
-                    &sorted_goals
-                        .into_iter()
-                        .map(|(value, count)| {
-                            format!(
-                                "    {:5.2}% of {}",
-                                *count as f32 * 1e2 / plays as f32,
-                                value
-                            )
-                        })
-                        .collect::<Vec<_>>()
-                        .join("\n")
-                        .into(),
-                ]),
+                &Array::from_iter(lines.into_iter().map(JsValue::from)),
             )
             .unwrap();
     });

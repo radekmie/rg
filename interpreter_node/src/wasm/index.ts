@@ -113,12 +113,7 @@ export async function perfRg(
 export async function runRg(
   gameDeclaration: rg.ast.GameDeclaration,
   plays: number,
-  callback: (
-    plays: number,
-    moves: number,
-    turns: number,
-    goals: string,
-  ) => void,
+  callback: (lines: string[]) => void,
 ) {
   const ast = JSON.stringify(gameDeclaration);
   await workerMethod('runRg', [ast, plays], callback);
