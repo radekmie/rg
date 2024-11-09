@@ -5,13 +5,20 @@ use utils::position::Span;
 
 impl Game<Arc<str>> {
     pub fn calculate_disjoints(&mut self) -> Result<(), Error<Arc<str>>> {
+        let game = Self {
+            constants: self.constants.clone(),
+            typedefs: self.typedefs.clone(),
+            variables: self.variables.clone(),
+            ..Self::default()
+        };
+
         let mut pragmas = vec![];
         for (node, edges) in self.next_edges() {
             if edges.len() == 1 || node.has_bindings() {
                 continue;
             }
 
-            if let Some((is_exhaustive, nodes)) = get_disjoint(edges) {
+            if let Some((is_exhaustive, nodes)) = game.get_disjoint(edges) {
                 let pragma = if is_exhaustive {
                     Pragma::DisjointExhaustive {
                         span: Span::none(),
@@ -39,57 +46,66 @@ impl Game<Arc<str>> {
 
         Ok(())
     }
-}
 
-fn get_disjoint(mut edges: BTreeSet<&Edge<Arc<str>>>) -> Option<(bool, Vec<Node<Arc<str>>>)> {
-    let e1 = edges.pop_first().unwrap();
+    fn get_disjoint(
+        &self,
+        mut edges: BTreeSet<&Edge<Arc<str>>>,
+    ) -> Option<(bool, Vec<Node<Arc<str>>>)> {
+        let e1 = edges.pop_first().unwrap();
 
-    // If-else.
-    if edges.len() == 1 {
-        if let Some(e2) = edges.first() {
-            if e1.rhs != e2.rhs && e1.label.is_negated(&e2.label) {
-                return Some((true, vec![e1.rhs.clone(), e2.rhs.clone()]));
+        // If-else.
+        if edges.len() == 1 {
+            if let Some(e2) = edges.first() {
+                if e1.rhs != e2.rhs && e1.label.is_negated(&e2.label) {
+                    return Some((true, vec![e1.rhs.clone(), e2.rhs.clone()]));
+                }
             }
         }
-    }
 
-    // Switch.
-    if let Label::Comparison {
-        lhs,
-        rhs,
-        negated: false,
-    } = &e1.label
-    {
-        if let Expression::Reference { identifier } = rhs.uncast() {
-            let lhs1 = lhs.uncast();
-            let mut nodes = vec![e1.rhs.clone()];
-            let mut symbols = BTreeSet::from([identifier]);
-            for edge in edges {
-                if let Label::Comparison {
-                    lhs: lhs2,
-                    rhs,
-                    negated: false,
-                } = &edge.label
-                {
-                    if lhs1 == lhs2.uncast() {
-                        if let Expression::Reference { identifier } = rhs.uncast() {
-                            if symbols.insert(identifier) {
-                                nodes.push(edge.rhs.clone());
-                                continue;
+        // Switch.
+        if let Label::Comparison {
+            lhs,
+            rhs,
+            negated: false,
+        } = &e1.label
+        {
+            if let Expression::Reference { identifier } = rhs.uncast() {
+                let lhs1 = lhs.uncast();
+                let mut nodes = vec![e1.rhs.clone()];
+                let mut symbols = BTreeSet::from([identifier]);
+                for edge in edges {
+                    if let Label::Comparison {
+                        lhs: lhs2,
+                        rhs,
+                        negated: false,
+                    } = &edge.label
+                    {
+                        if lhs1 == lhs2.uncast() {
+                            if let Expression::Reference { identifier } = rhs.uncast() {
+                                if symbols.insert(identifier) {
+                                    nodes.push(edge.rhs.clone());
+                                    continue;
+                                }
                             }
                         }
                     }
                 }
 
-                return None;
+                if nodes.len() == 1 {
+                    return None;
+                }
+
+                let is_exhaustive = lhs1
+                    .infer(self, None)
+                    .and_then(|type_| type_.values(self))
+                    .is_ok_and(|values| values.len() == nodes.len());
+
+                return Some((is_exhaustive, nodes));
             }
-
-            // TODO: Check whether `nodes.len()` matches the number possible values.
-            return Some((false, nodes));
         }
-    }
 
-    None
+        None
+    }
 }
 
 #[cfg(test)]
@@ -180,5 +196,19 @@ mod test {
         tictactoe,
         include_str!("../../../../../examples/ticTacToe.rg"),
         adds "@disjointExhaustive checkwin : win nextturn; @disjointExhaustive turn : move preend;"
+    );
+
+    test_transform!(
+        calculate_disjoints,
+        simple_apply_test_5,
+        include_str!("../../../../../examples/simpleApplyTest5.rg"),
+        adds "@disjointExhaustive readKey : readZero readOne;"
+    );
+
+    test_transform!(
+        calculate_disjoints,
+        simple_apply_test_6,
+        include_str!("../../../../../examples/simpleApplyTest6.rg"),
+        adds "@disjoint readKey : readZero readOne; @disjointExhaustive readHidden : readDone win draw;"
     );
 }

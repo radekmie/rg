@@ -1,7 +1,7 @@
 // Set key=0 or 1, then win if it is 1.
 // Win stats: 50
 
-//@disjointExhaustive readKey : readDone win;
+//@disjointExhaustive readKey : readZero readOne;
 
 //@simpleApplyExhaustive setKey 0 read done: setZero setKeyDone readKey readDone preend;
 //@simpleApplyExhaustive setKey 1 read done: setOne setKeyDone readKey win readDone preend;
