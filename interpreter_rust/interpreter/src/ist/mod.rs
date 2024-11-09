@@ -56,12 +56,16 @@ pub enum Expression<Id: Ord> {
 #[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
 pub struct Game<Id: Ord> {
     pub constants: Vec<Rc<Value<Id>>>,
+    /// Nodes marked as `@disjoint` or `@disjointExhaustive` without other successors.
+    pub disjoints: BTreeSet<Id>,
     pub edges: BTreeMap<Id, Vec<Edge<Id>>>,
     pub initial_goals: Rc<Value<Id>>,
     pub initial_player: Rc<Value<Id>>,
     pub initial_values: Rc<Vec<Rc<Value<Id>>>>,
     pub initial_visible: Rc<Value<Id>>,
+    /// Nodes marked as `@repeat` with their variables.
     pub repeats: BTreeMap<Id, Rc<Vec<usize>>>,
+    /// Nodes marked as `@unique`.
     pub uniques: BTreeSet<Id>,
 }
 

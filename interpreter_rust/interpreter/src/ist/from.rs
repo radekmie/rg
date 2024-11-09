@@ -23,6 +23,7 @@ impl From<ast::Game<Id>> for ist::Game<Id> {
             constants_indexes: BTreeMap::default(),
             game: Self {
                 constants: Vec::default(),
+                disjoints: BTreeSet::default(),
                 edges: BTreeMap::default(),
                 initial_goals: placeholder_value.clone(),
                 initial_player: placeholder_value.clone(),
@@ -38,8 +39,8 @@ impl From<ast::Game<Id>> for ist::Game<Id> {
         build_typedefs(&mut context, ast.typedefs);
         build_constants(&mut context, ast.constants);
         build_variables(&mut context, ast.variables);
-        build_pragmas(&mut context, ast.pragmas);
         build_edges(&mut context, ast.edges);
+        build_pragmas(&mut context, ast.pragmas);
 
         // Make sure no placeholders are left.
         assert_ne!(context.game.initial_goals, placeholder_value);
@@ -144,6 +145,15 @@ fn build_expression(
 fn build_pragmas(context: &mut Context, pragmas: Vec<ast::Pragma<Id>>) {
     for pragma in pragmas {
         match pragma {
+            ast::Pragma::Disjoint { node, nodes, .. }
+            | ast::Pragma::DisjointExhaustive { node, nodes, .. } => {
+                let node = build_node(node);
+                if let Some(next) = context.game.edges.get(&node) {
+                    if next.len() == nodes.len() {
+                        context.game.disjoints.insert(node);
+                    }
+                }
+            }
             ast::Pragma::Repeat {
                 nodes, identifiers, ..
             } => {

@@ -152,6 +152,7 @@ impl Iterator for StateNext<'_> {
                 }
 
                 if let Some(edges) = game.edges.get(&state.position) {
+                    let is_fully_disjoint = game.disjoints.contains(&state.position);
                     let mut reachables: Option<Vec<(RuntimeId, RuntimeId, bool)>> = None;
                     for edge in edges {
                         let mut state = state.clone_at(edge.next);
@@ -170,6 +171,8 @@ impl Iterator for StateNext<'_> {
                                 let is_equal = lhs_value == rhs_value;
                                 if is_equal != *negated {
                                     search_queue.push(state);
+                                } else {
+                                    continue;
                                 }
                             }
                             EdgeLabel::Reachability { lhs, rhs, negated } => {
@@ -192,6 +195,8 @@ impl Iterator for StateNext<'_> {
 
                                 if is_reachable != *negated {
                                     search_queue.push(state);
+                                } else {
+                                    continue;
                                 }
                             }
                             EdgeLabel::Skip => {
@@ -201,6 +206,10 @@ impl Iterator for StateNext<'_> {
                                 state.tags = Rc::new([&state.tags[..], &[*symbol]].concat());
                                 search_queue.push(state);
                             }
+                        }
+
+                        if is_fully_disjoint {
+                            break;
                         }
                     }
                 }
