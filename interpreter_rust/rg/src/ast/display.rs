@@ -130,6 +130,9 @@ impl<Id: Display> Display for ErrorReason<Id> {
             Self::ComparisonTypeMismatch { lhs, rhs } => {
                 write!(f, "{lhs} is not comparable to {rhs}")
             }
+            Self::ConstantAssignment { identifier, label } => {
+                write!(f, "{identifier} is constant in {label}")
+            }
             Self::DuplicatedMapKey { key, value } => match key {
                 Some(key) => write!(f, "Duplicated key {key} in map {value}."),
                 None => write!(f, "Duplicated default value in map {value}."),

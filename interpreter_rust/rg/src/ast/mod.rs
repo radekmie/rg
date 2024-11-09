@@ -160,9 +160,7 @@ impl<Id> Default for Label<Id> {
 impl<Id> Label<Id> {
     pub fn as_var_assignment(&self) -> Option<(&Id, &Arc<Expression<Id>>)> {
         if let Self::Assignment { lhs, rhs } = self {
-            if let Some(identifier) = lhs.access_identifier() {
-                return Some((identifier, rhs));
-            }
+            return Some((lhs.access_identifier(), rhs));
         }
         None
     }
@@ -344,7 +342,7 @@ impl<Id: PartialEq> Label<Id> {
 
 impl Label<Arc<str>> {
     pub fn is_goals_assignment(&self) -> bool {
-        matches!(self, Self::Assignment { lhs, .. } if lhs.access_identifier().map_or(false, |x| &**x == "goals"))
+        matches!(self, Self::Assignment { lhs, .. } if lhs.access_identifier().as_ref() == "goals")
     }
 
     pub fn is_player_assignment(&self) -> bool {
@@ -534,6 +532,10 @@ pub enum ErrorReason<Id> {
         lhs: Arc<Type<Id>>,
         rhs: Arc<Type<Id>>,
     },
+    ConstantAssignment {
+        identifier: Id,
+        label: Label<Id>,
+    },
     DuplicatedMapKey {
         key: Option<Id>,
         value: Value<Id>,
@@ -597,11 +599,11 @@ pub enum Expression<Id> {
 }
 
 impl<Id> Expression<Id> {
-    pub fn access_identifier(&self) -> Option<&Id> {
+    pub fn access_identifier(&self) -> &Id {
         match self {
             Self::Access { lhs, .. } => lhs.access_identifier(),
             Self::Cast { rhs, .. } => rhs.access_identifier(),
-            Self::Reference { identifier } => Some(identifier),
+            Self::Reference { identifier } => identifier,
         }
     }
 

@@ -1,3 +1,4 @@
+mod check_assignments;
 mod check_maps;
 mod check_multiple_edges;
 mod check_reachabilities;
