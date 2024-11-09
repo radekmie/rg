@@ -1,0 +1,39 @@
+// A dice throw game.
+// Both players throw dice and compare the outcomes.
+// The higher score wins. Ties are, of course, possible.
+//
+// As the dice throws should be random, i.e., not chosen
+// by the players, the `keeper` player does the actual
+// throw. The players are given control but their moves
+// are empty, as they don't have to do anything.
+
+domain Player = a | b
+domain Dice = D(N) where N in 1..6
+domain Score = 0 | 50 | 100
+
+throw_a : Dice
+throw_b : Dice
+
+compare : Dice -> Dice -> Score
+compare(D(A), D(B)) = if A < B then 0 else if A == B then 50 else 100
+
+graph rules() {
+  player = a // Empty move.
+  player = keeper
+  forall dice:Dice {
+    throw_a = dice
+    $ dice
+  }
+
+  player = b // Empty move.
+  player = keeper
+  forall dice:Dice {
+    throw_b = dice
+    $ dice
+  }
+
+  player = keeper
+  goals[a] = compare(throw_a, throw_b)
+  goals[b] = compare(throw_b, throw_a)
+  end()
+}

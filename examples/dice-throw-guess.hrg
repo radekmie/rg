@@ -1,0 +1,34 @@
+// A dice throw with guessing.
+// The player guesses the outcome of their throw.
+// They win only if they guessed correctly.
+//
+// As the dice throws should be random, i.e., not chosen
+// by the player, the `keeper` player does the actual
+// throw.
+
+domain Player = a
+domain Dice = D(N) where N in 1..6
+domain Score = 0 | 100
+
+guess : Dice
+throw : Dice
+
+compare : Dice -> Dice -> Score
+compare(D(A), D(B)) = if A == B then 100 else 0
+
+graph rules() {
+  player = a
+  forall dice:Dice {
+    guess = dice
+    $ dice
+  }
+
+  player = keeper
+  forall dice:Dice {
+    throw = dice
+    $ dice
+  }
+
+  goals[a] = compare(guess, throw)
+  end()
+}
