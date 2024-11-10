@@ -150,8 +150,8 @@ export async function parse(source: string, settings: Settings) {
 
     switch (extension) {
       case L.gdl: {
-        const astRg = await wasm.parseGdl(source);
-        game.steps.push({ kind: 'ast', language: L.rg, value: astRg });
+        const steps = await wasm.analyzeGdl(source);
+        game.steps.push(...steps);
         break;
       }
       case L.hrg: {

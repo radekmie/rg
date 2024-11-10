@@ -55,8 +55,29 @@ fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
     }
 }
 
-fn safe_serialize_rg_ast(game: &RgGame<Arc<str>>) -> Result<String, String> {
-    to_string(game).map_err(|error| error.to_string())
+#[wasm_bindgen(js_name = analyzeGdl)]
+pub fn analyze_gdl(source: &str, callback: &Function) -> Result<(), String> {
+    console_error_panic_hook::set_once();
+    let this = JsValue::null();
+    macro_rules! step {
+        ({ $($json:tt)+ }) => {{
+            let step = json!({ $($json)+ });
+            let message = to_string(&step).map_err(|error| error.to_string())?;
+            callback.call1(&this, &JsValue::from(message)).unwrap();
+        }};
+    }
+
+    let gdl = gdl::parser::game(source)
+        .map_err(|error| error.to_string())?
+        .1;
+
+    step!({ "kind": "source", "language": "gdl", "value": gdl.as_infix().to_string(), "title": "infix" });
+    step!({ "kind": "source", "language": "gdl", "value": gdl.as_prefix().to_string(), "title": "prefix" });
+
+    let rg = gdl_to_rg::gdl_to_rg(&gdl);
+    step!({ "kind": "ast", "language": "rg", "value": rg });
+
+    Ok(())
 }
 
 #[wasm_bindgen(js_name = analyzeHrg)]
@@ -212,16 +233,6 @@ pub fn analyze_rg(source: &str, flags: &str, callback: &Function) -> Result<(), 
     });
     analyze_rg_inner(source, &flags, callback)?;
     Ok(())
-}
-
-#[wasm_bindgen(js_name = parseGdl)]
-pub fn parse_gdl(source: &str) -> Result<String, String> {
-    console_error_panic_hook::set_once();
-    let gdl = gdl::parser::game(source)
-        .map_err(|error| error.to_string())?
-        .1;
-    let rg = gdl_to_rg::gdl_to_rg(&gdl);
-    safe_serialize_rg_ast(&rg)
 }
 
 #[wasm_bindgen(js_name = perfRg)]

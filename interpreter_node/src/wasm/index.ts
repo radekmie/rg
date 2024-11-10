@@ -61,10 +61,18 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
   );
 }
 
+export async function analyzeGdl(source: string) {
+  const steps: AnalyzedGameStep[] = [];
+  await workerMethod('analyzeGdl', [source], (step: string) => {
+    steps.push(JSON.parse(step));
+  });
+  return steps;
+}
+
 export async function analyzeHrg(source: string, reuseFunctions: boolean) {
   const steps: AnalyzedGameStep[] = [];
   await workerMethod('analyzeHrg', [source, reuseFunctions], (step: string) => {
-    steps.push(parseHrg(step));
+    steps.push(JSON.parse(step));
   });
   return steps;
 }
@@ -80,26 +88,6 @@ export async function analyzeRg(source: string, flags: Settings['flags']) {
   );
   return steps;
 }
-
-export async function parseGdl(source: string) {
-  const ast = await workerMethod('parseGdl', [source], utils.noop);
-  return JSON.parse(ast) as rg.ast.GameDeclaration;
-}
-
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-plus-operands -- `parseHrgAst` is a workaround. */
-function parseHrg(step: string) {
-  return JSON.parse(step, (_, value) => {
-    if (value && value.kind === 'BinExpr') {
-      return {
-        kind: 'Expression' + value.op,
-        lhs: value.lhs,
-        rhs: value.rhs,
-      };
-    }
-    return value;
-  });
-}
-/* eslint-enable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-plus-operands -- `parseHrgAst` is a workaround. */
 
 export async function perfRg(
   gameDeclaration: rg.ast.GameDeclaration,

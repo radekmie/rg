@@ -1,9 +1,9 @@
 import { readFile } from 'fs/promises';
 
 import init, {
+  analyzeGdl,
   analyzeHrg,
   analyzeRg,
-  parseGdl,
   perfRg,
   runRg,
   serializeRg,
@@ -21,9 +21,9 @@ const initPromise = init(response);
 initPromise.catch(console.error);
 
 const methods = {
+  analyzeGdl,
   analyzeHrg,
   analyzeRg,
-  parseGdl,
   perfRg,
   runRg,
   serializeRg,
