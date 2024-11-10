@@ -1,4 +1,4 @@
-import { gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate';
+import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate';
 import { useEffect, useMemo, useState } from 'react';
 
 import { usePromise } from './usePromise';
@@ -33,10 +33,9 @@ const initialState: State = {
 
 function parseStateFromQuery() {
   try {
-    const hash = window.location.hash.slice(1);
-    const base64 = hash.replace(/\+/g, '-').replace(/\//g, '_');
-    const decoded = atob(decodeURIComponent(base64));
-    const decompressed = strFromU8(gunzipSync(strToU8(decoded, true)), true);
+    const hash = decodeURIComponent(window.location.hash.slice(1));
+    const decoded = atob(hash.replace(/-/g, '+').replace(/_/g, '/'));
+    const decompressed = strFromU8(inflateSync(strToU8(decoded, true)), true);
     const deserialized = JSON.parse(decompressed) as State;
     return {
       preset: deserialized.preset,
@@ -45,7 +44,6 @@ function parseStateFromQuery() {
       view: deserialized.view,
     };
   } catch (_) {
-    console.log(_);
     return initialState;
   }
 }
@@ -53,10 +51,10 @@ function parseStateFromQuery() {
 function updateStateInQuery(state: State) {
   try {
     const serialized = JSON.stringify(state);
-    const compressed = strFromU8(gzipSync(strToU8(serialized, true)), true);
-    const encoded = encodeURIComponent(btoa(compressed));
-    const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
-    window.location.hash = base64;
+    const compressed = strFromU8(deflateSync(strToU8(serialized, true)), true);
+    const encoded = btoa(compressed).replace(/\+/g, '-').replace(/\//g, '_');
+    const hash = encodeURIComponent(encoded);
+    window.location.hash = hash;
   } catch (_) {
     // It's alright.
   }
