@@ -152,19 +152,11 @@ export async function parse(source: string, settings: Settings) {
       case L.gdl: {
         const astRg = await wasm.parseGdl(source);
         game.steps.push({ kind: 'ast', language: L.rg, value: astRg });
-
         break;
       }
       case L.hrg: {
-        const steps = await wasm.analyzeHrg(source);
-
+        const steps = await wasm.analyzeHrg(source, flags.reuseFunctions);
         game.steps.push(...steps);
-        const astHrg = game.astHrg;
-        if (astHrg) {
-          const astRg = translators.hrg2rg(astHrg, settings);
-          game.steps.push({ kind: 'ast', language: L.rg, value: astRg });
-        }
-
         break;
       }
       case L.rbg: {

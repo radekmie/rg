@@ -16,14 +16,7 @@ pub fn gdl_to_rg(gdl: &gdl::ast::Game<&str>) -> rg::ast::Game<Id> {
         .map_id(&mut |id| Arc::from(*interner.recall(id).unwrap()))
         .symbolify();
 
-    let mut rg = rg::ast::Game {
-        constants: vec![],
-        edges: vec![],
-        pragmas: vec![],
-        typedefs: vec![],
-        variables: vec![],
-    };
-
+    let mut rg = rg::ast::Game::default();
     add_common_typedefs(&mut rg, &gdl);
     rg.add_builtins().unwrap();
     add_does_variables(&mut rg, &gdl);

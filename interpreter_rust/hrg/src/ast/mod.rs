@@ -101,9 +101,22 @@ pub enum DomainElement<Id> {
 #[serde(tag = "kind")]
 pub enum DomainValue<Id> {
     #[serde(rename = "DomainRange")]
-    Range { identifier: Id, min: Id, max: Id },
+    Range {
+        identifier: Id,
+        min: usize,
+        max: usize,
+    },
     #[serde(rename = "DomainSet")]
     Set { identifier: Id, elements: Vec<Id> },
+}
+
+impl<Id> DomainValue<Id> {
+    pub fn identifier(&self) -> &Id {
+        match self {
+            Self::Range { identifier, .. } => identifier,
+            Self::Set { identifier, .. } => identifier,
+        }
+    }
 }
 
 // TODO: Implement MapId for trivial enums

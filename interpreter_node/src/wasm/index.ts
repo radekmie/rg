@@ -61,9 +61,9 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
   );
 }
 
-export async function analyzeHrg(source: string) {
+export async function analyzeHrg(source: string, reuseFunctions: boolean) {
   const steps: AnalyzedGameStep[] = [];
-  await workerMethod('analyzeHrg', [source], (step: string) => {
+  await workerMethod('analyzeHrg', [source, reuseFunctions], (step: string) => {
     steps.push(parseHrg(step));
   });
   return steps;

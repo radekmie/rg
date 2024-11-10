@@ -13,7 +13,7 @@ use std::cell::RefCell;
 use std::sync::Arc;
 use utils::parser::{
     comma_separated, comments_and_whitespaces, identifier_, in_braces, in_brackets, in_parens,
-    into_arc, parse_error_line, ww, ww_char, ww_tag, Input, Result, State,
+    integer, into_arc, parse_error_line, ww, ww_char, ww_tag, Input, Result, State,
 };
 use utils::position::Span;
 use utils::Error;
@@ -119,7 +119,7 @@ fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {
     ww(alt((
         into(pair(
             terminated(identifier, ww_tag("in")),
-            ww(separated_pair(identifier, ww_tag(".."), identifier)),
+            ww(separated_pair(integer, ww_tag(".."), integer)),
         )),
         into(pair(
             terminated(identifier, ww_tag("in")),
@@ -330,7 +330,7 @@ fn variable_declaration(input: Input) -> Result<VariableDeclaration<Identifier>>
     )))(input)
 }
 
-pub fn game(input: Input) -> Result<Game<Identifier>> {
+fn game(input: Input) -> Result<Game<Identifier>> {
     context(
         "game_declaration",
         terminated(

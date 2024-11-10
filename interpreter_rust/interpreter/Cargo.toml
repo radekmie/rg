@@ -10,6 +10,7 @@ gdl = { path = "../gdl" }
 gdl_to_rg = { path = "../gdl_to_rg" }
 getrandom = { version = "0.2.8", features = ["js"] }
 hrg = { path = "../hrg" }
+hrg_to_rg = { path = "../hrg_to_rg" }
 js-sys = "0.3.61"
 map_id = { path = "../map_id" }
 map_id_macro = { path = "../map_id_macro" }

@@ -48,8 +48,8 @@ impl<Id> From<(Id, Vec<Id>, Vec<DomainValue<Id>>)> for DomainElement<Id> {
     }
 }
 
-impl<Id> From<(Id, (Id, Id))> for DomainValue<Id> {
-    fn from((identifier, (min, max)): (Id, (Id, Id))) -> Self {
+impl<Id> From<(Id, (usize, usize))> for DomainValue<Id> {
+    fn from((identifier, (min, max)): (Id, (usize, usize))) -> Self {
         Self::Range {
             identifier,
             min,

@@ -60,7 +60,7 @@ fn safe_serialize_rg_ast(game: &RgGame<Arc<str>>) -> Result<String, String> {
 }
 
 #[wasm_bindgen(js_name = analyzeHrg)]
-pub fn analyze_hrg(source: &str, callback: &Function) -> Result<(), String> {
+pub fn analyze_hrg(source: &str, reuse_functions: bool, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
     let this = JsValue::null();
     macro_rules! step {
@@ -71,11 +71,15 @@ pub fn analyze_hrg(source: &str, callback: &Function) -> Result<(), String> {
         }};
     }
 
-    let game = safe_parse_hrg_source(source)?;
-    step!({ "kind": "ast", "language": "hrg", "value": game});
-    let serialized = game.to_string();
-    assert_eq!(safe_parse_hrg_source(&serialized)?, game);
-    step!({ "kind": "source", "language": "hrg", "value": serialized, "title": "formatted"});
+    let hrg = safe_parse_hrg_source(source)?;
+    step!({ "kind": "ast", "language": "hrg", "value": hrg });
+
+    let serialized = hrg.to_string();
+    assert_eq!(safe_parse_hrg_source(&serialized)?, hrg);
+    step!({ "kind": "source", "language": "hrg", "value": serialized, "title": "formatted" });
+
+    let rg = hrg_to_rg::hrg_to_rg(hrg, reuse_functions);
+    step!({ "kind": "ast", "language": "rg", "value": rg });
 
     Ok(())
 }

@@ -1539,6 +1539,10 @@ impl<Id> Type<Id> {
         }
     }
 
+    pub fn is_arrow(&self) -> bool {
+        matches!(self, Self::Arrow { .. })
+    }
+
     pub fn is_set(&self) -> bool {
         matches!(self, Self::Set { .. })
     }
