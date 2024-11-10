@@ -6,8 +6,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use utils::position::Span;
 
-// TODO: edge_name -> node
-
 type Id = Arc<str>;
 
 struct Context {
@@ -48,7 +46,7 @@ impl Context {
         Id::from(format!("{prefix}_{index}"))
     }
 
-    fn random_edge_name(&mut self, prefix: &Id) -> rg::Node<Id> {
+    fn random_node(&mut self, prefix: &Id) -> rg::Node<Id> {
         rg::Node::new(self.random(prefix))
     }
 }
@@ -467,8 +465,8 @@ fn serialize_value(value: &hrg::Value<Id>) -> Id {
 fn translate_automaton_function(
     context: &mut Context,
     automaton_function: &hrg::Function<Id>,
-    end_edge_name: Option<&rg::Node<Id>>,
-    return_edge_name: Option<&rg::Node<Id>>,
+    end_node: Option<&rg::Node<Id>>,
+    return_node: Option<&rg::Node<Id>>,
     prefix: &Id,
 ) {
     for arg in &automaton_function.args {
@@ -493,7 +491,7 @@ fn translate_automaton_function(
         }
     }
 
-    let next_edge_name = rg::Node::new(Id::from(if context.reuse_functions {
+    let next_node = rg::Node::new(Id::from(if context.reuse_functions {
         format!("{}_end", automaton_function.name)
     } else {
         format!("{prefix}{}_end", automaton_function.name)
@@ -505,25 +503,20 @@ fn translate_automaton_function(
         &[],
         None,
         None,
-        end_edge_name,
+        end_node,
         rg::Node::new(Id::from(if context.reuse_functions {
             format!("{}_begin", automaton_function.name)
         } else {
             format!("{prefix}{}_begin", automaton_function.name)
         })),
-        Some(&next_edge_name),
+        Some(&next_node),
         &Id::from(format!("{prefix}{}", automaton_function.name)),
-        Some(&next_edge_name),
+        Some(&next_node),
     );
 
     if returns {
-        if let Some(return_edge_name) = return_edge_name {
-            context.connect(
-                next_edge_name,
-                return_edge_name.clone(),
-                rg::Label::new_skip(),
-                &[],
-            );
+        if let Some(return_node) = return_node {
+            context.connect(next_node, return_node.clone(), rg::Label::new_skip(), &[]);
         }
     }
 }
@@ -533,15 +526,15 @@ fn translate_automaton_statements(
     context: &mut Context,
     automaton_statements: &[hrg::Statement<Id>],
     bindings: &[rg::Binding<Id>],
-    break_edge_name: Option<&rg::Node<Id>>,
-    continue_edge_name: Option<&rg::Node<Id>>,
-    end_edge_name: Option<&rg::Node<Id>>,
-    entry_edge_name: rg::Node<Id>,
-    next_edge_name: Option<&rg::Node<Id>>,
+    break_node: Option<&rg::Node<Id>>,
+    continue_node: Option<&rg::Node<Id>>,
+    end_node: Option<&rg::Node<Id>>,
+    entry_node: rg::Node<Id>,
+    next_node: Option<&rg::Node<Id>>,
     prefix: &Id,
-    return_edge_name: Option<&rg::Node<Id>>,
+    return_node: Option<&rg::Node<Id>>,
 ) -> bool {
-    let mut current_edge_name = entry_edge_name;
+    let mut current_node = entry_node;
     for automaton_statement in automaton_statements {
         match automaton_statement {
             hrg::Statement::Assignment {
@@ -549,10 +542,10 @@ fn translate_automaton_statements(
                 accessors,
                 expression,
             } => {
-                let local_edge_name = context.random_edge_name(prefix);
+                let local_node = context.random_node(prefix);
                 context.connect(
-                    current_edge_name,
-                    local_edge_name.clone(),
+                    current_node,
+                    local_node.clone(),
                     rg::Label::Assignment {
                         lhs: Arc::from(accessors.iter().fold(
                             rg::Expression::new(identifier.clone()),
@@ -566,336 +559,338 @@ fn translate_automaton_statements(
                     },
                     bindings,
                 );
-                current_edge_name = local_edge_name;
+                current_node = local_node;
             }
             hrg::Statement::Branch { arms } => {
-                let local_edge_name = context.random_edge_name(prefix);
+                let local_node = context.random_node(prefix);
                 for arm in arms {
                     translate_automaton_statements(
                         context,
                         arm,
                         bindings,
-                        break_edge_name,
-                        continue_edge_name,
-                        end_edge_name,
-                        current_edge_name.clone(),
-                        Some(&local_edge_name),
+                        break_node,
+                        continue_node,
+                        end_node,
+                        current_node.clone(),
+                        Some(&local_node),
                         prefix,
-                        return_edge_name,
+                        return_node,
                     );
                 }
-                current_edge_name = local_edge_name;
+                current_node = local_node;
             }
-            hrg::Statement::Call { identifier, args } => {
-                match identifier.as_ref() {
-                    "break" => {
-                        assert!(args.is_empty(), "break() expects no arguments.");
-                        assert_eq!(
-                            Some(automaton_statement),
-                            automaton_statements.last(),
-                            "break() has to be the last statement."
-                        );
-                        let Some(break_edge_name) = break_edge_name else {
-                            panic!("break() requires break_edge_name.");
-                        };
+            hrg::Statement::Call { identifier, args } => match identifier.as_ref() {
+                "break" => {
+                    assert!(args.is_empty(), "break() expects no arguments.");
+                    assert_eq!(
+                        Some(automaton_statement),
+                        automaton_statements.last(),
+                        "break() has to be the last statement."
+                    );
+                    let Some(break_node) = break_node else {
+                        panic!("break() requires break_node.");
+                    };
 
-                        current_edge_name.parts.extend(bindings.iter().map(
-                            |(identifier, type_)| rg::NodePart::Binding {
-                                span: Span::none(),
-                                identifier: (*identifier).clone(),
-                                type_: (*type_).clone(),
-                            },
-                        ));
-                        context.connect(
-                            current_edge_name,
-                            break_edge_name.clone(),
-                            rg::Label::new_skip(),
-                            &[],
+                    current_node
+                        .parts
+                        .extend(
+                            bindings
+                                .iter()
+                                .map(|(identifier, type_)| rg::NodePart::Binding {
+                                    span: Span::none(),
+                                    identifier: (*identifier).clone(),
+                                    type_: (*type_).clone(),
+                                }),
                         );
-                        return true;
-                    }
-                    "check" => {
-                        assert_eq!(args.len(), 1, "check() expects exactly 1 argument.");
-                        let local_edge_name = context.random_edge_name(prefix);
-                        translate_condition(
-                            context,
-                            args[0].as_ref(),
-                            &current_edge_name,
-                            Some(&local_edge_name),
-                            None,
-                            prefix,
+                    context.connect(current_node, break_node.clone(), rg::Label::new_skip(), &[]);
+                    return true;
+                }
+                "check" => {
+                    assert_eq!(args.len(), 1, "check() expects exactly 1 argument.");
+                    let local_node = context.random_node(prefix);
+                    translate_condition(
+                        context,
+                        args[0].as_ref(),
+                        &current_node,
+                        Some(&local_node),
+                        None,
+                        prefix,
+                        bindings,
+                    );
+                    current_node = local_node;
+                }
+                "continue" => {
+                    assert!(args.is_empty(), "continue() expects no arguments.");
+                    assert_eq!(
+                        Some(automaton_statement),
+                        automaton_statements.last(),
+                        "continue() has to be the last statement."
+                    );
+                    let Some(continue_node) = continue_node else {
+                        panic!("continue() requires continue_node.");
+                    };
+
+                    current_node
+                        .parts
+                        .extend(
+                            bindings
+                                .iter()
+                                .map(|(identifier, type_)| rg::NodePart::Binding {
+                                    span: Span::none(),
+                                    identifier: (*identifier).clone(),
+                                    type_: (*type_).clone(),
+                                }),
+                        );
+                    context.connect(
+                        current_node,
+                        continue_node.clone(),
+                        rg::Label::new_skip(),
+                        &[],
+                    );
+                    return true;
+                }
+                "end" => {
+                    assert!(args.is_empty(), "end() expects no arguments.");
+                    assert_eq!(
+                        Some(automaton_statement),
+                        automaton_statements.last(),
+                        "end() has to be the last statement."
+                    );
+                    let Some(end_node) = end_node else {
+                        panic!("end() requires end_node.");
+                    };
+
+                    current_node
+                        .parts
+                        .extend(
+                            bindings
+                                .iter()
+                                .map(|(identifier, type_)| rg::NodePart::Binding {
+                                    span: Span::none(),
+                                    identifier: (*identifier).clone(),
+                                    type_: (*type_).clone(),
+                                }),
+                        );
+                    context.connect(
+                        current_node,
+                        end_node.clone(),
+                        rg::Label::Assignment {
+                            lhs: Arc::from(rg::Expression::new(Id::from("player"))),
+                            rhs: Arc::from(rg::Expression::new(Id::from("keeper"))),
+                        },
+                        &[],
+                    );
+                    return true;
+                }
+                "return" => {
+                    assert!(args.is_empty(), "return() expects no arguments.");
+                    assert_eq!(
+                        Some(automaton_statement),
+                        automaton_statements.last(),
+                        "return() has to be the last statement."
+                    );
+                    let Some(return_node) = return_node else {
+                        panic!("return() requires return_node.");
+                    };
+
+                    current_node
+                        .parts
+                        .extend(
+                            bindings
+                                .iter()
+                                .map(|(identifier, type_)| rg::NodePart::Binding {
+                                    span: Span::none(),
+                                    identifier: (*identifier).clone(),
+                                    type_: (*type_).clone(),
+                                }),
+                        );
+                    context.connect(
+                        current_node,
+                        return_node.clone(),
+                        rg::Label::Assignment {
+                            lhs: Arc::from(rg::Expression::new(Id::from("player"))),
+                            rhs: Arc::from(rg::Expression::new(Id::from("keeper"))),
+                        },
+                        &[],
+                    );
+                    return true;
+                }
+                _ => {
+                    let automaton_function = context
+                        .hrg
+                        .automaton
+                        .iter()
+                        .find(|automaton_function| automaton_function.name == *identifier)
+                        .unwrap_or_else(|| panic!("Unknown automaton function \"{identifier}\"."))
+                        .clone();
+
+                    if context.reuse_functions {
+                        let call_id =
+                            context.random(&Id::from(format!("{}_call", &automaton_function.name)));
+                        let variable = Id::from(format!("{}_return", &automaton_function.name));
+                        let type_ = Id::from(format!("{variable}_type"));
+
+                        if context
+                            .rg
+                            .variables
+                            .iter()
+                            .any(|x| x.identifier == variable)
+                        {
+                            let type_declaration = context
+                                .rg
+                                .typedefs
+                                .iter_mut()
+                                .find(|x| x.identifier == type_)
+                                .unwrap_or_else(|| panic!("Type \"{type_}\" not found."));
+                            let rg::Type::Set {
+                                ref mut identifiers,
+                                ..
+                            } = Arc::make_mut(&mut type_declaration.type_)
+                            else {
+                                panic!("Type \"{variable}\" has invalid type.");
+                            };
+                            identifiers.push(call_id.clone());
+                        } else {
+                            context.rg.typedefs.push(rg::Typedef {
+                                span: Span::none(),
+                                identifier: type_.clone(),
+                                type_: Arc::from(rg::Type::Set {
+                                    span: Span::none(),
+                                    identifiers: vec![call_id.clone()],
+                                }),
+                            });
+                            context.rg.variables.push(rg::Variable {
+                                span: Span::none(),
+                                default_value: Arc::from(rg::Value::Element {
+                                    identifier: call_id.clone(),
+                                }),
+                                identifier: variable.clone(),
+                                type_: Arc::from(rg::Type::new(type_)),
+                            });
+                        }
+
+                        let call_node = rg::Node::new(call_id.clone());
+                        context.connect(
+                            current_node,
+                            call_node.clone(),
+                            rg::Label::new_skip(),
                             bindings,
                         );
-                        current_edge_name = local_edge_name;
-                    }
-                    "continue" => {
-                        assert!(args.is_empty(), "continue() expects no arguments.");
-                        assert_eq!(
-                            Some(automaton_statement),
-                            automaton_statements.last(),
-                            "continue() has to be the last statement."
-                        );
-                        let Some(continue_edge_name) = continue_edge_name else {
-                            panic!("continue() requires continue_edge_name.");
-                        };
 
-                        current_edge_name.parts.extend(bindings.iter().map(
-                            |(identifier, type_)| rg::NodePart::Binding {
-                                span: Span::none(),
-                                identifier: (*identifier).clone(),
-                                type_: (*type_).clone(),
-                            },
-                        ));
+                        let set_node = context.random_node(prefix);
                         context.connect(
-                            current_edge_name,
-                            continue_edge_name.clone(),
-                            rg::Label::new_skip(),
-                            &[],
-                        );
-                        return true;
-                    }
-                    "end" => {
-                        assert!(args.is_empty(), "end() expects no arguments.");
-                        assert_eq!(
-                            Some(automaton_statement),
-                            automaton_statements.last(),
-                            "end() has to be the last statement."
-                        );
-                        let Some(end_edge_name) = end_edge_name else {
-                            panic!("end() requires end_edge_name.");
-                        };
-
-                        current_edge_name.parts.extend(bindings.iter().map(
-                            |(identifier, type_)| rg::NodePart::Binding {
-                                span: Span::none(),
-                                identifier: (*identifier).clone(),
-                                type_: (*type_).clone(),
-                            },
-                        ));
-                        context.connect(
-                            current_edge_name,
-                            end_edge_name.clone(),
+                            call_node,
+                            set_node.clone(),
                             rg::Label::Assignment {
-                                lhs: Arc::from(rg::Expression::new(Id::from("player"))),
-                                rhs: Arc::from(rg::Expression::new(Id::from("keeper"))),
+                                lhs: Arc::from(rg::Expression::new(variable.clone())),
+                                rhs: Arc::from(rg::Expression::new(call_id.clone())),
                             },
-                            &[],
+                            bindings,
                         );
-                        return true;
-                    }
-                    "return" => {
-                        assert!(args.is_empty(), "return() expects no arguments.");
-                        assert_eq!(
-                            Some(automaton_statement),
-                            automaton_statements.last(),
-                            "return() has to be the last statement."
-                        );
-                        let Some(return_edge_name) = return_edge_name else {
-                            panic!("return() requires return_edge_name.");
-                        };
 
-                        current_edge_name.parts.extend(bindings.iter().map(
-                            |(identifier, type_)| rg::NodePart::Binding {
-                                span: Span::none(),
-                                identifier: (*identifier).clone(),
-                                type_: (*type_).clone(),
-                            },
-                        ));
-                        context.connect(
-                            current_edge_name,
-                            return_edge_name.clone(),
-                            rg::Label::Assignment {
-                                lhs: Arc::from(rg::Expression::new(Id::from("player"))),
-                                rhs: Arc::from(rg::Expression::new(Id::from("keeper"))),
-                            },
-                            &[],
-                        );
-                        return true;
-                    }
-                    _ => {
-                        let automaton_function = context
-                            .hrg
-                            .automaton
-                            .iter()
-                            .find(|automaton_function| automaton_function.name == *identifier)
-                            .unwrap_or_else(|| {
-                                panic!("Unknown automaton function \"{identifier}\".")
-                            })
-                            .clone();
-
-                        if context.reuse_functions {
-                            let call_id = context
-                                .random(&Id::from(format!("{}_call", &automaton_function.name)));
-                            let variable = Id::from(format!("{}_return", &automaton_function.name));
-                            let type_ = Id::from(format!("{variable}_type"));
-
-                            if context
-                                .rg
-                                .variables
-                                .iter()
-                                .any(|x| x.identifier == variable)
-                            {
-                                let type_declaration = context
-                                    .rg
-                                    .typedefs
-                                    .iter_mut()
-                                    .find(|x| x.identifier == type_)
-                                    .unwrap_or_else(|| panic!("Type \"{type_}\" not found."));
-                                let rg::Type::Set {
-                                    ref mut identifiers,
-                                    ..
-                                } = Arc::make_mut(&mut type_declaration.type_)
-                                else {
-                                    panic!("Type \"{variable}\" has invalid type.");
-                                };
-                                identifiers.push(call_id.clone());
-                            } else {
-                                context.rg.typedefs.push(rg::Typedef {
-                                    span: Span::none(),
-                                    identifier: type_.clone(),
-                                    type_: Arc::from(rg::Type::Set {
-                                        span: Span::none(),
-                                        identifiers: vec![call_id.clone()],
-                                    }),
-                                });
-                                context.rg.variables.push(rg::Variable {
-                                    span: Span::none(),
-                                    default_value: Arc::from(rg::Value::Element {
-                                        identifier: call_id.clone(),
-                                    }),
-                                    identifier: variable.clone(),
-                                    type_: Arc::from(rg::Type::new(type_)),
-                                });
-                            }
-
-                            let call_edge_name = rg::Node::new(call_id.clone());
+                        current_node = set_node;
+                        for (index, arg) in args.iter().enumerate() {
+                            let arg_node = context.random_node(prefix);
                             context.connect(
-                                current_edge_name,
-                                call_edge_name.clone(),
-                                rg::Label::new_skip(),
-                                bindings,
-                            );
-
-                            let set_edge_name = context.random_edge_name(prefix);
-                            context.connect(
-                                call_edge_name,
-                                set_edge_name.clone(),
+                                current_node,
+                                arg_node.clone(),
                                 rg::Label::Assignment {
-                                    lhs: Arc::from(rg::Expression::new(variable.clone())),
-                                    rhs: Arc::from(rg::Expression::new(call_id.clone())),
+                                    lhs: Arc::from(rg::Expression::new(
+                                        automaton_function.args[index].identifier.clone(),
+                                    )),
+                                    rhs: translate_expression(arg),
                                 },
                                 bindings,
                             );
+                            current_node = arg_node;
+                        }
 
-                            current_edge_name = set_edge_name;
-                            for (index, arg) in args.iter().enumerate() {
-                                let arg_edge_name = context.random_edge_name(prefix);
-                                context.connect(
-                                    current_edge_name,
-                                    arg_edge_name.clone(),
-                                    rg::Label::Assignment {
-                                        lhs: Arc::from(rg::Expression::new(
-                                            automaton_function.args[index].identifier.clone(),
-                                        )),
-                                        rhs: translate_expression(arg),
-                                    },
-                                    bindings,
-                                );
-                                current_edge_name = arg_edge_name;
-                            }
+                        context.connect(
+                            current_node,
+                            rg::Node::new(Id::from(format!("{}_begin", &automaton_function.name))),
+                            rg::Label::new_skip(),
+                            bindings,
+                        );
 
-                            context.connect(
-                                current_edge_name,
-                                rg::Node::new(Id::from(format!(
-                                    "{}_begin",
-                                    &automaton_function.name
-                                ))),
-                                rg::Label::new_skip(),
-                                bindings,
-                            );
-
-                            let local_edge_name = rg::Node::new(Id::from(format!(
-                                "{}_return",
-                                &automaton_function.name
-                            )));
-                            if context
-                                .translated_functions
-                                .insert(automaton_function.name.clone())
-                            {
-                                translate_automaton_function(
-                                    context,
-                                    &automaton_function,
-                                    end_edge_name,
-                                    Some(&local_edge_name),
-                                    &Id::from(""),
-                                );
-                            } else {
-                                context.connect(
-                                    rg::Node::new(Id::from(format!(
-                                        "{}_end",
-                                        &automaton_function.name
-                                    ))),
-                                    local_edge_name.clone(),
-                                    rg::Label::new_skip(),
-                                    bindings,
-                                );
-                            }
-
-                            current_edge_name = local_edge_name;
-                            let intermediate_edge_name = context.random_edge_name(prefix);
-                            context.connect(
-                                current_edge_name,
-                                intermediate_edge_name.clone(),
-                                rg::Label::Comparison {
-                                    lhs: Arc::from(rg::Expression::new(variable)),
-                                    rhs: Arc::from(rg::Expression::new(call_id)),
-                                    negated: false,
-                                },
-                                bindings,
-                            );
-
-                            current_edge_name = intermediate_edge_name;
-                        } else {
-                            let call_id = Id::from(format!("{}_", context.random(prefix)));
-                            for (index, arg) in args.iter().enumerate() {
-                                let arg_edge_name = context.random_edge_name(&call_id);
-                                context.connect(
-                                    current_edge_name,
-                                    arg_edge_name.clone(),
-                                    rg::Label::Assignment {
-                                        lhs: Arc::from(rg::Expression::new(
-                                            automaton_function.args[index].identifier.clone(),
-                                        )),
-                                        rhs: translate_expression(arg),
-                                    },
-                                    bindings,
-                                );
-                                current_edge_name = arg_edge_name;
-                            }
-
-                            context.connect(
-                                current_edge_name,
-                                rg::Node::new(Id::from(format!(
-                                    "{call_id}{}_begin",
-                                    &automaton_function.name
-                                ))),
-                                rg::Label::new_skip(),
-                                bindings,
-                            );
-
-                            let local_edge_name = context.random_edge_name(prefix);
+                        let local_node =
+                            rg::Node::new(Id::from(format!("{}_return", &automaton_function.name)));
+                        if context
+                            .translated_functions
+                            .insert(automaton_function.name.clone())
+                        {
                             translate_automaton_function(
                                 context,
                                 &automaton_function,
-                                end_edge_name,
-                                Some(&local_edge_name),
-                                &call_id,
+                                end_node,
+                                Some(&local_node),
+                                &Id::from(""),
                             );
-                            current_edge_name = local_edge_name;
+                        } else {
+                            context.connect(
+                                rg::Node::new(Id::from(format!(
+                                    "{}_end",
+                                    &automaton_function.name
+                                ))),
+                                local_node.clone(),
+                                rg::Label::new_skip(),
+                                bindings,
+                            );
                         }
+
+                        current_node = local_node;
+                        let intermediate_node = context.random_node(prefix);
+                        context.connect(
+                            current_node,
+                            intermediate_node.clone(),
+                            rg::Label::Comparison {
+                                lhs: Arc::from(rg::Expression::new(variable)),
+                                rhs: Arc::from(rg::Expression::new(call_id)),
+                                negated: false,
+                            },
+                            bindings,
+                        );
+
+                        current_node = intermediate_node;
+                    } else {
+                        let call_id = Id::from(format!("{}_", context.random(prefix)));
+                        for (index, arg) in args.iter().enumerate() {
+                            let arg_node = context.random_node(&call_id);
+                            context.connect(
+                                current_node,
+                                arg_node.clone(),
+                                rg::Label::Assignment {
+                                    lhs: Arc::from(rg::Expression::new(
+                                        automaton_function.args[index].identifier.clone(),
+                                    )),
+                                    rhs: translate_expression(arg),
+                                },
+                                bindings,
+                            );
+                            current_node = arg_node;
+                        }
+
+                        context.connect(
+                            current_node,
+                            rg::Node::new(Id::from(format!(
+                                "{call_id}{}_begin",
+                                &automaton_function.name
+                            ))),
+                            rg::Label::new_skip(),
+                            bindings,
+                        );
+
+                        let local_node = context.random_node(prefix);
+                        translate_automaton_function(
+                            context,
+                            &automaton_function,
+                            end_node,
+                            Some(&local_node),
+                            &call_id,
+                        );
+                        current_node = local_node;
                     }
                 }
-            }
+            },
             hrg::Statement::Forall {
                 identifier,
                 type_,
@@ -903,21 +898,21 @@ fn translate_automaton_statements(
             } => {
                 let binding = (identifier, &translate_type(type_));
 
-                let mut local_edge_name = context.random_edge_name(prefix);
-                local_edge_name.parts.push(rg::NodePart::Binding {
+                let mut local_node = context.random_node(prefix);
+                local_node.parts.push(rg::NodePart::Binding {
                     span: Span::none(),
                     identifier: binding.0.clone(),
                     type_: binding.1.clone(),
                 });
                 context.connect(
-                    current_edge_name.clone(),
-                    local_edge_name.clone(),
+                    current_node.clone(),
+                    local_node.clone(),
                     rg::Label::new_skip(),
                     bindings,
                 );
-                local_edge_name.parts.pop();
+                local_node.parts.pop();
 
-                let mut middle_edge_name = context.random_edge_name(prefix);
+                let mut middle_node = context.random_node(prefix);
                 translate_automaton_statements(
                     context,
                     body,
@@ -927,40 +922,40 @@ fn translate_automaton_statements(
                         .chain(Some(binding))
                         .collect::<Vec<_>>()
                         .as_slice(),
-                    break_edge_name,
-                    continue_edge_name,
-                    end_edge_name,
-                    local_edge_name,
-                    Some(&middle_edge_name),
+                    break_node,
+                    continue_node,
+                    end_node,
+                    local_node,
+                    Some(&middle_node),
                     prefix,
-                    return_edge_name,
+                    return_node,
                 );
 
-                let after_edge_name = context.random_edge_name(prefix);
-                middle_edge_name.parts.push(rg::NodePart::Binding {
+                let after_node = context.random_node(prefix);
+                middle_node.parts.push(rg::NodePart::Binding {
                     span: Span::none(),
                     identifier: binding.0.clone(),
                     type_: binding.1.clone(),
                 });
                 context.connect(
-                    middle_edge_name.clone(),
-                    after_edge_name.clone(),
+                    middle_node.clone(),
+                    after_node.clone(),
                     rg::Label::new_skip(),
                     bindings,
                 );
-                middle_edge_name.parts.pop();
+                middle_node.parts.pop();
 
-                current_edge_name = after_edge_name;
+                current_node = after_node;
             }
             hrg::Statement::If { expression, body } => {
-                let then_edge_name = context.random_edge_name(prefix);
-                let else_edge_name = context.random_edge_name(prefix);
+                let then_node = context.random_node(prefix);
+                let else_node = context.random_node(prefix);
                 translate_condition(
                     context,
                     expression,
-                    &current_edge_name,
-                    Some(&then_edge_name),
-                    Some(&else_edge_name),
+                    &current_node,
+                    Some(&then_node),
+                    Some(&else_node),
                     prefix,
                     bindings,
                 );
@@ -968,53 +963,53 @@ fn translate_automaton_statements(
                     context,
                     body,
                     bindings,
-                    break_edge_name,
-                    continue_edge_name,
-                    end_edge_name,
-                    then_edge_name,
-                    Some(&else_edge_name),
+                    break_node,
+                    continue_node,
+                    end_node,
+                    then_node,
+                    Some(&else_node),
                     prefix,
-                    return_edge_name,
+                    return_node,
                 );
-                current_edge_name = else_edge_name;
+                current_node = else_node;
             }
             hrg::Statement::Loop { body } => {
-                let local_edge_name = context.random_edge_name(prefix);
+                let local_node = context.random_node(prefix);
                 translate_automaton_statements(
                     context,
                     body,
                     bindings,
-                    Some(&local_edge_name),
-                    Some(&current_edge_name.clone()),
-                    end_edge_name,
-                    current_edge_name.clone(),
-                    Some(&current_edge_name),
+                    Some(&local_node),
+                    Some(&current_node.clone()),
+                    end_node,
+                    current_node.clone(),
+                    Some(&current_node),
                     prefix,
-                    return_edge_name,
+                    return_node,
                 );
-                current_edge_name = local_edge_name;
+                current_node = local_node;
             }
             hrg::Statement::Tag { symbol } => {
-                let local_edge_name = context.random_edge_name(prefix);
+                let local_node = context.random_node(prefix);
                 context.connect(
-                    current_edge_name,
-                    local_edge_name.clone(),
+                    current_node,
+                    local_node.clone(),
                     rg::Label::Tag {
                         symbol: symbol.clone(),
                     },
                     bindings,
                 );
-                current_edge_name = local_edge_name;
+                current_node = local_node;
             }
             hrg::Statement::While { expression, body } => {
-                let then_edge_name = context.random_edge_name(prefix);
-                let else_edge_name = context.random_edge_name(prefix);
+                let then_node = context.random_node(prefix);
+                let else_node = context.random_node(prefix);
                 translate_condition(
                     context,
                     expression,
-                    &current_edge_name,
-                    Some(&then_edge_name),
-                    Some(&else_edge_name),
+                    &current_node,
+                    Some(&then_node),
+                    Some(&else_node),
                     prefix,
                     bindings,
                 );
@@ -1022,23 +1017,23 @@ fn translate_automaton_statements(
                     context,
                     body,
                     bindings,
-                    Some(&else_edge_name),
-                    Some(&current_edge_name),
-                    end_edge_name,
-                    then_edge_name,
-                    Some(&current_edge_name),
+                    Some(&else_node),
+                    Some(&current_node),
+                    end_node,
+                    then_node,
+                    Some(&current_node),
                     prefix,
-                    return_edge_name,
+                    return_node,
                 );
-                current_edge_name = else_edge_name;
+                current_node = else_node;
             }
         }
     }
 
-    if let Some(next_edge_name) = next_edge_name {
+    if let Some(next_node) = next_node {
         context.connect(
-            current_edge_name,
-            next_edge_name.clone(),
+            current_node,
+            next_node.clone(),
             rg::Label::new_skip(),
             bindings,
         );
@@ -1050,9 +1045,9 @@ fn translate_automaton_statements(
 fn translate_condition(
     context: &mut Context,
     expression: &hrg::Expression<Id>,
-    entry_edge_name: &rg::Node<Id>,
-    then_edge_name: Option<&rg::Node<Id>>,
-    else_edge_name: Option<&rg::Node<Id>>,
+    entry_node: &rg::Node<Id>,
+    then_node: Option<&rg::Node<Id>>,
+    else_node: Option<&rg::Node<Id>>,
     prefix: &Id,
     bindings: &[rg::Binding<Id>],
 ) {
@@ -1062,24 +1057,18 @@ fn translate_condition(
             op: hrg::Binop::And,
             rhs,
         } => {
-            let true_edge_name = context.random_edge_name(prefix);
+            let true_node = context.random_node(prefix);
             translate_condition(
                 context,
                 lhs,
-                entry_edge_name,
-                Some(&true_edge_name),
-                else_edge_name,
+                entry_node,
+                Some(&true_node),
+                else_node,
                 prefix,
                 bindings,
             );
             translate_condition(
-                context,
-                rhs,
-                &true_edge_name,
-                then_edge_name,
-                else_edge_name,
-                prefix,
-                bindings,
+                context, rhs, &true_node, then_node, else_node, prefix, bindings,
             );
         }
         hrg::Expression::BinExpr {
@@ -1087,10 +1076,10 @@ fn translate_condition(
             op: hrg::Binop::Eq,
             rhs,
         } => {
-            if let Some(then_edge_name) = then_edge_name {
+            if let Some(then_node) = then_node {
                 context.connect(
-                    entry_edge_name.clone(),
-                    then_edge_name.clone(),
+                    entry_node.clone(),
+                    then_node.clone(),
                     rg::Label::Comparison {
                         lhs: translate_expression(lhs),
                         rhs: translate_expression(rhs),
@@ -1099,10 +1088,10 @@ fn translate_condition(
                     bindings,
                 );
             }
-            if let Some(else_edge_name) = else_edge_name {
+            if let Some(else_node) = else_node {
                 context.connect(
-                    entry_edge_name.clone(),
-                    else_edge_name.clone(),
+                    entry_node.clone(),
+                    else_node.clone(),
                     rg::Label::Comparison {
                         lhs: translate_expression(lhs),
                         rhs: translate_expression(rhs),
@@ -1117,22 +1106,22 @@ fn translate_condition(
             op: hrg::Binop::Or,
             rhs,
         } => {
-            let false_edge_name = context.random_edge_name(prefix);
+            let false_node = context.random_node(prefix);
             translate_condition(
                 context,
                 lhs,
-                entry_edge_name,
-                then_edge_name,
-                Some(&false_edge_name),
+                entry_node,
+                then_node,
+                Some(&false_node),
                 prefix,
                 bindings,
             );
             translate_condition(
                 context,
                 rhs,
-                &false_edge_name,
-                then_edge_name,
-                else_edge_name,
+                &false_node,
+                then_node,
+                else_node,
                 prefix,
                 bindings,
             );
@@ -1142,10 +1131,10 @@ fn translate_condition(
             op: hrg::Binop::Ne,
             rhs,
         } => {
-            if let Some(then_edge_name) = then_edge_name {
+            if let Some(then_node) = then_node {
                 context.connect(
-                    entry_edge_name.clone(),
-                    then_edge_name.clone(),
+                    entry_node.clone(),
+                    then_node.clone(),
                     rg::Label::Comparison {
                         lhs: translate_expression(lhs),
                         rhs: translate_expression(rhs),
@@ -1154,10 +1143,10 @@ fn translate_condition(
                     bindings,
                 );
             }
-            if let Some(else_edge_name) = else_edge_name {
+            if let Some(else_node) = else_node {
                 context.connect(
-                    entry_edge_name.clone(),
-                    else_edge_name.clone(),
+                    entry_node.clone(),
+                    else_node.clone(),
                     rg::Label::Comparison {
                         lhs: translate_expression(lhs),
                         rhs: translate_expression(rhs),
@@ -1178,9 +1167,9 @@ fn translate_condition(
                     translate_condition(
                         context,
                         args[0].as_ref(),
-                        entry_edge_name,
-                        else_edge_name,
-                        then_edge_name,
+                        entry_node,
+                        else_node,
+                        then_node,
                         prefix,
                         bindings,
                     );
@@ -1206,18 +1195,18 @@ fn translate_condition(
 
                     let call_id =
                         context.random(&Id::from(format!("{}_call", automaton_function.name)));
-                    let automaton_start_edge_name = if context.reuse_functions {
+                    let automaton_start_node = if context.reuse_functions {
                         rg::Node::new(call_id)
                     } else {
-                        context.random_edge_name(&automaton_prefix)
+                        context.random_node(&automaton_prefix)
                     };
 
-                    let mut automaton_current_edge_name = automaton_start_edge_name.clone();
+                    let mut automaton_current_node = automaton_start_node.clone();
                     for (index, arg) in args.iter().enumerate() {
-                        let arg_edge_name = context.random_edge_name(&automaton_prefix);
+                        let arg_node = context.random_node(&automaton_prefix);
                         context.connect(
-                            automaton_current_edge_name,
-                            arg_edge_name.clone(),
+                            automaton_current_node,
+                            arg_node.clone(),
                             rg::Label::Assignment {
                                 lhs: Arc::from(rg::Expression::new(
                                     automaton_function.args[index].identifier.clone(),
@@ -1226,11 +1215,11 @@ fn translate_condition(
                             },
                             bindings,
                         );
-                        automaton_current_edge_name = arg_edge_name;
+                        automaton_current_node = arg_node;
                     }
 
                     context.connect(
-                        automaton_current_edge_name,
+                        automaton_current_node,
                         rg::Node::new(Id::from(if context.reuse_functions {
                             format!("{automaton_name}_begin")
                         } else {
@@ -1240,12 +1229,11 @@ fn translate_condition(
                         bindings,
                     );
 
-                    let automaton_end_edge_name =
-                        rg::Node::new(Id::from(if context.reuse_functions {
-                            format!("{automaton_name}_end")
-                        } else {
-                            format!("{automaton_prefix}_{automaton_name}_end")
-                        }));
+                    let automaton_end_node = rg::Node::new(Id::from(if context.reuse_functions {
+                        format!("{automaton_name}_end")
+                    } else {
+                        format!("{automaton_prefix}_{automaton_name}_end")
+                    }));
 
                     if context.reuse_functions {
                         if context
@@ -1255,7 +1243,7 @@ fn translate_condition(
                             translate_automaton_function(
                                 context,
                                 &automaton_function,
-                                Some(&automaton_end_edge_name),
+                                Some(&automaton_end_node),
                                 None,
                                 &Id::from(""),
                             );
@@ -1264,34 +1252,34 @@ fn translate_condition(
                         translate_automaton_function(
                             context,
                             &automaton_function,
-                            Some(&automaton_end_edge_name),
+                            Some(&automaton_end_node),
                             None,
                             &Id::from(format!("{automaton_prefix}_")),
                         );
                     }
 
-                    if let Some(then_edge_name) = then_edge_name {
+                    if let Some(then_node) = then_node {
                         context.connect(
-                            entry_edge_name.clone(),
-                            then_edge_name.clone(),
+                            entry_node.clone(),
+                            then_node.clone(),
                             rg::Label::Reachability {
                                 span: Span::none(),
-                                lhs: automaton_start_edge_name.clone(),
-                                rhs: automaton_end_edge_name.clone(),
+                                lhs: automaton_start_node.clone(),
+                                rhs: automaton_end_node.clone(),
                                 negated: false,
                             },
                             bindings,
                         );
                     }
 
-                    if let Some(else_edge_name) = else_edge_name {
+                    if let Some(else_node) = else_node {
                         context.connect(
-                            entry_edge_name.clone(),
-                            else_edge_name.clone(),
+                            entry_node.clone(),
+                            else_node.clone(),
                             rg::Label::Reachability {
                                 span: Span::none(),
-                                lhs: automaton_start_edge_name,
-                                rhs: automaton_end_edge_name,
+                                lhs: automaton_start_node,
+                                rhs: automaton_end_node,
                                 negated: true,
                             },
                             bindings,
