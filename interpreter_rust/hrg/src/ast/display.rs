@@ -145,25 +145,23 @@ impl<Id: Display> Display for FunctionDeclaration<Id> {
 impl<Id: Display> Display for VariableDeclaration<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         if let Some(default_value) = self.default_value.as_ref() {
-            writeln!(f, "{} : {} = {default_value}", self.identifier, self.type_)?;
+            write!(f, "{} : {} = ", self.identifier, self.type_)?;
+            write_expression(f, default_value, 0)?;
+            writeln!(f)
         } else {
-            writeln!(f, "{} : {}", self.identifier, self.type_)?;
+            writeln!(f, "{} : {}", self.identifier, self.type_)
         }
-        Ok(())
     }
 }
 
 fn write_toplevel<T: Display>(f: &mut Formatter<'_>, items: &[T]) -> Result {
-    items.iter().try_for_each(|item| writeln!(f, "{item}"))?;
-    if !items.is_empty() {
-        writeln!(f)?;
-    }
-    Ok(())
+    items.iter().try_for_each(|item| writeln!(f, "{item}"))
 }
 
 impl<Id: Display> Display for Game<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write_toplevel(f, &self.domains)?;
+        writeln!(f)?;
         write_toplevel(f, &self.functions)?;
         write_toplevel(f, &self.variables)?;
         write_toplevel(f, &self.automaton)?;
@@ -202,11 +200,13 @@ fn write_expression<Id: Display>(
         } => {
             let indent = if indent == 0 { 0 } else { indent - 2 };
             writeln!(f, "{{")?;
-            write_indent(f, indent)?;
+            write_indent(f, indent + 2)?;
             write!(f, "{pattern} = ")?;
-            write_expression(f, expression, indent + 2)?;
+            write_expression(f, expression, indent + 4)?;
             if !domains.is_empty() {
-                write!(f, " where ")?;
+                writeln!(f)?;
+                write_indent(f, indent + 2)?;
+                write!(f, "where ")?;
                 write_with_separator(f, domains, ", ")?;
             }
             writeln!(f)?;
