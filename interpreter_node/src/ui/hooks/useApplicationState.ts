@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate';
+import { useEffect, useMemo, useState } from 'react';
 
 import { usePromise } from './usePromise';
 import { parse } from '../../parse';
@@ -30,8 +31,42 @@ const initialState: State = {
   view: 0,
 };
 
+function parseStateFromQuery() {
+  try {
+    const hash = window.location.hash.slice(1);
+    const base64 = hash.replace(/\+/g, '-').replace(/\//g, '_');
+    const decoded = atob(decodeURIComponent(base64));
+    const decompressed = strFromU8(gunzipSync(strToU8(decoded, true)), true);
+    const deserialized = JSON.parse(decompressed) as State;
+    return {
+      preset: deserialized.preset,
+      settings: deserialized.settings,
+      source: deserialized.source,
+      view: deserialized.view,
+    };
+  } catch (_) {
+    console.log(_);
+    return initialState;
+  }
+}
+
+function updateStateInQuery(state: State) {
+  try {
+    const serialized = JSON.stringify(state);
+    const compressed = strFromU8(gzipSync(strToU8(serialized, true)), true);
+    const encoded = encodeURIComponent(btoa(compressed));
+    const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    window.location.hash = base64;
+  } catch (_) {
+    // It's alright.
+  }
+}
+
 export function useApplicationState() {
-  const [{ preset, settings, source, view }, setState] = useState(initialState);
+  const [state, setState] = useState(parseStateFromQuery);
+  useEffect(() => updateStateInQuery(state), [state]);
+
+  const { preset, settings, source, view } = state;
   const game = usePromise(() => parse(source, settings), [settings, source]);
   const actions = useMemo(
     () => ({
