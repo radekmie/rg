@@ -146,10 +146,10 @@ fn used_definitions(
     defs.iter()
         .filter(|(var, _)| variables.contains(var) || var == identifier)
         .fold(BTreeMap::new(), |mut grouped_defs, (var, edge)| {
-            grouped_defs
-                .entry(var.clone())
-                .or_default()
-                .insert((*edge).clone());
+            grouped_defs.entry(var.clone()).or_default().insert(
+                edge.as_ref()
+                    .map(|edge| Arc::make_mut(&mut edge.clone()).clone()),
+            );
             grouped_defs
         })
 }
