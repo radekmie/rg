@@ -1,0 +1,12 @@
+[package]
+name = "rbg"
+version = "0.1.0"
+authors = ["Radosław Miernik <radekmie@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+map_id = { path = "../map_id" }
+map_id_macro = { path = "../map_id_macro" }
+
+[lints]
+workspace = true

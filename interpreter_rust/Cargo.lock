@@ -798,6 +798,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rbg"
+version = "0.1.0"
+dependencies = [
+ "map_id",
+ "map_id_macro",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

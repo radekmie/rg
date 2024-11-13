@@ -20,6 +20,7 @@ members = [
   "lsp_browser",
   "map_id",
   "map_id_macro",
+  "rbg",
   "rg",
   "utils",
 ]
