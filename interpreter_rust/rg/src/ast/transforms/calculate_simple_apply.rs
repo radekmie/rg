@@ -37,6 +37,10 @@ impl Game<Arc<str>> {
                 }
 
                 for edge in next_edges.get(&lhs).into_iter().flatten() {
+                    if path.contains(&edge.rhs) {
+                        continue;
+                    }
+
                     let mut path = path.clone();
                     path.push(edge.rhs.clone());
 
@@ -228,6 +232,23 @@ mod test {
             9(bind_2: Coord), 11: coord = bind_2;
             11, 14: board[coord] == w;
             14, 15: board[coord] = e;
+            15, 16(bind_3: Coord): bind_3 == coord;
+            16(bind_3: Coord), 17: $ bind_3;
+            17, 12: $ index_2;
+            12, end: ;
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        with_loop,
+        "
+            begin, 4: ;
+            4, 9(bind_2: Coord): Coord(bind_2) != Coord(null);
+            9(bind_2: Coord), 11: coord = bind_2;
+            11, 14: board[coord] == w;
+            14, 15: board[coord] = e;
+            15, 11: ;
             15, 16(bind_3: Coord): bind_3 == coord;
             16(bind_3: Coord), 17: $ bind_3;
             17, 12: $ index_2;
