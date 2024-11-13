@@ -49,6 +49,7 @@ fn scenario(criterion: &mut Criterion, path: &str) {
     bench!(join_fork_prefixes);
     bench!(join_fork_suffixes);
     bench!(mangle_symbols);
+    bench!(merge_accesses);
     bench!(normalize_constants);
     bench!(normalize_types);
     bench!(propagate_constants);
@@ -68,6 +69,12 @@ fn transforms(criterion: &mut Criterion) {
     scenario(criterion, "breakthrough.hrg.rg");
     scenario(criterion, "breakthrough.rbg.rg");
     scenario(criterion, "breakthrough.rg");
+    scenario(criterion, "connect4.hrg.reuse.rg");
+    scenario(criterion, "connect4.hrg.rg");
+    scenario(criterion, "connect4.kif.rg");
+    scenario(criterion, "connect4.rbg.rg");
+    scenario(criterion, "ticTacToe.hrg.reuse.rg");
+    scenario(criterion, "ticTacToe.hrg.rg");
     scenario(criterion, "ticTacToe.kif.rg");
     scenario(criterion, "ticTacToe.rbg.rg");
     scenario(criterion, "ticTacToe.rg");
