@@ -22,6 +22,7 @@ impl Game<Id> {
 
     fn join_generators_step(&mut self) -> bool {
         let next_edges = self.next_edges();
+        let prev_edges = self.prev_edges();
         let span = Span::none();
         let mut max_id = max_node_id(&self.nodes());
         for (node, outgoing_edges) in &next_edges {
@@ -30,7 +31,7 @@ impl Game<Id> {
             }
 
             let Some((id, (target, edges_to_remove), (type_, value))) =
-                self.collect_binding_comparisons(outgoing_edges, &next_edges)
+                self.collect_binding_comparisons(outgoing_edges, &next_edges, &prev_edges)
             else {
                 continue;
             };
@@ -106,8 +107,10 @@ impl Game<Id> {
         &self,
         edges: &BTreeSet<&Edge<Id>>,
         next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>>,
+        prev_edges: &BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>>,
     ) -> Option<(Id, NodeEdges, TypeValue)> {
         let first = edges.iter().next()?;
+        let target = next_edges.get(&first.rhs)?.first()?.rhs.clone();
         let Label::Comparison { lhs, .. } = &first.label else {
             return None;
         };
@@ -120,11 +123,14 @@ impl Game<Id> {
                     return None;
                 }
                 let rhs = rhs.uncast().as_reference()?;
-                let outgoing_edge = next_edges.get(&edge.rhs)?;
-                if outgoing_edge.len() != 1 {
+                let outgoing_edges = next_edges.get(&edge.rhs)?;
+                let outgoing_edge = outgoing_edges.first()?;
+                if outgoing_edges.len() != 1
+                    || prev_edges.get(&edge.rhs)?.len() != 1
+                    || outgoing_edge.rhs != target
+                {
                     return None;
                 }
-                let outgoing_edge = outgoing_edge.first()?;
                 edges_to_remove.push((*edge).clone());
                 edges_to_remove.push((*outgoing_edge).clone());
                 let generator_members = self.get_generator_members(outgoing_edge, identifier)?;
@@ -132,7 +138,6 @@ impl Game<Id> {
             }
         }
         let (type_, value) = merge_generators(generators);
-        let target = next_edges.get(&first.rhs)?.first()?.rhs.clone();
 
         Some((
             identifier.clone(),
@@ -244,5 +249,45 @@ mod test {
         var coord: All = 1;
         begin, 1(bind_Joined_1: Joined_1): joined_1[coord][bind_Joined_1] == 1;
         1(bind_Joined_1: Joined_1), end: coord = bind_Joined_1;"
+    );
+
+    test_transform!(
+        join_generators,
+        small2,
+        "type All = {1,2,3,4,5,6};
+        type Type1 = {3,4,5};
+        var coord : All = 1;
+        begin, a1(t1: Type1): coord == All(1);
+        begin, f: coord == 1;
+        f, e: coord = 2;
+        a1(t1: Type1), end: coord = t1;"
+    );
+
+    test_transform!(
+        join_generators,
+        small3,
+        "type All = {1,2,3,4,5,6};
+        type Type1 = {3,4,5};
+        var coord : All = 1;
+        begin, a1(t1: Type1): coord == All(1);
+        begin, f: ;
+        a1(t1: Type3), end: coord = t1;"
+    );
+
+    test_transform!(
+        join_generators,
+        small4,
+        "type All = {1,2,3,4,5,6};
+        type Type1 = {3,4,5};
+        type Type2 = {1,2,3};
+        type Type3 = {1,3,6};
+        var coord : All = 1;
+        begin, a1(t1: Type1): coord == All(1);
+        begin, a2(t2: Type2): coord == All(2);
+        begin, a2(t2: Type2): ;
+        begin, a3(t3: Type3): coord == All(3);
+        a1(t1: Type1), end: coord = t1;
+        a2(t2: Type2), end: coord = t2;
+        a3(t3: Type3), end: coord = t3;"
     );
 }
