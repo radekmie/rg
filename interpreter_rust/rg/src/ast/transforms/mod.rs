@@ -32,16 +32,13 @@ use super::Node;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-#[allow(clippy::needless_pass_by_value)]
-pub fn gen_fresh_node(suffix: String, nodes: &BTreeSet<Node<Arc<str>>>) -> Node<Arc<str>> {
-    for x in 1..nodes.len() {
-        let fresh_node: Node<Arc<str>> = Node::new(Arc::from(format!("__gen_{x}_{suffix}")));
-        if !nodes.contains(&fresh_node) {
-            return fresh_node;
-        }
-    }
-    let name = format!("__gen_{}_{suffix}", nodes.len());
-    Node::new(Arc::from(name))
+pub fn gen_fresh_node(max_node_id: &mut usize) -> Node<Arc<str>> {
+    *max_node_id += 1;
+    Node::new(Arc::from(max_node_id.to_string()))
+}
+
+pub fn max_node_id(nodes: &BTreeSet<&Node<Arc<str>>>) -> usize {
+    nodes.iter().map(|node| node.literal().parse::<usize>().unwrap_or(0)).max().unwrap_or(0)
 }
 
 #[cfg(test)]

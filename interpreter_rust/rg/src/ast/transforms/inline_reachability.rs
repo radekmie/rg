@@ -1,4 +1,4 @@
-use super::gen_fresh_node;
+use super::{gen_fresh_node, max_node_id};
 use crate::ast::{Edge, Error, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -117,11 +117,10 @@ impl Game<Id> {
                 ..
             } = edge.label.clone()
             {
-                let mut nodes: BTreeSet<_> = self.nodes().iter().map(|n| (*n).clone()).collect();
+                let mut max_id = max_node_id(&self.nodes());
 
                 self.remove_edge(&edge);
-                let new_start = gen_fresh_node(format!("reachability_{start}_{target}"), &nodes);
-                nodes.insert(new_start.clone());
+                let new_start = gen_fresh_node(&mut max_id);
 
                 let mut mapping = BTreeMap::new();
                 mapping.insert(start, new_start.clone());
@@ -135,8 +134,7 @@ impl Game<Id> {
                     if let Some(lhs) = mapping.get(&edge.lhs) {
                         edge.lhs = lhs.clone();
                     } else {
-                        let lhs = gen_fresh_node(edge.lhs.to_string(), &nodes);
-                        nodes.insert(lhs.clone());
+                        let lhs = gen_fresh_node(&mut max_id);
                         mapping.insert(edge.lhs.clone(), lhs.clone());
                         edge.lhs = lhs;
                     }
@@ -144,8 +142,7 @@ impl Game<Id> {
                     if let Some(rhs) = mapping.get(&edge.rhs) {
                         edge.rhs = rhs.clone();
                     } else {
-                        let rhs = gen_fresh_node(edge.rhs.to_string(), &nodes);
-                        nodes.insert(rhs.clone());
+                        let rhs = gen_fresh_node(&mut max_id);
                         mapping.insert(edge.rhs.clone(), rhs.clone());
                         edge.rhs = rhs;
                     }
@@ -201,8 +198,8 @@ mod test {
         "a, b: ? x -> y;
         x, y: 1 == 1;",
         "x, y: 1 == 1;
-        a, __gen_1_reachability_x_y: ;
-        __gen_1_reachability_x_y, b: 1 == 1;"
+        a, 1: ;
+        1, b: 1 == 1;"
     );
 
     test_transform!(
@@ -213,9 +210,9 @@ mod test {
         y, z: 2 == 2;",
         "x, y: 1 == 1;
         y, z: 2 == 2;
-        a, __gen_1_reachability_x_z: ;
-        __gen_1_reachability_x_z, __gen_1_y: 1 == 1;
-        __gen_1_y, b: 2 == 2;"
+        a, 1: ;
+        1, 2: 1 == 1;
+        2, b: 2 == 2;"
     );
 
     test_transform!(
@@ -226,9 +223,9 @@ mod test {
         y, z: 2 == 2;",
         "x, y: ;
         y, z: 2 == 2;
-        a, __gen_1_reachability_x_z: ;
-        __gen_1_y, b: 2 == 2;
-        __gen_1_reachability_x_z, __gen_1_y: ;"
+        a, 1: ;
+        2, b: 2 == 2;
+        1, 2: ;"
     );
 
     test_transform!(
@@ -239,9 +236,9 @@ mod test {
         y, z: ;",
         "x, y: 1 == 1;
         y, z: ;
-        a, __gen_1_reachability_x_z: ;
-        __gen_1_reachability_x_z, __gen_1_y: 1 == 1;
-        __gen_1_y, b: ;"
+        a, 1: ;
+        1, 2: 1 == 1;
+        2, b: ;"
     );
 
     test_transform!(
@@ -256,11 +253,11 @@ mod test {
         a, c: 1 != 1;
         b, d: ;
         c, d: ;
-        x, __gen_1_reachability_a_d: ;
-        __gen_1_reachability_a_d, __gen_1_b: 1 == 1;
-        __gen_1_reachability_a_d, __gen_1_c: 1 != 1;
-        __gen_1_b, y: ;
-        __gen_1_c, y: ;"
+        x, 1: ;
+        1, 2: 1 == 1;
+        1, 3: 1 != 1;
+        2, y: ;
+        3, y: ;"
     );
 
     test_transform!(
@@ -279,11 +276,11 @@ mod test {
         a, c: v != 2;
         b, d: ;
         c, d: ;
-        x, __gen_1_reachability_a_d: ;
-        __gen_1_reachability_a_d, __gen_1_b: v == 1;
-        __gen_1_reachability_a_d, __gen_1_c: v != 2;
-        __gen_1_b, y: ;
-        __gen_1_c, y: ;"
+        x, 1: ;
+        1, 2: v == 1;
+        1, 3: v != 2;
+        2, y: ;
+        3, y: ;"
     );
 
     test_transform!(
@@ -298,13 +295,13 @@ mod test {
         "b, d: ;
         c, d: ;
         e, f: ;
-        x, __gen_1_reachability_a_d: ;
-        __gen_1_reachability_a_d, __gen_1_b: ? e -> f;
-        __gen_1_reachability_a_d, __gen_1_c: ! e -> f;
-        __gen_1_b, y: ;
-        __gen_1_c, y: ;
-        a, __gen_1_reachability_e_f: ;
-        __gen_1_reachability_e_f, b: ;"
+        x, 1: ;
+        1, 2: ? e -> f;
+        1, 3: ! e -> f;
+        2, y: ;
+        3, y: ;
+        a, 4: ;
+        4, b: ;"
     );
 
     test_transform!(
@@ -313,23 +310,23 @@ mod test {
         "b, d: ;
         c, d: ;
         e, f: ;
-        x, __gen_1_reachability_a_d: ;
-        __gen_1_reachability_a_d, __gen_1_b: ? e -> f;
-        __gen_1_reachability_a_d, __gen_1_c: ! e -> f;
-        __gen_1_b, y: ;
-        __gen_1_c, y: ;
-        a, __gen_1_reachability_e_f: ;
-        __gen_1_reachability_e_f, b: ;",
+        x, 1: ;
+        1, 2: ? e -> f;
+        1, 3: ! e -> f;
+        2, y: ;
+        3, y: ;
+        a, 4: ;
+        4, b: ;",
         "b, d: ;
         c, d: ;
         e, f: ;
-        x, __gen_1_reachability_a_d: ;
-        __gen_1_b, y: ;
-        __gen_1_c, y: ;
-        a, __gen_1_reachability_e_f: ;
-        __gen_1_reachability_e_f, b: ;
-        __gen_1_reachability_a_d, __gen_2_reachability_e_f: ;
-        __gen_2_reachability_e_f, __gen_1_b: ;"
+        x, 1: ;
+        2, y: ;
+        3, y: ;
+        a, 4: ;
+        4, b: ;
+        1, 5: ;
+        5, 2: ;"
     );
 
     test_transform!(
@@ -347,14 +344,14 @@ mod test {
         c, d: ;
         e, f: ;
         e, g: ;
-        x, __gen_1_reachability_a_d: ;
-        __gen_1_reachability_a_d, __gen_1_b: ? e -> f;
-        __gen_1_reachability_a_d, __gen_1_c: ! e -> g;
-        __gen_1_b, y: ;
-        __gen_1_c, y: ;
-        a, __gen_1_reachability_e_f: ;
-        __gen_1_reachability_e_f, b: ;
-        __gen_1_reachability_e_f, __gen_1_g: ;"
+        x, 1: ;
+        1, 2: ? e -> f;
+        1, 3: ! e -> g;
+        2, y: ;
+        3, y: ;
+        a, 4: ;
+        4, b: ;
+        4, 5: ;"
     );
 
     test_transform!(
@@ -367,9 +364,9 @@ mod test {
         "a, b: 0 == 0;
         b, c: 1 == 1;
         c, d: 2 == 2;
-        x, __gen_1_reachability_a_c: ;
-        __gen_1_reachability_a_c, __gen_1_b: 0 == 0;
-        __gen_1_b, y: 1 == 1;"
+        x, 1: ;
+        1, 2: 0 == 0;
+        2, y: 1 == 1;"
     );
 
     test_transform!(
@@ -387,8 +384,8 @@ mod test {
         "a, b: ! x -> y;
         x, y: 1 == 1;",
         "x, y: 1 == 1;
-        a, __gen_1_reachability_x_y: ;
-        __gen_1_reachability_x_y, b: 1 != 1;"
+        a, 1: ;
+        1, b: 1 != 1;"
     );
 
     test_transform!(
@@ -422,10 +419,10 @@ mod test {
         c, d: ! x -> y;
         x, y: 1 == 1;",
         "x, y: 1 == 1;
-        a, __gen_1_reachability_x_y: ;
-        __gen_1_reachability_x_y, b: 1 == 1;
-        c, __gen_2_reachability_x_y: ;
-        __gen_2_reachability_x_y, d: 1 != 1;"
+        a, 1: ;
+        1, b: 1 == 1;
+        c, 2: ;
+        2, d: 1 != 1;"
     );
 
     test_transform!(
@@ -463,8 +460,8 @@ mod test {
         e, f: v = 1;",
         "a, end: ;
         e, f: v = 1;
-        begin, __gen_1_reachability_e_f: ;
-        __gen_1_reachability_e_f, a: v = 1;"
+        begin, 1: ;
+        1, a: v = 1;"
     );
 
     test_transform!(
@@ -477,8 +474,8 @@ mod test {
         "a, a1: v = 1;
         a1, end: v == 1;
         e, f: v = 1;
-        begin, __gen_1_reachability_e_f: ;
-        __gen_1_reachability_e_f, a: v = 1;"
+        begin, 1: ;
+        1, a: v = 1;"
     );
 
     test_transform!(

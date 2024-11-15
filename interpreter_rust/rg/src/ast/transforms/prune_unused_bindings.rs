@@ -1,16 +1,14 @@
-use super::gen_fresh_node;
+use super::{gen_fresh_node, max_node_id};
 use crate::ast::{Error, Game, Node};
-use std::collections::BTreeSet;
 use std::sync::Arc;
 
 type Id = Arc<str>;
 
 impl Game<Id> {
     pub fn prune_unused_bindings(&mut self) -> Result<(), Error<Id>> {
-        let mut nodes: BTreeSet<_> = self.nodes().iter().map(|n| (*n).clone()).collect();
+        let mut max_id = max_node_id(&self.nodes());
         while let Some((node, binding)) = self.first_removable_binding() {
-            let mut new_node = gen_fresh_node(format!("{}_{binding}", node.literal()), &nodes);
-            nodes.insert(new_node.clone());
+            let mut new_node = gen_fresh_node(&mut max_id);
             for (identifier, type_) in node.bindings() {
                 if identifier != &binding {
                     new_node.add_binding(identifier.clone(), type_.clone());
@@ -75,7 +73,7 @@ mod test {
         "begin, a: ;
         a, a(bind_1: A): ;",
         "begin, a: ;
-        a, __gen_1_a_bind_1: ;"
+        a, 1: ;"
     );
 
     test_transform!(
@@ -97,8 +95,8 @@ mod test {
         small4,
         "begin, a(bind_1: A): ;
         a(bind_1: A), a: ;",
-        "begin, __gen_1_a_bind_1: ;
-        __gen_1_a_bind_1, a: ;"
+        "begin, 1: ;
+        1, a: ;"
     );
 
     test_transform!(
@@ -113,8 +111,8 @@ mod test {
         small6,
         "begin, a(bind_1: A): ;
         a(bind_1: A), b(bind_1: A): $ bind_1;",
-        "begin, __gen_1_a_bind_1: ;
-        __gen_1_a_bind_1, b(bind_1: A): $ bind_1;"
+        "begin, 1: ;
+        1, b(bind_1: A): $ bind_1;"
     );
 
     test_transform!(
@@ -123,9 +121,9 @@ mod test {
         "begin, a(bind_1: A): ;
         a(bind_1: A), b(bind_1: A): $ bind_1;
         b(bind_1: A), c(bind_1: A): ;",
-        "begin, __gen_1_a_bind_1: ;
-        __gen_1_a_bind_1, b(bind_1: A): $ bind_1;
-        b(bind_1: A), __gen_1_c_bind_1: ;"
+        "begin, 1: ;
+        1, b(bind_1: A): $ bind_1;
+        b(bind_1: A), 2: ;"
     );
 
     test_transform!(
@@ -135,8 +133,8 @@ mod test {
         a, a(bind_1: A): ;
         c, d: ? a -> a(bind_1: A);",
         "begin, a: ;
-        a, __gen_1_a_bind_1: ;
-        c, d: ? a -> __gen_1_a_bind_1;"
+        a, 1: ;
+        c, d: ? a -> 1;"
     );
 
     test_transform!(
@@ -152,16 +150,16 @@ mod test {
         @tagIndex a(bind_1: A): 1;
         @tagMaxIndex a(bind_1: A): 1;
         @unique a(bind_1: A);",
-        "@disjoint __gen_1_a_bind_1 : __gen_1_a_bind_1;
-        @disjointExhaustive __gen_1_a_bind_1 : __gen_1_a_bind_1;
-        @repeat __gen_1_a_bind_1 : 1;
-        @simpleApply __gen_1_a_bind_1 1 : __gen_1_a_bind_1;
-        @simpleApplyExhaustive __gen_1_a_bind_1 1 : __gen_1_a_bind_1;
-        @tagIndex __gen_1_a_bind_1 : 1;
-        @tagMaxIndex __gen_1_a_bind_1 : 1;
-        @unique __gen_1_a_bind_1;
+        "@disjoint 1 : 1;
+        @disjointExhaustive 1 : 1;
+        @repeat 1 : 1;
+        @simpleApply 1 1 : 1;
+        @simpleApplyExhaustive 1 1 : 1;
+        @tagIndex 1 : 1;
+        @tagMaxIndex 1 : 1;
+        @unique 1;
         begin, a: ;
-        a, __gen_1_a_bind_1: ;"
+        a, 1: ;"
     );
 
     test_transform!(
@@ -169,8 +167,8 @@ mod test {
         another_binding_used,
         "x, y(t: T)(a: A): ;
         y(t: T)(a: A), z: coord = a;",
-        "x, __gen_1_y_t(a: A): ;
-        __gen_1_y_t(a: A), z: coord = a;"
+        "x, 1(a: A): ;
+        1(a: A), z: coord = a;"
     );
 
     test_transform!(
@@ -179,8 +177,8 @@ mod test {
         "20_118_115(bind_18: Coord), 20_118_118: ;
         20_118_111(bind_19: Coord), 20_118_115(bind_18: Coord): ;
         20_118_110, 20_118_111(bind_19: Coord): ;",
-        "__gen_1_20_118_115_bind_18, 20_118_118: ;
-        __gen_1_20_118_111_bind_19, __gen_1_20_118_115_bind_18: ;
-        20_118_110, __gen_1_20_118_111_bind_19: ;"
+        "2, 20_118_118: ;
+        1, 2: ;
+        20_118_110, 1: ;"
     );
 }

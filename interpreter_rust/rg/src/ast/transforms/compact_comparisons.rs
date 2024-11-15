@@ -1,6 +1,5 @@
-use super::gen_fresh_node;
+use super::{gen_fresh_node, max_node_id};
 use crate::ast::{Edge, Error, Expression, Game, Label, Type};
-use std::collections::BTreeSet;
 use std::iter;
 use std::sync::Arc;
 
@@ -35,18 +34,20 @@ impl Game<Id> {
             })
         });
 
-        let nodes: BTreeSet<_> = self.nodes().into_iter().cloned().collect();
+        let mut max_id = max_node_id(&self.nodes());
 
         for (edge, expr, type_, unused_members) in to_compat {
-            let nodes = unused_members.iter().map(|id| {
-                let mut node =
-                    gen_fresh_node(format!("{}_{expr}_{id}", edge.lhs.literal()), &nodes);
-                let mut bindings: Vec<_> = edge.lhs.parts.iter().skip(1).cloned().collect();
-                node.parts.append(&mut bindings);
-                node
-            });
+            let nodes: Vec<_> = unused_members
+                .iter()
+                .map(|_| {
+                    let mut node = gen_fresh_node(&mut max_id);
+                    let mut bindings: Vec<_> = edge.lhs.parts.iter().skip(1).cloned().collect();
+                    node.parts.append(&mut bindings);
+                    node
+                })
+                .collect();
             let lhss = iter::once(edge.lhs.clone()).chain(nodes.clone());
-            let rhss = nodes.chain(iter::once(edge.rhs.clone()));
+            let rhss = nodes.into_iter().chain(iter::once(edge.rhs.clone()));
             let labels = unused_members
                 .iter()
                 .map(|id| Label::Comparison {
@@ -163,8 +164,8 @@ mod test {
         begin, end: x == 2;",
         "type A = {1,2,3};
         var x: A = 1;
-        begin, __gen_0_begin_x_3: x != A(3);
-        __gen_0_begin_x_3, end: ;"
+        begin, 1: x != A(3);
+        1, end: ;"
     );
 
     test_transform!(
@@ -176,8 +177,8 @@ mod test {
         begin, end: x == A(2);",
         "type A = {1,2,3};
         var x: A = 1;
-        begin, __gen_0_begin_x_3: x != A(3);
-        __gen_0_begin_x_3, end: ;"
+        begin, 1: x != A(3);
+        1, end: ;"
     );
 
     test_transform!(
@@ -245,8 +246,8 @@ mod test {
         begin, end: 2 == x;",
         "type A = { 1, 2, 3 };
         var x: A = 1;
-        begin, __gen_0_begin_x_3: x != A(3);
-        __gen_0_begin_x_3, end: ;"
+        begin, 1: x != A(3);
+        1, end: ;"
     );
 
     test_transform!(
@@ -262,8 +263,8 @@ mod test {
         var x: A = 1;
         var y: A = 2;
         begin, end: y == 2;
-        begin, __gen_1_begin_x_3: x != A(3);
-        __gen_1_begin_x_3, end: ;"
+        begin, 1: x != A(3);
+        1, end: ;"
     );
 
     test_transform!(
@@ -276,9 +277,9 @@ mod test {
         begin, end: x == 3;",
         "type A = { 1, 2, 3, 4, 5 };
         var x: A = 1;
-        begin, __gen_0_begin_x_4: x != A(4);
-        __gen_0_begin_x_4, __gen_0_begin_x_5: x != A(5);
-        __gen_0_begin_x_5, end: ;"
+        begin, 1: x != A(4);
+        1, 2: x != A(5);
+        2, end: ;"
     );
 
     test_transform!(
@@ -289,8 +290,8 @@ mod test {
         begin(x: A), end: x == 2;
         begin(x: A), end: x == 3;",
         "type A = { 1, 2, 3, 4, 5 };
-        begin(x: A), __gen_0_begin_x_4(x: A): x != A(4);
-        __gen_0_begin_x_4(x: A), __gen_0_begin_x_5(x: A): x != A(5);
-        __gen_0_begin_x_5(x: A), end: ;"
+        begin(x: A), 1(x: A): x != A(4);
+        1(x: A), 2(x: A): x != A(5);
+        2(x: A), end: ;"
     );
 }
