@@ -39,7 +39,11 @@ pub fn gen_fresh_node(max_node_id: &mut usize) -> Node<Arc<str>> {
 }
 
 pub fn max_node_id(nodes: &BTreeSet<&Node<Arc<str>>>) -> usize {
-    nodes.iter().map(|node| node.literal().parse::<usize>().unwrap_or(0)).max().unwrap_or(0)
+    nodes
+        .iter()
+        .map(|node| node.literal().parse::<usize>().unwrap_or(0))
+        .max()
+        .unwrap_or(0)
 }
 
 #[cfg(test)]

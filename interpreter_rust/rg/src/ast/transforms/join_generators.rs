@@ -5,6 +5,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use utils::position::Span;
 
+use super::{gen_fresh_node, max_node_id};
+
 type Id = Arc<str>;
 type NodeEdges = (Node<Id>, Vec<Edge<Id>>);
 type TypeValue = (Arc<Type<Id>>, Arc<Value<Id>>);
@@ -21,6 +23,7 @@ impl Game<Id> {
     fn join_generators_step(&mut self) -> bool {
         let next_edges = self.next_edges();
         let span = Span::none();
+        let mut max_id = max_node_id(&self.nodes());
         for (node, outgoing_edges) in &next_edges {
             if node.has_bindings() || outgoing_edges.len() < 2 {
                 continue;
@@ -38,10 +41,16 @@ impl Game<Id> {
             else {
                 continue;
             };
-            let (constant_id, type_id, new_node_id) = self.generate_new_names();
+            let constant_id = (1..)
+                .map(|x| Id::from(format!("joined_{x}")))
+                .find(|x| self.constants.iter().all(|y| y.identifier != *x))
+                .unwrap();
+            let type_id = (1..)
+                .map(|x| Id::from(format!("Joined_{x}")))
+                .find(|x| self.typedefs.iter().all(|y| y.identifier != *x))
+                .unwrap();
             let new_type = Arc::new(Type::new(type_id.clone()));
-
-            let mut intermediate_node = Node::new(new_node_id);
+            let mut intermediate_node = gen_fresh_node(&mut max_id);
             let binding: Id = Arc::from(format!("bind_{type_id}"));
             intermediate_node.add_binding(binding.clone(), new_type.clone());
 
@@ -57,11 +66,7 @@ impl Game<Id> {
             };
             let first_label = Label::Comparison {
                 lhs: Arc::new(check_expr),
-                rhs: Arc::new(Expression::Cast {
-                    span,
-                    lhs: bool_type.clone(),
-                    rhs: new_expr(Arc::from(BOOL_TRUE)),
-                }),
+                rhs: new_expr(Arc::from(BOOL_TRUE)),
                 negated: false,
             };
             let first_edge = Edge::new((*node).clone(), intermediate_node.clone(), first_label);
@@ -95,26 +100,6 @@ impl Game<Id> {
         }
 
         false
-    }
-
-    fn generate_new_names(&self) -> (Id, Id, Id) {
-        let constant_id = (1..)
-            .map(|x| Id::from(format!("joined_{x}")))
-            .find(|x| self.constants.iter().all(|y| y.identifier != *x))
-            .unwrap();
-        let type_id = (1..)
-            .map(|x| Id::from(format!("Joined_{x}")))
-            .find(|x| self.typedefs.iter().all(|y| y.identifier != *x))
-            .unwrap();
-        let new_node_id = { 1.. }
-            .map(|x| Id::from(format!("joined_{x}")))
-            .find(|x| {
-                self.edges
-                    .iter()
-                    .all(|e| e.lhs.literal() != x && e.rhs.literal() != x)
-            })
-            .unwrap();
-        (constant_id, type_id, new_node_id)
     }
 
     fn collect_binding_comparisons(
@@ -230,4 +215,34 @@ fn merge_generators(generators: Vec<(Id, Vec<Id>)>) -> (Type<Id>, Value<Id>) {
 
 fn new_expr(id: Id) -> Arc<Expression<Id>> {
     Arc::new(Expression::new(id))
+}
+
+#[cfg(test)]
+mod test {
+    use crate::test_transform;
+
+    test_transform!(
+        join_generators,
+        small1,
+        "type All = {1,2,3,4,5,6};
+        type Type1 = {3,4,5};
+        type Type2 = {1,2,3};
+        type Type3 = {1,3,6};
+        var coord : All = 1;
+        begin, a1(t1: Type1): coord == All(1);
+        begin, a2(t2: Type2): coord == All(2);
+        begin, a3(t3: Type3): coord == All(3);
+        a1(t1: Type1), end: coord = t1;
+        a2(t2: Type2), end: coord = t2;
+        a3(t3: Type3), end: coord = t3;",
+        "type All = { 1, 2, 3, 4, 5, 6 };
+        type Type1 = { 3, 4, 5 };
+        type Type2 = { 1, 2, 3 };
+        type Type3 = { 1, 3, 6 };
+        type Joined_1 = { 1, 2, 3, 4, 5, 6 };
+        const joined_1: All -> Joined_1 -> Bool = { 1: { 3: 1, 4: 1, 5: 1, :0 }, 2: { 1: 1, 2: 1, 3: 1, :0 }, 3: { 1: 1, 3: 1, 6: 1, :0 }, :{ :0 } };
+        var coord: All = 1;
+        begin, 1(bind_Joined_1: Joined_1): joined_1[coord][bind_Joined_1] == 1;
+        1(bind_Joined_1: Joined_1), end: coord = bind_Joined_1;"
+    );
 }
