@@ -47,6 +47,7 @@ program
     '--joinForkSuffixes',
     'join paths with identical labels leading to the same node',
   )
+  .option('--joinGenerators', 'join generator nodes')
   .option('--mangleSymbols', 'mangle all user-defined symbols')
   .option('--mergeAccesses', 'merge nested accesses to constant maps')
   .option(
@@ -130,6 +131,7 @@ function addCommand(
           joinExclusiveEdges: !!options.joinExclusiveEdges,
           joinForkPrefixes: !!options.joinForkPrefixes,
           joinForkSuffixes: !!options.joinForkSuffixes,
+          joinGenerators: !!options.joinGenerators,
           mangleSymbols: !!options.mangleSymbols,
           mergeAccesses: !!options.mergeAccesses,
           normalizeConstants: !!options.normalizeConstants,

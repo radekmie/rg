@@ -24,6 +24,7 @@ export type Settings = {
     joinExclusiveEdges: boolean;
     joinForkPrefixes: boolean;
     joinForkSuffixes: boolean;
+    joinGenerators: boolean,
     mangleSymbols: boolean;
     mergeAccesses: boolean,
     normalizeConstants: boolean;
@@ -57,6 +58,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   joinExclusiveEdges: false,
   joinForkPrefixes: false,
   joinForkSuffixes: false,
+  joinGenerators: false,
   mangleSymbols: false,
   mergeAccesses: false,
   normalizeConstants: false,
