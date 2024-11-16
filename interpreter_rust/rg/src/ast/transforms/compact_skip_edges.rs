@@ -58,6 +58,18 @@ impl Game<Arc<str>> {
             remove_edge!(x);
         }
 
+        while let Some((x, y)) = self.jump_backward(&edge_counts) {
+            change_edge_count!(&self.edges[x].rhs, 1, saturating_sub);
+            change_edge_count!(&self.edges[y].rhs, 1, saturating_add);
+            self.edges[x].rhs = self.edges[y].rhs.clone();
+        }
+
+        while let Some((x, y)) = self.jump_forward(&edge_counts) {
+            change_edge_count!(&self.edges[y].lhs, 0, saturating_sub);
+            change_edge_count!(&self.edges[x].lhs, 0, saturating_add);
+            self.edges[y].lhs = self.edges[x].lhs.clone();
+        }
+
         while let Some(x) = self.compact_skip_edge_single(&edge_counts) {
             remove_edge!(x);
         }
@@ -144,6 +156,76 @@ impl Game<Arc<str>> {
                             .map(|(index, _)| index)
                             .collect();
                         return Some((x_index, y_indexes));
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Before:
+    ///       x       y
+    ///   a ----> b ----> c
+    ///
+    /// After:
+    ///           x
+    ///   a ------------> c
+    ///               y
+    ///           b ----> c
+    ///
+    /// Conditions:
+    ///   1. x != Assignment of `player` OR c has no bindings
+    ///   2. y == Skip
+    ///   3. b has no other outgoing edges
+    ///   4. b has no bindings
+    ///   5. b is not a reachability target
+    fn jump_backward(&self, edge_counts: &EdgeCounts) -> Option<(usize, usize)> {
+        for (y_index, y) in self.edges.iter().enumerate() {
+            if y.label.is_skip()
+                && !y.lhs.has_bindings()
+                && edge_counts[&y.lhs].0 == 1
+                && !self.is_reachability_target(&y.lhs)
+            {
+                for (x_index, x) in self.edges.iter().enumerate() {
+                    if x.rhs == y.lhs && (!y.rhs.has_bindings() || !x.label.is_player_assignment())
+                    {
+                        return Some((x_index, y_index));
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Before:
+    ///       x       y
+    ///   a ----> b ----> c
+    ///
+    /// After:
+    ///           y
+    ///   a ------------> c
+    ///       x
+    ///   a ----> b
+    ///
+    /// Conditions:
+    ///   1. y != Assignment of `player` OR c has no bindings
+    ///   2. x == Skip
+    ///   3. b has no other incoming edges
+    ///   4. b has no bindings
+    ///   5. b is not a reachability target
+    fn jump_forward(&self, edge_counts: &EdgeCounts) -> Option<(usize, usize)> {
+        for (x_index, x) in self.edges.iter().enumerate() {
+            if x.label.is_skip()
+                && !x.rhs.has_bindings()
+                && edge_counts[&x.rhs].1 == 1
+                && !self.is_reachability_target(&x.rhs)
+            {
+                for (y_index, y) in self.edges.iter().enumerate() {
+                    if x.rhs == y.lhs && (!x.lhs.has_bindings() || !y.label.is_player_assignment())
+                    {
+                        return Some((x_index, y_index));
                     }
                 }
             }
@@ -363,10 +445,9 @@ mod test {
             true, end: player = keeper;
         ",
         "
-            begin, loop: ;
-            loop, cond: ;
+            begin, cond: ;
             cond, true: 1 == 1;
-            cond, loop: 1 != 1;
+            cond, cond: 1 != 1;
             true, end: player = keeper;
         "
     );
@@ -456,9 +537,15 @@ mod test {
     test_transform!(
         compact_skip_edges,
         random5,
-        "begin, a: 1 == 1;
-        begin, b: ;
-        b, a: 1 == 1;"
+        "
+            begin, a: 1 == 1;
+            begin, b: ;
+            b, a: 1 == 1;
+        ",
+        "
+            begin, a: 1 == 1;
+            begin, a: 1 == 1; // This should be removed in other transforms.
+        "
     );
 
     test_transform!(
@@ -480,6 +567,7 @@ mod test {
             begin, end: ? a -> e;
             begin, end: ! a -> e;
             a, e: 1 == 1;
+            a, e: 1 == 1; // This should be removed in other transforms.
         "
     );
 
@@ -575,6 +663,93 @@ mod test {
         b, c: ;",
         "a, c: 1 == 1;
         a, c: 2 == 2;"
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        amazons_naive_loops_hrg,
+        "
+            begin, 1: position = direction[position];
+            1, 2: position != null;
+            2, 3: board[position] == empty;
+            3, 4: ;
+            3, 5: position = direction[position];
+            5, 6: position != null;
+            6, 7: board[position] == empty;
+            7, 8: ;
+            7, 9: position = direction[position];
+            9, 10: position != null;
+            10, 11: board[position] == empty;
+            11, 12: ;
+            11, 13: position = direction[position];
+            13, 14: position != null;
+            14, 15: board[position] == empty;
+            15, 16: ;
+            15, 17: position = direction[position];
+            17, 18: position != null;
+            18, 19: board[position] == empty;
+            19, 20: ;
+            19, 21: position = direction[position];
+            21, 22: position != null;
+            22, 23: board[position] == empty;
+            23, 24: ;
+            23, 25: position = direction[position];
+            25, 26: position != null;
+            26, 27: board[position] == empty;
+            27, 28: ;
+            27, 29: position = direction[position];
+            29, 30: position != null;
+            30, 31: board[position] == empty;
+            31, 32: ;
+            31, 33: position = direction[position];
+            33, 34: position != null;
+            34, 32: board[position] == empty;
+            32, 28: ;
+            28, 24: ;
+            24, 20: ;
+            20, 16: ;
+            16, 12: ;
+            12, 8: ;
+            8, 4: ;
+            4, end: ;
+        ",
+        "
+            begin, 1: position = direction[position];
+            1, 2: position != null;
+            2, 3: board[position] == empty;
+            3, end: ;
+            3, 5: position = direction[position];
+            5, 6: position != null;
+            6, 7: board[position] == empty;
+            7, end: ;
+            7, 9: position = direction[position];
+            9, 10: position != null;
+            10, 11: board[position] == empty;
+            11, end: ;
+            11, 13: position = direction[position];
+            13, 14: position != null;
+            14, 15: board[position] == empty;
+            15, end: ;
+            15, 17: position = direction[position];
+            17, 18: position != null;
+            18, 19: board[position] == empty;
+            19, end: ;
+            19, 21: position = direction[position];
+            21, 22: position != null;
+            22, 23: board[position] == empty;
+            23, end: ;
+            23, 25: position = direction[position];
+            25, 26: position != null;
+            26, 27: board[position] == empty;
+            27, end: ;
+            27, 29: position = direction[position];
+            29, 30: position != null;
+            30, 31: board[position] == empty;
+            31, end: ;
+            31, 33: position = direction[position];
+            33, 34: position != null;
+            34, end: board[position] == empty;
+        "
     );
 
     test_transform!(
@@ -697,15 +872,14 @@ mod test {
             win_call_1, win_begin: position = position;
             win_begin, win_2: position != next_d1[position];
             win_2, win_3: board[position] == board[next_d1[position]];
-            win_3, win_1: board[position] == board[next_d1[next_d1[position]]];
+            win_3, win_end: board[position] == board[next_d1[next_d1[position]]];
             win_begin, win_5: position != next_d2[position];
             win_5, win_6: board[position] == board[next_d2[position]];
-            win_6, win_1: board[position] == board[next_d2[next_d2[position]]];
+            win_6, win_end: board[position] == board[next_d2[next_d2[position]]];
             win_begin, win_8: board[position] == board[next_h[position]];
-            win_8, win_1: board[position] == board[next_h[next_h[position]]];
+            win_8, win_end: board[position] == board[next_h[next_h[position]]];
             win_begin, win_10: board[position] == board[next_v[position]];
-            win_10, win_1: board[position] == board[next_v[next_v[position]]];
-            win_1, win_end: ;
+            win_10, win_end: board[position] == board[next_v[next_v[position]]];
             turn_9, turn_10: ? win_call_1 -> win_end;
             turn_9, turn_11: ! win_call_1 -> win_end;
             turn_10, turn_13: goals[me] = 100;
@@ -722,6 +896,37 @@ mod test {
             turn_call_2, rules_5: turn_return = turn_call_2;
             rules_5, turn_begin: me = o;
             turn_end, rules_begin: turn_return == turn_call_2;
+        "
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        tictactoe_hrg_loop,
+        "
+            win_call_1, win_begin: ;
+            win_begin, win_2: position != next_d1[position];
+            win_2, win_3: board[position] == board[next_d1[position]];
+            win_3, win_end: board[position] == board[__gen_next_d1_next_d1[position]];
+            win_begin, win_5: position != next_d2[position];
+            win_5, win_6: board[position] == board[next_d2[position]];
+            win_6, win_end: board[position] == board[__gen_next_d2_next_d2[position]];
+            win_begin, win_8: board[position] == board[next_h[position]];
+            win_8, win_end: board[position] == board[__gen_next_h_next_h[position]];
+            win_begin, win_10: board[position] == board[next_v[position]];
+            win_10, win_end: board[position] == board[__gen_next_v_next_v[position]];
+        ",
+        "
+            win_call_1, win_begin: ;
+            win_call_1, win_2: position != next_d1[position];
+            win_2, win_3: board[position] == board[next_d1[position]];
+            win_3, win_end: board[position] == board[__gen_next_d1_next_d1[position]];
+            win_call_1, win_5: position != next_d2[position];
+            win_5, win_6: board[position] == board[next_d2[position]];
+            win_6, win_end: board[position] == board[__gen_next_d2_next_d2[position]];
+            win_call_1, win_8: board[position] == board[next_h[position]];
+            win_8, win_end: board[position] == board[__gen_next_h_next_h[position]];
+            win_call_1, win_10: board[position] == board[next_v[position]];
+            win_10, win_end: board[position] == board[__gen_next_v_next_v[position]];
         "
     );
 }
