@@ -423,6 +423,10 @@ impl Node<Arc<str>> {
         matches!(&self.parts[..], [NodePart::Literal { identifier }] if &**identifier == "begin")
     }
 
+    pub fn is_end(&self) -> bool {
+        matches!(&self.parts[..], [NodePart::Literal { identifier }] if &**identifier == "end")
+    }
+
     pub fn substitute_bindings(&self, mapping: &Mapping<Arc<str>>) -> Self {
         let identifier = self
             .parts

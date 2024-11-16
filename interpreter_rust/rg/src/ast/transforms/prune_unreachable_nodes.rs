@@ -10,6 +10,24 @@ impl Game<Arc<str>> {
                 .get(&edge.lhs)
                 .is_some_and(|reachable| *reachable)
         });
+
+        let next_edges = self.next_edges();
+        self.edges
+            .iter()
+            .enumerate()
+            .rev()
+            .filter(|(_, edge)| {
+                !edge.rhs.is_end()
+                    && !next_edges.contains_key(&edge.rhs)
+                    && !self.is_reachability_target(&edge.rhs)
+            })
+            .map(|(index, _)| index)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .for_each(|index| {
+                self.edges.remove(index);
+            });
+
         Ok(())
     }
 }
