@@ -254,14 +254,19 @@ pub fn run_rg(ast: &str, plays: usize, callback: &Function) -> Result<(), String
     let (game, interner) = prepare_ist(safe_parse_rg_ast(ast)?)?;
     let this = JsValue::null();
     let mut rng = thread_rng();
-    game.run(&mut rng, &interner, plays, &|lines| {
-        callback
-            .call1(
-                &this,
-                &Array::from_iter(lines.into_iter().map(JsValue::from)),
-            )
-            .unwrap();
-    });
+    game.run(
+        &mut rng,
+        &interner,
+        plays,
+        &Some(|lines: Vec<_>| {
+            callback
+                .call1(
+                    &this,
+                    &Array::from_iter(lines.into_iter().map(JsValue::from)),
+                )
+                .unwrap();
+        }),
+    );
 
     Ok(())
 }

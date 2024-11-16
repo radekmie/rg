@@ -28,9 +28,14 @@ fn main() -> Result<(), String> {
                 .get(3)
                 .map_or(10, |plays| plays.parse::<usize>().unwrap());
 
-            game.run(&mut rng, &interner, plays, &|lines| {
-                println!("{esc}c{}", lines.join("\n"), esc = 27 as char);
-            });
+            game.run(
+                &mut rng,
+                &interner,
+                plays,
+                &Some(|lines: Vec<_>| {
+                    println!("{esc}c{}", lines.join("\n"), esc = 27 as char);
+                }),
+            );
         }
         _ => panic!("Unknown operation."),
     }

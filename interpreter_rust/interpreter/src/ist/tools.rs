@@ -46,7 +46,7 @@ impl Game<RuntimeId> {
         rng: &mut R,
         interner: &Interner<Id, RuntimeId>,
         plays: usize,
-        callback: &impl Fn(Vec<String>),
+        callback: &Option<impl Fn(Vec<String>)>,
     ) {
         fn stats(counter: &BTreeMap<usize, usize>) -> (usize, usize, f32, f32) {
             let max = *counter.keys().max().unwrap();
@@ -98,7 +98,11 @@ impl Game<RuntimeId> {
             increase(&mut times, now.elapsed().as_micros() as usize);
             increase(&mut turns, turn);
 
-            if play % step == 0 {
+            if let Some(callback) = callback {
+                if play % step != 0 {
+                    continue;
+                }
+
                 // Statistics.
                 let moves = stats(&moves);
                 let times = stats(&times);
