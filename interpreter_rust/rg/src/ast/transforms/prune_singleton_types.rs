@@ -1,4 +1,4 @@
-use crate::ast::{Error, Expression, Game};
+use crate::ast::{Error, Expression, Game, Label};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -38,6 +38,17 @@ impl Game<Arc<str>> {
 
             for (id, expression) in &variables {
                 if edge.label.has_variable(id) && !edge.has_binding(id) {
+                    // If we'd substitute the assigned variable, then the lhs
+                    // would become constant (symbol), and the assignment would
+                    // be illegal. To prevent that, we skip the whole assignment
+                    // instead. It's legal, as the assignment are always legal.
+                    if let Label::Assignment { lhs, .. } = &edge.label {
+                        if lhs.uncast().is_reference_and(|lhs| lhs == id) {
+                            edge.skip();
+                            continue;
+                        }
+                    }
+
                     edge.label = edge.label.substitute_variable(id, expression);
                 }
             }
@@ -85,6 +96,13 @@ mod test {
         inline_values,
         "type T = { 1 }; var t: T = 1; begin, end: t == t;",
         "begin, end: 1 == 1;"
+    );
+
+    test_transform!(
+        prune_singleton_types,
+        skip_assignments,
+        "type T = { 1 }; var t: T = 1; begin, end: t = 1;",
+        "begin, end: ;"
     );
 
     test_transform!(
