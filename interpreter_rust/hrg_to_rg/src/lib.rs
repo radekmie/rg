@@ -707,10 +707,7 @@ fn translate_automaton_statements(
                     context.connect(
                         current_node,
                         return_node.clone(),
-                        rg::Label::Assignment {
-                            lhs: Arc::from(rg::Expression::new(Id::from("player"))),
-                            rhs: Arc::from(rg::Expression::new(Id::from("keeper"))),
-                        },
+                        rg::Label::new_skip(),
                         &[],
                     );
                     return true;
