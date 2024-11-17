@@ -6,10 +6,14 @@ use utils::position::Span;
 
 impl Game<Arc<str>> {
     pub fn calculate_uniques(&mut self) -> Result<(), Error<Arc<str>>> {
+        let has_next_edges: BTreeSet<_> = self.edges.iter().map(|edge| edge.lhs.clone()).collect();
         let reaching_paths = self.analyse::<ReachingAssignments>(false);
         let mut unique_nodes: BTreeSet<_> = reaching_paths
             .into_iter()
-            .filter(|(_, variables)| variables.values().all(|reached| !reached.is_repeated))
+            .filter(|(node, variables)| {
+                !has_next_edges.contains(node)
+                    || variables.values().all(|reached| !reached.is_repeated)
+            })
             .map(|(node, _)| node)
             .collect();
 
@@ -74,6 +78,25 @@ mod test {
 
     test_transform!(
         calculate_uniques,
+        tictactoe_hrg_condition,
+        "
+            begin, end: ? win_call_1 -> win_end;
+            win_call_1, win_2: position != next_d1[position];
+            win_2, win_3: board[position] == board[next_d1[position]];
+            win_3, win_end: board[position] == board[__gen_next_d1_next_d1[position]];
+            win_call_1, win_5: position != next_d2[position];
+            win_5, win_6: board[position] == board[next_d2[position]];
+            win_6, win_end: board[position] == board[__gen_next_d2_next_d2[position]];
+            win_call_1, win_8: board[position] == board[next_h[position]];
+            win_8, win_end: board[position] == board[__gen_next_h_next_h[position]];
+            win_call_1, win_10: board[position] == board[next_v[position]];
+            win_10, win_end: board[position] == board[__gen_next_v_next_v[position]];
+        ",
+        adds "@unique begin end win_10 win_2 win_3 win_5 win_6 win_8 win_call_1 win_end;"
+    );
+
+    test_transform!(
+        calculate_uniques,
         repeat_test,
         include_str!("../../../../../examples/repeatTest.rg"),
         adds "@unique begin end setScore win;"
@@ -97,7 +120,7 @@ mod test {
         calculate_uniques,
         tictactoe,
         include_str!("../../../../../examples/ticTacToe.rg"),
-        adds "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endmove move nextturn preend set turn win win1 win2;"
+        adds "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endcheckline endmove move nextturn preend set turn win win1 win2;"
     );
 
     test_transform!(

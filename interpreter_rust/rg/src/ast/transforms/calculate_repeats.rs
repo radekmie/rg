@@ -6,8 +6,13 @@ use utils::position::Span;
 
 impl Game<Arc<str>> {
     pub fn calculate_repeats(&mut self) -> Result<(), Error<Arc<str>>> {
+        let has_next_edges: BTreeSet<_> = self.edges.iter().map(|edge| edge.lhs.clone()).collect();
         let reaching_paths = self.analyse::<ReachingAssignments>(false);
         for (node, variables) in reaching_paths {
+            if !has_next_edges.contains(&node) {
+                continue;
+            }
+
             let has_none_repeat = variables
                 .get(&None)
                 .is_some_and(|reached| reached.is_repeated);
@@ -98,6 +103,7 @@ mod test {
             c2, d2: z = 1;
             d1, e: ;
             d2, e: ;
+            e, end: ;
         ",
         adds "@repeat e : x z;"
     );
@@ -112,6 +118,24 @@ mod test {
             joined, end: ;
         ",
         adds "@repeat choice : x;"
+    );
+
+    test_transform!(
+        calculate_repeats,
+        tictactoe_hrg_condition,
+        "
+            begin, end: ? win_call_1 -> win_end;
+            win_call_1, win_2: position != next_d1[position];
+            win_2, win_3: board[position] == board[next_d1[position]];
+            win_3, win_end: board[position] == board[__gen_next_d1_next_d1[position]];
+            win_call_1, win_5: position != next_d2[position];
+            win_5, win_6: board[position] == board[next_d2[position]];
+            win_6, win_end: board[position] == board[__gen_next_d2_next_d2[position]];
+            win_call_1, win_8: board[position] == board[next_h[position]];
+            win_8, win_end: board[position] == board[__gen_next_h_next_h[position]];
+            win_call_1, win_10: board[position] == board[next_v[position]];
+            win_10, win_end: board[position] == board[__gen_next_v_next_v[position]];
+        "
     );
 
     test_transform!(
@@ -131,7 +155,6 @@ mod test {
     test_transform!(
         calculate_repeats,
         tictactoe,
-        include_str!("../../../../../examples/ticTacToe.rg"),
-        adds "@repeat endcheckline :;"
+        include_str!("../../../../../examples/ticTacToe.rg")
     );
 }
