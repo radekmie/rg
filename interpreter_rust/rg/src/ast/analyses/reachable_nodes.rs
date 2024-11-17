@@ -18,7 +18,9 @@ impl Analysis for ReachableNodes {
         true
     }
 
-    fn join(a: Self::Domain, b: Self::Domain) -> Self::Domain {
+    fn get_context(_program: &Game<Id>) -> Self::Context {}
+
+    fn join(a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
         a || b
     }
 

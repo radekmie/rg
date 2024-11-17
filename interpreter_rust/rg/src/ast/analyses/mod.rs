@@ -14,7 +14,7 @@ use std::sync::Arc;
 type Id = Arc<str>;
 
 pub trait Analysis {
-    type Context: PartialEq + Default;
+    type Context;
     type Domain: Clone + PartialEq;
 
     fn bot() -> Self::Domain;
@@ -25,11 +25,9 @@ pub trait Analysis {
         input
     }
 
-    fn get_context(_program: &Game<Id>) -> Self::Context {
-        Self::Context::default()
-    }
+    fn get_context(_program: &Game<Id>) -> Self::Context;
 
-    fn join(a: Self::Domain, b: Self::Domain) -> Self::Domain;
+    fn join(a: Self::Domain, b: Self::Domain, ctx: &Self::Context) -> Self::Domain;
 
     fn kill(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
         input
@@ -143,7 +141,7 @@ impl<'a, A: Analysis + ?Sized> Worker<'a, A> {
         incoming_edges
             .iter()
             .map(|edge| A::transfer(self.knowledge(&edge.lhs), edge, &self.ctx))
-            .reduce(A::join)
+            .reduce(|a, b| A::join(a, b, &self.ctx))
             .unwrap_or_else(|| old_input.clone())
     }
 

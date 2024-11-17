@@ -31,7 +31,7 @@ impl Analysis for ConstantsAnalysis {
         Self::Domain::default()
     }
 
-    fn extreme(program: &Game<Id>, _ctx: &Context) -> Self::Domain {
+    fn extreme(program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
         program
             .variables
             .iter()
@@ -39,7 +39,7 @@ impl Analysis for ConstantsAnalysis {
             .collect()
     }
 
-    fn join(mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
+    fn join(mut a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
         // Keep only keys present in both maps with the same value.
         a.retain(|key, value| b.get(key) == Some(value));
         a

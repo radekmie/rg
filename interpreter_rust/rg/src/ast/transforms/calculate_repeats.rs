@@ -96,9 +96,10 @@ mod test {
             var x: Bool = 0;
             var y: Bool = 0;
             var z: Bool = 0;
+            begin, a: ;
             a, b: x = 1;
-            b, c1: y != 0;
-            b, c2: y != 1;
+            b, c1: y == 0;
+            b, c2: y == 1;
             c1, d1: z = 0;
             c2, d2: z = 1;
             d1, e: ;
@@ -106,6 +107,26 @@ mod test {
             e, end: ;
         ",
         adds "@repeat e : x z;"
+    );
+
+    test_transform!(
+        calculate_repeats,
+        base_on_disjoint_pragma,
+        "
+            @disjoint b : c1 c2;
+            var x: Bool = 0;
+            var y: Bool = 0;
+            var z: Bool = 0;
+            begin, a: ;
+            a, b: x = 1;
+            b, c1: y == 0;
+            b, c2: y == 1;
+            c1, d1: z = 0;
+            c2, d2: z = 1;
+            d1, e: ;
+            d2, e: ;
+            e, end: ;
+        "
     );
 
     test_transform!(

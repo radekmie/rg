@@ -205,7 +205,7 @@ pub fn analyze_rg_inner(
         // Expand generator nodes before calculating pragmas.
         pass!(expand_generator_nodes);
 
-        // Pragmas (order doesn't matter).
+        // Pragmas.
         pass!(calculate_disjoints);
         pass!(calculate_repeats);
         pass!(calculate_simple_apply);

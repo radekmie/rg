@@ -25,7 +25,9 @@ impl Analysis for ReachingDefinitions {
         domain
     }
 
-    fn join(mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
+    fn get_context(_program: &Game<Id>) -> Self::Context {}
+
+    fn join(mut a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
         for x in b {
             if let Err(index) = a.binary_search(&x) {
                 a.insert(index, x);
