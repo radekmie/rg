@@ -116,8 +116,10 @@ fn split_edges<'a, Id: Ord + Clone>(
     let (first, second): (Vec<_>, Vec<_>) = edges.iter().partition(|edge| edge.rhs == *first_rhs);
     if first.len() == 1 {
         Some((first[0], second))
-    } else {
+    } else if second.len() == 1 {
         Some((second[0], first))
+    } else {
+        None
     }
 }
 

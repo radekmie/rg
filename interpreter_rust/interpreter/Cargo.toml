@@ -5,6 +5,7 @@ authors = ["Radosław Miernik <radekmie@gmail.com>"]
 edition = "2021"
 
 [dependencies]
+clap = { version = "4.5.21", features = ["derive"] }
 console_error_panic_hook = "0.1.7"
 gdl = { path = "../gdl" }
 gdl_to_rg = { path = "../gdl_to_rg" }

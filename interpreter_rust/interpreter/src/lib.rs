@@ -55,15 +55,16 @@ fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
     }
 }
 
-#[wasm_bindgen(js_name = analyzeGdl)]
-pub fn analyze_gdl(source: &str, callback: &Function) -> Result<(), String> {
-    console_error_panic_hook::set_once();
-    let this = JsValue::null();
+pub fn analyze_gdl_inner(
+    source: &str,
+    mut callback: Option<impl FnMut(String)>,
+) -> Result<RgGame<Arc<str>>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
-            let step = json!({ $($json)+ });
-            let message = to_string(&step).map_err(|error| error.to_string())?;
-            callback.call1(&this, &JsValue::from(message)).unwrap();
+            if let Some(callback) = callback.as_mut() {
+                let step = json!({ $($json)+ });
+                callback(to_string(&step).map_err(|error| error.to_string())?);
+            }
         }};
     }
 
@@ -77,18 +78,31 @@ pub fn analyze_gdl(source: &str, callback: &Function) -> Result<(), String> {
     let rg = gdl_to_rg::gdl_to_rg(&gdl);
     step!({ "kind": "ast", "language": "rg", "value": rg });
 
+    Ok(rg)
+}
+
+#[wasm_bindgen(js_name = analyzeGdl)]
+pub fn analyze_gdl(source: &str, callback: &Function) -> Result<(), String> {
+    console_error_panic_hook::set_once();
+    let this = JsValue::null();
+    let callback = Some(|step| {
+        callback.call1(&this, &JsValue::from(step)).unwrap();
+    });
+    analyze_gdl_inner(source, callback)?;
     Ok(())
 }
 
-#[wasm_bindgen(js_name = analyzeHrg)]
-pub fn analyze_hrg(source: &str, reuse_functions: bool, callback: &Function) -> Result<(), String> {
-    console_error_panic_hook::set_once();
-    let this = JsValue::null();
+pub fn analyze_hrg_inner(
+    source: &str,
+    reuse_functions: bool,
+    mut callback: Option<impl FnMut(String)>,
+) -> Result<RgGame<Arc<str>>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
-            let step = json!({ $($json)+ });
-            let message = to_string(&step).map_err(|error| error.to_string())?;
-            callback.call1(&this, &JsValue::from(message)).unwrap();
+            if let Some(callback) = callback.as_mut() {
+                let step = json!({ $($json)+ });
+                callback(to_string(&step).map_err(|error| error.to_string())?);
+            }
         }};
     }
 
@@ -102,6 +116,17 @@ pub fn analyze_hrg(source: &str, reuse_functions: bool, callback: &Function) -> 
     let rg = hrg_to_rg::hrg_to_rg(hrg, reuse_functions);
     step!({ "kind": "ast", "language": "rg", "value": rg });
 
+    Ok(rg)
+}
+
+#[wasm_bindgen(js_name = analyzeHrg)]
+pub fn analyze_hrg(source: &str, reuse_functions: bool, callback: &Function) -> Result<(), String> {
+    console_error_panic_hook::set_once();
+    let this = JsValue::null();
+    let callback = Some(|step| {
+        callback.call1(&this, &JsValue::from(step)).unwrap();
+    });
+    analyze_hrg_inner(source, reuse_functions, callback)?;
     Ok(())
 }
 
@@ -227,6 +252,7 @@ pub fn analyze_rg_inner(
 
 #[wasm_bindgen(js_name = analyzeRg)]
 pub fn analyze_rg(source: &str, flags: &str, callback: &Function) -> Result<(), String> {
+    console_error_panic_hook::set_once();
     let flags = from_str::<Flags>(flags).unwrap();
     let this = JsValue::null();
     let callback = Some(|step| {
