@@ -902,7 +902,7 @@ mod expression {
 #[serde(rename = "GameDeclaration", tag = "kind")]
 pub struct Game<Id> {
     pub constants: Vec<Constant<Id>>,
-    pub edges: Vec<Edge<Id>>,
+    pub edges: Vec<Arc<Edge<Id>>>,
     pub pragmas: Vec<Pragma<Id>>,
     #[serde(rename = "types")]
     pub typedefs: Vec<Typedef<Id>>,
@@ -1099,17 +1099,19 @@ impl<Id: Clone + PartialEq> Game<Id> {
     pub fn rename_node(&mut self, node: &Node<Id>, new_node: &Node<Id>) {
         for edge in &mut self.edges {
             if &edge.lhs == node {
-                edge.lhs = new_node.clone();
+                Arc::make_mut(edge).lhs = new_node.clone();
             }
             if &edge.rhs == node {
-                edge.rhs = new_node.clone();
+                Arc::make_mut(edge).rhs = new_node.clone();
             }
-            if let Label::Reachability { lhs, rhs, .. } = &mut edge.label {
-                if lhs == node {
-                    *lhs = new_node.clone();
-                }
-                if rhs == node {
-                    *rhs = new_node.clone();
+            if edge.label.is_reachability() {
+                if let Label::Reachability { lhs, rhs, .. } = &mut Arc::make_mut(edge).label {
+                    if lhs == node {
+                        *lhs = new_node.clone();
+                    }
+                    if rhs == node {
+                        *rhs = new_node.clone();
+                    }
                 }
             }
         }
@@ -1197,7 +1199,7 @@ impl<Id: Ord> Game<Id> {
             .collect()
     }
 
-    pub fn next_edges(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>> {
+    pub fn next_edges(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>> {
         self.edges
             .iter()
             .fold(BTreeMap::new(), |mut next_edges, edge| {
@@ -1215,7 +1217,7 @@ impl<Id: Ord> Game<Id> {
             })
     }
 
-    pub fn prev_edges(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>> {
+    pub fn prev_edges(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>> {
         self.edges
             .iter()
             .fold(BTreeMap::new(), |mut prev_edges, edge| {
@@ -1270,7 +1272,7 @@ impl<Id: Ord> Game<Id> {
 }
 
 impl<Id: PartialEq> Game<Id> {
-    pub fn add_edge(&mut self, edge: Edge<Id>) {
+    pub fn add_edge(&mut self, edge: Arc<Edge<Id>>) {
         if !self.edges.contains(&edge) {
             self.edges.push(edge);
         }
@@ -1287,27 +1289,33 @@ impl<Id: PartialEq> Game<Id> {
     }
 
     /// Returns the only edge ending at `node` or `None` if there are multiple or no such edges.
-    pub fn incoming_edge<'a>(&'a self, node: &'a Node<Id>) -> Option<&'a Edge<Id>> {
+    pub fn incoming_edge<'a>(&'a self, node: &'a Node<Id>) -> Option<&'a Arc<Edge<Id>>> {
         let mut iterator = self.incoming_edges(node);
         iterator.next().filter(|_| iterator.next().is_none())
     }
 
-    pub fn incoming_edges<'a>(&'a self, node: &'a Node<Id>) -> impl Iterator<Item = &'a Edge<Id>> {
+    pub fn incoming_edges<'a>(
+        &'a self,
+        node: &'a Node<Id>,
+    ) -> impl Iterator<Item = &'a Arc<Edge<Id>>> {
         self.edges.iter().filter(move |edge| &edge.rhs == node)
     }
 
     /// Returns the only edge starting from `node` or `None` if there are multiple or no such edges.
-    pub fn outgoing_edge<'a>(&'a self, node: &'a Node<Id>) -> Option<&'a Edge<Id>> {
+    pub fn outgoing_edge<'a>(&'a self, node: &'a Node<Id>) -> Option<&'a Arc<Edge<Id>>> {
         let mut iterator = self.outgoing_edges(node);
         iterator.next().filter(|_| iterator.next().is_none())
     }
 
-    pub fn outgoing_edges<'a>(&'a self, node: &'a Node<Id>) -> impl Iterator<Item = &'a Edge<Id>> {
+    pub fn outgoing_edges<'a>(
+        &'a self,
+        node: &'a Node<Id>,
+    ) -> impl Iterator<Item = &'a Arc<Edge<Id>>> {
         self.edges.iter().filter(move |edge| &edge.lhs == node)
     }
 
     pub fn remove_edge(&mut self, edge: &Edge<Id>) {
-        self.edges.retain(|x| x != edge);
+        self.edges.retain(|x| x.as_ref() != edge);
     }
 }
 

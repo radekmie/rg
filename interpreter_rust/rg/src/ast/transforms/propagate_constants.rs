@@ -75,6 +75,7 @@ impl Game<Id> {
             }
 
             let edge_clone = edge.clone();
+            let edge = Arc::make_mut(edge);
             match &mut edge.label {
                 Label::Assignment { lhs, rhs } => {
                     let context = Context {

@@ -7,7 +7,7 @@ impl Game<Arc<str>> {
     pub fn calculate_tag_indexes(&mut self) -> Result<(), Error<Arc<str>>> {
         let next_edges = self.next_edges();
         let mut tag_indexes: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
-        for Edge { label, rhs, .. } in &self.edges {
+        for Edge { label, rhs, .. } in self.edges.iter().map(Arc::as_ref) {
             if label.is_player_assignment() {
                 let mut seen = BTreeSet::new();
                 let mut queue = vec![(rhs, 0)];

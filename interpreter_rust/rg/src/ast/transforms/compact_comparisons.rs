@@ -63,7 +63,8 @@ impl Game<Id> {
             let pairs = lhss.zip(rhss).zip(labels);
             let xs = pairs
                 .into_iter()
-                .map(|((lhs, rhs), label)| Edge::new(lhs, rhs, label));
+                .map(|((lhs, rhs), label)| Edge::new(lhs, rhs, label))
+                .map(Arc::from);
             self.edges.extend(xs);
         }
 
@@ -120,7 +121,7 @@ impl Game<Id> {
 fn get_same_comparisons<'a>(
     expr: &'a Arc<Expression<Id>>,
     same_as: &'a Edge<Id>,
-    edges: impl Iterator<Item = &'a Edge<Id>>,
+    edges: impl Iterator<Item = &'a Arc<Edge<Id>>>,
 ) -> Option<Vec<&'a Id>> {
     let same_comparisons: Vec<_> = edges
         .filter(|edge| {

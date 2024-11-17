@@ -4,7 +4,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 type Id = Arc<str>;
-type ToInline = (Id, Arc<Expression<Id>>, Edge<Id>, BTreeSet<Edge<Id>>);
+type ToInline = (
+    Id,
+    Arc<Expression<Id>>,
+    Arc<Edge<Id>>,
+    BTreeSet<Arc<Edge<Id>>>,
+);
 
 impl Game<Id> {
     /// For each assignment to a variable `x = expr` :
@@ -22,9 +27,9 @@ impl Game<Id> {
         for (to_replace, new_expr, to_skip, usages) in to_inline {
             for edge in &mut self.edges {
                 if *edge == to_skip {
-                    edge.skip();
+                    Arc::make_mut(edge).skip();
                 } else if usages.contains(edge) {
-                    edge.label = edge
+                    Arc::make_mut(edge).label = edge
                         .label
                         .substitute_variable_readonly(&to_replace, &new_expr);
                 }
@@ -90,13 +95,13 @@ impl Game<Id> {
 }
 
 fn maybe_inline_assignment(
-    next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>>,
+    next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     reaching_definitions: &BTreeMap<Node<Id>, <ReachingDefinitions as Analysis>::Domain>,
     def_edge: &Edge<Id>,
     id: &Id,
-    defs_on_assignment: &BTreeMap<Id, BTreeSet<Option<Edge<Id>>>>,
+    defs_on_assignment: &BTreeMap<Id, BTreeSet<Option<Arc<Edge<Id>>>>>,
     vars_in_definition: &BTreeSet<&Id>,
-) -> Option<BTreeSet<Edge<Id>>> {
+) -> Option<BTreeSet<Arc<Edge<Id>>>> {
     let mut queue = vec![&def_edge.rhs];
     let mut seen = BTreeSet::new();
     let mut to_inline = BTreeSet::new();
@@ -142,14 +147,14 @@ fn used_definitions(
     defs: &<ReachingDefinitions as Analysis>::Domain,
     variables: &BTreeSet<&Id>,
     identifier: &Id,
-) -> BTreeMap<Id, BTreeSet<Option<Edge<Id>>>> {
+) -> BTreeMap<Id, BTreeSet<Option<Arc<Edge<Id>>>>> {
     defs.iter()
         .filter(|(var, _)| variables.contains(var) || var == identifier)
         .fold(BTreeMap::new(), |mut grouped_defs, (var, edge)| {
-            grouped_defs.entry(var.clone()).or_default().insert(
-                edge.as_ref()
-                    .map(|edge| Arc::make_mut(&mut edge.clone()).clone()),
-            );
+            grouped_defs
+                .entry(var.clone())
+                .or_default()
+                .insert(edge.clone());
             grouped_defs
         })
 }
@@ -157,12 +162,12 @@ fn used_definitions(
 fn can_replace_usage(
     to_replace: &Id,
     def_edge: &Edge<Id>,
-    defs_on_assignment: &BTreeMap<Id, BTreeSet<Option<Edge<Id>>>>,
-    defs_on_usage: &BTreeMap<Id, BTreeSet<Option<Edge<Id>>>>,
+    defs_on_assignment: &BTreeMap<Id, BTreeSet<Option<Arc<Edge<Id>>>>>,
+    defs_on_usage: &BTreeMap<Id, BTreeSet<Option<Arc<Edge<Id>>>>>,
 ) -> bool {
     defs_on_usage.get(to_replace).is_some_and(|defs| {
         defs.iter()
-            .all(|def| def.as_ref().is_some_and(|def| def == def_edge))
+            .all(|def| def.as_ref().is_some_and(|def| def.as_ref() == def_edge))
     }) && defs_on_assignment.iter().all(|(var, on_def)| {
         var == to_replace
             || defs_on_usage

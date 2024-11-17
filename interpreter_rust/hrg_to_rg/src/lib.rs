@@ -36,7 +36,9 @@ impl Context {
 
         lhs.parts.extend(parts.clone());
         rhs.parts.extend(parts);
-        self.rg.edges.push(rg::Edge::new(lhs, rhs, label));
+        self.rg
+            .edges
+            .push(Arc::from(rg::Edge::new(lhs, rhs, label)));
     }
 
     fn random(&mut self, prefix: &Id) -> Id {
@@ -65,12 +67,12 @@ pub fn hrg_to_rg(hrg: hrg::Game<Id>, reuse_functions: bool) -> rg::Game<Id> {
     translate_functions(&mut context);
     translate_variables(&mut context);
 
-    context.rg.edges.push(rg::Edge {
+    context.rg.edges.push(Arc::from(rg::Edge {
         span: Span::none(),
         label: rg::Label::new_skip(),
         lhs: rg::Node::new(Id::from("begin")),
         rhs: rg::Node::new(Id::from("rules_begin")),
-    });
+    }));
 
     let rules = context
         .hrg

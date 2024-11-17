@@ -428,7 +428,7 @@ pub fn game(input: Input) -> Result<Game<Identifier>> {
                         (Some(constant), _, _, _, _) => game.constants.push(constant),
                         (_, Some(typedef), _, _, _) => game.typedefs.push(typedef),
                         (_, _, Some(variable), _, _) => game.variables.push(variable),
-                        (_, _, _, Some(edge), _) => game.edges.push(edge),
+                        (_, _, _, Some(edge), _) => game.edges.push(Arc::from(edge)),
                         (_, _, _, _, Some(pragma)) => game.pragmas.push(pragma),
                         _ => (),
                     }

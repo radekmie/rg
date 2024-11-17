@@ -12,7 +12,7 @@ use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
 use utils::position::Positioned;
 use utils::Error;
 
-#[allow(deprecated)]
+#[expect(deprecated)]
 pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<DocumentSymbolResponse> {
     let symbols = symbol_table
         .symbols

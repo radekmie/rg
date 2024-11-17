@@ -11,7 +11,7 @@ impl Game<Arc<str>> {
                     .get(&edge.lhs)
                     .is_some_and(|reachable| *reachable)
             {
-                edge.skip();
+                Arc::make_mut(edge).skip();
             }
         }
         Ok(())

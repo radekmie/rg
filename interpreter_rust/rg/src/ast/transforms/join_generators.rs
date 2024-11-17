@@ -1,3 +1,4 @@
+use super::{gen_fresh_node, max_node_id};
 use crate::ast::{
     Constant, Edge, Error, Expression, Game, Label, Node, Type, Typedef, Value, ValueEntry,
 };
@@ -5,10 +6,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use utils::position::Span;
 
-use super::{gen_fresh_node, max_node_id};
-
 type Id = Arc<str>;
-type NodeEdges = (Node<Id>, Vec<Edge<Id>>);
+type NodeEdges = (Node<Id>, Vec<Arc<Edge<Id>>>);
 type TypeValue = (Arc<Type<Id>>, Arc<Value<Id>>);
 const BOOL_FALSE: &str = "0";
 const BOOL_TRUE: &str = "1";
@@ -94,8 +93,8 @@ impl Game<Id> {
                 Arc::new(constant_type),
                 value,
             ));
-            self.edges.push(first_edge);
-            self.edges.push(second_edge);
+            self.edges.push(Arc::from(first_edge));
+            self.edges.push(Arc::from(second_edge));
 
             return true;
         }
@@ -105,9 +104,9 @@ impl Game<Id> {
 
     fn collect_binding_comparisons(
         &self,
-        edges: &BTreeSet<&Edge<Id>>,
-        next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>>,
-        prev_edges: &BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>>,
+        edges: &BTreeSet<&Arc<Edge<Id>>>,
+        next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
+        prev_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     ) -> Option<(Id, NodeEdges, TypeValue)> {
         let first = edges.iter().next()?;
         let target = next_edges.get(&first.rhs)?.first()?.rhs.clone();

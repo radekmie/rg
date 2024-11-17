@@ -1,4 +1,5 @@
 use crate::ast::{Edge, Error, Game, Label};
+use std::sync::Arc;
 
 impl<Id: Clone + Ord> Game<Id> {
     pub fn skip_generator_comparisons(&mut self) -> Result<(), Error<Id>> {
@@ -22,7 +23,7 @@ impl<Id: Clone + Ord> Game<Id> {
 
         for edge in &mut self.edges {
             if edges_to_skip.contains(edge) {
-                edge.skip();
+                Arc::make_mut(edge).skip();
             }
         }
 

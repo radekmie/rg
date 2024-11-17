@@ -36,7 +36,7 @@ impl Analysis for ReachingDefinitions {
         a
     }
 
-    fn kill(mut input: Self::Domain, edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn kill(mut input: Self::Domain, edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
         if let Some((identifier, _)) = edge.label.as_var_assignment() {
             if !edge.label.is_map_assignment() {
                 input.retain(|(id, _)| id != identifier);
@@ -45,10 +45,10 @@ impl Analysis for ReachingDefinitions {
         input
     }
 
-    fn gen(mut input: Self::Domain, edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn gen(mut input: Self::Domain, edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
         if let Some((identifier, _)) = edge.label.as_var_assignment() {
             if let Err(index) = position(&input, identifier, edge) {
-                input.insert(index, (identifier.clone(), Some(Arc::from(edge.clone()))));
+                input.insert(index, (identifier.clone(), Some(edge.clone())));
             }
         }
         input

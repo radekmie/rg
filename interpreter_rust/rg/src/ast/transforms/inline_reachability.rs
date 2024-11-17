@@ -5,7 +5,7 @@ use std::sync::Arc;
 use utils::position::Span;
 
 type Id = Arc<str>;
-type Subgraph = BTreeSet<Edge<Id>>;
+type Subgraph = BTreeSet<Arc<Edge<Id>>>;
 
 impl Game<Id> {
     pub fn inline_reachability(&mut self) -> Result<(), Error<Id>> {
@@ -100,7 +100,7 @@ impl Game<Id> {
 
     fn substitute_reachability(
         &mut self,
-        mut edge: Edge<Id>,
+        mut edge: Arc<Edge<Id>>,
         subgraph: Subgraph,
         defined_vars: Option<BTreeSet<Id>>,
     ) {
@@ -124,30 +124,30 @@ impl Game<Id> {
 
                 let mut mapping = BTreeMap::new();
                 mapping.insert(start, new_start.clone());
-                mapping.insert(target.clone(), edge.rhs);
+                mapping.insert(target.clone(), edge.rhs.clone());
 
-                edge.rhs = new_start;
-                edge.skip();
+                Arc::make_mut(&mut edge).rhs = new_start;
+                Arc::make_mut(&mut edge).skip();
                 self.add_edge(edge);
 
                 for mut edge in subgraph {
                     if let Some(lhs) = mapping.get(&edge.lhs) {
-                        edge.lhs = lhs.clone();
+                        Arc::make_mut(&mut edge).lhs = lhs.clone();
                     } else {
                         let lhs = gen_fresh_node(&mut max_id);
                         mapping.insert(edge.lhs.clone(), lhs.clone());
-                        edge.lhs = lhs;
+                        Arc::make_mut(&mut edge).lhs = lhs;
                     }
 
                     if let Some(rhs) = mapping.get(&edge.rhs) {
-                        edge.rhs = rhs.clone();
+                        Arc::make_mut(&mut edge).rhs = rhs.clone();
                     } else {
                         let rhs = gen_fresh_node(&mut max_id);
                         mapping.insert(edge.rhs.clone(), rhs.clone());
-                        edge.rhs = rhs;
+                        Arc::make_mut(&mut edge).rhs = rhs;
                     }
                     if negated {
-                        edge.label.negate();
+                        Arc::make_mut(&mut edge).label.negate();
                     }
                     self.add_edge(edge);
                 }

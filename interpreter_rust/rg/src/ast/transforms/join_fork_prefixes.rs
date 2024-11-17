@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 type Id = Arc<str>;
-type ToInline = (Node<Id>, Vec<Edge<Id>>, Vec<Node<Id>>);
+type ToInline = (Node<Id>, Vec<Arc<Edge<Id>>>, Vec<Node<Id>>);
 
 /// Before:
 /// b, a1: x = 1;
@@ -29,7 +29,7 @@ impl Game<Id> {
             self.edges.retain(|edge| !to_remove.contains(edge));
             for next_node in to_add {
                 let edge = Edge::new_skip(node.clone(), next_node);
-                self.edges.push(edge);
+                self.edges.push(Arc::from(edge));
             }
         }
         changed

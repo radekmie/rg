@@ -21,7 +21,7 @@ pub struct Assignment {
 }
 
 impl Assignment {
-    fn add_condition(&mut self, condition: &Edge<Id>, disjoints: &Disjoints) {
+    fn add_condition(&mut self, condition: &Arc<Edge<Id>>, disjoints: &Disjoints) {
         self.is_conflicting = self.is_conflicting
             || self
                 .conditions
@@ -30,7 +30,7 @@ impl Assignment {
 
         // Add condition only if it may cause a conflict in the future.
         if !self.is_conflicting {
-            self.conditions.insert(Arc::from(condition.clone()));
+            self.conditions.insert(condition.clone());
         }
     }
 
@@ -132,7 +132,7 @@ impl Analysis for ReachingAssignments {
         a
     }
 
-    fn kill(mut input: Self::Domain, edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn kill(mut input: Self::Domain, edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
         if edge.label.is_player_assignment() || edge.label.is_tag() {
             input.clear();
         } else if let Label::Comparison {
@@ -158,7 +158,7 @@ impl Analysis for ReachingAssignments {
         input
     }
 
-    fn gen(mut input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain {
+    fn gen(mut input: Self::Domain, edge: &Arc<Edge<Id>>, ctx: &Self::Context) -> Self::Domain {
         if edge.label.is_assignment() {
             let variable = edge.label.as_var_assignment().unwrap().0;
             if !IMPORTANT_VARIABLES.contains(&variable.as_ref()) {

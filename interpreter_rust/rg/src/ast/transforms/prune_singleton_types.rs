@@ -33,12 +33,12 @@ impl Game<Arc<str>> {
 
         for edge in &mut self.edges {
             for (id, _) in types.values() {
-                edge.label = edge.label.remove_casts(id);
+                Arc::make_mut(edge).label = edge.label.remove_casts(id);
             }
 
             for (id, expression) in &variables {
                 if edge.label.has_variable(id) && !edge.has_binding(id) {
-                    edge.label = edge.label.substitute_variable(id, expression);
+                    Arc::make_mut(edge).label = edge.label.substitute_variable(id, expression);
                 }
             }
         }

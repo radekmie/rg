@@ -1,5 +1,6 @@
 use crate::ast::{Edge, Error, Game, Node};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 impl<Id: Clone + Ord> Game<Id> {
     pub fn join_exclusive_edges(&mut self) -> Result<(), Error<Id>> {
@@ -18,7 +19,7 @@ impl<Id: Clone + Ord> Game<Id> {
         }
 
         for index in to_ignore {
-            self.edges[index].skip();
+            Arc::make_mut(&mut self.edges[index]).skip();
         }
 
         for index in to_remove.into_iter().rev() {
@@ -33,7 +34,7 @@ impl<Id: Clone + Ord> Game<Id> {
     fn join_complex(&mut self) {
         let next_edges = self.next_edges();
         let prev_edges = self.prev_edges();
-        let empty_set: BTreeSet<&Edge<Id>> = BTreeSet::new();
+        let empty_set: BTreeSet<_> = BTreeSet::new();
         let mut to_remove = vec![];
         let mut to_add = vec![];
         for node in self.nodes() {
@@ -52,7 +53,7 @@ impl<Id: Clone + Ord> Game<Id> {
             if paths_match(&complex_path, &simple_path) {
                 to_remove.extend(complex_path);
                 to_remove.extend(simple_path.into_iter().cloned());
-                to_add.push(Edge::new_skip(node.clone(), target.clone()));
+                to_add.push(Arc::from(Edge::new_skip(node.clone(), target.clone())));
             }
         }
 
@@ -62,12 +63,12 @@ impl<Id: Clone + Ord> Game<Id> {
 }
 
 fn build_complex_path<Id: Clone + Ord>(
-    next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>>,
-    prev_edges: &BTreeMap<&Node<Id>, BTreeSet<&Edge<Id>>>,
-    start_edge: &Edge<Id>,
+    next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
+    prev_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
+    start_edge: &Arc<Edge<Id>>,
     target: &Node<Id>,
-) -> Option<Vec<Edge<Id>>> {
-    let mut complex_path = vec![(*start_edge).clone()];
+) -> Option<Vec<Arc<Edge<Id>>>> {
+    let mut complex_path = vec![start_edge.clone()];
     let mut current_edge = start_edge;
 
     while let Some(next_edge) = next_edges.get(&current_edge.rhs).and_then(singleton) {
@@ -92,7 +93,10 @@ fn singleton<T>(set: &BTreeSet<T>) -> Option<&T> {
     }
 }
 
-fn paths_match<Id: PartialEq>(complex_path: &[Edge<Id>], simple_path: &[&Edge<Id>]) -> bool {
+fn paths_match<Id: PartialEq>(
+    complex_path: &[Arc<Edge<Id>>],
+    simple_path: &[&Arc<Edge<Id>>],
+) -> bool {
     // For each condition on simple path "p" complex path contains "!p"
     // For each condition on complex path "p" simple path contains "!p"
     simple_path.iter().all(|simple| {
@@ -106,9 +110,10 @@ fn paths_match<Id: PartialEq>(complex_path: &[Edge<Id>], simple_path: &[&Edge<Id
     })
 }
 
+#[expect(clippy::type_complexity)]
 fn split_edges<'a, Id: Ord + Clone>(
-    edges: &'a BTreeSet<&Edge<Id>>,
-) -> Option<(&'a Edge<Id>, Vec<&'a Edge<Id>>)> {
+    edges: &'a BTreeSet<&Arc<Edge<Id>>>,
+) -> Option<(&'a Arc<Edge<Id>>, Vec<&'a Arc<Edge<Id>>>)> {
     if edges.len() < 3 || !edges.iter().all(|e| e.is_conditional()) {
         return None;
     }

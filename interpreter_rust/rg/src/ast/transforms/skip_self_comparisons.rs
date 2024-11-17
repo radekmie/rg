@@ -1,4 +1,5 @@
 use crate::ast::{Error, Game, Label};
+use std::sync::Arc;
 
 impl<Id: Clone + PartialEq> Game<Id> {
     pub fn skip_self_comparisons(&mut self) -> Result<(), Error<Id>> {
@@ -9,7 +10,7 @@ impl<Id: Clone + PartialEq> Game<Id> {
                     if *negated {
                         unreachable.push(edge.clone());
                     } else {
-                        edge.skip();
+                        Arc::make_mut(edge).skip();
                     }
                 }
             }

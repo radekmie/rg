@@ -30,7 +30,7 @@ impl Game<Arc<str>> {
         for edge in &mut self.edges {
             if let Some((identifier, _)) = edge.label.as_var_assignment() {
                 if unused_variables.contains(identifier) {
-                    edge.skip();
+                    Arc::make_mut(edge).skip();
                 }
             }
         }
