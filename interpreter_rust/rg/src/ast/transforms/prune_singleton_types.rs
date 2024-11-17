@@ -2,12 +2,14 @@ use crate::ast::{Error, Expression, Game};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+const SINGLETON_TYPES: [&str; 2] = ["Player", "Score"];
+
 impl Game<Arc<str>> {
     pub fn prune_singleton_types(&mut self) -> Result<(), Error<Arc<str>>> {
         let types: BTreeMap<_, _> = self
             .typedefs
             .iter()
-            .filter(|typedef| typedef.identifier.as_ref() != "Player")
+            .filter(|typedef| !SINGLETON_TYPES.contains(&typedef.identifier.as_ref()))
             .filter_map(|typedef| {
                 typedef.type_.as_singleton().map(|id| {
                     let pair = (typedef.identifier.clone(), id.clone());
