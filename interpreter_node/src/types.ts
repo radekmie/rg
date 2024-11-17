@@ -24,9 +24,9 @@ export type Settings = {
     joinExclusiveEdges: boolean;
     joinForkPrefixes: boolean;
     joinForkSuffixes: boolean;
-    joinGenerators: boolean,
+    joinGenerators: boolean;
     mangleSymbols: boolean;
-    mergeAccesses: boolean,
+    mergeAccesses: boolean;
     normalizeConstants: boolean;
     normalizeTypes: boolean;
     propagateConstants: boolean;
@@ -75,3 +75,51 @@ export const noFlagsEnabled: Settings['flags'] = {
   skipSelfComparisons: false,
   skipUnusedTags: false,
 };
+
+export const availableFlags: { label: string; flags: Flag[] }[] = [
+  {
+    label: 'Optimizations',
+    flags: [
+      'compactComparisons',
+      'compactSkipEdges',
+      'inlineAssignment',
+      'inlineReachability',
+      'joinExclusiveEdges',
+      'joinForkPrefixes',
+      'joinForkSuffixes',
+      'joinGenerators',
+      'mergeAccesses',
+      'propagateConstants',
+      'pruneSingletonTypes',
+      'pruneUnreachableNodes',
+      'pruneUnusedBindings',
+      'pruneUnusedConstants',
+      'pruneUnusedVariables',
+      'skipGeneratorComparisons',
+      'skipSelfAssignments',
+      'skipSelfComparisons',
+      'skipUnusedTags',
+    ],
+  },
+  {
+    label: 'Pragmas',
+    flags: [
+      'calculateDisjoints',
+      'calculateRepeats',
+      'calculateSimpleApply',
+      'calculateTagIndexes',
+      'calculateUniques',
+    ],
+  },
+  {
+    label: 'Other',
+    flags: [
+      'addExplicitCasts',
+      'expandGeneratorNodes',
+      'mangleSymbols',
+      'normalizeConstants',
+      'normalizeTypes',
+      'reuseFunctions',
+    ],
+  },
+];

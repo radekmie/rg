@@ -4,7 +4,7 @@ import path from 'path';
 
 import { AnalyzedGame, parse } from '../parse';
 import * as rg from '../rg';
-import { Language } from '../types';
+import { availableFlags, Flag, Language, noFlagsEnabled } from '../types';
 import * as utils from '../utils';
 
 program
@@ -90,6 +90,8 @@ program
     '--skipUnusedTags',
     'replaces all tags in reachability with skip edges',
   )
+  .option('--x-enable-all-optimizations', 'enables all optimization flags')
+  .option('--x-enable-all-pragmas', 'enables all pragma flags')
   .configureHelp({ sortSubcommands: true });
 
 function addCommand(
@@ -113,41 +115,33 @@ function addCommand(
         throw new Error(`Unknown extension "${extension}".`);
       }
 
+      const flags = { ...noFlagsEnabled };
+      for (const [option, value] of Object.entries(options)) {
+        if (option in flags) {
+          flags[option as Flag] = !!value;
+        }
+      }
+
+      if (options.xEnableAllOptimizations) {
+        availableFlags
+          .find(x => x.label === 'Optimizations')
+          ?.flags.forEach(flag => {
+            flags[flag] = true;
+          });
+      }
+
+      if (options.xEnableAllPragmas) {
+        availableFlags
+          .find(x => x.label === 'Pragmas')
+          ?.flags.forEach(flag => {
+            flags[flag] = true;
+          });
+      }
+
       const source = await fs.readFile(file, { encoding: 'utf8' });
       const game = await parse(source, {
         extension: extension as Language,
-        flags: {
-          addExplicitCasts: !!options.addExplicitCasts,
-          calculateDisjoints: !!options.calculateDisjoints,
-          calculateRepeats: !!options.calculateRepeats,
-          calculateSimpleApply: !!options.calculateSimpleApply,
-          calculateTagIndexes: !!options.calculateTagIndexes,
-          calculateUniques: !!options.calculateUniques,
-          compactComparisons: !!options.compactComparisons,
-          compactSkipEdges: !!options.compactSkipEdges,
-          expandGeneratorNodes: !!options.expandGeneratorNodes,
-          inlineAssignment: !!options.inlineAssignment,
-          inlineReachability: !!options.inlineReachability,
-          joinExclusiveEdges: !!options.joinExclusiveEdges,
-          joinForkPrefixes: !!options.joinForkPrefixes,
-          joinForkSuffixes: !!options.joinForkSuffixes,
-          joinGenerators: !!options.joinGenerators,
-          mangleSymbols: !!options.mangleSymbols,
-          mergeAccesses: !!options.mergeAccesses,
-          normalizeConstants: !!options.normalizeConstants,
-          normalizeTypes: !!options.normalizeTypes,
-          propagateConstants: !!options.propagateConstants,
-          pruneSingletonTypes: !!options.pruneSingletonTypes,
-          pruneUnreachableNodes: !!options.pruneUnreachableNodes,
-          pruneUnusedBindings: !!options.pruneUnusedBindings,
-          pruneUnusedConstants: !!options.pruneUnusedConstants,
-          pruneUnusedVariables: !!options.pruneUnusedVariables,
-          reuseFunctions: !!options.reuseFunctions,
-          skipGeneratorComparisons: !!options.skipGeneratorComparisons,
-          skipSelfAssignments: !!options.skipSelfAssignments,
-          skipSelfComparisons: !!options.skipSelfComparisons,
-          skipUnusedTags: !!options.skipUnusedTags,
-        },
+        flags,
       });
 
       if (game.error) {

@@ -1,59 +1,12 @@
 import { Callout, Checkbox, HTMLSelect, Intent } from '@blueprintjs/core';
 import { ChangeEvent, FormEvent, useCallback, useMemo } from 'react';
 
-import { Flag, Settings } from '../../types';
+import { Flag, Settings, availableFlags } from '../../types';
 import { presets } from '../const/presets';
 import { useApplicationState } from '../hooks/useApplicationState';
 import * as styles from '../index.module.css';
 
 const availablePresets = presets.map(game => game.name);
-const availableOptions: { label: string; flags: Flag[] }[] = [
-  {
-    label: 'Optimizations',
-    flags: [
-      'compactComparisons',
-      'compactSkipEdges',
-      'inlineAssignment',
-      'inlineReachability',
-      'joinExclusiveEdges',
-      'joinForkPrefixes',
-      'joinForkSuffixes',
-      'joinGenerators',
-      'mergeAccesses',
-      'propagateConstants',
-      'pruneSingletonTypes',
-      'pruneUnreachableNodes',
-      'pruneUnusedBindings',
-      'pruneUnusedConstants',
-      'pruneUnusedVariables',
-      'skipGeneratorComparisons',
-      'skipSelfAssignments',
-      'skipSelfComparisons',
-      'skipUnusedTags',
-    ],
-  },
-  {
-    label: 'Pragmas',
-    flags: [
-      'calculateDisjoints',
-      'calculateRepeats',
-      'calculateSimpleApply',
-      'calculateTagIndexes',
-      'calculateUniques',
-    ],
-  },
-  {
-    label: 'Other',
-    flags: [
-      'addExplicitCasts',
-      'expandGeneratorNodes',
-      'mangleSymbols',
-      'normalizeConstants',
-      'normalizeTypes',
-      'reuseFunctions',
-    ],
-  },
-];
 
 export type SettingsProps = {
   preset: string;
@@ -160,7 +113,7 @@ export function Settings({
             : Intent.SUCCESS
         }
       >
-        {availableOptions.map(({ flags, label }) => {
+        {availableFlags.map(({ flags, label }) => {
           const checked = flags.filter(flag => settings.flags[flag]).length;
           return (
             <div className={styles.flags} key={label}>
