@@ -104,7 +104,7 @@ graph turn(me: Player, op: Player, piece: Piece) {
   }
   board[position] = piece
   player = keeper
-  if reachable(win()) {
+  if reachable(win(piece)) {
     goals[me] = 100
     goals[op] = 0
     end()

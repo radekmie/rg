@@ -52,6 +52,23 @@ pub struct Function<Id> {
     pub body: Vec<Statement<Id>>,
 }
 
+impl<Id: PartialEq> Function<Id> {
+    pub fn arg_index(&self, identifier: &Id) -> Option<usize> {
+        self.args
+            .iter()
+            .position(|arg| arg.identifier == *identifier)
+    }
+}
+
+impl Function<Arc<str>> {
+    pub fn nth_arg_variable(&self, index: usize) -> Arc<str> {
+        Arc::from(format!(
+            "{}_arg{index}_{}",
+            self.name, self.args[index].identifier
+        ))
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename = "AutomatonFunctionArgument", tag = "kind")]
 pub struct FunctionArg<Id> {

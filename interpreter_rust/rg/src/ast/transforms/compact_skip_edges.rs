@@ -94,6 +94,7 @@ impl Game<Arc<str>> {
     ///   3. b has no other incoming nor outgoing edges
     ///   4. b has no bindings
     ///   5. b is not a reachability target
+    ///   6. a -> c will not connect two separate binds
     fn compact_skip_edge_backward(&self, edge_counts: &EdgeCounts) -> Option<(Vec<usize>, usize)> {
         for (y_index, y) in self.edges.iter().enumerate() {
             if y.label.is_skip()
@@ -104,6 +105,7 @@ impl Game<Arc<str>> {
                 for x in &self.edges {
                     if x.rhs == y.lhs
                         && (!y.rhs.has_bindings() || !x.label.is_player_assignment())
+                        && are_bindings_safe(&x.lhs, &x.rhs, &y.rhs)
                         && self.incoming_edges(&y.lhs).all(|z| z.lhs == x.lhs)
                     {
                         let x_indexes = self
@@ -136,6 +138,7 @@ impl Game<Arc<str>> {
     ///   3. b has no bindings
     ///   4. b is not a reachability target
     ///   5. y != Assignment of `player` OR a has no bindings
+    ///   6. a -> c will not connect two separate binds
     fn compact_skip_edge_forward(&self, edge_counts: &EdgeCounts) -> Option<(usize, Vec<usize>)> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
@@ -146,6 +149,7 @@ impl Game<Arc<str>> {
                 for y in &self.edges {
                     if x.rhs == y.lhs
                         && (!x.lhs.has_bindings() || !y.label.is_player_assignment())
+                        && are_bindings_safe(&x.lhs, &x.rhs, &y.rhs)
                         && self.outgoing_edges(&x.rhs).all(|z| z.rhs == y.rhs)
                     {
                         let y_indexes = self
@@ -180,6 +184,7 @@ impl Game<Arc<str>> {
     ///   3. b has no other outgoing edges
     ///   4. b has no bindings
     ///   5. b is not a reachability target
+    ///   6. a -> c will not connect two separate binds
     fn jump_backward(&self, edge_counts: &EdgeCounts) -> Option<(usize, usize)> {
         for (y_index, y) in self.edges.iter().enumerate() {
             if y.label.is_skip()
@@ -188,7 +193,9 @@ impl Game<Arc<str>> {
                 && !self.is_reachability_target(&y.lhs)
             {
                 for (x_index, x) in self.edges.iter().enumerate() {
-                    if x.rhs == y.lhs && (!y.rhs.has_bindings() || !x.label.is_player_assignment())
+                    if x.rhs == y.lhs
+                        && (!y.rhs.has_bindings() || !x.label.is_player_assignment())
+                        && are_bindings_safe(&x.lhs, &x.rhs, &y.rhs)
                     {
                         return Some((x_index, y_index));
                     }
@@ -215,6 +222,7 @@ impl Game<Arc<str>> {
     ///   3. b has no other incoming edges
     ///   4. b has no bindings
     ///   5. b is not a reachability target
+    ///   6. a -> c will not connect two separate binds
     fn jump_forward(&self, edge_counts: &EdgeCounts) -> Option<(usize, usize)> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
@@ -223,7 +231,9 @@ impl Game<Arc<str>> {
                 && !self.is_reachability_target(&x.rhs)
             {
                 for (y_index, y) in self.edges.iter().enumerate() {
-                    if x.rhs == y.lhs && (!x.lhs.has_bindings() || !y.label.is_player_assignment())
+                    if x.rhs == y.lhs
+                        && (!x.lhs.has_bindings() || !y.label.is_player_assignment())
+                        && are_bindings_safe(&x.lhs, &x.rhs, &y.rhs)
                     {
                         return Some((x_index, y_index));
                     }
@@ -359,6 +369,14 @@ impl Game<Arc<str>> {
                 }
             }
         }
+    }
+}
+
+fn are_bindings_safe(a: &Node<Arc<str>>, b: &Node<Arc<str>>, c: &Node<Arc<str>>) -> bool {
+    if b.has_bindings() {
+        b.bindings().eq(a.bindings()) && b.bindings().eq(c.bindings())
+    } else {
+        !a.has_bindings() || !c.has_bindings()
     }
 }
 
@@ -606,6 +624,17 @@ mod test {
             x1(p: Position), x4(p: Position): p != null;
             x4(p: Position), x5(p: Position): position = p;
             x5(p: Position), x2(p: Position): 1 == 1;
+        "
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        sequence_of_binds,
+        "
+            begin, x1(position: Position): ;
+            x1(position: Position), y: ;
+            y, x2(position: Position): ;
+            x2(position: Position), end: ;
         "
     );
 

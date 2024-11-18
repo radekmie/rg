@@ -4,92 +4,44 @@ import path from 'path';
 
 import { AnalyzedGame, parse } from '../parse';
 import * as rg from '../rg';
-import { Language } from '../types';
+import { availableFlags, Flag, Language, noFlagsEnabled } from '../types';
 import * as utils from '../utils';
 
+// prettier-ignore
 program
   .name('node lib/cli')
   .option('--addExplicitCasts', 'add type casts to all expressions')
-  .option(
-    '--calculateDisjoints',
-    'calculate missing @disjoint and @disjointExhaustive pragmas automatically',
-  )
-  .option(
-    '--calculateRepeats',
-    'calculate missing @repeat pragmas automatically',
-  )
-  .option(
-    '--calculateSimpleApply',
-    'calculate missing @simpleApply and @simpleApplyExhaustive pragmas automatically',
-  )
-  .option(
-    '--calculateTagIndexes',
-    'calculate missing @tagIndex and @tagMaxIndex pragmas automatically',
-  )
-  .option(
-    '--calculateUniques',
-    'calculate missing @unique pragmas automatically',
-  )
-  .option(
-    '--compactComparisons',
-    'optimize selective comparisons with negations',
-  )
+  .option('--calculateDisjoints', 'calculate missing @disjoint and @disjointExhaustive pragmas automatically')
+  .option('--calculateRepeats', 'calculate missing @repeat pragmas automatically')
+  .option('--calculateSimpleApply', 'calculate missing @simpleApply and @simpleApplyExhaustive pragmas automatically')
+  .option('--calculateTagIndexes', 'calculate missing @tagIndex and @tagMaxIndex pragmas automatically')
+  .option('--calculateUniques', 'calculate missing @unique pragmas automatically')
+  .option('--compactComparisons', 'optimize selective comparisons with negations')
   .option('--compactSkipEdges', 'optimize automaton by compacting skip edges')
   .option('--expandGeneratorNodes', 'expand generator nodes')
   .option('--inlineAssignment', 'inline assignment when possible')
   .option('--inlineReachability', 'inline reachability when possible')
   .option('--joinExclusiveEdges', 'joins multiedges with exclusive labels')
-  .option(
-    '--joinForkPrefixes',
-    'join paths with identical labels from the same node',
-  )
-  .option(
-    '--joinForkSuffixes',
-    'join paths with identical labels leading to the same node',
-  )
+  .option('--joinForkPrefixes', 'join paths with identical labels from the same node')
+  .option('--joinForkSuffixes', 'join paths with identical labels leading to the same node')
   .option('--joinGenerators', 'join generator nodes')
   .option('--mangleSymbols', 'mangle all user-defined symbols')
   .option('--mergeAccesses', 'merge nested accesses to constant maps')
-  .option(
-    '--normalizeConstants',
-    'normalize all constants so Maps appear only in the top level',
-  )
-  .option(
-    '--normalizeTypes',
-    'normalize all types so Arrow types appear only in type definitions and are at most one level deep',
-  )
-  .option(
-    '--propagateConstants',
-    'inline constants and skip obvious comparisons',
-  )
-  .option(
-    '--pruneSingletonTypes',
-    'prune singleton types (i.e., Set types with one element)',
-  )
+  .option('--normalizeConstants', 'normalize all constants so Maps appear only in the top level')
+  .option('--normalizeTypes', 'normalize all types so Arrow types appear only in type definitions and are at most one level deep')
+  .option('--propagateConstants', 'inline constants and skip obvious comparisons')
+  .option('--pruneSingletonTypes', 'prune singleton types (i.e., Set types with one element)')
   .option('--pruneUnreachableNodes', 'prune unreachable nodes')
   .option('--pruneUnusedBindings', 'prune unused bindings from nodes')
   .option('--pruneUnusedConstants', 'prune unused constants')
   .option('--pruneUnusedVariables', 'prune unused variables')
-  .option(
-    '--reuseFunctions',
-    'reuse subautomatons when translating function calls (.hrg only)',
-  )
-  .option(
-    '--skipGeneratorComparisons',
-    'skips all comparisons to a generator (e.g., `x, y(t: T): t == null`)',
-  )
-  .option(
-    '--skipSelfAssignments',
-    'replaces all self assignments (e.g., `x = x`) with skip edges',
-  )
-  .option(
-    '--skipSelfComparisons',
-    'replaces all self comparisons (e.g., `x == x`) with skip edges',
-  )
-  .option(
-    '--skipUnusedTags',
-    'replaces all tags in reachability with skip edges',
-  )
+  .option('--reuseFunctions', 'reuse subautomatons when translating function calls (.hrg only)')
+  .option('--skipGeneratorComparisons', 'skips all comparisons to a generator (e.g., `x, y(t: T): t == null`)')
+  .option('--skipSelfAssignments', 'replaces all self assignments (e.g., `x = x`) with skip edges')
+  .option('--skipSelfComparisons', 'replaces all self comparisons (e.g., `x == x`) with skip edges')
+  .option('--skipUnusedTags', 'replaces all tags in reachability with skip edges')
+  .option('--x-enable-all-optimizations', 'enables all optimization flags')
+  .option('--x-enable-all-pragmas', 'enables all pragma flags')
   .configureHelp({ sortSubcommands: true });
 
 function addCommand(
@@ -113,41 +65,33 @@ function addCommand(
         throw new Error(`Unknown extension "${extension}".`);
       }
 
+      const flags = { ...noFlagsEnabled };
+      for (const [option, value] of Object.entries(options)) {
+        if (option in flags) {
+          flags[option as Flag] = !!value;
+        }
+      }
+
+      if (options.xEnableAllOptimizations) {
+        availableFlags
+          .find(x => x.label === 'Optimizations')
+          ?.flags.forEach(flag => {
+            flags[flag] = true;
+          });
+      }
+
+      if (options.xEnableAllPragmas) {
+        availableFlags
+          .find(x => x.label === 'Pragmas')
+          ?.flags.forEach(flag => {
+            flags[flag] = true;
+          });
+      }
+
       const source = await fs.readFile(file, { encoding: 'utf8' });
       const game = await parse(source, {
         extension: extension as Language,
-        flags: {
-          addExplicitCasts: !!options.addExplicitCasts,
-          calculateDisjoints: !!options.calculateDisjoints,
-          calculateRepeats: !!options.calculateRepeats,
-          calculateSimpleApply: !!options.calculateSimpleApply,
-          calculateTagIndexes: !!options.calculateTagIndexes,
-          calculateUniques: !!options.calculateUniques,
-          compactComparisons: !!options.compactComparisons,
-          compactSkipEdges: !!options.compactSkipEdges,
-          expandGeneratorNodes: !!options.expandGeneratorNodes,
-          inlineAssignment: !!options.inlineAssignment,
-          inlineReachability: !!options.inlineReachability,
-          joinExclusiveEdges: !!options.joinExclusiveEdges,
-          joinForkPrefixes: !!options.joinForkPrefixes,
-          joinForkSuffixes: !!options.joinForkSuffixes,
-          joinGenerators: !!options.joinGenerators,
-          mangleSymbols: !!options.mangleSymbols,
-          mergeAccesses: !!options.mergeAccesses,
-          normalizeConstants: !!options.normalizeConstants,
-          normalizeTypes: !!options.normalizeTypes,
-          propagateConstants: !!options.propagateConstants,
-          pruneSingletonTypes: !!options.pruneSingletonTypes,
-          pruneUnreachableNodes: !!options.pruneUnreachableNodes,
-          pruneUnusedBindings: !!options.pruneUnusedBindings,
-          pruneUnusedConstants: !!options.pruneUnusedConstants,
-          pruneUnusedVariables: !!options.pruneUnusedVariables,
-          reuseFunctions: !!options.reuseFunctions,
-          skipGeneratorComparisons: !!options.skipGeneratorComparisons,
-          skipSelfAssignments: !!options.skipSelfAssignments,
-          skipSelfComparisons: !!options.skipSelfComparisons,
-          skipUnusedTags: !!options.skipUnusedTags,
-        },
+        flags,
       });
 
       if (game.error) {
