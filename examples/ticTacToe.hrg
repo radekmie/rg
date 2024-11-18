@@ -21,13 +21,15 @@ op : Player -> Player
 op(x) = o
 op(o) = x
 
+position : Position
+
 graph findNonempty() {
   forall p:Position {
     check(board[p] == empty)
   }
 }
 
-graph win(position: Position) {
+graph win() {
   branch {
     check(position != next_d1(position))
     check(board[position] == board[next_d1(position)])
@@ -55,7 +57,7 @@ graph turn(me: Player) {
   }
 
   player = keeper
-  if reachable(win(position)) {
+  if reachable(win()) {
     goals[me] = 100
     goals[op[me]] = 0
     end()

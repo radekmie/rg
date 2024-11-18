@@ -466,23 +466,26 @@ fn translate_automaton_function(
     return_node: Option<&rg::Node<Id>>,
     prefix: &Id,
 ) {
-    for arg in &automaton_function.args {
+    for (index, arg) in automaton_function.args.iter().enumerate() {
         // Function arguments are hoisted into global variables, shadowing them
         // if needed. For the sake of easier implementation, the type of a
         // global variable has to match the type of the argument.
         let type_ = translate_type(&arg.type_);
-        match context.rg.variables.iter().find(|x| x.identifier == arg.identifier) {
+        let identifier = automaton_function.nth_arg_variable(index);
+        match context.rg.variables.iter().find(|x| x.identifier == identifier) {
             Some(variable) =>
-                assert_eq!(type_, variable.type_, "Argument \"{}\" of function \"{}\" has a different type than an already existing variable ({} != {})", arg.identifier,
-          automaton_function.name,
-        type_,
-        variable.type_
-        )
-            ,
+                assert_eq!(
+                    type_,
+                    variable.type_,
+                    "Argument \"{}\" of function \"{}\" (stored in \"{identifier}\") has a different type than an already existing variable ({type_} != {})",
+                    arg.identifier,
+                    automaton_function.name,
+                    variable.type_
+                ),
             None => context.rg.variables.push(rg::Variable {
                 span: Span::none(),
                 default_value: Arc::from(translate_value(&evaluate_default_value(context, &type_))),
-                identifier: arg.identifier.clone(),
+                identifier,
                 type_
             })
         }
@@ -509,6 +512,7 @@ fn translate_automaton_function(
         Some(&next_node),
         &Id::from(format!("{prefix}{}", automaton_function.name)),
         Some(&next_node),
+        Some(automaton_function),
     );
 
     if returns {
@@ -530,6 +534,7 @@ fn translate_automaton_statements(
     next_node: Option<&rg::Node<Id>>,
     prefix: &Id,
     return_node: Option<&rg::Node<Id>>,
+    automaton_function: Option<&hrg::Function<Id>>,
 ) -> bool {
     let mut current_node = entry_node;
     for automaton_statement in automaton_statements {
@@ -549,10 +554,10 @@ fn translate_automaton_statements(
                             |expression, accessor| rg::Expression::Access {
                                 span: Span::none(),
                                 lhs: Arc::from(expression),
-                                rhs: translate_expression(accessor),
+                                rhs: translate_expression(accessor, bindings, automaton_function),
                             },
                         )),
-                        rhs: translate_expression(expression),
+                        rhs: translate_expression(expression, bindings, automaton_function),
                     },
                     bindings,
                 );
@@ -572,6 +577,7 @@ fn translate_automaton_statements(
                         Some(&local_node),
                         prefix,
                         return_node,
+                        automaton_function,
                     );
                 }
                 current_node = local_node;
@@ -603,6 +609,7 @@ fn translate_automaton_statements(
                         None,
                         prefix,
                         bindings,
+                        automaton_function,
                     );
                     current_node = local_node;
                 }
@@ -670,7 +677,7 @@ fn translate_automaton_statements(
                     return true;
                 }
                 _ => {
-                    let automaton_function = context
+                    let called_automaton_function = context
                         .hrg
                         .automaton
                         .iter()
@@ -678,10 +685,21 @@ fn translate_automaton_statements(
                         .unwrap_or_else(|| panic!("Unknown automaton function \"{identifier}\"."))
                         .clone();
 
+                    assert_eq!(
+                        called_automaton_function.args.len(),
+                        args.len(),
+                        "Function \"{identifier}\" expects {} arguments but got {}.",
+                        called_automaton_function.args.len(),
+                        args.len()
+                    );
+
                     if context.reuse_functions {
-                        let call_id =
-                            context.random(&Id::from(format!("{}_call", &automaton_function.name)));
-                        let variable = Id::from(format!("{}_return", &automaton_function.name));
+                        let call_id = context.random(&Id::from(format!(
+                            "{}_call",
+                            &called_automaton_function.name
+                        )));
+                        let variable =
+                            Id::from(format!("{}_return", &called_automaton_function.name));
                         let type_ = Id::from(format!("{variable}_type"));
 
                         if context
@@ -750,9 +768,9 @@ fn translate_automaton_statements(
                                 arg_node.clone(),
                                 rg::Label::Assignment {
                                     lhs: Arc::from(rg::Expression::new(
-                                        automaton_function.args[index].identifier.clone(),
+                                        called_automaton_function.nth_arg_variable(index),
                                     )),
-                                    rhs: translate_expression(arg),
+                                    rhs: translate_expression(arg, bindings, automaton_function),
                                 },
                                 bindings,
                             );
@@ -761,20 +779,25 @@ fn translate_automaton_statements(
 
                         context.connect(
                             current_node,
-                            rg::Node::new(Id::from(format!("{}_begin", &automaton_function.name))),
+                            rg::Node::new(Id::from(format!(
+                                "{}_begin",
+                                &called_automaton_function.name
+                            ))),
                             rg::Label::new_skip(),
                             bindings,
                         );
 
-                        let local_node =
-                            rg::Node::new(Id::from(format!("{}_return", &automaton_function.name)));
+                        let local_node = rg::Node::new(Id::from(format!(
+                            "{}_return",
+                            &called_automaton_function.name
+                        )));
                         if context
                             .translated_functions
-                            .insert(automaton_function.name.clone())
+                            .insert(called_automaton_function.name.clone())
                         {
                             translate_automaton_function(
                                 context,
-                                &automaton_function,
+                                &called_automaton_function,
                                 end_node,
                                 Some(&local_node),
                                 &Id::from(""),
@@ -783,7 +806,7 @@ fn translate_automaton_statements(
                             context.connect(
                                 rg::Node::new(Id::from(format!(
                                     "{}_end",
-                                    &automaton_function.name
+                                    &called_automaton_function.name
                                 ))),
                                 local_node.clone(),
                                 rg::Label::new_skip(),
@@ -814,9 +837,9 @@ fn translate_automaton_statements(
                                 arg_node.clone(),
                                 rg::Label::Assignment {
                                     lhs: Arc::from(rg::Expression::new(
-                                        automaton_function.args[index].identifier.clone(),
+                                        called_automaton_function.nth_arg_variable(index),
                                     )),
-                                    rhs: translate_expression(arg),
+                                    rhs: translate_expression(arg, bindings, automaton_function),
                                 },
                                 bindings,
                             );
@@ -827,7 +850,7 @@ fn translate_automaton_statements(
                             current_node,
                             rg::Node::new(Id::from(format!(
                                 "{call_id}{}_begin",
-                                &automaton_function.name
+                                &called_automaton_function.name
                             ))),
                             rg::Label::new_skip(),
                             bindings,
@@ -836,7 +859,7 @@ fn translate_automaton_statements(
                         let local_node = context.random_node(prefix);
                         translate_automaton_function(
                             context,
-                            &automaton_function,
+                            &called_automaton_function,
                             end_node,
                             Some(&local_node),
                             &call_id,
@@ -879,6 +902,7 @@ fn translate_automaton_statements(
                     Some(&middle_node),
                     prefix,
                     return_node,
+                    automaton_function,
                 );
 
                 let after_node = context.random_node(prefix);
@@ -913,6 +937,7 @@ fn translate_automaton_statements(
                     Some(&else_node),
                     prefix,
                     bindings,
+                    automaton_function,
                 );
                 translate_automaton_statements(
                     context,
@@ -925,6 +950,7 @@ fn translate_automaton_statements(
                     Some(&else_node),
                     prefix,
                     return_node,
+                    automaton_function,
                 );
                 current_node = else_node;
             }
@@ -941,6 +967,7 @@ fn translate_automaton_statements(
                     Some(&current_node),
                     prefix,
                     return_node,
+                    automaton_function,
                 );
                 current_node = local_node;
             }
@@ -967,6 +994,7 @@ fn translate_automaton_statements(
                     Some(&else_node),
                     prefix,
                     bindings,
+                    automaton_function,
                 );
                 translate_automaton_statements(
                     context,
@@ -979,6 +1007,7 @@ fn translate_automaton_statements(
                     Some(&current_node),
                     prefix,
                     return_node,
+                    automaton_function,
                 );
                 current_node = else_node;
             }
@@ -997,6 +1026,7 @@ fn translate_automaton_statements(
     true
 }
 
+#[expect(clippy::too_many_arguments)]
 fn translate_condition(
     context: &mut Context,
     expression: &hrg::Expression<Id>,
@@ -1005,6 +1035,7 @@ fn translate_condition(
     else_node: Option<&rg::Node<Id>>,
     prefix: &Id,
     bindings: &[rg::Binding<Id>],
+    automaton_function: Option<&hrg::Function<Id>>,
 ) {
     match expression {
         hrg::Expression::BinExpr {
@@ -1021,9 +1052,17 @@ fn translate_condition(
                 else_node,
                 prefix,
                 bindings,
+                automaton_function,
             );
             translate_condition(
-                context, rhs, &true_node, then_node, else_node, prefix, bindings,
+                context,
+                rhs,
+                &true_node,
+                then_node,
+                else_node,
+                prefix,
+                bindings,
+                automaton_function,
             );
         }
         hrg::Expression::BinExpr {
@@ -1036,8 +1075,8 @@ fn translate_condition(
                     entry_node.clone(),
                     then_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs),
-                        rhs: translate_expression(rhs),
+                        lhs: translate_expression(lhs, bindings, automaton_function),
+                        rhs: translate_expression(rhs, bindings, automaton_function),
                         negated: false,
                     },
                     bindings,
@@ -1048,8 +1087,8 @@ fn translate_condition(
                     entry_node.clone(),
                     else_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs),
-                        rhs: translate_expression(rhs),
+                        lhs: translate_expression(lhs, bindings, automaton_function),
+                        rhs: translate_expression(rhs, bindings, automaton_function),
                         negated: true,
                     },
                     bindings,
@@ -1070,6 +1109,7 @@ fn translate_condition(
                 Some(&false_node),
                 prefix,
                 bindings,
+                automaton_function,
             );
             translate_condition(
                 context,
@@ -1079,6 +1119,7 @@ fn translate_condition(
                 else_node,
                 prefix,
                 bindings,
+                automaton_function,
             );
         }
         hrg::Expression::BinExpr {
@@ -1091,8 +1132,8 @@ fn translate_condition(
                     entry_node.clone(),
                     then_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs),
-                        rhs: translate_expression(rhs),
+                        lhs: translate_expression(lhs, bindings, automaton_function),
+                        rhs: translate_expression(rhs, bindings, automaton_function),
                         negated: true,
                     },
                     bindings,
@@ -1103,8 +1144,8 @@ fn translate_condition(
                     entry_node.clone(),
                     else_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs),
-                        rhs: translate_expression(rhs),
+                        lhs: translate_expression(lhs, bindings, automaton_function),
+                        rhs: translate_expression(rhs, bindings, automaton_function),
                         negated: false,
                     },
                     bindings,
@@ -1127,6 +1168,7 @@ fn translate_condition(
                         then_node,
                         prefix,
                         bindings,
+                        automaton_function,
                     );
                 }
                 "reachable" => {
@@ -1138,35 +1180,44 @@ fn translate_condition(
                         panic!("reachable() expects an automaton call.");
                     };
 
-                    let automaton_name = identifier;
-                    let automaton_prefix = context.random(prefix);
-                    let automaton_function = context
+                    let prefix = context.random(prefix);
+                    let called_automaton_function = context
                         .hrg
                         .automaton
                         .iter()
-                        .find(|automaton_function| automaton_function.name == *automaton_name)
+                        .find(|automaton_function| automaton_function.name == *identifier)
                         .unwrap_or_else(|| panic!("Unknown automaton function \"{identifier}\"."))
                         .clone();
 
-                    let call_id =
-                        context.random(&Id::from(format!("{}_call", automaton_function.name)));
+                    assert_eq!(
+                        called_automaton_function.args.len(),
+                        args.len(),
+                        "Function \"{identifier}\" expects {} arguments but got {}.",
+                        called_automaton_function.args.len(),
+                        args.len()
+                    );
+
+                    let call_id = context.random(&Id::from(format!(
+                        "{}_call",
+                        called_automaton_function.name
+                    )));
                     let automaton_start_node = if context.reuse_functions {
                         rg::Node::new(call_id)
                     } else {
-                        context.random_node(&automaton_prefix)
+                        context.random_node(&prefix)
                     };
 
                     let mut automaton_current_node = automaton_start_node.clone();
                     for (index, arg) in args.iter().enumerate() {
-                        let arg_node = context.random_node(&automaton_prefix);
+                        let arg_node = context.random_node(&prefix);
                         context.connect(
                             automaton_current_node,
                             arg_node.clone(),
                             rg::Label::Assignment {
                                 lhs: Arc::from(rg::Expression::new(
-                                    automaton_function.args[index].identifier.clone(),
+                                    called_automaton_function.nth_arg_variable(index),
                                 )),
-                                rhs: translate_expression(arg),
+                                rhs: translate_expression(arg, bindings, automaton_function),
                             },
                             bindings,
                         );
@@ -1176,28 +1227,28 @@ fn translate_condition(
                     context.connect(
                         automaton_current_node,
                         rg::Node::new(Id::from(if context.reuse_functions {
-                            format!("{automaton_name}_begin")
+                            format!("{identifier}_begin")
                         } else {
-                            format!("{automaton_prefix}_{automaton_name}_begin")
+                            format!("{prefix}_{identifier}_begin")
                         })),
                         rg::Label::new_skip(),
                         bindings,
                     );
 
                     let automaton_end_node = rg::Node::new(Id::from(if context.reuse_functions {
-                        format!("{automaton_name}_end")
+                        format!("{identifier}_end")
                     } else {
-                        format!("{automaton_prefix}_{automaton_name}_end")
+                        format!("{prefix}_{identifier}_end")
                     }));
 
                     if context.reuse_functions {
                         if context
                             .translated_functions
-                            .insert(automaton_function.name.clone())
+                            .insert(called_automaton_function.name.clone())
                         {
                             translate_automaton_function(
                                 context,
-                                &automaton_function,
+                                &called_automaton_function,
                                 Some(&automaton_end_node),
                                 None,
                                 &Id::from(""),
@@ -1206,10 +1257,10 @@ fn translate_condition(
                     } else {
                         translate_automaton_function(
                             context,
-                            &automaton_function,
+                            &called_automaton_function,
                             Some(&automaton_end_node),
                             None,
-                            &Id::from(format!("{automaton_prefix}_")),
+                            &Id::from(format!("{prefix}_")),
                         );
                     }
 
@@ -1331,27 +1382,43 @@ fn translate_domain_elements(
         .collect()
 }
 
-fn translate_expression(expression: &hrg::Expression<Id>) -> Arc<rg::Expression<Id>> {
+fn translate_expression(
+    expression: &hrg::Expression<Id>,
+    bindings: &[rg::Binding<Id>],
+    automaton_function: Option<&hrg::Function<Id>>,
+) -> Arc<rg::Expression<Id>> {
     match expression {
         hrg::Expression::Access { lhs, rhs } => Arc::from(rg::Expression::Access {
             span: Span::none(),
-            lhs: translate_expression(lhs),
-            rhs: translate_expression(rhs),
+            lhs: translate_expression(lhs, bindings, automaton_function),
+            rhs: translate_expression(rhs, bindings, automaton_function),
         }),
-        hrg::Expression::Call { expression, args } => {
-            args.iter()
-                .fold(translate_expression(expression), |expression, arg| {
-                    Arc::from(rg::Expression::Access {
-                        span: Span::none(),
-                        lhs: expression,
-                        rhs: translate_expression(arg),
-                    })
+        hrg::Expression::Call { expression, args } => args.iter().fold(
+            translate_expression(expression, bindings, automaton_function),
+            |expression, arg| {
+                Arc::from(rg::Expression::Access {
+                    span: Span::none(),
+                    lhs: expression,
+                    rhs: translate_expression(arg, bindings, automaton_function),
                 })
-        }
+            },
+        ),
         hrg::Expression::Constructor { .. } => Arc::from(rg::Expression::new(serialize_value(
             &evaluate_expression(expression, &BTreeMap::new()),
         ))),
         hrg::Expression::Literal { identifier } => {
+            // If it's function's argument...
+            if let Some(automaton_function) = automaton_function {
+                if let Some(index) = automaton_function.arg_index(identifier) {
+                    // ...not shadowed by some binding...
+                    if bindings.iter().all(|binding| binding.0 != identifier) {
+                        // ...then rename it.
+                        return Arc::from(rg::Expression::new(
+                            automaton_function.nth_arg_variable(index),
+                        ));
+                    }
+                }
+            }
             Arc::from(rg::Expression::new(identifier.clone()))
         }
         _ => unimplemented!(),
