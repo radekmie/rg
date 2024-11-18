@@ -157,13 +157,14 @@ impl Game<Id> {
 
     /// If the subgraph contains assignments,
     /// they should not be used in the rest of the graph before beeing reassigned.
-    fn check_used_variables(&self, start: &Node<Id>, mut defined_vars: BTreeSet<Id>) -> bool {
+    fn check_used_variables(&self, start: &Node<Id>, defined_vars: BTreeSet<Id>) -> bool {
         let next_edges = self.next_edges();
-        let mut queue = vec![(start, BTreeSet::new())];
-        while let Some((lhs, mut previous)) = queue.pop() {
+        let mut queue = vec![(start, BTreeSet::new(), defined_vars)];
+        while let Some((lhs, mut previous, defined_vars)) = queue.pop() {
             previous.insert(lhs);
             if let Some(edges) = next_edges.get(&lhs) {
                 for edge in edges {
+                    let mut defined_vars = defined_vars.clone();
                     if previous.contains(&edge.rhs) {
                         continue;
                     }
@@ -174,13 +175,15 @@ impl Game<Id> {
                     match edge.label.as_var_assignment() {
                         Some((id, _)) if !edge.label.is_map_assignment() => {
                             defined_vars.remove(id);
-                            if defined_vars.is_empty() {
-                                return true;
-                            }
                         }
                         _ => (),
                     }
-                    queue.push((&edge.rhs, previous.clone()));
+                    if let Label::Reachability { lhs, .. } = &edge.label {
+                        if !previous.contains(lhs) {
+                            queue.push((lhs, previous.clone(), defined_vars.clone()));
+                        }
+                    }
+                    queue.push((&edge.rhs, previous.clone(), defined_vars));
                 }
             }
         }
@@ -495,5 +498,28 @@ mod test {
         e, f2: v = 2;
         f1, f: ;
         f2, f: ;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        inline_assignment5,
+        "begin, a: ? e -> f;
+        a, end: ? e1 -> f1;
+        e, f: coord = 0;
+        e1, f1: coord == 1;",
+        "begin, a: ? e -> f;
+        e, f: coord = 0;
+        e1, f1: coord == 1;
+        a, 1: ;
+        1, end: coord == 1;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        inline_assignment6,
+        "begin, a: ? e -> f;
+        e, f: coord = 0;
+        a, end: coord = 1;
+        a, end: coord == 0;"
     );
 }
