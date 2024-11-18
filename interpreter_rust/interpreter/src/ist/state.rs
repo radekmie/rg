@@ -267,7 +267,7 @@ impl Iterator for StateNextDepth<'_> {
 
 struct VisitedStates<'a> {
     game: &'a Game<RuntimeId>,
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity)]
     states: Option<BTreeSet<(RuntimeId, Rc<Vec<RuntimeId>>, Rc<Vec<Rc<Value<RuntimeId>>>>)>>,
 }
 

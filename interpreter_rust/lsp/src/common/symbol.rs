@@ -71,7 +71,7 @@ impl Positioned for Symbol {
 pub enum Type {
     Hrg(Arc<hrg::ast::Type<Identifier>>),
     Rg(Arc<rg::ast::Type<Identifier>>),
-    #[allow(clippy::enum_variant_names)]
+    #[expect(clippy::enum_variant_names)]
     NoType,
 }
 

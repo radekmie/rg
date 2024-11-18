@@ -1,12 +1,9 @@
-use crate::{
-    common::symbol::{Flag, Symbol},
-    rg::statement::Statement,
-};
+use crate::common::symbol::{Flag, Symbol};
+use crate::rg::statement::Statement;
 use rg::ast::Game;
-use utils::{
-    position::{Position, Span},
-    Identifier,
-};
+use std::sync::Arc;
+use utils::position::{Position, Span};
+use utils::Identifier;
 
 pub trait AstFeatures {
     fn find_stat(&self, predicate: impl Fn(&&dyn Statement) -> bool) -> Option<&dyn Statement>;
@@ -58,6 +55,6 @@ fn stats(game: &Game<Identifier>) -> impl Iterator<Item = &dyn Statement> {
         .chain(game.typedefs.iter().map(mapper!()))
         .chain(game.constants.iter().map(mapper!()))
         .chain(game.variables.iter().map(mapper!()))
-        .chain(game.edges.iter().map(mapper!()))
+        .chain(game.edges.iter().map(Arc::as_ref).map(mapper!()))
         .chain(game.pragmas.iter().map(mapper!()))
 }

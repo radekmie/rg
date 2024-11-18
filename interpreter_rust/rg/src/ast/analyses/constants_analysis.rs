@@ -63,7 +63,11 @@ impl Analysis for ConstantsAnalysis {
     // We can't use the default implementation, because it doesn't work for cases like:
     // x = 1;
     // x = y[x]; <- here `kill` removes `x` from `input` before `gen`, so `x` in lhs is not recognised as a constant
-    fn transfer(mut input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain {
+    fn transfer(
+        mut input: Self::Domain,
+        edge: &Arc<Edge<Id>>,
+        ctx: &Self::Context,
+    ) -> Self::Domain {
         if let Some((identifier, value)) = as_constant_assignment(edge, &input, ctx)
             .or_else(|| as_constant_comparison(edge, &input, ctx))
         {

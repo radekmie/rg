@@ -1,5 +1,6 @@
 use crate::ast::{Edge, Error, Game, Node};
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 // Before:
 //
@@ -54,13 +55,14 @@ impl<Id: Clone + Ord> Game<Id> {
             changed = true;
             self.remove_edge(&e4);
             self.remove_edge(&e2);
-            e4.rhs = y1;
+            Arc::make_mut(&mut e4).rhs = y1;
             self.add_edge(e4);
         }
         changed
     }
 
-    fn to_join(&self) -> Vec<(Edge<Id>, Node<Id>, Edge<Id>)> {
+    #[expect(clippy::type_complexity)]
+    fn to_join(&self) -> Vec<(Arc<Edge<Id>>, Node<Id>, Arc<Edge<Id>>)> {
         let prev_edges = self.prev_edges();
 
         let mut to_join = vec![];

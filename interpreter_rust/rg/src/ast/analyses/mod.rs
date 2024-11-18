@@ -21,7 +21,7 @@ pub trait Analysis {
 
     fn extreme(program: &Game<Id>, ctx: &Self::Context) -> Self::Domain;
 
-    fn gen(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn gen(input: Self::Domain, _edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
         input
     }
 
@@ -29,11 +29,11 @@ pub trait Analysis {
 
     fn join(a: Self::Domain, b: Self::Domain, ctx: &Self::Context) -> Self::Domain;
 
-    fn kill(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn kill(input: Self::Domain, _edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
         input
     }
 
-    fn transfer(input: Self::Domain, edge: &Edge<Id>, ctx: &Self::Context) -> Self::Domain {
+    fn transfer(input: Self::Domain, edge: &Arc<Edge<Id>>, ctx: &Self::Context) -> Self::Domain {
         Self::gen(Self::kill(input, edge, ctx), edge, ctx)
     }
 }
@@ -57,8 +57,9 @@ impl Game<Id> {
 struct Flow<'a> {
     next_nodes: BTreeMap<&'a Node<Id>, BTreeSet<&'a Node<Id>>>,
     nodes: BTreeSet<&'a Node<Id>>,
-    prev_edges: BTreeMap<&'a Node<Id>, BTreeSet<&'a Edge<Id>>>,
-    reachability_edges: Option<BTreeMap<&'a Node<Id>, BTreeSet<Edge<Id>>>>,
+    prev_edges: BTreeMap<&'a Node<Id>, BTreeSet<&'a Arc<Edge<Id>>>>,
+    #[expect(clippy::type_complexity)]
+    reachability_edges: Option<BTreeMap<&'a Node<Id>, BTreeSet<Arc<Edge<Id>>>>>,
 }
 
 impl<'a> Flow<'a> {
@@ -77,7 +78,10 @@ impl<'a> Flow<'a> {
                     // node0, node1: ? start -> target;
                     // node0 is predecessor of start
                     let skip_edge = Edge::new_skip(edge.lhs.clone(), lhs.clone());
-                    reachability_edges.entry(lhs).or_default().insert(skip_edge);
+                    reachability_edges
+                        .entry(lhs)
+                        .or_default()
+                        .insert(Arc::from(skip_edge));
                     next_nodes.entry(&edge.lhs).or_default().insert(lhs);
                 }
             }
@@ -93,7 +97,7 @@ impl<'a> Flow<'a> {
         }
     }
 
-    fn predecessors(&self, node: &Node<Id>) -> BTreeSet<&Edge<Id>> {
+    fn predecessors(&self, node: &Node<Id>) -> BTreeSet<&Arc<Edge<Id>>> {
         let mut result = BTreeSet::new();
         result.extend(self.prev_edges.get(node).into_iter().flatten());
         if let Some(reachability_edges) = &self.reachability_edges {
@@ -137,8 +141,8 @@ impl<'a, A: Analysis + ?Sized> Worker<'a, A> {
     }
 
     fn summarize_predecessors(&self, node: &Node<Id>, old_input: &A::Domain) -> A::Domain {
-        let incoming_edges = self.flow.predecessors(node);
-        incoming_edges
+        self.flow
+            .predecessors(node)
             .iter()
             .map(|edge| A::transfer(self.knowledge(&edge.lhs), edge, &self.ctx))
             .reduce(|a, b| A::join(a, b, &self.ctx))

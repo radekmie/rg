@@ -49,7 +49,7 @@ impl Game<Arc<str>> {
 
     fn get_disjoint(
         &self,
-        mut edges: BTreeSet<&Edge<Arc<str>>>,
+        mut edges: BTreeSet<&Arc<Edge<Arc<str>>>>,
     ) -> Option<(bool, Vec<Node<Arc<str>>>)> {
         let e1 = edges.pop_first().unwrap();
 

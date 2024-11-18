@@ -24,11 +24,11 @@ impl Analysis for ReachableNodes {
         a || b
     }
 
-    fn kill(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn kill(input: Self::Domain, _edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
         input
     }
 
-    fn gen(input: Self::Domain, _edge: &Edge<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn gen(input: Self::Domain, _edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
         input
     }
 }

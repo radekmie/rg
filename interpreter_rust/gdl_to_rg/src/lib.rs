@@ -151,12 +151,12 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use rg::ast::{Edge, Expression, Label, Node};
     use utils::position::Span;
 
-    rg.edges.push(Edge {
+    rg.edges.push(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from("begin")),
         rhs: Node::new(Id::from("loop_begin")),
         label: Label::Skip { span: Span::none() },
-    });
+    }));
 
     let mut legals: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
     for term in gdl.subterms() {
@@ -181,7 +181,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         .collect::<Vec<_>>();
 
     for (role_index, role) in roles.iter().enumerate() {
-        rg.edges.push(Edge {
+        rg.edges.push(Arc::from(Edge {
             span: Span::none(),
             lhs: Node::new(if role_index == 0 {
                 Id::from("loop_begin")
@@ -190,11 +190,11 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
             }),
             rhs: Node::new(Id::from(format!("loop_{role}_visibility_0"))),
             label: Label::Skip { span: Span::none() },
-        });
+        }));
 
         for (op_index, op) in roles.iter().enumerate() {
             let is_visible = if role_index == op_index { "1" } else { "0" };
-            rg.edges.push(Edge {
+            rg.edges.push(Arc::from(Edge {
                 span: Span::none(),
                 lhs: Node::new(Id::from(format!("loop_{role}_visibility_{op_index}"))),
                 rhs: Node::new(Id::from(format!("loop_{role}_visibility_{}", op_index + 1))),
@@ -206,10 +206,10 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                     }),
                     rhs: Arc::from(Expression::new(Id::from(is_visible))),
                 },
-            });
+            }));
         }
 
-        rg.edges.push(Edge {
+        rg.edges.push(Arc::from(Edge {
             span: Span::none(),
             lhs: Node::new(Id::from(format!("loop_{role}_visibility_{}", roles.len()))),
             rhs: Node::new(Id::from(format!("loop_{role}_begin"))),
@@ -217,7 +217,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                 lhs: Arc::from(Expression::new(Id::from("player"))),
                 rhs: Arc::from(Expression::new((*role).clone())),
             },
-        });
+        }));
 
         for action in legals.get(role).unwrap() {
             connect(
@@ -237,7 +237,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         }
 
         for action in legals.get(role).unwrap() {
-            rg.edges.push(Edge {
+            rg.edges.push(Arc::from(Edge {
                 span: Span::none(),
                 lhs: Node::new(Id::from(format!("loop_{role}_{action}_move"))),
                 rhs: Node::new(Id::from(format!("loop_{role}_{action}_tag"))),
@@ -245,19 +245,19 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                     lhs: Arc::from(Expression::new(Id::from(format!("does_{role}")))),
                     rhs: Arc::from(Expression::new((*action).clone())),
                 },
-            });
+            }));
 
-            rg.edges.push(Edge {
+            rg.edges.push(Arc::from(Edge {
                 span: Span::none(),
                 lhs: Node::new(Id::from(format!("loop_{role}_{action}_tag"))),
                 rhs: Node::new(Id::from(format!("loop_{role}_switch"))),
                 label: Label::Tag {
                     symbol: (*action).clone(),
                 },
-            });
+            }));
         }
 
-        rg.edges.push(Edge {
+        rg.edges.push(Arc::from(Edge {
             span: Span::none(),
             lhs: Node::new(Id::from(format!("loop_{role}_switch"))),
             rhs: Node::new(Id::from(format!("loop_{role}_end"))),
@@ -265,15 +265,15 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                 lhs: Arc::from(Expression::new(Id::from("player"))),
                 rhs: Arc::from(Expression::new(Id::from("keeper"))),
             },
-        });
+        }));
     }
 
-    rg.edges.push(Edge {
+    rg.edges.push(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from(format!("loop_{}_end", roles.last().unwrap()))),
         rhs: Node::new(Id::from("loop_end")),
         label: Label::Skip { span: Span::none() },
-    });
+    }));
 }
 
 fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
@@ -281,12 +281,12 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use rg::ast::{Edge, Expression, Label, Node};
     use utils::position::Span;
 
-    rg.edges.push(Edge {
+    rg.edges.push(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from("loop_end")),
         rhs: Node::new(Id::from("next_0")),
         label: Label::Skip { span: Span::none() },
-    });
+    }));
 
     let mut variables = BTreeSet::new();
     for term in gdl.subterms() {
@@ -320,7 +320,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                     false,
                 );
 
-                rg.edges.push(Edge {
+                rg.edges.push(Arc::from(Edge {
                     span: Span::none(),
                     lhs: Node::new(Id::from(format!("next_{}_0", variables.len()))),
                     rhs: Node::new(Id::from(format!("next_{}", variables.len()))),
@@ -328,9 +328,9 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                         lhs: Arc::from(Expression::new(Id::from(format!("{id}_next")))),
                         rhs: Arc::from(Expression::new(Id::from("0"))),
                     },
-                });
+                }));
 
-                rg.edges.push(Edge {
+                rg.edges.push(Arc::from(Edge {
                     span: Span::none(),
                     lhs: Node::new(Id::from(format!("next_{}_1", variables.len()))),
                     rhs: Node::new(Id::from(format!("next_{}", variables.len()))),
@@ -338,20 +338,20 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                         lhs: Arc::from(Expression::new(Id::from(format!("{id}_next")))),
                         rhs: Arc::from(Expression::new(Id::from("1"))),
                     },
-                });
+                }));
             }
         }
     }
 
-    rg.edges.push(Edge {
+    rg.edges.push(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from(format!("next_{}", variables.len()))),
         rhs: Node::new(Id::from("next_0_set")),
         label: Label::Skip { span: Span::none() },
-    });
+    }));
 
     for (index, variable) in variables.iter().enumerate() {
-        rg.edges.push(Edge {
+        rg.edges.push(Arc::from(Edge {
             span: Span::none(),
             lhs: Node::new(Id::from(format!("next_{index}_set"))),
             rhs: Node::new(Id::from(format!("next_{}_set", index + 1))),
@@ -359,18 +359,18 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                 lhs: Arc::from(Expression::new(Id::from(format!("{variable}_prev")))),
                 rhs: Arc::from(Expression::new(Id::from(format!("{variable}_next")))),
             },
-        });
+        }));
     }
 
-    rg.edges.push(Edge {
+    rg.edges.push(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from(format!("next_{}_set", variables.len()))),
         rhs: Node::new(Id::from("next_0_clear")),
         label: Label::Skip { span: Span::none() },
-    });
+    }));
 
     for (index, variable) in variables.iter().enumerate() {
-        rg.edges.push(Edge {
+        rg.edges.push(Arc::from(Edge {
             span: Span::none(),
             lhs: Node::new(Id::from(format!("next_{index}_clear"))),
             rhs: Node::new(Id::from(format!("next_{}_clear", index + 1))),
@@ -378,15 +378,15 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                 lhs: Arc::from(Expression::new(Id::from(format!("{variable}_next")))),
                 rhs: Arc::from(Expression::new(Id::from("0"))),
             },
-        });
+        }));
     }
 
-    rg.edges.push(Edge {
+    rg.edges.push(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from(format!("next_{}_clear", variables.len()))),
         rhs: Node::new(Id::from("next_end")),
         label: Label::Skip { span: Span::none() },
-    });
+    }));
 }
 
 fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
@@ -394,12 +394,12 @@ fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use rg::ast::{Edge, Label, Node};
     use utils::position::Span;
 
-    rg.edges.push(Edge {
+    rg.edges.push(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from("next_end")),
         rhs: Node::new(Id::from("terminal")),
         label: Label::Skip { span: Span::none() },
-    });
+    }));
 
     connect(
         rg,
@@ -425,12 +425,12 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     use rg::ast::{Edge, Expression, Label, Node};
     use utils::position::Span;
 
-    rg.edges.push(Edge {
+    rg.edges.push(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from("terminal_end")),
         rhs: Node::new(Id::from("goals_0_set")),
         label: Label::Skip { span: Span::none() },
-    });
+    }));
 
     let mut goals: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
     for Rule { term, .. } in &gdl.0 {
@@ -455,7 +455,7 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         }
 
         for goal in goals {
-            rg.edges.push(Edge {
+            rg.edges.push(Arc::from(Edge {
                 span: Span::none(),
                 lhs: Node::new(Id::from(format!("goals_{}_check_{goal}", index + 1))),
                 rhs: Node::new(Id::from(format!("goals_{}_set", index + 1))),
@@ -467,11 +467,11 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                     }),
                     rhs: Arc::from(Expression::new((**goal).clone())),
                 },
-            });
+            }));
         }
     }
 
-    rg.edges.push(Edge {
+    rg.edges.push(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from(format!("goals_{}_set", goals.len()))),
         rhs: Node::new(Id::from("end")),
@@ -479,7 +479,7 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
             lhs: Arc::from(Expression::new(Id::from("player"))),
             rhs: Arc::from(Expression::new(Id::from("keeper"))),
         },
-    });
+    }));
 }
 
 fn hash_term(term: &gdl::ast::Term<Id>) -> String {
@@ -524,34 +524,34 @@ fn connect(
             edge_added = true;
 
             let prefix = format!("__{hash}_{index}");
-            rg.edges.push(Edge {
+            rg.edges.push(Arc::from(Edge {
                 span: Span::none(),
                 lhs: lhs.clone(),
                 rhs: Node::new(Id::from(format!("{prefix}_0"))),
                 label: Label::Skip { span: Span::none() },
-            });
+            }));
 
             for (step, predicate) in rule.predicates.iter().enumerate() {
                 let label = connect_one(rg, gdl, predicate, &format!("{prefix}_{}", step + 1));
-                rg.edges.push(Edge {
+                rg.edges.push(Arc::from(Edge {
                     span: Span::none(),
                     lhs: Node::new(Id::from(format!("{prefix}_{step}"))),
                     rhs: Node::new(Id::from(format!("{prefix}_{}", step + 1))),
                     label,
-                });
+                }));
             }
 
-            rg.edges.push(Edge {
+            rg.edges.push(Arc::from(Edge {
                 span: Span::none(),
                 lhs: Node::new(Id::from(format!("{prefix}_{}", rule.predicates.len()))),
                 rhs: rhs.clone(),
                 label: Label::Skip { span: Span::none() },
-            });
+            }));
         }
 
         // If no edges were added, add an always-false one.
         if !edge_added {
-            rg.edges.push(Edge {
+            rg.edges.push(Arc::from(Edge {
                 span: Span::none(),
                 lhs: lhs.clone(),
                 rhs: rhs.clone(),
@@ -560,11 +560,11 @@ fn connect(
                     rhs: Arc::from(Expression::new(Id::from("0"))),
                     negated: true,
                 },
-            });
+            }));
         }
     }
 
-    rg.edges.push(Edge {
+    rg.edges.push(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(begin),
         rhs: Node::new(end),
@@ -574,7 +574,7 @@ fn connect(
             rhs,
             negated,
         },
-    });
+    }));
 }
 
 fn connect_one(

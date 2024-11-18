@@ -93,8 +93,9 @@ fn build_node(mut node: ast::Node<Id>) -> Id {
     identifier
 }
 
-fn build_edges(context: &mut Context, edges: Vec<ast::Edge<Id>>) {
+fn build_edges(context: &mut Context, edges: Vec<Arc<ast::Edge<Id>>>) {
     for edge in edges {
+        let edge = Arc::unwrap_or_clone(edge);
         let lhs = build_node(edge.lhs);
         let rhs = build_node(edge.rhs);
         let label = build_label(context, edge.label);

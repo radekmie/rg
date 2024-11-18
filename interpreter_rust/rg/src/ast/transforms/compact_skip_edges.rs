@@ -17,7 +17,7 @@ impl Game<Arc<str>> {
         }
 
         let mut edge_counts: EdgeCounts = BTreeMap::new();
-        for Edge { lhs, rhs, .. } in &self.edges {
+        for Edge { lhs, rhs, .. } in self.edges.iter().map(Arc::as_ref) {
             edge_counts.entry(lhs.clone()).or_default().0 += 1;
             edge_counts.entry(rhs.clone()).or_default().1 += 1;
         }
@@ -42,7 +42,7 @@ impl Game<Arc<str>> {
             for x in xs {
                 change_edge_count!(&self.edges[x].rhs, 1, saturating_sub);
                 change_edge_count!(&self.edges[y].rhs, 1, saturating_add);
-                self.edges[x].rhs = self.edges[y].rhs.clone();
+                Arc::make_mut(&mut self.edges[x]).rhs = self.edges[y].rhs.clone();
             }
 
             remove_edge!(y);
@@ -52,7 +52,7 @@ impl Game<Arc<str>> {
             for y in ys {
                 change_edge_count!(&self.edges[y].lhs, 0, saturating_sub);
                 change_edge_count!(&self.edges[x].lhs, 0, saturating_add);
-                self.edges[y].lhs = self.edges[x].lhs.clone();
+                Arc::make_mut(&mut self.edges[y]).lhs = self.edges[x].lhs.clone();
             }
 
             remove_edge!(x);
@@ -61,13 +61,13 @@ impl Game<Arc<str>> {
         while let Some((x, y)) = self.jump_backward(&edge_counts) {
             change_edge_count!(&self.edges[x].rhs, 1, saturating_sub);
             change_edge_count!(&self.edges[y].rhs, 1, saturating_add);
-            self.edges[x].rhs = self.edges[y].rhs.clone();
+            Arc::make_mut(&mut self.edges[x]).rhs = self.edges[y].rhs.clone();
         }
 
         while let Some((x, y)) = self.jump_forward(&edge_counts) {
             change_edge_count!(&self.edges[y].lhs, 0, saturating_sub);
             change_edge_count!(&self.edges[x].lhs, 0, saturating_add);
-            self.edges[y].lhs = self.edges[x].lhs.clone();
+            Arc::make_mut(&mut self.edges[y]).lhs = self.edges[x].lhs.clone();
         }
 
         while let Some(x) = self.compact_skip_edge_single(&edge_counts) {
@@ -339,7 +339,7 @@ impl Game<Arc<str>> {
 
                 let mapping = BTreeMap::from([(binding.clone(), (fresh, type_.clone()))]);
                 for y in edges_to_rename {
-                    edges[y] = edges[y].rename_variables(&mapping);
+                    edges[y] = Arc::from(edges[y].rename_variables(&mapping));
                 }
             }
         }
@@ -365,7 +365,7 @@ impl Game<Arc<str>> {
                 let mapping = BTreeMap::from([(binding.clone(), (fresh.clone(), type_.clone()))]);
                 for y in get_edges_using_binding(edges, x, binding) {
                     mapped.insert((y, fresh.clone()));
-                    edges[y] = edges[y].rename_variables(&mapping);
+                    edges[y] = Arc::from(edges[y].rename_variables(&mapping));
                 }
             }
         }
@@ -381,7 +381,7 @@ fn are_bindings_safe(a: &Node<Arc<str>>, b: &Node<Arc<str>>, c: &Node<Arc<str>>)
 }
 
 fn get_edges_using_binding(
-    edges: &[Edge<Arc<str>>],
+    edges: &[Arc<Edge<Arc<str>>>],
     starting_edge_index: usize,
     binding: &Arc<str>,
 ) -> BTreeSet<usize> {

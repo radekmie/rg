@@ -85,7 +85,7 @@ impl<Id: Clone + PartialEq> Game<Id> {
     pub fn add_explicit_casts(&mut self) -> Result<(), Error<Id>> {
         let mut edges = take(&mut self.edges);
         for edge in &mut edges {
-            edge.add_explicit_casts(self)?;
+            Arc::make_mut(edge).add_explicit_casts(self)?;
         }
 
         self.edges = edges;

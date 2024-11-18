@@ -15,7 +15,7 @@ impl Game<Id> {
         };
         for edge in &mut self.edges {
             if let Label::Assignment { lhs, rhs } | Label::Comparison { lhs, rhs, .. } =
-                &mut edge.label
+                &mut Arc::make_mut(edge).label
             {
                 game.simplify_expression(lhs, &mut new_constants);
                 game.simplify_expression(rhs, &mut new_constants);

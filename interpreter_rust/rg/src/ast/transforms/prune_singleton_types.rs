@@ -33,7 +33,7 @@ impl Game<Arc<str>> {
 
         for edge in &mut self.edges {
             for (id, _) in types.values() {
-                edge.label = edge.label.remove_casts(id);
+                Arc::make_mut(edge).label = edge.label.remove_casts(id);
             }
 
             for (id, expression) in &variables {
@@ -44,12 +44,12 @@ impl Game<Arc<str>> {
                     // instead. It's legal, as the assignment are always legal.
                     if let Label::Assignment { lhs, .. } = &edge.label {
                         if lhs.uncast().is_reference_and(|lhs| lhs == id) {
-                            edge.skip();
+                            Arc::make_mut(edge).skip();
                             continue;
                         }
                     }
 
-                    edge.label = edge.label.substitute_variable(id, expression);
+                    Arc::make_mut(edge).label = edge.label.substitute_variable(id, expression);
                 }
             }
         }

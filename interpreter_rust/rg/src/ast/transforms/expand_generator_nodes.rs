@@ -15,7 +15,8 @@ impl Game<Id> {
                     index..index,
                     mappings
                         .into_iter()
-                        .map(|mapping| item.substitute_bindings(&mapping)),
+                        .map(|mapping| item.substitute_bindings(&mapping))
+                        .map(Arc::from),
                 );
             }
         }
