@@ -25,17 +25,8 @@ impl Context {
         label: rg::Label<Id>,
         bindings: &[rg::Binding<Id>],
     ) {
-        let parts: Vec<_> = bindings
-            .iter()
-            .map(|(identifier, type_)| rg::NodePart::Binding {
-                span: Span::none(),
-                identifier: (*identifier).clone(),
-                type_: (*type_).clone(),
-            })
-            .collect();
-
-        lhs.parts.extend(parts.clone());
-        rhs.parts.extend(parts);
+        add_bindings(&mut lhs, bindings);
+        add_bindings(&mut rhs, bindings);
         self.rg.edges.push(rg::Edge::new(lhs, rhs, label));
     }
 
@@ -89,6 +80,12 @@ pub fn hrg_to_rg(hrg: hrg::Game<Id>, reuse_functions: bool) -> rg::Game<Id> {
     );
 
     context.rg
+}
+
+fn add_bindings(node: &mut rg::Node<Id>, bindings: &[(&Id, &Arc<rg::Type<Id>>)]) {
+    bindings
+        .iter()
+        .for_each(|(identifier, type_)| node.add_binding((*identifier).clone(), (*type_).clone()));
 }
 
 #[expect(clippy::needless_pass_by_value)]
@@ -591,17 +588,7 @@ fn translate_automaton_statements(
                         panic!("break() requires break_node.");
                     };
 
-                    current_node
-                        .parts
-                        .extend(
-                            bindings
-                                .iter()
-                                .map(|(identifier, type_)| rg::NodePart::Binding {
-                                    span: Span::none(),
-                                    identifier: (*identifier).clone(),
-                                    type_: (*type_).clone(),
-                                }),
-                        );
+                    add_bindings(&mut current_node, bindings);
                     context.connect(current_node, break_node.clone(), rg::Label::new_skip(), &[]);
                     return true;
                 }
@@ -630,17 +617,7 @@ fn translate_automaton_statements(
                         panic!("continue() requires continue_node.");
                     };
 
-                    current_node
-                        .parts
-                        .extend(
-                            bindings
-                                .iter()
-                                .map(|(identifier, type_)| rg::NodePart::Binding {
-                                    span: Span::none(),
-                                    identifier: (*identifier).clone(),
-                                    type_: (*type_).clone(),
-                                }),
-                        );
+                    add_bindings(&mut current_node, bindings);
                     context.connect(
                         current_node,
                         continue_node.clone(),
@@ -660,17 +637,7 @@ fn translate_automaton_statements(
                         panic!("end() requires end_node.");
                     };
 
-                    current_node
-                        .parts
-                        .extend(
-                            bindings
-                                .iter()
-                                .map(|(identifier, type_)| rg::NodePart::Binding {
-                                    span: Span::none(),
-                                    identifier: (*identifier).clone(),
-                                    type_: (*type_).clone(),
-                                }),
-                        );
+                    add_bindings(&mut current_node, bindings);
                     context.connect(
                         current_node,
                         end_node.clone(),
@@ -693,17 +660,7 @@ fn translate_automaton_statements(
                         panic!("return() requires return_node.");
                     };
 
-                    current_node
-                        .parts
-                        .extend(
-                            bindings
-                                .iter()
-                                .map(|(identifier, type_)| rg::NodePart::Binding {
-                                    span: Span::none(),
-                                    identifier: (*identifier).clone(),
-                                    type_: (*type_).clone(),
-                                }),
-                        );
+                    add_bindings(&mut current_node, bindings);
                     context.connect(
                         current_node,
                         return_node.clone(),
@@ -896,11 +853,7 @@ fn translate_automaton_statements(
                 let binding = (identifier, &translate_type(type_));
 
                 let mut local_node = context.random_node(prefix);
-                local_node.parts.push(rg::NodePart::Binding {
-                    span: Span::none(),
-                    identifier: binding.0.clone(),
-                    type_: binding.1.clone(),
-                });
+                local_node.add_binding(binding.0.clone(), binding.1.clone());
                 context.connect(
                     current_node.clone(),
                     local_node.clone(),
@@ -929,11 +882,7 @@ fn translate_automaton_statements(
                 );
 
                 let after_node = context.random_node(prefix);
-                middle_node.parts.push(rg::NodePart::Binding {
-                    span: Span::none(),
-                    identifier: binding.0.clone(),
-                    type_: binding.1.clone(),
-                });
+                middle_node.add_binding(binding.0.clone(), binding.1.clone());
                 context.connect(
                     middle_node.clone(),
                     after_node.clone(),
@@ -942,7 +891,16 @@ fn translate_automaton_statements(
                 );
                 middle_node.parts.pop();
 
-                current_node = after_node;
+                let end_node = if bindings.is_empty() {
+                    after_node
+                } else {
+                    let end_node = context.random_node(prefix);
+                    add_bindings(&mut current_node, bindings);
+                    context.connect(after_node, end_node.clone(), rg::Label::new_skip(), &[]);
+                    end_node
+                };
+
+                current_node = end_node;
             }
             hrg::Statement::If { expression, body } => {
                 let then_node = context.random_node(prefix);
