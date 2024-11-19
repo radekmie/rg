@@ -75,21 +75,22 @@ impl Game<Id> {
     ) -> Option<(Subgraph, Option<BTreeSet<Id>>)> {
         let next_edges = self.next_edges();
         let mut defined_vars = BTreeSet::new();
-        let mut queue = vec![(start, BTreeSet::new())];
+        let mut previous = BTreeSet::new();
+        let mut queue = vec![start];
         let mut result = BTreeSet::new();
-        while let Some((lhs, mut previous)) = queue.pop() {
+        while let Some(lhs) = queue.pop() {
             previous.insert(lhs);
             if let Some(edges) = next_edges.get(&lhs) {
                 for edge in edges {
-                    if edge.has_bindings() || previous.contains(&edge.rhs) {
+                    if edge.has_bindings() {
                         return None;
                     }
                     if let Some((id, _)) = edge.label.as_var_assignment() {
                         defined_vars.insert(id.clone());
                     }
                     result.insert((*edge).clone());
-                    if edge.rhs != *target {
-                        queue.push((&edge.rhs, previous.clone()));
+                    if edge.rhs != *target && !previous.contains(&edge.rhs) {
+                        queue.push(&edge.rhs);
                     }
                 }
             }
@@ -242,6 +243,22 @@ mod test {
         a, 1: ;
         1, 2: 1 == 1;
         2, b: ;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        basic5,
+        "a, b: ? x -> z;
+        x, y: 1 == 1;
+        y, x: 2 == 2;
+        y, z: 3 == 3;",
+        "x, y: 1 == 1;
+        y, x: 2 == 2;
+        y, z: 3 == 3;
+        a, 1: ;
+        1, 2: 1 == 1;
+        2, 1: 2 == 2;
+        2, b: 3 == 3;"
     );
 
     test_transform!(
