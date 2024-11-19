@@ -284,7 +284,11 @@ impl Game<Arc<str>> {
             .filter(|(_, e)| e.label.is_skip())
         {
             for (y_index, y) in self.edges.iter().enumerate() {
-                if x.lhs == y.lhs && x.rhs == y.rhs && x_index != y_index {
+                if x.lhs == y.lhs
+                    && x.rhs == y.rhs
+                    && x_index != y_index
+                    && !y.label.is_assignment()
+                {
                     return Some(y_index);
                 }
             }
@@ -662,6 +666,14 @@ mod test {
         a, b: 1 == 1;
         b, c: 2 == 2;",
         "a, c: 2 == 2;"
+    );
+
+    test_transform!(
+        compact_skip_edges,
+        skip_and_assign,
+        "a, b: ;
+        a, b: x = 1;
+        b, c: 2 == 2;"
     );
 
     test_transform!(
