@@ -22,6 +22,7 @@ const initialState: State = {
     flags: {
       ...noFlagsEnabled,
       compactSkipEdges: true,
+      pruneUnreachableNodes: true,
       reuseFunctions: true,
       skipSelfAssignments: true,
       skipSelfComparisons: true,

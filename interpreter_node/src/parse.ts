@@ -1,6 +1,5 @@
 import { CstNode } from 'chevrotain';
 
-import * as hrg from './hrg';
 import * as rbg from './rbg';
 import * as rg from './rg';
 import * as translators from './translators';
@@ -9,7 +8,7 @@ import * as utils from './utils';
 import * as wasm from './wasm';
 
 export type AnalyzedGameStep = { title?: string } & (
-  | { kind: 'ast'; language: L.hrg; value: hrg.ast.GameDeclaration }
+  | { kind: 'ast'; language: L.hrg; value: unknown }
   | { kind: 'ast'; language: L.rbg; value: rbg.ast.Game }
   | { kind: 'ast'; language: L.rg; value: rg.ast.GameDeclaration }
   | { kind: 'automaton'; value: string }
