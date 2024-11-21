@@ -12,7 +12,9 @@ pub enum Statement<Id> {
         accessors: Vec<Arc<Expression<Id>>>,
         expression: Arc<Expression<Id>>,
     },
-    Branch { arms: Vec<Vec<Statement<Id>>> },
+    Branch {
+        arms: Vec<Vec<Statement<Id>>>,
+    },
     Call {
         identifier: Id,
         args: Vec<Arc<Expression<Id>>>,
@@ -26,8 +28,12 @@ pub enum Statement<Id> {
         expression: Arc<Expression<Id>>,
         body: Vec<Statement<Id>>,
     },
-    Loop { body: Vec<Statement<Id>> },
-    Tag { symbol: Id },
+    Loop {
+        body: Vec<Statement<Id>>,
+    },
+    Tag {
+        symbol: Id,
+    },
     While {
         expression: Arc<Expression<Id>>,
         body: Vec<Statement<Id>>,
@@ -91,7 +97,9 @@ pub enum DomainElement<Id> {
         args: Vec<Id>,
         values: Vec<DomainValue<Id>>,
     },
-    Literal { identifier: Id },
+    Literal {
+        identifier: Id,
+    },
 }
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
@@ -101,7 +109,10 @@ pub enum DomainValue<Id> {
         min: usize,
         max: usize,
     },
-    Set { identifier: Id, elements: Vec<Id> },
+    Set {
+        identifier: Id,
+        elements: Vec<Id>,
+    },
 }
 
 impl<Id> DomainValue<Id> {
@@ -111,6 +122,16 @@ impl<Id> DomainValue<Id> {
             Self::Set { identifier, .. } => identifier,
         }
     }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum Error<Id> {
+    DuplicatedDomainValue { identifier: Id },
+    EmptyMap,
+    IncomparableValues { lhs: Value<Id>, rhs: Value<Id> },
+    InvalidCondition { expression: Expression<Id> },
+    NotImplemented { message: &'static str },
+    UnknownAutomatonFunction { identifier: Id },
 }
 
 // TODO: Implement MapId for trivial enums
@@ -170,7 +191,9 @@ pub enum Expression<Id> {
         then: Arc<Expression<Id>>,
         else_: Arc<Expression<Id>>,
     },
-    Literal { identifier: Id },
+    Literal {
+        identifier: Id,
+    },
     Map {
         pattern: Arc<Pattern<Id>>,
         expression: Arc<Expression<Id>>,
@@ -184,8 +207,12 @@ pub enum Pattern<Id> {
         identifier: Id,
         args: Vec<Arc<Pattern<Id>>>,
     },
-    Literal { identifier: Id },
-    Variable { identifier: Id },
+    Literal {
+        identifier: Id,
+    },
+    Variable {
+        identifier: Id,
+    },
     Wildcard,
 }
 
@@ -201,7 +228,9 @@ pub enum Type<Id> {
         lhs: Arc<Type<Id>>,
         rhs: Arc<Type<Id>>,
     },
-    Name { identifier: Id },
+    Name {
+        identifier: Id,
+    },
 }
 
 impl<Id> Type<Id> {
@@ -216,8 +245,12 @@ pub enum Value<Id> {
         identifier: Id,
         args: Vec<Arc<Value<Id>>>,
     },
-    Element { identifier: Id },
-    Map { entries: Vec<ValueMapEntry<Id>> },
+    Element {
+        identifier: Id,
+    },
+    Map {
+        entries: Vec<ValueMapEntry<Id>>,
+    },
 }
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

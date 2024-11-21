@@ -44,7 +44,10 @@ impl Context {
     }
 }
 
-pub fn hrg_to_rg(hrg: hrg::Game<Id>, reuse_functions: bool) -> rg::Game<Id> {
+pub fn hrg_to_rg(
+    hrg: hrg::Game<Id>,
+    reuse_functions: bool,
+) -> Result<rg::Game<Id>, hrg::Error<Id>> {
     let mut context = Context {
         counters: BTreeMap::new(),
         hrg,
@@ -55,8 +58,8 @@ pub fn hrg_to_rg(hrg: hrg::Game<Id>, reuse_functions: bool) -> rg::Game<Id> {
     };
 
     translate_domains(&mut context);
-    translate_functions(&mut context);
-    translate_variables(&mut context);
+    translate_functions(&mut context)?;
+    translate_variables(&mut context)?;
 
     context.rg.edges.push(Arc::from(rg::Edge {
         span: Span::none(),
@@ -70,7 +73,9 @@ pub fn hrg_to_rg(hrg: hrg::Game<Id>, reuse_functions: bool) -> rg::Game<Id> {
         .automaton
         .iter()
         .find(|automaton_function| automaton_function.name.as_ref() == "rules")
-        .expect("No `rules` automation function found.")
+        .ok_or_else(|| hrg::Error::UnknownAutomatonFunction {
+            identifier: Arc::from("rules"),
+        })?
         .clone();
 
     translate_automaton_function(
@@ -79,9 +84,9 @@ pub fn hrg_to_rg(hrg: hrg::Game<Id>, reuse_functions: bool) -> rg::Game<Id> {
         Some(&rg::Node::new(Id::from("end"))),
         Some(&rg::Node::new(Id::from("end"))),
         &Id::from(""),
-    );
+    )?;
 
-    context.rg
+    Ok(context.rg)
 }
 
 fn add_bindings(node: &mut rg::Node<Id>, bindings: &[(&Id, &Arc<rg::Type<Id>>)]) {
@@ -107,7 +112,7 @@ fn compare_identifiers(lhs: &Id, rhs: &Id) -> Ordering {
     compare(lhs, rhs)
 }
 
-fn compare_values(lhs: &hrg::Value<Id>, rhs: &hrg::Value<Id>) -> Ordering {
+fn compare_values(lhs: &hrg::Value<Id>, rhs: &hrg::Value<Id>) -> Result<Ordering, hrg::Error<Id>> {
     match (lhs, rhs) {
         (
             hrg::Value::Constructor {
@@ -118,23 +123,32 @@ fn compare_values(lhs: &hrg::Value<Id>, rhs: &hrg::Value<Id>) -> Ordering {
                 identifier: ri,
                 args: ra,
             },
-        ) => compare_identifiers(li, ri)
-            .then_with(|| la.len().cmp(&ra.len()))
-            .then_with(|| {
-                la.iter().zip(ra).fold(Ordering::Equal, |ord, (lhs, rhs)| {
-                    ord.then_with(|| compare_values(lhs, rhs))
-                })
-            }),
+        ) => Ok(compare_identifiers(li, ri)
+            .then(la.len().cmp(&ra.len()))
+            .then({
+                la.iter()
+                    .zip(ra)
+                    .try_fold(Ordering::Equal, |ord, (lhs, rhs)| {
+                        Ok(ord.then(compare_values(lhs, rhs)?))
+                    })?
+            })),
         (hrg::Value::Element { identifier: li }, hrg::Value::Element { identifier: ri }) => {
-            compare_identifiers(li, ri)
+            Ok(compare_identifiers(li, ri))
         }
-        (hrg::Value::Map { .. }, hrg::Value::Map { .. }) => unimplemented!(),
-        _ => panic!("Incomparable values."),
+        (hrg::Value::Map { .. }, hrg::Value::Map { .. }) => Err(hrg::Error::NotImplemented {
+            message: "compare_values for Value::Map",
+        }),
+        _ => Err(hrg::Error::IncomparableValues {
+            lhs: lhs.clone(),
+            rhs: rhs.clone(),
+        }),
     }
 }
 
-fn construct_map(mut entries: Vec<rg::ValueEntry<Id>>) -> rg::Value<Id> {
-    assert!(!entries.is_empty(), "At least one entry is required.");
+fn construct_map(mut entries: Vec<rg::ValueEntry<Id>>) -> Result<rg::Value<Id>, hrg::Error<Id>> {
+    if entries.is_empty() {
+        return Err(hrg::Error::EmptyMap);
+    }
 
     let default_value = entries
         .iter()
@@ -160,10 +174,10 @@ fn construct_map(mut entries: Vec<rg::ValueEntry<Id>>) -> rg::Value<Id> {
         },
     );
 
-    rg::Value::Map {
+    Ok(rg::Value::Map {
         span: Span::none(),
         entries,
-    }
+    })
 }
 
 fn evaluate_binding(
@@ -206,23 +220,25 @@ fn evaluate_binding(
 fn evaluate_condition(
     expression: &hrg::Expression<Id>,
     binding: &BTreeMap<Id, hrg::Value<Id>>,
-) -> bool {
+) -> Result<bool, hrg::Error<Id>> {
     let hrg::Expression::BinExpr { lhs, op, rhs } = expression else {
-        panic!("Expression \"{expression}\" is not a valid condition.");
+        return Err(hrg::Error::InvalidCondition {
+            expression: expression.clone(),
+        });
     };
 
-    match op {
-        hrg::Binop::And => evaluate_condition(lhs, binding) && evaluate_condition(rhs, binding),
-        hrg::Binop::Or => evaluate_condition(lhs, binding) || evaluate_condition(rhs, binding),
+    Ok(match op {
+        hrg::Binop::And => evaluate_condition(lhs, binding)? && evaluate_condition(rhs, binding)?,
+        hrg::Binop::Or => evaluate_condition(lhs, binding)? || evaluate_condition(rhs, binding)?,
         hrg::Binop::Eq
         | hrg::Binop::Gt
         | hrg::Binop::Gte
         | hrg::Binop::Lt
         | hrg::Binop::Lte
         | hrg::Binop::Ne => {
-            let lhs = evaluate_expression(lhs, binding);
-            let rhs = evaluate_expression(rhs, binding);
-            let ord = compare_values(&lhs, &rhs);
+            let lhs = evaluate_expression(lhs, binding)?;
+            let rhs = evaluate_expression(rhs, binding)?;
+            let ord = compare_values(&lhs, &rhs)?;
             match op {
                 hrg::Binop::Eq => ord.is_eq(),
                 hrg::Binop::Gt => ord.is_gt(),
@@ -230,11 +246,19 @@ fn evaluate_condition(
                 hrg::Binop::Lt => ord.is_lt(),
                 hrg::Binop::Lte => ord.is_lt() || ord.is_eq(),
                 hrg::Binop::Ne => !ord.is_eq(),
-                _ => panic!("Expression \"{expression}\" is not a valid condition."),
+                _ => {
+                    return Err(hrg::Error::InvalidCondition {
+                        expression: expression.clone(),
+                    })
+                }
             }
         }
-        _ => panic!("Expression \"{expression}\" is not a valid condition."),
-    }
+        _ => {
+            return Err(hrg::Error::InvalidCondition {
+                expression: expression.clone(),
+            })
+        }
+    })
 }
 
 fn evaluate_default_value(context: &Context, type_: &rg::Type<Id>) -> hrg::Value<Id> {
@@ -259,16 +283,16 @@ fn evaluate_default_value(context: &Context, type_: &rg::Type<Id>) -> hrg::Value
 
 fn evaluate_domain_values(
     domain_values: &[hrg::DomainValue<Id>],
-) -> Vec<BTreeMap<Id, hrg::Value<Id>>> {
+) -> Result<Vec<BTreeMap<Id, hrg::Value<Id>>>, hrg::Error<Id>> {
     for domain_value in &domain_values[1..] {
-        assert_ne!(
-            domain_value.identifier(),
-            domain_values.first().unwrap().identifier(),
-            "Duplicated identifier."
-        );
+        if domain_value.identifier() == domain_values.first().unwrap().identifier() {
+            return Err(hrg::Error::DuplicatedDomainValue {
+                identifier: domain_value.identifier().clone(),
+            });
+        }
     }
 
-    domain_values
+    Ok(domain_values
         .iter()
         .map(|domain_value| match domain_value {
             hrg::DomainValue::Range {
@@ -310,7 +334,7 @@ fn evaluate_domain_values(
                     binding
                 })
         })
-        .collect()
+        .collect())
 }
 
 fn evaluate_equality(lhs: &rg::Value<Id>, rhs: &rg::Value<Id>) -> bool {
@@ -333,15 +357,15 @@ fn evaluate_equality(lhs: &rg::Value<Id>, rhs: &rg::Value<Id>) -> bool {
 fn evaluate_expression(
     expression: &hrg::Expression<Id>,
     binding: &BTreeMap<Id, hrg::Value<Id>>,
-) -> hrg::Value<Id> {
-    match expression {
+) -> Result<hrg::Value<Id>, hrg::Error<Id>> {
+    Ok(match expression {
         hrg::Expression::BinExpr { lhs, op, rhs }
             if matches!(op, hrg::Binop::Add | hrg::Binop::Mod | hrg::Binop::Sub) =>
         {
-            let lhs: i32 = evaluate_expression_identifier(lhs, binding)
+            let lhs: i32 = evaluate_expression_identifier(lhs, binding)?
                 .parse()
                 .unwrap();
-            let rhs: i32 = evaluate_expression_identifier(rhs, binding)
+            let rhs: i32 = evaluate_expression_identifier(rhs, binding)?
                 .parse()
                 .unwrap();
             let value = match op {
@@ -359,14 +383,14 @@ fn evaluate_expression(
             identifier: identifier.clone(),
             args: args
                 .iter()
-                .map(|expression| Arc::from(evaluate_expression(expression, binding)))
-                .collect(),
+                .map(|expression| Ok(Arc::from(evaluate_expression(expression, binding)?)))
+                .collect::<Result<_, _>>()?,
         },
         hrg::Expression::If { cond, then, else_ } => {
-            if evaluate_condition(cond, binding) {
-                evaluate_expression(then, binding)
+            if evaluate_condition(cond, binding)? {
+                evaluate_expression(then, binding)?
             } else {
-                evaluate_expression(else_, binding)
+                evaluate_expression(else_, binding)?
             }
         }
         hrg::Expression::Literal { identifier } => {
@@ -382,29 +406,31 @@ fn evaluate_expression(
             expression,
             domains,
         } => hrg::Value::Map {
-            entries: evaluate_domain_values(domains)
+            entries: evaluate_domain_values(domains)?
                 .into_iter()
                 .map(|subbinding| {
                     let mut binding = binding.clone();
                     binding.extend(subbinding);
                     binding
                 })
-                .map(|binding| hrg::ValueMapEntry {
-                    key: Arc::from(evaluate_pattern(pattern, &binding)),
-                    value: Arc::from(evaluate_expression(expression, &binding)),
+                .map(|binding| {
+                    Ok(hrg::ValueMapEntry {
+                        key: Arc::from(evaluate_pattern(pattern, &binding)),
+                        value: Arc::from(evaluate_expression(expression, &binding)?),
+                    })
                 })
-                .collect(),
+                .collect::<Result<_, _>>()?,
         },
         _ => unimplemented!(),
-    }
+    })
 }
 
 fn evaluate_expression_identifier(
     expression: &hrg::Expression<Id>,
     binding: &BTreeMap<Id, hrg::Value<Id>>,
-) -> Id {
-    match evaluate_expression(expression, binding) {
-        hrg::Value::Element { identifier } => identifier.clone(),
+) -> Result<Id, hrg::Error<Id>> {
+    match evaluate_expression(expression, binding)? {
+        hrg::Value::Element { identifier } => Ok(identifier.clone()),
         _ => panic!("Expected ValueElement."),
     }
 }
@@ -467,7 +493,7 @@ fn translate_automaton_function(
     end_node: Option<&rg::Node<Id>>,
     return_node: Option<&rg::Node<Id>>,
     prefix: &Id,
-) {
+) -> Result<(), hrg::Error<Id>> {
     for (index, arg) in automaton_function.args.iter().enumerate() {
         // Function arguments are hoisted into global variables, shadowing them
         // if needed. For the sake of easier implementation, the type of a
@@ -486,7 +512,7 @@ fn translate_automaton_function(
                 ),
             None => context.rg.variables.push(rg::Variable {
                 span: Span::none(),
-                default_value: Arc::from(translate_value(&evaluate_default_value(context, &type_))),
+                default_value: Arc::from(translate_value(&evaluate_default_value(context, &type_))?),
                 identifier,
                 type_
             })
@@ -515,13 +541,15 @@ fn translate_automaton_function(
         &Id::from(format!("{prefix}{}", automaton_function.name)),
         Some(&next_node),
         Some(automaton_function),
-    );
+    )?;
 
     if returns {
         if let Some(return_node) = return_node {
             context.connect(next_node, return_node.clone(), rg::Label::new_skip(), &[]);
         }
     }
+
+    Ok(())
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -537,7 +565,7 @@ fn translate_automaton_statements(
     prefix: &Id,
     return_node: Option<&rg::Node<Id>>,
     automaton_function: Option<&hrg::Function<Id>>,
-) -> bool {
+) -> Result<bool, hrg::Error<Id>> {
     let mut current_node = entry_node;
     for automaton_statement in automaton_statements {
         match automaton_statement {
@@ -551,15 +579,21 @@ fn translate_automaton_statements(
                     current_node,
                     local_node.clone(),
                     rg::Label::Assignment {
-                        lhs: Arc::from(accessors.iter().fold(
+                        lhs: Arc::from(accessors.iter().try_fold(
                             rg::Expression::new(identifier.clone()),
-                            |expression, accessor| rg::Expression::Access {
-                                span: Span::none(),
-                                lhs: Arc::from(expression),
-                                rhs: translate_expression(accessor, bindings, automaton_function),
+                            |expression, accessor| {
+                                Ok(rg::Expression::Access {
+                                    span: Span::none(),
+                                    lhs: Arc::from(expression),
+                                    rhs: translate_expression(
+                                        accessor,
+                                        bindings,
+                                        automaton_function,
+                                    )?,
+                                })
                             },
-                        )),
-                        rhs: translate_expression(expression, bindings, automaton_function),
+                        )?),
+                        rhs: translate_expression(expression, bindings, automaton_function)?,
                     },
                     bindings,
                 );
@@ -580,7 +614,7 @@ fn translate_automaton_statements(
                         prefix,
                         return_node,
                         automaton_function,
-                    );
+                    )?;
                 }
                 current_node = local_node;
             }
@@ -598,7 +632,7 @@ fn translate_automaton_statements(
 
                     add_bindings(&mut current_node, bindings);
                     context.connect(current_node, break_node.clone(), rg::Label::new_skip(), &[]);
-                    return true;
+                    return Ok(true);
                 }
                 "check" => {
                     assert_eq!(args.len(), 1, "check() expects exactly 1 argument.");
@@ -612,7 +646,7 @@ fn translate_automaton_statements(
                         prefix,
                         bindings,
                         automaton_function,
-                    );
+                    )?;
                     current_node = local_node;
                 }
                 "continue" => {
@@ -633,7 +667,7 @@ fn translate_automaton_statements(
                         rg::Label::new_skip(),
                         &[],
                     );
-                    return true;
+                    return Ok(true);
                 }
                 "end" => {
                     assert!(args.is_empty(), "end() expects no arguments.");
@@ -656,7 +690,7 @@ fn translate_automaton_statements(
                         },
                         &[],
                     );
-                    return true;
+                    return Ok(true);
                 }
                 "return" => {
                     assert!(args.is_empty(), "return() expects no arguments.");
@@ -676,7 +710,7 @@ fn translate_automaton_statements(
                         rg::Label::new_skip(),
                         &[],
                     );
-                    return true;
+                    return Ok(true);
                 }
                 _ => {
                     let called_automaton_function = context
@@ -772,7 +806,7 @@ fn translate_automaton_statements(
                                     lhs: Arc::from(rg::Expression::new(
                                         called_automaton_function.nth_arg_variable(index),
                                     )),
-                                    rhs: translate_expression(arg, bindings, automaton_function),
+                                    rhs: translate_expression(arg, bindings, automaton_function)?,
                                 },
                                 bindings,
                             );
@@ -803,7 +837,7 @@ fn translate_automaton_statements(
                                 end_node,
                                 Some(&local_node),
                                 &Id::from(""),
-                            );
+                            )?;
                         } else {
                             context.connect(
                                 rg::Node::new(Id::from(format!(
@@ -841,7 +875,7 @@ fn translate_automaton_statements(
                                     lhs: Arc::from(rg::Expression::new(
                                         called_automaton_function.nth_arg_variable(index),
                                     )),
-                                    rhs: translate_expression(arg, bindings, automaton_function),
+                                    rhs: translate_expression(arg, bindings, automaton_function)?,
                                 },
                                 bindings,
                             );
@@ -865,7 +899,7 @@ fn translate_automaton_statements(
                             end_node,
                             Some(&local_node),
                             &call_id,
-                        );
+                        )?;
                         current_node = local_node;
                     }
                 }
@@ -905,7 +939,7 @@ fn translate_automaton_statements(
                     prefix,
                     return_node,
                     automaton_function,
-                );
+                )?;
 
                 let after_node = context.random_node(prefix);
                 middle_node.add_binding(binding.0.clone(), binding.1.clone());
@@ -940,7 +974,7 @@ fn translate_automaton_statements(
                     prefix,
                     bindings,
                     automaton_function,
-                );
+                )?;
                 translate_automaton_statements(
                     context,
                     body,
@@ -953,7 +987,7 @@ fn translate_automaton_statements(
                     prefix,
                     return_node,
                     automaton_function,
-                );
+                )?;
                 current_node = else_node;
             }
             hrg::Statement::Loop { body } => {
@@ -970,7 +1004,7 @@ fn translate_automaton_statements(
                     prefix,
                     return_node,
                     automaton_function,
-                );
+                )?;
                 current_node = local_node;
             }
             hrg::Statement::Tag { symbol } => {
@@ -997,7 +1031,7 @@ fn translate_automaton_statements(
                     prefix,
                     bindings,
                     automaton_function,
-                );
+                )?;
                 translate_automaton_statements(
                     context,
                     body,
@@ -1010,7 +1044,7 @@ fn translate_automaton_statements(
                     prefix,
                     return_node,
                     automaton_function,
-                );
+                )?;
                 current_node = else_node;
             }
         }
@@ -1025,7 +1059,7 @@ fn translate_automaton_statements(
         );
     }
 
-    true
+    Ok(true)
 }
 
 #[expect(clippy::too_many_arguments)]
@@ -1038,7 +1072,7 @@ fn translate_condition(
     prefix: &Id,
     bindings: &[rg::Binding<Id>],
     automaton_function: Option<&hrg::Function<Id>>,
-) {
+) -> Result<(), hrg::Error<Id>> {
     match expression {
         hrg::Expression::BinExpr {
             lhs,
@@ -1055,7 +1089,7 @@ fn translate_condition(
                 prefix,
                 bindings,
                 automaton_function,
-            );
+            )?;
             translate_condition(
                 context,
                 rhs,
@@ -1065,7 +1099,7 @@ fn translate_condition(
                 prefix,
                 bindings,
                 automaton_function,
-            );
+            )?;
         }
         hrg::Expression::BinExpr {
             lhs,
@@ -1077,8 +1111,8 @@ fn translate_condition(
                     entry_node.clone(),
                     then_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs, bindings, automaton_function),
-                        rhs: translate_expression(rhs, bindings, automaton_function),
+                        lhs: translate_expression(lhs, bindings, automaton_function)?,
+                        rhs: translate_expression(rhs, bindings, automaton_function)?,
                         negated: false,
                     },
                     bindings,
@@ -1089,8 +1123,8 @@ fn translate_condition(
                     entry_node.clone(),
                     else_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs, bindings, automaton_function),
-                        rhs: translate_expression(rhs, bindings, automaton_function),
+                        lhs: translate_expression(lhs, bindings, automaton_function)?,
+                        rhs: translate_expression(rhs, bindings, automaton_function)?,
                         negated: true,
                     },
                     bindings,
@@ -1112,7 +1146,7 @@ fn translate_condition(
                 prefix,
                 bindings,
                 automaton_function,
-            );
+            )?;
             translate_condition(
                 context,
                 rhs,
@@ -1122,7 +1156,7 @@ fn translate_condition(
                 prefix,
                 bindings,
                 automaton_function,
-            );
+            )?;
         }
         hrg::Expression::BinExpr {
             lhs,
@@ -1134,8 +1168,8 @@ fn translate_condition(
                     entry_node.clone(),
                     then_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs, bindings, automaton_function),
-                        rhs: translate_expression(rhs, bindings, automaton_function),
+                        lhs: translate_expression(lhs, bindings, automaton_function)?,
+                        rhs: translate_expression(rhs, bindings, automaton_function)?,
                         negated: true,
                     },
                     bindings,
@@ -1146,8 +1180,8 @@ fn translate_condition(
                     entry_node.clone(),
                     else_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs, bindings, automaton_function),
-                        rhs: translate_expression(rhs, bindings, automaton_function),
+                        lhs: translate_expression(lhs, bindings, automaton_function)?,
+                        rhs: translate_expression(rhs, bindings, automaton_function)?,
                         negated: false,
                     },
                     bindings,
@@ -1171,7 +1205,7 @@ fn translate_condition(
                         prefix,
                         bindings,
                         automaton_function,
-                    );
+                    )?;
                 }
                 "reachable" => {
                     assert_eq!(args.len(), 1, "reachable() expects exactly 1 argument.");
@@ -1219,7 +1253,7 @@ fn translate_condition(
                                 lhs: Arc::from(rg::Expression::new(
                                     called_automaton_function.nth_arg_variable(index),
                                 )),
-                                rhs: translate_expression(arg, bindings, automaton_function),
+                                rhs: translate_expression(arg, bindings, automaton_function)?,
                             },
                             bindings,
                         );
@@ -1254,7 +1288,7 @@ fn translate_condition(
                                 Some(&automaton_end_node),
                                 None,
                                 &Id::from(""),
-                            );
+                            )?;
                         }
                     } else {
                         translate_automaton_function(
@@ -1263,7 +1297,7 @@ fn translate_condition(
                             Some(&automaton_end_node),
                             None,
                             &Id::from(format!("{prefix}_")),
-                        );
+                        )?;
                     }
 
                     if let Some(then_node) = then_node {
@@ -1299,6 +1333,8 @@ fn translate_condition(
         }
         _ => unimplemented!(),
     }
+
+    Ok(())
 }
 
 fn translate_domains(context: &mut Context) {
@@ -1388,25 +1424,25 @@ fn translate_expression(
     expression: &hrg::Expression<Id>,
     bindings: &[rg::Binding<Id>],
     automaton_function: Option<&hrg::Function<Id>>,
-) -> Arc<rg::Expression<Id>> {
-    match expression {
+) -> Result<Arc<rg::Expression<Id>>, hrg::Error<Id>> {
+    Ok(match expression {
         hrg::Expression::Access { lhs, rhs } => Arc::from(rg::Expression::Access {
             span: Span::none(),
-            lhs: translate_expression(lhs, bindings, automaton_function),
-            rhs: translate_expression(rhs, bindings, automaton_function),
+            lhs: translate_expression(lhs, bindings, automaton_function)?,
+            rhs: translate_expression(rhs, bindings, automaton_function)?,
         }),
-        hrg::Expression::Call { expression, args } => args.iter().fold(
-            translate_expression(expression, bindings, automaton_function),
+        hrg::Expression::Call { expression, args } => args.iter().try_fold(
+            translate_expression(expression, bindings, automaton_function)?,
             |expression, arg| {
-                Arc::from(rg::Expression::Access {
+                Ok(Arc::from(rg::Expression::Access {
                     span: Span::none(),
                     lhs: expression,
-                    rhs: translate_expression(arg, bindings, automaton_function),
-                })
+                    rhs: translate_expression(arg, bindings, automaton_function)?,
+                }))
             },
-        ),
+        )?,
         hrg::Expression::Constructor { .. } => Arc::from(rg::Expression::new(serialize_value(
-            &evaluate_expression(expression, &BTreeMap::new()),
+            &evaluate_expression(expression, &BTreeMap::new())?,
         ))),
         hrg::Expression::Literal { identifier } => {
             // If it's function's argument...
@@ -1415,22 +1451,22 @@ fn translate_expression(
                     // ...not shadowed by some binding...
                     if bindings.iter().all(|binding| binding.0 != identifier) {
                         // ...then rename it.
-                        return Arc::from(rg::Expression::new(
+                        return Ok(Arc::from(rg::Expression::new(
                             automaton_function.nth_arg_variable(index),
-                        ));
+                        )));
                     }
                 }
             }
             Arc::from(rg::Expression::new(identifier.clone()))
         }
         _ => unimplemented!(),
-    }
+    })
 }
 
 fn translate_function(
     context: &Context,
     function_declaration: &hrg::FunctionDeclaration<Id>,
-) -> rg::Constant<Id> {
+) -> Result<rg::Constant<Id>, hrg::Error<Id>> {
     let first_case = function_declaration
         .cases
         .first()
@@ -1456,13 +1492,14 @@ fn translate_function(
         first_case,
         &type_,
         &[],
-    ));
-    rg::Constant {
+    )?);
+
+    Ok(rg::Constant {
         span: Span::none(),
         identifier: function_declaration.identifier.clone(),
         type_,
         value,
-    }
+    })
 }
 
 fn translate_function_layer(
@@ -1471,7 +1508,7 @@ fn translate_function_layer(
     first_case: &hrg::FunctionCase<Id>,
     type_: &rg::Type<Id>,
     values: &[hrg::Value<Id>],
-) -> rg::Value<Id> {
+) -> Result<rg::Value<Id>, hrg::Error<Id>> {
     if first_case.args.len() > values.len() {
         if let rg::Type::Arrow { lhs, rhs } = type_ {
             return construct_map(
@@ -1480,7 +1517,7 @@ fn translate_function_layer(
                     .map(|value| {
                         let mut values = values.to_owned();
                         values.push(value.clone());
-                        rg::ValueEntry {
+                        Ok(rg::ValueEntry {
                             span: Span::none(),
                             identifier: Some(serialize_value(value)),
                             value: Arc::from(translate_function_layer(
@@ -1489,10 +1526,10 @@ fn translate_function_layer(
                                 first_case,
                                 rhs,
                                 &values,
-                            )),
-                        }
+                            )?),
+                        })
                     })
-                    .collect(),
+                    .collect::<Result<_, _>>()?,
             );
         }
     }
@@ -1524,19 +1561,21 @@ fn translate_function_layer(
             )
         });
 
-    let value = evaluate_expression(&arm.1.body, &arm.0);
-    rg::Value::Element {
+    let value = evaluate_expression(&arm.1.body, &arm.0)?;
+    Ok(rg::Value::Element {
         identifier: serialize_value(&value),
-    }
+    })
 }
 
-fn translate_functions(context: &mut Context) {
+fn translate_functions(context: &mut Context) -> Result<(), hrg::Error<Id>> {
     for function_declaration in &context.hrg.functions {
         context
             .rg
             .constants
-            .push(translate_function(context, function_declaration));
+            .push(translate_function(context, function_declaration)?);
     }
+
+    Ok(())
 }
 
 fn translate_type(type_: &hrg::Type<Id>) -> Arc<rg::Type<Id>> {
@@ -1551,52 +1590,51 @@ fn translate_type(type_: &hrg::Type<Id>) -> Arc<rg::Type<Id>> {
     })
 }
 
-fn translate_value(value: &hrg::Value<Id>) -> rg::Value<Id> {
+fn translate_value(value: &hrg::Value<Id>) -> Result<rg::Value<Id>, hrg::Error<Id>> {
     match value {
-        hrg::Value::Constructor { .. } => rg::Value::Element {
+        hrg::Value::Constructor { .. } => Ok(rg::Value::Element {
             identifier: serialize_value(value),
-        },
-        hrg::Value::Element { identifier } => rg::Value::Element {
+        }),
+        hrg::Value::Element { identifier } => Ok(rg::Value::Element {
             identifier: identifier.clone(),
-        },
-        hrg::Value::Map { entries } => {
-            assert!(!entries.is_empty(), "At least one entry is required.");
-            construct_map(
-                entries
-                    .iter()
-                    .map(|entry| rg::ValueEntry {
+        }),
+        hrg::Value::Map { entries } => construct_map(
+            entries
+                .iter()
+                .map(|entry| {
+                    Ok(rg::ValueEntry {
                         span: Span::none(),
                         identifier: Some(serialize_value(&entry.key)),
-                        value: Arc::from(translate_value(&entry.value)),
+                        value: Arc::from(translate_value(&entry.value)?),
                     })
-                    .collect(),
-            )
-        }
+                })
+                .collect::<Result<_, _>>()?,
+        ),
     }
 }
 
 fn translate_variable(
     context: &Context,
     variable_declaration: &hrg::VariableDeclaration<Id>,
-) -> rg::Variable<Id> {
+) -> Result<rg::Variable<Id>, hrg::Error<Id>> {
     let type_ = translate_type(&variable_declaration.type_);
-    rg::Variable {
+    Ok(rg::Variable {
         span: Span::none(),
         default_value: Arc::from(translate_variable_default_value(
             context,
             &variable_declaration.default_value,
             &type_,
-        )),
+        )?),
         identifier: variable_declaration.identifier.clone(),
         type_,
-    }
+    })
 }
 
 fn translate_variable_default_value(
     context: &Context,
     default_value: &Option<Arc<hrg::Expression<Id>>>,
     type_: &rg::Type<Id>,
-) -> rg::Value<Id> {
+) -> Result<rg::Value<Id>, hrg::Error<Id>> {
     match default_value.as_deref() {
         // If there's none, build one from the type.
         None => translate_value(&evaluate_default_value(context, type_)),
@@ -1606,7 +1644,7 @@ fn translate_variable_default_value(
             pattern,
             expression,
             ..
-        }) if **pattern == hrg::Pattern::Wildcard => rg::Value::Map {
+        }) if **pattern == hrg::Pattern::Wildcard => Ok(rg::Value::Map {
             span: Span::none(),
             entries: vec![rg::ValueEntry {
                 span: Span::none(),
@@ -1614,23 +1652,25 @@ fn translate_variable_default_value(
                 value: Arc::from(translate_value(&evaluate_expression(
                     expression,
                     &BTreeMap::new(),
-                ))),
+                )?)?),
             }],
-        },
+        }),
 
         // Build the map.
         // TODO: Check whether map domains match type domains.
         Some(default_value) => {
-            translate_value(&evaluate_expression(default_value, &BTreeMap::new()))
+            translate_value(&evaluate_expression(default_value, &BTreeMap::new())?)
         }
     }
 }
 
-fn translate_variables(context: &mut Context) {
+fn translate_variables(context: &mut Context) -> Result<(), hrg::Error<Id>> {
     for variable_declaration in &context.hrg.variables {
         context
             .rg
             .variables
-            .push(translate_variable(context, variable_declaration));
+            .push(translate_variable(context, variable_declaration)?);
     }
+
+    Ok(())
 }

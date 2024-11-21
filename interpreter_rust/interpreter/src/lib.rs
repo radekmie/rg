@@ -113,7 +113,7 @@ pub fn analyze_hrg_inner(
     assert_eq!(safe_parse_hrg_source(&serialized)?, hrg);
     step!({ "kind": "source", "language": "hrg", "value": serialized, "title": "formatted" });
 
-    let rg = hrg_to_rg::hrg_to_rg(hrg, reuse_functions);
+    let rg = hrg_to_rg::hrg_to_rg(hrg, reuse_functions).map_err(|error| error.to_string())?;
     step!({ "kind": "ast", "language": "rg", "value": rg });
 
     Ok(rg)

@@ -1,6 +1,7 @@
 use super::{
-    Binop, DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg,
-    FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
+    Binop, DomainDeclaration, DomainElement, DomainValue, Error, Expression, Function, FunctionArg,
+    FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, Value, ValueMapEntry,
+    VariableDeclaration,
 };
 use std::fmt::{Display, Formatter, Result};
 
@@ -58,6 +59,27 @@ impl<Id: Display> Display for DomainValue<Id> {
                 write!(f, "{identifier} in {{ ")?;
                 write_with_separator(f, elements, ", ")?;
                 write!(f, " }}")
+            }
+        }
+    }
+}
+
+impl<Id: Display> Display for Error<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Self::DuplicatedDomainValue { identifier } => {
+                write!(f, "Duplicated domain value \"{identifier}\".")
+            }
+            Self::EmptyMap => write!(f, "At least one map entry is required to construct a map."),
+            Self::IncomparableValues { lhs, rhs } => {
+                write!(f, "Values \"{lhs}\" and \"{rhs}\" are not comparable.")
+            }
+            Self::InvalidCondition { expression } => {
+                write!(f, "Expression \"{expression}\" is not a valid condition.")
+            }
+            Self::NotImplemented { message } => write!(f, "Not implemented ({message})."),
+            Self::UnknownAutomatonFunction { identifier } => {
+                write!(f, "Unknown automaton function \"{identifier}\".")
             }
         }
     }
@@ -139,6 +161,31 @@ impl<Id: Display> Display for DomainDeclaration<Id> {
 impl<Id: Display> Display for FunctionDeclaration<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write_function_declaration(f, self, 0)
+    }
+}
+
+impl<Id: Display> Display for Value<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Self::Constructor { identifier, args } => {
+                write!(f, "{identifier}(")?;
+                write_with_separator(f, args, ", ")?;
+                write!(f, ")")
+            }
+            Self::Element { identifier } => write!(f, "{identifier}"),
+            Self::Map { entries, .. } => {
+                write!(f, "{{ ")?;
+                write_with_separator(f, entries, ", ")?;
+                write!(f, " }}")
+            }
+        }
+    }
+}
+
+impl<Id: Display> Display for ValueMapEntry<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let Self { key, value } = self;
+        write!(f, "{key}: {value}")
     }
 }
 
