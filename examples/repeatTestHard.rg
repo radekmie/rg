@@ -22,6 +22,6 @@ loopRight, loop: ;
 
 loop, win: pos==Position(v2);
 win, setscore: goals[tester]=100;
-loop, exit: ;
-setscore, exit: ;
+setscore, exit: $ WIN;
+loop, exit: $ LOSE;
 exit, end: player = PlayerOrKeeper(keeper);
