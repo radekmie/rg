@@ -475,14 +475,13 @@ fn evaluate_type_values<'a>(context: &'a Context, type_: &rg::Type<Id>) -> &'a [
 fn serialize_value(value: &hrg::Value<Id>) -> Id {
     match value {
         hrg::Value::Constructor { identifier, args } => Arc::from(format!(
-            "{}__{}",
-            identifier.to_lowercase(),
+            "{identifier}__{}",
             args.iter()
                 .map(|arg| serialize_value(arg))
                 .collect::<Vec<_>>()
                 .join("_")
         )),
-        hrg::Value::Element { identifier } => Arc::from(identifier.to_lowercase()),
+        hrg::Value::Element { identifier } => identifier.clone(),
         hrg::Value::Map { .. } => unimplemented!(),
     }
 }
