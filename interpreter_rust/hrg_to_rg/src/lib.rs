@@ -20,16 +20,16 @@ struct Context {
 impl Context {
     fn connect(
         &mut self,
-        mut lhs: rg::Node<Id>,
-        mut rhs: rg::Node<Id>,
+        lhs: rg::Node<Id>,
+        rhs: rg::Node<Id>,
         label: rg::Label<Id>,
         bindings: &[rg::Binding<Id>],
     ) {
-        add_bindings(&mut lhs, bindings);
-        add_bindings(&mut rhs, bindings);
-        self.rg
-            .edges
-            .push(Arc::from(rg::Edge::new(lhs, rhs, label)));
+        self.rg.edges.push(Arc::from(rg::Edge::new(
+            add_bindings(lhs, bindings),
+            add_bindings(rhs, bindings),
+            label,
+        )));
     }
 
     fn random(&mut self, prefix: &Id) -> Id {
@@ -89,10 +89,11 @@ pub fn hrg_to_rg(
     Ok(context.rg)
 }
 
-fn add_bindings(node: &mut rg::Node<Id>, bindings: &[(&Id, &Arc<rg::Type<Id>>)]) {
+fn add_bindings(mut node: rg::Node<Id>, bindings: &[(&Id, &Arc<rg::Type<Id>>)]) -> rg::Node<Id> {
     bindings
         .iter()
         .for_each(|(identifier, type_)| node.add_binding((*identifier).clone(), (*type_).clone()));
+    node
 }
 
 #[expect(clippy::needless_pass_by_value)]
@@ -629,8 +630,12 @@ fn translate_automaton_statements(
                         panic!("break() requires break_node.");
                     };
 
-                    add_bindings(&mut current_node, bindings);
-                    context.connect(current_node, break_node.clone(), rg::Label::new_skip(), &[]);
+                    context.connect(
+                        add_bindings(current_node, bindings),
+                        break_node.clone(),
+                        rg::Label::new_skip(),
+                        &[],
+                    );
                     return Ok(true);
                 }
                 "check" => {
@@ -659,9 +664,8 @@ fn translate_automaton_statements(
                         panic!("continue() requires continue_node.");
                     };
 
-                    add_bindings(&mut current_node, bindings);
                     context.connect(
-                        current_node,
+                        add_bindings(current_node, bindings),
                         continue_node.clone(),
                         rg::Label::new_skip(),
                         &[],
@@ -679,9 +683,8 @@ fn translate_automaton_statements(
                         panic!("end() requires end_node.");
                     };
 
-                    add_bindings(&mut current_node, bindings);
                     context.connect(
-                        current_node,
+                        add_bindings(current_node, bindings),
                         end_node.clone(),
                         rg::Label::Assignment {
                             lhs: Arc::from(rg::Expression::new(Id::from("player"))),
@@ -702,9 +705,8 @@ fn translate_automaton_statements(
                         panic!("return() requires return_node.");
                     };
 
-                    add_bindings(&mut current_node, bindings);
                     context.connect(
-                        current_node,
+                        add_bindings(current_node, bindings),
                         return_node.clone(),
                         rg::Label::new_skip(),
                         &[],
@@ -910,17 +912,15 @@ fn translate_automaton_statements(
             } => {
                 let binding = (identifier, &translate_type(type_));
 
-                let mut local_node = context.random_node(prefix);
-                local_node.add_binding(binding.0.clone(), binding.1.clone());
+                let local_node = context.random_node(prefix);
                 context.connect(
-                    current_node.clone(),
-                    local_node.clone(),
+                    add_bindings(current_node, bindings),
+                    add_bindings(add_bindings(local_node.clone(), bindings), &[binding]),
                     rg::Label::new_skip(),
-                    bindings,
+                    &[],
                 );
-                local_node.parts.pop();
 
-                let mut middle_node = context.random_node(prefix);
+                let middle_node = context.random_node(prefix);
                 translate_automaton_statements(
                     context,
                     body,
@@ -941,25 +941,14 @@ fn translate_automaton_statements(
                 )?;
 
                 let after_node = context.random_node(prefix);
-                middle_node.add_binding(binding.0.clone(), binding.1.clone());
                 context.connect(
-                    middle_node.clone(),
-                    after_node.clone(),
+                    add_bindings(add_bindings(middle_node, bindings), &[binding]),
+                    add_bindings(after_node.clone(), bindings),
                     rg::Label::new_skip(),
-                    bindings,
+                    &[],
                 );
-                middle_node.parts.pop();
 
-                let end_node = if bindings.is_empty() {
-                    after_node
-                } else {
-                    let end_node = context.random_node(prefix);
-                    add_bindings(&mut current_node, bindings);
-                    context.connect(after_node, end_node.clone(), rg::Label::new_skip(), &[]);
-                    end_node
-                };
-
-                current_node = end_node;
+                current_node = after_node;
             }
             hrg::Statement::If { expression, body } => {
                 let then_node = context.random_node(prefix);
