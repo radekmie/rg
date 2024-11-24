@@ -126,12 +126,30 @@ impl<Id> DomainValue<Id> {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum Error<Id> {
-    DuplicatedDomainValue { identifier: Id },
+    DuplicatedDomainValue {
+        identifier: Id,
+    },
     EmptyMap,
-    IncomparableValues { lhs: Value<Id>, rhs: Value<Id> },
-    InvalidCondition { expression: Expression<Id> },
-    NotImplemented { message: &'static str },
-    UnknownAutomatonFunction { identifier: Id },
+    FunctionCaseNotCovered {
+        identifier: Id,
+        args: Vec<Value<Id>>,
+    },
+    IncomparableValues {
+        lhs: Value<Id>,
+        rhs: Value<Id>,
+    },
+    InvalidCondition {
+        expression: Expression<Id>,
+    },
+    NotImplemented {
+        message: &'static str,
+    },
+    UnknownAutomatonFunction {
+        identifier: Id,
+    },
+    UnknownFunction {
+        identifier: Id,
+    },
 }
 
 // TODO: Implement MapId for trivial enums

@@ -25,19 +25,19 @@ down(V(X, Y)) = if Y == 9 then null else V(X, Y + 1)
 down(_) = null
 
 upleft : Position -> Position
-upleft(V(X, Y)) = if X == 0 || Y == 0 then null else V(X - 1, Y - 1)
+upleft(V(X, Y)) = up(left(V(X, Y)))
 upleft(_) = null
 
 upright : Position -> Position
-upright(V(X, Y)) = if X == 9 || Y == 0 then null else V(X + 1, Y - 1)
+upright(V(X, Y)) = up(right(V(X, Y)))
 upright(_) = null
 
 downleft : Position -> Position
-downleft(V(X, Y)) = if X == 0 || Y == 9 then null else V(X - 1, Y + 1)
+downleft(V(X, Y)) = down(left(V(X, Y)))
 downleft(_) = null
 
 downright : Position -> Position
-downright(V(X, Y)) = if X == 9 || Y == 9 then null else V(X + 1, Y + 1)
+downright(V(X, Y)) = down(right(V(X, Y)))
 downright(_) = null
 
 piece : Player -> Piece

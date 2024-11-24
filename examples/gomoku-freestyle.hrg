@@ -25,21 +25,21 @@ left(V(X, Y)) = if X == 1 then null else V(X - 1, Y)
 left(_) = null
 
 upLeft: Position -> Position
-upLeft(V(X, Y)) = if X == 1 || Y == 15 then null else V(X - 1, Y + 1)
+upLeft(V(X, Y)) = up(left(V(X, Y)))
 upLeft(_) = null
 
 upRight: Position -> Position
-upRight(V(X, Y)) = if X == 15 || Y == 15 then null else V(X + 1, Y + 1)
+upRight(V(X, Y)) = up(right(V(X, Y)))
 upRight(_) = null
 
 
 downLeft: Position -> Position
-downLeft(V(X, Y)) = if X == 1 || Y == 1 then null else V(X - 1, Y - 1)
+downLeft(V(X, Y)) = down(left(V(X, Y)))
 downLeft(_) = null
 
 
 downRight: Position -> Position
-downRight(V(X, Y)) = if X == 15 || Y == 1 then null else V(X + 1, Y - 1)
+downRight(V(X, Y)) = down(right(V(X, Y)))
 downRight(_) = null
 
 

@@ -219,6 +219,7 @@ fn evaluate_binding(
 }
 
 fn evaluate_condition(
+    context: &Context,
     expression: &hrg::Expression<Id>,
     binding: &BTreeMap<Id, hrg::Value<Id>>,
 ) -> Result<bool, hrg::Error<Id>> {
@@ -229,16 +230,20 @@ fn evaluate_condition(
     };
 
     Ok(match op {
-        hrg::Binop::And => evaluate_condition(lhs, binding)? && evaluate_condition(rhs, binding)?,
-        hrg::Binop::Or => evaluate_condition(lhs, binding)? || evaluate_condition(rhs, binding)?,
+        hrg::Binop::And => {
+            evaluate_condition(context, lhs, binding)? && evaluate_condition(context, rhs, binding)?
+        }
+        hrg::Binop::Or => {
+            evaluate_condition(context, lhs, binding)? || evaluate_condition(context, rhs, binding)?
+        }
         hrg::Binop::Eq
         | hrg::Binop::Gt
         | hrg::Binop::Gte
         | hrg::Binop::Lt
         | hrg::Binop::Lte
         | hrg::Binop::Ne => {
-            let lhs = evaluate_expression(lhs, binding)?;
-            let rhs = evaluate_expression(rhs, binding)?;
+            let lhs = evaluate_expression(context, lhs, binding)?;
+            let rhs = evaluate_expression(context, rhs, binding)?;
             let ord = compare_values(&lhs, &rhs)?;
             match op {
                 hrg::Binop::Eq => ord.is_eq(),
@@ -356,6 +361,7 @@ fn evaluate_equality(lhs: &rg::Value<Id>, rhs: &rg::Value<Id>) -> bool {
 }
 
 fn evaluate_expression(
+    context: &Context,
     expression: &hrg::Expression<Id>,
     binding: &BTreeMap<Id, hrg::Value<Id>>,
 ) -> Result<hrg::Value<Id>, hrg::Error<Id>> {
@@ -363,10 +369,10 @@ fn evaluate_expression(
         hrg::Expression::BinExpr { lhs, op, rhs }
             if matches!(op, hrg::Binop::Add | hrg::Binop::Mod | hrg::Binop::Sub) =>
         {
-            let lhs: i32 = evaluate_expression_identifier(lhs, binding)?
+            let lhs: i32 = evaluate_expression_identifier(context, lhs, binding)?
                 .parse()
                 .unwrap();
-            let rhs: i32 = evaluate_expression_identifier(rhs, binding)?
+            let rhs: i32 = evaluate_expression_identifier(context, rhs, binding)?
                 .parse()
                 .unwrap();
             let value = match op {
@@ -379,19 +385,41 @@ fn evaluate_expression(
                 identifier: Arc::from(format!("{value}")),
             }
         }
-        hrg::Expression::Call { .. } => unimplemented!(),
+        hrg::Expression::Call { expression, args }
+            if matches!(expression.as_ref(), hrg::Expression::Literal { .. }) =>
+        {
+            let hrg::Expression::Literal { identifier } = expression.as_ref() else {
+                unreachable!();
+            };
+
+            let function_declaration = context
+                .hrg
+                .functions
+                .iter()
+                .find(|function| function.identifier == *identifier)
+                .ok_or_else(|| hrg::Error::UnknownFunction {
+                    identifier: Arc::from("rules"),
+                })?;
+
+            let args = args
+                .iter()
+                .map(|arg| evaluate_expression(context, arg, binding))
+                .collect::<Result<Vec<_>, _>>()?;
+
+            evaluate_expression_call(context, function_declaration, &args[..])?
+        }
         hrg::Expression::Constructor { identifier, args } => hrg::Value::Constructor {
             identifier: identifier.clone(),
             args: args
                 .iter()
-                .map(|expression| Ok(Arc::from(evaluate_expression(expression, binding)?)))
+                .map(|arg| Ok(Arc::from(evaluate_expression(context, arg, binding)?)))
                 .collect::<Result<_, _>>()?,
         },
         hrg::Expression::If { cond, then, else_ } => {
-            if evaluate_condition(cond, binding)? {
-                evaluate_expression(then, binding)?
+            if evaluate_condition(context, cond, binding)? {
+                evaluate_expression(context, then, binding)?
             } else {
-                evaluate_expression(else_, binding)?
+                evaluate_expression(context, else_, binding)?
             }
         }
         hrg::Expression::Literal { identifier } => {
@@ -417,7 +445,7 @@ fn evaluate_expression(
                 .map(|binding| {
                     Ok(hrg::ValueMapEntry {
                         key: Arc::from(evaluate_pattern(pattern, &binding)),
-                        value: Arc::from(evaluate_expression(expression, &binding)?),
+                        value: Arc::from(evaluate_expression(context, expression, &binding)?),
                     })
                 })
                 .collect::<Result<_, _>>()?,
@@ -426,11 +454,40 @@ fn evaluate_expression(
     })
 }
 
+fn evaluate_expression_call(
+    context: &Context,
+    function_declaration: &hrg::FunctionDeclaration<Id>,
+    values: &[hrg::Value<Id>],
+) -> Result<hrg::Value<Id>, hrg::Error<Id>> {
+    let arm = function_declaration
+        .cases
+        .iter()
+        .find_map(|function_case| {
+            values
+                .iter()
+                .enumerate()
+                .try_fold(BTreeMap::new(), |mut binding, (index, value)| {
+                    evaluate_binding(&function_case.args[index], value).map(|subbinding| {
+                        binding.extend(subbinding);
+                        binding
+                    })
+                })
+                .map(|binding| (binding, function_case))
+        })
+        .ok_or_else(|| hrg::Error::FunctionCaseNotCovered {
+            identifier: function_declaration.identifier.clone(),
+            args: values.to_owned(),
+        })?;
+
+    evaluate_expression(context, &arm.1.body, &arm.0)
+}
+
 fn evaluate_expression_identifier(
+    context: &Context,
     expression: &hrg::Expression<Id>,
     binding: &BTreeMap<Id, hrg::Value<Id>>,
 ) -> Result<Id, hrg::Error<Id>> {
-    match evaluate_expression(expression, binding)? {
+    match evaluate_expression(context, expression, binding)? {
         hrg::Value::Element { identifier } => Ok(identifier.clone()),
         _ => panic!("Expected ValueElement."),
     }
@@ -586,6 +643,7 @@ fn translate_automaton_statements(
                                     span: Span::none(),
                                     lhs: Arc::from(expression),
                                     rhs: translate_expression(
+                                        context,
                                         accessor,
                                         bindings,
                                         automaton_function,
@@ -593,7 +651,12 @@ fn translate_automaton_statements(
                                 })
                             },
                         )?),
-                        rhs: translate_expression(expression, bindings, automaton_function)?,
+                        rhs: translate_expression(
+                            context,
+                            expression,
+                            bindings,
+                            automaton_function,
+                        )?,
                     },
                     bindings,
                 );
@@ -807,7 +870,12 @@ fn translate_automaton_statements(
                                     lhs: Arc::from(rg::Expression::new(
                                         called_automaton_function.nth_arg_variable(index),
                                     )),
-                                    rhs: translate_expression(arg, bindings, automaton_function)?,
+                                    rhs: translate_expression(
+                                        context,
+                                        arg,
+                                        bindings,
+                                        automaton_function,
+                                    )?,
                                 },
                                 bindings,
                             );
@@ -876,7 +944,12 @@ fn translate_automaton_statements(
                                     lhs: Arc::from(rg::Expression::new(
                                         called_automaton_function.nth_arg_variable(index),
                                     )),
-                                    rhs: translate_expression(arg, bindings, automaton_function)?,
+                                    rhs: translate_expression(
+                                        context,
+                                        arg,
+                                        bindings,
+                                        automaton_function,
+                                    )?,
                                 },
                                 bindings,
                             );
@@ -1099,8 +1172,8 @@ fn translate_condition(
                     entry_node.clone(),
                     then_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs, bindings, automaton_function)?,
-                        rhs: translate_expression(rhs, bindings, automaton_function)?,
+                        lhs: translate_expression(context, lhs, bindings, automaton_function)?,
+                        rhs: translate_expression(context, rhs, bindings, automaton_function)?,
                         negated: false,
                     },
                     bindings,
@@ -1111,8 +1184,8 @@ fn translate_condition(
                     entry_node.clone(),
                     else_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs, bindings, automaton_function)?,
-                        rhs: translate_expression(rhs, bindings, automaton_function)?,
+                        lhs: translate_expression(context, lhs, bindings, automaton_function)?,
+                        rhs: translate_expression(context, rhs, bindings, automaton_function)?,
                         negated: true,
                     },
                     bindings,
@@ -1156,8 +1229,8 @@ fn translate_condition(
                     entry_node.clone(),
                     then_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs, bindings, automaton_function)?,
-                        rhs: translate_expression(rhs, bindings, automaton_function)?,
+                        lhs: translate_expression(context, lhs, bindings, automaton_function)?,
+                        rhs: translate_expression(context, rhs, bindings, automaton_function)?,
                         negated: true,
                     },
                     bindings,
@@ -1168,8 +1241,8 @@ fn translate_condition(
                     entry_node.clone(),
                     else_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(lhs, bindings, automaton_function)?,
-                        rhs: translate_expression(rhs, bindings, automaton_function)?,
+                        lhs: translate_expression(context, lhs, bindings, automaton_function)?,
+                        rhs: translate_expression(context, rhs, bindings, automaton_function)?,
                         negated: false,
                     },
                     bindings,
@@ -1241,7 +1314,12 @@ fn translate_condition(
                                 lhs: Arc::from(rg::Expression::new(
                                     called_automaton_function.nth_arg_variable(index),
                                 )),
-                                rhs: translate_expression(arg, bindings, automaton_function)?,
+                                rhs: translate_expression(
+                                    context,
+                                    arg,
+                                    bindings,
+                                    automaton_function,
+                                )?,
                             },
                             bindings,
                         );
@@ -1409,6 +1487,7 @@ fn translate_domain_elements(
 }
 
 fn translate_expression(
+    context: &Context,
     expression: &hrg::Expression<Id>,
     bindings: &[rg::Binding<Id>],
     automaton_function: Option<&hrg::Function<Id>>,
@@ -1416,21 +1495,21 @@ fn translate_expression(
     Ok(match expression {
         hrg::Expression::Access { lhs, rhs } => Arc::from(rg::Expression::Access {
             span: Span::none(),
-            lhs: translate_expression(lhs, bindings, automaton_function)?,
-            rhs: translate_expression(rhs, bindings, automaton_function)?,
+            lhs: translate_expression(context, lhs, bindings, automaton_function)?,
+            rhs: translate_expression(context, rhs, bindings, automaton_function)?,
         }),
         hrg::Expression::Call { expression, args } => args.iter().try_fold(
-            translate_expression(expression, bindings, automaton_function)?,
+            translate_expression(context, expression, bindings, automaton_function)?,
             |expression, arg| {
                 Ok(Arc::from(rg::Expression::Access {
                     span: Span::none(),
                     lhs: expression,
-                    rhs: translate_expression(arg, bindings, automaton_function)?,
+                    rhs: translate_expression(context, arg, bindings, automaton_function)?,
                 }))
             },
         )?,
         hrg::Expression::Constructor { .. } => Arc::from(rg::Expression::new(serialize_value(
-            &evaluate_expression(expression, &BTreeMap::new())?,
+            &evaluate_expression(context, expression, &BTreeMap::new())?,
         ))),
         hrg::Expression::Literal { identifier } => {
             // If it's function's argument...
@@ -1522,34 +1601,7 @@ fn translate_function_layer(
         }
     }
 
-    let arm = function_declaration
-        .cases
-        .iter()
-        .find_map(|function_case| {
-            values
-                .iter()
-                .enumerate()
-                .try_fold(BTreeMap::new(), |mut binding, (index, value)| {
-                    evaluate_binding(&function_case.args[index], value).map(|subbinding| {
-                        binding.extend(subbinding);
-                        binding
-                    })
-                })
-                .map(|binding| (binding, function_case))
-        })
-        .unwrap_or_else(|| {
-            panic!(
-                "No case for {}({}).",
-                function_declaration.identifier,
-                values
-                    .iter()
-                    .map(serialize_value)
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )
-        });
-
-    let value = evaluate_expression(&arm.1.body, &arm.0)?;
+    let value = evaluate_expression_call(context, function_declaration, values)?;
     Ok(rg::Value::Element {
         identifier: serialize_value(&value),
     })
@@ -1638,6 +1690,7 @@ fn translate_variable_default_value(
                 span: Span::none(),
                 identifier: None,
                 value: Arc::from(translate_value(&evaluate_expression(
+                    context,
                     expression,
                     &BTreeMap::new(),
                 )?)?),
@@ -1646,9 +1699,11 @@ fn translate_variable_default_value(
 
         // Build the map.
         // TODO: Check whether map domains match type domains.
-        Some(default_value) => {
-            translate_value(&evaluate_expression(default_value, &BTreeMap::new())?)
-        }
+        Some(default_value) => translate_value(&evaluate_expression(
+            context,
+            default_value,
+            &BTreeMap::new(),
+        )?),
     }
 }
 

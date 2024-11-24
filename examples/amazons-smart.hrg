@@ -26,19 +26,19 @@ downdir(V(X, Y)) = if Y == 9 then null else V(X, Y + 1)
 downdir(_) = null
 
 upleftdir : Position -> Position
-upleftdir(V(X, Y)) = if X == 0 || Y == 0 then null else V(X-1,Y-1)
+upleftdir(V(X, Y)) = updir(leftdir(V(X, Y)))
 upleftdir(_) = null
 
 uprightdir : Position -> Position
-uprightdir(V(X, Y)) = if X == 9 || Y == 0 then null else V(X+1,Y-1)
+uprightdir(V(X, Y)) = updir(rightdir(V(X, Y)))
 uprightdir(_) = null
 
 downleftdir : Position -> Position
-downleftdir(V(X, Y)) = if X == 0 || Y == 9 then null else V(X-1,Y+1)
+downleftdir(V(X, Y)) = downdir(leftdir(V(X, Y)))
 downleftdir(_) = null
 
 downrightdir : Position -> Position
-downrightdir(V(X, Y)) = if X == 9 || Y == 9 then null else V(X+1,Y+1)
+downrightdir(V(X, Y)) = downdir(rightdir(V(X, Y)))
 downrightdir(_) = null
 
 direction: DirIndex -> Position -> Position

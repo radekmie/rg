@@ -71,6 +71,11 @@ impl<Id: Display> Display for Error<Id> {
                 write!(f, "Duplicated domain value \"{identifier}\".")
             }
             Self::EmptyMap => write!(f, "At least one map entry is required to construct a map."),
+            Self::FunctionCaseNotCovered { identifier, args } => {
+                write!(f, "No case for {identifier}(")?;
+                write_with_separator(f, args, ", ")?;
+                write!(f, ")")
+            }
             Self::IncomparableValues { lhs, rhs } => {
                 write!(f, "Values \"{lhs}\" and \"{rhs}\" are not comparable.")
             }
@@ -80,6 +85,9 @@ impl<Id: Display> Display for Error<Id> {
             Self::NotImplemented { message } => write!(f, "Not implemented ({message})."),
             Self::UnknownAutomatonFunction { identifier } => {
                 write!(f, "Unknown automaton function \"{identifier}\".")
+            }
+            Self::UnknownFunction { identifier } => {
+                write!(f, "Unknown function \"{identifier}\".")
             }
         }
     }
