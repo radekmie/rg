@@ -266,11 +266,10 @@ pub fn analyze_rg(source: &str, flags: &str, callback: &Function) -> Result<(), 
 pub fn perf_rg(ast: &str, depth: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
     let game = prepare_ist(safe_parse_rg_ast(ast)?)?.0;
-    let this = JsValue::null();
-    game.perf(depth, &|count, time| {
-        callback.call2(&this, &count.into(), &time.into()).unwrap();
-    });
-
+    let (count, time) = game.perf(depth);
+    callback
+        .call2(&JsValue::null(), &count.into(), &time.into())
+        .unwrap();
     Ok(())
 }
 

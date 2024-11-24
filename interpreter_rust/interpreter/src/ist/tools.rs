@@ -32,13 +32,13 @@ impl Game<RuntimeId> {
         }
     }
 
-    pub fn perf(&self, depth: usize, callback: &impl Fn(usize, f32)) {
+    pub fn perf(&self, depth: usize) -> (usize, f32) {
         let now = Instant::now();
         let count = self
             .initial_state()
             .next_states_depth(self, depth, true)
             .count();
-        callback(count, now.elapsed().as_micros() as f32 / 1e3);
+        (count, now.elapsed().as_micros() as f32 / 1e3)
     }
 
     pub fn run<Id: Clone + Display + Ord, R: Rng>(

@@ -59,9 +59,8 @@ fn main() -> Result<(), String> {
         } => {
             let game = prepare_ist(game_with_flags.load()?)?.0;
             for depth in 0..=depth {
-                game.perf(depth, &|count, time| {
-                    println!("perf(depth: {depth}) = {count} in {time:.3}ms",);
-                });
+                let (count, time) = game.perf(depth);
+                println!("perf(depth: {depth}) = {count} in {time:.3}ms",);
             }
         }
         CliArgs::Run {
