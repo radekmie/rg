@@ -150,6 +150,12 @@ pub enum Error<Id> {
     UnknownFunction {
         identifier: Id,
     },
+    UnknownType {
+        identifier: Id,
+    },
+    UnknownVariable {
+        identifier: Id,
+    },
 }
 
 // TODO: Implement MapId for trivial enums
@@ -232,6 +238,16 @@ pub enum Pattern<Id> {
         identifier: Id,
     },
     Wildcard,
+}
+
+impl<Id: std::fmt::Display> Pattern<Id> {
+    /// Literals do not start with an uppercase letter.
+    pub fn is_literal(id: &Id) -> bool {
+        !id.to_string()
+            .chars()
+            .next()
+            .is_some_and(char::is_uppercase)
+    }
 }
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

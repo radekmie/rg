@@ -89,6 +89,12 @@ impl<Id: Display> Display for Error<Id> {
             Self::UnknownFunction { identifier } => {
                 write!(f, "Unknown function \"{identifier}\".")
             }
+            Self::UnknownType { identifier } => {
+                write!(f, "Unknown type \"{identifier}\".")
+            }
+            Self::UnknownVariable { identifier } => {
+                write!(f, "Unknown variable \"{identifier}\".")
+            }
         }
     }
 }

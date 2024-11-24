@@ -267,24 +267,29 @@ fn evaluate_condition(
     })
 }
 
-fn evaluate_default_value(context: &Context, type_: &rg::Type<Id>) -> hrg::Value<Id> {
-    match type_ {
+fn evaluate_default_value(
+    context: &Context,
+    type_: &rg::Type<Id>,
+) -> Result<hrg::Value<Id>, hrg::Error<Id>> {
+    Ok(match type_ {
         // NOTE: Is this even correct?
         rg::Type::Arrow { lhs, rhs } => hrg::Value::Map {
-            entries: evaluate_type_values(context, lhs)
+            entries: evaluate_type_values(context, lhs)?
                 .iter()
-                .map(|value| hrg::ValueMapEntry {
-                    key: Arc::from(value.clone()),
-                    value: Arc::from(evaluate_default_value(context, rhs)),
+                .map(|value| {
+                    Ok(hrg::ValueMapEntry {
+                        key: Arc::from(value.clone()),
+                        value: Arc::from(evaluate_default_value(context, rhs)?),
+                    })
                 })
-                .collect(),
+                .collect::<Result<_, _>>()?,
         },
         rg::Type::Set { .. } => unimplemented!(),
-        rg::Type::TypeReference { .. } => evaluate_type_values(context, type_)
+        rg::Type::TypeReference { .. } => evaluate_type_values(context, type_)?
             .first()
             .unwrap()
             .clone(),
-    }
+    })
 }
 
 fn evaluate_domain_values(
@@ -422,14 +427,17 @@ fn evaluate_expression(
                 evaluate_expression(context, else_, binding)?
             }
         }
-        hrg::Expression::Literal { identifier } => {
-            binding
-                .get(identifier)
-                .cloned()
-                .unwrap_or_else(|| hrg::Value::Element {
-                    identifier: identifier.clone(),
-                })
-        }
+        hrg::Expression::Literal { identifier } => binding.get(identifier).cloned().map_or_else(
+            || {
+                let identifier = identifier.clone();
+                if hrg::Pattern::is_literal(&identifier) {
+                    Ok(hrg::Value::Element { identifier })
+                } else {
+                    Err(hrg::Error::UnknownVariable { identifier })
+                }
+            },
+            Ok,
+        )?,
         hrg::Expression::Map {
             pattern,
             expression,
@@ -516,7 +524,10 @@ fn evaluate_pattern(
     }
 }
 
-fn evaluate_type_values<'a>(context: &'a Context, type_: &rg::Type<Id>) -> &'a [hrg::Value<Id>] {
+fn evaluate_type_values<'a>(
+    context: &'a Context,
+    type_: &rg::Type<Id>,
+) -> Result<&'a [hrg::Value<Id>], hrg::Error<Id>> {
     let rg::Type::TypeReference { identifier } = type_ else {
         panic!("Expected TypeReference, got \"{type_}\".");
     };
@@ -524,10 +535,12 @@ fn evaluate_type_values<'a>(context: &'a Context, type_: &rg::Type<Id>) -> &'a [
     let values = context
         .type_values
         .get(identifier)
-        .unwrap_or_else(|| panic!("Unresolved TypeReference \"{identifier}\"."));
+        .ok_or_else(|| hrg::Error::UnknownType {
+            identifier: identifier.clone(),
+        })?;
     assert!(!values.is_empty(), "Expected at least one identifier.");
 
-    values
+    Ok(values)
 }
 
 fn serialize_value(value: &hrg::Value<Id>) -> Id {
@@ -569,7 +582,7 @@ fn translate_automaton_function(
                 ),
             None => context.rg.variables.push(rg::Variable {
                 span: Span::none(),
-                default_value: Arc::from(translate_value(&evaluate_default_value(context, &type_))?),
+                default_value: Arc::from(translate_value(&evaluate_default_value(context, &type_)?)?),
                 identifier,
                 type_
             })
@@ -1579,7 +1592,7 @@ fn translate_function_layer(
     if first_case.args.len() > values.len() {
         if let rg::Type::Arrow { lhs, rhs } = type_ {
             return construct_map(
-                evaluate_type_values(context, lhs)
+                evaluate_type_values(context, lhs)?
                     .iter()
                     .map(|value| {
                         let mut values = values.to_owned();
@@ -1677,7 +1690,7 @@ fn translate_variable_default_value(
 ) -> Result<rg::Value<Id>, hrg::Error<Id>> {
     match default_value.as_deref() {
         // If there's none, build one from the type.
-        None => translate_value(&evaluate_default_value(context, type_)),
+        None => translate_value(&evaluate_default_value(context, type_)?),
 
         // If it's a map with a wildcard pattern, set it as the default value.
         Some(hrg::Expression::Map {

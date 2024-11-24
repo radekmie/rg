@@ -210,8 +210,10 @@ fn expression5(input: Input) -> Result<Arc<Expression<Identifier>>> {
     let (input, identifier) = opt(identifier)(input)?;
     match identifier {
         Some(identifier) => {
-            let is_constructor = identifier.identifier.chars().next().unwrap().is_uppercase();
-            if is_constructor {
+            if Pattern::is_literal(&identifier.identifier) {
+                let expression = Arc::new(identifier.into());
+                expression_suffix(input, expression)
+            } else {
                 let (input, args) = opt(in_parens(comma_separated(expression)))(input)?;
                 if let Some(args) = args {
                     let expr = Arc::new(Expression::Constructor { identifier, args });
@@ -220,9 +222,6 @@ fn expression5(input: Input) -> Result<Arc<Expression<Identifier>>> {
                     let expression = Arc::new(identifier.into());
                     expression_suffix(input, expression)
                 }
-            } else {
-                let expression = Arc::new(identifier.into());
-                expression_suffix(input, expression)
             }
         }
         None => in_parens(expression)(input),
@@ -268,10 +267,10 @@ fn pattern(input: Input) -> Result<Arc<Pattern<Identifier>>> {
         map(char('_'), |_| Arc::new(Pattern::Wildcard)),
         into_arc(pair(identifier, in_parens(comma_separated(pattern)))),
         map(identifier, |identifier| {
-            if identifier.identifier.chars().next().unwrap().is_uppercase() {
-                Arc::new(Pattern::Variable { identifier })
-            } else {
+            if Pattern::is_literal(&identifier.identifier) {
                 Arc::new(Pattern::Literal { identifier })
+            } else {
+                Arc::new(Pattern::Variable { identifier })
             }
         }),
     )))(input)
