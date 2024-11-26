@@ -1038,7 +1038,7 @@ fn translate_automaton_statements(
             }
             hrg::Statement::If {
                 expression,
-                body,
+                then,
                 else_: None,
             } => {
                 let then_node = context.random_node(prefix);
@@ -1055,7 +1055,7 @@ fn translate_automaton_statements(
                 )?;
                 translate_automaton_statements(
                     context,
-                    body,
+                    then,
                     bindings,
                     break_node,
                     continue_node,
@@ -1070,7 +1070,7 @@ fn translate_automaton_statements(
             }
             hrg::Statement::If {
                 expression,
-                body,
+                then: body,
                 else_: Some(else_),
             } => {
                 let then_node = context.random_node(prefix);

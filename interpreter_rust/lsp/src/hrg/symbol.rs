@@ -39,18 +39,17 @@ impl Symbols {
                 self.add_from_expression(expression);
             }
             Statement::If {
-                body,
                 expression,
+                then,
                 else_,
             } => {
-                body.iter()
+                then.iter()
                     .for_each(|statement| self.add_from_statement(statement));
                 self.add_from_expression(expression);
-                if let Some(else_) = else_ {
-                    else_
-                        .iter()
-                        .for_each(|statement| self.add_from_statement(statement));
-                }
+                else_
+                    .iter()
+                    .flatten()
+                    .for_each(|statement| self.add_from_statement(statement));
             }
             Statement::Loop { body } => body
                 .iter()

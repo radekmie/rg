@@ -26,7 +26,7 @@ pub enum Statement<Id> {
     },
     If {
         expression: Arc<Expression<Id>>,
-        body: Vec<Statement<Id>>,
+        then: Vec<Statement<Id>>,
         else_: Option<Vec<Statement<Id>>>,
     },
     Loop {

@@ -75,9 +75,9 @@ fn if_(input: Input) -> Result<Statement<Identifier>> {
             in_braces(many0(statement)),
             opt(preceded(ww_tag("else"), in_braces(many0(statement)))),
         )),
-        |(expression, body, else_)| Statement::If {
+        |(expression, then, else_)| Statement::If {
             expression,
-            body,
+            then,
             else_,
         },
     )(input)
