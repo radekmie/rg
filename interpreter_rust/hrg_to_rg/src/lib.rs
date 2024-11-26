@@ -1036,7 +1036,11 @@ fn translate_automaton_statements(
 
                 current_node = after_node;
             }
-            hrg::Statement::If { expression, body } => {
+            hrg::Statement::If {
+                expression,
+                body,
+                else_: None,
+            } => {
                 let then_node = context.random_node(prefix);
                 let else_node = context.random_node(prefix);
                 translate_condition(
@@ -1063,6 +1067,52 @@ fn translate_automaton_statements(
                     automaton_function,
                 )?;
                 current_node = else_node;
+            }
+            hrg::Statement::If {
+                expression,
+                body,
+                else_: Some(else_),
+            } => {
+                let then_node = context.random_node(prefix);
+                let else_node = context.random_node(prefix);
+                let next_node = context.random_node(prefix);
+                translate_condition(
+                    context,
+                    expression,
+                    &current_node,
+                    Some(&then_node),
+                    Some(&else_node),
+                    prefix,
+                    bindings,
+                    automaton_function,
+                )?;
+                translate_automaton_statements(
+                    context,
+                    body,
+                    bindings,
+                    break_node,
+                    continue_node,
+                    end_node,
+                    then_node,
+                    Some(&next_node),
+                    prefix,
+                    return_node,
+                    automaton_function,
+                )?;
+                translate_automaton_statements(
+                    context,
+                    else_,
+                    bindings,
+                    break_node,
+                    continue_node,
+                    end_node,
+                    else_node,
+                    Some(&next_node),
+                    prefix,
+                    return_node,
+                    automaton_function,
+                )?;
+                current_node = next_node;
             }
             hrg::Statement::Loop { body } => {
                 let local_node = context.random_node(prefix);
