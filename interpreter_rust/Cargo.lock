@@ -540,6 +540,8 @@ dependencies = [
  "map_id",
  "map_id_macro",
  "rand",
+ "rbg",
+ "rbg_to_rg",
  "rg",
  "serde",
  "serde_json",
@@ -880,6 +882,17 @@ version = "0.1.0"
 dependencies = [
  "map_id",
  "map_id_macro",
+ "serde",
+]
+
+[[package]]
+name = "rbg_to_rg"
+version = "0.1.0"
+dependencies = [
+ "map_id",
+ "rbg",
+ "rg",
+ "utils",
 ]
 
 [[package]]

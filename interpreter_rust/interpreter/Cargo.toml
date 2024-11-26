@@ -16,6 +16,8 @@ js-sys = "0.3.61"
 map_id = { path = "../map_id" }
 map_id_macro = { path = "../map_id_macro" }
 rand = { version = "0.8.5", features = ["small_rng"] }
+rbg = { path = "../rbg" }
+rbg_to_rg = { path = "../rbg_to_rg" }
 rg = { path = "../rg" }
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 serde_json = "1.0.91"

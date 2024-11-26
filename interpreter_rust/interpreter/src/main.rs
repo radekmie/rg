@@ -1,6 +1,7 @@
 use clap::{Args, Parser};
 use interpreter::{
-    analyze_gdl_inner as gdl, analyze_hrg_inner as hrg, analyze_rg_inner as rg, prepare_ist, Flags,
+    analyze_gdl_inner as gdl, analyze_hrg_inner as hrg, analyze_rbg_inner as rbg,
+    analyze_rg_inner as rg, prepare_ist, Flags,
 };
 use rand::thread_rng;
 use rg::ast::Game;
@@ -43,6 +44,7 @@ impl GameWithFlags {
         let source_rg = match path.extension().and_then(OsStr::to_str) {
             Some("hrg") => hrg(&source, flags.reuse_functions, callback)?.to_string(),
             Some("kif") => gdl(&source, callback)?.to_string(),
+            Some("rbg") => rbg(&source, callback)?.to_string(),
             Some("rg") => source,
             _ => panic!("Unknown game type: {}.", path.display()),
         };

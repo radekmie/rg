@@ -1,13 +1,14 @@
 [package]
-name = "rbg"
+name = "rbg_to_rg"
 version = "0.1.0"
 authors = ["Radosław Miernik <radekmie@gmail.com>"]
 edition = "2021"
 
 [dependencies]
+rbg = { path = "../rbg" }
 map_id = { path = "../map_id" }
-map_id_macro = { path = "../map_id_macro" }
-serde = { version = "1.0.152", features = ["derive", "rc"] }
+rg = { path = "../rg" }
+utils = { path = "../utils" }
 
 [lints]
 workspace = true

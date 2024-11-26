@@ -8,6 +8,7 @@ use ist::tools::{new_ist_interner, ISTInterner};
 use js_sys::{Array, Function};
 use map_id::MapId;
 use rand::thread_rng;
+use rbg::ast::Game as RbgGame;
 use rg::ast::Game as RgGame;
 use rg::parsing::parser::parse_with_errors as unsafe_parse_rg;
 use serde_json::{from_str, json, to_string};
@@ -39,6 +40,10 @@ fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> {
             .collect::<Vec<_>>()
             .join("\n"))
     }
+}
+
+fn safe_parse_rbg_source(_source: &str) -> Result<RbgGame<Arc<str>>, String> {
+    todo!("RBG parser")
 }
 
 fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
@@ -127,6 +132,44 @@ pub fn analyze_hrg(source: &str, reuse_functions: bool, callback: &Function) -> 
         callback.call1(&this, &JsValue::from(step)).unwrap();
     });
     analyze_hrg_inner(source, reuse_functions, callback)?;
+    Ok(())
+}
+
+pub fn analyze_rbg_inner(
+    source: &str,
+    mut callback: Option<impl FnMut(String)>,
+) -> Result<RgGame<Arc<str>>, String> {
+    macro_rules! step {
+        ({ $($json:tt)+ }) => {{
+            if let Some(callback) = callback.as_mut() {
+                let step = json!({ $($json)+ });
+                callback(to_string(&step).map_err(|error| error.to_string())?);
+            }
+        }};
+    }
+
+    let rbg = safe_parse_rbg_source(source)?;
+    step!({ "kind": "ast", "language": "rbg", "value": rbg });
+
+    // TODO: Implement formatter.
+    // let serialized = rbg.to_string();
+    // assert_eq!(safe_parse_rbg_source(&serialized)?, rbg);
+    // step!({ "kind": "source", "language": "rbg", "value": serialized, "title": "formatted" });
+
+    let rg = rbg_to_rg::rbg_to_rg(&rbg).map_err(|error| error.to_string())?;
+    step!({ "kind": "ast", "language": "rg", "value": rg });
+
+    Ok(rg)
+}
+
+#[wasm_bindgen(js_name = analyzeRbg)]
+pub fn analyze_rbg(source: &str, callback: &Function) -> Result<(), String> {
+    console_error_panic_hook::set_once();
+    let this = JsValue::null();
+    let callback = Some(|step| {
+        callback.call1(&this, &JsValue::from(step)).unwrap();
+    });
+    analyze_rbg_inner(source, callback)?;
     Ok(())
 }
 
