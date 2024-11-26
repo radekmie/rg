@@ -74,9 +74,16 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
                 add_from_statement(table, statement);
             }
         }
-        Statement::If { expression, body } => {
+        Statement::If {
+            expression,
+            then,
+            else_,
+        } => {
             add_from_expression(table, expression);
-            for statement in body {
+            for statement in then {
+                add_from_statement(table, statement);
+            }
+            for statement in else_.iter().flatten() {
                 add_from_statement(table, statement);
             }
         }

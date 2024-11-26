@@ -33,10 +33,23 @@ impl Symbols {
                 body.iter()
                     .for_each(|statement| self.add_from_statement(statement));
             }
-            Statement::If { body, expression } | Statement::While { body, expression } => {
+            Statement::While { body, expression } => {
                 body.iter()
                     .for_each(|statement| self.add_from_statement(statement));
                 self.add_from_expression(expression);
+            }
+            Statement::If {
+                expression,
+                then,
+                else_,
+            } => {
+                then.iter()
+                    .for_each(|statement| self.add_from_statement(statement));
+                self.add_from_expression(expression);
+                else_
+                    .iter()
+                    .flatten()
+                    .for_each(|statement| self.add_from_statement(statement));
             }
             Statement::Loop { body } => body
                 .iter()

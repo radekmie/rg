@@ -359,9 +359,18 @@ fn write_statement<Id: Display>(
             write_statements(f, body, indent + 2)?;
             write_rbrace(f, indent)
         }
-        Statement::If { expression, body } => {
+        Statement::If {
+            expression,
+            then,
+            else_,
+        } => {
             writeln!(f, "if {expression} {{")?;
-            write_statements(f, body, indent + 2)?;
+            write_statements(f, then, indent + 2)?;
+            if let Some(else_) = else_ {
+                write_indent(f, indent)?;
+                writeln!(f, "}} else {{")?;
+                write_statements(f, else_, indent + 2)?;
+            }
             write_rbrace(f, indent)
         }
         Statement::Loop { body } => {

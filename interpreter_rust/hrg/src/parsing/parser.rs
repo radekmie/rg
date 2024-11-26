@@ -70,8 +70,16 @@ fn loop_(input: Input) -> Result<Statement<Identifier>> {
 
 fn if_(input: Input) -> Result<Statement<Identifier>> {
     map(
-        pair(preceded(tag("if"), expression), in_braces(many0(statement))),
-        |(expression, body)| Statement::If { expression, body },
+        tuple((
+            preceded(tag("if"), expression),
+            in_braces(many0(statement)),
+            opt(preceded(ww_tag("else"), in_braces(many0(statement)))),
+        )),
+        |(expression, then, else_)| Statement::If {
+            expression,
+            then,
+            else_,
+        },
     )(input)
 }
 
