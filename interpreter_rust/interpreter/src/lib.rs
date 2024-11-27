@@ -9,6 +9,7 @@ use js_sys::{Array, Function};
 use map_id::MapId;
 use rand::thread_rng;
 use rbg::ast::Game as RbgGame;
+use rbg::parsing::parser::parse_with_errors as unsafe_parse_rbg;
 use rg::ast::Game as RgGame;
 use rg::parsing::parser::parse_with_errors as unsafe_parse_rg;
 use serde_json::{from_str, json, to_string};
@@ -42,8 +43,18 @@ fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> {
     }
 }
 
-fn safe_parse_rbg_source(_source: &str) -> Result<RbgGame<Arc<str>>, String> {
-    todo!("RBG parser")
+fn safe_parse_rbg_source(source: &str) -> Result<RbgGame<Arc<str>>, String> {
+    let (game, errors) = unsafe_parse_rbg(source);
+    if errors.is_empty() {
+        let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
+        Ok(game)
+    } else {
+        Err(errors
+            .into_iter()
+            .map(|error| format!("Dupa {error}"))
+            .collect::<Vec<_>>()
+            .join("\n"))
+    }
 }
 
 fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {

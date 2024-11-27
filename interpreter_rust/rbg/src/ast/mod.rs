@@ -34,6 +34,36 @@ pub enum Action<Id> {
     },
 }
 
+impl<Id> Action<Id> {
+    pub fn assignment(variable: Id, rvalue: RValue<Id>) -> Self {
+        Self::Assignment { variable, rvalue }
+    }
+
+    pub fn check(negated: bool, rule: Rule<Id>) -> Self {
+        Self::Check { negated, rule }
+    }
+
+    pub fn comparison(lhs: RValue<Id>, rhs: RValue<Id>, operator: ComparisonOperator) -> Self {
+        Self::Comparison { lhs, rhs, operator }
+    }
+
+    pub fn off(piece: Id) -> Self {
+        Self::Off { piece }
+    }
+
+    pub fn on(pieces: Vec<Id>) -> Self {
+        Self::On { pieces }
+    }
+
+    pub fn shift(label: Id) -> Self {
+        Self::Shift { label }
+    }
+
+    pub fn switch(player: Option<Id>) -> Self {
+        Self::Switch { player }
+    }
+}
+
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum ActionOrRule<Id> {
     Action(Action<Id>),
@@ -44,6 +74,22 @@ pub enum ActionOrRule<Id> {
 pub struct Atom<Id> {
     content: ActionOrRule<Id>,
     power: bool,
+}
+
+impl<Id> Atom<Id> {
+    pub fn action(content: Action<Id>, power: bool) -> Self {
+        Self {
+            content: ActionOrRule::Action(content),
+            power,
+        }
+    }
+
+    pub fn rule(content: Rule<Id>, power: bool) -> Self {
+        Self {
+            content: ActionOrRule::Rule(content),
+            power,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
@@ -73,6 +119,12 @@ pub enum Error<Id> {
     Todo(Id),
 }
 
+impl<Id> Edge<Id> {
+    pub fn new(label: Id, node: Id) -> Self {
+        Self { label, node }
+    }
+}
+
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Expression<Id> {
     lhs: Arc<RValue<Id>>,
@@ -96,11 +148,11 @@ impl<OldId, NewId> MapId<Self, OldId, NewId> for ExpressionOperator {
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Game<Id> {
-    pieces: Vec<Id>,
-    variables: Vec<Variable<Id>>,
-    players: Vec<Variable<Id>>,
-    board: Vec<Node<Id>>,
-    rules: Rule<Id>,
+    pub pieces: Vec<Id>,
+    pub variables: Vec<Variable<Id>>,
+    pub players: Vec<Variable<Id>>,
+    pub board: Vec<Node<Id>>,
+    pub rules: Rule<Id>,
 }
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
@@ -110,9 +162,15 @@ pub struct Node<Id> {
     edges: Vec<Edge<Id>>,
 }
 
+impl<Id> Node<Id> {
+    pub fn new(node: Id, piece: Id, edges: Vec<Edge<Id>>) -> Self {
+        Self { node, piece, edges }
+    }
+}
+
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Rule<Id> {
-    elements: Vec<Vec<Atom<Id>>>,
+    pub elements: Vec<Vec<Atom<Id>>>,
 }
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
@@ -122,8 +180,32 @@ pub enum RValue<Id> {
     String(Id),
 }
 
+impl<Id> RValue<Id> {
+    pub fn expression(
+        lhs: Arc<Self>,
+        rhs: Arc<Self>,
+        operator: ExpressionOperator,
+    ) -> Self {
+        Self::Expression(Expression { lhs, rhs, operator })
+    }
+
+    pub fn number(value: usize) -> Self {
+        Self::Number(value)
+    }
+
+    pub fn string(value: Id) -> Self {
+        Self::String(value)
+    }
+}
+
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Variable<Id> {
     name: Id,
     bound: usize,
+}
+
+impl<Id> Variable<Id> {
+    pub fn new(name: Id, bound: usize) -> Self {
+        Self { name, bound }
+    }
 }
