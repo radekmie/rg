@@ -1,3 +1,6 @@
+use crate::ast::{
+    Action, Atom, ComparisonOperator, Edge, ExpressionOperator, Game, Node, RValue, Rule, Variable,
+};
 use nom::branch::{alt, permutation};
 use nom::bytes::complete::tag;
 use nom::combinator::{all_consuming, map, opt, value};
@@ -12,10 +15,6 @@ use utils::parser::{
 use utils::position::Span;
 use utils::Error;
 use utils::Identifier;
-
-use crate::ast::{
-    Action, Atom, ComparisonOperator, Edge, ExpressionOperator, Game, Node, RValue, Rule, Variable,
-};
 
 const PIECES: &str = "pieces";
 const VARIABLES: &str = "variables";
@@ -104,7 +103,7 @@ fn expression(input: Input) -> Result<RValue<Id>> {
     map(
         pair(expression1, opt(pair(muldiv_binop, expression))),
         |(lhs, rhs)| match rhs {
-            Some((op, rhs)) => RValue::expression(Arc::new(lhs), Arc::new(rhs), op),
+            Some((op, rhs)) => RValue::new_expression(Arc::new(lhs), Arc::new(rhs), op),
             None => lhs,
         },
     )(input)
@@ -114,7 +113,7 @@ fn expression1(input: Input) -> Result<RValue<Id>> {
     map(
         pair(expression2, opt(pair(addsub_binop, expression1))),
         |(lhs, rhs)| match rhs {
-            Some((op, rhs)) => RValue::expression(Arc::new(lhs), Arc::new(rhs), op),
+            Some((op, rhs)) => RValue::new_expression(Arc::new(lhs), Arc::new(rhs), op),
             None => lhs,
         },
     )(input)
@@ -122,8 +121,8 @@ fn expression1(input: Input) -> Result<RValue<Id>> {
 
 fn expression2(input: Input) -> Result<RValue<Id>> {
     alt((
-        map(identifier, RValue::string),
-        map(integer, RValue::number),
+        map(identifier, RValue::new_string),
+        map(integer, RValue::new_number),
         in_parens(expression),
     ))(input)
 }
@@ -141,16 +140,16 @@ fn comparison_operator(input: Input) -> Result<ComparisonOperator> {
 
 fn action(input: Input) -> Result<Action<Id>> {
     alt((
-        map(identifier, Action::shift),
-        map(in_braces(comma_separated0(identifier)), Action::on),
-        map(in_brackets(identifier), Action::off),
+        map(identifier, Action::new_shift),
+        map(in_braces(comma_separated0(identifier)), Action::new_on),
+        map(in_brackets(identifier), Action::new_off),
         map(
             delimited(
                 ww_tag("[$"),
                 separated_pair(identifier, ww_char('='), expression),
                 ww_char(']'),
             ),
-            |(variable, rvalue)| Action::assignment(variable, rvalue),
+            |(variable, rvalue)| Action::new_assignment(variable, rvalue),
         ),
         map(
             delimited(
@@ -158,17 +157,17 @@ fn action(input: Input) -> Result<Action<Id>> {
                 tuple((expression, comparison_operator, expression)),
                 ww_char(']'),
             ),
-            |(lhs, op, rhs)| Action::comparison(lhs, rhs, op),
+            |(lhs, op, rhs)| Action::new_comparison(lhs, rhs, op),
         ),
         map(preceded(ww_tag("->"), identifier), |player| {
-            Action::switch(Some(player))
+            Action::new_switch(Some(player))
         }),
-        map(ww_tag("->>"), |_| Action::switch(None)),
+        map(ww_tag("->>"), |_| Action::new_switch(None)),
         map(delimited(ww_tag("{?"), rule_sum, ww_char('}')), |rule| {
-            Action::check(false, rule)
+            Action::new_check(false, rule)
         }),
         map(delimited(ww_tag("{!"), rule_sum, ww_char('}')), |rule| {
-            Action::check(true, rule)
+            Action::new_check(true, rule)
         }),
     ))(input)
 }
@@ -176,11 +175,11 @@ fn action(input: Input) -> Result<Action<Id>> {
 fn rule_sum_element(input: Input) -> Result<Vec<Atom<Id>>> {
     many1(alt((
         map(pair(action, potential_power), |(action, power)| {
-            Atom::action(action, power)
+            Atom::new_action(action, power)
         }),
         map(
             pair(in_parens(rule_sum), potential_power),
-            |(sum, power)| Atom::rule(sum, power),
+            |(sum, power)| Atom::new_rule(sum, power),
         ),
     )))(input)
 }
@@ -218,12 +217,10 @@ pub fn parse_with_errors(input: &str) -> (Game<Identifier>, Vec<Error>) {
 
 #[cfg(test)]
 mod test {
-    use std::cell::RefCell;
-
+    use super::{board, game, pieces, players, rules};
     use nom::combinator::all_consuming;
+    use std::cell::RefCell;
     use utils::parser::{Input, Result, State};
-
-    use super::{game, pieces, players, rules};
 
     fn check_parse<O>(parser: impl FnMut(Input) -> Result<O>, input: &str) {
         let errors = RefCell::new(Vec::new());
@@ -254,7 +251,7 @@ mod test {
     #[test]
     fn board_test() {
         check_parse(
-            super::board,
+            board,
             r#"
             #board = 
                 r1[a] {a: b, b: c, c: a}

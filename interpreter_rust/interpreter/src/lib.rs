@@ -51,7 +51,7 @@ fn safe_parse_rbg_source(source: &str) -> Result<RbgGame<Arc<str>>, String> {
     } else {
         Err(errors
             .into_iter()
-            .map(|error| format!("Dupa {error}"))
+            .map(|error| format!("{error}"))
             .collect::<Vec<_>>()
             .join("\n"))
     }

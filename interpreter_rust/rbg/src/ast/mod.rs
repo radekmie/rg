@@ -35,31 +35,31 @@ pub enum Action<Id> {
 }
 
 impl<Id> Action<Id> {
-    pub fn assignment(variable: Id, rvalue: RValue<Id>) -> Self {
+    pub fn new_assignment(variable: Id, rvalue: RValue<Id>) -> Self {
         Self::Assignment { variable, rvalue }
     }
 
-    pub fn check(negated: bool, rule: Rule<Id>) -> Self {
+    pub fn new_check(negated: bool, rule: Rule<Id>) -> Self {
         Self::Check { negated, rule }
     }
 
-    pub fn comparison(lhs: RValue<Id>, rhs: RValue<Id>, operator: ComparisonOperator) -> Self {
+    pub fn new_comparison(lhs: RValue<Id>, rhs: RValue<Id>, operator: ComparisonOperator) -> Self {
         Self::Comparison { lhs, rhs, operator }
     }
 
-    pub fn off(piece: Id) -> Self {
+    pub fn new_off(piece: Id) -> Self {
         Self::Off { piece }
     }
 
-    pub fn on(pieces: Vec<Id>) -> Self {
+    pub fn new_on(pieces: Vec<Id>) -> Self {
         Self::On { pieces }
     }
 
-    pub fn shift(label: Id) -> Self {
+    pub fn new_shift(label: Id) -> Self {
         Self::Shift { label }
     }
 
-    pub fn switch(player: Option<Id>) -> Self {
+    pub fn new_switch(player: Option<Id>) -> Self {
         Self::Switch { player }
     }
 }
@@ -77,14 +77,14 @@ pub struct Atom<Id> {
 }
 
 impl<Id> Atom<Id> {
-    pub fn action(content: Action<Id>, power: bool) -> Self {
+    pub fn new_action(content: Action<Id>, power: bool) -> Self {
         Self {
             content: ActionOrRule::Action(content),
             power,
         }
     }
 
-    pub fn rule(content: Rule<Id>, power: bool) -> Self {
+    pub fn new_rule(content: Rule<Id>, power: bool) -> Self {
         Self {
             content: ActionOrRule::Rule(content),
             power,
@@ -181,19 +181,15 @@ pub enum RValue<Id> {
 }
 
 impl<Id> RValue<Id> {
-    pub fn expression(
-        lhs: Arc<Self>,
-        rhs: Arc<Self>,
-        operator: ExpressionOperator,
-    ) -> Self {
+    pub fn new_expression(lhs: Arc<Self>, rhs: Arc<Self>, operator: ExpressionOperator) -> Self {
         Self::Expression(Expression { lhs, rhs, operator })
     }
 
-    pub fn number(value: usize) -> Self {
+    pub fn new_number(value: usize) -> Self {
         Self::Number(value)
     }
 
-    pub fn string(value: Id) -> Self {
+    pub fn new_string(value: Id) -> Self {
         Self::String(value)
     }
 }

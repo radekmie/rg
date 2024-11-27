@@ -159,8 +159,30 @@ export async function parse(source: string, settings: Settings) {
         break;
       }
       case L.rbg: {
-        const steps = await wasm.analyzeRbg(source);
-        game.steps.push(...steps);
+        let cst = rbg.cst.parse(source).cstNode;
+        game.steps.push({ kind: 'cst', language: L.rbg, value: cst });
+
+        const ast = rbg.ast.visit(cst);
+        game.steps.push({ kind: 'ast', language: L.rbg, value: ast });
+
+        source = rbg.ast.serializeGame(ast);
+        game.steps.push({
+          kind: 'source',
+          language: L.rbg,
+          title: 'formatted',
+          value: source,
+        });
+
+        cst = rbg.cst.parse(source).cstNode;
+        game.steps.push({ kind: 'cst', language: L.rbg, value: cst });
+
+        if (!utils.isEqual(ast, rbg.ast.visit(cst))) {
+          throw new Error('RbgFormattingError (AST mismatch)');
+        }
+
+        const astRg = translators.rbg2rg(ast);
+        game.steps.push({ kind: 'ast', language: L.rg, value: astRg });
+
         break;
       }
     }
