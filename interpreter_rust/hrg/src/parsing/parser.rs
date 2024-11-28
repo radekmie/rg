@@ -12,7 +12,7 @@ use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple
 use std::cell::RefCell;
 use std::sync::Arc;
 use utils::parser::{
-    comma_separated, comments_and_whitespaces, identifier_, in_braces, in_brackets, in_parens,
+    comma_separated0, comments_and_whitespaces, identifier_, in_braces, in_brackets, in_parens,
     integer, into_arc, parse_error_line, ww, ww_char, ww_tag, Input, Result, State,
 };
 use utils::position::Span;
@@ -52,7 +52,7 @@ fn branch(input: Input) -> Result<Statement<Identifier>> {
 }
 
 fn call(input: Input) -> Result<Statement<Identifier>> {
-    into(pair(identifier, in_parens(comma_separated(expression))))(input)
+    into(pair(identifier, in_parens(comma_separated0(expression))))(input)
 }
 
 fn forall(input: Input) -> Result<Statement<Identifier>> {
@@ -116,8 +116,8 @@ fn domain_element(input: Input) -> Result<DomainElement<Identifier>> {
     ww(alt((
         into(tuple((
             identifier,
-            in_parens(comma_separated(identifier)),
-            preceded(ww_tag("where"), comma_separated(domain_value)),
+            in_parens(comma_separated0(identifier)),
+            preceded(ww_tag("where"), comma_separated0(domain_value)),
         ))),
         into(identifier),
     )))(input)
@@ -131,7 +131,7 @@ fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {
         )),
         into(pair(
             terminated(identifier, ww_tag("in")),
-            in_braces(comma_separated(identifier)),
+            in_braces(comma_separated0(identifier)),
         )),
     )))(input)
 }
@@ -145,7 +145,7 @@ fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
         ))),
         into_arc(in_braces(pair(
             separated_pair(pattern, char('='), expression),
-            opt(preceded(tag("where"), comma_separated(domain_value))),
+            opt(preceded(tag("where"), comma_separated0(domain_value))),
         ))),
         map(
             pair(expression2, opt(preceded(ww_tag("||"), expression))),
@@ -222,7 +222,7 @@ fn expression5(input: Input) -> Result<Arc<Expression<Identifier>>> {
                 let expression = Arc::new(identifier.into());
                 expression_suffix(input, expression)
             } else {
-                let (input, args) = opt(in_parens(comma_separated(expression)))(input)?;
+                let (input, args) = opt(in_parens(comma_separated0(expression)))(input)?;
                 if let Some(args) = args {
                     let expr = Arc::new(Expression::Constructor { identifier, args });
                     Ok((input, expr))
@@ -241,7 +241,7 @@ fn expression_suffix(
     lhs: Arc<Expression<Identifier>>,
 ) -> Result<Arc<Expression<Identifier>>> {
     let (input, access) = opt(in_brackets(expression))(input)?;
-    let (input, args) = opt(in_parens(comma_separated(expression)))(input)?;
+    let (input, args) = opt(in_parens(comma_separated0(expression)))(input)?;
 
     match access {
         Some(rhs) => {
@@ -273,7 +273,7 @@ fn expression_suffix(
 fn pattern(input: Input) -> Result<Arc<Pattern<Identifier>>> {
     ww(alt((
         map(char('_'), |_| Arc::new(Pattern::Wildcard)),
-        into_arc(pair(identifier, in_parens(comma_separated(pattern)))),
+        into_arc(pair(identifier, in_parens(comma_separated0(pattern)))),
         map(identifier, |identifier| {
             if Pattern::is_literal(&identifier.identifier) {
                 Arc::new(Pattern::Literal { identifier })
@@ -295,7 +295,7 @@ fn type_(input: Input) -> Result<Arc<Type<Identifier>>> {
 fn function(input: Input) -> Result<Function<Identifier>> {
     into(tuple((
         preceded(ww_tag("graph"), identifier),
-        in_parens(comma_separated(function_arg)),
+        in_parens(comma_separated0(function_arg)),
         in_braces(many0(statement)),
     )))(input)
 }
@@ -322,7 +322,7 @@ fn function_declaration(input: Input) -> Result<FunctionDeclaration<Identifier>>
             verify(identifier, |identifier| {
                 identifier.identifier == id.identifier
             }),
-            in_parens(comma_separated(pattern)),
+            in_parens(comma_separated0(pattern)),
         )),
         preceded(ww_char('='), expression),
     ))(input)?;

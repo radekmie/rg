@@ -77,6 +77,14 @@ export async function analyzeHrg(source: string, reuseFunctions: boolean) {
   return steps;
 }
 
+export async function analyzeRbg(source: string) {
+  const steps: AnalyzedGameStep[] = [];
+  await workerMethod('analyzeRbg', [source], (step: string) => {
+    steps.push(JSON.parse(step));
+  });
+  return steps;
+}
+
 export async function analyzeRg(source: string, flags: Settings['flags']) {
   const steps: AnalyzedGameStep[] = [];
   await workerMethod(

@@ -5,7 +5,7 @@ use nom::bytes::complete::{tag, take_till, take_while, take_while1};
 use nom::character::complete::char;
 use nom::character::complete::{anychar, digit1, multispace1};
 use nom::combinator::{cut, into, map, map_res, opt, verify};
-use nom::multi::{fold_many0, separated_list0};
+use nom::multi::{fold_many0, separated_list0, separated_list1};
 use nom::sequence::{delimited, preceded};
 use nom::IResult;
 use nom_locate::LocatedSpan;
@@ -145,8 +145,14 @@ pub fn in_brackets<'a, O>(
     delimited(ww_char('['), inner, ww_char(']'))
 }
 
-pub fn comma_separated<'a, O>(
+pub fn comma_separated0<'a, O>(
     inner: impl FnMut(Input<'a>) -> Result<O>,
 ) -> impl FnMut(Input<'a>) -> Result<Vec<O>> {
     separated_list0(ww_char(','), inner)
+}
+
+pub fn comma_separated1<'a, O>(
+    inner: impl FnMut(Input<'a>) -> Result<O>,
+) -> impl FnMut(Input<'a>) -> Result<Vec<O>> {
+    separated_list1(ww_char(','), inner)
 }
