@@ -2,79 +2,38 @@ mod flags;
 pub mod ist;
 
 pub use flags::Flags;
-use hrg::ast::Game as HrgGame;
 use hrg::parsing::parser::parse_with_errors as unsafe_parse_hrg;
 use ist::tools::{new_ist_interner, ISTInterner};
 use js_sys::{Array, Function};
 use map_id::MapId;
 use rand::thread_rng;
-use rbg::ast::Game as RbgGame;
 use rbg::parsing::parser::parse_with_errors as unsafe_parse_rbg;
-use rg::ast::Game as RgGame;
+use rg::ast::Game;
 use rg::parsing::parser::parse_with_errors as unsafe_parse_rg;
 use serde_json::{from_str, json, to_string};
 use std::sync::Arc;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
-pub fn prepare_ist(
-    mut game: RgGame<Arc<str>>,
-) -> Result<(ist::Game<ist::RuntimeId>, ISTInterner), String> {
-    game.expand_generator_nodes()?;
-    let mut interner = new_ist_interner();
-    let game = ist::Game::from(game).map_id(&mut |id| interner.intern(id));
-    Ok((game, interner))
+macro_rules! safe_parse {
+    ($result:expr) => {{
+        let (game, errors) = $result;
+        if errors.is_empty() {
+            let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
+            Ok(game)
+        } else {
+            Err(errors
+                .into_iter()
+                .map(|error| format!("{error}"))
+                .collect::<Vec<_>>()
+                .join("\n"))
+        }
+    }};
 }
 
-fn safe_parse_rg_ast(ast: &str) -> Result<RgGame<Arc<str>>, String> {
-    from_str::<RgGame<Arc<str>>>(ast).map_err(|error| error.to_string())
-}
-
-fn safe_parse_hrg_source(source: &str) -> Result<HrgGame<Arc<str>>, String> {
-    let (game, errors) = unsafe_parse_hrg(source);
-    if errors.is_empty() {
-        let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
-        Ok(game)
-    } else {
-        Err(errors
-            .into_iter()
-            .map(|error| format!("{error}"))
-            .collect::<Vec<_>>()
-            .join("\n"))
-    }
-}
-
-fn safe_parse_rbg_source(source: &str) -> Result<RbgGame<Arc<str>>, String> {
-    let (game, errors) = unsafe_parse_rbg(source);
-    if errors.is_empty() {
-        let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
-        Ok(game)
-    } else {
-        Err(errors
-            .into_iter()
-            .map(|error| format!("{error}"))
-            .collect::<Vec<_>>()
-            .join("\n"))
-    }
-}
-
-fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
-    let (game, errors) = unsafe_parse_rg(source);
-    if errors.is_empty() {
-        let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
-        Ok(game)
-    } else {
-        Err(errors
-            .into_iter()
-            .map(|error| format!("{error}"))
-            .collect::<Vec<_>>()
-            .join("\n"))
-    }
-}
-
-pub fn analyze_gdl_inner(
+fn analyze_gdl_inner(
     source: &str,
     callback: &mut Option<impl FnMut(String)>,
-) -> Result<RgGame<Arc<str>>, String> {
+) -> Result<Game<Arc<str>>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
             if let Some(callback) = callback.as_mut() {
@@ -94,11 +53,11 @@ pub fn analyze_gdl_inner(
     Ok(gdl_to_rg::gdl_to_rg(&gdl))
 }
 
-pub fn analyze_hrg_inner(
+fn analyze_hrg_inner(
     source: &str,
     reuse_functions: bool,
     callback: &mut Option<impl FnMut(String)>,
-) -> Result<RgGame<Arc<str>>, String> {
+) -> Result<Game<Arc<str>>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
             if let Some(callback) = callback.as_mut() {
@@ -108,20 +67,20 @@ pub fn analyze_hrg_inner(
         }};
     }
 
-    let hrg = safe_parse_hrg_source(source)?;
+    let hrg = safe_parse!(unsafe_parse_hrg(source))?;
     step!({ "kind": "ast", "language": "hrg", "value": hrg });
 
     let serialized = hrg.to_string();
-    assert_eq!(safe_parse_hrg_source(&serialized)?, hrg);
+    assert_eq!(safe_parse!(unsafe_parse_hrg(&serialized))?, hrg);
     step!({ "kind": "source", "language": "hrg", "value": serialized, "title": "formatted" });
 
     hrg_to_rg::hrg_to_rg(hrg, reuse_functions).map_err(|error| error.to_string())
 }
 
-pub fn analyze_rbg_inner(
+fn analyze_rbg_inner(
     source: &str,
     callback: &mut Option<impl FnMut(String)>,
-) -> Result<RgGame<Arc<str>>, String> {
+) -> Result<Game<Arc<str>>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
             if let Some(callback) = callback.as_mut() {
@@ -131,22 +90,22 @@ pub fn analyze_rbg_inner(
         }};
     }
 
-    let rbg = safe_parse_rbg_source(source)?;
+    let rbg = safe_parse!(unsafe_parse_rbg(source))?;
     step!({ "kind": "ast", "language": "rbg", "value": rbg });
 
     // TODO: Implement formatter.
     // let serialized = rbg.to_string();
-    // assert_eq!(safe_parse_rbg_source(&serialized)?, rbg);
+    // assert_eq!(safe_parse!(unsafe_parse_rbg(&serialized))?, rbg);
     // step!({ "kind": "source", "language": "rbg", "value": serialized, "title": "formatted" });
 
     rbg_to_rg::rbg_to_rg(rbg).map_err(|error| error.to_string())
 }
 
-pub fn analyze_rg_inner(
-    source: &str,
+fn analyze_rg_inner(
+    game_or_source: Result<Game<Arc<str>>, String>,
     flags: &Flags,
     callback: &mut Option<impl FnMut(String)>,
-) -> Result<RgGame<Arc<str>>, String> {
+) -> Result<Game<Arc<str>>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
             if let Some(callback) = callback.as_mut() {
@@ -176,7 +135,13 @@ pub fn analyze_rg_inner(
         }};
     }
 
-    let mut game = check!(safe_parse_rg_source(source));
+    let (mut game, source) = match game_or_source {
+        Ok(game) => {
+            let source = game.to_string();
+            (game, source)
+        }
+        Err(source) => (check!(safe_parse!(unsafe_parse_rg(&source))), source),
+    };
 
     // Add AST for the original source
     step!({ "kind": "source", "language": "rg", "value": source, "title": "original" });
@@ -256,7 +221,10 @@ pub fn analyze_rg_inner(
         break;
     }
 
-    assert_eq!(check!(safe_parse_rg_source(&game.to_string())), game);
+    assert_eq!(
+        check!(safe_parse!(unsafe_parse_rg(&game.to_string()))),
+        game
+    );
 
     step!({ "kind": "stats", "value": game.to_stats() });
     step!({ "kind": "graphviz", "value": game.to_graphviz() });
@@ -264,25 +232,25 @@ pub fn analyze_rg_inner(
 }
 
 pub fn analyze_inner(
-    source: &str,
+    source: String,
     extension: &str,
     flags: &Flags,
     callback: &mut Option<impl FnMut(String)>,
-) -> Result<RgGame<Arc<str>>, String> {
-    let source_rg = match extension {
-        "hrg" => analyze_hrg_inner(source, flags.reuse_functions, callback)?.to_string(),
-        "kif" => analyze_gdl_inner(source, callback)?.to_string(),
-        "rbg" => analyze_rbg_inner(source, callback)?.to_string(),
-        "rg" => source.to_string(),
+) -> Result<Game<Arc<str>>, String> {
+    let game_or_source = match extension {
+        "hrg" => Ok(analyze_hrg_inner(&source, flags.reuse_functions, callback)?),
+        "kif" => Ok(analyze_gdl_inner(&source, callback)?),
+        "rbg" => Ok(analyze_rbg_inner(&source, callback)?),
+        "rg" => Err(source),
         _ => return Err("Unknown game type: {extension}.".to_string()),
     };
 
-    analyze_rg_inner(&source_rg, flags, callback)
+    analyze_rg_inner(game_or_source, flags, callback)
 }
 
 #[wasm_bindgen(js_name = analyze)]
 pub fn analyze(
-    source: &str,
+    source: String,
     extension: &str,
     flags: &str,
     callback: &Function,
@@ -301,10 +269,19 @@ pub fn analyze(
     Ok(())
 }
 
+pub fn build_ist(
+    mut game: Game<Arc<str>>,
+) -> Result<(ist::Game<ist::RuntimeId>, ISTInterner), String> {
+    game.expand_generator_nodes()?;
+    let mut interner = new_ist_interner();
+    let game = ist::Game::from(game).map_id(&mut |id| interner.intern(id));
+    Ok((game, interner))
+}
+
 #[wasm_bindgen(js_name = perf)]
 pub fn perf(ast: &str, depth: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
-    let game = prepare_ist(safe_parse_rg_ast(ast)?)?.0;
+    let game = build_ist(from_str(ast).map_err(|error| error.to_string())?)?.0;
     let (count, time) = game.perf(depth);
     callback
         .call2(&JsValue::null(), &count.into(), &time.into())
@@ -315,7 +292,7 @@ pub fn perf(ast: &str, depth: usize, callback: &Function) -> Result<(), String> 
 #[wasm_bindgen(js_name = run)]
 pub fn run(ast: &str, plays: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
-    let (game, interner) = prepare_ist(safe_parse_rg_ast(ast)?)?;
+    let (game, interner) = build_ist(from_str(ast).map_err(|error| error.to_string())?)?;
     let this = JsValue::null();
     let mut rng = thread_rng();
     game.run(

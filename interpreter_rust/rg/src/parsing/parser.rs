@@ -18,7 +18,7 @@ use utils::parser::{
 use utils::position::{Position, Positioned, Span};
 use utils::{Error, Identifier};
 
-pub fn arc_expression(expression: Expression<Identifier>) -> Arc<Expression<Identifier>> {
+fn arc_expression(expression: Expression<Identifier>) -> Arc<Expression<Identifier>> {
     Arc::new(expression)
 }
 

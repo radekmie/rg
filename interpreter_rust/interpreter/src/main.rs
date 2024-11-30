@@ -1,5 +1,5 @@
 use clap::{Args, Parser};
-use interpreter::{analyze_inner, prepare_ist, Flags};
+use interpreter::{analyze_inner, build_ist, Flags};
 use rand::thread_rng;
 use rg::ast::Game;
 use serde_json::json;
@@ -51,7 +51,7 @@ impl GameWithFlags {
         };
 
         let source = read_to_string(&path).map_err(|error| error.to_string())?;
-        analyze_inner(&source, extension, &flags, &mut None::<fn(String)>)
+        analyze_inner(source, extension, &flags, &mut None::<fn(String)>)
     }
 }
 
@@ -65,7 +65,7 @@ fn main() -> Result<(), String> {
             depth,
             game_with_flags,
         } => {
-            let game = prepare_ist(game_with_flags.load()?)?.0;
+            let game = build_ist(game_with_flags.load()?)?.0;
             for depth in 0..=depth {
                 let (count, time) = game.perf(depth);
                 println!("perf(depth: {depth}) = {count} in {time:.3}ms",);
@@ -75,7 +75,7 @@ fn main() -> Result<(), String> {
             game_with_flags,
             plays,
         } => {
-            let (game, interner) = prepare_ist(game_with_flags.load()?)?;
+            let (game, interner) = build_ist(game_with_flags.load()?)?;
             game.run(
                 &mut thread_rng(),
                 &interner,
