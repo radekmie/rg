@@ -72,8 +72,8 @@ pub enum ActionOrRule<Id> {
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Atom<Id> {
-    content: ActionOrRule<Id>,
-    power: bool,
+    pub content: ActionOrRule<Id>,
+    pub power: bool,
 }
 
 impl<Id> Atom<Id> {
@@ -110,8 +110,8 @@ impl<OldId, NewId> MapId<Self, OldId, NewId> for ComparisonOperator {
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Edge<Id> {
-    label: Id,
-    node: Id,
+    pub label: Id,
+    pub node: Id,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -127,9 +127,9 @@ impl<Id> Edge<Id> {
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Expression<Id> {
-    lhs: Arc<RValue<Id>>,
-    rhs: Arc<RValue<Id>>,
-    operator: ExpressionOperator,
+    pub lhs: Arc<RValue<Id>>,
+    pub rhs: Arc<RValue<Id>>,
+    pub operator: ExpressionOperator,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
@@ -155,11 +155,17 @@ pub struct Game<Id> {
     pub rules: Rule<Id>,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum Operator {
+    Comparison(ComparisonOperator),
+    Expression(ExpressionOperator),
+}
+
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Node<Id> {
-    node: Id,
-    piece: Id,
-    edges: Vec<Edge<Id>>,
+    pub node: Id,
+    pub piece: Id,
+    pub edges: Vec<Edge<Id>>,
 }
 
 impl<Id> Node<Id> {
@@ -196,8 +202,8 @@ impl<Id> RValue<Id> {
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Variable<Id> {
-    name: Id,
-    bound: usize,
+    pub name: Id,
+    pub bound: usize,
 }
 
 impl<Id> Variable<Id> {

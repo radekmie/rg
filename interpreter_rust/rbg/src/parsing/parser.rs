@@ -159,7 +159,10 @@ fn action(input: Input) -> Result<Action<Id>> {
             ),
             |(lhs, op, rhs)| Action::new_comparison(lhs, rhs, op),
         ),
-        map(preceded(ww_tag("->"), map(identifier, Some)), Action::new_switch),
+        map(
+            preceded(ww_tag("->"), map(identifier, Some)),
+            Action::new_switch,
+        ),
         value(Action::new_switch(None), ww_tag("->>")),
         map(delimited(ww_tag("{?"), rule_sum, ww_char('}')), |rule| {
             Action::new_check(false, rule)

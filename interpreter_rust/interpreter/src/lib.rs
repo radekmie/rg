@@ -167,7 +167,7 @@ pub fn analyze_rbg_inner(
     // assert_eq!(safe_parse_rbg_source(&serialized)?, rbg);
     // step!({ "kind": "source", "language": "rbg", "value": serialized, "title": "formatted" });
 
-    let rg = rbg_to_rg::rbg_to_rg(&rbg).map_err(|error| error.to_string())?;
+    let rg = rbg_to_rg::rbg_to_rg(rbg).map_err(|error| error.to_string())?;
     step!({ "kind": "ast", "language": "rg", "value": rg });
 
     Ok(rg)
