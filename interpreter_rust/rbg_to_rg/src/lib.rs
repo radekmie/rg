@@ -650,14 +650,14 @@ fn copy_path(
 
     fn copy(
         context: &mut Context,
-        distances: &mut BTreeMap<rg::Node<Id>, usize>,
+        distances: &mut BTreeMap<rg::Node<Id>, Option<usize>>,
         prefix: &Id,
         edge: &rg::Edge<Id>,
         distance: usize,
     ) {
         // If the edge cannot reach the end _yet_, we check whether it is on a cycle
         // and if so, then add it anyway. It will copy too many edges, though.
-        if distance == usize::MAX && distances.contains_key(&edge.rhs) {
+        if distance == usize::MAX && distances.get(&edge.rhs).map_or(true, Option::is_some) {
             return;
         }
 
@@ -694,22 +694,36 @@ fn copy_path(
 
     fn copy_if_on_path(
         context: &mut Context,
-        distances: &mut BTreeMap<rg::Node<Id>, usize>,
+        distances: &mut BTreeMap<rg::Node<Id>, Option<usize>>,
         prefix: &Id,
+        original_to: &rg::Node<Id>,
         node: &rg::Node<Id>,
-    ) -> usize {
+    ) -> Option<usize> {
         if !distances.contains_key(node) {
-            distances.insert(node.clone(), usize::MAX);
+            distances.insert(node.clone(), (node == original_to).then_some(0));
 
-            let mut index = 0;
-            while let Some(next) = nth_outgoing_edge(context, node, index) {
-                index += 1;
-                if !next.label.is_player_assignment() {
-                    let distance =
-                        copy_if_on_path(context, distances, prefix, &next.rhs).saturating_add(1);
-                    copy(context, distances, prefix, &next, distance);
-                    distances.insert(node.clone(), distances[node].min(distance));
+            // If it's not reached, copy and check.
+            if distances[node].is_none() {
+                let mut index = 0;
+                while let Some(next) = nth_outgoing_edge(context, node, index) {
+                    index += 1;
+                    if !next.label.is_player_assignment() {
+                        let distance =
+                            copy_if_on_path(context, distances, prefix, original_to, &next.rhs)
+                                .unwrap_or(usize::MAX)
+                                .saturating_add(1);
+                        copy(context, distances, prefix, &next, distance);
+                        distances.insert(
+                            node.clone(),
+                            Some(distances[node].unwrap_or(usize::MAX).min(distance)),
+                        );
+                    }
                 }
+            }
+
+            // If it wasn't reached, mark it as not reachable.
+            if distances[node].is_none() {
+                distances.insert(node.clone(), Some(usize::MAX));
             }
         }
 
@@ -728,10 +742,16 @@ fn copy_path(
     // Represent minimum distance to `original_to`. A `None` is an intermediate
     // state where we don't know if it's reachable or no. (It is used to copy
     // edges on cycles.) A `usize::MAX` means the `original_to` is not reachable.
-    let mut distances = BTreeMap::from([(original_to.clone(), 0)]);
+    let mut distances = BTreeMap::new();
     let prefix = Id::from(format!("{original_from}_{original_to}"));
 
-    copy_if_on_path(context, &mut distances, &prefix, &original_from);
+    copy_if_on_path(
+        context,
+        &mut distances,
+        &prefix,
+        &original_to,
+        &original_from,
+    );
 
     (
         prefix_node(&prefix, original_from),
