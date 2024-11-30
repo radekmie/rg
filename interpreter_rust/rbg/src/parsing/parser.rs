@@ -121,8 +121,8 @@ fn expression1(input: Input) -> Result<RValue<Id>> {
 
 fn expression2(input: Input) -> Result<RValue<Id>> {
     alt((
-        map(identifier, RValue::new_string),
         map(integer, RValue::new_number),
+        map(identifier, RValue::new_string),
         in_parens(expression),
     ))(input)
 }
@@ -155,14 +155,12 @@ fn action(input: Input) -> Result<Action<Id>> {
             delimited(
                 ww_tag("{$"),
                 tuple((expression, comparison_operator, expression)),
-                ww_char(']'),
+                ww_char('}'),
             ),
             |(lhs, op, rhs)| Action::new_comparison(lhs, rhs, op),
         ),
-        map(preceded(ww_tag("->"), identifier), |player| {
-            Action::new_switch(Some(player))
-        }),
-        map(ww_tag("->>"), |_| Action::new_switch(None)),
+        map(preceded(ww_tag("->"), map(identifier, Some)), Action::new_switch),
+        value(Action::new_switch(None), ww_tag("->>")),
         map(delimited(ww_tag("{?"), rule_sum, ww_char('}')), |rule| {
             Action::new_check(false, rule)
         }),
