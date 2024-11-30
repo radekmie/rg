@@ -2,6 +2,7 @@ use clap::{Args, Parser};
 use interpreter::{analyze_inner, prepare_ist, Flags};
 use rand::thread_rng;
 use rg::ast::Game;
+use serde_json::json;
 use std::ffi::OsStr;
 use std::fs::read_to_string;
 use std::path::PathBuf;
@@ -10,6 +11,10 @@ use std::sync::Arc;
 #[derive(Parser)]
 #[command(about, version)]
 enum CliArgs {
+    Ast {
+        #[command(flatten)]
+        game_with_flags: GameWithFlags,
+    },
     Perf {
         #[command(flatten)]
         game_with_flags: GameWithFlags,
@@ -47,6 +52,10 @@ impl GameWithFlags {
 
 fn main() -> Result<(), String> {
     match CliArgs::parse() {
+        CliArgs::Ast { game_with_flags } => {
+            let game = game_with_flags.load()?;
+            println!("{}", json!(game));
+        }
         CliArgs::Perf {
             depth,
             game_with_flags,
