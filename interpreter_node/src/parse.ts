@@ -116,43 +116,16 @@ export class AnalyzedGame {
 
 export async function parse(source: string, settings: Settings) {
   const game = new AnalyzedGame();
-  const { extension, flags } = settings;
 
   try {
     game.steps.push({
       kind: 'source',
-      language: extension,
+      language: settings.extension,
       title: 'original',
       value: source,
     });
 
-    switch (extension) {
-      case L.gdl: {
-        const steps = await wasm.analyzeGdl(source);
-        game.steps.push(...steps);
-        break;
-      }
-      case L.hrg: {
-        const steps = await wasm.analyzeHrg(source, flags.reuseFunctions);
-        game.steps.push(...steps);
-        break;
-      }
-      case L.rbg: {
-        const steps = await wasm.analyzeRbg(source);
-        game.steps.push(...steps);
-        break;
-      }
-    }
-
-    if (extension !== L.rg) {
-      const astRg = game.astRg;
-      if (astRg) {
-        const sourceRg = await wasm.serializeRg(astRg);
-        game.steps.push({ kind: 'source', language: L.rg, value: sourceRg });
-      }
-    }
-
-    const steps = await wasm.analyzeRg(game.sourceRg, flags);
+    const steps = await wasm.analyze(source, settings);
     const graphviz = steps.pop();
     utils.assert(graphviz?.kind === 'graphviz', 'Graphviz step expected');
     const stats = steps.pop();

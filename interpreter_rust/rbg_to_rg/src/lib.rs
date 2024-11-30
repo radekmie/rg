@@ -638,12 +638,7 @@ fn copy_path(
     fn prefix_node(prefix: &Id, mut node: rg::Node<Id>) -> rg::Node<Id> {
         match node.parts.first_mut().unwrap() {
             rg::NodePart::Binding { .. } => {
-                node.parts.insert(
-                    0,
-                    rg::NodePart::Literal {
-                        identifier: prefix.clone(),
-                    },
-                );
+                node.parts.insert(0, rg::NodePart::new(prefix.clone()));
             }
             rg::NodePart::Literal { identifier } => {
                 *identifier = Id::from(format!("{prefix}_{identifier}"));

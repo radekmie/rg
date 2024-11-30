@@ -73,7 +73,7 @@ fn safe_parse_rg_source(source: &str) -> Result<RgGame<Arc<str>>, String> {
 
 pub fn analyze_gdl_inner(
     source: &str,
-    mut callback: Option<impl FnMut(String)>,
+    callback: &mut Option<impl FnMut(String)>,
 ) -> Result<RgGame<Arc<str>>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
@@ -91,27 +91,13 @@ pub fn analyze_gdl_inner(
     step!({ "kind": "source", "language": "gdl", "value": gdl.as_infix().to_string(), "title": "infix" });
     step!({ "kind": "source", "language": "gdl", "value": gdl.as_prefix().to_string(), "title": "prefix" });
 
-    let rg = gdl_to_rg::gdl_to_rg(&gdl);
-    step!({ "kind": "ast", "language": "rg", "value": rg });
-
-    Ok(rg)
-}
-
-#[wasm_bindgen(js_name = analyzeGdl)]
-pub fn analyze_gdl(source: &str, callback: &Function) -> Result<(), String> {
-    console_error_panic_hook::set_once();
-    let this = JsValue::null();
-    let callback = Some(|step| {
-        callback.call1(&this, &JsValue::from(step)).unwrap();
-    });
-    analyze_gdl_inner(source, callback)?;
-    Ok(())
+    Ok(gdl_to_rg::gdl_to_rg(&gdl))
 }
 
 pub fn analyze_hrg_inner(
     source: &str,
     reuse_functions: bool,
-    mut callback: Option<impl FnMut(String)>,
+    callback: &mut Option<impl FnMut(String)>,
 ) -> Result<RgGame<Arc<str>>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
@@ -129,26 +115,12 @@ pub fn analyze_hrg_inner(
     assert_eq!(safe_parse_hrg_source(&serialized)?, hrg);
     step!({ "kind": "source", "language": "hrg", "value": serialized, "title": "formatted" });
 
-    let rg = hrg_to_rg::hrg_to_rg(hrg, reuse_functions).map_err(|error| error.to_string())?;
-    step!({ "kind": "ast", "language": "rg", "value": rg });
-
-    Ok(rg)
-}
-
-#[wasm_bindgen(js_name = analyzeHrg)]
-pub fn analyze_hrg(source: &str, reuse_functions: bool, callback: &Function) -> Result<(), String> {
-    console_error_panic_hook::set_once();
-    let this = JsValue::null();
-    let callback = Some(|step| {
-        callback.call1(&this, &JsValue::from(step)).unwrap();
-    });
-    analyze_hrg_inner(source, reuse_functions, callback)?;
-    Ok(())
+    hrg_to_rg::hrg_to_rg(hrg, reuse_functions).map_err(|error| error.to_string())
 }
 
 pub fn analyze_rbg_inner(
     source: &str,
-    mut callback: Option<impl FnMut(String)>,
+    callback: &mut Option<impl FnMut(String)>,
 ) -> Result<RgGame<Arc<str>>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
@@ -167,27 +139,13 @@ pub fn analyze_rbg_inner(
     // assert_eq!(safe_parse_rbg_source(&serialized)?, rbg);
     // step!({ "kind": "source", "language": "rbg", "value": serialized, "title": "formatted" });
 
-    let rg = rbg_to_rg::rbg_to_rg(rbg).map_err(|error| error.to_string())?;
-    step!({ "kind": "ast", "language": "rg", "value": rg });
-
-    Ok(rg)
-}
-
-#[wasm_bindgen(js_name = analyzeRbg)]
-pub fn analyze_rbg(source: &str, callback: &Function) -> Result<(), String> {
-    console_error_panic_hook::set_once();
-    let this = JsValue::null();
-    let callback = Some(|step| {
-        callback.call1(&this, &JsValue::from(step)).unwrap();
-    });
-    analyze_rbg_inner(source, callback)?;
-    Ok(())
+    rbg_to_rg::rbg_to_rg(rbg).map_err(|error| error.to_string())
 }
 
 pub fn analyze_rg_inner(
     source: &str,
     flags: &Flags,
-    mut callback: Option<impl FnMut(String)>,
+    callback: &mut Option<impl FnMut(String)>,
 ) -> Result<RgGame<Arc<str>>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
@@ -221,6 +179,7 @@ pub fn analyze_rg_inner(
     let mut game = check!(safe_parse_rg_source(source));
 
     // Add AST for the original source
+    step!({ "kind": "source", "language": "rg", "value": source, "title": "original" });
     step!({ "kind": "ast", "language": "rg", "value": game, "title": "original" });
 
     // Builtins may not be required.
@@ -304,20 +263,46 @@ pub fn analyze_rg_inner(
     Ok(game)
 }
 
-#[wasm_bindgen(js_name = analyzeRg)]
-pub fn analyze_rg(source: &str, flags: &str, callback: &Function) -> Result<(), String> {
+pub fn analyze_inner(
+    source: &str,
+    extension: &str,
+    flags: &Flags,
+    callback: &mut Option<impl FnMut(String)>,
+) -> Result<RgGame<Arc<str>>, String> {
+    let source_rg = match extension {
+        "hrg" => analyze_hrg_inner(source, flags.reuse_functions, callback)?.to_string(),
+        "kif" => analyze_gdl_inner(source, callback)?.to_string(),
+        "rbg" => analyze_rbg_inner(source, callback)?.to_string(),
+        "rg" => source.to_string(),
+        _ => return Err("Unknown game type: {extension}.".to_string()),
+    };
+
+    analyze_rg_inner(&source_rg, flags, callback)
+}
+
+#[wasm_bindgen(js_name = analyze)]
+pub fn analyze(
+    source: &str,
+    extension: &str,
+    flags: &str,
+    callback: &Function,
+) -> Result<(), String> {
     console_error_panic_hook::set_once();
-    let flags = from_str::<Flags>(flags).unwrap();
-    let this = JsValue::null();
-    let callback = Some(|step| {
-        callback.call1(&this, &JsValue::from(step)).unwrap();
-    });
-    analyze_rg_inner(source, &flags, callback)?;
+    analyze_inner(
+        source,
+        extension,
+        &from_str::<Flags>(flags).unwrap(),
+        &mut Some(|step| {
+            callback
+                .call1(&JsValue::null(), &JsValue::from(step))
+                .unwrap();
+        }),
+    )?;
     Ok(())
 }
 
-#[wasm_bindgen(js_name = perfRg)]
-pub fn perf_rg(ast: &str, depth: usize, callback: &Function) -> Result<(), String> {
+#[wasm_bindgen(js_name = perf)]
+pub fn perf(ast: &str, depth: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
     let game = prepare_ist(safe_parse_rg_ast(ast)?)?.0;
     let (count, time) = game.perf(depth);
@@ -327,8 +312,8 @@ pub fn perf_rg(ast: &str, depth: usize, callback: &Function) -> Result<(), Strin
     Ok(())
 }
 
-#[wasm_bindgen(js_name = runRg)]
-pub fn run_rg(ast: &str, plays: usize, callback: &Function) -> Result<(), String> {
+#[wasm_bindgen(js_name = run)]
+pub fn run(ast: &str, plays: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
     let (game, interner) = prepare_ist(safe_parse_rg_ast(ast)?)?;
     let this = JsValue::null();
@@ -338,21 +323,10 @@ pub fn run_rg(ast: &str, plays: usize, callback: &Function) -> Result<(), String
         &interner,
         plays,
         &Some(|lines: Vec<_>| {
-            callback
-                .call1(
-                    &this,
-                    &Array::from_iter(lines.into_iter().map(JsValue::from)),
-                )
-                .unwrap();
+            let lines = Array::from_iter(lines.into_iter().map(JsValue::from));
+            callback.call1(&this, &lines).unwrap();
         }),
     );
 
     Ok(())
-}
-
-#[wasm_bindgen(js_name = serializeRg)]
-pub fn serialize_rg(ast: &str) -> Result<String, String> {
-    console_error_panic_hook::set_once();
-    let game = safe_parse_rg_ast(ast)?;
-    Ok(game.to_string())
 }

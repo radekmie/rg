@@ -128,13 +128,13 @@ addCommand('rg-ast', 'print .rg  Abstract Syntax Tree', game => {
 addCommand('rg-perf', 'run   .rg  tree depth check', async (game, depth) => {
   utils.assert(isFinite(+depth) && +depth > 0, 'depth must be positive');
   utils.assert(game.astRg, 'RG analysis failed');
-  await wasm.perfRg(game.astRg, +depth, { log: x => console.log(x) });
+  await wasm.perf(game.astRg, +depth, { log: x => console.log(x) });
 }).argument('<depth>', 'maximum tree depth');
 
 addCommand('rg-run', 'run   .rg  simulations', async (game, plays) => {
   utils.assert(isFinite(+plays) && +plays > 0, 'plays must be positive');
   utils.assert(game.astRg, 'RG analysis failed');
-  await wasm.runRg(game.astRg, +plays, { log: x => console.log(x) });
+  await wasm.run(game.astRg, +plays, { log: x => console.log(x) });
 }).argument('<plays>', 'number of simulated games');
 
 addCommand('rg-source', 'print .rg  source', game => {

@@ -113,7 +113,7 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
         <pre>{stats}</pre>
       </Card>
       <BenchBlock
-        action={wasm.runRg}
+        action={wasm.run}
         actionText="Run"
         gameDeclaration={gameDeclaration}
         id="iterations"
@@ -125,7 +125,7 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
         min={1}
       />
       <BenchBlock
-        action={wasm.perfRg}
+        action={wasm.perf}
         actionText="Bench"
         gameDeclaration={gameDeclaration}
         id="depth"

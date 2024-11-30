@@ -1,8 +1,5 @@
 use clap::{Args, Parser};
-use interpreter::{
-    analyze_gdl_inner as gdl, analyze_hrg_inner as hrg, analyze_rbg_inner as rbg,
-    analyze_rg_inner as rg, prepare_ist, Flags,
-};
+use interpreter::{analyze_inner, prepare_ist, Flags};
 use rand::thread_rng;
 use rg::ast::Game;
 use std::ffi::OsStr;
@@ -39,17 +36,12 @@ struct GameWithFlags {
 impl GameWithFlags {
     fn load(self) -> Result<Game<Arc<str>>, String> {
         let Self { flags, path } = self;
-        let callback = None::<fn(_)>;
-        let source = read_to_string(&path).map_err(|error| error.to_string())?;
-        let source_rg = match path.extension().and_then(OsStr::to_str) {
-            Some("hrg") => hrg(&source, flags.reuse_functions, callback)?.to_string(),
-            Some("kif") => gdl(&source, callback)?.to_string(),
-            Some("rbg") => rbg(&source, callback)?.to_string(),
-            Some("rg") => source,
-            _ => panic!("Unknown game type: {}.", path.display()),
+        let Some(extension) = path.extension().and_then(OsStr::to_str) else {
+            return Err(format!("Unknown game type: {}.", path.display()));
         };
 
-        rg(&source_rg, &flags, callback)
+        let source = read_to_string(&path).map_err(|error| error.to_string())?;
+        analyze_inner(&source, extension, &flags, &mut None::<fn(String)>)
     }
 }
 

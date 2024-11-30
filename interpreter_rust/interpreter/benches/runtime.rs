@@ -20,7 +20,8 @@ fn scenario(criterion: &mut Criterion, name: &str, variants: &[&str]) {
                     let (ist, interner) = ist.get_or_insert_with(|| {
                         let source =
                             read_to_string(format!("../../examples/{name}{variant}")).unwrap();
-                        let ast = analyze_rg_inner(source.as_str(), &flags, None::<fn(_)>).unwrap();
+                        let ast =
+                            analyze_rg_inner(source.as_str(), &flags, &mut None::<fn(_)>).unwrap();
                         prepare_ist(ast).unwrap()
                     });
                     bencher.iter(|| ist.run(&mut rng, &interner, 1, &None::<fn(_)>))

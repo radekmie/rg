@@ -2,7 +2,6 @@ import pLimit from 'p-limit';
 
 import { AnalyzedGameStep, RgGameDeclaration } from '../parse';
 import { Settings } from '../types';
-import * as utils from '../utils';
 
 // Node.js requires a Worker polyfill.
 if (typeof Worker === 'undefined') {
@@ -60,35 +59,11 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
   );
 }
 
-export async function analyzeGdl(source: string) {
-  const steps: AnalyzedGameStep[] = [];
-  await workerMethod('analyzeGdl', [source], (step: string) => {
-    steps.push(JSON.parse(step));
-  });
-  return steps;
-}
-
-export async function analyzeHrg(source: string, reuseFunctions: boolean) {
-  const steps: AnalyzedGameStep[] = [];
-  await workerMethod('analyzeHrg', [source, reuseFunctions], (step: string) => {
-    steps.push(JSON.parse(step));
-  });
-  return steps;
-}
-
-export async function analyzeRbg(source: string) {
-  const steps: AnalyzedGameStep[] = [];
-  await workerMethod('analyzeRbg', [source], (step: string) => {
-    steps.push(JSON.parse(step));
-  });
-  return steps;
-}
-
-export async function analyzeRg(source: string, flags: Settings['flags']) {
+export async function analyze(source: string, settings: Settings) {
   const steps: AnalyzedGameStep[] = [];
   await workerMethod(
-    'analyzeRg',
-    [source, JSON.stringify(flags)],
+    'analyze',
+    [source, settings.extension, JSON.stringify(settings.flags)],
     (step: string) => {
       steps.push(JSON.parse(step));
     },
@@ -98,36 +73,26 @@ export async function analyzeRg(source: string, flags: Settings['flags']) {
 
 export type Logger = { log: (message: string) => void };
 
-export async function perfRg(
+export async function perf(
   gameDeclaration: RgGameDeclaration,
   maxDepth: number,
   logger: Logger,
 ) {
   for (let depth = 0; depth <= maxDepth; ++depth) {
     const ast = JSON.stringify(gameDeclaration);
-    await workerMethod(
-      'perfRg',
-      [ast, depth],
-      (count: number, time: number) => {
-        logger.log(`perf(depth: ${depth}) = ${count} in ${time}ms`);
-      },
-    );
+    await workerMethod('perf', [ast, depth], (count: number, time: number) => {
+      logger.log(`perf(depth: ${depth}) = ${count} in ${time}ms`);
+    });
   }
 }
 
-export async function runRg(
+export async function run(
   gameDeclaration: RgGameDeclaration,
   plays: number,
   logger: Logger,
 ) {
   const ast = JSON.stringify(gameDeclaration);
-  await workerMethod('runRg', [ast, plays], (lines: string[]) => {
+  await workerMethod('run', [ast, plays], (lines: string[]) => {
     lines.forEach(logger.log);
   });
-}
-
-export async function serializeRg(gameDeclaration: RgGameDeclaration) {
-  const ast = JSON.stringify(gameDeclaration);
-  const rg = await workerMethod('serializeRg', [ast], utils.noop);
-  return rg;
 }
