@@ -701,33 +701,24 @@ fn copy_path(
         context: &mut Context,
         distances: &mut BTreeMap<rg::Node<Id>, usize>,
         prefix: &Id,
-        original_to: &rg::Node<Id>,
-        node: rg::Node<Id>,
+        node: &rg::Node<Id>,
     ) -> usize {
-        if let Some(distance) = distances.get(&node) {
-            return *distance;
-        }
+        if !distances.contains_key(node) {
+            distances.insert(node.clone(), usize::MAX);
 
-        if node == *original_to {
-            distances.insert(node, 0);
-            return 0;
-        }
-
-        let mut best = usize::MAX;
-        let mut index = 0;
-        while let Some(next) = nth_outgoing_edge(context, &node, index) {
-            index += 1;
-            if !next.label.is_player_assignment() {
-                let distance =
-                    copy_if_on_path(context, distances, prefix, original_to, next.rhs.clone())
-                        .saturating_add(1);
-                copy(context, distances, prefix, &next, distance);
-                best = best.min(distance);
+            let mut index = 0;
+            while let Some(next) = nth_outgoing_edge(context, node, index) {
+                index += 1;
+                if !next.label.is_player_assignment() {
+                    let distance =
+                        copy_if_on_path(context, distances, prefix, &next.rhs).saturating_add(1);
+                    copy(context, distances, prefix, &next, distance);
+                    distances.insert(node.clone(), distances[node].min(distance));
+                }
             }
         }
 
-        distances.insert(node, best);
-        best
+        distances[node]
     }
 
     assert!(
@@ -742,16 +733,10 @@ fn copy_path(
     // Represent minimum distance to `original_to`. A `None` is an intermediate
     // state where we don't know if it's reachable or no. (It is used to copy
     // edges on cycles.) A `usize::MAX` means the `original_to` is not reachable.
-    let mut distances = BTreeMap::new();
+    let mut distances = BTreeMap::from([(original_to.clone(), 0)]);
     let prefix = Id::from(format!("{original_from}_{original_to}"));
 
-    copy_if_on_path(
-        context,
-        &mut distances,
-        &prefix,
-        &original_to,
-        original_from.clone(),
-    );
+    copy_if_on_path(context, &mut distances, &prefix, &original_from);
 
     (
         prefix_node(&prefix, original_from),

@@ -980,30 +980,24 @@ function copyPath(
    * Represent minimum distance to `originalTo`. A `null` is an intermediate
    * state where we don't know if it's reachable or no. (It is used to copy
    * edges on cycles.) An `Infinity` means the `originalTo` is not reachable. */
-  const distances: Record<string, null | number> = Object.create(null);
-  function copyIfOnPath(edgeName: rg.EdgeName): number | null {
+  const distances: Record<string, number> = Object.create(null);
+  distances[JSON.stringify(originalTo)] = 0;
+  function copyIfOnPath(edgeName: rg.EdgeName): number {
     const hash = JSON.stringify(edgeName);
     if (!(hash in distances)) {
-      distances[hash] = utils.isEqual(edgeName, originalTo) ? 0 : null;
+      distances[hash] = Infinity;
 
       // If it's not reached, copy and check.
-      if (distances[hash] === null) {
-        for (const next of rg.lib.outgoing(context.rg.edges, edgeName)) {
-          if (
-            next.label.kind !== 'Assignment' ||
-            next.label.lhs.kind !== 'Reference' ||
-            next.label.lhs.identifier !== 'player'
-          ) {
-            const distance = 1 + (copyIfOnPath(next.rhs) ?? Infinity);
-            copy(next, distance);
-            distances[hash] = Math.min(distances[hash] ?? Infinity, distance);
-          }
+      for (const next of rg.lib.outgoing(context.rg.edges, edgeName)) {
+        if (
+          next.label.kind !== 'Assignment' ||
+          next.label.lhs.kind !== 'Reference' ||
+          next.label.lhs.identifier !== 'player'
+        ) {
+          const distance = 1 + copyIfOnPath(next.rhs);
+          copy(next, distance);
+          distances[hash] = Math.min(distances[hash], distance);
         }
-      }
-
-      // If it wasn't reached, mark it as not reachable.
-      if (distances[hash] === null) {
-        distances[hash] = Infinity;
       }
     }
 
