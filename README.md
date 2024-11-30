@@ -2,15 +2,50 @@
 
 # Regular Games repo
 
-## Setup
+## Quick start (CLI)
 
-### Dependencies
+```sh
+# In interpreter_rust
+cargo run --release run ../examples/ticTacToe.rg 1000
+```
+
+```sh
+# cargo run help
+Regular Games CLI
+
+Usage: interpreter <COMMAND>
+
+Commands:
+  ast     Print RG AST
+  perf    Benchmark game tree
+  run     Benchmark random playouts
+  source  Print RG source
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
+## Quick start (GUI)
+
+```sh
+# In interpreter_rust
+wasm-pack build --out-dir ../../interpreter_node/src/wasm/interpreter --out-name index --target web interpreter
+wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp --out-name index --target web lsp_browser
+
+# In interpreter_node
+npm clean-install
+npm run start
+```
+
+## Dependencies
 
 - [Node.js](https://nodejs.org/en/) 20.12.2
 - [Rust](https://www.rust-lang.org) 1.81.0
 - [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) 0.13.1
 
-#### Manual installation
+### Manual installation
 
 ```sh
 # System-wide tools on Debian-based systems
@@ -31,7 +66,7 @@ rustup install 1.81.0
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 ```
 
-#### Nix
+### Nix
 
 Open a shell with all required dependencies:
 
@@ -43,39 +78,9 @@ These dependencies are accessible only from the current shell\*, they are not in
 
 \*: Obviously you can access them by file paths as long as they are in the filesystem.
 
-### Quick start
+## Development
 
-```sh
-# In interpreter_rust
-wasm-pack build --out-dir ../../interpreter_node/src/wasm/interpreter --out-name index --target web interpreter
-wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp --out-name index --target web lsp_browser
-
-# In interpreter_node
-npm clean-install
-npm run build
-node lib/cli rg-source --compactSkipEdges ../examples/ticTacToe.rg > ../examples/ticTacToe.rg.ll
-
-# In interpreter_rust
-cargo run --release ../examples/ticTacToe.rg run 1000
-```
-
-## Check everything before commit
-
-```sh
-# In interpreter_rust
-cargo clippy
-cargo fmt
-cargo test
-
-# In interpreter_node
-npm run check
-npm run lint
-npm test
-```
-
-## `interpreter_rust`
-
-### Development
+### `interpreter_rust`
 
 ```sh
 # Format the project.
@@ -84,6 +89,9 @@ cargo fmt
 # Lint the project.
 cargo clippy
 
+# Run tests.
+cargo test
+
 # Build the `interpreter` WASM module.
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/interpreter --out-name index --target web interpreter
 
@@ -91,16 +99,7 @@ wasm-pack build --out-dir ../../interpreter_node/src/wasm/interpreter --out-name
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp --out-name index --target web lsp_browser
 ```
 
-### Usage
-
-```sh
-cargo run --release game.rg run [plays]
-cargo run --release game.rg perf [depth]
-```
-
-## `interpreter_node`
-
-### Development
+### `interpreter_node`
 
 ```sh
 # Install dependencies.
@@ -120,59 +119,4 @@ npm run lint
 
 # Check the project.
 npm run check
-
-# Run tests.
-npm test
-```
-
-### Usage
-
-```
-Usage: node lib/cli [options] [command]
-
-Options:
-  --addExplicitCasts          add type casts to all expressions
-  --calculateDisjoints        calculate missing @disjoint and @disjointExhaustive pragmas automatically
-  --calculateRepeats          calculate missing @repeat pragmas automatically
-  --calculateSimpleApply      calculate missing @simpleApply and @simpleApplyExhaustive pragmas
-                              automatically
-  --calculateTagIndexes       calculate missing @tagIndex and @tagMaxIndex pragmas automatically
-  --calculateUniques          calculate missing @unique pragmas automatically
-  --compactComparisons        optimize selective comparisons with negations
-  --compactSkipEdges          optimize automaton by compacting skip edges
-  --expandGeneratorNodes      expand generator nodes
-  --inlineAssignment          inline assignment when possible
-  --inlineReachability        inline reachability when possible
-  --joinExclusiveEdges        joins multiedges with exclusive labels
-  --joinForkPrefixes          join paths with identical labels from the same node
-  --joinForkSuffixes          join paths with identical labels leading to the same node
-  --mangleSymbols             mangle all user-defined symbols
-  --normalizeConstants        normalize all constants so Maps appear only in the top level
-  --normalizeTypes            normalize all types so Arrow types appear only in type definitions and are
-                              at most one level deep
-  --propagateConstants        inline constants and skip obvious comparisons
-  --pruneSingletonTypes       prune singleton types (i.e., Set types with one element)
-  --pruneUnreachableNodes     prune unreachable nodes
-  --pruneUnusedBindings       prune unused bindings from nodes
-  --pruneUnusedConstants      prune unused constants
-  --pruneUnusedVariables      prune unused variables
-  --reuseFunctions            reuse subautomatons when translating function calls (.hrg only)
-  --skipGeneratorComparisons  skips all comparisons to a generator (e.g., `x, y(t: T): t == null`)
-  --skipSelfAssignments       replaces all self assignments (e.g., `x = x`) with skip edges
-  --skipSelfComparisons       replaces all self comparisons (e.g., `x == x`) with skip edges
-  --skipUnusedTags            replaces all tags in reachability with skip edges
-  -h, --help                  display help for command
-
-Commands:
-  help [command]              display help for command
-  hrg-ast <file>              print .hrg Abstract Syntax Tree
-  hrg-cst <file>              print .hrg Concrete Syntax Tree
-  hrg-source <file>           print .hrg source
-  rbg-ast <file>              print .rbg Abstract Syntax Tree
-  rbg-cst <file>              print .rbg Concrete Syntax Tree
-  rbg-source <file>           print .rbg source
-  rg-ast <file>               print .rg  Abstract Syntax Tree
-  rg-perf <file> <depth>      run   .rg  tree depth check
-  rg-run <file> <plays>       run   .rg  simulations
-  rg-source <file>            print .rg  source
 ```

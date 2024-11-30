@@ -10,21 +10,26 @@ use std::sync::Arc;
 
 #[derive(Parser)]
 #[command(about, version)]
+/// Regular Games CLI
 enum CliArgs {
+    /// Print RG AST
     Ast {
         #[command(flatten)]
         game_with_flags: GameWithFlags,
     },
+    /// Benchmark game tree
     Perf {
         #[command(flatten)]
         game_with_flags: GameWithFlags,
         depth: usize,
     },
+    /// Benchmark random playouts
     Run {
         #[command(flatten)]
         game_with_flags: GameWithFlags,
         plays: usize,
     },
+    /// Print RG source
     Source {
         #[command(flatten)]
         game_with_flags: GameWithFlags,

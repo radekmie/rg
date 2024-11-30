@@ -8,7 +8,6 @@
     "lint": "eslint --ext ts,tsx --fix src",
     "postinstall": "monaco-treemending",
     "start": "parcel serve --cache-dir node_modules/.cache/parcel --dist-dir lib/ui --target ui",
-    "test": "vitest",
     "watch": "parcel watch --cache-dir node_modules/.cache/parcel"
   },
   "dependencies": {
