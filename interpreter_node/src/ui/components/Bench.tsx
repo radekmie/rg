@@ -9,18 +9,19 @@ import {
 } from '@blueprintjs/core';
 import { useCallback, useMemo, useState } from 'react';
 
-import * as rg from '../../rg';
+import { RgGameDeclaration } from '../../parse';
+import * as wasm from '../../wasm';
 import { useNumericState } from '../hooks/useNumericState';
 import * as styles from '../index.module.css';
 
 type BenchBlockProps = {
   action: (
-    gameDeclaration: rg.ast.GameDeclaration,
+    gameDeclaration: RgGameDeclaration,
     value: number,
-    logger: rg.ast.Logger,
+    logger: wasm.Logger,
   ) => Promise<void>;
   actionText: string;
-  gameDeclaration: rg.ast.GameDeclaration;
+  gameDeclaration: RgGameDeclaration;
   id?: string;
   initialValue: number;
   label: string;
@@ -100,7 +101,7 @@ function BenchBlock({
 }
 
 export type BenchProps = {
-  gameDeclaration: rg.ast.GameDeclaration;
+  gameDeclaration: RgGameDeclaration;
   stats: string;
 };
 
@@ -112,7 +113,7 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
         <pre>{stats}</pre>
       </Card>
       <BenchBlock
-        action={rg.ast.run}
+        action={wasm.runRg}
         actionText="Run"
         gameDeclaration={gameDeclaration}
         id="iterations"
@@ -124,7 +125,7 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
         min={1}
       />
       <BenchBlock
-        action={rg.ast.perf}
+        action={wasm.perfRg}
         actionText="Bench"
         gameDeclaration={gameDeclaration}
         id="depth"

@@ -1,7 +1,6 @@
 import pLimit from 'p-limit';
 
-import { AnalyzedGameStep } from '../parse';
-import * as rg from '../rg';
+import { AnalyzedGameStep, RgGameDeclaration } from '../parse';
 import { Settings } from '../types';
 import * as utils from '../utils';
 
@@ -97,25 +96,37 @@ export async function analyzeRg(source: string, flags: Settings['flags']) {
   return steps;
 }
 
+export type Logger = { log: (message: string) => void };
+
 export async function perfRg(
-  gameDeclaration: rg.ast.GameDeclaration,
-  depth: number,
-  callback: (count: number, time: number) => void,
+  gameDeclaration: RgGameDeclaration,
+  maxDepth: number,
+  logger: Logger,
 ) {
-  const ast = JSON.stringify(gameDeclaration);
-  await workerMethod('perfRg', [ast, depth], callback);
+  for (let depth = 0; depth <= maxDepth; ++depth) {
+    const ast = JSON.stringify(gameDeclaration);
+    await workerMethod(
+      'perfRg',
+      [ast, depth],
+      (count: number, time: number) => {
+        logger.log(`perf(depth: ${depth}) = ${count} in ${time}ms`);
+      },
+    );
+  }
 }
 
 export async function runRg(
-  gameDeclaration: rg.ast.GameDeclaration,
+  gameDeclaration: RgGameDeclaration,
   plays: number,
-  callback: (lines: string[]) => void,
+  logger: Logger,
 ) {
   const ast = JSON.stringify(gameDeclaration);
-  await workerMethod('runRg', [ast, plays], callback);
+  await workerMethod('runRg', [ast, plays], (lines: string[]) => {
+    lines.forEach(logger.log);
+  });
 }
 
-export async function serializeRg(gameDeclaration: rg.ast.GameDeclaration) {
+export async function serializeRg(gameDeclaration: RgGameDeclaration) {
   const ast = JSON.stringify(gameDeclaration);
   const rg = await workerMethod('serializeRg', [ast], utils.noop);
   return rg;

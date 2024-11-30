@@ -3,9 +3,9 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { AnalyzedGame, parse } from '../parse';
-import * as rg from '../rg';
 import { availableFlags, Flag, Language, noFlagsEnabled } from '../types';
 import * as utils from '../utils';
+import * as wasm from '../wasm';
 
 // prettier-ignore
 program
@@ -109,20 +109,12 @@ addCommand('hrg-ast', 'print .hrg Abstract Syntax Tree', game => {
   console.log(JSON.stringify(game.astHrg));
 });
 
-addCommand('hrg-cst', 'print .hrg Concrete Syntax Tree', game => {
-  console.log(JSON.stringify(game.cstHrg));
-});
-
 addCommand('hrg-source', 'print .hrg source', game => {
   console.log(game.sourceHrgFormatted);
 });
 
 addCommand('rbg-ast', 'print .rbg Abstract Syntax Tree', game => {
   console.log(JSON.stringify(game.astRbg));
-});
-
-addCommand('rbg-cst', 'print .rbg Concrete Syntax Tree', game => {
-  console.log(JSON.stringify(game.cstRbg));
 });
 
 addCommand('rbg-source', 'print .rbg source', game => {
@@ -136,13 +128,13 @@ addCommand('rg-ast', 'print .rg  Abstract Syntax Tree', game => {
 addCommand('rg-perf', 'run   .rg  tree depth check', async (game, depth) => {
   utils.assert(isFinite(+depth) && +depth > 0, 'depth must be positive');
   utils.assert(game.astRg, 'RG analysis failed');
-  await rg.ast.perf(game.astRg, +depth, { log: x => console.log(x) });
+  await wasm.perfRg(game.astRg, +depth, { log: x => console.log(x) });
 }).argument('<depth>', 'maximum tree depth');
 
 addCommand('rg-run', 'run   .rg  simulations', async (game, plays) => {
   utils.assert(isFinite(+plays) && +plays > 0, 'plays must be positive');
   utils.assert(game.astRg, 'RG analysis failed');
-  await rg.ast.run(game.astRg, +plays, { log: x => console.log(x) });
+  await wasm.runRg(game.astRg, +plays, { log: x => console.log(x) });
 }).argument('<plays>', 'number of simulated games');
 
 addCommand('rg-source', 'print .rg  source', game => {
