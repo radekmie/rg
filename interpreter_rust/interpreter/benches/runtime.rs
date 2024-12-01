@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use interpreter::{analyze_inner, build_ist, Flags};
+use interpreter::{analyze_inner, Flags, Game};
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use std::fs::read_to_string;
@@ -21,7 +21,7 @@ fn scenario(criterion: &mut Criterion, name: &str, variants: &[&str]) {
                         let source =
                             read_to_string(format!("../../examples/{name}{variant}")).unwrap();
                         let ast = analyze_inner(source, "rg", &flags, &mut None::<fn(_)>).unwrap();
-                        build_ist(ast).unwrap()
+                        Game::try_from(ast).unwrap()
                     });
                     bencher.iter(|| ist.run(&mut rng, &interner, 1, &None::<fn(_)>))
                 },

@@ -1,14 +1,14 @@
 mod flags;
-pub mod ist;
+mod ist;
 
+pub use crate::ist::Game;
 pub use flags::Flags;
 use hrg::parsing::parser::parse_with_errors as unsafe_parse_hrg;
-use ist::tools::{new_ist_interner, ISTInterner};
 use js_sys::{Array, Function};
 use map_id::MapId;
 use rand::thread_rng;
 use rbg::parsing::parser::parse_with_errors as unsafe_parse_rbg;
-use rg::ast::Game;
+use rg::ast::Game as GameAst;
 use rg::parsing::parser::parse_with_errors as unsafe_parse_rg;
 use serde_json::{from_str, json, to_string};
 use std::sync::Arc;
@@ -30,10 +30,12 @@ macro_rules! safe_parse {
     }};
 }
 
+type Id = Arc<str>;
+
 fn analyze_gdl_inner(
     source: &str,
     callback: &mut Option<impl FnMut(String)>,
-) -> Result<Game<Arc<str>>, String> {
+) -> Result<GameAst<Id>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
             if let Some(callback) = callback.as_mut() {
@@ -57,7 +59,7 @@ fn analyze_hrg_inner(
     source: &str,
     reuse_functions: bool,
     callback: &mut Option<impl FnMut(String)>,
-) -> Result<Game<Arc<str>>, String> {
+) -> Result<GameAst<Id>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
             if let Some(callback) = callback.as_mut() {
@@ -80,7 +82,7 @@ fn analyze_hrg_inner(
 fn analyze_rbg_inner(
     source: &str,
     callback: &mut Option<impl FnMut(String)>,
-) -> Result<Game<Arc<str>>, String> {
+) -> Result<GameAst<Id>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
             if let Some(callback) = callback.as_mut() {
@@ -102,10 +104,10 @@ fn analyze_rbg_inner(
 }
 
 fn analyze_rg_inner(
-    game_or_source: Result<Game<Arc<str>>, String>,
+    game_or_source: Result<GameAst<Id>, String>,
     flags: &Flags,
     callback: &mut Option<impl FnMut(String)>,
-) -> Result<Game<Arc<str>>, String> {
+) -> Result<GameAst<Id>, String> {
     macro_rules! step {
         ({ $($json:tt)+ }) => {{
             if let Some(callback) = callback.as_mut() {
@@ -236,7 +238,7 @@ pub fn analyze_inner(
     extension: &str,
     flags: &Flags,
     callback: &mut Option<impl FnMut(String)>,
-) -> Result<Game<Arc<str>>, String> {
+) -> Result<GameAst<Id>, String> {
     let game_or_source = match extension {
         "hrg" => Ok(analyze_hrg_inner(&source, flags.reuse_functions, callback)?),
         "kif" => Ok(analyze_gdl_inner(&source, callback)?),
@@ -269,19 +271,10 @@ pub fn analyze(
     Ok(())
 }
 
-pub fn build_ist(
-    mut game: Game<Arc<str>>,
-) -> Result<(ist::Game<ist::RuntimeId>, ISTInterner), String> {
-    game.expand_generator_nodes()?;
-    let mut interner = new_ist_interner();
-    let game = ist::Game::from(game).map_id(&mut |id| interner.intern(id));
-    Ok((game, interner))
-}
-
 #[wasm_bindgen(js_name = perf)]
 pub fn perf(ast: &str, depth: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
-    let game = build_ist(from_str(ast).map_err(|error| error.to_string())?)?.0;
+    let game = Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?.0;
     let (count, time) = game.perf(depth);
     callback
         .call2(&JsValue::null(), &count.into(), &time.into())
@@ -292,7 +285,7 @@ pub fn perf(ast: &str, depth: usize, callback: &Function) -> Result<(), String> 
 #[wasm_bindgen(js_name = run)]
 pub fn run(ast: &str, plays: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
-    let (game, interner) = build_ist(from_str(ast).map_err(|error| error.to_string())?)?;
+    let (game, interner) = Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?;
     let this = JsValue::null();
     let mut rng = thread_rng();
     game.run(

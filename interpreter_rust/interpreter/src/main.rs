@@ -1,7 +1,7 @@
 use clap::{Args, Parser};
-use interpreter::{analyze_inner, build_ist, Flags};
+use interpreter::{analyze_inner, Flags, Game};
 use rand::thread_rng;
-use rg::ast::Game;
+use rg::ast::Game as GameAst;
 use serde_json::json;
 use std::ffi::OsStr;
 use std::fs::read_to_string;
@@ -44,7 +44,7 @@ struct GameWithFlags {
 }
 
 impl GameWithFlags {
-    fn load(self) -> Result<Game<Arc<str>>, String> {
+    fn load(self) -> Result<GameAst<Arc<str>>, String> {
         let Self { flags, path } = self;
         let Some(extension) = path.extension().and_then(OsStr::to_str) else {
             return Err(format!("Unknown game type: {}.", path.display()));
@@ -65,7 +65,7 @@ fn main() -> Result<(), String> {
             depth,
             game_with_flags,
         } => {
-            let game = build_ist(game_with_flags.load()?)?.0;
+            let game = Game::try_from(game_with_flags.load()?)?.0;
             for depth in 0..=depth {
                 let (count, time) = game.perf(depth);
                 println!("perf(depth: {depth}) = {count} in {time:.3}ms",);
@@ -75,7 +75,7 @@ fn main() -> Result<(), String> {
             game_with_flags,
             plays,
         } => {
-            let (game, interner) = build_ist(game_with_flags.load()?)?;
+            let (game, interner) = Game::try_from(game_with_flags.load()?)?;
             game.run(
                 &mut thread_rng(),
                 &interner,

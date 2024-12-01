@@ -3,6 +3,7 @@ use crate::ist::{Game, RuntimeId, Value, LABEL_BEGIN, LABEL_END, LABEL_KEEPER};
 use map_id::MapId;
 use rand::seq::IteratorRandom;
 use rand::Rng;
+use rg::ast::{Error, Game as GameAst};
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::rc::Rc;
@@ -10,15 +11,7 @@ use std::sync::Arc;
 use utils::interner::Interner;
 use web_time::Instant;
 
-pub type ISTInterner = Interner<Arc<str>, RuntimeId>;
-
-pub fn new_ist_interner() -> ISTInterner {
-    let mut interner = Interner::default();
-    interner.intern_as(&Arc::from("begin"), LABEL_BEGIN);
-    interner.intern_as(&Arc::from("end"), LABEL_END);
-    interner.intern_as(&Arc::from("keeper"), LABEL_KEEPER);
-    interner
-}
+type Id = Arc<str>;
 
 impl Game<RuntimeId> {
     pub fn initial_state(&self) -> State {
@@ -179,5 +172,19 @@ impl Game<RuntimeId> {
                 callback(lines);
             }
         }
+    }
+
+    /// This should be provided via the `TryFrom` trait, but it's impossible due
+    /// to orphan rules.
+    pub fn try_from(mut game: GameAst<Id>) -> Result<(Self, Interner<Id, RuntimeId>), Error<Id>> {
+        let mut interner = Interner::default();
+        interner.intern_as(&Arc::from("begin"), LABEL_BEGIN);
+        interner.intern_as(&Arc::from("end"), LABEL_END);
+        interner.intern_as(&Arc::from("keeper"), LABEL_KEEPER);
+
+        game.expand_generator_nodes()?;
+        let game = Game::from(game);
+        let game = game.map_id(&mut |id| interner.intern(id));
+        Ok((game, interner))
     }
 }
