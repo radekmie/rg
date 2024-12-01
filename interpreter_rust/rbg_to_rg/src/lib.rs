@@ -114,80 +114,19 @@ impl Context {
             .iter()
             .any(|constant| constant.identifier == math_operator)
         {
-            let nan_element = Arc::from(rg::Value::new(Id::from("nan")));
-            let nan_entry = rg::ValueEntry::new_default(nan_element.clone());
-
-            let number_type = self.create_math_type(limit);
+            let type_ = self.create_math_type(limit);
+            let value = self.create_math_operator_value(limit, operator);
             self.rg.constants.push(rg::Constant {
                 span: Span::none(),
                 identifier: math_operator.clone(),
                 type_: Arc::from(rg::Type::Arrow {
-                    lhs: number_type.clone(),
+                    lhs: type_.clone(),
                     rhs: Arc::from(rg::Type::Arrow {
-                        lhs: number_type.clone(),
-                        rhs: number_type.clone(),
+                        lhs: type_.clone(),
+                        rhs: type_,
                     }),
                 }),
-                value: Arc::from(rg::Value::Map {
-                    span: Span::none(),
-                    entries: Some(rg::ValueEntry::new_default(Arc::from(rg::Value::Map {
-                        span: Span::none(),
-                        entries: vec![nan_entry.clone()],
-                    })))
-                    .into_iter()
-                    .chain((0..limit).map(|lhs| {
-                        rg::ValueEntry {
-                            span: Span::none(),
-                            identifier: Some(Id::from(lhs.to_string())),
-                            value: Arc::from(rg::Value::Map {
-                                span: Span::none(),
-                                entries: Some(nan_entry.clone())
-                                    .into_iter()
-                                    .chain((0..limit).filter_map(|rhs| {
-                                        let result = match operator {
-                                            rbg::Operator::Comparison(
-                                                rbg::ComparisonOperator::Gt,
-                                            ) => Some((lhs > rhs).into()),
-                                            rbg::Operator::Comparison(
-                                                rbg::ComparisonOperator::Gte,
-                                            ) => Some((lhs >= rhs).into()),
-                                            rbg::Operator::Comparison(
-                                                rbg::ComparisonOperator::Lt,
-                                            ) => Some((lhs < rhs).into()),
-                                            rbg::Operator::Comparison(
-                                                rbg::ComparisonOperator::Lte,
-                                            ) => Some((lhs <= rhs).into()),
-                                            rbg::Operator::Expression(
-                                                rbg::ExpressionOperator::Add,
-                                            ) if lhs + rhs >= limit => None,
-                                            rbg::Operator::Expression(
-                                                rbg::ExpressionOperator::Add,
-                                            ) => Some(lhs + rhs),
-                                            rbg::Operator::Expression(
-                                                rbg::ExpressionOperator::Sub,
-                                            ) if lhs < rhs => None,
-                                            rbg::Operator::Expression(
-                                                rbg::ExpressionOperator::Sub,
-                                            ) => Some(lhs - rhs),
-                                            _ => unimplemented!(
-                                                "create_math_operator of {operator:?}"
-                                            ),
-                                        }?;
-
-                                        Some(rg::ValueEntry {
-                                            span: Span::none(),
-                                            identifier: Some(Id::from(rhs.to_string())),
-                                            value: Arc::from(rg::Value::new(Id::from(
-                                                result.to_string(),
-                                            ))),
-                                        })
-                                    }))
-                                    .collect(),
-                            }),
-                        }
-                    }))
-                    .collect(),
-                }),
+                value,
             });
         }
 
@@ -200,6 +139,64 @@ impl Context {
             }),
             rhs,
         })
+    }
+
+    fn create_math_operator_value(
+        &self,
+        limit: usize,
+        operator: rbg::Operator,
+    ) -> Arc<rg::Value<Id>> {
+        let nan = Id::from("nan");
+        let nan_value = Arc::from(rg::Value::new(nan.clone()));
+        let nan_map = Arc::from(rg::Value::from_pairs(vec![(
+            nan.clone(),
+            nan_value.clone(),
+        )]));
+
+        let mut numbers = BTreeMap::new();
+        macro_rules! number {
+            ($expr:expr) => {{
+                let number = usize::from($expr);
+                numbers
+                    .entry(number)
+                    .or_insert_with(|| Arc::from(rg::Value::new(Id::from(number.to_string()))))
+                    .clone()
+            }};
+        }
+
+        Arc::from(rg::Value::from_pairs(
+            (0..limit)
+                .map(|lhs| {
+                    let value = Arc::from(rg::Value::from_pairs(
+                        (0..limit)
+                            .map(|rhs| {
+                                use rbg::ComparisonOperator::{Gt, Gte, Lt, Lte};
+                                use rbg::ExpressionOperator::{Add, Sub};
+                                use rbg::Operator::{Comparison, Expression};
+
+                                let value = match operator {
+                                    Comparison(Gt) => number!(lhs > rhs),
+                                    Comparison(Gte) => number!(lhs >= rhs),
+                                    Comparison(Lt) => number!(lhs < rhs),
+                                    Comparison(Lte) => number!(lhs <= rhs),
+                                    Expression(Add) if lhs + rhs >= limit => nan_value.clone(),
+                                    Expression(Add) => number!(lhs + rhs),
+                                    Expression(Sub) if lhs < rhs => nan_value.clone(),
+                                    Expression(Sub) => number!(lhs - rhs),
+                                    _ => unimplemented!("create_math_operator of {operator:?}"),
+                                };
+
+                                (Id::from(rhs.to_string()), value)
+                            })
+                            .chain([(nan.clone(), nan_value.clone())])
+                            .collect(),
+                    ));
+
+                    (Id::from(lhs.to_string()), value)
+                })
+                .chain([(nan.clone(), nan_map.clone())])
+                .collect(),
+        ))
     }
 
     fn create_math_type(&mut self, limit: usize) -> Arc<rg::Type<Id>> {
@@ -526,43 +523,20 @@ fn add_builtin_variables(context: &mut Context) {
         }),
     });
 
-    let most_common_piece = context
-        .rbg
-        .board
-        .iter()
-        .fold(BTreeMap::<_, usize>::new(), |mut pieces, node| {
-            *pieces.entry(node.piece.clone()).or_default() += 1;
-            pieces
-        })
-        .into_iter()
-        .max_by(|x, y| x.1.cmp(&y.1))
-        .unwrap()
-        .0;
-
     context.rg.variables.push(rg::Variable {
         span: Span::none(),
         identifier: Id::from("board"),
         type_: Arc::from(rg::Type::new(Id::from("Board"))),
-        default_value: Arc::from(rg::Value::Map {
-            span: Span::none(),
-            entries: Some(rg::ValueEntry::new_default(Arc::from(rg::Value::new(
-                most_common_piece.clone(),
-            ))))
-            .into_iter()
-            .chain(
-                context
-                    .rbg
-                    .board
-                    .iter()
-                    .filter(|node| node.piece != most_common_piece)
-                    .map(|node| rg::ValueEntry {
-                        span: Span::none(),
-                        identifier: Some(node.node.clone()),
-                        value: Arc::from(rg::Value::new(node.piece.clone())),
-                    }),
-            )
-            .collect(),
-        }),
+        default_value: Arc::from(rg::Value::from_pairs(
+            context
+                .rbg
+                .board
+                .iter()
+                .map(|rbg::Node { node, piece, .. }| {
+                    (node.clone(), Arc::from(rg::Value::new(piece.clone())))
+                })
+                .collect(),
+        )),
     });
 
     context.rg.variables.push(rg::Variable {

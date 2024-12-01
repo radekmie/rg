@@ -1646,6 +1646,17 @@ impl<Id> Value<Id> {
         Self::Element { identifier }
     }
 
+    pub fn size(&self) -> usize {
+        match self {
+            Self::Element { .. } => 1,
+            Self::Map { entries, .. } => entries
+                .iter()
+                .map(|value_entry| value_entry.value.size())
+                .sum::<usize>()
+                .saturating_add(1),
+        }
+    }
+
     pub fn to_identifier(&self) -> Option<&Id> {
         match self {
             Self::Element { identifier } => Some(identifier),
@@ -1677,6 +1688,37 @@ impl<Id: PartialEq> Value<Id> {
 }
 
 impl<Id: Ord> Value<Id> {
+    pub fn from_pairs(pairs: Vec<(Id, Arc<Self>)>) -> Self {
+        let most_common_value = pairs
+            .iter()
+            .fold(BTreeMap::<_, usize>::new(), |mut counts, (_, value)| {
+                *counts.entry(value.clone()).or_default() += 1;
+                counts
+            })
+            .into_iter()
+            .max_by(|(v1, c1), (v2, c2)| {
+                // Count, size, key.
+                c1.cmp(c2)
+                    .then_with(|| v1.size().cmp(&v2.size()).reverse())
+                    .then_with(|| v1.cmp(v2))
+            })
+            .expect("Value::from_pairs require at least one pair.")
+            .0;
+
+        Self::Map {
+            span: Span::none(),
+            entries: Some(ValueEntry::new_default(most_common_value.clone()))
+                .into_iter()
+                .chain(
+                    pairs
+                        .into_iter()
+                        .filter(|(_, value)| *value != most_common_value)
+                        .map(|(key, value)| ValueEntry::new(Span::none(), Some(key), value)),
+                )
+                .collect(),
+        }
+    }
+
     /// Test:
     /// ```
     /// use rg::ast::{Value, ValueEntry};
