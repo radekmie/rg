@@ -550,29 +550,23 @@ fn add_builtin_variables(context: &mut Context) {
         span: Span::none(),
         identifier: Id::from("counters"),
         type_: Arc::from(rg::Type::new(Id::from("Counters"))),
-        default_value: Arc::from(rg::Value::Map {
-            span: Span::none(),
-            entries: Some(rg::ValueEntry::new_default(Arc::from(rg::Value::new(
-                Id::from("0"),
-            ))))
-            .into_iter()
-            .chain(context.rbg.pieces.iter().map(|piece| {
-                rg::ValueEntry {
-                    span: Span::none(),
-                    identifier: Some(piece.clone()),
-                    value: Arc::from(rg::Value::new(Id::from(
-                        context
-                            .rbg
-                            .board
-                            .iter()
-                            .filter(|node| node.piece == *piece)
-                            .count()
-                            .to_string(),
-                    ))),
-                }
-            }))
-            .collect(),
-        }),
+        default_value: Arc::from(rg::Value::from_pairs(
+            context
+                .rbg
+                .pieces
+                .iter()
+                .map(|piece| {
+                    let count = context
+                        .rbg
+                        .board
+                        .iter()
+                        .filter(|node| node.piece == *piece)
+                        .count()
+                        .to_string();
+                    (piece.clone(), Arc::from(rg::Value::new(Id::from(count))))
+                })
+                .collect(),
+        )),
     });
 }
 

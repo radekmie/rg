@@ -78,11 +78,9 @@ impl Game<Arc<str>> {
             type_: Arc::new(Type::from(Arc::from("Goals"))),
             default_value: Arc::new(Value::Map {
                 span: Span::none(),
-                entries: vec![ValueEntry {
-                    span: Span::none(),
-                    identifier: None,
-                    value: Arc::new(Value::from(default_score)),
-                }],
+                entries: vec![ValueEntry::new_default(Arc::new(Value::from(
+                    default_score,
+                )))],
             }),
         })?;
 
@@ -103,11 +101,9 @@ impl Game<Arc<str>> {
             type_: Arc::new(Type::from(Arc::from("Visibility"))),
             default_value: Arc::new(Value::Map {
                 span: Span::none(),
-                entries: vec![ValueEntry {
-                    span: Span::none(),
-                    identifier: None,
-                    value: Arc::new(Value::from(Arc::from("1"))),
-                }],
+                entries: vec![ValueEntry::new_default(Arc::new(Value::from(Arc::from(
+                    "1",
+                ))))],
             }),
         })?;
 

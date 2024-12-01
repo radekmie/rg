@@ -146,41 +146,6 @@ fn compare_values(lhs: &hrg::Value<Id>, rhs: &hrg::Value<Id>) -> Result<Ordering
     }
 }
 
-fn construct_map(mut entries: Vec<rg::ValueEntry<Id>>) -> Result<rg::Value<Id>, hrg::Error<Id>> {
-    if entries.is_empty() {
-        return Err(hrg::Error::EmptyMap);
-    }
-
-    let default_value = entries
-        .iter()
-        .fold(vec![], |mut counts: Vec<(_, _)>, entry| {
-            match counts.iter_mut().find(|count| count.0 == entry.value) {
-                Some(count) => count.1 += 1,
-                None => counts.push((entry.value.clone(), 1)),
-            }
-            counts
-        })
-        .into_iter()
-        .reduce(|x, y| if x.1 >= y.1 { x } else { y })
-        .unwrap()
-        .0;
-
-    entries.retain(|entry| !evaluate_equality(&entry.value, &default_value));
-    entries.insert(
-        0,
-        rg::ValueEntry {
-            span: Span::none(),
-            identifier: None,
-            value: default_value,
-        },
-    );
-
-    Ok(rg::Value::Map {
-        span: Span::none(),
-        entries,
-    })
-}
-
 fn evaluate_binding(
     pattern: &hrg::Pattern<Id>,
     value: &hrg::Value<Id>,
@@ -346,23 +311,6 @@ fn evaluate_domain_values(
                 })
         })
         .collect())
-}
-
-fn evaluate_equality(lhs: &rg::Value<Id>, rhs: &rg::Value<Id>) -> bool {
-    match (lhs, rhs) {
-        (rg::Value::Element { identifier: lhs }, rg::Value::Element { identifier: rhs }) => {
-            lhs == rhs
-        }
-        (rg::Value::Map { entries: lhss, .. }, rg::Value::Map { entries: rhss, .. }) => {
-            lhss.len() == rhss.len()
-                && lhss.iter().all(|lhs| {
-                    rhss.iter()
-                        .find(|rhs| rhs.identifier == lhs.identifier)
-                        .is_some_and(|rhs| evaluate_equality(&lhs.value, &rhs.value))
-                })
-        }
-        _ => panic!("Equality for different kinds."),
-    }
 }
 
 fn evaluate_expression(
@@ -582,7 +530,7 @@ fn translate_automaton_function(
                 ),
             None => context.rg.variables.push(rg::Variable {
                 span: Span::none(),
-                default_value: Arc::from(translate_value(&evaluate_default_value(context, &type_)?)?),
+                default_value: translate_value(&evaluate_default_value(context, &type_)?)?,
                 identifier,
                 type_
             })
@@ -1641,26 +1589,28 @@ fn translate_function_layer(
 ) -> Result<rg::Value<Id>, hrg::Error<Id>> {
     if first_case.args.len() > values.len() {
         if let rg::Type::Arrow { lhs, rhs } = type_ {
-            return construct_map(
+            return Ok(rg::Value::from_pairs(
                 evaluate_type_values(context, lhs)?
                     .iter()
                     .map(|value| {
-                        let mut values = values.to_owned();
-                        values.push(value.clone());
-                        Ok(rg::ValueEntry {
-                            span: Span::none(),
-                            identifier: Some(serialize_value(value)),
-                            value: Arc::from(translate_function_layer(
-                                context,
-                                function_declaration,
-                                first_case,
-                                rhs,
-                                &values,
-                            )?),
-                        })
+                        let key = serialize_value(value);
+                        let value = Arc::from(translate_function_layer(
+                            context,
+                            function_declaration,
+                            first_case,
+                            rhs,
+                            values
+                                .iter()
+                                .chain([value])
+                                .cloned()
+                                .collect::<Vec<_>>()
+                                .as_slice(),
+                        )?);
+
+                        Ok((key, value))
                     })
                     .collect::<Result<_, _>>()?,
-            );
+            ));
         }
     }
 
@@ -1693,27 +1643,25 @@ fn translate_type(type_: &hrg::Type<Id>) -> Arc<rg::Type<Id>> {
     })
 }
 
-fn translate_value(value: &hrg::Value<Id>) -> Result<rg::Value<Id>, hrg::Error<Id>> {
-    match value {
-        hrg::Value::Constructor { .. } => Ok(rg::Value::Element {
+fn translate_value(value: &hrg::Value<Id>) -> Result<Arc<rg::Value<Id>>, hrg::Error<Id>> {
+    Ok(Arc::from(match value {
+        hrg::Value::Constructor { .. } => rg::Value::Element {
             identifier: serialize_value(value),
-        }),
-        hrg::Value::Element { identifier } => Ok(rg::Value::Element {
+        },
+        hrg::Value::Element { identifier } => rg::Value::Element {
             identifier: identifier.clone(),
-        }),
-        hrg::Value::Map { entries } => construct_map(
+        },
+        hrg::Value::Map { entries } => rg::Value::from_pairs(
             entries
                 .iter()
                 .map(|entry| {
-                    Ok(rg::ValueEntry {
-                        span: Span::none(),
-                        identifier: Some(serialize_value(&entry.key)),
-                        value: Arc::from(translate_value(&entry.value)?),
-                    })
+                    let key = serialize_value(&entry.key);
+                    let value = translate_value(&entry.value)?;
+                    Ok((key, value))
                 })
                 .collect::<Result<_, _>>()?,
         ),
-    }
+    }))
 }
 
 fn translate_variable(
@@ -1723,11 +1671,11 @@ fn translate_variable(
     let type_ = translate_type(&variable_declaration.type_);
     Ok(rg::Variable {
         span: Span::none(),
-        default_value: Arc::from(translate_variable_default_value(
+        default_value: translate_variable_default_value(
             context,
             &variable_declaration.default_value,
             &type_,
-        )?),
+        )?,
         identifier: variable_declaration.identifier.clone(),
         type_,
     })
@@ -1737,7 +1685,7 @@ fn translate_variable_default_value(
     context: &Context,
     default_value: &Option<Arc<hrg::Expression<Id>>>,
     type_: &rg::Type<Id>,
-) -> Result<rg::Value<Id>, hrg::Error<Id>> {
+) -> Result<Arc<rg::Value<Id>>, hrg::Error<Id>> {
     match default_value.as_deref() {
         // If there's none, build one from the type.
         None => translate_value(&evaluate_default_value(context, type_)?),
@@ -1747,18 +1695,12 @@ fn translate_variable_default_value(
             pattern,
             expression,
             ..
-        }) if **pattern == hrg::Pattern::Wildcard => Ok(rg::Value::Map {
+        }) if **pattern == hrg::Pattern::Wildcard => Ok(Arc::from(rg::Value::Map {
             span: Span::none(),
-            entries: vec![rg::ValueEntry {
-                span: Span::none(),
-                identifier: None,
-                value: Arc::from(translate_value(&evaluate_expression(
-                    context,
-                    expression,
-                    &BTreeMap::new(),
-                )?)?),
-            }],
-        }),
+            entries: vec![rg::ValueEntry::new_default(translate_value(
+                &evaluate_expression(context, expression, &BTreeMap::new())?,
+            )?)],
+        })),
 
         // Build the map.
         // TODO: Check whether map domains match type domains.
