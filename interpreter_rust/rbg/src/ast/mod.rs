@@ -114,15 +114,15 @@ pub struct Edge<Id> {
     pub node: Id,
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub enum Error<Id> {
-    Todo(Id),
-}
-
 impl<Id> Edge<Id> {
     pub fn new(label: Id, node: Id) -> Self {
         Self { label, node }
     }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum Error<Id> {
+    Todo(Id),
 }
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

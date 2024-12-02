@@ -95,10 +95,9 @@ fn analyze_rbg_inner(
     let rbg = safe_parse!(unsafe_parse_rbg(source))?;
     step!({ "kind": "ast", "language": "rbg", "value": rbg });
 
-    // TODO: Implement formatter.
-    // let serialized = rbg.to_string();
-    // assert_eq!(safe_parse!(unsafe_parse_rbg(&serialized))?, rbg);
-    // step!({ "kind": "source", "language": "rbg", "value": serialized, "title": "formatted" });
+    let serialized = rbg.to_string();
+    assert_eq!(safe_parse!(unsafe_parse_rbg(&serialized))?, rbg);
+    step!({ "kind": "source", "language": "rbg", "value": serialized, "title": "formatted" });
 
     rbg_to_rg::rbg_to_rg(rbg).map_err(|error| error.to_string())
 }

@@ -1,3 +1,4 @@
+pub mod display;
 pub mod interner;
 pub mod parser;
 pub mod position;
