@@ -139,6 +139,11 @@ pub enum Error<Id> {
         lhs: Value<Id>,
         rhs: Value<Id>,
     },
+    IncorrectNumberOfArguments {
+        identifier: Id,
+        expected: usize,
+        got: usize,
+    },
     InvalidCondition {
         expression: Expression<Id>,
     },

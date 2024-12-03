@@ -109,6 +109,20 @@ fn cartesian<T: Clone>(xss: Vec<Vec<T>>, ys: Vec<T>) -> Vec<Vec<T>> {
         .collect()
 }
 
+fn check_arguments_length(
+    identifier: Id,
+    expected: usize,
+    got: usize,
+) -> Result<(), hrg::Error<Id>> {
+    (expected == got)
+        .then_some(())
+        .ok_or_else(|| hrg::Error::IncorrectNumberOfArguments {
+            identifier,
+            expected,
+            got,
+        })
+}
+
 fn compare_identifiers(lhs: &Id, rhs: &Id) -> Ordering {
     compare(lhs, rhs)
 }
@@ -644,7 +658,7 @@ fn translate_automaton_statements(
             }
             hrg::Statement::Call { identifier, args } => match identifier.as_ref() {
                 "break" => {
-                    assert!(args.is_empty(), "break() expects no arguments.");
+                    check_arguments_length(identifier.clone(), 0, args.len())?;
                     assert_eq!(
                         Some(automaton_statement),
                         automaton_statements.last(),
@@ -663,7 +677,7 @@ fn translate_automaton_statements(
                     return Ok(true);
                 }
                 "check" => {
-                    assert_eq!(args.len(), 1, "check() expects exactly 1 argument.");
+                    check_arguments_length(identifier.clone(), 1, args.len())?;
                     let local_node = context.random_node(prefix);
                     translate_condition(
                         context,
@@ -678,7 +692,7 @@ fn translate_automaton_statements(
                     current_node = local_node;
                 }
                 "continue" => {
-                    assert!(args.is_empty(), "continue() expects no arguments.");
+                    check_arguments_length(identifier.clone(), 0, args.len())?;
                     assert_eq!(
                         Some(automaton_statement),
                         automaton_statements.last(),
@@ -697,7 +711,7 @@ fn translate_automaton_statements(
                     return Ok(true);
                 }
                 "end" => {
-                    assert!(args.is_empty(), "end() expects no arguments.");
+                    check_arguments_length(identifier.clone(), 0, args.len())?;
                     assert_eq!(
                         Some(automaton_statement),
                         automaton_statements.last(),
@@ -719,7 +733,7 @@ fn translate_automaton_statements(
                     return Ok(true);
                 }
                 "return" => {
-                    assert!(args.is_empty(), "return() expects no arguments.");
+                    check_arguments_length(identifier.clone(), 0, args.len())?;
                     assert_eq!(
                         Some(automaton_statement),
                         automaton_statements.last(),
@@ -746,13 +760,11 @@ fn translate_automaton_statements(
                         .unwrap_or_else(|| panic!("Unknown automaton function \"{identifier}\"."))
                         .clone();
 
-                    assert_eq!(
+                    check_arguments_length(
+                        called_automaton_function.name.clone(),
                         called_automaton_function.args.len(),
                         args.len(),
-                        "Function \"{identifier}\" expects {} arguments but got {}.",
-                        called_automaton_function.args.len(),
-                        args.len()
-                    );
+                    )?;
 
                     if context.reuse_functions {
                         let call_id = context.random(&Id::from(format!(
@@ -1267,7 +1279,7 @@ fn translate_condition(
 
             match identifier.as_ref() {
                 "not" => {
-                    assert_eq!(args.len(), 1, "not() expects exactly 1 argument.");
+                    check_arguments_length(identifier.clone(), 1, args.len())?;
                     translate_condition(
                         context,
                         args[0].as_ref(),
@@ -1280,7 +1292,7 @@ fn translate_condition(
                     )?;
                 }
                 "reachable" => {
-                    assert_eq!(args.len(), 1, "reachable() expects exactly 1 argument.");
+                    check_arguments_length(identifier.clone(), 1, args.len())?;
                     let hrg::Expression::Call { expression, args } = args[0].as_ref() else {
                         panic!("reachable() expects an automaton call.");
                     };
@@ -1297,13 +1309,11 @@ fn translate_condition(
                         .unwrap_or_else(|| panic!("Unknown automaton function \"{identifier}\"."))
                         .clone();
 
-                    assert_eq!(
+                    check_arguments_length(
+                        called_automaton_function.name.clone(),
                         called_automaton_function.args.len(),
                         args.len(),
-                        "Function \"{identifier}\" expects {} arguments but got {}.",
-                        called_automaton_function.args.len(),
-                        args.len()
-                    );
+                    )?;
 
                     let call_id = context.random(&Id::from(format!(
                         "{}_call",

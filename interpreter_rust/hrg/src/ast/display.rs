@@ -69,6 +69,16 @@ impl<Id: Display> Display for Error<Id> {
             Self::IncomparableValues { lhs, rhs } => {
                 write!(f, "Values \"{lhs}\" and \"{rhs}\" are not comparable.")
             }
+            Self::IncorrectNumberOfArguments {
+                identifier,
+                expected,
+                got,
+            } => {
+                write!(
+                    f,
+                    "Function \"{identifier}\" expected {expected} arguments but got {got}."
+                )
+            }
             Self::InvalidCondition { expression } => {
                 write!(f, "Expression \"{expression}\" is not a valid condition.")
             }
