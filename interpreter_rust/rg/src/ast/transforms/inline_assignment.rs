@@ -1,15 +1,11 @@
 use crate::ast::analyses::{Analysis, ReachingDefinitions};
 use crate::ast::{Edge, Error, Expression, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
+use std::iter;
 use std::sync::Arc;
 
 type Id = Arc<str>;
-type ToInline = (
-    Id,
-    Arc<Expression<Id>>,
-    Arc<Edge<Id>>,
-    BTreeSet<Arc<Edge<Id>>>,
-);
+type ToInline = (Id, Arc<Expression<Id>>, BTreeSet<Arc<Edge<Id>>>);
 
 impl Game<Id> {
     /// For each assignment to a variable `x = expr` :
@@ -23,15 +19,19 @@ impl Game<Id> {
     ///   - the only reaching definition of `x` is from that assignment
     ///   - all variables in `expr` have the same values as in the assignment
     pub fn inline_assignment(&mut self) -> Result<(), Error<Id>> {
-        let to_inline = self.collect_to_inline();
-        for (to_replace, new_expr, to_skip, usages) in to_inline {
-            for edge in &mut self.edges {
-                if *edge == to_skip {
-                    Arc::make_mut(edge).skip();
-                } else if usages.contains(edge) {
+        let (to_inline, to_skip) = self.collect_to_inline();
+        for edge in &mut self.edges {
+            if to_skip.contains(edge) {
+                Arc::make_mut(edge).skip();
+            } else {
+                let inlines: Vec<_> = to_inline
+                    .iter()
+                    .filter(|(_, _, usages)| usages.contains(edge))
+                    .collect();
+                for (to_replace, new_expr, _) in inlines {
                     Arc::make_mut(edge).label = edge
                         .label
-                        .substitute_variable_readonly(&to_replace, &new_expr);
+                        .substitute_variable_readonly(to_replace, new_expr);
                 }
             }
         }
@@ -39,11 +39,12 @@ impl Game<Id> {
         Ok(())
     }
 
-    fn collect_to_inline(&self) -> BTreeSet<ToInline> {
+    fn collect_to_inline(&self) -> (BTreeSet<ToInline>, BTreeSet<Arc<Edge<Id>>>) {
         let reaching_definitions = self.analyse::<ReachingDefinitions>(true);
         let next_edges = self.next_edges();
         let is_reachable = self.make_is_reachable();
         let mut to_inline = BTreeSet::new();
+        let mut to_skip = BTreeSet::new();
         let mut modified_edges = BTreeSet::new();
 
         for edge in &self.edges {
@@ -82,15 +83,11 @@ impl Game<Id> {
                 }
 
                 modified_edges.extend(usages.iter().cloned());
-                to_inline.insert((
-                    (*identifier).clone(),
-                    (*rhs).clone(),
-                    (*edge).clone(),
-                    usages,
-                ));
+                to_inline.insert(((*identifier).clone(), (*rhs).clone(), usages));
+                to_skip.insert((*edge).clone());
             }
         }
-        to_inline
+        (to_inline, to_skip)
     }
 }
 
@@ -99,7 +96,7 @@ fn maybe_inline_assignment(
     reaching_definitions: &BTreeMap<Node<Id>, <ReachingDefinitions as Analysis>::Domain>,
     def_edge: &Edge<Id>,
     id: &Id,
-    defs_on_assignment: &BTreeMap<Id, BTreeSet<Option<Arc<Edge<Id>>>>>,
+    defs_on_assignment: &BTreeMap<&Id, Option<&Arc<Edge<Id>>>>,
     vars_in_definition: &BTreeSet<&Id>,
 ) -> Option<BTreeSet<Arc<Edge<Id>>>> {
     let mut queue = vec![&def_edge.rhs];
@@ -143,37 +140,35 @@ fn maybe_inline_assignment(
     Some(to_inline)
 }
 
-fn used_definitions(
-    defs: &<ReachingDefinitions as Analysis>::Domain,
-    variables: &BTreeSet<&Id>,
-    identifier: &Id,
-) -> BTreeMap<Id, BTreeSet<Option<Arc<Edge<Id>>>>> {
-    defs.iter()
-        .filter(|(var, _)| variables.contains(var) || var == identifier)
-        .fold(BTreeMap::new(), |mut grouped_defs, (var, edge)| {
-            grouped_defs
-                .entry(var.clone())
-                .or_default()
-                .insert(edge.clone());
-            grouped_defs
-        })
+fn used_definitions<'a>(
+    defs: &'a <ReachingDefinitions as Analysis>::Domain,
+    variables: &'a BTreeSet<&Id>,
+    identifier: &'a Id,
+) -> BTreeMap<&'a Id, Option<&'a Arc<Edge<Id>>>> {
+    let used: BTreeMap<_, _> = variables
+        .iter()
+        .chain(iter::once(&identifier))
+        .map(|var| (*var, defs.get(*var)))
+        .collect();
+
+    used
 }
 
 fn can_replace_usage(
     to_replace: &Id,
     def_edge: &Edge<Id>,
-    defs_on_assignment: &BTreeMap<Id, BTreeSet<Option<Arc<Edge<Id>>>>>,
-    defs_on_usage: &BTreeMap<Id, BTreeSet<Option<Arc<Edge<Id>>>>>,
+    defs_on_assignment: &BTreeMap<&Id, Option<&Arc<Edge<Id>>>>,
+    defs_on_usage: &BTreeMap<&Id, Option<&Arc<Edge<Id>>>>,
 ) -> bool {
-    defs_on_usage.get(to_replace).is_some_and(|defs| {
-        defs.iter()
-            .all(|def| def.as_ref().is_some_and(|def| def.as_ref() == def_edge))
-    }) && defs_on_assignment.iter().all(|(var, on_def)| {
-        var == to_replace
-            || defs_on_usage
-                .get(var)
-                .is_some_and(|on_use| on_def == on_use)
-    })
+    defs_on_usage
+        .get(to_replace)
+        .is_some_and(|def| def.is_some_and(|def| def.as_ref() == def_edge))
+        && defs_on_assignment.iter().all(|(var, on_def)| {
+            *var == to_replace
+                || defs_on_usage
+                    .get(var)
+                    .is_some_and(|on_use| on_def == on_use)
+        })
 }
 
 fn is_reassigned(label: &Label<Id>, id: &Id) -> bool {
@@ -193,10 +188,10 @@ mod test {
         t5, t6: a2 = z;
         t6, end: a2 == x;",
         "begin, t2: ;
-        t2, t3: ;
+        t2, t3: z = d;
         t3, t5: d = y;
-        t5, t6: a2 = d;
-        t6, end: a2 == y;"
+        t5, t6: ;
+        t6, end: z == y;"
     );
 
     test_transform!(
