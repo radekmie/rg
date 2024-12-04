@@ -176,10 +176,8 @@ fn analyze_rg_inner(
             };
         }
 
-        // Normalization.
-        pass!(normalize_types);
-        pass!(normalize_constants);
-        pass!(add_explicit_casts);
+        // Compact skip edges after every transformation.
+        pass!(compact_skip_edges);
 
         // Inlining.
         pass!(inline_assignment);
@@ -189,7 +187,6 @@ fn analyze_rg_inner(
 
         // Compact the automaton.
         pass!(compact_comparisons);
-        pass!(compact_skip_edges);
         pass!(join_exclusive_edges);
         pass!(join_fork_prefixes);
         pass!(join_fork_suffixes);
@@ -205,6 +202,11 @@ fn analyze_rg_inner(
         pass!(prune_unused_bindings);
         pass!(prune_unused_constants);
         pass!(prune_unused_variables);
+
+        // Normalization.
+        pass!(normalize_types);
+        pass!(normalize_constants);
+        pass!(add_explicit_casts);
 
         // Expand generator nodes before calculating pragmas.
         pass!(expand_generator_nodes);
