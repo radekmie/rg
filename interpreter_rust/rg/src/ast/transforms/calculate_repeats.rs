@@ -162,20 +162,20 @@ mod test {
     test_transform!(
         calculate_repeats,
         repeat_test,
-        include_str!("../../../../../examples/repeatTest.rg"),
+        include_str!("../../../../../games/rg/repeatTest.rg"),
         adds "@repeat selectDir4 : pos;"
     );
 
     test_transform!(
         calculate_repeats,
         repeat_test_big,
-        include_str!("../../../../../examples/repeatTestBig.rg"),
+        include_str!("../../../../../games/rg/repeatTestBig.rg"),
         adds "@repeat goDown goLeft goRight goUp main : pos; @repeat setScore :;"
     );
 
     test_transform!(
         calculate_repeats,
         tictactoe,
-        include_str!("../../../../../examples/ticTacToe.rg")
+        include_str!("../../../../../games/rg/ticTacToe.rg")
     );
 }

@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 fn load(path: &str) -> Game<Arc<str>> {
-    let source = read_to_string(format!("../../examples/{path}")).unwrap();
+    let source = read_to_string(format!("../../games/{path}")).unwrap();
     let (game, errors) = parse_with_errors(&source);
     assert!(errors.is_empty(), "Parse errors: {errors:?}");
     let mut game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
@@ -65,19 +65,19 @@ fn scenario(criterion: &mut Criterion, path: &str) {
 }
 
 fn transforms(criterion: &mut Criterion) {
-    scenario(criterion, "breakthrough.hrg.reuse.rg");
-    scenario(criterion, "breakthrough.hrg.rg");
-    scenario(criterion, "breakthrough.rbg.rg");
-    scenario(criterion, "breakthrough.rg");
-    scenario(criterion, "connect4.hrg.reuse.rg");
-    scenario(criterion, "connect4.hrg.rg");
-    scenario(criterion, "connect4.kif.rg");
-    scenario(criterion, "connect4.rbg.rg");
-    scenario(criterion, "ticTacToe.hrg.reuse.rg");
-    scenario(criterion, "ticTacToe.hrg.rg");
-    scenario(criterion, "ticTacToe.kif.rg");
-    scenario(criterion, "ticTacToe.rbg.rg");
-    scenario(criterion, "ticTacToe.rg");
+    scenario(criterion, "hrg/breakthrough.hrg.reuse.rg");
+    scenario(criterion, "hrg/breakthrough.hrg.rg");
+    scenario(criterion, "rbg/breakthrough.rbg.rg");
+    scenario(criterion, "rg/breakthrough.rg");
+    scenario(criterion, "hrg/connect4.hrg.reuse.rg");
+    scenario(criterion, "hrg/connect4.hrg.rg");
+    scenario(criterion, "kif/connect4.kif.rg");
+    scenario(criterion, "rbg/connect4.rbg.rg");
+    scenario(criterion, "hrg/ticTacToe.hrg.reuse.rg");
+    scenario(criterion, "hrg/ticTacToe.hrg.rg");
+    scenario(criterion, "kif/ticTacToe.kif.rg");
+    scenario(criterion, "rbg/ticTacToe.rbg.rg");
+    scenario(criterion, "rg/ticTacToe.rg");
 }
 
 criterion_group!(benches, transforms);

@@ -1,0 +1,442 @@
+#board =
+  rx5y0[blackMan]{downLeft:rx5y1}
+  rx4y1[blackMan]{downLeft:rx4y2,downRight:rx5y1}
+  rx5y1[blackMan]{downLeft:rx5y2,downRight:rx6y1,upLeft:rx4y1,upRight:rx5y0}
+  rx6y1[blackMan]{downLeft:rx6y2,upLeft:rx5y1}
+  rx3y2[blackMan]{downLeft:rx3y3,downRight:rx4y2}
+  rx4y2[blackMan]{downLeft:rx4y3,downRight:rx5y2,upLeft:rx3y2,upRight:rx4y1}
+  rx5y2[blackMan]{downLeft:rx5y3,downRight:rx6y2,upLeft:rx4y2,upRight:rx5y1}
+  rx6y2[blackMan]{downLeft:rx6y3,downRight:rx7y2,upLeft:rx5y2,upRight:rx6y1}
+  rx7y2[blackMan]{downLeft:rx7y3,upLeft:rx6y2}
+  rx2y3[blackMan]{downLeft:rx2y4,downRight:rx3y3}
+  rx3y3[blackMan]{downLeft:rx3y4,downRight:rx4y3,upLeft:rx2y3,upRight:rx3y2}
+  rx4y3[blackMan]{downLeft:rx4y4,downRight:rx5y3,upLeft:rx3y3,upRight:rx4y2}
+  rx5y3[blackMan]{downLeft:rx5y4,downRight:rx6y3,upLeft:rx4y3,upRight:rx5y2}
+  rx6y3[blackMan]{downLeft:rx6y4,downRight:rx7y3,upLeft:rx5y3,upRight:rx6y2}
+  rx7y3[empty]{downLeft:rx7y4,downRight:rx8y3,upLeft:rx6y3,upRight:rx7y2}
+  rx8y3[empty]{downLeft:rx8y4,upLeft:rx7y3}
+  rx1y4[blackMan]{downLeft:rx1y5,downRight:rx2y4}
+  rx2y4[blackMan]{downLeft:rx2y5,downRight:rx3y4,upLeft:rx1y4,upRight:rx2y3}
+  rx3y4[blackMan]{downLeft:rx3y5,downRight:rx4y4,upLeft:rx2y4,upRight:rx3y3}
+  rx4y4[blackMan]{downLeft:rx4y5,downRight:rx5y4,upLeft:rx3y4,upRight:rx4y3}
+  rx5y4[blackMan]{downLeft:rx5y5,downRight:rx6y4,upLeft:rx4y4,upRight:rx5y3}
+  rx6y4[empty]{downLeft:rx6y5,downRight:rx7y4,upLeft:rx5y4,upRight:rx6y3}
+  rx7y4[empty]{downLeft:rx7y5,downRight:rx8y4,upLeft:rx6y4,upRight:rx7y3}
+  rx8y4[whiteMan]{downLeft:rx8y5,downRight:rx9y4,upLeft:rx7y4,upRight:rx8y3}
+  rx9y4[whiteMan]{downLeft:rx9y5,upLeft:rx8y4}
+  rx0y5[blackMan]{downLeft:rx0y6,downRight:rx1y5}
+  rx1y5[blackMan]{downLeft:rx1y6,downRight:rx2y5,upLeft:rx0y5,upRight:rx1y4}
+  rx2y5[blackMan]{downLeft:rx2y6,downRight:rx3y5,upLeft:rx1y5,upRight:rx2y4}
+  rx3y5[blackMan]{downLeft:rx3y6,downRight:rx4y5,upLeft:rx2y5,upRight:rx3y4}
+  rx4y5[blackMan]{downLeft:rx4y6,downRight:rx5y5,upLeft:rx3y5,upRight:rx4y4}
+  rx5y5[empty]{downLeft:rx5y6,downRight:rx6y5,upLeft:rx4y5,upRight:rx5y4}
+  rx6y5[empty]{downLeft:rx6y6,downRight:rx7y5,upLeft:rx5y5,upRight:rx6y4}
+  rx7y5[whiteMan]{downLeft:rx7y6,downRight:rx8y5,upLeft:rx6y5,upRight:rx7y4}
+  rx8y5[whiteMan]{downLeft:rx8y6,downRight:rx9y5,upLeft:rx7y5,upRight:rx8y4}
+  rx9y5[whiteMan]{downLeft:rx9y6,downRight:rx10y5,upLeft:rx8y5,upRight:rx9y4}
+  rx10y5[whiteMan]{downLeft:rx10y6,upLeft:rx9y5}
+  rx0y6[blackMan]{downRight:rx1y6,upRight:rx0y5}
+  rx1y6[blackMan]{downLeft:rx1y7,downRight:rx2y6,upLeft:rx0y6,upRight:rx1y5}
+  rx2y6[blackMan]{downLeft:rx2y7,downRight:rx3y6,upLeft:rx1y6,upRight:rx2y5}
+  rx3y6[blackMan]{downLeft:rx3y7,downRight:rx4y6,upLeft:rx2y6,upRight:rx3y5}
+  rx4y6[empty]{downLeft:rx4y7,downRight:rx5y6,upLeft:rx3y6,upRight:rx4y5}
+  rx5y6[empty]{downLeft:rx5y7,downRight:rx6y6,upLeft:rx4y6,upRight:rx5y5}
+  rx6y6[whiteMan]{downLeft:rx6y7,downRight:rx7y6,upLeft:rx5y6,upRight:rx6y5}
+  rx7y6[whiteMan]{downLeft:rx7y7,downRight:rx8y6,upLeft:rx6y6,upRight:rx7y5}
+  rx8y6[whiteMan]{downLeft:rx8y7,downRight:rx9y6,upLeft:rx7y6,upRight:rx8y5}
+  rx9y6[whiteMan]{downLeft:rx9y7,downRight:rx10y6,upLeft:rx8y6,upRight:rx9y5}
+  rx10y6[whiteMan]{upLeft:rx9y6,upRight:rx10y5}
+  rx1y7[blackMan]{downRight:rx2y7,upRight:rx1y6}
+  rx2y7[blackMan]{downLeft:rx2y8,downRight:rx3y7,upLeft:rx1y7,upRight:rx2y6}
+  rx3y7[empty]{downLeft:rx3y8,downRight:rx4y7,upLeft:rx2y7,upRight:rx3y6}
+  rx4y7[empty]{downLeft:rx4y8,downRight:rx5y7,upLeft:rx3y7,upRight:rx4y6}
+  rx5y7[whiteMan]{downLeft:rx5y8,downRight:rx6y7,upLeft:rx4y7,upRight:rx5y6}
+  rx6y7[whiteMan]{downLeft:rx6y8,downRight:rx7y7,upLeft:rx5y7,upRight:rx6y6}
+  rx7y7[whiteMan]{downLeft:rx7y8,downRight:rx8y7,upLeft:rx6y7,upRight:rx7y6}
+  rx8y7[whiteMan]{downLeft:rx8y8,downRight:rx9y7,upLeft:rx7y7,upRight:rx8y6}
+  rx9y7[whiteMan]{upLeft:rx8y7,upRight:rx9y6}
+  rx2y8[empty]{downRight:rx3y8,upRight:rx2y7}
+  rx3y8[empty]{downLeft:rx3y9,downRight:rx4y8,upLeft:rx2y8,upRight:rx3y7}
+  rx4y8[whiteMan]{downLeft:rx4y9,downRight:rx5y8,upLeft:rx3y8,upRight:rx4y7}
+  rx5y8[whiteMan]{downLeft:rx5y9,downRight:rx6y8,upLeft:rx4y8,upRight:rx5y7}
+  rx6y8[whiteMan]{downLeft:rx6y9,downRight:rx7y8,upLeft:rx5y8,upRight:rx6y7}
+  rx7y8[whiteMan]{downLeft:rx7y9,downRight:rx8y8,upLeft:rx6y8,upRight:rx7y7}
+  rx8y8[whiteMan]{upLeft:rx7y8,upRight:rx8y7}
+  rx3y9[whiteMan]{downRight:rx4y9,upRight:rx3y8}
+  rx4y9[whiteMan]{downLeft:rx4y10,downRight:rx5y9,upLeft:rx3y9,upRight:rx4y8}
+  rx5y9[whiteMan]{downLeft:rx5y10,downRight:rx6y9,upLeft:rx4y9,upRight:rx5y8}
+  rx6y9[whiteMan]{downLeft:rx6y10,downRight:rx7y9,upLeft:rx5y9,upRight:rx6y8}
+  rx7y9[whiteMan]{upLeft:rx6y9,upRight:rx7y8}
+  rx4y10[whiteMan]{downRight:rx5y10,upRight:rx4y9}
+  rx5y10[whiteMan]{downLeft:rx5y11,downRight:rx6y10,upLeft:rx4y10,upRight:rx5y9}
+  rx6y10[whiteMan]{upLeft:rx5y10,upRight:rx6y9}
+  rx5y11[whiteMan]{upRight:rx5y10}
+#players = white(100), black(100)
+#pieces = blackKing, blackMan, empty, kingToBeMoved, kingToBePlaced, kingToBeRemoved, manToBeMoved, manToBePlaced, manToBeRemoved, toBeRemoved, toBeRemovedDuringCheck, whiteKing, whiteMan
+#variables = actuallyCapturedPieces(12), stagnation(20)
+#rules = (
+  [$ stagnation = (stagnation + 1)]
+  ->white
+  (upRight* + downLeft*)
+  (upLeft* + downRight*)
+  {?
+    upRight
+    upRight
+    upRight
+    upRight
+    downLeft
+    downLeft
+    downLeft
+    downLeft
+    downLeft
+    downLeft
+    downLeft
+  }
+  (upRight* + downLeft*)
+  (upLeft* + downRight*)
+  (
+      (
+          {whiteKing} [kingToBeRemoved] (
+              upLeft ({empty, kingToBeRemoved, manToBeRemoved} upLeft)* {blackKing, blackMan} [toBeRemoved] upLeft ({empty, kingToBeRemoved, manToBeRemoved} upLeft)* {empty, kingToBeRemoved, manToBeRemoved}
+            + upRight ({empty, kingToBeRemoved, manToBeRemoved} upRight)* {blackKing, blackMan} [toBeRemoved] upRight ({empty, kingToBeRemoved, manToBeRemoved} upRight)* {empty, kingToBeRemoved, manToBeRemoved}
+            + downLeft ({empty, kingToBeRemoved, manToBeRemoved} downLeft)* {blackKing, blackMan} [toBeRemoved] downLeft ({empty, kingToBeRemoved, manToBeRemoved} downLeft)* {empty, kingToBeRemoved, manToBeRemoved}
+            + downRight (
+                {empty, kingToBeRemoved, manToBeRemoved} downRight
+              )* {blackKing, blackMan} [toBeRemoved] downRight (
+                {empty, kingToBeRemoved, manToBeRemoved} downRight
+              )* {empty, kingToBeRemoved, manToBeRemoved}
+          ) (
+              upLeft ({empty, kingToBeRemoved, manToBeRemoved} upLeft)* {blackKing, blackMan} [toBeRemoved] upLeft ({empty, kingToBeRemoved, manToBeRemoved} upLeft)* {empty, kingToBeRemoved, manToBeRemoved}
+            + upRight ({empty, kingToBeRemoved, manToBeRemoved} upRight)* {blackKing, blackMan} [toBeRemoved] upRight ({empty, kingToBeRemoved, manToBeRemoved} upRight)* {empty, kingToBeRemoved, manToBeRemoved}
+            + downLeft ({empty, kingToBeRemoved, manToBeRemoved} downLeft)* {blackKing, blackMan} [toBeRemoved] downLeft ({empty, kingToBeRemoved, manToBeRemoved} downLeft)* {empty, kingToBeRemoved, manToBeRemoved}
+            + downRight (
+                {empty, kingToBeRemoved, manToBeRemoved} downRight
+              )* {blackKing, blackMan} [toBeRemoved] downRight (
+                {empty, kingToBeRemoved, manToBeRemoved} downRight
+              )* {empty, kingToBeRemoved, manToBeRemoved}
+          )*
+        + {whiteKing} [kingToBeRemoved] (
+              upLeft ({empty} upLeft)*
+            + upRight ({empty} upRight)*
+            + downLeft ({empty} downLeft)*
+            + downRight ({empty} downRight)*
+          ) {empty}
+      ) (
+          {empty} [kingToBePlaced]
+        + {kingToBeRemoved} [kingToBeMoved]
+      )
+    + (
+          {whiteMan} [manToBeRemoved] (
+              upLeft {blackKing, blackMan} [toBeRemoved] upLeft {empty, kingToBeRemoved, manToBeRemoved}
+            + upRight {blackKing, blackMan} [toBeRemoved] upRight {empty, kingToBeRemoved, manToBeRemoved}
+            + downLeft {blackKing, blackMan} [toBeRemoved] downLeft {empty, kingToBeRemoved, manToBeRemoved}
+            + downRight {blackKing, blackMan} [toBeRemoved] downRight {empty, kingToBeRemoved, manToBeRemoved}
+          ) (
+              upLeft {blackKing, blackMan} [toBeRemoved] upLeft {empty, kingToBeRemoved, manToBeRemoved}
+            + upRight {blackKing, blackMan} [toBeRemoved] upRight {empty, kingToBeRemoved, manToBeRemoved}
+            + downLeft {blackKing, blackMan} [toBeRemoved] downLeft {empty, kingToBeRemoved, manToBeRemoved}
+            + downRight {blackKing, blackMan} [toBeRemoved] downRight {empty, kingToBeRemoved, manToBeRemoved}
+          )*
+        + {whiteMan} [manToBeRemoved] (upLeft + upRight) {empty}
+      ) (
+          {empty} [manToBePlaced]
+        + {manToBeRemoved} [manToBeMoved]
+      ) [$ stagnation = 0]
+  )
+  {!
+    [$ actuallyCapturedPieces = toBeRemoved]
+    (upRight* + downLeft*)
+    (upLeft* + downRight*)
+    {?
+      upRight
+      upRight
+      upRight
+      upRight
+      downLeft
+      downLeft
+      downLeft
+      downLeft
+      downLeft
+      downLeft
+      downLeft
+    }
+    (upRight* + downLeft*)
+    (upLeft* + downRight*)
+    (
+        {kingToBeMoved, kingToBeRemoved, whiteKing} [empty] (
+            upLeft ({empty, kingToBePlaced, manToBePlaced} upLeft)* {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] upLeft ({empty, kingToBePlaced, manToBePlaced} upLeft)* {empty, kingToBePlaced, manToBePlaced}
+          + upRight ({empty, kingToBePlaced, manToBePlaced} upRight)* {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] upRight ({empty, kingToBePlaced, manToBePlaced} upRight)* {empty, kingToBePlaced, manToBePlaced}
+          + downLeft ({empty, kingToBePlaced, manToBePlaced} downLeft)* {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] downLeft ({empty, kingToBePlaced, manToBePlaced} downLeft)* {empty, kingToBePlaced, manToBePlaced}
+          + downRight ({empty, kingToBePlaced, manToBePlaced} downRight)* {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] downRight ({empty, kingToBePlaced, manToBePlaced} downRight)* {empty, kingToBePlaced, manToBePlaced}
+        ) (
+            upLeft ({empty, kingToBePlaced, manToBePlaced} upLeft)* {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] upLeft ({empty, kingToBePlaced, manToBePlaced} upLeft)* {empty, kingToBePlaced, manToBePlaced}
+          + upRight ({empty, kingToBePlaced, manToBePlaced} upRight)* {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] upRight ({empty, kingToBePlaced, manToBePlaced} upRight)* {empty, kingToBePlaced, manToBePlaced}
+          + downLeft ({empty, kingToBePlaced, manToBePlaced} downLeft)* {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] downLeft ({empty, kingToBePlaced, manToBePlaced} downLeft)* {empty, kingToBePlaced, manToBePlaced}
+          + downRight ({empty, kingToBePlaced, manToBePlaced} downRight)* {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] downRight ({empty, kingToBePlaced, manToBePlaced} downRight)* {empty, kingToBePlaced, manToBePlaced}
+        )*
+      + {manToBeMoved, manToBeRemoved, whiteMan} [empty] (
+            upLeft {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] upLeft {empty, kingToBePlaced, manToBePlaced}
+          + upRight {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] upRight {empty, kingToBePlaced, manToBePlaced}
+          + downLeft {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] downLeft {empty, kingToBePlaced, manToBePlaced}
+          + downRight {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] downRight {empty, kingToBePlaced, manToBePlaced}
+        ) (
+            upLeft {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] upLeft {empty, kingToBePlaced, manToBePlaced}
+          + upRight {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] upRight {empty, kingToBePlaced, manToBePlaced}
+          + downLeft {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] downLeft {empty, kingToBePlaced, manToBePlaced}
+          + downRight {blackKing, blackMan, toBeRemoved} [toBeRemovedDuringCheck] downRight {empty, kingToBePlaced, manToBePlaced}
+        )*
+    )
+    {$ toBeRemovedDuringCheck > actuallyCapturedPieces}
+  }
+  ->>
+  (
+      {manToBePlaced} (
+          {? upLeft + upRight} [whiteMan]
+        + {! upLeft + upRight} [whiteKing]
+      )
+    + {kingToBePlaced} [whiteKing]
+    + {kingToBeMoved, manToBeMoved}
+  )
+  (
+      (
+          upLeft upLeft* {toBeRemoved} [empty] upLeft upLeft*
+        + upRight upRight* {toBeRemoved} [empty] upRight upRight*
+        + downLeft downLeft* {toBeRemoved} [empty] downLeft downLeft*
+        + downRight downRight* {toBeRemoved} [empty] downRight downRight*
+      )*
+    + upLeft*
+    + upRight*
+    + downLeft*
+    + downRight*
+  )
+  (
+      {kingToBeRemoved, manToBeRemoved} [empty]
+    + {kingToBeMoved} [whiteKing]
+    + {manToBeMoved} (
+          {? upLeft + upRight} [whiteMan]
+        + {! upLeft + upRight} [whiteKing]
+      )
+  )
+  {$ (toBeRemoved + (manToBeRemoved + (kingToBeRemoved + (manToBePlaced + (kingToBePlaced + (manToBeMoved + kingToBeMoved)))))) == 0}
+  ->>
+  (
+      {$ stagnation < 20} [$ white = 100] [$ black = 0]
+    + {$ stagnation == 20} [$ white = 50] [$ black = 50] ->> {!
+        (upRight* + downLeft*)
+        (upLeft* + downRight*)
+        {?
+          upRight
+          upRight
+          upRight
+          upRight
+          downLeft
+          downLeft
+          downLeft
+          downLeft
+          downLeft
+          downLeft
+          downLeft
+        }
+        (upRight* + downLeft*)
+        (upLeft* + downRight*)
+        (
+            {blackKing} (
+                (upRight + downLeft + upLeft + downRight) {empty}
+              + upRight ({empty} upRight)* {whiteKing, whiteMan} upRight {empty}
+              + upLeft ({empty} upLeft)* {whiteKing, whiteMan} upLeft {empty}
+              + downRight ({empty} downRight)* {whiteKing, whiteMan} downRight {empty}
+              + downLeft ({empty} downLeft)* {whiteKing, whiteMan} downLeft {empty}
+            )
+          + {blackMan} (
+                (downLeft + downRight) {empty}
+              + upRight {whiteKing, whiteMan} upRight {empty}
+              + upLeft {whiteKing, whiteMan} upLeft {empty}
+              + downRight {whiteKing, whiteMan} downRight {empty}
+              + downLeft {whiteKing, whiteMan} downLeft {empty}
+            )
+        )
+      } [$ white = 100] [$ black = 0] ->> {}
+  )
+  [$ stagnation = (stagnation + 1)]
+  ->black
+  (upRight* + downLeft*)
+  (upLeft* + downRight*)
+  {?
+    upRight
+    upRight
+    upRight
+    upRight
+    downLeft
+    downLeft
+    downLeft
+    downLeft
+    downLeft
+    downLeft
+    downLeft
+  }
+  (upRight* + downLeft*)
+  (upLeft* + downRight*)
+  (
+      (
+          {blackKing} [kingToBeRemoved] (
+              upLeft ({empty, kingToBeRemoved, manToBeRemoved} upLeft)* {whiteKing, whiteMan} [toBeRemoved] upLeft ({empty, kingToBeRemoved, manToBeRemoved} upLeft)* {empty, kingToBeRemoved, manToBeRemoved}
+            + upRight ({empty, kingToBeRemoved, manToBeRemoved} upRight)* {whiteKing, whiteMan} [toBeRemoved] upRight ({empty, kingToBeRemoved, manToBeRemoved} upRight)* {empty, kingToBeRemoved, manToBeRemoved}
+            + downLeft ({empty, kingToBeRemoved, manToBeRemoved} downLeft)* {whiteKing, whiteMan} [toBeRemoved] downLeft ({empty, kingToBeRemoved, manToBeRemoved} downLeft)* {empty, kingToBeRemoved, manToBeRemoved}
+            + downRight (
+                {empty, kingToBeRemoved, manToBeRemoved} downRight
+              )* {whiteKing, whiteMan} [toBeRemoved] downRight (
+                {empty, kingToBeRemoved, manToBeRemoved} downRight
+              )* {empty, kingToBeRemoved, manToBeRemoved}
+          ) (
+              upLeft ({empty, kingToBeRemoved, manToBeRemoved} upLeft)* {whiteKing, whiteMan} [toBeRemoved] upLeft ({empty, kingToBeRemoved, manToBeRemoved} upLeft)* {empty, kingToBeRemoved, manToBeRemoved}
+            + upRight ({empty, kingToBeRemoved, manToBeRemoved} upRight)* {whiteKing, whiteMan} [toBeRemoved] upRight ({empty, kingToBeRemoved, manToBeRemoved} upRight)* {empty, kingToBeRemoved, manToBeRemoved}
+            + downLeft ({empty, kingToBeRemoved, manToBeRemoved} downLeft)* {whiteKing, whiteMan} [toBeRemoved] downLeft ({empty, kingToBeRemoved, manToBeRemoved} downLeft)* {empty, kingToBeRemoved, manToBeRemoved}
+            + downRight (
+                {empty, kingToBeRemoved, manToBeRemoved} downRight
+              )* {whiteKing, whiteMan} [toBeRemoved] downRight (
+                {empty, kingToBeRemoved, manToBeRemoved} downRight
+              )* {empty, kingToBeRemoved, manToBeRemoved}
+          )*
+        + {blackKing} [kingToBeRemoved] (
+              upLeft ({empty} upLeft)*
+            + upRight ({empty} upRight)*
+            + downLeft ({empty} downLeft)*
+            + downRight ({empty} downRight)*
+          ) {empty}
+      ) (
+          {empty} [kingToBePlaced]
+        + {kingToBeRemoved} [kingToBeMoved]
+      )
+    + (
+          {blackMan} [manToBeRemoved] (
+              upLeft {whiteKing, whiteMan} [toBeRemoved] upLeft {empty, kingToBeRemoved, manToBeRemoved}
+            + upRight {whiteKing, whiteMan} [toBeRemoved] upRight {empty, kingToBeRemoved, manToBeRemoved}
+            + downLeft {whiteKing, whiteMan} [toBeRemoved] downLeft {empty, kingToBeRemoved, manToBeRemoved}
+            + downRight {whiteKing, whiteMan} [toBeRemoved] downRight {empty, kingToBeRemoved, manToBeRemoved}
+          ) (
+              upLeft {whiteKing, whiteMan} [toBeRemoved] upLeft {empty, kingToBeRemoved, manToBeRemoved}
+            + upRight {whiteKing, whiteMan} [toBeRemoved] upRight {empty, kingToBeRemoved, manToBeRemoved}
+            + downLeft {whiteKing, whiteMan} [toBeRemoved] downLeft {empty, kingToBeRemoved, manToBeRemoved}
+            + downRight {whiteKing, whiteMan} [toBeRemoved] downRight {empty, kingToBeRemoved, manToBeRemoved}
+          )*
+        + {blackMan} [manToBeRemoved] (downLeft + downRight) {empty}
+      ) (
+          {empty} [manToBePlaced]
+        + {manToBeRemoved} [manToBeMoved]
+      ) [$ stagnation = 0]
+  )
+  {!
+    [$ actuallyCapturedPieces = toBeRemoved]
+    (upRight* + downLeft*)
+    (upLeft* + downRight*)
+    {?
+      upRight
+      upRight
+      upRight
+      upRight
+      downLeft
+      downLeft
+      downLeft
+      downLeft
+      downLeft
+      downLeft
+      downLeft
+    }
+    (upRight* + downLeft*)
+    (upLeft* + downRight*)
+    (
+        {blackKing, kingToBeMoved, kingToBeRemoved} [empty] (
+            upLeft ({empty, kingToBePlaced, manToBePlaced} upLeft)* {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] upLeft ({empty, kingToBePlaced, manToBePlaced} upLeft)* {empty, kingToBePlaced, manToBePlaced}
+          + upRight ({empty, kingToBePlaced, manToBePlaced} upRight)* {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] upRight ({empty, kingToBePlaced, manToBePlaced} upRight)* {empty, kingToBePlaced, manToBePlaced}
+          + downLeft ({empty, kingToBePlaced, manToBePlaced} downLeft)* {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] downLeft ({empty, kingToBePlaced, manToBePlaced} downLeft)* {empty, kingToBePlaced, manToBePlaced}
+          + downRight ({empty, kingToBePlaced, manToBePlaced} downRight)* {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] downRight ({empty, kingToBePlaced, manToBePlaced} downRight)* {empty, kingToBePlaced, manToBePlaced}
+        ) (
+            upLeft ({empty, kingToBePlaced, manToBePlaced} upLeft)* {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] upLeft ({empty, kingToBePlaced, manToBePlaced} upLeft)* {empty, kingToBePlaced, manToBePlaced}
+          + upRight ({empty, kingToBePlaced, manToBePlaced} upRight)* {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] upRight ({empty, kingToBePlaced, manToBePlaced} upRight)* {empty, kingToBePlaced, manToBePlaced}
+          + downLeft ({empty, kingToBePlaced, manToBePlaced} downLeft)* {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] downLeft ({empty, kingToBePlaced, manToBePlaced} downLeft)* {empty, kingToBePlaced, manToBePlaced}
+          + downRight ({empty, kingToBePlaced, manToBePlaced} downRight)* {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] downRight ({empty, kingToBePlaced, manToBePlaced} downRight)* {empty, kingToBePlaced, manToBePlaced}
+        )*
+      + {blackMan, manToBeMoved, manToBeRemoved} [empty] (
+            upLeft {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] upLeft {empty, kingToBePlaced, manToBePlaced}
+          + upRight {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] upRight {empty, kingToBePlaced, manToBePlaced}
+          + downLeft {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] downLeft {empty, kingToBePlaced, manToBePlaced}
+          + downRight {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] downRight {empty, kingToBePlaced, manToBePlaced}
+        ) (
+            upLeft {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] upLeft {empty, kingToBePlaced, manToBePlaced}
+          + upRight {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] upRight {empty, kingToBePlaced, manToBePlaced}
+          + downLeft {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] downLeft {empty, kingToBePlaced, manToBePlaced}
+          + downRight {toBeRemoved, whiteKing, whiteMan} [toBeRemovedDuringCheck] downRight {empty, kingToBePlaced, manToBePlaced}
+        )*
+    )
+    {$ toBeRemovedDuringCheck > actuallyCapturedPieces}
+  }
+  ->>
+  (
+      {manToBePlaced} (
+          {? downLeft + downRight} [blackMan]
+        + {! downLeft + downRight} [blackKing]
+      )
+    + {kingToBePlaced} [blackKing]
+    + {kingToBeMoved, manToBeMoved}
+  )
+  (
+      (
+          upLeft upLeft* {toBeRemoved} [empty] upLeft upLeft*
+        + upRight upRight* {toBeRemoved} [empty] upRight upRight*
+        + downLeft downLeft* {toBeRemoved} [empty] downLeft downLeft*
+        + downRight downRight* {toBeRemoved} [empty] downRight downRight*
+      )*
+    + upLeft*
+    + upRight*
+    + downLeft*
+    + downRight*
+  )
+  (
+      {kingToBeRemoved, manToBeRemoved} [empty]
+    + {kingToBeMoved} [blackKing]
+    + {manToBeMoved} (
+          {? downLeft + downRight} [blackMan]
+        + {! downLeft + downRight} [blackKing]
+      )
+  )
+  {$ (toBeRemoved + (manToBeRemoved + (kingToBeRemoved + (manToBePlaced + (kingToBePlaced + (manToBeMoved + kingToBeMoved)))))) == 0}
+  ->>
+  (
+      {$ stagnation < 20} [$ black = 100] [$ white = 0]
+    + {$ stagnation == 20} [$ black = 50] [$ white = 50] ->> {!
+        (upRight* + downLeft*)
+        (upLeft* + downRight*)
+        {?
+          upRight
+          upRight
+          upRight
+          upRight
+          downLeft
+          downLeft
+          downLeft
+          downLeft
+          downLeft
+          downLeft
+          downLeft
+        }
+        (upRight* + downLeft*)
+        (upLeft* + downRight*)
+        (
+            {whiteKing} (
+                (upRight + downLeft + upLeft + downRight) {empty}
+              + upRight ({empty} upRight)* {blackKing, blackMan} upRight {empty}
+              + upLeft ({empty} upLeft)* {blackKing, blackMan} upLeft {empty}
+              + downRight ({empty} downRight)* {blackKing, blackMan} downRight {empty}
+              + downLeft ({empty} downLeft)* {blackKing, blackMan} downLeft {empty}
+            )
+          + {whiteMan} (
+                (upLeft + upRight) {empty}
+              + upRight {blackKing, blackMan} upRight {empty}
+              + upLeft {blackKing, blackMan} upLeft {empty}
+              + downRight {blackKing, blackMan} downRight {empty}
+              + downLeft {blackKing, blackMan} downLeft {empty}
+            )
+        )
+      } [$ black = 100] [$ white = 0] ->> {}
+  )
+)*

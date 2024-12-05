@@ -1,0 +1,113 @@
+#board =
+  rx0y0[e]{down:rx0y1,right:rx1y0}
+  rx1y0[O]{down:rx1y1,left:rx0y0,right:rx2y0}
+  rx2y0[N]{down:rx2y1,left:rx1y0,right:rx3y0}
+  rx3y0[M]{down:rx3y1,left:rx2y0}
+  rx0y1[L]{down:rx0y2,right:rx1y1,up:rx0y0}
+  rx1y1[K]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+  rx2y1[J]{down:rx2y2,left:rx1y1,right:rx3y1,up:rx2y0}
+  rx3y1[I]{down:rx3y2,left:rx2y1,up:rx3y0}
+  rx0y2[H]{down:rx0y3,right:rx1y2,up:rx0y1}
+  rx1y2[G]{down:rx1y3,left:rx0y2,right:rx2y2,up:rx1y1}
+  rx2y2[F]{down:rx2y3,left:rx1y2,right:rx3y2,up:rx2y1}
+  rx3y2[E]{down:rx3y3,left:rx2y2,up:rx3y1}
+  rx0y3[D]{right:rx1y3,up:rx0y2}
+  rx1y3[C]{left:rx0y3,right:rx2y3,up:rx1y2}
+  rx2y3[A]{left:rx1y3,right:rx3y3,up:rx2y2}
+  rx3y3[B]{left:rx2y3,up:rx3y2}
+#players = player(100)
+#pieces = A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, e
+#variables = counter(100)
+#rules = (
+  [$ counter = (counter + 1)]
+  (
+      {!
+        (up* + down*)
+        (left* + right*)
+        {! right + down}
+        {e}
+        left
+        {O}
+        left
+        {N}
+        left
+        {M}
+        up
+        {I}
+        right
+        {J}
+        right
+        {K}
+        right
+        {L}
+        up
+        {H}
+        left
+        {G}
+        left
+        {F}
+        left
+        {E}
+        up
+        {A}
+        right
+        {B}
+        right
+        {C}
+        right
+        {D}
+      } ->player (up* + down*) (left* + right*) {e} (left + right + up + down) (
+          {A} [e] (left + right + up + down) {e} ->> [A]
+        + {B} [e] (left + right + up + down) {e} ->> [B]
+        + {C} [e] (left + right + up + down) {e} ->> [C]
+        + {D} [e] (left + right + up + down) {e} ->> [D]
+        + {E} [e] (left + right + up + down) {e} ->> [E]
+        + {F} [e] (left + right + up + down) {e} ->> [F]
+        + {G} [e] (left + right + up + down) {e} ->> [G]
+        + {H} [e] (left + right + up + down) {e} ->> [H]
+        + {I} [e] (left + right + up + down) {e} ->> [I]
+        + {J} [e] (left + right + up + down) {e} ->> [J]
+        + {K} [e] (left + right + up + down) {e} ->> [K]
+        + {L} [e] (left + right + up + down) {e} ->> [L]
+        + {M} [e] (left + right + up + down) {e} ->> [M]
+        + {N} [e] (left + right + up + down) {e} ->> [N]
+        + {O} [e] (left + right + up + down) {e} ->> [O]
+      )
+    + {?
+        (up* + down*)
+        (left* + right*)
+        {! right + down}
+        {e}
+        left
+        {O}
+        left
+        {N}
+        left
+        {M}
+        up
+        {I}
+        right
+        {J}
+        right
+        {K}
+        right
+        {L}
+        up
+        {H}
+        left
+        {G}
+        left
+        {F}
+        left
+        {E}
+        up
+        {A}
+        right
+        {B}
+        right
+        {C}
+        right
+        {D}
+      } [$ player = 100] ->> {}
+  )
+)*

@@ -98,49 +98,49 @@ mod test {
     test_transform!(
         calculate_uniques,
         repeat_test,
-        include_str!("../../../../../examples/repeatTest.rg"),
+        include_str!("../../../../../games/rg/repeatTest.rg"),
         adds "@unique begin end setScore win;"
     );
 
     test_transform!(
         calculate_uniques,
         repeat_test_big,
-        include_str!("../../../../../examples/repeatTestBig.rg"),
+        include_str!("../../../../../games/rg/repeatTestBig.rg"),
         adds "@unique begin end win1 win2;"
     );
 
     test_transform!(
         calculate_uniques,
         breakthrough,
-        include_str!("../../../../../examples/breakthrough.rg"),
+        include_str!("../../../../../games/rg/breakthrough.rg"),
         adds "@unique begin checkOwn continue directionForward directionLeft directionLeftChecked directionOK directionRight directionRightChecked done end finish forward lose move moved score selectDirection selectPos selectedPos(position: Position) setFinished setPos(position: Position) turn win wincheck;"
     );
 
     test_transform!(
         calculate_uniques,
         tictactoe,
-        include_str!("../../../../../examples/ticTacToe.rg"),
+        include_str!("../../../../../games/rg/ticTacToe.rg"),
         adds "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endcheckline endmove move nextturn preend set turn win win1 win2;"
     );
 
     test_transform!(
         calculate_uniques,
         simple_apply_test_1,
-        include_str!("../../../../../examples/simpleApplyTest1.rg"),
+        include_str!("../../../../../games/rg/simpleApplyTest1.rg"),
         adds "@unique begin doneA doneB end extraB moveA moveB preend tagA0 tagA1 tagB0 tagB0same tagB1 tagB1same;"
     );
 
     test_transform!(
         calculate_uniques,
         simple_apply_test_2,
-        include_str!("../../../../../examples/simpleApplyTest2.rg"),
+        include_str!("../../../../../games/rg/simpleApplyTest2.rg"),
         adds "@unique begin doneA doneB end extraB moveA moveB preend tagA0 tagA1 tagB0 tagB0same tagB1 tagB1same;"
     );
 
     test_transform!(
         calculate_uniques,
         simple_apply_test_3,
-        include_str!("../../../../../examples/simpleApplyTest3.rg"),
+        include_str!("../../../../../games/rg/simpleApplyTest3.rg"),
         adds "@unique begin doneA doneB end extraB moveA moveB preend tagA0 tagA1 tagB0 tagB0same tagB1 tagB1same;"
     );
 }

@@ -187,28 +187,28 @@ mod test {
     test_transform!(
         calculate_disjoints,
         breakthrough,
-        include_str!("../../../../../examples/breakthrough.rg"),
+        include_str!("../../../../../games/rg/breakthrough.rg"),
         adds "@disjointExhaustive wincheck : win continue; @disjointExhaustive turn : move lose;"
     );
 
     test_transform!(
         calculate_disjoints,
         tictactoe,
-        include_str!("../../../../../examples/ticTacToe.rg"),
+        include_str!("../../../../../games/rg/ticTacToe.rg"),
         adds "@disjointExhaustive checkwin : win nextturn; @disjointExhaustive turn : move preend;"
     );
 
     test_transform!(
         calculate_disjoints,
         simple_apply_test_5,
-        include_str!("../../../../../examples/simpleApplyTest5.rg"),
+        include_str!("../../../../../games/rg/simpleApplyTest5.rg"),
         adds "@disjointExhaustive readKey : readZero readOne;"
     );
 
     test_transform!(
         calculate_disjoints,
         simple_apply_test_6,
-        include_str!("../../../../../examples/simpleApplyTest6.rg"),
+        include_str!("../../../../../games/rg/simpleApplyTest6.rg"),
         adds "@disjoint readKey : readZero readOne; @disjointExhaustive readHidden : readDone win draw;"
     );
 }

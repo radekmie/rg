@@ -6,7 +6,7 @@
 
 ```sh
 # In interpreter_rust
-cargo run --release run ../examples/ticTacToe.rg 1000
+cargo run --release run ../games/rg/ticTacToe.rg 1000
 ```
 
 ```sh

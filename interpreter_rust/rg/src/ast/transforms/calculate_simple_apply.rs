@@ -259,7 +259,7 @@ mod test {
     test_transform!(
         calculate_simple_apply,
         complex_1,
-        include_str!("../../../../../examples/simpleApplyTest1.rg"),
+        include_str!("../../../../../games/rg/simpleApplyTest1.rg"),
         adds "
             @simpleApplyExhaustive doneB dummytag : extraB preend;
             @simpleApplyExhaustive moveA 0 : tagA0 doneA moveB;
@@ -271,7 +271,7 @@ mod test {
     test_transform!(
         calculate_simple_apply,
         complex_2,
-        include_str!("../../../../../examples/simpleApplyTest2.rg"),
+        include_str!("../../../../../games/rg/simpleApplyTest2.rg"),
         adds "
             @simpleApplyExhaustive moveA 0 : tagA0 doneA moveB;
             @simpleApplyExhaustive moveA 1 : tagA1 doneA moveB;
@@ -284,7 +284,7 @@ mod test {
     test_transform!(
         calculate_simple_apply,
         complex_3,
-        include_str!("../../../../../examples/simpleApplyTest3.rg"),
+        include_str!("../../../../../games/rg/simpleApplyTest3.rg"),
         adds "
             @simpleApplyExhaustive moveA 0 : tagA0 doneA moveB;
             @simpleApplyExhaustive moveA 1 : tagA1 doneA moveB;

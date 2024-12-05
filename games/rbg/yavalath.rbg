@@ -1,0 +1,133 @@
+#board =
+  hx0y0[e]{E:hx1y0,SE:hx1y1,SW:hx0y1}
+  hx1y0[e]{E:hx2y0,SE:hx2y1,SW:hx1y1,W:hx0y0}
+  hx2y0[e]{E:hx3y0,SE:hx3y1,SW:hx2y1,W:hx1y0}
+  hx3y0[e]{E:hx4y0,SE:hx4y1,SW:hx3y1,W:hx2y0}
+  hx4y0[e]{SE:hx5y1,SW:hx4y1,W:hx3y0}
+  hx0y1[e]{E:hx1y1,NE:hx0y0,SE:hx1y2,SW:hx0y2}
+  hx1y1[e]{E:hx2y1,NE:hx1y0,NW:hx0y0,SE:hx2y2,SW:hx1y2,W:hx0y1}
+  hx2y1[e]{E:hx3y1,NE:hx2y0,NW:hx1y0,SE:hx3y2,SW:hx2y2,W:hx1y1}
+  hx3y1[e]{E:hx4y1,NE:hx3y0,NW:hx2y0,SE:hx4y2,SW:hx3y2,W:hx2y1}
+  hx4y1[e]{E:hx5y1,NE:hx4y0,NW:hx3y0,SE:hx5y2,SW:hx4y2,W:hx3y1}
+  hx5y1[e]{NW:hx4y0,SE:hx6y2,SW:hx5y2,W:hx4y1}
+  hx0y2[e]{E:hx1y2,NE:hx0y1,SE:hx1y3,SW:hx0y3}
+  hx1y2[e]{E:hx2y2,NE:hx1y1,NW:hx0y1,SE:hx2y3,SW:hx1y3,W:hx0y2}
+  hx2y2[e]{E:hx3y2,NE:hx2y1,NW:hx1y1,SE:hx3y3,SW:hx2y3,W:hx1y2}
+  hx3y2[e]{E:hx4y2,NE:hx3y1,NW:hx2y1,SE:hx4y3,SW:hx3y3,W:hx2y2}
+  hx4y2[e]{E:hx5y2,NE:hx4y1,NW:hx3y1,SE:hx5y3,SW:hx4y3,W:hx3y2}
+  hx5y2[e]{E:hx6y2,NE:hx5y1,NW:hx4y1,SE:hx6y3,SW:hx5y3,W:hx4y2}
+  hx6y2[e]{NW:hx5y1,SE:hx7y3,SW:hx6y3,W:hx5y2}
+  hx0y3[e]{E:hx1y3,NE:hx0y2,SE:hx1y4,SW:hx0y4}
+  hx1y3[e]{E:hx2y3,NE:hx1y2,NW:hx0y2,SE:hx2y4,SW:hx1y4,W:hx0y3}
+  hx2y3[e]{E:hx3y3,NE:hx2y2,NW:hx1y2,SE:hx3y4,SW:hx2y4,W:hx1y3}
+  hx3y3[e]{E:hx4y3,NE:hx3y2,NW:hx2y2,SE:hx4y4,SW:hx3y4,W:hx2y3}
+  hx4y3[e]{E:hx5y3,NE:hx4y2,NW:hx3y2,SE:hx5y4,SW:hx4y4,W:hx3y3}
+  hx5y3[e]{E:hx6y3,NE:hx5y2,NW:hx4y2,SE:hx6y4,SW:hx5y4,W:hx4y3}
+  hx6y3[e]{E:hx7y3,NE:hx6y2,NW:hx5y2,SE:hx7y4,SW:hx6y4,W:hx5y3}
+  hx7y3[e]{NW:hx6y2,SE:hx8y4,SW:hx7y4,W:hx6y3}
+  hx0y4[e]{E:hx1y4,NE:hx0y3,SE:hx0y5}
+  hx1y4[e]{E:hx2y4,NE:hx1y3,NW:hx0y3,SE:hx1y5,SW:hx0y5,W:hx0y4}
+  hx2y4[e]{E:hx3y4,NE:hx2y3,NW:hx1y3,SE:hx2y5,SW:hx1y5,W:hx1y4}
+  hx3y4[e]{E:hx4y4,NE:hx3y3,NW:hx2y3,SE:hx3y5,SW:hx2y5,W:hx2y4}
+  hx4y4[e]{E:hx5y4,NE:hx4y3,NW:hx3y3,SE:hx4y5,SW:hx3y5,W:hx3y4}
+  hx5y4[e]{E:hx6y4,NE:hx5y3,NW:hx4y3,SE:hx5y5,SW:hx4y5,W:hx4y4}
+  hx6y4[e]{E:hx7y4,NE:hx6y3,NW:hx5y3,SE:hx6y5,SW:hx5y5,W:hx5y4}
+  hx7y4[e]{E:hx8y4,NE:hx7y3,NW:hx6y3,SE:hx7y5,SW:hx6y5,W:hx6y4}
+  hx8y4[e]{NW:hx7y3,SW:hx7y5,W:hx7y4}
+  hx0y5[e]{E:hx1y5,NE:hx1y4,NW:hx0y4,SE:hx0y6}
+  hx1y5[e]{E:hx2y5,NE:hx2y4,NW:hx1y4,SE:hx1y6,SW:hx0y6,W:hx0y5}
+  hx2y5[e]{E:hx3y5,NE:hx3y4,NW:hx2y4,SE:hx2y6,SW:hx1y6,W:hx1y5}
+  hx3y5[e]{E:hx4y5,NE:hx4y4,NW:hx3y4,SE:hx3y6,SW:hx2y6,W:hx2y5}
+  hx4y5[e]{E:hx5y5,NE:hx5y4,NW:hx4y4,SE:hx4y6,SW:hx3y6,W:hx3y5}
+  hx5y5[e]{E:hx6y5,NE:hx6y4,NW:hx5y4,SE:hx5y6,SW:hx4y6,W:hx4y5}
+  hx6y5[e]{E:hx7y5,NE:hx7y4,NW:hx6y4,SE:hx6y6,SW:hx5y6,W:hx5y5}
+  hx7y5[e]{NE:hx8y4,NW:hx7y4,SW:hx6y6,W:hx6y5}
+  hx0y6[e]{E:hx1y6,NE:hx1y5,NW:hx0y5,SE:hx0y7}
+  hx1y6[e]{E:hx2y6,NE:hx2y5,NW:hx1y5,SE:hx1y7,SW:hx0y7,W:hx0y6}
+  hx2y6[e]{E:hx3y6,NE:hx3y5,NW:hx2y5,SE:hx2y7,SW:hx1y7,W:hx1y6}
+  hx3y6[e]{E:hx4y6,NE:hx4y5,NW:hx3y5,SE:hx3y7,SW:hx2y7,W:hx2y6}
+  hx4y6[e]{E:hx5y6,NE:hx5y5,NW:hx4y5,SE:hx4y7,SW:hx3y7,W:hx3y6}
+  hx5y6[e]{E:hx6y6,NE:hx6y5,NW:hx5y5,SE:hx5y7,SW:hx4y7,W:hx4y6}
+  hx6y6[e]{NE:hx7y5,NW:hx6y5,SW:hx5y7,W:hx5y6}
+  hx0y7[e]{E:hx1y7,NE:hx1y6,NW:hx0y6,SE:hx0y8}
+  hx1y7[e]{E:hx2y7,NE:hx2y6,NW:hx1y6,SE:hx1y8,SW:hx0y8,W:hx0y7}
+  hx2y7[e]{E:hx3y7,NE:hx3y6,NW:hx2y6,SE:hx2y8,SW:hx1y8,W:hx1y7}
+  hx3y7[e]{E:hx4y7,NE:hx4y6,NW:hx3y6,SE:hx3y8,SW:hx2y8,W:hx2y7}
+  hx4y7[e]{E:hx5y7,NE:hx5y6,NW:hx4y6,SE:hx4y8,SW:hx3y8,W:hx3y7}
+  hx5y7[e]{NE:hx6y6,NW:hx5y6,SW:hx4y8,W:hx4y7}
+  hx0y8[e]{E:hx1y8,NE:hx1y7,NW:hx0y7}
+  hx1y8[e]{E:hx2y8,NE:hx2y7,NW:hx1y7,W:hx0y8}
+  hx2y8[e]{E:hx3y8,NE:hx3y7,NW:hx2y7,W:hx1y8}
+  hx3y8[e]{E:hx4y8,NE:hx4y7,NW:hx3y7,W:hx2y8}
+  hx4y8[e]{NE:hx5y7,NW:hx4y7,W:hx3y8}
+#players = white(100), black(100)
+#pieces = b, e, w
+#variables = 
+#rules = [$ white = 50]
+[$ black = 50]
+(
+  ->white
+  (NW* + SE*)
+  (SW* + NE*)
+  {? W W W W E E E E E E E E}
+  (W* + E*)
+  (NE* + SE*)
+  {e}
+  ->>
+  [w]
+  (
+      {!
+          (NE {w})* SW {w} SW {w}
+        + (NW {w})* SE {w} SE {w}
+        + (W {w})* E {w} E {w}
+      }
+    + {?
+          (NE {w})* SW {w} SW {w}
+        + (NW {w})* SE {w} SE {w}
+        + (W {w})* E {w} E {w}
+      } (
+          {?
+              (NE {w})* SW {w} SW {w} SW {w}
+            + (NW {w})* SE {w} SE {w} SE {w}
+            + (W {w})* E {w} E {w} E {w}
+          } [$ white = 100] [$ black = 0]
+        + {!
+              (NE {w})* SW {w} SW {w} SW {w}
+            + (NW {w})* SE {w} SE {w} SE {w}
+            + (W {w})* E {w} E {w} E {w}
+          } [$ white = 0] [$ black = 100]
+      ) ->> {}
+  )
+  ->black
+  (NW* + SE*)
+  (SW* + NE*)
+  {? W W W W E E E E E E E E}
+  (W* + E*)
+  (NE* + SE*)
+  {e}
+  ->>
+  [b]
+  (
+      {!
+          (NE {b})* SW {b} SW {b}
+        + (NW {b})* SE {b} SE {b}
+        + (W {b})* E {b} E {b}
+      }
+    + {?
+          (NE {b})* SW {b} SW {b}
+        + (NW {b})* SE {b} SE {b}
+        + (W {b})* E {b} E {b}
+      } (
+          {?
+              (NE {b})* SW {b} SW {b} SW {b}
+            + (NW {b})* SE {b} SE {b} SE {b}
+            + (W {b})* E {b} E {b} E {b}
+          } [$ black = 100] [$ white = 0]
+        + {!
+              (NE {b})* SW {b} SW {b} SW {b}
+            + (NW {b})* SE {b} SE {b} SE {b}
+            + (W {b})* E {b} E {b} E {b}
+          } [$ black = 0] [$ white = 100]
+      ) ->> {}
+  )
+)*

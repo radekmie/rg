@@ -1,4 +1,4 @@
-# Translate all non-RG games in the `examples` directory to RG.
+# Translate all non-RG games in the `games` directory to RG.
 #   - RBG and GDL games are translated once.
 #   - HRG games are translated twice, once with `--reuse-functions` flag enabled
 #     and once without.
@@ -23,8 +23,8 @@ function translate {
   echo " ${time}ms"
 }
 
-rm -f examples/*.*.rg
-for game in ../examples/*.{hrg,kif,rbg}; do
+rm -f games/**/*.*.rg
+for game in ../games/**/*.{hrg,kif,rbg}; do
   translate "${game}" "${game}.rg" ""
   if [[ $game == *.hrg ]] ; then
     translate "${game}" "${game}.reuse.rg" "--reuse-functions"

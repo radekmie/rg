@@ -1,0 +1,2249 @@
+#board =
+  cx0y0z0[empty]{backLayer:cx0y0z1,down:cx0y1z0,right:cx1y0z0}
+  cx1y0z0[empty]{backLayer:cx1y0z1,down:cx1y1z0,left:cx0y0z0,right:cx2y0z0}
+  cx2y0z0[empty]{backLayer:cx2y0z1,down:cx2y1z0,left:cx1y0z0,right:cx3y0z0}
+  cx3y0z0[empty]{backLayer:cx3y0z1,down:cx3y1z0,left:cx2y0z0,right:cx4y0z0}
+  cx4y0z0[empty]{backLayer:cx4y0z1,down:cx4y1z0,left:cx3y0z0,right:cx5y0z0}
+  cx5y0z0[empty]{backLayer:cx5y0z1,down:cx5y1z0,left:cx4y0z0,right:cx6y0z0}
+  cx6y0z0[empty]{backLayer:cx6y0z1,down:cx6y1z0,left:cx5y0z0,right:cx7y0z0}
+  cx7y0z0[empty]{backLayer:cx7y0z1,down:cx7y1z0,left:cx6y0z0}
+  cx0y1z0[empty]{backLayer:cx0y1z1,down:cx0y2z0,right:cx1y1z0,up:cx0y0z0}
+  cx1y1z0[empty]{backLayer:cx1y1z1,down:cx1y2z0,left:cx0y1z0,right:cx2y1z0,up:cx1y0z0}
+  cx2y1z0[empty]{backLayer:cx2y1z1,down:cx2y2z0,left:cx1y1z0,right:cx3y1z0,up:cx2y0z0}
+  cx3y1z0[empty]{backLayer:cx3y1z1,down:cx3y2z0,left:cx2y1z0,right:cx4y1z0,up:cx3y0z0}
+  cx4y1z0[empty]{backLayer:cx4y1z1,down:cx4y2z0,left:cx3y1z0,right:cx5y1z0,up:cx4y0z0}
+  cx5y1z0[empty]{backLayer:cx5y1z1,down:cx5y2z0,left:cx4y1z0,right:cx6y1z0,up:cx5y0z0}
+  cx6y1z0[empty]{backLayer:cx6y1z1,down:cx6y2z0,left:cx5y1z0,right:cx7y1z0,up:cx6y0z0}
+  cx7y1z0[empty]{backLayer:cx7y1z1,down:cx7y2z0,left:cx6y1z0,up:cx7y0z0}
+  cx0y2z0[empty]{backLayer:cx0y2z1,down:cx0y3z0,right:cx1y2z0,up:cx0y1z0}
+  cx1y2z0[empty]{backLayer:cx1y2z1,down:cx1y3z0,left:cx0y2z0,right:cx2y2z0,up:cx1y1z0}
+  cx2y2z0[empty]{backLayer:cx2y2z1,down:cx2y3z0,left:cx1y2z0,right:cx3y2z0,up:cx2y1z0}
+  cx3y2z0[empty]{backLayer:cx3y2z1,down:cx3y3z0,left:cx2y2z0,right:cx4y2z0,up:cx3y1z0}
+  cx4y2z0[empty]{backLayer:cx4y2z1,down:cx4y3z0,left:cx3y2z0,right:cx5y2z0,up:cx4y1z0}
+  cx5y2z0[empty]{backLayer:cx5y2z1,down:cx5y3z0,left:cx4y2z0,right:cx6y2z0,up:cx5y1z0}
+  cx6y2z0[empty]{backLayer:cx6y2z1,down:cx6y3z0,left:cx5y2z0,right:cx7y2z0,up:cx6y1z0}
+  cx7y2z0[empty]{backLayer:cx7y2z1,down:cx7y3z0,left:cx6y2z0,up:cx7y1z0}
+  cx0y3z0[empty]{backLayer:cx0y3z1,down:cx0y4z0,right:cx1y3z0,up:cx0y2z0}
+  cx1y3z0[empty]{backLayer:cx1y3z1,down:cx1y4z0,left:cx0y3z0,right:cx2y3z0,up:cx1y2z0}
+  cx2y3z0[empty]{backLayer:cx2y3z1,down:cx2y4z0,left:cx1y3z0,right:cx3y3z0,up:cx2y2z0}
+  cx3y3z0[empty]{backLayer:cx3y3z1,down:cx3y4z0,left:cx2y3z0,right:cx4y3z0,up:cx3y2z0}
+  cx4y3z0[empty]{backLayer:cx4y3z1,down:cx4y4z0,left:cx3y3z0,right:cx5y3z0,up:cx4y2z0}
+  cx5y3z0[empty]{backLayer:cx5y3z1,down:cx5y4z0,left:cx4y3z0,right:cx6y3z0,up:cx5y2z0}
+  cx6y3z0[empty]{backLayer:cx6y3z1,down:cx6y4z0,left:cx5y3z0,right:cx7y3z0,up:cx6y2z0}
+  cx7y3z0[empty]{backLayer:cx7y3z1,down:cx7y4z0,left:cx6y3z0,up:cx7y2z0}
+  cx0y4z0[empty]{backLayer:cx0y4z1,down:cx0y5z0,right:cx1y4z0,up:cx0y3z0}
+  cx1y4z0[empty]{backLayer:cx1y4z1,down:cx1y5z0,left:cx0y4z0,right:cx2y4z0,up:cx1y3z0}
+  cx2y4z0[empty]{backLayer:cx2y4z1,down:cx2y5z0,left:cx1y4z0,right:cx3y4z0,up:cx2y3z0}
+  cx3y4z0[empty]{backLayer:cx3y4z1,down:cx3y5z0,left:cx2y4z0,right:cx4y4z0,up:cx3y3z0}
+  cx4y4z0[empty]{backLayer:cx4y4z1,down:cx4y5z0,left:cx3y4z0,right:cx5y4z0,up:cx4y3z0}
+  cx5y4z0[empty]{backLayer:cx5y4z1,down:cx5y5z0,left:cx4y4z0,right:cx6y4z0,up:cx5y3z0}
+  cx6y4z0[empty]{backLayer:cx6y4z1,down:cx6y5z0,left:cx5y4z0,right:cx7y4z0,up:cx6y3z0}
+  cx7y4z0[empty]{backLayer:cx7y4z1,down:cx7y5z0,left:cx6y4z0,up:cx7y3z0}
+  cx0y5z0[empty]{backLayer:cx0y5z1,down:cx0y6z0,right:cx1y5z0,up:cx0y4z0}
+  cx1y5z0[empty]{backLayer:cx1y5z1,down:cx1y6z0,left:cx0y5z0,right:cx2y5z0,up:cx1y4z0}
+  cx2y5z0[empty]{backLayer:cx2y5z1,down:cx2y6z0,left:cx1y5z0,right:cx3y5z0,up:cx2y4z0}
+  cx3y5z0[empty]{backLayer:cx3y5z1,down:cx3y6z0,left:cx2y5z0,right:cx4y5z0,up:cx3y4z0}
+  cx4y5z0[empty]{backLayer:cx4y5z1,down:cx4y6z0,left:cx3y5z0,right:cx5y5z0,up:cx4y4z0}
+  cx5y5z0[empty]{backLayer:cx5y5z1,down:cx5y6z0,left:cx4y5z0,right:cx6y5z0,up:cx5y4z0}
+  cx6y5z0[empty]{backLayer:cx6y5z1,down:cx6y6z0,left:cx5y5z0,right:cx7y5z0,up:cx6y4z0}
+  cx7y5z0[empty]{backLayer:cx7y5z1,down:cx7y6z0,left:cx6y5z0,up:cx7y4z0}
+  cx0y6z0[empty]{backLayer:cx0y6z1,down:cx0y7z0,right:cx1y6z0,up:cx0y5z0}
+  cx1y6z0[empty]{backLayer:cx1y6z1,down:cx1y7z0,left:cx0y6z0,right:cx2y6z0,up:cx1y5z0}
+  cx2y6z0[empty]{backLayer:cx2y6z1,down:cx2y7z0,left:cx1y6z0,right:cx3y6z0,up:cx2y5z0}
+  cx3y6z0[empty]{backLayer:cx3y6z1,down:cx3y7z0,left:cx2y6z0,right:cx4y6z0,up:cx3y5z0}
+  cx4y6z0[empty]{backLayer:cx4y6z1,down:cx4y7z0,left:cx3y6z0,right:cx5y6z0,up:cx4y5z0}
+  cx5y6z0[empty]{backLayer:cx5y6z1,down:cx5y7z0,left:cx4y6z0,right:cx6y6z0,up:cx5y5z0}
+  cx6y6z0[empty]{backLayer:cx6y6z1,down:cx6y7z0,left:cx5y6z0,right:cx7y6z0,up:cx6y5z0}
+  cx7y6z0[empty]{backLayer:cx7y6z1,down:cx7y7z0,left:cx6y6z0,up:cx7y5z0}
+  cx0y7z0[empty]{backLayer:cx0y7z1,right:cx1y7z0,up:cx0y6z0}
+  cx1y7z0[empty]{backLayer:cx1y7z1,left:cx0y7z0,right:cx2y7z0,up:cx1y6z0}
+  cx2y7z0[empty]{backLayer:cx2y7z1,left:cx1y7z0,right:cx3y7z0,up:cx2y6z0}
+  cx3y7z0[empty]{backLayer:cx3y7z1,left:cx2y7z0,right:cx4y7z0,up:cx3y6z0}
+  cx4y7z0[empty]{backLayer:cx4y7z1,left:cx3y7z0,right:cx5y7z0,up:cx4y6z0}
+  cx5y7z0[empty]{backLayer:cx5y7z1,left:cx4y7z0,right:cx6y7z0,up:cx5y6z0}
+  cx6y7z0[empty]{backLayer:cx6y7z1,left:cx5y7z0,right:cx7y7z0,up:cx6y6z0}
+  cx7y7z0[empty]{backLayer:cx7y7z1,left:cx6y7z0,up:cx7y6z0}
+  cx0y0z1[empty]{down:cx0y1z1,frontLayer:cx0y0z0,right:cx1y0z1}
+  cx1y0z1[empty]{down:cx1y1z1,frontLayer:cx1y0z0,left:cx0y0z1,right:cx2y0z1}
+  cx2y0z1[empty]{down:cx2y1z1,frontLayer:cx2y0z0,left:cx1y0z1,right:cx3y0z1}
+  cx3y0z1[empty]{down:cx3y1z1,frontLayer:cx3y0z0,left:cx2y0z1,right:cx4y0z1}
+  cx4y0z1[empty]{down:cx4y1z1,frontLayer:cx4y0z0,left:cx3y0z1,right:cx5y0z1}
+  cx5y0z1[empty]{down:cx5y1z1,frontLayer:cx5y0z0,left:cx4y0z1,right:cx6y0z1}
+  cx6y0z1[empty]{down:cx6y1z1,frontLayer:cx6y0z0,left:cx5y0z1,right:cx7y0z1}
+  cx7y0z1[empty]{down:cx7y1z1,frontLayer:cx7y0z0,left:cx6y0z1}
+  cx0y1z1[empty]{down:cx0y2z1,frontLayer:cx0y1z0,right:cx1y1z1,up:cx0y0z1}
+  cx1y1z1[empty]{down:cx1y2z1,frontLayer:cx1y1z0,left:cx0y1z1,right:cx2y1z1,up:cx1y0z1}
+  cx2y1z1[empty]{down:cx2y2z1,frontLayer:cx2y1z0,left:cx1y1z1,right:cx3y1z1,up:cx2y0z1}
+  cx3y1z1[empty]{down:cx3y2z1,frontLayer:cx3y1z0,left:cx2y1z1,right:cx4y1z1,up:cx3y0z1}
+  cx4y1z1[empty]{down:cx4y2z1,frontLayer:cx4y1z0,left:cx3y1z1,right:cx5y1z1,up:cx4y0z1}
+  cx5y1z1[empty]{down:cx5y2z1,frontLayer:cx5y1z0,left:cx4y1z1,right:cx6y1z1,up:cx5y0z1}
+  cx6y1z1[empty]{down:cx6y2z1,frontLayer:cx6y1z0,left:cx5y1z1,right:cx7y1z1,up:cx6y0z1}
+  cx7y1z1[empty]{down:cx7y2z1,frontLayer:cx7y1z0,left:cx6y1z1,up:cx7y0z1}
+  cx0y2z1[empty]{down:cx0y3z1,frontLayer:cx0y2z0,right:cx1y2z1,up:cx0y1z1}
+  cx1y2z1[empty]{down:cx1y3z1,frontLayer:cx1y2z0,left:cx0y2z1,right:cx2y2z1,up:cx1y1z1}
+  cx2y2z1[empty]{down:cx2y3z1,frontLayer:cx2y2z0,left:cx1y2z1,right:cx3y2z1,up:cx2y1z1}
+  cx3y2z1[empty]{down:cx3y3z1,frontLayer:cx3y2z0,left:cx2y2z1,right:cx4y2z1,up:cx3y1z1}
+  cx4y2z1[empty]{down:cx4y3z1,frontLayer:cx4y2z0,left:cx3y2z1,right:cx5y2z1,up:cx4y1z1}
+  cx5y2z1[empty]{down:cx5y3z1,frontLayer:cx5y2z0,left:cx4y2z1,right:cx6y2z1,up:cx5y1z1}
+  cx6y2z1[empty]{down:cx6y3z1,frontLayer:cx6y2z0,left:cx5y2z1,right:cx7y2z1,up:cx6y1z1}
+  cx7y2z1[empty]{down:cx7y3z1,frontLayer:cx7y2z0,left:cx6y2z1,up:cx7y1z1}
+  cx0y3z1[empty]{down:cx0y4z1,frontLayer:cx0y3z0,right:cx1y3z1,up:cx0y2z1}
+  cx1y3z1[empty]{down:cx1y4z1,frontLayer:cx1y3z0,left:cx0y3z1,right:cx2y3z1,up:cx1y2z1}
+  cx2y3z1[empty]{down:cx2y4z1,frontLayer:cx2y3z0,left:cx1y3z1,right:cx3y3z1,up:cx2y2z1}
+  cx3y3z1[empty]{down:cx3y4z1,frontLayer:cx3y3z0,left:cx2y3z1,right:cx4y3z1,up:cx3y2z1}
+  cx4y3z1[empty]{down:cx4y4z1,frontLayer:cx4y3z0,left:cx3y3z1,right:cx5y3z1,up:cx4y2z1}
+  cx5y3z1[empty]{down:cx5y4z1,frontLayer:cx5y3z0,left:cx4y3z1,right:cx6y3z1,up:cx5y2z1}
+  cx6y3z1[empty]{down:cx6y4z1,frontLayer:cx6y3z0,left:cx5y3z1,right:cx7y3z1,up:cx6y2z1}
+  cx7y3z1[empty]{down:cx7y4z1,frontLayer:cx7y3z0,left:cx6y3z1,up:cx7y2z1}
+  cx0y4z1[empty]{down:cx0y5z1,frontLayer:cx0y4z0,right:cx1y4z1,up:cx0y3z1}
+  cx1y4z1[empty]{down:cx1y5z1,frontLayer:cx1y4z0,left:cx0y4z1,right:cx2y4z1,up:cx1y3z1}
+  cx2y4z1[empty]{down:cx2y5z1,frontLayer:cx2y4z0,left:cx1y4z1,right:cx3y4z1,up:cx2y3z1}
+  cx3y4z1[empty]{down:cx3y5z1,frontLayer:cx3y4z0,left:cx2y4z1,right:cx4y4z1,up:cx3y3z1}
+  cx4y4z1[empty]{down:cx4y5z1,frontLayer:cx4y4z0,left:cx3y4z1,right:cx5y4z1,up:cx4y3z1}
+  cx5y4z1[empty]{down:cx5y5z1,frontLayer:cx5y4z0,left:cx4y4z1,right:cx6y4z1,up:cx5y3z1}
+  cx6y4z1[empty]{down:cx6y5z1,frontLayer:cx6y4z0,left:cx5y4z1,right:cx7y4z1,up:cx6y3z1}
+  cx7y4z1[empty]{down:cx7y5z1,frontLayer:cx7y4z0,left:cx6y4z1,up:cx7y3z1}
+  cx0y5z1[empty]{down:cx0y6z1,frontLayer:cx0y5z0,right:cx1y5z1,up:cx0y4z1}
+  cx1y5z1[empty]{down:cx1y6z1,frontLayer:cx1y5z0,left:cx0y5z1,right:cx2y5z1,up:cx1y4z1}
+  cx2y5z1[empty]{down:cx2y6z1,frontLayer:cx2y5z0,left:cx1y5z1,right:cx3y5z1,up:cx2y4z1}
+  cx3y5z1[empty]{down:cx3y6z1,frontLayer:cx3y5z0,left:cx2y5z1,right:cx4y5z1,up:cx3y4z1}
+  cx4y5z1[empty]{down:cx4y6z1,frontLayer:cx4y5z0,left:cx3y5z1,right:cx5y5z1,up:cx4y4z1}
+  cx5y5z1[empty]{down:cx5y6z1,frontLayer:cx5y5z0,left:cx4y5z1,right:cx6y5z1,up:cx5y4z1}
+  cx6y5z1[empty]{down:cx6y6z1,frontLayer:cx6y5z0,left:cx5y5z1,right:cx7y5z1,up:cx6y4z1}
+  cx7y5z1[empty]{down:cx7y6z1,frontLayer:cx7y5z0,left:cx6y5z1,up:cx7y4z1}
+  cx0y6z1[empty]{down:cx0y7z1,frontLayer:cx0y6z0,right:cx1y6z1,up:cx0y5z1}
+  cx1y6z1[empty]{down:cx1y7z1,frontLayer:cx1y6z0,left:cx0y6z1,right:cx2y6z1,up:cx1y5z1}
+  cx2y6z1[empty]{down:cx2y7z1,frontLayer:cx2y6z0,left:cx1y6z1,right:cx3y6z1,up:cx2y5z1}
+  cx3y6z1[empty]{down:cx3y7z1,frontLayer:cx3y6z0,left:cx2y6z1,right:cx4y6z1,up:cx3y5z1}
+  cx4y6z1[empty]{down:cx4y7z1,frontLayer:cx4y6z0,left:cx3y6z1,right:cx5y6z1,up:cx4y5z1}
+  cx5y6z1[empty]{down:cx5y7z1,frontLayer:cx5y6z0,left:cx4y6z1,right:cx6y6z1,up:cx5y5z1}
+  cx6y6z1[empty]{down:cx6y7z1,frontLayer:cx6y6z0,left:cx5y6z1,right:cx7y6z1,up:cx6y5z1}
+  cx7y6z1[empty]{down:cx7y7z1,frontLayer:cx7y6z0,left:cx6y6z1,up:cx7y5z1}
+  cx0y7z1[empty]{frontLayer:cx0y7z0,right:cx1y7z1,up:cx0y6z1}
+  cx1y7z1[empty]{frontLayer:cx1y7z0,left:cx0y7z1,right:cx2y7z1,up:cx1y6z1}
+  cx2y7z1[empty]{frontLayer:cx2y7z0,left:cx1y7z1,right:cx3y7z1,up:cx2y6z1}
+  cx3y7z1[empty]{frontLayer:cx3y7z0,left:cx2y7z1,right:cx4y7z1,up:cx3y6z1}
+  cx4y7z1[empty]{frontLayer:cx4y7z0,left:cx3y7z1,right:cx5y7z1,up:cx4y6z1}
+  cx5y7z1[empty]{frontLayer:cx5y7z0,left:cx4y7z1,right:cx6y7z1,up:cx5y6z1}
+  cx6y7z1[empty]{frontLayer:cx6y7z0,left:cx5y7z1,right:cx7y7z1,up:cx6y6z1}
+  cx7y7z1[empty]{frontLayer:cx7y7z0,left:cx6y7z1,up:cx7y6z1}
+#players = gold(100), silver(100)
+#pieces = empty, goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit, goldRabbitSecond, silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit, silverRabbitSecond
+#variables = changed(1), steps(4), turn(199)
+#rules = (
+  (
+      {$ goldElephant < 1}
+    + {$ goldCamel < 1}
+    + {$ goldHorse < 2}
+    + {$ goldDog < 2}
+    + {$ goldCat < 2}
+    + {$ goldRabbit < 8}
+  )
+  ->gold
+  (
+      {$ goldElephant < 1} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldElephant]
+    + {$ goldCamel < 1} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldCamel]
+    + {$ goldHorse < 2} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldHorse]
+    + {$ goldDog < 2} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldDog]
+    + {$ goldCat < 2} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldCat]
+    + {$ goldRabbit < 8} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldRabbit]
+  )
+)*
+{$ goldElephant == 1}
+{$ goldCamel == 1}
+{$ goldHorse == 2}
+{$ goldDog == 2}
+{$ goldCat == 2}
+{$ goldRabbit == 8}
+(
+  (
+      {$ silverElephant < 1}
+    + {$ silverCamel < 1}
+    + {$ silverHorse < 2}
+    + {$ silverDog < 2}
+    + {$ silverCat < 2}
+    + {$ silverRabbit < 8}
+  )
+  ->silver
+  (
+      {$ silverElephant < 1} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverElephant]
+    + {$ silverCamel < 1} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverCamel]
+    + {$ silverHorse < 2} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverHorse]
+    + {$ silverDog < 2} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverDog]
+    + {$ silverCat < 2} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverCat]
+    + {$ silverRabbit < 8} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverRabbit]
+  )
+)*
+{$ silverElephant == 1}
+{$ silverCamel == 1}
+{$ silverHorse == 2}
+{$ silverDog == 2}
+{$ silverCat == 2}
+{$ silverRabbit == 8}
+->>
+(
+  (
+    (left* + right*)
+    (up* + down*)
+    {!
+        {empty} backLayer {empty}
+      + {goldElephant} backLayer {goldElephant}
+      + {goldCamel} backLayer {goldCamel}
+      + {goldHorse} backLayer {goldHorse}
+      + {goldDog} backLayer {goldDog}
+      + {goldCat} backLayer {goldCat}
+      + {goldRabbit} backLayer {goldRabbitSecond}
+      + {silverElephant} backLayer {silverElephant}
+      + {silverCamel} backLayer {silverCamel}
+      + {silverHorse} backLayer {silverHorse}
+      + {silverDog} backLayer {silverDog}
+      + {silverCat} backLayer {silverCat}
+      + {silverRabbit} backLayer {silverRabbitSecond}
+    }
+    ->>
+    (
+        {empty} backLayer [empty]
+      + {goldElephant} backLayer [goldElephant]
+      + {goldCamel} backLayer [goldCamel]
+      + {goldHorse} backLayer [goldHorse]
+      + {goldDog} backLayer [goldDog]
+      + {goldCat} backLayer [goldCat]
+      + {goldRabbit} backLayer [goldRabbitSecond]
+      + {silverElephant} backLayer [silverElephant]
+      + {silverCamel} backLayer [silverCamel]
+      + {silverHorse} backLayer [silverHorse]
+      + {silverDog} backLayer [silverDog]
+      + {silverCat} backLayer [silverCat]
+      + {silverRabbit} backLayer [silverRabbitSecond]
+    )
+    frontLayer
+  )*
+  {!
+    (left* + right*)
+    (up* + down*)
+    {!
+        {empty} backLayer {empty}
+      + {goldElephant} backLayer {goldElephant}
+      + {goldCamel} backLayer {goldCamel}
+      + {goldHorse} backLayer {goldHorse}
+      + {goldDog} backLayer {goldDog}
+      + {goldCat} backLayer {goldCat}
+      + {goldRabbit} backLayer {goldRabbitSecond}
+      + {silverElephant} backLayer {silverElephant}
+      + {silverCamel} backLayer {silverCamel}
+      + {silverHorse} backLayer {silverHorse}
+      + {silverDog} backLayer {silverDog}
+      + {silverCat} backLayer {silverCat}
+      + {silverRabbit} backLayer {silverRabbitSecond}
+    }
+  }
+  (left* + right*)
+  (up* + down*)
+  {! up + left}
+  [$ steps = 4]
+  [$ changed = 0]
+  ->gold
+  (
+    {$ steps > 0}
+    (left* + right*)
+    (up* + down*)
+    {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+    {!
+      {!
+        (left + right + up + down)
+        {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+      }
+      {?
+          {goldCamel} (left + right + up + down) {silverElephant}
+        + {goldHorse} (left + right + up + down) {silverCamel, silverElephant}
+        + {goldDog} (left + right + up + down) {silverCamel, silverElephant, silverHorse}
+        + {goldCat} (left + right + up + down) {silverCamel, silverDog, silverElephant, silverHorse}
+        + {goldRabbit} (left + right + up + down) {silverCamel, silverCat, silverDog, silverElephant, silverHorse}
+      }
+    }
+    (
+        [$ steps = (steps - 1)] (
+            {goldElephant} [empty] (
+                left {empty} [goldElephant]
+              + right {empty} [goldElephant]
+              + up {empty} [goldElephant]
+              + down {empty} [goldElephant]
+            )
+          + {goldCamel} [empty] (
+                left {empty} [goldCamel]
+              + right {empty} [goldCamel]
+              + up {empty} [goldCamel]
+              + down {empty} [goldCamel]
+            )
+          + {goldHorse} [empty] (
+                left {empty} [goldHorse]
+              + right {empty} [goldHorse]
+              + up {empty} [goldHorse]
+              + down {empty} [goldHorse]
+            )
+          + {goldDog} [empty] (
+                left {empty} [goldDog]
+              + right {empty} [goldDog]
+              + up {empty} [goldDog]
+              + down {empty} [goldDog]
+            )
+          + {goldCat} [empty] (
+                left {empty} [goldCat]
+              + right {empty} [goldCat]
+              + up {empty} [goldCat]
+              + down {empty} [goldCat]
+            )
+          + {goldRabbit} [empty] (
+                left {empty} [goldRabbit]
+              + right {empty} [goldRabbit]
+              + up {empty} [goldRabbit] [$ changed = 1]
+            )
+        )
+      + [$ steps = (steps - 2)] (
+            {goldElephant} [empty] (
+                (
+                    left {silverCamel, silverCat, silverDog, silverHorse, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                  + right {silverCamel, silverCat, silverDog, silverHorse, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                  + up {silverCamel, silverCat, silverDog, silverHorse, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                    )
+                  + down {silverCamel, silverCat, silverDog, silverHorse, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                ) [goldElephant]
+              + (
+                    left {empty} [goldElephant] right
+                  + right {empty} [goldElephant] left
+                  + up {empty} [goldElephant] down
+                  + down {empty} [goldElephant] up
+                ) (
+                    left {silverCamel, silverCat, silverDog, silverHorse, silverRabbit} (
+                        {silverRabbit} [empty] right {empty} [silverRabbit]
+                      + {silverCat} [empty] right {empty} [silverCat]
+                      + {silverDog} [empty] right {empty} [silverDog]
+                      + {silverHorse} [empty] right {empty} [silverHorse]
+                      + {silverCamel} [empty] right {empty} [silverCamel]
+                      + {silverElephant} [empty] right {empty} [silverElephant]
+                    )
+                  + right {silverCamel, silverCat, silverDog, silverHorse, silverRabbit} (
+                        {silverRabbit} [empty] left {empty} [silverRabbit]
+                      + {silverCat} [empty] left {empty} [silverCat]
+                      + {silverDog} [empty] left {empty} [silverDog]
+                      + {silverHorse} [empty] left {empty} [silverHorse]
+                      + {silverCamel} [empty] left {empty} [silverCamel]
+                      + {silverElephant} [empty] left {empty} [silverElephant]
+                    )
+                  + up {silverCamel, silverCat, silverDog, silverHorse, silverRabbit} (
+                        {silverRabbit} [empty] down {empty} [silverRabbit]
+                      + {silverCat} [empty] down {empty} [silverCat]
+                      + {silverDog} [empty] down {empty} [silverDog]
+                      + {silverHorse} [empty] down {empty} [silverHorse]
+                      + {silverCamel} [empty] down {empty} [silverCamel]
+                      + {silverElephant} [empty] down {empty} [silverElephant]
+                    )
+                  + down {silverCamel, silverCat, silverDog, silverHorse, silverRabbit} (
+                        {silverRabbit} [empty] up {empty} [silverRabbit]
+                      + {silverCat} [empty] up {empty} [silverCat]
+                      + {silverDog} [empty] up {empty} [silverDog]
+                      + {silverHorse} [empty] up {empty} [silverHorse]
+                      + {silverCamel} [empty] up {empty} [silverCamel]
+                      + {silverElephant} [empty] up {empty} [silverElephant]
+                    )
+                )
+            )
+          + {goldCamel} [empty] (
+                (
+                    left {silverCat, silverDog, silverHorse, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                  + right {silverCat, silverDog, silverHorse, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                  + up {silverCat, silverDog, silverHorse, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                    )
+                  + down {silverCat, silverDog, silverHorse, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                ) [goldCamel]
+              + (
+                    left {empty} [goldCamel] right
+                  + right {empty} [goldCamel] left
+                  + up {empty} [goldCamel] down
+                  + down {empty} [goldCamel] up
+                ) (
+                    left {silverCat, silverDog, silverHorse, silverRabbit} (
+                        {silverRabbit} [empty] right {empty} [silverRabbit]
+                      + {silverCat} [empty] right {empty} [silverCat]
+                      + {silverDog} [empty] right {empty} [silverDog]
+                      + {silverHorse} [empty] right {empty} [silverHorse]
+                      + {silverCamel} [empty] right {empty} [silverCamel]
+                      + {silverElephant} [empty] right {empty} [silverElephant]
+                    )
+                  + right {silverCat, silverDog, silverHorse, silverRabbit} (
+                        {silverRabbit} [empty] left {empty} [silverRabbit]
+                      + {silverCat} [empty] left {empty} [silverCat]
+                      + {silverDog} [empty] left {empty} [silverDog]
+                      + {silverHorse} [empty] left {empty} [silverHorse]
+                      + {silverCamel} [empty] left {empty} [silverCamel]
+                      + {silverElephant} [empty] left {empty} [silverElephant]
+                    )
+                  + up {silverCat, silverDog, silverHorse, silverRabbit} (
+                        {silverRabbit} [empty] down {empty} [silverRabbit]
+                      + {silverCat} [empty] down {empty} [silverCat]
+                      + {silverDog} [empty] down {empty} [silverDog]
+                      + {silverHorse} [empty] down {empty} [silverHorse]
+                      + {silverCamel} [empty] down {empty} [silverCamel]
+                      + {silverElephant} [empty] down {empty} [silverElephant]
+                    )
+                  + down {silverCat, silverDog, silverHorse, silverRabbit} (
+                        {silverRabbit} [empty] up {empty} [silverRabbit]
+                      + {silverCat} [empty] up {empty} [silverCat]
+                      + {silverDog} [empty] up {empty} [silverDog]
+                      + {silverHorse} [empty] up {empty} [silverHorse]
+                      + {silverCamel} [empty] up {empty} [silverCamel]
+                      + {silverElephant} [empty] up {empty} [silverElephant]
+                    )
+                )
+            )
+          + {goldHorse} [empty] (
+                (
+                    left {silverCat, silverDog, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                  + right {silverCat, silverDog, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                  + up {silverCat, silverDog, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                    )
+                  + down {silverCat, silverDog, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                ) [goldHorse]
+              + (
+                    left {empty} [goldHorse] right
+                  + right {empty} [goldHorse] left
+                  + up {empty} [goldHorse] down
+                  + down {empty} [goldHorse] up
+                ) (
+                    left {silverCat, silverDog, silverRabbit} (
+                        {silverRabbit} [empty] right {empty} [silverRabbit]
+                      + {silverCat} [empty] right {empty} [silverCat]
+                      + {silverDog} [empty] right {empty} [silverDog]
+                      + {silverHorse} [empty] right {empty} [silverHorse]
+                      + {silverCamel} [empty] right {empty} [silverCamel]
+                      + {silverElephant} [empty] right {empty} [silverElephant]
+                    )
+                  + right {silverCat, silverDog, silverRabbit} (
+                        {silverRabbit} [empty] left {empty} [silverRabbit]
+                      + {silverCat} [empty] left {empty} [silverCat]
+                      + {silverDog} [empty] left {empty} [silverDog]
+                      + {silverHorse} [empty] left {empty} [silverHorse]
+                      + {silverCamel} [empty] left {empty} [silverCamel]
+                      + {silverElephant} [empty] left {empty} [silverElephant]
+                    )
+                  + up {silverCat, silverDog, silverRabbit} (
+                        {silverRabbit} [empty] down {empty} [silverRabbit]
+                      + {silverCat} [empty] down {empty} [silverCat]
+                      + {silverDog} [empty] down {empty} [silverDog]
+                      + {silverHorse} [empty] down {empty} [silverHorse]
+                      + {silverCamel} [empty] down {empty} [silverCamel]
+                      + {silverElephant} [empty] down {empty} [silverElephant]
+                    )
+                  + down {silverCat, silverDog, silverRabbit} (
+                        {silverRabbit} [empty] up {empty} [silverRabbit]
+                      + {silverCat} [empty] up {empty} [silverCat]
+                      + {silverDog} [empty] up {empty} [silverDog]
+                      + {silverHorse} [empty] up {empty} [silverHorse]
+                      + {silverCamel} [empty] up {empty} [silverCamel]
+                      + {silverElephant} [empty] up {empty} [silverElephant]
+                    )
+                )
+            )
+          + {goldDog} [empty] (
+                (
+                    left {silverCat, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                  + right {silverCat, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                  + up {silverCat, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                    )
+                  + down {silverCat, silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                ) [goldDog]
+              + (
+                    left {empty} [goldDog] right
+                  + right {empty} [goldDog] left
+                  + up {empty} [goldDog] down
+                  + down {empty} [goldDog] up
+                ) (
+                    left {silverCat, silverRabbit} (
+                        {silverRabbit} [empty] right {empty} [silverRabbit]
+                      + {silverCat} [empty] right {empty} [silverCat]
+                      + {silverDog} [empty] right {empty} [silverDog]
+                      + {silverHorse} [empty] right {empty} [silverHorse]
+                      + {silverCamel} [empty] right {empty} [silverCamel]
+                      + {silverElephant} [empty] right {empty} [silverElephant]
+                    )
+                  + right {silverCat, silverRabbit} (
+                        {silverRabbit} [empty] left {empty} [silverRabbit]
+                      + {silverCat} [empty] left {empty} [silverCat]
+                      + {silverDog} [empty] left {empty} [silverDog]
+                      + {silverHorse} [empty] left {empty} [silverHorse]
+                      + {silverCamel} [empty] left {empty} [silverCamel]
+                      + {silverElephant} [empty] left {empty} [silverElephant]
+                    )
+                  + up {silverCat, silverRabbit} (
+                        {silverRabbit} [empty] down {empty} [silverRabbit]
+                      + {silverCat} [empty] down {empty} [silverCat]
+                      + {silverDog} [empty] down {empty} [silverDog]
+                      + {silverHorse} [empty] down {empty} [silverHorse]
+                      + {silverCamel} [empty] down {empty} [silverCamel]
+                      + {silverElephant} [empty] down {empty} [silverElephant]
+                    )
+                  + down {silverCat, silverRabbit} (
+                        {silverRabbit} [empty] up {empty} [silverRabbit]
+                      + {silverCat} [empty] up {empty} [silverCat]
+                      + {silverDog} [empty] up {empty} [silverDog]
+                      + {silverHorse} [empty] up {empty} [silverHorse]
+                      + {silverCamel} [empty] up {empty} [silverCamel]
+                      + {silverElephant} [empty] up {empty} [silverElephant]
+                    )
+                )
+            )
+          + {goldCat} [empty] (
+                (
+                    left {silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                  + right {silverRabbit} (
+                        (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                  + up {silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] up {empty} [silverRabbit]
+                          + {silverCat} [empty] up {empty} [silverCat]
+                          + {silverDog} [empty] up {empty} [silverDog]
+                          + {silverHorse} [empty] up {empty} [silverHorse]
+                          + {silverCamel} [empty] up {empty} [silverCamel]
+                          + {silverElephant} [empty] up {empty} [silverElephant]
+                        ) down
+                    )
+                  + down {silverRabbit} (
+                        (
+                            {silverRabbit} [empty] left {empty} [silverRabbit]
+                          + {silverCat} [empty] left {empty} [silverCat]
+                          + {silverDog} [empty] left {empty} [silverDog]
+                          + {silverHorse} [empty] left {empty} [silverHorse]
+                          + {silverCamel} [empty] left {empty} [silverCamel]
+                          + {silverElephant} [empty] left {empty} [silverElephant]
+                        ) right
+                      + (
+                            {silverRabbit} [empty] right {empty} [silverRabbit]
+                          + {silverCat} [empty] right {empty} [silverCat]
+                          + {silverDog} [empty] right {empty} [silverDog]
+                          + {silverHorse} [empty] right {empty} [silverHorse]
+                          + {silverCamel} [empty] right {empty} [silverCamel]
+                          + {silverElephant} [empty] right {empty} [silverElephant]
+                        ) left
+                      + (
+                            {silverRabbit} [empty] down {empty} [silverRabbit]
+                          + {silverCat} [empty] down {empty} [silverCat]
+                          + {silverDog} [empty] down {empty} [silverDog]
+                          + {silverHorse} [empty] down {empty} [silverHorse]
+                          + {silverCamel} [empty] down {empty} [silverCamel]
+                          + {silverElephant} [empty] down {empty} [silverElephant]
+                        ) up
+                    )
+                ) [goldCat]
+              + (
+                    left {empty} [goldCat] right
+                  + right {empty} [goldCat] left
+                  + up {empty} [goldCat] down
+                  + down {empty} [goldCat] up
+                ) (
+                    left {silverRabbit} (
+                        {silverRabbit} [empty] right {empty} [silverRabbit]
+                      + {silverCat} [empty] right {empty} [silverCat]
+                      + {silverDog} [empty] right {empty} [silverDog]
+                      + {silverHorse} [empty] right {empty} [silverHorse]
+                      + {silverCamel} [empty] right {empty} [silverCamel]
+                      + {silverElephant} [empty] right {empty} [silverElephant]
+                    )
+                  + right {silverRabbit} (
+                        {silverRabbit} [empty] left {empty} [silverRabbit]
+                      + {silverCat} [empty] left {empty} [silverCat]
+                      + {silverDog} [empty] left {empty} [silverDog]
+                      + {silverHorse} [empty] left {empty} [silverHorse]
+                      + {silverCamel} [empty] left {empty} [silverCamel]
+                      + {silverElephant} [empty] left {empty} [silverElephant]
+                    )
+                  + up {silverRabbit} (
+                        {silverRabbit} [empty] down {empty} [silverRabbit]
+                      + {silverCat} [empty] down {empty} [silverCat]
+                      + {silverDog} [empty] down {empty} [silverDog]
+                      + {silverHorse} [empty] down {empty} [silverHorse]
+                      + {silverCamel} [empty] down {empty} [silverCamel]
+                      + {silverElephant} [empty] down {empty} [silverElephant]
+                    )
+                  + down {silverRabbit} (
+                        {silverRabbit} [empty] up {empty} [silverRabbit]
+                      + {silverCat} [empty] up {empty} [silverCat]
+                      + {silverDog} [empty] up {empty} [silverDog]
+                      + {silverHorse} [empty] up {empty} [silverHorse]
+                      + {silverCamel} [empty] up {empty} [silverCamel]
+                      + {silverElephant} [empty] up {empty} [silverElephant]
+                    )
+                )
+            )
+        )
+    )
+    (left* + right*)
+    (up* + down*)
+    left
+    left
+    left
+    left
+    left
+    left
+    left
+    up
+    up
+    up
+    up
+    up
+    up
+    up
+    right
+    right
+    down
+    down
+    (
+        {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit} (
+            {?
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
+            {?
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {empty}
+    )
+    right
+    right
+    right
+    (
+        {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit} (
+            {?
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
+            {?
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {empty}
+    )
+    down
+    down
+    down
+    (
+        {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit} (
+            {?
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
+            {?
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {empty}
+    )
+    left
+    left
+    left
+    (
+        {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit} (
+            {?
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
+            {?
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {empty}
+    )
+    (
+        {$ goldRabbit > 0} {$ silverRabbit > 0} {!
+          (left* + right*)
+          (up* + down*)
+          {! down}
+          {silverRabbit}
+        } {!
+          (left* + right*) (up* + down*) {! up} {goldRabbit}
+        }
+      + (
+            {$ goldRabbit == 0}
+          + {?
+              (left* + right*)
+              (up* + down*)
+              {! down}
+              {silverRabbit}
+            }
+        ) [$ silver = 100] [$ gold = 0] ->> {}
+      + (
+            {$ silverRabbit == 0}
+          + {?
+              (left* + right*) (up* + down*) {! up} {goldRabbit}
+            }
+        ) [$ gold = 100] [$ silver = 0] ->> {}
+    )
+  )*
+  (
+      {$ changed == 1}
+    + {$ steps == 1}
+    + {$ steps == 3}
+    + {$ changed == 0} ({$ steps == 0} + {$ steps == 2}) {?
+        (left* + right*)
+        (up* + down*)
+        {!
+            {empty} backLayer {empty}
+          + {goldElephant} backLayer {goldElephant}
+          + {goldCamel} backLayer {goldCamel}
+          + {goldHorse} backLayer {goldHorse}
+          + {goldDog} backLayer {goldDog}
+          + {goldCat} backLayer {goldCat}
+          + {goldRabbit} backLayer {goldRabbitSecond}
+          + {silverElephant} backLayer {silverElephant}
+          + {silverCamel} backLayer {silverCamel}
+          + {silverHorse} backLayer {silverHorse}
+          + {silverDog} backLayer {silverDog}
+          + {silverCat} backLayer {silverCat}
+          + {silverRabbit} backLayer {silverRabbitSecond}
+        }
+      }
+  )
+  ->>
+  (
+      {$ turn < 199} [$ gold = 100] [$ silver = 0]
+    + {$ turn == 199} [$ gold = 50] [$ silver = 50] ->> {}
+  )
+  [$ turn = (turn + 1)]
+  (
+    (left* + right*)
+    (up* + down*)
+    {!
+        {empty} backLayer {empty}
+      + {goldElephant} backLayer {goldElephant}
+      + {goldCamel} backLayer {goldCamel}
+      + {goldHorse} backLayer {goldHorse}
+      + {goldDog} backLayer {goldDog}
+      + {goldCat} backLayer {goldCat}
+      + {goldRabbit} backLayer {goldRabbitSecond}
+      + {silverElephant} backLayer {silverElephant}
+      + {silverCamel} backLayer {silverCamel}
+      + {silverHorse} backLayer {silverHorse}
+      + {silverDog} backLayer {silverDog}
+      + {silverCat} backLayer {silverCat}
+      + {silverRabbit} backLayer {silverRabbitSecond}
+    }
+    ->>
+    (
+        {empty} backLayer [empty]
+      + {goldElephant} backLayer [goldElephant]
+      + {goldCamel} backLayer [goldCamel]
+      + {goldHorse} backLayer [goldHorse]
+      + {goldDog} backLayer [goldDog]
+      + {goldCat} backLayer [goldCat]
+      + {goldRabbit} backLayer [goldRabbitSecond]
+      + {silverElephant} backLayer [silverElephant]
+      + {silverCamel} backLayer [silverCamel]
+      + {silverHorse} backLayer [silverHorse]
+      + {silverDog} backLayer [silverDog]
+      + {silverCat} backLayer [silverCat]
+      + {silverRabbit} backLayer [silverRabbitSecond]
+    )
+    frontLayer
+  )*
+  {!
+    (left* + right*)
+    (up* + down*)
+    {!
+        {empty} backLayer {empty}
+      + {goldElephant} backLayer {goldElephant}
+      + {goldCamel} backLayer {goldCamel}
+      + {goldHorse} backLayer {goldHorse}
+      + {goldDog} backLayer {goldDog}
+      + {goldCat} backLayer {goldCat}
+      + {goldRabbit} backLayer {goldRabbitSecond}
+      + {silverElephant} backLayer {silverElephant}
+      + {silverCamel} backLayer {silverCamel}
+      + {silverHorse} backLayer {silverHorse}
+      + {silverDog} backLayer {silverDog}
+      + {silverCat} backLayer {silverCat}
+      + {silverRabbit} backLayer {silverRabbitSecond}
+    }
+  }
+  (left* + right*)
+  (up* + down*)
+  {! up + left}
+  [$ steps = 4]
+  [$ changed = 0]
+  ->silver
+  (
+    {$ steps > 0}
+    (left* + right*)
+    (up* + down*)
+    {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+    {!
+      {!
+        (left + right + up + down)
+        {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+      }
+      {?
+          {silverCamel} (left + right + up + down) {goldElephant}
+        + {silverHorse} (left + right + up + down) {goldCamel, goldElephant}
+        + {silverDog} (left + right + up + down) {goldCamel, goldElephant, goldHorse}
+        + {silverCat} (left + right + up + down) {goldCamel, goldDog, goldElephant, goldHorse}
+        + {silverRabbit} (left + right + up + down) {goldCamel, goldCat, goldDog, goldElephant, goldHorse}
+      }
+    }
+    (
+        [$ steps = (steps - 1)] (
+            {silverElephant} [empty] (
+                left {empty} [silverElephant]
+              + right {empty} [silverElephant]
+              + up {empty} [silverElephant]
+              + down {empty} [silverElephant]
+            )
+          + {silverCamel} [empty] (
+                left {empty} [silverCamel]
+              + right {empty} [silverCamel]
+              + up {empty} [silverCamel]
+              + down {empty} [silverCamel]
+            )
+          + {silverHorse} [empty] (
+                left {empty} [silverHorse]
+              + right {empty} [silverHorse]
+              + up {empty} [silverHorse]
+              + down {empty} [silverHorse]
+            )
+          + {silverDog} [empty] (
+                left {empty} [silverDog]
+              + right {empty} [silverDog]
+              + up {empty} [silverDog]
+              + down {empty} [silverDog]
+            )
+          + {silverCat} [empty] (
+                left {empty} [silverCat]
+              + right {empty} [silverCat]
+              + up {empty} [silverCat]
+              + down {empty} [silverCat]
+            )
+          + {silverRabbit} [empty] (
+                left {empty} [silverRabbit]
+              + right {empty} [silverRabbit]
+              + down {empty} [silverRabbit] [$ changed = 1]
+            )
+        )
+      + [$ steps = (steps - 2)] (
+            {silverElephant} [empty] (
+                (
+                    left {goldCamel, goldCat, goldDog, goldHorse, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                  + right {goldCamel, goldCat, goldDog, goldHorse, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                  + up {goldCamel, goldCat, goldDog, goldHorse, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                    )
+                  + down {goldCamel, goldCat, goldDog, goldHorse, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                ) [silverElephant]
+              + (
+                    left {empty} [silverElephant] right
+                  + right {empty} [silverElephant] left
+                  + up {empty} [silverElephant] down
+                  + down {empty} [silverElephant] up
+                ) (
+                    left {goldCamel, goldCat, goldDog, goldHorse, goldRabbit} (
+                        {goldRabbit} [empty] right {empty} [goldRabbit]
+                      + {goldCat} [empty] right {empty} [goldCat]
+                      + {goldDog} [empty] right {empty} [goldDog]
+                      + {goldHorse} [empty] right {empty} [goldHorse]
+                      + {goldCamel} [empty] right {empty} [goldCamel]
+                      + {goldElephant} [empty] right {empty} [goldElephant]
+                    )
+                  + right {goldCamel, goldCat, goldDog, goldHorse, goldRabbit} (
+                        {goldRabbit} [empty] left {empty} [goldRabbit]
+                      + {goldCat} [empty] left {empty} [goldCat]
+                      + {goldDog} [empty] left {empty} [goldDog]
+                      + {goldHorse} [empty] left {empty} [goldHorse]
+                      + {goldCamel} [empty] left {empty} [goldCamel]
+                      + {goldElephant} [empty] left {empty} [goldElephant]
+                    )
+                  + up {goldCamel, goldCat, goldDog, goldHorse, goldRabbit} (
+                        {goldRabbit} [empty] down {empty} [goldRabbit]
+                      + {goldCat} [empty] down {empty} [goldCat]
+                      + {goldDog} [empty] down {empty} [goldDog]
+                      + {goldHorse} [empty] down {empty} [goldHorse]
+                      + {goldCamel} [empty] down {empty} [goldCamel]
+                      + {goldElephant} [empty] down {empty} [goldElephant]
+                    )
+                  + down {goldCamel, goldCat, goldDog, goldHorse, goldRabbit} (
+                        {goldRabbit} [empty] up {empty} [goldRabbit]
+                      + {goldCat} [empty] up {empty} [goldCat]
+                      + {goldDog} [empty] up {empty} [goldDog]
+                      + {goldHorse} [empty] up {empty} [goldHorse]
+                      + {goldCamel} [empty] up {empty} [goldCamel]
+                      + {goldElephant} [empty] up {empty} [goldElephant]
+                    )
+                )
+            )
+          + {silverCamel} [empty] (
+                (
+                    left {goldCat, goldDog, goldHorse, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                  + right {goldCat, goldDog, goldHorse, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                  + up {goldCat, goldDog, goldHorse, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                    )
+                  + down {goldCat, goldDog, goldHorse, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                ) [silverCamel]
+              + (
+                    left {empty} [silverCamel] right
+                  + right {empty} [silverCamel] left
+                  + up {empty} [silverCamel] down
+                  + down {empty} [silverCamel] up
+                ) (
+                    left {goldCat, goldDog, goldHorse, goldRabbit} (
+                        {goldRabbit} [empty] right {empty} [goldRabbit]
+                      + {goldCat} [empty] right {empty} [goldCat]
+                      + {goldDog} [empty] right {empty} [goldDog]
+                      + {goldHorse} [empty] right {empty} [goldHorse]
+                      + {goldCamel} [empty] right {empty} [goldCamel]
+                      + {goldElephant} [empty] right {empty} [goldElephant]
+                    )
+                  + right {goldCat, goldDog, goldHorse, goldRabbit} (
+                        {goldRabbit} [empty] left {empty} [goldRabbit]
+                      + {goldCat} [empty] left {empty} [goldCat]
+                      + {goldDog} [empty] left {empty} [goldDog]
+                      + {goldHorse} [empty] left {empty} [goldHorse]
+                      + {goldCamel} [empty] left {empty} [goldCamel]
+                      + {goldElephant} [empty] left {empty} [goldElephant]
+                    )
+                  + up {goldCat, goldDog, goldHorse, goldRabbit} (
+                        {goldRabbit} [empty] down {empty} [goldRabbit]
+                      + {goldCat} [empty] down {empty} [goldCat]
+                      + {goldDog} [empty] down {empty} [goldDog]
+                      + {goldHorse} [empty] down {empty} [goldHorse]
+                      + {goldCamel} [empty] down {empty} [goldCamel]
+                      + {goldElephant} [empty] down {empty} [goldElephant]
+                    )
+                  + down {goldCat, goldDog, goldHorse, goldRabbit} (
+                        {goldRabbit} [empty] up {empty} [goldRabbit]
+                      + {goldCat} [empty] up {empty} [goldCat]
+                      + {goldDog} [empty] up {empty} [goldDog]
+                      + {goldHorse} [empty] up {empty} [goldHorse]
+                      + {goldCamel} [empty] up {empty} [goldCamel]
+                      + {goldElephant} [empty] up {empty} [goldElephant]
+                    )
+                )
+            )
+          + {silverHorse} [empty] (
+                (
+                    left {goldCat, goldDog, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                  + right {goldCat, goldDog, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                  + up {goldCat, goldDog, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                    )
+                  + down {goldCat, goldDog, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                ) [silverHorse]
+              + (
+                    left {empty} [silverHorse] right
+                  + right {empty} [silverHorse] left
+                  + up {empty} [silverHorse] down
+                  + down {empty} [silverHorse] up
+                ) (
+                    left {goldCat, goldDog, goldRabbit} (
+                        {goldRabbit} [empty] right {empty} [goldRabbit]
+                      + {goldCat} [empty] right {empty} [goldCat]
+                      + {goldDog} [empty] right {empty} [goldDog]
+                      + {goldHorse} [empty] right {empty} [goldHorse]
+                      + {goldCamel} [empty] right {empty} [goldCamel]
+                      + {goldElephant} [empty] right {empty} [goldElephant]
+                    )
+                  + right {goldCat, goldDog, goldRabbit} (
+                        {goldRabbit} [empty] left {empty} [goldRabbit]
+                      + {goldCat} [empty] left {empty} [goldCat]
+                      + {goldDog} [empty] left {empty} [goldDog]
+                      + {goldHorse} [empty] left {empty} [goldHorse]
+                      + {goldCamel} [empty] left {empty} [goldCamel]
+                      + {goldElephant} [empty] left {empty} [goldElephant]
+                    )
+                  + up {goldCat, goldDog, goldRabbit} (
+                        {goldRabbit} [empty] down {empty} [goldRabbit]
+                      + {goldCat} [empty] down {empty} [goldCat]
+                      + {goldDog} [empty] down {empty} [goldDog]
+                      + {goldHorse} [empty] down {empty} [goldHorse]
+                      + {goldCamel} [empty] down {empty} [goldCamel]
+                      + {goldElephant} [empty] down {empty} [goldElephant]
+                    )
+                  + down {goldCat, goldDog, goldRabbit} (
+                        {goldRabbit} [empty] up {empty} [goldRabbit]
+                      + {goldCat} [empty] up {empty} [goldCat]
+                      + {goldDog} [empty] up {empty} [goldDog]
+                      + {goldHorse} [empty] up {empty} [goldHorse]
+                      + {goldCamel} [empty] up {empty} [goldCamel]
+                      + {goldElephant} [empty] up {empty} [goldElephant]
+                    )
+                )
+            )
+          + {silverDog} [empty] (
+                (
+                    left {goldCat, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                  + right {goldCat, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                  + up {goldCat, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                    )
+                  + down {goldCat, goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                ) [silverDog]
+              + (
+                    left {empty} [silverDog] right
+                  + right {empty} [silverDog] left
+                  + up {empty} [silverDog] down
+                  + down {empty} [silverDog] up
+                ) (
+                    left {goldCat, goldRabbit} (
+                        {goldRabbit} [empty] right {empty} [goldRabbit]
+                      + {goldCat} [empty] right {empty} [goldCat]
+                      + {goldDog} [empty] right {empty} [goldDog]
+                      + {goldHorse} [empty] right {empty} [goldHorse]
+                      + {goldCamel} [empty] right {empty} [goldCamel]
+                      + {goldElephant} [empty] right {empty} [goldElephant]
+                    )
+                  + right {goldCat, goldRabbit} (
+                        {goldRabbit} [empty] left {empty} [goldRabbit]
+                      + {goldCat} [empty] left {empty} [goldCat]
+                      + {goldDog} [empty] left {empty} [goldDog]
+                      + {goldHorse} [empty] left {empty} [goldHorse]
+                      + {goldCamel} [empty] left {empty} [goldCamel]
+                      + {goldElephant} [empty] left {empty} [goldElephant]
+                    )
+                  + up {goldCat, goldRabbit} (
+                        {goldRabbit} [empty] down {empty} [goldRabbit]
+                      + {goldCat} [empty] down {empty} [goldCat]
+                      + {goldDog} [empty] down {empty} [goldDog]
+                      + {goldHorse} [empty] down {empty} [goldHorse]
+                      + {goldCamel} [empty] down {empty} [goldCamel]
+                      + {goldElephant} [empty] down {empty} [goldElephant]
+                    )
+                  + down {goldCat, goldRabbit} (
+                        {goldRabbit} [empty] up {empty} [goldRabbit]
+                      + {goldCat} [empty] up {empty} [goldCat]
+                      + {goldDog} [empty] up {empty} [goldDog]
+                      + {goldHorse} [empty] up {empty} [goldHorse]
+                      + {goldCamel} [empty] up {empty} [goldCamel]
+                      + {goldElephant} [empty] up {empty} [goldElephant]
+                    )
+                )
+            )
+          + {silverCat} [empty] (
+                (
+                    left {goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                  + right {goldRabbit} (
+                        (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                  + up {goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] up {empty} [goldRabbit]
+                          + {goldCat} [empty] up {empty} [goldCat]
+                          + {goldDog} [empty] up {empty} [goldDog]
+                          + {goldHorse} [empty] up {empty} [goldHorse]
+                          + {goldCamel} [empty] up {empty} [goldCamel]
+                          + {goldElephant} [empty] up {empty} [goldElephant]
+                        ) down
+                    )
+                  + down {goldRabbit} (
+                        (
+                            {goldRabbit} [empty] left {empty} [goldRabbit]
+                          + {goldCat} [empty] left {empty} [goldCat]
+                          + {goldDog} [empty] left {empty} [goldDog]
+                          + {goldHorse} [empty] left {empty} [goldHorse]
+                          + {goldCamel} [empty] left {empty} [goldCamel]
+                          + {goldElephant} [empty] left {empty} [goldElephant]
+                        ) right
+                      + (
+                            {goldRabbit} [empty] right {empty} [goldRabbit]
+                          + {goldCat} [empty] right {empty} [goldCat]
+                          + {goldDog} [empty] right {empty} [goldDog]
+                          + {goldHorse} [empty] right {empty} [goldHorse]
+                          + {goldCamel} [empty] right {empty} [goldCamel]
+                          + {goldElephant} [empty] right {empty} [goldElephant]
+                        ) left
+                      + (
+                            {goldRabbit} [empty] down {empty} [goldRabbit]
+                          + {goldCat} [empty] down {empty} [goldCat]
+                          + {goldDog} [empty] down {empty} [goldDog]
+                          + {goldHorse} [empty] down {empty} [goldHorse]
+                          + {goldCamel} [empty] down {empty} [goldCamel]
+                          + {goldElephant} [empty] down {empty} [goldElephant]
+                        ) up
+                    )
+                ) [silverCat]
+              + (
+                    left {empty} [silverCat] right
+                  + right {empty} [silverCat] left
+                  + up {empty} [silverCat] down
+                  + down {empty} [silverCat] up
+                ) (
+                    left {goldRabbit} (
+                        {goldRabbit} [empty] right {empty} [goldRabbit]
+                      + {goldCat} [empty] right {empty} [goldCat]
+                      + {goldDog} [empty] right {empty} [goldDog]
+                      + {goldHorse} [empty] right {empty} [goldHorse]
+                      + {goldCamel} [empty] right {empty} [goldCamel]
+                      + {goldElephant} [empty] right {empty} [goldElephant]
+                    )
+                  + right {goldRabbit} (
+                        {goldRabbit} [empty] left {empty} [goldRabbit]
+                      + {goldCat} [empty] left {empty} [goldCat]
+                      + {goldDog} [empty] left {empty} [goldDog]
+                      + {goldHorse} [empty] left {empty} [goldHorse]
+                      + {goldCamel} [empty] left {empty} [goldCamel]
+                      + {goldElephant} [empty] left {empty} [goldElephant]
+                    )
+                  + up {goldRabbit} (
+                        {goldRabbit} [empty] down {empty} [goldRabbit]
+                      + {goldCat} [empty] down {empty} [goldCat]
+                      + {goldDog} [empty] down {empty} [goldDog]
+                      + {goldHorse} [empty] down {empty} [goldHorse]
+                      + {goldCamel} [empty] down {empty} [goldCamel]
+                      + {goldElephant} [empty] down {empty} [goldElephant]
+                    )
+                  + down {goldRabbit} (
+                        {goldRabbit} [empty] up {empty} [goldRabbit]
+                      + {goldCat} [empty] up {empty} [goldCat]
+                      + {goldDog} [empty] up {empty} [goldDog]
+                      + {goldHorse} [empty] up {empty} [goldHorse]
+                      + {goldCamel} [empty] up {empty} [goldCamel]
+                      + {goldElephant} [empty] up {empty} [goldElephant]
+                    )
+                )
+            )
+        )
+    )
+    (left* + right*)
+    (up* + down*)
+    left
+    left
+    left
+    left
+    left
+    left
+    left
+    up
+    up
+    up
+    up
+    up
+    up
+    up
+    right
+    right
+    down
+    down
+    (
+        {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit} (
+            {?
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
+            {?
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {empty}
+    )
+    right
+    right
+    right
+    (
+        {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit} (
+            {?
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
+            {?
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {empty}
+    )
+    down
+    down
+    down
+    (
+        {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit} (
+            {?
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
+            {?
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {empty}
+    )
+    left
+    left
+    left
+    (
+        {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit} (
+            {?
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
+            {?
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            }
+          + {!
+              (left + right + up + down)
+              {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
+            } [empty] [$ changed = 1]
+        )
+      + {empty}
+    )
+    (
+        {$ goldRabbit > 0} {$ silverRabbit > 0} {!
+          (left* + right*)
+          (up* + down*)
+          {! down}
+          {silverRabbit}
+        } {!
+          (left* + right*) (up* + down*) {! up} {goldRabbit}
+        }
+      + (
+            {$ goldRabbit == 0}
+          + {?
+              (left* + right*)
+              (up* + down*)
+              {! down}
+              {silverRabbit}
+            }
+        ) [$ silver = 100] [$ gold = 0] ->> {}
+      + (
+            {$ silverRabbit == 0}
+          + {?
+              (left* + right*) (up* + down*) {! up} {goldRabbit}
+            }
+        ) [$ gold = 100] [$ silver = 0] ->> {}
+    )
+  )*
+  (
+      {$ changed == 1}
+    + {$ steps == 1}
+    + {$ steps == 3}
+    + {$ changed == 0} ({$ steps == 0} + {$ steps == 2}) {?
+        (left* + right*)
+        (up* + down*)
+        {!
+            {empty} backLayer {empty}
+          + {goldElephant} backLayer {goldElephant}
+          + {goldCamel} backLayer {goldCamel}
+          + {goldHorse} backLayer {goldHorse}
+          + {goldDog} backLayer {goldDog}
+          + {goldCat} backLayer {goldCat}
+          + {goldRabbit} backLayer {goldRabbitSecond}
+          + {silverElephant} backLayer {silverElephant}
+          + {silverCamel} backLayer {silverCamel}
+          + {silverHorse} backLayer {silverHorse}
+          + {silverDog} backLayer {silverDog}
+          + {silverCat} backLayer {silverCat}
+          + {silverRabbit} backLayer {silverRabbitSecond}
+        }
+      }
+  )
+  ->>
+  (
+      {$ turn < 199} [$ silver = 100] [$ gold = 0]
+    + {$ turn == 199} [$ silver = 50] [$ gold = 50] ->> {}
+  )
+  [$ turn = (turn + 1)]
+)*

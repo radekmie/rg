@@ -1,0 +1,1453 @@
+#board =
+  hx4y0[northPiece]{southEast:hx5y1,southWest:hx4y1}
+  hx4y1[northPiece]{east:hx5y1,northEast:hx4y0,southEast:hx5y2,southWest:hx4y2}
+  hx5y1[northPiece]{northWest:hx4y0,southEast:hx6y2,southWest:hx5y2,west:hx4y1}
+  hx4y2[northPiece]{east:hx5y2,northEast:hx4y1,southEast:hx5y3,southWest:hx4y3}
+  hx5y2[northPiece]{east:hx6y2,northEast:hx5y1,northWest:hx4y1,southEast:hx6y3,southWest:hx5y3,west:hx4y2}
+  hx6y2[northPiece]{northWest:hx5y1,southEast:hx7y3,southWest:hx6y3,west:hx5y2}
+  hx4y3[northPiece]{east:hx5y3,northEast:hx4y2,southEast:hx5y4,southWest:hx4y4}
+  hx5y3[northPiece]{east:hx6y3,northEast:hx5y2,northWest:hx4y2,southEast:hx6y4,southWest:hx5y4,west:hx4y3}
+  hx6y3[northPiece]{east:hx7y3,northEast:hx6y2,northWest:hx5y2,southEast:hx7y4,southWest:hx6y4,west:hx5y3}
+  hx7y3[northPiece]{northWest:hx6y2,southEast:hx8y4,southWest:hx7y4,west:hx6y3}
+  hx0y4[northWestPiece]{east:hx1y4,southEast:hx1y5}
+  hx1y4[northWestPiece]{east:hx2y4,southEast:hx2y5,southWest:hx1y5,west:hx0y4}
+  hx2y4[northWestPiece]{east:hx3y4,southEast:hx3y5,southWest:hx2y5,west:hx1y4}
+  hx3y4[northWestPiece]{east:hx4y4,southEast:hx4y5,southWest:hx3y5,west:hx2y4}
+  hx4y4[empty]{east:hx5y4,northEast:hx4y3,southEast:hx5y5,southWest:hx4y5,west:hx3y4}
+  hx5y4[empty]{east:hx6y4,northEast:hx5y3,northWest:hx4y3,southEast:hx6y5,southWest:hx5y5,west:hx4y4}
+  hx6y4[empty]{east:hx7y4,northEast:hx6y3,northWest:hx5y3,southEast:hx7y5,southWest:hx6y5,west:hx5y4}
+  hx7y4[empty]{east:hx8y4,northEast:hx7y3,northWest:hx6y3,southEast:hx8y5,southWest:hx7y5,west:hx6y4}
+  hx8y4[empty]{east:hx9y4,northWest:hx7y3,southEast:hx9y5,southWest:hx8y5,west:hx7y4}
+  hx9y4[northEastPiece]{east:hx10y4,southEast:hx10y5,southWest:hx9y5,west:hx8y4}
+  hx10y4[northEastPiece]{east:hx11y4,southEast:hx11y5,southWest:hx10y5,west:hx9y4}
+  hx11y4[northEastPiece]{east:hx12y4,southEast:hx12y5,southWest:hx11y5,west:hx10y4}
+  hx12y4[northEastPiece]{southWest:hx12y5,west:hx11y4}
+  hx1y5[northWestPiece]{east:hx2y5,northEast:hx1y4,northWest:hx0y4,southEast:hx2y6}
+  hx2y5[northWestPiece]{east:hx3y5,northEast:hx2y4,northWest:hx1y4,southEast:hx3y6,southWest:hx2y6,west:hx1y5}
+  hx3y5[northWestPiece]{east:hx4y5,northEast:hx3y4,northWest:hx2y4,southEast:hx4y6,southWest:hx3y6,west:hx2y5}
+  hx4y5[empty]{east:hx5y5,northEast:hx4y4,northWest:hx3y4,southEast:hx5y6,southWest:hx4y6,west:hx3y5}
+  hx5y5[empty]{east:hx6y5,northEast:hx5y4,northWest:hx4y4,southEast:hx6y6,southWest:hx5y6,west:hx4y5}
+  hx6y5[empty]{east:hx7y5,northEast:hx6y4,northWest:hx5y4,southEast:hx7y6,southWest:hx6y6,west:hx5y5}
+  hx7y5[empty]{east:hx8y5,northEast:hx7y4,northWest:hx6y4,southEast:hx8y6,southWest:hx7y6,west:hx6y5}
+  hx8y5[empty]{east:hx9y5,northEast:hx8y4,northWest:hx7y4,southEast:hx9y6,southWest:hx8y6,west:hx7y5}
+  hx9y5[empty]{east:hx10y5,northEast:hx9y4,northWest:hx8y4,southEast:hx10y6,southWest:hx9y6,west:hx8y5}
+  hx10y5[northEastPiece]{east:hx11y5,northEast:hx10y4,northWest:hx9y4,southEast:hx11y6,southWest:hx10y6,west:hx9y5}
+  hx11y5[northEastPiece]{east:hx12y5,northEast:hx11y4,northWest:hx10y4,southEast:hx12y6,southWest:hx11y6,west:hx10y5}
+  hx12y5[northEastPiece]{northEast:hx12y4,northWest:hx11y4,southWest:hx12y6,west:hx11y5}
+  hx2y6[northWestPiece]{east:hx3y6,northEast:hx2y5,northWest:hx1y5,southEast:hx3y7}
+  hx3y6[northWestPiece]{east:hx4y6,northEast:hx3y5,northWest:hx2y5,southEast:hx4y7,southWest:hx3y7,west:hx2y6}
+  hx4y6[empty]{east:hx5y6,northEast:hx4y5,northWest:hx3y5,southEast:hx5y7,southWest:hx4y7,west:hx3y6}
+  hx5y6[empty]{east:hx6y6,northEast:hx5y5,northWest:hx4y5,southEast:hx6y7,southWest:hx5y7,west:hx4y6}
+  hx6y6[empty]{east:hx7y6,northEast:hx6y5,northWest:hx5y5,southEast:hx7y7,southWest:hx6y7,west:hx5y6}
+  hx7y6[empty]{east:hx8y6,northEast:hx7y5,northWest:hx6y5,southEast:hx8y7,southWest:hx7y7,west:hx6y6}
+  hx8y6[empty]{east:hx9y6,northEast:hx8y5,northWest:hx7y5,southEast:hx9y7,southWest:hx8y7,west:hx7y6}
+  hx9y6[empty]{east:hx10y6,northEast:hx9y5,northWest:hx8y5,southEast:hx10y7,southWest:hx9y7,west:hx8y6}
+  hx10y6[empty]{east:hx11y6,northEast:hx10y5,northWest:hx9y5,southEast:hx11y7,southWest:hx10y7,west:hx9y6}
+  hx11y6[northEastPiece]{east:hx12y6,northEast:hx11y5,northWest:hx10y5,southEast:hx12y7,southWest:hx11y7,west:hx10y6}
+  hx12y6[northEastPiece]{northEast:hx12y5,northWest:hx11y5,southWest:hx12y7,west:hx11y6}
+  hx3y7[northWestPiece]{east:hx4y7,northEast:hx3y6,northWest:hx2y6,southEast:hx4y8}
+  hx4y7[empty]{east:hx5y7,northEast:hx4y6,northWest:hx3y6,southEast:hx5y8,southWest:hx4y8,west:hx3y7}
+  hx5y7[empty]{east:hx6y7,northEast:hx5y6,northWest:hx4y6,southEast:hx6y8,southWest:hx5y8,west:hx4y7}
+  hx6y7[empty]{east:hx7y7,northEast:hx6y6,northWest:hx5y6,southEast:hx7y8,southWest:hx6y8,west:hx5y7}
+  hx7y7[empty]{east:hx8y7,northEast:hx7y6,northWest:hx6y6,southEast:hx8y8,southWest:hx7y8,west:hx6y7}
+  hx8y7[empty]{east:hx9y7,northEast:hx8y6,northWest:hx7y6,southEast:hx9y8,southWest:hx8y8,west:hx7y7}
+  hx9y7[empty]{east:hx10y7,northEast:hx9y6,northWest:hx8y6,southEast:hx10y8,southWest:hx9y8,west:hx8y7}
+  hx10y7[empty]{east:hx11y7,northEast:hx10y6,northWest:hx9y6,southEast:hx11y8,southWest:hx10y8,west:hx9y7}
+  hx11y7[empty]{east:hx12y7,northEast:hx11y6,northWest:hx10y6,southEast:hx12y8,southWest:hx11y8,west:hx10y7}
+  hx12y7[northEastPiece]{northEast:hx12y6,northWest:hx11y6,southWest:hx12y8,west:hx11y7}
+  hx4y8[empty]{east:hx5y8,northEast:hx4y7,northWest:hx3y7,southEast:hx4y9,southWest:hx3y9}
+  hx5y8[empty]{east:hx6y8,northEast:hx5y7,northWest:hx4y7,southEast:hx5y9,southWest:hx4y9,west:hx4y8}
+  hx6y8[empty]{east:hx7y8,northEast:hx6y7,northWest:hx5y7,southEast:hx6y9,southWest:hx5y9,west:hx5y8}
+  hx7y8[empty]{east:hx8y8,northEast:hx7y7,northWest:hx6y7,southEast:hx7y9,southWest:hx6y9,west:hx6y8}
+  hx8y8[empty]{east:hx9y8,northEast:hx8y7,northWest:hx7y7,southEast:hx8y9,southWest:hx7y9,west:hx7y8}
+  hx9y8[empty]{east:hx10y8,northEast:hx9y7,northWest:hx8y7,southEast:hx9y9,southWest:hx8y9,west:hx8y8}
+  hx10y8[empty]{east:hx11y8,northEast:hx10y7,northWest:hx9y7,southEast:hx10y9,southWest:hx9y9,west:hx9y8}
+  hx11y8[empty]{east:hx12y8,northEast:hx11y7,northWest:hx10y7,southEast:hx11y9,southWest:hx10y9,west:hx10y8}
+  hx12y8[empty]{northEast:hx12y7,northWest:hx11y7,southEast:hx12y9,southWest:hx11y9,west:hx11y8}
+  hx3y9[southWestPiece]{east:hx4y9,northEast:hx4y8,southEast:hx3y10,southWest:hx2y10}
+  hx4y9[empty]{east:hx5y9,northEast:hx5y8,northWest:hx4y8,southEast:hx4y10,southWest:hx3y10,west:hx3y9}
+  hx5y9[empty]{east:hx6y9,northEast:hx6y8,northWest:hx5y8,southEast:hx5y10,southWest:hx4y10,west:hx4y9}
+  hx6y9[empty]{east:hx7y9,northEast:hx7y8,northWest:hx6y8,southEast:hx6y10,southWest:hx5y10,west:hx5y9}
+  hx7y9[empty]{east:hx8y9,northEast:hx8y8,northWest:hx7y8,southEast:hx7y10,southWest:hx6y10,west:hx6y9}
+  hx8y9[empty]{east:hx9y9,northEast:hx9y8,northWest:hx8y8,southEast:hx8y10,southWest:hx7y10,west:hx7y9}
+  hx9y9[empty]{east:hx10y9,northEast:hx10y8,northWest:hx9y8,southEast:hx9y10,southWest:hx8y10,west:hx8y9}
+  hx10y9[empty]{east:hx11y9,northEast:hx11y8,northWest:hx10y8,southEast:hx10y10,southWest:hx9y10,west:hx9y9}
+  hx11y9[empty]{east:hx12y9,northEast:hx12y8,northWest:hx11y8,southEast:hx11y10,southWest:hx10y10,west:hx10y9}
+  hx12y9[southEastPiece]{northWest:hx12y8,southEast:hx12y10,southWest:hx11y10,west:hx11y9}
+  hx2y10[southWestPiece]{east:hx3y10,northEast:hx3y9,southEast:hx2y11,southWest:hx1y11}
+  hx3y10[southWestPiece]{east:hx4y10,northEast:hx4y9,northWest:hx3y9,southEast:hx3y11,southWest:hx2y11,west:hx2y10}
+  hx4y10[empty]{east:hx5y10,northEast:hx5y9,northWest:hx4y9,southEast:hx4y11,southWest:hx3y11,west:hx3y10}
+  hx5y10[empty]{east:hx6y10,northEast:hx6y9,northWest:hx5y9,southEast:hx5y11,southWest:hx4y11,west:hx4y10}
+  hx6y10[empty]{east:hx7y10,northEast:hx7y9,northWest:hx6y9,southEast:hx6y11,southWest:hx5y11,west:hx5y10}
+  hx7y10[empty]{east:hx8y10,northEast:hx8y9,northWest:hx7y9,southEast:hx7y11,southWest:hx6y11,west:hx6y10}
+  hx8y10[empty]{east:hx9y10,northEast:hx9y9,northWest:hx8y9,southEast:hx8y11,southWest:hx7y11,west:hx7y10}
+  hx9y10[empty]{east:hx10y10,northEast:hx10y9,northWest:hx9y9,southEast:hx9y11,southWest:hx8y11,west:hx8y10}
+  hx10y10[empty]{east:hx11y10,northEast:hx11y9,northWest:hx10y9,southEast:hx10y11,southWest:hx9y11,west:hx9y10}
+  hx11y10[southEastPiece]{east:hx12y10,northEast:hx12y9,northWest:hx11y9,southEast:hx11y11,southWest:hx10y11,west:hx10y10}
+  hx12y10[southEastPiece]{northWest:hx12y9,southEast:hx12y11,southWest:hx11y11,west:hx11y10}
+  hx1y11[southWestPiece]{east:hx2y11,northEast:hx2y10,southEast:hx1y12,southWest:hx0y12}
+  hx2y11[southWestPiece]{east:hx3y11,northEast:hx3y10,northWest:hx2y10,southEast:hx2y12,southWest:hx1y12,west:hx1y11}
+  hx3y11[southWestPiece]{east:hx4y11,northEast:hx4y10,northWest:hx3y10,southEast:hx3y12,southWest:hx2y12,west:hx2y11}
+  hx4y11[empty]{east:hx5y11,northEast:hx5y10,northWest:hx4y10,southEast:hx4y12,southWest:hx3y12,west:hx3y11}
+  hx5y11[empty]{east:hx6y11,northEast:hx6y10,northWest:hx5y10,southEast:hx5y12,southWest:hx4y12,west:hx4y11}
+  hx6y11[empty]{east:hx7y11,northEast:hx7y10,northWest:hx6y10,southEast:hx6y12,southWest:hx5y12,west:hx5y11}
+  hx7y11[empty]{east:hx8y11,northEast:hx8y10,northWest:hx7y10,southEast:hx7y12,southWest:hx6y12,west:hx6y11}
+  hx8y11[empty]{east:hx9y11,northEast:hx9y10,northWest:hx8y10,southEast:hx8y12,southWest:hx7y12,west:hx7y11}
+  hx9y11[empty]{east:hx10y11,northEast:hx10y10,northWest:hx9y10,southEast:hx9y12,southWest:hx8y12,west:hx8y11}
+  hx10y11[southEastPiece]{east:hx11y11,northEast:hx11y10,northWest:hx10y10,southEast:hx10y12,southWest:hx9y12,west:hx9y11}
+  hx11y11[southEastPiece]{east:hx12y11,northEast:hx12y10,northWest:hx11y10,southEast:hx11y12,southWest:hx10y12,west:hx10y11}
+  hx12y11[southEastPiece]{northWest:hx12y10,southEast:hx12y12,southWest:hx11y12,west:hx11y11}
+  hx0y12[southWestPiece]{east:hx1y12,northEast:hx1y11}
+  hx1y12[southWestPiece]{east:hx2y12,northEast:hx2y11,northWest:hx1y11,west:hx0y12}
+  hx2y12[southWestPiece]{east:hx3y12,northEast:hx3y11,northWest:hx2y11,west:hx1y12}
+  hx3y12[southWestPiece]{east:hx4y12,northEast:hx4y11,northWest:hx3y11,west:hx2y12}
+  hx4y12[empty]{east:hx5y12,northEast:hx5y11,northWest:hx4y11,southEast:hx4y13,west:hx3y12}
+  hx5y12[empty]{east:hx6y12,northEast:hx6y11,northWest:hx5y11,southEast:hx5y13,southWest:hx4y13,west:hx4y12}
+  hx6y12[empty]{east:hx7y12,northEast:hx7y11,northWest:hx6y11,southEast:hx6y13,southWest:hx5y13,west:hx5y12}
+  hx7y12[empty]{east:hx8y12,northEast:hx8y11,northWest:hx7y11,southEast:hx7y13,southWest:hx6y13,west:hx6y12}
+  hx8y12[empty]{east:hx9y12,northEast:hx9y11,northWest:hx8y11,southWest:hx7y13,west:hx7y12}
+  hx9y12[southEastPiece]{east:hx10y12,northEast:hx10y11,northWest:hx9y11,west:hx8y12}
+  hx10y12[southEastPiece]{east:hx11y12,northEast:hx11y11,northWest:hx10y11,west:hx9y12}
+  hx11y12[southEastPiece]{east:hx12y12,northEast:hx12y11,northWest:hx11y11,west:hx10y12}
+  hx12y12[southEastPiece]{northWest:hx12y11,west:hx11y12}
+  hx4y13[southPiece]{east:hx5y13,northEast:hx5y12,northWest:hx4y12,southEast:hx4y14}
+  hx5y13[southPiece]{east:hx6y13,northEast:hx6y12,northWest:hx5y12,southEast:hx5y14,southWest:hx4y14,west:hx4y13}
+  hx6y13[southPiece]{east:hx7y13,northEast:hx7y12,northWest:hx6y12,southEast:hx6y14,southWest:hx5y14,west:hx5y13}
+  hx7y13[southPiece]{northEast:hx8y12,northWest:hx7y12,southWest:hx6y14,west:hx6y13}
+  hx4y14[southPiece]{east:hx5y14,northEast:hx5y13,northWest:hx4y13,southEast:hx4y15}
+  hx5y14[southPiece]{east:hx6y14,northEast:hx6y13,northWest:hx5y13,southEast:hx5y15,southWest:hx4y15,west:hx4y14}
+  hx6y14[southPiece]{northEast:hx7y13,northWest:hx6y13,southWest:hx5y15,west:hx5y14}
+  hx4y15[southPiece]{east:hx5y15,northEast:hx5y14,northWest:hx4y14,southEast:hx4y16}
+  hx5y15[southPiece]{northEast:hx6y14,northWest:hx5y14,southWest:hx4y16,west:hx4y15}
+  hx4y16[southPiece]{northEast:hx5y15,northWest:hx4y15}
+#players = northPlayer(100), northEastPlayer(100), southEastPlayer(100), southPlayer(100), southWestPlayer(100), northWestPlayer(100)
+#pieces = empty, northEastPiece, northPiece, northWestPiece, southEastPiece, southPiece, southWestPiece
+#variables = turn(200)
+#rules = [$ southPlayer = 50]
+[$ northPlayer = 50]
+[$ northWestPlayer = 50]
+[$ northEastPlayer = 50]
+[$ southWestPlayer = 50]
+[$ southEastPlayer = 50]
+(
+  (
+      {$ northPiece > 0} (
+          {?
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      southEast
+                    + southWest
+                    + west
+                    + east
+                    + {!
+                        {?
+                          (
+                              southWest southWest southWest
+                            + southWest southWest southEast
+                            + southWest southEast southEast
+                            + southEast southEast southEast
+                          )
+                          {! southEast + southWest + east + west}
+                        }
+                      } (northWest + northEast)
+                  ) {empty}
+                + (
+                      southEast {! {empty}} southEast {empty}
+                    + southWest {! {empty}} southWest {empty}
+                    + west {! {empty}} west {empty}
+                    + east {! {empty}} east {empty}
+                    + {!
+                          {?
+                            (
+                                southWest southWest southWest
+                              + southWest southWest southEast
+                              + southWest southEast southEast
+                              + southEast southEast southEast
+                            )
+                            {! southEast + southWest + east + west}
+                          }
+                        + {?
+                            (
+                                southWest southWest
+                              + southWest southEast
+                              + southEast southEast
+                            )
+                            {! southEast + southWest + east + west}
+                          }
+                      } (
+                          northWest {! {empty}} northWest {empty}
+                        + northEast {! {empty}} northEast {empty}
+                      )
+                  )*
+              )
+            }
+          } ->northPlayer (
+            northWest + northEast + east + southEast + southWest + west
+          )* {northPiece} [empty] (
+              (
+                  southEast
+                + southWest
+                + west
+                + east
+                + {!
+                    {?
+                      (
+                          southWest southWest southWest
+                        + southWest southWest southEast
+                        + southWest southEast southEast
+                        + southEast southEast southEast
+                      )
+                      {! southEast + southWest + east + west}
+                    }
+                  } (northWest + northEast)
+              ) {empty}
+            + (
+                  southEast {! {empty}} southEast {empty}
+                + southWest {! {empty}} southWest {empty}
+                + west {! {empty}} west {empty}
+                + east {! {empty}} east {empty}
+                + {!
+                      {?
+                        (
+                            southWest southWest southWest
+                          + southWest southWest southEast
+                          + southWest southEast southEast
+                          + southEast southEast southEast
+                        )
+                        {! southEast + southWest + east + west}
+                      }
+                    + {?
+                        (
+                            southWest southWest
+                          + southWest southEast
+                          + southEast southEast
+                        )
+                        {! southEast + southWest + east + west}
+                      }
+                  } (
+                      northWest {! {empty}} northWest {empty}
+                    + northEast {! {empty}} northEast {empty}
+                  )
+              )*
+          ) ->> [northPiece] (
+              {?
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! southEast + southWest + east + west}
+                {northPiece}
+                northEast
+                {northPiece}
+                northEast
+                {northPiece}
+                northEast
+                {northPiece}
+                west
+                {northPiece}
+                west
+                {northPiece}
+                west
+                {northPiece}
+                southEast
+                {northPiece}
+                southEast
+                {northPiece}
+                northEast
+                {northPiece}
+              } [$ southPlayer = 0] [$ northPlayer = 0] [$ northWestPlayer = 0] [$ northEastPlayer = 0] [$ southWestPlayer = 0] [$ southEastPlayer = 0] [$ northPlayer = 100] ->> {}
+            + {!
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! southEast + southWest + east + west}
+                {northPiece}
+                northEast
+                {northPiece}
+                northEast
+                {northPiece}
+                northEast
+                {northPiece}
+                west
+                {northPiece}
+                west
+                {northPiece}
+                west
+                {northPiece}
+                southEast
+                {northPiece}
+                southEast
+                {northPiece}
+                northEast
+                {northPiece}
+              }
+          )
+        + {!
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      southEast
+                    + southWest
+                    + west
+                    + east
+                    + {!
+                        {?
+                          (
+                              southWest southWest southWest
+                            + southWest southWest southEast
+                            + southWest southEast southEast
+                            + southEast southEast southEast
+                          )
+                          {! southEast + southWest + east + west}
+                        }
+                      } (northWest + northEast)
+                  ) {empty}
+                + (
+                      southEast {! {empty}} southEast {empty}
+                    + southWest {! {empty}} southWest {empty}
+                    + west {! {empty}} west {empty}
+                    + east {! {empty}} east {empty}
+                    + {!
+                          {?
+                            (
+                                southWest southWest southWest
+                              + southWest southWest southEast
+                              + southWest southEast southEast
+                              + southEast southEast southEast
+                            )
+                            {! southEast + southWest + east + west}
+                          }
+                        + {?
+                            (
+                                southWest southWest
+                              + southWest southEast
+                              + southEast southEast
+                            )
+                            {! southEast + southWest + east + west}
+                          }
+                      } (
+                          northWest {! {empty}} northWest {empty}
+                        + northEast {! {empty}} northEast {empty}
+                      )
+                  )*
+              )
+            }
+          } (
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {northPiece}
+            [empty]
+            ->>
+          )* {!
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {northPiece}
+          } (
+            northWest + northEast + east + southEast + southWest + west
+          )* {! northWest + northEast + west + east} [$ northPlayer = 0]
+      )
+    + {$ northPiece == 0}
+  )
+  ->>
+  [$ turn = (turn + 1)]
+  (
+      {$ northEastPiece > 0} (
+          {?
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      southWest
+                    + west
+                    + northWest
+                    + southEast
+                    + {!
+                        {?
+                          (
+                              west west west
+                            + west west southWest
+                            + west southWest southWest
+                            + southWest southWest southWest
+                          )
+                          {! southWest + west + southEast + northWest}
+                        }
+                      } (northEast + east)
+                  ) {empty}
+                + (
+                      southWest {! {empty}} southWest {empty}
+                    + west {! {empty}} west {empty}
+                    + northWest {! {empty}} northWest {empty}
+                    + southEast {! {empty}} southEast {empty}
+                    + {!
+                          {?
+                            (
+                                west west west
+                              + west west southWest
+                              + west southWest southWest
+                              + southWest southWest southWest
+                            )
+                            {! southWest + west + southEast + northWest}
+                          }
+                        + {?
+                            (west west + west southWest + southWest southWest)
+                            {! southWest + west + southEast + northWest}
+                          }
+                      } (
+                          northEast {! {empty}} northEast {empty}
+                        + east {! {empty}} east {empty}
+                      )
+                  )*
+              )
+            }
+          } ->northEastPlayer (
+            northWest + northEast + east + southEast + southWest + west
+          )* {northEastPiece} [empty] (
+              (
+                  southWest
+                + west
+                + northWest
+                + southEast
+                + {!
+                    {?
+                      (
+                          west west west
+                        + west west southWest
+                        + west southWest southWest
+                        + southWest southWest southWest
+                      )
+                      {! southWest + west + southEast + northWest}
+                    }
+                  } (northEast + east)
+              ) {empty}
+            + (
+                  southWest {! {empty}} southWest {empty}
+                + west {! {empty}} west {empty}
+                + northWest {! {empty}} northWest {empty}
+                + southEast {! {empty}} southEast {empty}
+                + {!
+                      {?
+                        (
+                            west west west
+                          + west west southWest
+                          + west southWest southWest
+                          + southWest southWest southWest
+                        )
+                        {! southWest + west + southEast + northWest}
+                      }
+                    + {?
+                        (west west + west southWest + southWest southWest)
+                        {! southWest + west + southEast + northWest}
+                      }
+                  } (
+                      northEast {! {empty}} northEast {empty}
+                    + east {! {empty}} east {empty}
+                  )
+              )*
+          ) ->> [northEastPiece] (
+              {?
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! southWest + west + southEast + northWest}
+                {northEastPiece}
+                east
+                {northEastPiece}
+                east
+                {northEastPiece}
+                east
+                {northEastPiece}
+                northWest
+                {northEastPiece}
+                northWest
+                {northEastPiece}
+                northWest
+                {northEastPiece}
+                southWest
+                {northEastPiece}
+                southWest
+                {northEastPiece}
+                east
+                {northEastPiece}
+              } [$ southPlayer = 0] [$ northPlayer = 0] [$ northWestPlayer = 0] [$ northEastPlayer = 0] [$ southWestPlayer = 0] [$ southEastPlayer = 0] [$ northEastPlayer = 100] ->> {}
+            + {!
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! southWest + west + southEast + northWest}
+                {northEastPiece}
+                east
+                {northEastPiece}
+                east
+                {northEastPiece}
+                east
+                {northEastPiece}
+                northWest
+                {northEastPiece}
+                northWest
+                {northEastPiece}
+                northWest
+                {northEastPiece}
+                southWest
+                {northEastPiece}
+                southWest
+                {northEastPiece}
+                east
+                {northEastPiece}
+              }
+          )
+        + {!
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      southWest
+                    + west
+                    + northWest
+                    + southEast
+                    + {!
+                        {?
+                          (
+                              west west west
+                            + west west southWest
+                            + west southWest southWest
+                            + southWest southWest southWest
+                          )
+                          {! southWest + west + southEast + northWest}
+                        }
+                      } (northEast + east)
+                  ) {empty}
+                + (
+                      southWest {! {empty}} southWest {empty}
+                    + west {! {empty}} west {empty}
+                    + northWest {! {empty}} northWest {empty}
+                    + southEast {! {empty}} southEast {empty}
+                    + {!
+                          {?
+                            (
+                                west west west
+                              + west west southWest
+                              + west southWest southWest
+                              + southWest southWest southWest
+                            )
+                            {! southWest + west + southEast + northWest}
+                          }
+                        + {?
+                            (west west + west southWest + southWest southWest)
+                            {! southWest + west + southEast + northWest}
+                          }
+                      } (
+                          northEast {! {empty}} northEast {empty}
+                        + east {! {empty}} east {empty}
+                      )
+                  )*
+              )
+            }
+          } (
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {northEastPiece}
+            [empty]
+            ->>
+          )* {!
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {northEastPiece}
+          } (
+            northWest + northEast + east + southEast + southWest + west
+          )* {! northWest + northEast + west + east} [$ northEastPlayer = 0]
+      )
+    + {$ northEastPiece == 0}
+  )
+  ->>
+  [$ turn = (turn + 1)]
+  (
+      {$ southEastPiece > 0} (
+          {?
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      west
+                    + northWest
+                    + northEast
+                    + southWest
+                    + {!
+                        {?
+                          (
+                              northWest northWest northWest
+                            + northWest northWest west
+                            + northWest west west
+                            + west west west
+                          )
+                          {! west + northWest + southWest + northEast}
+                        }
+                      } (east + southEast)
+                  ) {empty}
+                + (
+                      west {! {empty}} west {empty}
+                    + northWest {! {empty}} northWest {empty}
+                    + northEast {! {empty}} northEast {empty}
+                    + southWest {! {empty}} southWest {empty}
+                    + {!
+                          {?
+                            (
+                                northWest northWest northWest
+                              + northWest northWest west
+                              + northWest west west
+                              + west west west
+                            )
+                            {! west + northWest + southWest + northEast}
+                          }
+                        + {?
+                            (northWest northWest + northWest west + west west)
+                            {! west + northWest + southWest + northEast}
+                          }
+                      } (
+                          east {! {empty}} east {empty}
+                        + southEast {! {empty}} southEast {empty}
+                      )
+                  )*
+              )
+            }
+          } ->southEastPlayer (
+            northWest + northEast + east + southEast + southWest + west
+          )* {southEastPiece} [empty] (
+              (
+                  west
+                + northWest
+                + northEast
+                + southWest
+                + {!
+                    {?
+                      (
+                          northWest northWest northWest
+                        + northWest northWest west
+                        + northWest west west
+                        + west west west
+                      )
+                      {! west + northWest + southWest + northEast}
+                    }
+                  } (east + southEast)
+              ) {empty}
+            + (
+                  west {! {empty}} west {empty}
+                + northWest {! {empty}} northWest {empty}
+                + northEast {! {empty}} northEast {empty}
+                + southWest {! {empty}} southWest {empty}
+                + {!
+                      {?
+                        (
+                            northWest northWest northWest
+                          + northWest northWest west
+                          + northWest west west
+                          + west west west
+                        )
+                        {! west + northWest + southWest + northEast}
+                      }
+                    + {?
+                        (northWest northWest + northWest west + west west)
+                        {! west + northWest + southWest + northEast}
+                      }
+                  } (
+                      east {! {empty}} east {empty}
+                    + southEast {! {empty}} southEast {empty}
+                  )
+              )*
+          ) ->> [southEastPiece] (
+              {?
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! west + northWest + southWest + northEast}
+                {southEastPiece}
+                southEast
+                {southEastPiece}
+                southEast
+                {southEastPiece}
+                southEast
+                {southEastPiece}
+                northEast
+                {southEastPiece}
+                northEast
+                {southEastPiece}
+                northEast
+                {southEastPiece}
+                west
+                {southEastPiece}
+                west
+                {southEastPiece}
+                southEast
+                {southEastPiece}
+              } [$ southPlayer = 0] [$ northPlayer = 0] [$ northWestPlayer = 0] [$ northEastPlayer = 0] [$ southWestPlayer = 0] [$ southEastPlayer = 0] [$ southEastPlayer = 100] ->> {}
+            + {!
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! west + northWest + southWest + northEast}
+                {southEastPiece}
+                southEast
+                {southEastPiece}
+                southEast
+                {southEastPiece}
+                southEast
+                {southEastPiece}
+                northEast
+                {southEastPiece}
+                northEast
+                {southEastPiece}
+                northEast
+                {southEastPiece}
+                west
+                {southEastPiece}
+                west
+                {southEastPiece}
+                southEast
+                {southEastPiece}
+              }
+          )
+        + {!
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      west
+                    + northWest
+                    + northEast
+                    + southWest
+                    + {!
+                        {?
+                          (
+                              northWest northWest northWest
+                            + northWest northWest west
+                            + northWest west west
+                            + west west west
+                          )
+                          {! west + northWest + southWest + northEast}
+                        }
+                      } (east + southEast)
+                  ) {empty}
+                + (
+                      west {! {empty}} west {empty}
+                    + northWest {! {empty}} northWest {empty}
+                    + northEast {! {empty}} northEast {empty}
+                    + southWest {! {empty}} southWest {empty}
+                    + {!
+                          {?
+                            (
+                                northWest northWest northWest
+                              + northWest northWest west
+                              + northWest west west
+                              + west west west
+                            )
+                            {! west + northWest + southWest + northEast}
+                          }
+                        + {?
+                            (northWest northWest + northWest west + west west)
+                            {! west + northWest + southWest + northEast}
+                          }
+                      } (
+                          east {! {empty}} east {empty}
+                        + southEast {! {empty}} southEast {empty}
+                      )
+                  )*
+              )
+            }
+          } (
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {southEastPiece}
+            [empty]
+            ->>
+          )* {!
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {southEastPiece}
+          } (
+            northWest + northEast + east + southEast + southWest + west
+          )* {! northWest + northEast + west + east} [$ southEastPlayer = 0]
+      )
+    + {$ southEastPiece == 0}
+  )
+  ->>
+  [$ turn = (turn + 1)]
+  (
+      {$ southPiece > 0} (
+          {?
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      northWest
+                    + northEast
+                    + east
+                    + west
+                    + {!
+                        {?
+                          (
+                              northEast northEast northEast
+                            + northEast northEast northWest
+                            + northEast northWest northWest
+                            + northWest northWest northWest
+                          )
+                          {! northWest + northEast + west + east}
+                        }
+                      } (southEast + southWest)
+                  ) {empty}
+                + (
+                      northWest {! {empty}} northWest {empty}
+                    + northEast {! {empty}} northEast {empty}
+                    + east {! {empty}} east {empty}
+                    + west {! {empty}} west {empty}
+                    + {!
+                          {?
+                            (
+                                northEast northEast northEast
+                              + northEast northEast northWest
+                              + northEast northWest northWest
+                              + northWest northWest northWest
+                            )
+                            {! northWest + northEast + west + east}
+                          }
+                        + {?
+                            (
+                                northEast northEast
+                              + northEast northWest
+                              + northWest northWest
+                            )
+                            {! northWest + northEast + west + east}
+                          }
+                      } (
+                          southEast {! {empty}} southEast {empty}
+                        + southWest {! {empty}} southWest {empty}
+                      )
+                  )*
+              )
+            }
+          } ->southPlayer (
+            northWest + northEast + east + southEast + southWest + west
+          )* {southPiece} [empty] (
+              (
+                  northWest
+                + northEast
+                + east
+                + west
+                + {!
+                    {?
+                      (
+                          northEast northEast northEast
+                        + northEast northEast northWest
+                        + northEast northWest northWest
+                        + northWest northWest northWest
+                      )
+                      {! northWest + northEast + west + east}
+                    }
+                  } (southEast + southWest)
+              ) {empty}
+            + (
+                  northWest {! {empty}} northWest {empty}
+                + northEast {! {empty}} northEast {empty}
+                + east {! {empty}} east {empty}
+                + west {! {empty}} west {empty}
+                + {!
+                      {?
+                        (
+                            northEast northEast northEast
+                          + northEast northEast northWest
+                          + northEast northWest northWest
+                          + northWest northWest northWest
+                        )
+                        {! northWest + northEast + west + east}
+                      }
+                    + {?
+                        (
+                            northEast northEast
+                          + northEast northWest
+                          + northWest northWest
+                        )
+                        {! northWest + northEast + west + east}
+                      }
+                  } (
+                      southEast {! {empty}} southEast {empty}
+                    + southWest {! {empty}} southWest {empty}
+                  )
+              )*
+          ) ->> [southPiece] (
+              {?
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! northWest + northEast + west + east}
+                {southPiece}
+                southWest
+                {southPiece}
+                southWest
+                {southPiece}
+                southWest
+                {southPiece}
+                east
+                {southPiece}
+                east
+                {southPiece}
+                east
+                {southPiece}
+                northWest
+                {southPiece}
+                northWest
+                {southPiece}
+                southWest
+                {southPiece}
+              } [$ southPlayer = 0] [$ northPlayer = 0] [$ northWestPlayer = 0] [$ northEastPlayer = 0] [$ southWestPlayer = 0] [$ southEastPlayer = 0] [$ southPlayer = 100] ->> {}
+            + {!
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! northWest + northEast + west + east}
+                {southPiece}
+                southWest
+                {southPiece}
+                southWest
+                {southPiece}
+                southWest
+                {southPiece}
+                east
+                {southPiece}
+                east
+                {southPiece}
+                east
+                {southPiece}
+                northWest
+                {southPiece}
+                northWest
+                {southPiece}
+                southWest
+                {southPiece}
+              }
+          )
+        + {!
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      northWest
+                    + northEast
+                    + east
+                    + west
+                    + {!
+                        {?
+                          (
+                              northEast northEast northEast
+                            + northEast northEast northWest
+                            + northEast northWest northWest
+                            + northWest northWest northWest
+                          )
+                          {! northWest + northEast + west + east}
+                        }
+                      } (southEast + southWest)
+                  ) {empty}
+                + (
+                      northWest {! {empty}} northWest {empty}
+                    + northEast {! {empty}} northEast {empty}
+                    + east {! {empty}} east {empty}
+                    + west {! {empty}} west {empty}
+                    + {!
+                          {?
+                            (
+                                northEast northEast northEast
+                              + northEast northEast northWest
+                              + northEast northWest northWest
+                              + northWest northWest northWest
+                            )
+                            {! northWest + northEast + west + east}
+                          }
+                        + {?
+                            (
+                                northEast northEast
+                              + northEast northWest
+                              + northWest northWest
+                            )
+                            {! northWest + northEast + west + east}
+                          }
+                      } (
+                          southEast {! {empty}} southEast {empty}
+                        + southWest {! {empty}} southWest {empty}
+                      )
+                  )*
+              )
+            }
+          } (
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {southPiece}
+            [empty]
+            ->>
+          )* {!
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {southPiece}
+          } (
+            northWest + northEast + east + southEast + southWest + west
+          )* {! northWest + northEast + west + east} [$ southPlayer = 0]
+      )
+    + {$ southPiece == 0}
+  )
+  ->>
+  [$ turn = (turn + 1)]
+  (
+      {$ southWestPiece > 0} (
+          {?
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      northEast
+                    + east
+                    + southEast
+                    + northWest
+                    + {!
+                        {?
+                          (
+                              east east east
+                            + east east northEast
+                            + east northEast northEast
+                            + northEast northEast northEast
+                          )
+                          {! northEast + east + northWest + southEast}
+                        }
+                      } (southWest + west)
+                  ) {empty}
+                + (
+                      northEast {! {empty}} northEast {empty}
+                    + east {! {empty}} east {empty}
+                    + southEast {! {empty}} southEast {empty}
+                    + northWest {! {empty}} northWest {empty}
+                    + {!
+                          {?
+                            (
+                                east east east
+                              + east east northEast
+                              + east northEast northEast
+                              + northEast northEast northEast
+                            )
+                            {! northEast + east + northWest + southEast}
+                          }
+                        + {?
+                            (east east + east northEast + northEast northEast)
+                            {! northEast + east + northWest + southEast}
+                          }
+                      } (
+                          southWest {! {empty}} southWest {empty}
+                        + west {! {empty}} west {empty}
+                      )
+                  )*
+              )
+            }
+          } ->southWestPlayer (
+            northWest + northEast + east + southEast + southWest + west
+          )* {southWestPiece} [empty] (
+              (
+                  northEast
+                + east
+                + southEast
+                + northWest
+                + {!
+                    {?
+                      (
+                          east east east
+                        + east east northEast
+                        + east northEast northEast
+                        + northEast northEast northEast
+                      )
+                      {! northEast + east + northWest + southEast}
+                    }
+                  } (southWest + west)
+              ) {empty}
+            + (
+                  northEast {! {empty}} northEast {empty}
+                + east {! {empty}} east {empty}
+                + southEast {! {empty}} southEast {empty}
+                + northWest {! {empty}} northWest {empty}
+                + {!
+                      {?
+                        (
+                            east east east
+                          + east east northEast
+                          + east northEast northEast
+                          + northEast northEast northEast
+                        )
+                        {! northEast + east + northWest + southEast}
+                      }
+                    + {?
+                        (east east + east northEast + northEast northEast)
+                        {! northEast + east + northWest + southEast}
+                      }
+                  } (
+                      southWest {! {empty}} southWest {empty}
+                    + west {! {empty}} west {empty}
+                  )
+              )*
+          ) ->> [southWestPiece] (
+              {?
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! northEast + east + northWest + southEast}
+                {southWestPiece}
+                west
+                {southWestPiece}
+                west
+                {southWestPiece}
+                west
+                {southWestPiece}
+                southEast
+                {southWestPiece}
+                southEast
+                {southWestPiece}
+                southEast
+                {southWestPiece}
+                northEast
+                {southWestPiece}
+                northEast
+                {southWestPiece}
+                west
+                {southWestPiece}
+              } [$ southPlayer = 0] [$ northPlayer = 0] [$ northWestPlayer = 0] [$ northEastPlayer = 0] [$ southWestPlayer = 0] [$ southEastPlayer = 0] [$ southWestPlayer = 100] ->> {}
+            + {!
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! northEast + east + northWest + southEast}
+                {southWestPiece}
+                west
+                {southWestPiece}
+                west
+                {southWestPiece}
+                west
+                {southWestPiece}
+                southEast
+                {southWestPiece}
+                southEast
+                {southWestPiece}
+                southEast
+                {southWestPiece}
+                northEast
+                {southWestPiece}
+                northEast
+                {southWestPiece}
+                west
+                {southWestPiece}
+              }
+          )
+        + {!
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      northEast
+                    + east
+                    + southEast
+                    + northWest
+                    + {!
+                        {?
+                          (
+                              east east east
+                            + east east northEast
+                            + east northEast northEast
+                            + northEast northEast northEast
+                          )
+                          {! northEast + east + northWest + southEast}
+                        }
+                      } (southWest + west)
+                  ) {empty}
+                + (
+                      northEast {! {empty}} northEast {empty}
+                    + east {! {empty}} east {empty}
+                    + southEast {! {empty}} southEast {empty}
+                    + northWest {! {empty}} northWest {empty}
+                    + {!
+                          {?
+                            (
+                                east east east
+                              + east east northEast
+                              + east northEast northEast
+                              + northEast northEast northEast
+                            )
+                            {! northEast + east + northWest + southEast}
+                          }
+                        + {?
+                            (east east + east northEast + northEast northEast)
+                            {! northEast + east + northWest + southEast}
+                          }
+                      } (
+                          southWest {! {empty}} southWest {empty}
+                        + west {! {empty}} west {empty}
+                      )
+                  )*
+              )
+            }
+          } (
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {southWestPiece}
+            [empty]
+            ->>
+          )* {!
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {southWestPiece}
+          } (
+            northWest + northEast + east + southEast + southWest + west
+          )* {! northWest + northEast + west + east} [$ southWestPlayer = 0]
+      )
+    + {$ southWestPiece == 0}
+  )
+  ->>
+  [$ turn = (turn + 1)]
+  (
+      {$ northWestPiece > 0} (
+          {?
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      east
+                    + southEast
+                    + southWest
+                    + northEast
+                    + {!
+                        {?
+                          (
+                              southEast southEast southEast
+                            + southEast southEast east
+                            + southEast east east
+                            + east east east
+                          )
+                          {! east + southEast + northEast + southWest}
+                        }
+                      } (west + northWest)
+                  ) {empty}
+                + (
+                      east {! {empty}} east {empty}
+                    + southEast {! {empty}} southEast {empty}
+                    + southWest {! {empty}} southWest {empty}
+                    + northEast {! {empty}} northEast {empty}
+                    + {!
+                          {?
+                            (
+                                southEast southEast southEast
+                              + southEast southEast east
+                              + southEast east east
+                              + east east east
+                            )
+                            {! east + southEast + northEast + southWest}
+                          }
+                        + {?
+                            (southEast southEast + southEast east + east east)
+                            {! east + southEast + northEast + southWest}
+                          }
+                      } (
+                          west {! {empty}} west {empty}
+                        + northWest {! {empty}} northWest {empty}
+                      )
+                  )*
+              )
+            }
+          } ->northWestPlayer (
+            northWest + northEast + east + southEast + southWest + west
+          )* {northWestPiece} [empty] (
+              (
+                  east
+                + southEast
+                + southWest
+                + northEast
+                + {!
+                    {?
+                      (
+                          southEast southEast southEast
+                        + southEast southEast east
+                        + southEast east east
+                        + east east east
+                      )
+                      {! east + southEast + northEast + southWest}
+                    }
+                  } (west + northWest)
+              ) {empty}
+            + (
+                  east {! {empty}} east {empty}
+                + southEast {! {empty}} southEast {empty}
+                + southWest {! {empty}} southWest {empty}
+                + northEast {! {empty}} northEast {empty}
+                + {!
+                      {?
+                        (
+                            southEast southEast southEast
+                          + southEast southEast east
+                          + southEast east east
+                          + east east east
+                        )
+                        {! east + southEast + northEast + southWest}
+                      }
+                    + {?
+                        (southEast southEast + southEast east + east east)
+                        {! east + southEast + northEast + southWest}
+                      }
+                  } (
+                      west {! {empty}} west {empty}
+                    + northWest {! {empty}} northWest {empty}
+                  )
+              )*
+          ) ->> [northWestPiece] (
+              {?
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! east + southEast + northEast + southWest}
+                {northWestPiece}
+                northWest
+                {northWestPiece}
+                northWest
+                {northWestPiece}
+                northWest
+                {northWestPiece}
+                southWest
+                {northWestPiece}
+                southWest
+                {northWestPiece}
+                southWest
+                {northWestPiece}
+                east
+                {northWestPiece}
+                east
+                {northWestPiece}
+                northWest
+                {northWestPiece}
+              } [$ southPlayer = 0] [$ northPlayer = 0] [$ northWestPlayer = 0] [$ northEastPlayer = 0] [$ southWestPlayer = 0] [$ southEastPlayer = 0] [$ northWestPlayer = 100] ->> {}
+            + {!
+                (
+                  northWest + northEast + east + southEast + southWest + west
+                )*
+                {! east + southEast + northEast + southWest}
+                {northWestPiece}
+                northWest
+                {northWestPiece}
+                northWest
+                {northWestPiece}
+                northWest
+                {northWestPiece}
+                southWest
+                {northWestPiece}
+                southWest
+                {northWestPiece}
+                southWest
+                {northWestPiece}
+                east
+                {northWestPiece}
+                east
+                {northWestPiece}
+                northWest
+                {northWestPiece}
+              }
+          )
+        + {!
+            {?
+              (
+                northWest + northEast + east + southEast + southWest + west
+              )*
+              (
+                  (
+                      east
+                    + southEast
+                    + southWest
+                    + northEast
+                    + {!
+                        {?
+                          (
+                              southEast southEast southEast
+                            + southEast southEast east
+                            + southEast east east
+                            + east east east
+                          )
+                          {! east + southEast + northEast + southWest}
+                        }
+                      } (west + northWest)
+                  ) {empty}
+                + (
+                      east {! {empty}} east {empty}
+                    + southEast {! {empty}} southEast {empty}
+                    + southWest {! {empty}} southWest {empty}
+                    + northEast {! {empty}} northEast {empty}
+                    + {!
+                          {?
+                            (
+                                southEast southEast southEast
+                              + southEast southEast east
+                              + southEast east east
+                              + east east east
+                            )
+                            {! east + southEast + northEast + southWest}
+                          }
+                        + {?
+                            (southEast southEast + southEast east + east east)
+                            {! east + southEast + northEast + southWest}
+                          }
+                      } (
+                          west {! {empty}} west {empty}
+                        + northWest {! {empty}} northWest {empty}
+                      )
+                  )*
+              )
+            }
+          } (
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {northWestPiece}
+            [empty]
+            ->>
+          )* {!
+            (
+              northWest + northEast + east + southEast + southWest + west
+            )*
+            {northWestPiece}
+          } (
+            northWest + northEast + east + southEast + southWest + west
+          )* {! northWest + northEast + west + east} [$ northWestPlayer = 0]
+      )
+    + {$ northWestPiece == 0}
+  )
+  ->>
+  [$ turn = (turn + 1)]
+)*

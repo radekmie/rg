@@ -1,0 +1,1478 @@
+#board =
+  rx0y0[blackRookUnmoved]{down:rx0y1,right:rx1y0}
+  rx1y0[blackKnight]{down:rx1y1,left:rx0y0,right:rx2y0}
+  rx2y0[blackBishop]{down:rx2y1,left:rx1y0,right:rx3y0}
+  rx3y0[blackQueen]{down:rx3y1,left:rx2y0,right:rx4y0}
+  rx4y0[blackKingUnmoved]{down:rx4y1,left:rx3y0,right:rx5y0}
+  rx5y0[blackBishop]{down:rx5y1,left:rx4y0,right:rx6y0}
+  rx6y0[blackKnight]{down:rx6y1,left:rx5y0,right:rx7y0}
+  rx7y0[blackRookUnmoved]{down:rx7y1,left:rx6y0,right:rx8y0}
+  rx8y0[blackRookUnmoved]{down:rx8y1,left:rx7y0,right:rx9y0}
+  rx9y0[blackKnight]{down:rx9y1,left:rx8y0,right:rx10y0}
+  rx10y0[blackBishop]{down:rx10y1,left:rx9y0,right:rx11y0}
+  rx11y0[blackQueen]{down:rx11y1,left:rx10y0,right:rx12y0}
+  rx12y0[blackKingUnmoved]{down:rx12y1,left:rx11y0,right:rx13y0}
+  rx13y0[blackBishop]{down:rx13y1,left:rx12y0,right:rx14y0}
+  rx14y0[blackKnight]{down:rx14y1,left:rx13y0,right:rx15y0}
+  rx15y0[blackRookUnmoved]{down:rx15y1,left:rx14y0}
+  rx0y1[blackPawn]{down:rx0y2,right:rx1y1,up:rx0y0}
+  rx1y1[blackPawn]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+  rx2y1[blackPawn]{down:rx2y2,left:rx1y1,right:rx3y1,up:rx2y0}
+  rx3y1[blackPawn]{down:rx3y2,left:rx2y1,right:rx4y1,up:rx3y0}
+  rx4y1[blackPawn]{down:rx4y2,left:rx3y1,right:rx5y1,up:rx4y0}
+  rx5y1[blackPawn]{down:rx5y2,left:rx4y1,right:rx6y1,up:rx5y0}
+  rx6y1[blackPawn]{down:rx6y2,left:rx5y1,right:rx7y1,up:rx6y0}
+  rx7y1[blackPawn]{down:rx7y2,left:rx6y1,right:rx8y1,up:rx7y0}
+  rx8y1[blackPawn]{down:rx8y2,left:rx7y1,right:rx9y1,up:rx8y0}
+  rx9y1[blackPawn]{down:rx9y2,left:rx8y1,right:rx10y1,up:rx9y0}
+  rx10y1[blackPawn]{down:rx10y2,left:rx9y1,right:rx11y1,up:rx10y0}
+  rx11y1[blackPawn]{down:rx11y2,left:rx10y1,right:rx12y1,up:rx11y0}
+  rx12y1[blackPawn]{down:rx12y2,left:rx11y1,right:rx13y1,up:rx12y0}
+  rx13y1[blackPawn]{down:rx13y2,left:rx12y1,right:rx14y1,up:rx13y0}
+  rx14y1[blackPawn]{down:rx14y2,left:rx13y1,right:rx15y1,up:rx14y0}
+  rx15y1[blackPawn]{down:rx15y2,left:rx14y1,up:rx15y0}
+  rx0y2[empty]{down:rx0y3,right:rx1y2,up:rx0y1}
+  rx1y2[empty]{down:rx1y3,left:rx0y2,right:rx2y2,up:rx1y1}
+  rx2y2[empty]{down:rx2y3,left:rx1y2,right:rx3y2,up:rx2y1}
+  rx3y2[empty]{down:rx3y3,left:rx2y2,right:rx4y2,up:rx3y1}
+  rx4y2[empty]{down:rx4y3,left:rx3y2,right:rx5y2,up:rx4y1}
+  rx5y2[empty]{down:rx5y3,left:rx4y2,right:rx6y2,up:rx5y1}
+  rx6y2[empty]{down:rx6y3,left:rx5y2,right:rx7y2,up:rx6y1}
+  rx7y2[empty]{down:rx7y3,left:rx6y2,right:rx8y2,up:rx7y1}
+  rx8y2[empty]{down:rx8y3,left:rx7y2,right:rx9y2,up:rx8y1}
+  rx9y2[empty]{down:rx9y3,left:rx8y2,right:rx10y2,up:rx9y1}
+  rx10y2[empty]{down:rx10y3,left:rx9y2,right:rx11y2,up:rx10y1}
+  rx11y2[empty]{down:rx11y3,left:rx10y2,right:rx12y2,up:rx11y1}
+  rx12y2[empty]{down:rx12y3,left:rx11y2,right:rx13y2,up:rx12y1}
+  rx13y2[empty]{down:rx13y3,left:rx12y2,right:rx14y2,up:rx13y1}
+  rx14y2[empty]{down:rx14y3,left:rx13y2,right:rx15y2,up:rx14y1}
+  rx15y2[empty]{down:rx15y3,left:rx14y2,up:rx15y1}
+  rx0y3[empty]{down:rx0y4,right:rx1y3,up:rx0y2}
+  rx1y3[empty]{down:rx1y4,left:rx0y3,right:rx2y3,up:rx1y2}
+  rx2y3[empty]{down:rx2y4,left:rx1y3,right:rx3y3,up:rx2y2}
+  rx3y3[empty]{down:rx3y4,left:rx2y3,right:rx4y3,up:rx3y2}
+  rx4y3[empty]{down:rx4y4,left:rx3y3,right:rx5y3,up:rx4y2}
+  rx5y3[empty]{down:rx5y4,left:rx4y3,right:rx6y3,up:rx5y2}
+  rx6y3[empty]{down:rx6y4,left:rx5y3,right:rx7y3,up:rx6y2}
+  rx7y3[empty]{down:rx7y4,left:rx6y3,right:rx8y3,up:rx7y2}
+  rx8y3[empty]{down:rx8y4,left:rx7y3,right:rx9y3,up:rx8y2}
+  rx9y3[empty]{down:rx9y4,left:rx8y3,right:rx10y3,up:rx9y2}
+  rx10y3[empty]{down:rx10y4,left:rx9y3,right:rx11y3,up:rx10y2}
+  rx11y3[empty]{down:rx11y4,left:rx10y3,right:rx12y3,up:rx11y2}
+  rx12y3[empty]{down:rx12y4,left:rx11y3,right:rx13y3,up:rx12y2}
+  rx13y3[empty]{down:rx13y4,left:rx12y3,right:rx14y3,up:rx13y2}
+  rx14y3[empty]{down:rx14y4,left:rx13y3,right:rx15y3,up:rx14y2}
+  rx15y3[empty]{down:rx15y4,left:rx14y3,up:rx15y2}
+  rx0y4[empty]{down:rx0y5,right:rx1y4,up:rx0y3}
+  rx1y4[empty]{down:rx1y5,left:rx0y4,right:rx2y4,up:rx1y3}
+  rx2y4[empty]{down:rx2y5,left:rx1y4,right:rx3y4,up:rx2y3}
+  rx3y4[empty]{down:rx3y5,left:rx2y4,right:rx4y4,up:rx3y3}
+  rx4y4[empty]{down:rx4y5,left:rx3y4,right:rx5y4,up:rx4y3}
+  rx5y4[empty]{down:rx5y5,left:rx4y4,right:rx6y4,up:rx5y3}
+  rx6y4[empty]{down:rx6y5,left:rx5y4,right:rx7y4,up:rx6y3}
+  rx7y4[empty]{down:rx7y5,left:rx6y4,right:rx8y4,up:rx7y3}
+  rx8y4[empty]{down:rx8y5,left:rx7y4,right:rx9y4,up:rx8y3}
+  rx9y4[empty]{down:rx9y5,left:rx8y4,right:rx10y4,up:rx9y3}
+  rx10y4[empty]{down:rx10y5,left:rx9y4,right:rx11y4,up:rx10y3}
+  rx11y4[empty]{down:rx11y5,left:rx10y4,right:rx12y4,up:rx11y3}
+  rx12y4[empty]{down:rx12y5,left:rx11y4,right:rx13y4,up:rx12y3}
+  rx13y4[empty]{down:rx13y5,left:rx12y4,right:rx14y4,up:rx13y3}
+  rx14y4[empty]{down:rx14y5,left:rx13y4,right:rx15y4,up:rx14y3}
+  rx15y4[empty]{down:rx15y5,left:rx14y4,up:rx15y3}
+  rx0y5[empty]{down:rx0y6,right:rx1y5,up:rx0y4}
+  rx1y5[empty]{down:rx1y6,left:rx0y5,right:rx2y5,up:rx1y4}
+  rx2y5[empty]{down:rx2y6,left:rx1y5,right:rx3y5,up:rx2y4}
+  rx3y5[empty]{down:rx3y6,left:rx2y5,right:rx4y5,up:rx3y4}
+  rx4y5[empty]{down:rx4y6,left:rx3y5,right:rx5y5,up:rx4y4}
+  rx5y5[empty]{down:rx5y6,left:rx4y5,right:rx6y5,up:rx5y4}
+  rx6y5[empty]{down:rx6y6,left:rx5y5,right:rx7y5,up:rx6y4}
+  rx7y5[empty]{down:rx7y6,left:rx6y5,right:rx8y5,up:rx7y4}
+  rx8y5[empty]{down:rx8y6,left:rx7y5,right:rx9y5,up:rx8y4}
+  rx9y5[empty]{down:rx9y6,left:rx8y5,right:rx10y5,up:rx9y4}
+  rx10y5[empty]{down:rx10y6,left:rx9y5,right:rx11y5,up:rx10y4}
+  rx11y5[empty]{down:rx11y6,left:rx10y5,right:rx12y5,up:rx11y4}
+  rx12y5[empty]{down:rx12y6,left:rx11y5,right:rx13y5,up:rx12y4}
+  rx13y5[empty]{down:rx13y6,left:rx12y5,right:rx14y5,up:rx13y4}
+  rx14y5[empty]{down:rx14y6,left:rx13y5,right:rx15y5,up:rx14y4}
+  rx15y5[empty]{down:rx15y6,left:rx14y5,up:rx15y4}
+  rx0y6[empty]{down:rx0y7,right:rx1y6,up:rx0y5}
+  rx1y6[empty]{down:rx1y7,left:rx0y6,right:rx2y6,up:rx1y5}
+  rx2y6[empty]{down:rx2y7,left:rx1y6,right:rx3y6,up:rx2y5}
+  rx3y6[empty]{down:rx3y7,left:rx2y6,right:rx4y6,up:rx3y5}
+  rx4y6[empty]{down:rx4y7,left:rx3y6,right:rx5y6,up:rx4y5}
+  rx5y6[empty]{down:rx5y7,left:rx4y6,right:rx6y6,up:rx5y5}
+  rx6y6[empty]{down:rx6y7,left:rx5y6,right:rx7y6,up:rx6y5}
+  rx7y6[empty]{down:rx7y7,left:rx6y6,right:rx8y6,up:rx7y5}
+  rx8y6[empty]{down:rx8y7,left:rx7y6,right:rx9y6,up:rx8y5}
+  rx9y6[empty]{down:rx9y7,left:rx8y6,right:rx10y6,up:rx9y5}
+  rx10y6[empty]{down:rx10y7,left:rx9y6,right:rx11y6,up:rx10y5}
+  rx11y6[empty]{down:rx11y7,left:rx10y6,right:rx12y6,up:rx11y5}
+  rx12y6[empty]{down:rx12y7,left:rx11y6,right:rx13y6,up:rx12y5}
+  rx13y6[empty]{down:rx13y7,left:rx12y6,right:rx14y6,up:rx13y5}
+  rx14y6[empty]{down:rx14y7,left:rx13y6,right:rx15y6,up:rx14y5}
+  rx15y6[empty]{down:rx15y7,left:rx14y6,up:rx15y5}
+  rx0y7[empty]{down:rx0y8,right:rx1y7,up:rx0y6}
+  rx1y7[empty]{down:rx1y8,left:rx0y7,right:rx2y7,up:rx1y6}
+  rx2y7[empty]{down:rx2y8,left:rx1y7,right:rx3y7,up:rx2y6}
+  rx3y7[empty]{down:rx3y8,left:rx2y7,right:rx4y7,up:rx3y6}
+  rx4y7[empty]{down:rx4y8,left:rx3y7,right:rx5y7,up:rx4y6}
+  rx5y7[empty]{down:rx5y8,left:rx4y7,right:rx6y7,up:rx5y6}
+  rx6y7[empty]{down:rx6y8,left:rx5y7,right:rx7y7,up:rx6y6}
+  rx7y7[empty]{down:rx7y8,left:rx6y7,right:rx8y7,up:rx7y6}
+  rx8y7[empty]{down:rx8y8,left:rx7y7,right:rx9y7,up:rx8y6}
+  rx9y7[empty]{down:rx9y8,left:rx8y7,right:rx10y7,up:rx9y6}
+  rx10y7[empty]{down:rx10y8,left:rx9y7,right:rx11y7,up:rx10y6}
+  rx11y7[empty]{down:rx11y8,left:rx10y7,right:rx12y7,up:rx11y6}
+  rx12y7[empty]{down:rx12y8,left:rx11y7,right:rx13y7,up:rx12y6}
+  rx13y7[empty]{down:rx13y8,left:rx12y7,right:rx14y7,up:rx13y6}
+  rx14y7[empty]{down:rx14y8,left:rx13y7,right:rx15y7,up:rx14y6}
+  rx15y7[empty]{down:rx15y8,left:rx14y7,up:rx15y6}
+  rx0y8[empty]{down:rx0y9,right:rx1y8,up:rx0y7}
+  rx1y8[empty]{down:rx1y9,left:rx0y8,right:rx2y8,up:rx1y7}
+  rx2y8[empty]{down:rx2y9,left:rx1y8,right:rx3y8,up:rx2y7}
+  rx3y8[empty]{down:rx3y9,left:rx2y8,right:rx4y8,up:rx3y7}
+  rx4y8[empty]{down:rx4y9,left:rx3y8,right:rx5y8,up:rx4y7}
+  rx5y8[empty]{down:rx5y9,left:rx4y8,right:rx6y8,up:rx5y7}
+  rx6y8[empty]{down:rx6y9,left:rx5y8,right:rx7y8,up:rx6y7}
+  rx7y8[empty]{down:rx7y9,left:rx6y8,right:rx8y8,up:rx7y7}
+  rx8y8[empty]{down:rx8y9,left:rx7y8,right:rx9y8,up:rx8y7}
+  rx9y8[empty]{down:rx9y9,left:rx8y8,right:rx10y8,up:rx9y7}
+  rx10y8[empty]{down:rx10y9,left:rx9y8,right:rx11y8,up:rx10y7}
+  rx11y8[empty]{down:rx11y9,left:rx10y8,right:rx12y8,up:rx11y7}
+  rx12y8[empty]{down:rx12y9,left:rx11y8,right:rx13y8,up:rx12y7}
+  rx13y8[empty]{down:rx13y9,left:rx12y8,right:rx14y8,up:rx13y7}
+  rx14y8[empty]{down:rx14y9,left:rx13y8,right:rx15y8,up:rx14y7}
+  rx15y8[empty]{down:rx15y9,left:rx14y8,up:rx15y7}
+  rx0y9[empty]{down:rx0y10,right:rx1y9,up:rx0y8}
+  rx1y9[empty]{down:rx1y10,left:rx0y9,right:rx2y9,up:rx1y8}
+  rx2y9[empty]{down:rx2y10,left:rx1y9,right:rx3y9,up:rx2y8}
+  rx3y9[empty]{down:rx3y10,left:rx2y9,right:rx4y9,up:rx3y8}
+  rx4y9[empty]{down:rx4y10,left:rx3y9,right:rx5y9,up:rx4y8}
+  rx5y9[empty]{down:rx5y10,left:rx4y9,right:rx6y9,up:rx5y8}
+  rx6y9[empty]{down:rx6y10,left:rx5y9,right:rx7y9,up:rx6y8}
+  rx7y9[empty]{down:rx7y10,left:rx6y9,right:rx8y9,up:rx7y8}
+  rx8y9[empty]{down:rx8y10,left:rx7y9,right:rx9y9,up:rx8y8}
+  rx9y9[empty]{down:rx9y10,left:rx8y9,right:rx10y9,up:rx9y8}
+  rx10y9[empty]{down:rx10y10,left:rx9y9,right:rx11y9,up:rx10y8}
+  rx11y9[empty]{down:rx11y10,left:rx10y9,right:rx12y9,up:rx11y8}
+  rx12y9[empty]{down:rx12y10,left:rx11y9,right:rx13y9,up:rx12y8}
+  rx13y9[empty]{down:rx13y10,left:rx12y9,right:rx14y9,up:rx13y8}
+  rx14y9[empty]{down:rx14y10,left:rx13y9,right:rx15y9,up:rx14y8}
+  rx15y9[empty]{down:rx15y10,left:rx14y9,up:rx15y8}
+  rx0y10[whitePawn]{down:rx0y11,right:rx1y10,up:rx0y9}
+  rx1y10[whitePawn]{down:rx1y11,left:rx0y10,right:rx2y10,up:rx1y9}
+  rx2y10[whitePawn]{down:rx2y11,left:rx1y10,right:rx3y10,up:rx2y9}
+  rx3y10[whitePawn]{down:rx3y11,left:rx2y10,right:rx4y10,up:rx3y9}
+  rx4y10[whitePawn]{down:rx4y11,left:rx3y10,right:rx5y10,up:rx4y9}
+  rx5y10[whitePawn]{down:rx5y11,left:rx4y10,right:rx6y10,up:rx5y9}
+  rx6y10[whitePawn]{down:rx6y11,left:rx5y10,right:rx7y10,up:rx6y9}
+  rx7y10[whitePawn]{down:rx7y11,left:rx6y10,right:rx8y10,up:rx7y9}
+  rx8y10[whitePawn]{down:rx8y11,left:rx7y10,right:rx9y10,up:rx8y9}
+  rx9y10[whitePawn]{down:rx9y11,left:rx8y10,right:rx10y10,up:rx9y9}
+  rx10y10[whitePawn]{down:rx10y11,left:rx9y10,right:rx11y10,up:rx10y9}
+  rx11y10[whitePawn]{down:rx11y11,left:rx10y10,right:rx12y10,up:rx11y9}
+  rx12y10[whitePawn]{down:rx12y11,left:rx11y10,right:rx13y10,up:rx12y9}
+  rx13y10[whitePawn]{down:rx13y11,left:rx12y10,right:rx14y10,up:rx13y9}
+  rx14y10[whitePawn]{down:rx14y11,left:rx13y10,right:rx15y10,up:rx14y9}
+  rx15y10[whitePawn]{down:rx15y11,left:rx14y10,up:rx15y9}
+  rx0y11[whiteRookUnmoved]{right:rx1y11,up:rx0y10}
+  rx1y11[whiteKnight]{left:rx0y11,right:rx2y11,up:rx1y10}
+  rx2y11[whiteBishop]{left:rx1y11,right:rx3y11,up:rx2y10}
+  rx3y11[whiteQueen]{left:rx2y11,right:rx4y11,up:rx3y10}
+  rx4y11[whiteKingUnmoved]{left:rx3y11,right:rx5y11,up:rx4y10}
+  rx5y11[whiteBishop]{left:rx4y11,right:rx6y11,up:rx5y10}
+  rx6y11[whiteKnight]{left:rx5y11,right:rx7y11,up:rx6y10}
+  rx7y11[whiteRookUnmoved]{left:rx6y11,right:rx8y11,up:rx7y10}
+  rx8y11[whiteRookUnmoved]{left:rx7y11,right:rx9y11,up:rx8y10}
+  rx9y11[whiteKnight]{left:rx8y11,right:rx10y11,up:rx9y10}
+  rx10y11[whiteBishop]{left:rx9y11,right:rx11y11,up:rx10y10}
+  rx11y11[whiteQueen]{left:rx10y11,right:rx12y11,up:rx11y10}
+  rx12y11[whiteKingUnmoved]{left:rx11y11,right:rx13y11,up:rx12y10}
+  rx13y11[whiteBishop]{left:rx12y11,right:rx14y11,up:rx13y10}
+  rx14y11[whiteKnight]{left:rx13y11,right:rx15y11,up:rx14y10}
+  rx15y11[whiteRookUnmoved]{left:rx14y11,up:rx15y10}
+#players = white(100), black(100)
+#pieces = blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved, empty, whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved
+#variables = pawnDoubleMove(1), stagnation(100)
+#rules = (
+  [$ stagnation = (stagnation + 1)]
+  ->white
+  (
+      [$ pawnDoubleMove = 0] (left* + right*) (up* + down*) (
+          {whiteKingMoved, whiteKingUnmoved} [empty] (
+            left + right + up + down + (left + right) (up + down)
+          ) (
+              {empty}
+            + {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved} [$ stagnation = 0]
+          ) [whiteKingMoved]
+        + {whiteKingUnmoved} [empty] {!
+              (
+                  (up up + down down) (left + right)
+                + (left left + right right) (up + down)
+              ) {blackKnight}
+            + up left (
+                  {blackKingMoved, blackKingUnmoved, blackPawn}
+                + ({empty} up left)* {blackBishop, blackQueen}
+              )
+            + up right (
+                  {blackKingMoved, blackKingUnmoved, blackPawn}
+                + ({empty} up right)* {blackBishop, blackQueen}
+              )
+            + down left (
+                  {blackKingMoved, blackKingUnmoved}
+                + ({empty} down left)* {blackBishop, blackQueen}
+              )
+            + down right (
+                  {blackKingMoved, blackKingUnmoved}
+                + ({empty} down right)* {blackBishop, blackQueen}
+              )
+            + up (
+                  {blackKingMoved, blackKingUnmoved}
+                + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+              )
+            + down (
+                  {blackKingMoved, blackKingUnmoved}
+                + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+              )
+            + left (
+                  {blackKingMoved, blackKingUnmoved}
+                + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+              )
+            + right (
+                  {blackKingMoved, blackKingUnmoved}
+                + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+              )
+          } (
+              right {empty} {!
+                  (
+                      (up up + down down) (left + right)
+                    + (left left + right right) (up + down)
+                  ) {blackKnight}
+                + up left (
+                      {blackKingMoved, blackKingUnmoved, blackPawn}
+                    + ({empty} up left)* {blackBishop, blackQueen}
+                  )
+                + up right (
+                      {blackKingMoved, blackKingUnmoved, blackPawn}
+                    + ({empty} up right)* {blackBishop, blackQueen}
+                  )
+                + down left (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} down left)* {blackBishop, blackQueen}
+                  )
+                + down right (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} down right)* {blackBishop, blackQueen}
+                  )
+                + up (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+                + down (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+                + left (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+                + right (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+              } right {empty} [whiteKingMoved] right {whiteRookUnmoved} [empty] left left
+            + left {empty} {!
+                  (
+                      (up up + down down) (left + right)
+                    + (left left + right right) (up + down)
+                  ) {blackKnight}
+                + up left (
+                      {blackKingMoved, blackKingUnmoved, blackPawn}
+                    + ({empty} up left)* {blackBishop, blackQueen}
+                  )
+                + up right (
+                      {blackKingMoved, blackKingUnmoved, blackPawn}
+                    + ({empty} up right)* {blackBishop, blackQueen}
+                  )
+                + down left (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} down left)* {blackBishop, blackQueen}
+                  )
+                + down right (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} down right)* {blackBishop, blackQueen}
+                  )
+                + up (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+                + down (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+                + left (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+                + right (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+              } left {empty} [whiteKingMoved] left {empty} left {whiteRookUnmoved} [empty] right right right
+          ) [whiteRookMoved]
+        + {whiteBishop} [empty] (
+              (up left {empty})* up left
+            + (up right {empty})* up right
+            + (down left {empty})* down left
+            + (down right {empty})* down right
+          ) (
+              {empty}
+            + {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved} [$ stagnation = 0]
+          ) [whiteBishop]
+        + {whiteRookMoved, whiteRookUnmoved} [empty] (
+              (up {empty})* up
+            + (down {empty})* down
+            + (right {empty})* right
+            + (left {empty})* left
+          ) (
+              {empty}
+            + {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved} [$ stagnation = 0]
+          ) [whiteRookMoved]
+        + {whiteQueen} [empty] (
+              (up left {empty})* up left
+            + (up right {empty})* up right
+            + (down left {empty})* down left
+            + (down right {empty})* down right
+            + (up {empty})* up
+            + (down {empty})* down
+            + (right {empty})* right
+            + (left {empty})* left
+          ) (
+              {empty}
+            + {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved} [$ stagnation = 0]
+          ) [whiteQueen]
+        + {whiteKnight} [empty] (
+              (up up + down down) (left + right)
+            + (left left + right right) (up + down)
+          ) (
+              {empty}
+            + {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved} [$ stagnation = 0]
+          ) [whiteKnight]
+        + {whitePawn} [empty] (
+              (
+                  up {empty}
+                + up (left + right) {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved}
+              ) (
+                  {? up} [whitePawn]
+                + {! up} (
+                      [whiteRookMoved]
+                    + [whiteKnight]
+                    + [whiteBishop]
+                    + [whiteQueen]
+                  )
+              )
+            + {! down down} (
+                  up {empty} up {empty}
+                + up {empty} up {empty} up {empty}
+                + up {empty} up {empty} up {empty} up {empty}
+              ) [whitePawn] [$ pawnDoubleMove = 1]
+          ) [$ stagnation = 0]
+      )
+    + {$ pawnDoubleMove == 1} ([empty] + [empty] up + [empty] up up) (
+          right {whitePawn} [empty] left
+        + left {whitePawn} [empty] right
+      ) up [whitePawn] [$ pawnDoubleMove = 0] [$ stagnation = 0]
+  )
+  {!
+    (left* + right*)
+    (up* + down*)
+    {whiteKingMoved, whiteKingUnmoved}
+    (
+        (
+            (up up + down down) (left + right)
+          + (left left + right right) (up + down)
+        ) {blackKnight}
+      + up left (
+            {blackKingMoved, blackKingUnmoved, blackPawn}
+          + ({empty} up left)* {blackBishop, blackQueen}
+        )
+      + up right (
+            {blackKingMoved, blackKingUnmoved, blackPawn}
+          + ({empty} up right)* {blackBishop, blackQueen}
+        )
+      + down left (
+            {blackKingMoved, blackKingUnmoved}
+          + ({empty} down left)* {blackBishop, blackQueen}
+        )
+      + down right (
+            {blackKingMoved, blackKingUnmoved}
+          + ({empty} down right)* {blackBishop, blackQueen}
+        )
+      + up (
+            {blackKingMoved, blackKingUnmoved}
+          + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+        )
+      + down (
+            {blackKingMoved, blackKingUnmoved}
+          + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+        )
+      + left (
+            {blackKingMoved, blackKingUnmoved}
+          + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+        )
+      + right (
+            {blackKingMoved, blackKingUnmoved}
+          + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+        )
+    )
+  }
+  ->>
+  (
+      {$ stagnation < 100} ->> (
+          {!
+            (left* + right*)
+            (up* + down*)
+            {blackKingMoved, blackKingUnmoved}
+            (
+                (
+                    (up up + down down) (left + right)
+                  + (left left + right right) (up + down)
+                ) {whiteKnight}
+              + down left (
+                    {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                  + ({empty} down left)* {whiteBishop, whiteQueen}
+                )
+              + down right (
+                    {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                  + ({empty} down right)* {whiteBishop, whiteQueen}
+                )
+              + up left (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up left)* {whiteBishop, whiteQueen}
+                )
+              + up right (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up right)* {whiteBishop, whiteQueen}
+                )
+              + up (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + down (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + left (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + right (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+            )
+          } [$ white = 50] [$ black = 50]
+        + {?
+            (left* + right*)
+            (up* + down*)
+            {blackKingMoved, blackKingUnmoved}
+            (
+                (
+                    (up up + down down) (left + right)
+                  + (left left + right right) (up + down)
+                ) {whiteKnight}
+              + down left (
+                    {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                  + ({empty} down left)* {whiteBishop, whiteQueen}
+                )
+              + down right (
+                    {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                  + ({empty} down right)* {whiteBishop, whiteQueen}
+                )
+              + up left (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up left)* {whiteBishop, whiteQueen}
+                )
+              + up right (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up right)* {whiteBishop, whiteQueen}
+                )
+              + up (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + down (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + left (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + right (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+            )
+          } [$ white = 100] [$ black = 0]
+      )
+    + {$ stagnation == 100} [$ white = 50] [$ black = 50] ->> (
+          {!
+            (left* + right*)
+            (up* + down*)
+            {blackKingMoved, blackKingUnmoved}
+            (
+                (
+                    (up up + down down) (left + right)
+                  + (left left + right right) (up + down)
+                ) {whiteKnight}
+              + down left (
+                    {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                  + ({empty} down left)* {whiteBishop, whiteQueen}
+                )
+              + down right (
+                    {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                  + ({empty} down right)* {whiteBishop, whiteQueen}
+                )
+              + up left (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up left)* {whiteBishop, whiteQueen}
+                )
+              + up right (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up right)* {whiteBishop, whiteQueen}
+                )
+              + up (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + down (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + left (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + right (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+            )
+          } ->> {}
+        + {?
+            (left* + right*)
+            (up* + down*)
+            {blackKingMoved, blackKingUnmoved}
+            (
+                (
+                    (up up + down down) (left + right)
+                  + (left left + right right) (up + down)
+                ) {whiteKnight}
+              + down left (
+                    {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                  + ({empty} down left)* {whiteBishop, whiteQueen}
+                )
+              + down right (
+                    {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                  + ({empty} down right)* {whiteBishop, whiteQueen}
+                )
+              + up left (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up left)* {whiteBishop, whiteQueen}
+                )
+              + up right (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up right)* {whiteBishop, whiteQueen}
+                )
+              + up (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + down (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + left (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+              + right (
+                    {whiteKingMoved, whiteKingUnmoved}
+                  + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                )
+            )
+          } {!
+            (
+                [$ pawnDoubleMove = 0] (left* + right*) (up* + down*) (
+                    {whiteKingMoved, whiteKingUnmoved} [empty] (
+                      left + right + up + down + (left + right) (up + down)
+                    ) (
+                        {empty}
+                      + {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved} [$ stagnation = 0]
+                    ) [whiteKingMoved]
+                  + {whiteKingUnmoved} [empty] {!
+                        (
+                            (up up + down down) (left + right)
+                          + (left left + right right) (up + down)
+                        ) {blackKnight}
+                      + up left (
+                            {blackKingMoved, blackKingUnmoved, blackPawn}
+                          + ({empty} up left)* {blackBishop, blackQueen}
+                        )
+                      + up right (
+                            {blackKingMoved, blackKingUnmoved, blackPawn}
+                          + ({empty} up right)* {blackBishop, blackQueen}
+                        )
+                      + down left (
+                            {blackKingMoved, blackKingUnmoved}
+                          + ({empty} down left)* {blackBishop, blackQueen}
+                        )
+                      + down right (
+                            {blackKingMoved, blackKingUnmoved}
+                          + ({empty} down right)* {blackBishop, blackQueen}
+                        )
+                      + up (
+                            {blackKingMoved, blackKingUnmoved}
+                          + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                        )
+                      + down (
+                            {blackKingMoved, blackKingUnmoved}
+                          + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                        )
+                      + left (
+                            {blackKingMoved, blackKingUnmoved}
+                          + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                        )
+                      + right (
+                            {blackKingMoved, blackKingUnmoved}
+                          + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                        )
+                    } (
+                        right {empty} {!
+                            (
+                                (up up + down down) (left + right)
+                              + (left left + right right) (up + down)
+                            ) {blackKnight}
+                          + up left (
+                                {blackKingMoved, blackKingUnmoved, blackPawn}
+                              + ({empty} up left)* {blackBishop, blackQueen}
+                            )
+                          + up right (
+                                {blackKingMoved, blackKingUnmoved, blackPawn}
+                              + ({empty} up right)* {blackBishop, blackQueen}
+                            )
+                          + down left (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} down left)* {blackBishop, blackQueen}
+                            )
+                          + down right (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} down right)* {blackBishop, blackQueen}
+                            )
+                          + up (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                            )
+                          + down (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                            )
+                          + left (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                            )
+                          + right (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                            )
+                        } right {empty} [whiteKingMoved] right {whiteRookUnmoved} [empty] left left
+                      + left {empty} {!
+                            (
+                                (up up + down down) (left + right)
+                              + (left left + right right) (up + down)
+                            ) {blackKnight}
+                          + up left (
+                                {blackKingMoved, blackKingUnmoved, blackPawn}
+                              + ({empty} up left)* {blackBishop, blackQueen}
+                            )
+                          + up right (
+                                {blackKingMoved, blackKingUnmoved, blackPawn}
+                              + ({empty} up right)* {blackBishop, blackQueen}
+                            )
+                          + down left (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} down left)* {blackBishop, blackQueen}
+                            )
+                          + down right (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} down right)* {blackBishop, blackQueen}
+                            )
+                          + up (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                            )
+                          + down (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                            )
+                          + left (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                            )
+                          + right (
+                                {blackKingMoved, blackKingUnmoved}
+                              + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                            )
+                        } left {empty} [whiteKingMoved] left {empty} left {whiteRookUnmoved} [empty] right right right
+                    ) [whiteRookMoved]
+                  + {whiteBishop} [empty] (
+                        (up left {empty})* up left
+                      + (up right {empty})* up right
+                      + (down left {empty})* down left
+                      + (down right {empty})* down right
+                    ) (
+                        {empty}
+                      + {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved} [$ stagnation = 0]
+                    ) [whiteBishop]
+                  + {whiteRookMoved, whiteRookUnmoved} [empty] (
+                        (up {empty})* up
+                      + (down {empty})* down
+                      + (right {empty})* right
+                      + (left {empty})* left
+                    ) (
+                        {empty}
+                      + {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved} [$ stagnation = 0]
+                    ) [whiteRookMoved]
+                  + {whiteQueen} [empty] (
+                        (up left {empty})* up left
+                      + (up right {empty})* up right
+                      + (down left {empty})* down left
+                      + (down right {empty})* down right
+                      + (up {empty})* up
+                      + (down {empty})* down
+                      + (right {empty})* right
+                      + (left {empty})* left
+                    ) (
+                        {empty}
+                      + {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved} [$ stagnation = 0]
+                    ) [whiteQueen]
+                  + {whiteKnight} [empty] (
+                        (up up + down down) (left + right)
+                      + (left left + right right) (up + down)
+                    ) (
+                        {empty}
+                      + {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved} [$ stagnation = 0]
+                    ) [whiteKnight]
+                  + {whitePawn} [empty] (
+                        (
+                            up {empty}
+                          + up (left + right) {blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved}
+                        ) (
+                            {? up} [whitePawn]
+                          + {! up} (
+                                [whiteRookMoved]
+                              + [whiteKnight]
+                              + [whiteBishop]
+                              + [whiteQueen]
+                            )
+                        )
+                      + {! down down} (
+                            up {empty} up {empty}
+                          + up {empty} up {empty} up {empty}
+                          + up {empty} up {empty} up {empty} up {empty}
+                        ) [whitePawn] [$ pawnDoubleMove = 1]
+                    ) [$ stagnation = 0]
+                )
+              + {$ pawnDoubleMove == 1} ([empty] + [empty] up + [empty] up up) (
+                    right {whitePawn} [empty] left
+                  + left {whitePawn} [empty] right
+                ) up [whitePawn] [$ pawnDoubleMove = 0] [$ stagnation = 0]
+            )
+            {!
+              (left* + right*)
+              (up* + down*)
+              {whiteKingMoved, whiteKingUnmoved}
+              (
+                  (
+                      (up up + down down) (left + right)
+                    + (left left + right right) (up + down)
+                  ) {blackKnight}
+                + up left (
+                      {blackKingMoved, blackKingUnmoved, blackPawn}
+                    + ({empty} up left)* {blackBishop, blackQueen}
+                  )
+                + up right (
+                      {blackKingMoved, blackKingUnmoved, blackPawn}
+                    + ({empty} up right)* {blackBishop, blackQueen}
+                  )
+                + down left (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} down left)* {blackBishop, blackQueen}
+                  )
+                + down right (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} down right)* {blackBishop, blackQueen}
+                  )
+                + up (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+                + down (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+                + left (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+                + right (
+                      {blackKingMoved, blackKingUnmoved}
+                    + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                  )
+              )
+            }
+          } [$ white = 100] [$ black = 0] ->> {}
+      )
+  )
+  [$ stagnation = (stagnation + 1)]
+  ->black
+  (
+      [$ pawnDoubleMove = 0] (left* + right*) (up* + down*) (
+          {blackKingMoved, blackKingUnmoved} [empty] (
+            left + right + up + down + (left + right) (up + down)
+          ) (
+              {empty}
+            + {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved} [$ stagnation = 0]
+          ) [blackKingMoved]
+        + {blackKingUnmoved} [empty] {!
+              (
+                  (up up + down down) (left + right)
+                + (left left + right right) (up + down)
+              ) {whiteKnight}
+            + down left (
+                  {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                + ({empty} down left)* {whiteBishop, whiteQueen}
+              )
+            + down right (
+                  {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                + ({empty} down right)* {whiteBishop, whiteQueen}
+              )
+            + up left (
+                  {whiteKingMoved, whiteKingUnmoved}
+                + ({empty} up left)* {whiteBishop, whiteQueen}
+              )
+            + up right (
+                  {whiteKingMoved, whiteKingUnmoved}
+                + ({empty} up right)* {whiteBishop, whiteQueen}
+              )
+            + up (
+                  {whiteKingMoved, whiteKingUnmoved}
+                + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+              )
+            + down (
+                  {whiteKingMoved, whiteKingUnmoved}
+                + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+              )
+            + left (
+                  {whiteKingMoved, whiteKingUnmoved}
+                + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+              )
+            + right (
+                  {whiteKingMoved, whiteKingUnmoved}
+                + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+              )
+          } (
+              right {empty} {!
+                  (
+                      (up up + down down) (left + right)
+                    + (left left + right right) (up + down)
+                  ) {whiteKnight}
+                + down left (
+                      {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                    + ({empty} down left)* {whiteBishop, whiteQueen}
+                  )
+                + down right (
+                      {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                    + ({empty} down right)* {whiteBishop, whiteQueen}
+                  )
+                + up left (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} up left)* {whiteBishop, whiteQueen}
+                  )
+                + up right (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} up right)* {whiteBishop, whiteQueen}
+                  )
+                + up (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+                + down (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+                + left (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+                + right (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+              } right {empty} [blackKingMoved] right {blackRookUnmoved} [empty] left left
+            + left {empty} {!
+                  (
+                      (up up + down down) (left + right)
+                    + (left left + right right) (up + down)
+                  ) {whiteKnight}
+                + down left (
+                      {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                    + ({empty} down left)* {whiteBishop, whiteQueen}
+                  )
+                + down right (
+                      {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                    + ({empty} down right)* {whiteBishop, whiteQueen}
+                  )
+                + up left (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} up left)* {whiteBishop, whiteQueen}
+                  )
+                + up right (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} up right)* {whiteBishop, whiteQueen}
+                  )
+                + up (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+                + down (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+                + left (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+                + right (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+              } left {empty} [blackKingMoved] left {empty} left {blackRookUnmoved} [empty] right right right
+          ) [blackRookMoved]
+        + {blackBishop} [empty] (
+              (up left {empty})* up left
+            + (up right {empty})* up right
+            + (down left {empty})* down left
+            + (down right {empty})* down right
+          ) (
+              {empty}
+            + {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved} [$ stagnation = 0]
+          ) [blackBishop]
+        + {blackRookMoved, blackRookUnmoved} [empty] (
+              (up {empty})* up
+            + (down {empty})* down
+            + (right {empty})* right
+            + (left {empty})* left
+          ) (
+              {empty}
+            + {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved} [$ stagnation = 0]
+          ) [blackRookMoved]
+        + {blackQueen} [empty] (
+              (up left {empty})* up left
+            + (up right {empty})* up right
+            + (down left {empty})* down left
+            + (down right {empty})* down right
+            + (up {empty})* up
+            + (down {empty})* down
+            + (right {empty})* right
+            + (left {empty})* left
+          ) (
+              {empty}
+            + {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved} [$ stagnation = 0]
+          ) [blackQueen]
+        + {blackKnight} [empty] (
+              (up up + down down) (left + right)
+            + (left left + right right) (up + down)
+          ) (
+              {empty}
+            + {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved} [$ stagnation = 0]
+          ) [blackKnight]
+        + {blackPawn} [empty] (
+              (
+                  down {empty}
+                + down (left + right) {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved}
+              ) (
+                  {? down} [blackPawn]
+                + {! down} (
+                      [blackRookMoved]
+                    + [blackKnight]
+                    + [blackBishop]
+                    + [blackQueen]
+                  )
+              )
+            + {! up up} (
+                  down {empty} down {empty}
+                + down {empty} down {empty} down {empty}
+                + down {empty} down {empty} down {empty} down {empty}
+              ) [blackPawn] [$ pawnDoubleMove = 1]
+          ) [$ stagnation = 0]
+      )
+    + {$ pawnDoubleMove == 1} ([empty] + [empty] down + [empty] down down) (
+          right {blackPawn} [empty] left
+        + left {blackPawn} [empty] right
+      ) down [blackPawn] [$ pawnDoubleMove = 0] [$ stagnation = 0]
+  )
+  {!
+    (left* + right*)
+    (up* + down*)
+    {blackKingMoved, blackKingUnmoved}
+    (
+        (
+            (up up + down down) (left + right)
+          + (left left + right right) (up + down)
+        ) {whiteKnight}
+      + down left (
+            {whiteKingMoved, whiteKingUnmoved, whitePawn}
+          + ({empty} down left)* {whiteBishop, whiteQueen}
+        )
+      + down right (
+            {whiteKingMoved, whiteKingUnmoved, whitePawn}
+          + ({empty} down right)* {whiteBishop, whiteQueen}
+        )
+      + up left (
+            {whiteKingMoved, whiteKingUnmoved}
+          + ({empty} up left)* {whiteBishop, whiteQueen}
+        )
+      + up right (
+            {whiteKingMoved, whiteKingUnmoved}
+          + ({empty} up right)* {whiteBishop, whiteQueen}
+        )
+      + up (
+            {whiteKingMoved, whiteKingUnmoved}
+          + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+        )
+      + down (
+            {whiteKingMoved, whiteKingUnmoved}
+          + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+        )
+      + left (
+            {whiteKingMoved, whiteKingUnmoved}
+          + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+        )
+      + right (
+            {whiteKingMoved, whiteKingUnmoved}
+          + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+        )
+    )
+  }
+  ->>
+  (
+      {$ stagnation < 100} ->> (
+          {!
+            (left* + right*)
+            (up* + down*)
+            {whiteKingMoved, whiteKingUnmoved}
+            (
+                (
+                    (up up + down down) (left + right)
+                  + (left left + right right) (up + down)
+                ) {blackKnight}
+              + up left (
+                    {blackKingMoved, blackKingUnmoved, blackPawn}
+                  + ({empty} up left)* {blackBishop, blackQueen}
+                )
+              + up right (
+                    {blackKingMoved, blackKingUnmoved, blackPawn}
+                  + ({empty} up right)* {blackBishop, blackQueen}
+                )
+              + down left (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down left)* {blackBishop, blackQueen}
+                )
+              + down right (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down right)* {blackBishop, blackQueen}
+                )
+              + up (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + down (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + left (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + right (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+            )
+          } [$ black = 50] [$ white = 50]
+        + {?
+            (left* + right*)
+            (up* + down*)
+            {whiteKingMoved, whiteKingUnmoved}
+            (
+                (
+                    (up up + down down) (left + right)
+                  + (left left + right right) (up + down)
+                ) {blackKnight}
+              + up left (
+                    {blackKingMoved, blackKingUnmoved, blackPawn}
+                  + ({empty} up left)* {blackBishop, blackQueen}
+                )
+              + up right (
+                    {blackKingMoved, blackKingUnmoved, blackPawn}
+                  + ({empty} up right)* {blackBishop, blackQueen}
+                )
+              + down left (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down left)* {blackBishop, blackQueen}
+                )
+              + down right (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down right)* {blackBishop, blackQueen}
+                )
+              + up (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + down (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + left (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + right (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+            )
+          } [$ black = 100] [$ white = 0]
+      )
+    + {$ stagnation == 100} [$ black = 50] [$ white = 50] ->> (
+          {!
+            (left* + right*)
+            (up* + down*)
+            {whiteKingMoved, whiteKingUnmoved}
+            (
+                (
+                    (up up + down down) (left + right)
+                  + (left left + right right) (up + down)
+                ) {blackKnight}
+              + up left (
+                    {blackKingMoved, blackKingUnmoved, blackPawn}
+                  + ({empty} up left)* {blackBishop, blackQueen}
+                )
+              + up right (
+                    {blackKingMoved, blackKingUnmoved, blackPawn}
+                  + ({empty} up right)* {blackBishop, blackQueen}
+                )
+              + down left (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down left)* {blackBishop, blackQueen}
+                )
+              + down right (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down right)* {blackBishop, blackQueen}
+                )
+              + up (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + down (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + left (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + right (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+            )
+          } ->> {}
+        + {?
+            (left* + right*)
+            (up* + down*)
+            {whiteKingMoved, whiteKingUnmoved}
+            (
+                (
+                    (up up + down down) (left + right)
+                  + (left left + right right) (up + down)
+                ) {blackKnight}
+              + up left (
+                    {blackKingMoved, blackKingUnmoved, blackPawn}
+                  + ({empty} up left)* {blackBishop, blackQueen}
+                )
+              + up right (
+                    {blackKingMoved, blackKingUnmoved, blackPawn}
+                  + ({empty} up right)* {blackBishop, blackQueen}
+                )
+              + down left (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down left)* {blackBishop, blackQueen}
+                )
+              + down right (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down right)* {blackBishop, blackQueen}
+                )
+              + up (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} up)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + down (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} down)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + left (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} left)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+              + right (
+                    {blackKingMoved, blackKingUnmoved}
+                  + ({empty} right)* {blackQueen, blackRookMoved, blackRookUnmoved}
+                )
+            )
+          } {!
+            (
+                [$ pawnDoubleMove = 0] (left* + right*) (up* + down*) (
+                    {blackKingMoved, blackKingUnmoved} [empty] (
+                      left + right + up + down + (left + right) (up + down)
+                    ) (
+                        {empty}
+                      + {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved} [$ stagnation = 0]
+                    ) [blackKingMoved]
+                  + {blackKingUnmoved} [empty] {!
+                        (
+                            (up up + down down) (left + right)
+                          + (left left + right right) (up + down)
+                        ) {whiteKnight}
+                      + down left (
+                            {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                          + ({empty} down left)* {whiteBishop, whiteQueen}
+                        )
+                      + down right (
+                            {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                          + ({empty} down right)* {whiteBishop, whiteQueen}
+                        )
+                      + up left (
+                            {whiteKingMoved, whiteKingUnmoved}
+                          + ({empty} up left)* {whiteBishop, whiteQueen}
+                        )
+                      + up right (
+                            {whiteKingMoved, whiteKingUnmoved}
+                          + ({empty} up right)* {whiteBishop, whiteQueen}
+                        )
+                      + up (
+                            {whiteKingMoved, whiteKingUnmoved}
+                          + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                        )
+                      + down (
+                            {whiteKingMoved, whiteKingUnmoved}
+                          + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                        )
+                      + left (
+                            {whiteKingMoved, whiteKingUnmoved}
+                          + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                        )
+                      + right (
+                            {whiteKingMoved, whiteKingUnmoved}
+                          + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                        )
+                    } (
+                        right {empty} {!
+                            (
+                                (up up + down down) (left + right)
+                              + (left left + right right) (up + down)
+                            ) {whiteKnight}
+                          + down left (
+                                {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                              + ({empty} down left)* {whiteBishop, whiteQueen}
+                            )
+                          + down right (
+                                {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                              + ({empty} down right)* {whiteBishop, whiteQueen}
+                            )
+                          + up left (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} up left)* {whiteBishop, whiteQueen}
+                            )
+                          + up right (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} up right)* {whiteBishop, whiteQueen}
+                            )
+                          + up (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                            )
+                          + down (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                            )
+                          + left (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                            )
+                          + right (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                            )
+                        } right {empty} [blackKingMoved] right {blackRookUnmoved} [empty] left left
+                      + left {empty} {!
+                            (
+                                (up up + down down) (left + right)
+                              + (left left + right right) (up + down)
+                            ) {whiteKnight}
+                          + down left (
+                                {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                              + ({empty} down left)* {whiteBishop, whiteQueen}
+                            )
+                          + down right (
+                                {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                              + ({empty} down right)* {whiteBishop, whiteQueen}
+                            )
+                          + up left (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} up left)* {whiteBishop, whiteQueen}
+                            )
+                          + up right (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} up right)* {whiteBishop, whiteQueen}
+                            )
+                          + up (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                            )
+                          + down (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                            )
+                          + left (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                            )
+                          + right (
+                                {whiteKingMoved, whiteKingUnmoved}
+                              + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                            )
+                        } left {empty} [blackKingMoved] left {empty} left {blackRookUnmoved} [empty] right right right
+                    ) [blackRookMoved]
+                  + {blackBishop} [empty] (
+                        (up left {empty})* up left
+                      + (up right {empty})* up right
+                      + (down left {empty})* down left
+                      + (down right {empty})* down right
+                    ) (
+                        {empty}
+                      + {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved} [$ stagnation = 0]
+                    ) [blackBishop]
+                  + {blackRookMoved, blackRookUnmoved} [empty] (
+                        (up {empty})* up
+                      + (down {empty})* down
+                      + (right {empty})* right
+                      + (left {empty})* left
+                    ) (
+                        {empty}
+                      + {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved} [$ stagnation = 0]
+                    ) [blackRookMoved]
+                  + {blackQueen} [empty] (
+                        (up left {empty})* up left
+                      + (up right {empty})* up right
+                      + (down left {empty})* down left
+                      + (down right {empty})* down right
+                      + (up {empty})* up
+                      + (down {empty})* down
+                      + (right {empty})* right
+                      + (left {empty})* left
+                    ) (
+                        {empty}
+                      + {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved} [$ stagnation = 0]
+                    ) [blackQueen]
+                  + {blackKnight} [empty] (
+                        (up up + down down) (left + right)
+                      + (left left + right right) (up + down)
+                    ) (
+                        {empty}
+                      + {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved} [$ stagnation = 0]
+                    ) [blackKnight]
+                  + {blackPawn} [empty] (
+                        (
+                            down {empty}
+                          + down (left + right) {whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                        ) (
+                            {? down} [blackPawn]
+                          + {! down} (
+                                [blackRookMoved]
+                              + [blackKnight]
+                              + [blackBishop]
+                              + [blackQueen]
+                            )
+                        )
+                      + {! up up} (
+                            down {empty} down {empty}
+                          + down {empty} down {empty} down {empty}
+                          + down {empty} down {empty} down {empty} down {empty}
+                        ) [blackPawn] [$ pawnDoubleMove = 1]
+                    ) [$ stagnation = 0]
+                )
+              + {$ pawnDoubleMove == 1} ([empty] + [empty] down + [empty] down down) (
+                    right {blackPawn} [empty] left
+                  + left {blackPawn} [empty] right
+                ) down [blackPawn] [$ pawnDoubleMove = 0] [$ stagnation = 0]
+            )
+            {!
+              (left* + right*)
+              (up* + down*)
+              {blackKingMoved, blackKingUnmoved}
+              (
+                  (
+                      (up up + down down) (left + right)
+                    + (left left + right right) (up + down)
+                  ) {whiteKnight}
+                + down left (
+                      {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                    + ({empty} down left)* {whiteBishop, whiteQueen}
+                  )
+                + down right (
+                      {whiteKingMoved, whiteKingUnmoved, whitePawn}
+                    + ({empty} down right)* {whiteBishop, whiteQueen}
+                  )
+                + up left (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} up left)* {whiteBishop, whiteQueen}
+                  )
+                + up right (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} up right)* {whiteBishop, whiteQueen}
+                  )
+                + up (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} up)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+                + down (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} down)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+                + left (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} left)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+                + right (
+                      {whiteKingMoved, whiteKingUnmoved}
+                    + ({empty} right)* {whiteQueen, whiteRookMoved, whiteRookUnmoved}
+                  )
+              )
+            }
+          } [$ black = 100] [$ white = 0] ->> {}
+      )
+  )
+)*

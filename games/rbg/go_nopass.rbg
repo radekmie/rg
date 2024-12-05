@@ -1,0 +1,719 @@
+#board =
+  rx0y0[empty]{down:rx0y1,right:rx1y0}
+  rx1y0[empty]{down:rx1y1,left:rx0y0,right:rx2y0}
+  rx2y0[empty]{down:rx2y1,left:rx1y0,right:rx3y0}
+  rx3y0[empty]{down:rx3y1,left:rx2y0,right:rx4y0}
+  rx4y0[empty]{down:rx4y1,left:rx3y0,right:rx5y0}
+  rx5y0[empty]{down:rx5y1,left:rx4y0,right:rx6y0}
+  rx6y0[empty]{down:rx6y1,left:rx5y0,right:rx7y0}
+  rx7y0[empty]{down:rx7y1,left:rx6y0,right:rx8y0}
+  rx8y0[empty]{down:rx8y1,left:rx7y0,right:rx9y0}
+  rx9y0[empty]{down:rx9y1,left:rx8y0,right:rx10y0}
+  rx10y0[empty]{down:rx10y1,left:rx9y0,right:rx11y0}
+  rx11y0[empty]{down:rx11y1,left:rx10y0,right:rx12y0}
+  rx12y0[empty]{down:rx12y1,left:rx11y0,right:rx13y0}
+  rx13y0[empty]{down:rx13y1,left:rx12y0,right:rx14y0}
+  rx14y0[empty]{down:rx14y1,left:rx13y0,right:rx15y0}
+  rx15y0[empty]{down:rx15y1,left:rx14y0,right:rx16y0}
+  rx16y0[empty]{down:rx16y1,left:rx15y0,right:rx17y0}
+  rx17y0[empty]{down:rx17y1,left:rx16y0,right:rx18y0}
+  rx18y0[empty]{down:rx18y1,left:rx17y0}
+  rx0y1[empty]{down:rx0y2,right:rx1y1,up:rx0y0}
+  rx1y1[empty]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+  rx2y1[empty]{down:rx2y2,left:rx1y1,right:rx3y1,up:rx2y0}
+  rx3y1[empty]{down:rx3y2,left:rx2y1,right:rx4y1,up:rx3y0}
+  rx4y1[empty]{down:rx4y2,left:rx3y1,right:rx5y1,up:rx4y0}
+  rx5y1[empty]{down:rx5y2,left:rx4y1,right:rx6y1,up:rx5y0}
+  rx6y1[empty]{down:rx6y2,left:rx5y1,right:rx7y1,up:rx6y0}
+  rx7y1[empty]{down:rx7y2,left:rx6y1,right:rx8y1,up:rx7y0}
+  rx8y1[empty]{down:rx8y2,left:rx7y1,right:rx9y1,up:rx8y0}
+  rx9y1[empty]{down:rx9y2,left:rx8y1,right:rx10y1,up:rx9y0}
+  rx10y1[empty]{down:rx10y2,left:rx9y1,right:rx11y1,up:rx10y0}
+  rx11y1[empty]{down:rx11y2,left:rx10y1,right:rx12y1,up:rx11y0}
+  rx12y1[empty]{down:rx12y2,left:rx11y1,right:rx13y1,up:rx12y0}
+  rx13y1[empty]{down:rx13y2,left:rx12y1,right:rx14y1,up:rx13y0}
+  rx14y1[empty]{down:rx14y2,left:rx13y1,right:rx15y1,up:rx14y0}
+  rx15y1[empty]{down:rx15y2,left:rx14y1,right:rx16y1,up:rx15y0}
+  rx16y1[empty]{down:rx16y2,left:rx15y1,right:rx17y1,up:rx16y0}
+  rx17y1[empty]{down:rx17y2,left:rx16y1,right:rx18y1,up:rx17y0}
+  rx18y1[empty]{down:rx18y2,left:rx17y1,up:rx18y0}
+  rx0y2[empty]{down:rx0y3,right:rx1y2,up:rx0y1}
+  rx1y2[empty]{down:rx1y3,left:rx0y2,right:rx2y2,up:rx1y1}
+  rx2y2[empty]{down:rx2y3,left:rx1y2,right:rx3y2,up:rx2y1}
+  rx3y2[empty]{down:rx3y3,left:rx2y2,right:rx4y2,up:rx3y1}
+  rx4y2[empty]{down:rx4y3,left:rx3y2,right:rx5y2,up:rx4y1}
+  rx5y2[empty]{down:rx5y3,left:rx4y2,right:rx6y2,up:rx5y1}
+  rx6y2[empty]{down:rx6y3,left:rx5y2,right:rx7y2,up:rx6y1}
+  rx7y2[empty]{down:rx7y3,left:rx6y2,right:rx8y2,up:rx7y1}
+  rx8y2[empty]{down:rx8y3,left:rx7y2,right:rx9y2,up:rx8y1}
+  rx9y2[empty]{down:rx9y3,left:rx8y2,right:rx10y2,up:rx9y1}
+  rx10y2[empty]{down:rx10y3,left:rx9y2,right:rx11y2,up:rx10y1}
+  rx11y2[empty]{down:rx11y3,left:rx10y2,right:rx12y2,up:rx11y1}
+  rx12y2[empty]{down:rx12y3,left:rx11y2,right:rx13y2,up:rx12y1}
+  rx13y2[empty]{down:rx13y3,left:rx12y2,right:rx14y2,up:rx13y1}
+  rx14y2[empty]{down:rx14y3,left:rx13y2,right:rx15y2,up:rx14y1}
+  rx15y2[empty]{down:rx15y3,left:rx14y2,right:rx16y2,up:rx15y1}
+  rx16y2[empty]{down:rx16y3,left:rx15y2,right:rx17y2,up:rx16y1}
+  rx17y2[empty]{down:rx17y3,left:rx16y2,right:rx18y2,up:rx17y1}
+  rx18y2[empty]{down:rx18y3,left:rx17y2,up:rx18y1}
+  rx0y3[empty]{down:rx0y4,right:rx1y3,up:rx0y2}
+  rx1y3[empty]{down:rx1y4,left:rx0y3,right:rx2y3,up:rx1y2}
+  rx2y3[empty]{down:rx2y4,left:rx1y3,right:rx3y3,up:rx2y2}
+  rx3y3[empty]{down:rx3y4,left:rx2y3,right:rx4y3,up:rx3y2}
+  rx4y3[empty]{down:rx4y4,left:rx3y3,right:rx5y3,up:rx4y2}
+  rx5y3[empty]{down:rx5y4,left:rx4y3,right:rx6y3,up:rx5y2}
+  rx6y3[empty]{down:rx6y4,left:rx5y3,right:rx7y3,up:rx6y2}
+  rx7y3[empty]{down:rx7y4,left:rx6y3,right:rx8y3,up:rx7y2}
+  rx8y3[empty]{down:rx8y4,left:rx7y3,right:rx9y3,up:rx8y2}
+  rx9y3[empty]{down:rx9y4,left:rx8y3,right:rx10y3,up:rx9y2}
+  rx10y3[empty]{down:rx10y4,left:rx9y3,right:rx11y3,up:rx10y2}
+  rx11y3[empty]{down:rx11y4,left:rx10y3,right:rx12y3,up:rx11y2}
+  rx12y3[empty]{down:rx12y4,left:rx11y3,right:rx13y3,up:rx12y2}
+  rx13y3[empty]{down:rx13y4,left:rx12y3,right:rx14y3,up:rx13y2}
+  rx14y3[empty]{down:rx14y4,left:rx13y3,right:rx15y3,up:rx14y2}
+  rx15y3[empty]{down:rx15y4,left:rx14y3,right:rx16y3,up:rx15y2}
+  rx16y3[empty]{down:rx16y4,left:rx15y3,right:rx17y3,up:rx16y2}
+  rx17y3[empty]{down:rx17y4,left:rx16y3,right:rx18y3,up:rx17y2}
+  rx18y3[empty]{down:rx18y4,left:rx17y3,up:rx18y2}
+  rx0y4[empty]{down:rx0y5,right:rx1y4,up:rx0y3}
+  rx1y4[empty]{down:rx1y5,left:rx0y4,right:rx2y4,up:rx1y3}
+  rx2y4[empty]{down:rx2y5,left:rx1y4,right:rx3y4,up:rx2y3}
+  rx3y4[empty]{down:rx3y5,left:rx2y4,right:rx4y4,up:rx3y3}
+  rx4y4[empty]{down:rx4y5,left:rx3y4,right:rx5y4,up:rx4y3}
+  rx5y4[empty]{down:rx5y5,left:rx4y4,right:rx6y4,up:rx5y3}
+  rx6y4[empty]{down:rx6y5,left:rx5y4,right:rx7y4,up:rx6y3}
+  rx7y4[empty]{down:rx7y5,left:rx6y4,right:rx8y4,up:rx7y3}
+  rx8y4[empty]{down:rx8y5,left:rx7y4,right:rx9y4,up:rx8y3}
+  rx9y4[empty]{down:rx9y5,left:rx8y4,right:rx10y4,up:rx9y3}
+  rx10y4[empty]{down:rx10y5,left:rx9y4,right:rx11y4,up:rx10y3}
+  rx11y4[empty]{down:rx11y5,left:rx10y4,right:rx12y4,up:rx11y3}
+  rx12y4[empty]{down:rx12y5,left:rx11y4,right:rx13y4,up:rx12y3}
+  rx13y4[empty]{down:rx13y5,left:rx12y4,right:rx14y4,up:rx13y3}
+  rx14y4[empty]{down:rx14y5,left:rx13y4,right:rx15y4,up:rx14y3}
+  rx15y4[empty]{down:rx15y5,left:rx14y4,right:rx16y4,up:rx15y3}
+  rx16y4[empty]{down:rx16y5,left:rx15y4,right:rx17y4,up:rx16y3}
+  rx17y4[empty]{down:rx17y5,left:rx16y4,right:rx18y4,up:rx17y3}
+  rx18y4[empty]{down:rx18y5,left:rx17y4,up:rx18y3}
+  rx0y5[empty]{down:rx0y6,right:rx1y5,up:rx0y4}
+  rx1y5[empty]{down:rx1y6,left:rx0y5,right:rx2y5,up:rx1y4}
+  rx2y5[empty]{down:rx2y6,left:rx1y5,right:rx3y5,up:rx2y4}
+  rx3y5[empty]{down:rx3y6,left:rx2y5,right:rx4y5,up:rx3y4}
+  rx4y5[empty]{down:rx4y6,left:rx3y5,right:rx5y5,up:rx4y4}
+  rx5y5[empty]{down:rx5y6,left:rx4y5,right:rx6y5,up:rx5y4}
+  rx6y5[empty]{down:rx6y6,left:rx5y5,right:rx7y5,up:rx6y4}
+  rx7y5[empty]{down:rx7y6,left:rx6y5,right:rx8y5,up:rx7y4}
+  rx8y5[empty]{down:rx8y6,left:rx7y5,right:rx9y5,up:rx8y4}
+  rx9y5[empty]{down:rx9y6,left:rx8y5,right:rx10y5,up:rx9y4}
+  rx10y5[empty]{down:rx10y6,left:rx9y5,right:rx11y5,up:rx10y4}
+  rx11y5[empty]{down:rx11y6,left:rx10y5,right:rx12y5,up:rx11y4}
+  rx12y5[empty]{down:rx12y6,left:rx11y5,right:rx13y5,up:rx12y4}
+  rx13y5[empty]{down:rx13y6,left:rx12y5,right:rx14y5,up:rx13y4}
+  rx14y5[empty]{down:rx14y6,left:rx13y5,right:rx15y5,up:rx14y4}
+  rx15y5[empty]{down:rx15y6,left:rx14y5,right:rx16y5,up:rx15y4}
+  rx16y5[empty]{down:rx16y6,left:rx15y5,right:rx17y5,up:rx16y4}
+  rx17y5[empty]{down:rx17y6,left:rx16y5,right:rx18y5,up:rx17y4}
+  rx18y5[empty]{down:rx18y6,left:rx17y5,up:rx18y4}
+  rx0y6[empty]{down:rx0y7,right:rx1y6,up:rx0y5}
+  rx1y6[empty]{down:rx1y7,left:rx0y6,right:rx2y6,up:rx1y5}
+  rx2y6[empty]{down:rx2y7,left:rx1y6,right:rx3y6,up:rx2y5}
+  rx3y6[empty]{down:rx3y7,left:rx2y6,right:rx4y6,up:rx3y5}
+  rx4y6[empty]{down:rx4y7,left:rx3y6,right:rx5y6,up:rx4y5}
+  rx5y6[empty]{down:rx5y7,left:rx4y6,right:rx6y6,up:rx5y5}
+  rx6y6[empty]{down:rx6y7,left:rx5y6,right:rx7y6,up:rx6y5}
+  rx7y6[empty]{down:rx7y7,left:rx6y6,right:rx8y6,up:rx7y5}
+  rx8y6[empty]{down:rx8y7,left:rx7y6,right:rx9y6,up:rx8y5}
+  rx9y6[empty]{down:rx9y7,left:rx8y6,right:rx10y6,up:rx9y5}
+  rx10y6[empty]{down:rx10y7,left:rx9y6,right:rx11y6,up:rx10y5}
+  rx11y6[empty]{down:rx11y7,left:rx10y6,right:rx12y6,up:rx11y5}
+  rx12y6[empty]{down:rx12y7,left:rx11y6,right:rx13y6,up:rx12y5}
+  rx13y6[empty]{down:rx13y7,left:rx12y6,right:rx14y6,up:rx13y5}
+  rx14y6[empty]{down:rx14y7,left:rx13y6,right:rx15y6,up:rx14y5}
+  rx15y6[empty]{down:rx15y7,left:rx14y6,right:rx16y6,up:rx15y5}
+  rx16y6[empty]{down:rx16y7,left:rx15y6,right:rx17y6,up:rx16y5}
+  rx17y6[empty]{down:rx17y7,left:rx16y6,right:rx18y6,up:rx17y5}
+  rx18y6[empty]{down:rx18y7,left:rx17y6,up:rx18y5}
+  rx0y7[empty]{down:rx0y8,right:rx1y7,up:rx0y6}
+  rx1y7[empty]{down:rx1y8,left:rx0y7,right:rx2y7,up:rx1y6}
+  rx2y7[empty]{down:rx2y8,left:rx1y7,right:rx3y7,up:rx2y6}
+  rx3y7[empty]{down:rx3y8,left:rx2y7,right:rx4y7,up:rx3y6}
+  rx4y7[empty]{down:rx4y8,left:rx3y7,right:rx5y7,up:rx4y6}
+  rx5y7[empty]{down:rx5y8,left:rx4y7,right:rx6y7,up:rx5y6}
+  rx6y7[empty]{down:rx6y8,left:rx5y7,right:rx7y7,up:rx6y6}
+  rx7y7[empty]{down:rx7y8,left:rx6y7,right:rx8y7,up:rx7y6}
+  rx8y7[empty]{down:rx8y8,left:rx7y7,right:rx9y7,up:rx8y6}
+  rx9y7[empty]{down:rx9y8,left:rx8y7,right:rx10y7,up:rx9y6}
+  rx10y7[empty]{down:rx10y8,left:rx9y7,right:rx11y7,up:rx10y6}
+  rx11y7[empty]{down:rx11y8,left:rx10y7,right:rx12y7,up:rx11y6}
+  rx12y7[empty]{down:rx12y8,left:rx11y7,right:rx13y7,up:rx12y6}
+  rx13y7[empty]{down:rx13y8,left:rx12y7,right:rx14y7,up:rx13y6}
+  rx14y7[empty]{down:rx14y8,left:rx13y7,right:rx15y7,up:rx14y6}
+  rx15y7[empty]{down:rx15y8,left:rx14y7,right:rx16y7,up:rx15y6}
+  rx16y7[empty]{down:rx16y8,left:rx15y7,right:rx17y7,up:rx16y6}
+  rx17y7[empty]{down:rx17y8,left:rx16y7,right:rx18y7,up:rx17y6}
+  rx18y7[empty]{down:rx18y8,left:rx17y7,up:rx18y6}
+  rx0y8[empty]{down:rx0y9,right:rx1y8,up:rx0y7}
+  rx1y8[empty]{down:rx1y9,left:rx0y8,right:rx2y8,up:rx1y7}
+  rx2y8[empty]{down:rx2y9,left:rx1y8,right:rx3y8,up:rx2y7}
+  rx3y8[empty]{down:rx3y9,left:rx2y8,right:rx4y8,up:rx3y7}
+  rx4y8[empty]{down:rx4y9,left:rx3y8,right:rx5y8,up:rx4y7}
+  rx5y8[empty]{down:rx5y9,left:rx4y8,right:rx6y8,up:rx5y7}
+  rx6y8[empty]{down:rx6y9,left:rx5y8,right:rx7y8,up:rx6y7}
+  rx7y8[empty]{down:rx7y9,left:rx6y8,right:rx8y8,up:rx7y7}
+  rx8y8[empty]{down:rx8y9,left:rx7y8,right:rx9y8,up:rx8y7}
+  rx9y8[empty]{down:rx9y9,left:rx8y8,right:rx10y8,up:rx9y7}
+  rx10y8[empty]{down:rx10y9,left:rx9y8,right:rx11y8,up:rx10y7}
+  rx11y8[empty]{down:rx11y9,left:rx10y8,right:rx12y8,up:rx11y7}
+  rx12y8[empty]{down:rx12y9,left:rx11y8,right:rx13y8,up:rx12y7}
+  rx13y8[empty]{down:rx13y9,left:rx12y8,right:rx14y8,up:rx13y7}
+  rx14y8[empty]{down:rx14y9,left:rx13y8,right:rx15y8,up:rx14y7}
+  rx15y8[empty]{down:rx15y9,left:rx14y8,right:rx16y8,up:rx15y7}
+  rx16y8[empty]{down:rx16y9,left:rx15y8,right:rx17y8,up:rx16y7}
+  rx17y8[empty]{down:rx17y9,left:rx16y8,right:rx18y8,up:rx17y7}
+  rx18y8[empty]{down:rx18y9,left:rx17y8,up:rx18y7}
+  rx0y9[empty]{down:rx0y10,right:rx1y9,up:rx0y8}
+  rx1y9[empty]{down:rx1y10,left:rx0y9,right:rx2y9,up:rx1y8}
+  rx2y9[empty]{down:rx2y10,left:rx1y9,right:rx3y9,up:rx2y8}
+  rx3y9[empty]{down:rx3y10,left:rx2y9,right:rx4y9,up:rx3y8}
+  rx4y9[empty]{down:rx4y10,left:rx3y9,right:rx5y9,up:rx4y8}
+  rx5y9[empty]{down:rx5y10,left:rx4y9,right:rx6y9,up:rx5y8}
+  rx6y9[empty]{down:rx6y10,left:rx5y9,right:rx7y9,up:rx6y8}
+  rx7y9[empty]{down:rx7y10,left:rx6y9,right:rx8y9,up:rx7y8}
+  rx8y9[empty]{down:rx8y10,left:rx7y9,right:rx9y9,up:rx8y8}
+  rx9y9[empty]{down:rx9y10,left:rx8y9,right:rx10y9,up:rx9y8}
+  rx10y9[empty]{down:rx10y10,left:rx9y9,right:rx11y9,up:rx10y8}
+  rx11y9[empty]{down:rx11y10,left:rx10y9,right:rx12y9,up:rx11y8}
+  rx12y9[empty]{down:rx12y10,left:rx11y9,right:rx13y9,up:rx12y8}
+  rx13y9[empty]{down:rx13y10,left:rx12y9,right:rx14y9,up:rx13y8}
+  rx14y9[empty]{down:rx14y10,left:rx13y9,right:rx15y9,up:rx14y8}
+  rx15y9[empty]{down:rx15y10,left:rx14y9,right:rx16y9,up:rx15y8}
+  rx16y9[empty]{down:rx16y10,left:rx15y9,right:rx17y9,up:rx16y8}
+  rx17y9[empty]{down:rx17y10,left:rx16y9,right:rx18y9,up:rx17y8}
+  rx18y9[empty]{down:rx18y10,left:rx17y9,up:rx18y8}
+  rx0y10[empty]{down:rx0y11,right:rx1y10,up:rx0y9}
+  rx1y10[empty]{down:rx1y11,left:rx0y10,right:rx2y10,up:rx1y9}
+  rx2y10[empty]{down:rx2y11,left:rx1y10,right:rx3y10,up:rx2y9}
+  rx3y10[empty]{down:rx3y11,left:rx2y10,right:rx4y10,up:rx3y9}
+  rx4y10[empty]{down:rx4y11,left:rx3y10,right:rx5y10,up:rx4y9}
+  rx5y10[empty]{down:rx5y11,left:rx4y10,right:rx6y10,up:rx5y9}
+  rx6y10[empty]{down:rx6y11,left:rx5y10,right:rx7y10,up:rx6y9}
+  rx7y10[empty]{down:rx7y11,left:rx6y10,right:rx8y10,up:rx7y9}
+  rx8y10[empty]{down:rx8y11,left:rx7y10,right:rx9y10,up:rx8y9}
+  rx9y10[empty]{down:rx9y11,left:rx8y10,right:rx10y10,up:rx9y9}
+  rx10y10[empty]{down:rx10y11,left:rx9y10,right:rx11y10,up:rx10y9}
+  rx11y10[empty]{down:rx11y11,left:rx10y10,right:rx12y10,up:rx11y9}
+  rx12y10[empty]{down:rx12y11,left:rx11y10,right:rx13y10,up:rx12y9}
+  rx13y10[empty]{down:rx13y11,left:rx12y10,right:rx14y10,up:rx13y9}
+  rx14y10[empty]{down:rx14y11,left:rx13y10,right:rx15y10,up:rx14y9}
+  rx15y10[empty]{down:rx15y11,left:rx14y10,right:rx16y10,up:rx15y9}
+  rx16y10[empty]{down:rx16y11,left:rx15y10,right:rx17y10,up:rx16y9}
+  rx17y10[empty]{down:rx17y11,left:rx16y10,right:rx18y10,up:rx17y9}
+  rx18y10[empty]{down:rx18y11,left:rx17y10,up:rx18y9}
+  rx0y11[empty]{down:rx0y12,right:rx1y11,up:rx0y10}
+  rx1y11[empty]{down:rx1y12,left:rx0y11,right:rx2y11,up:rx1y10}
+  rx2y11[empty]{down:rx2y12,left:rx1y11,right:rx3y11,up:rx2y10}
+  rx3y11[empty]{down:rx3y12,left:rx2y11,right:rx4y11,up:rx3y10}
+  rx4y11[empty]{down:rx4y12,left:rx3y11,right:rx5y11,up:rx4y10}
+  rx5y11[empty]{down:rx5y12,left:rx4y11,right:rx6y11,up:rx5y10}
+  rx6y11[empty]{down:rx6y12,left:rx5y11,right:rx7y11,up:rx6y10}
+  rx7y11[empty]{down:rx7y12,left:rx6y11,right:rx8y11,up:rx7y10}
+  rx8y11[empty]{down:rx8y12,left:rx7y11,right:rx9y11,up:rx8y10}
+  rx9y11[empty]{down:rx9y12,left:rx8y11,right:rx10y11,up:rx9y10}
+  rx10y11[empty]{down:rx10y12,left:rx9y11,right:rx11y11,up:rx10y10}
+  rx11y11[empty]{down:rx11y12,left:rx10y11,right:rx12y11,up:rx11y10}
+  rx12y11[empty]{down:rx12y12,left:rx11y11,right:rx13y11,up:rx12y10}
+  rx13y11[empty]{down:rx13y12,left:rx12y11,right:rx14y11,up:rx13y10}
+  rx14y11[empty]{down:rx14y12,left:rx13y11,right:rx15y11,up:rx14y10}
+  rx15y11[empty]{down:rx15y12,left:rx14y11,right:rx16y11,up:rx15y10}
+  rx16y11[empty]{down:rx16y12,left:rx15y11,right:rx17y11,up:rx16y10}
+  rx17y11[empty]{down:rx17y12,left:rx16y11,right:rx18y11,up:rx17y10}
+  rx18y11[empty]{down:rx18y12,left:rx17y11,up:rx18y10}
+  rx0y12[empty]{down:rx0y13,right:rx1y12,up:rx0y11}
+  rx1y12[empty]{down:rx1y13,left:rx0y12,right:rx2y12,up:rx1y11}
+  rx2y12[empty]{down:rx2y13,left:rx1y12,right:rx3y12,up:rx2y11}
+  rx3y12[empty]{down:rx3y13,left:rx2y12,right:rx4y12,up:rx3y11}
+  rx4y12[empty]{down:rx4y13,left:rx3y12,right:rx5y12,up:rx4y11}
+  rx5y12[empty]{down:rx5y13,left:rx4y12,right:rx6y12,up:rx5y11}
+  rx6y12[empty]{down:rx6y13,left:rx5y12,right:rx7y12,up:rx6y11}
+  rx7y12[empty]{down:rx7y13,left:rx6y12,right:rx8y12,up:rx7y11}
+  rx8y12[empty]{down:rx8y13,left:rx7y12,right:rx9y12,up:rx8y11}
+  rx9y12[empty]{down:rx9y13,left:rx8y12,right:rx10y12,up:rx9y11}
+  rx10y12[empty]{down:rx10y13,left:rx9y12,right:rx11y12,up:rx10y11}
+  rx11y12[empty]{down:rx11y13,left:rx10y12,right:rx12y12,up:rx11y11}
+  rx12y12[empty]{down:rx12y13,left:rx11y12,right:rx13y12,up:rx12y11}
+  rx13y12[empty]{down:rx13y13,left:rx12y12,right:rx14y12,up:rx13y11}
+  rx14y12[empty]{down:rx14y13,left:rx13y12,right:rx15y12,up:rx14y11}
+  rx15y12[empty]{down:rx15y13,left:rx14y12,right:rx16y12,up:rx15y11}
+  rx16y12[empty]{down:rx16y13,left:rx15y12,right:rx17y12,up:rx16y11}
+  rx17y12[empty]{down:rx17y13,left:rx16y12,right:rx18y12,up:rx17y11}
+  rx18y12[empty]{down:rx18y13,left:rx17y12,up:rx18y11}
+  rx0y13[empty]{down:rx0y14,right:rx1y13,up:rx0y12}
+  rx1y13[empty]{down:rx1y14,left:rx0y13,right:rx2y13,up:rx1y12}
+  rx2y13[empty]{down:rx2y14,left:rx1y13,right:rx3y13,up:rx2y12}
+  rx3y13[empty]{down:rx3y14,left:rx2y13,right:rx4y13,up:rx3y12}
+  rx4y13[empty]{down:rx4y14,left:rx3y13,right:rx5y13,up:rx4y12}
+  rx5y13[empty]{down:rx5y14,left:rx4y13,right:rx6y13,up:rx5y12}
+  rx6y13[empty]{down:rx6y14,left:rx5y13,right:rx7y13,up:rx6y12}
+  rx7y13[empty]{down:rx7y14,left:rx6y13,right:rx8y13,up:rx7y12}
+  rx8y13[empty]{down:rx8y14,left:rx7y13,right:rx9y13,up:rx8y12}
+  rx9y13[empty]{down:rx9y14,left:rx8y13,right:rx10y13,up:rx9y12}
+  rx10y13[empty]{down:rx10y14,left:rx9y13,right:rx11y13,up:rx10y12}
+  rx11y13[empty]{down:rx11y14,left:rx10y13,right:rx12y13,up:rx11y12}
+  rx12y13[empty]{down:rx12y14,left:rx11y13,right:rx13y13,up:rx12y12}
+  rx13y13[empty]{down:rx13y14,left:rx12y13,right:rx14y13,up:rx13y12}
+  rx14y13[empty]{down:rx14y14,left:rx13y13,right:rx15y13,up:rx14y12}
+  rx15y13[empty]{down:rx15y14,left:rx14y13,right:rx16y13,up:rx15y12}
+  rx16y13[empty]{down:rx16y14,left:rx15y13,right:rx17y13,up:rx16y12}
+  rx17y13[empty]{down:rx17y14,left:rx16y13,right:rx18y13,up:rx17y12}
+  rx18y13[empty]{down:rx18y14,left:rx17y13,up:rx18y12}
+  rx0y14[empty]{down:rx0y15,right:rx1y14,up:rx0y13}
+  rx1y14[empty]{down:rx1y15,left:rx0y14,right:rx2y14,up:rx1y13}
+  rx2y14[empty]{down:rx2y15,left:rx1y14,right:rx3y14,up:rx2y13}
+  rx3y14[empty]{down:rx3y15,left:rx2y14,right:rx4y14,up:rx3y13}
+  rx4y14[empty]{down:rx4y15,left:rx3y14,right:rx5y14,up:rx4y13}
+  rx5y14[empty]{down:rx5y15,left:rx4y14,right:rx6y14,up:rx5y13}
+  rx6y14[empty]{down:rx6y15,left:rx5y14,right:rx7y14,up:rx6y13}
+  rx7y14[empty]{down:rx7y15,left:rx6y14,right:rx8y14,up:rx7y13}
+  rx8y14[empty]{down:rx8y15,left:rx7y14,right:rx9y14,up:rx8y13}
+  rx9y14[empty]{down:rx9y15,left:rx8y14,right:rx10y14,up:rx9y13}
+  rx10y14[empty]{down:rx10y15,left:rx9y14,right:rx11y14,up:rx10y13}
+  rx11y14[empty]{down:rx11y15,left:rx10y14,right:rx12y14,up:rx11y13}
+  rx12y14[empty]{down:rx12y15,left:rx11y14,right:rx13y14,up:rx12y13}
+  rx13y14[empty]{down:rx13y15,left:rx12y14,right:rx14y14,up:rx13y13}
+  rx14y14[empty]{down:rx14y15,left:rx13y14,right:rx15y14,up:rx14y13}
+  rx15y14[empty]{down:rx15y15,left:rx14y14,right:rx16y14,up:rx15y13}
+  rx16y14[empty]{down:rx16y15,left:rx15y14,right:rx17y14,up:rx16y13}
+  rx17y14[empty]{down:rx17y15,left:rx16y14,right:rx18y14,up:rx17y13}
+  rx18y14[empty]{down:rx18y15,left:rx17y14,up:rx18y13}
+  rx0y15[empty]{down:rx0y16,right:rx1y15,up:rx0y14}
+  rx1y15[empty]{down:rx1y16,left:rx0y15,right:rx2y15,up:rx1y14}
+  rx2y15[empty]{down:rx2y16,left:rx1y15,right:rx3y15,up:rx2y14}
+  rx3y15[empty]{down:rx3y16,left:rx2y15,right:rx4y15,up:rx3y14}
+  rx4y15[empty]{down:rx4y16,left:rx3y15,right:rx5y15,up:rx4y14}
+  rx5y15[empty]{down:rx5y16,left:rx4y15,right:rx6y15,up:rx5y14}
+  rx6y15[empty]{down:rx6y16,left:rx5y15,right:rx7y15,up:rx6y14}
+  rx7y15[empty]{down:rx7y16,left:rx6y15,right:rx8y15,up:rx7y14}
+  rx8y15[empty]{down:rx8y16,left:rx7y15,right:rx9y15,up:rx8y14}
+  rx9y15[empty]{down:rx9y16,left:rx8y15,right:rx10y15,up:rx9y14}
+  rx10y15[empty]{down:rx10y16,left:rx9y15,right:rx11y15,up:rx10y14}
+  rx11y15[empty]{down:rx11y16,left:rx10y15,right:rx12y15,up:rx11y14}
+  rx12y15[empty]{down:rx12y16,left:rx11y15,right:rx13y15,up:rx12y14}
+  rx13y15[empty]{down:rx13y16,left:rx12y15,right:rx14y15,up:rx13y14}
+  rx14y15[empty]{down:rx14y16,left:rx13y15,right:rx15y15,up:rx14y14}
+  rx15y15[empty]{down:rx15y16,left:rx14y15,right:rx16y15,up:rx15y14}
+  rx16y15[empty]{down:rx16y16,left:rx15y15,right:rx17y15,up:rx16y14}
+  rx17y15[empty]{down:rx17y16,left:rx16y15,right:rx18y15,up:rx17y14}
+  rx18y15[empty]{down:rx18y16,left:rx17y15,up:rx18y14}
+  rx0y16[empty]{down:rx0y17,right:rx1y16,up:rx0y15}
+  rx1y16[empty]{down:rx1y17,left:rx0y16,right:rx2y16,up:rx1y15}
+  rx2y16[empty]{down:rx2y17,left:rx1y16,right:rx3y16,up:rx2y15}
+  rx3y16[empty]{down:rx3y17,left:rx2y16,right:rx4y16,up:rx3y15}
+  rx4y16[empty]{down:rx4y17,left:rx3y16,right:rx5y16,up:rx4y15}
+  rx5y16[empty]{down:rx5y17,left:rx4y16,right:rx6y16,up:rx5y15}
+  rx6y16[empty]{down:rx6y17,left:rx5y16,right:rx7y16,up:rx6y15}
+  rx7y16[empty]{down:rx7y17,left:rx6y16,right:rx8y16,up:rx7y15}
+  rx8y16[empty]{down:rx8y17,left:rx7y16,right:rx9y16,up:rx8y15}
+  rx9y16[empty]{down:rx9y17,left:rx8y16,right:rx10y16,up:rx9y15}
+  rx10y16[empty]{down:rx10y17,left:rx9y16,right:rx11y16,up:rx10y15}
+  rx11y16[empty]{down:rx11y17,left:rx10y16,right:rx12y16,up:rx11y15}
+  rx12y16[empty]{down:rx12y17,left:rx11y16,right:rx13y16,up:rx12y15}
+  rx13y16[empty]{down:rx13y17,left:rx12y16,right:rx14y16,up:rx13y15}
+  rx14y16[empty]{down:rx14y17,left:rx13y16,right:rx15y16,up:rx14y15}
+  rx15y16[empty]{down:rx15y17,left:rx14y16,right:rx16y16,up:rx15y15}
+  rx16y16[empty]{down:rx16y17,left:rx15y16,right:rx17y16,up:rx16y15}
+  rx17y16[empty]{down:rx17y17,left:rx16y16,right:rx18y16,up:rx17y15}
+  rx18y16[empty]{down:rx18y17,left:rx17y16,up:rx18y15}
+  rx0y17[empty]{down:rx0y18,right:rx1y17,up:rx0y16}
+  rx1y17[empty]{down:rx1y18,left:rx0y17,right:rx2y17,up:rx1y16}
+  rx2y17[empty]{down:rx2y18,left:rx1y17,right:rx3y17,up:rx2y16}
+  rx3y17[empty]{down:rx3y18,left:rx2y17,right:rx4y17,up:rx3y16}
+  rx4y17[empty]{down:rx4y18,left:rx3y17,right:rx5y17,up:rx4y16}
+  rx5y17[empty]{down:rx5y18,left:rx4y17,right:rx6y17,up:rx5y16}
+  rx6y17[empty]{down:rx6y18,left:rx5y17,right:rx7y17,up:rx6y16}
+  rx7y17[empty]{down:rx7y18,left:rx6y17,right:rx8y17,up:rx7y16}
+  rx8y17[empty]{down:rx8y18,left:rx7y17,right:rx9y17,up:rx8y16}
+  rx9y17[empty]{down:rx9y18,left:rx8y17,right:rx10y17,up:rx9y16}
+  rx10y17[empty]{down:rx10y18,left:rx9y17,right:rx11y17,up:rx10y16}
+  rx11y17[empty]{down:rx11y18,left:rx10y17,right:rx12y17,up:rx11y16}
+  rx12y17[empty]{down:rx12y18,left:rx11y17,right:rx13y17,up:rx12y16}
+  rx13y17[empty]{down:rx13y18,left:rx12y17,right:rx14y17,up:rx13y16}
+  rx14y17[empty]{down:rx14y18,left:rx13y17,right:rx15y17,up:rx14y16}
+  rx15y17[empty]{down:rx15y18,left:rx14y17,right:rx16y17,up:rx15y16}
+  rx16y17[empty]{down:rx16y18,left:rx15y17,right:rx17y17,up:rx16y16}
+  rx17y17[empty]{down:rx17y18,left:rx16y17,right:rx18y17,up:rx17y16}
+  rx18y17[empty]{down:rx18y18,left:rx17y17,up:rx18y16}
+  rx0y18[empty]{right:rx1y18,up:rx0y17}
+  rx1y18[empty]{left:rx0y18,right:rx2y18,up:rx1y17}
+  rx2y18[empty]{left:rx1y18,right:rx3y18,up:rx2y17}
+  rx3y18[empty]{left:rx2y18,right:rx4y18,up:rx3y17}
+  rx4y18[empty]{left:rx3y18,right:rx5y18,up:rx4y17}
+  rx5y18[empty]{left:rx4y18,right:rx6y18,up:rx5y17}
+  rx6y18[empty]{left:rx5y18,right:rx7y18,up:rx6y17}
+  rx7y18[empty]{left:rx6y18,right:rx8y18,up:rx7y17}
+  rx8y18[empty]{left:rx7y18,right:rx9y18,up:rx8y17}
+  rx9y18[empty]{left:rx8y18,right:rx10y18,up:rx9y17}
+  rx10y18[empty]{left:rx9y18,right:rx11y18,up:rx10y17}
+  rx11y18[empty]{left:rx10y18,right:rx12y18,up:rx11y17}
+  rx12y18[empty]{left:rx11y18,right:rx13y18,up:rx12y17}
+  rx13y18[empty]{left:rx12y18,right:rx14y18,up:rx13y17}
+  rx14y18[empty]{left:rx13y18,right:rx15y18,up:rx14y17}
+  rx15y18[empty]{left:rx14y18,right:rx16y18,up:rx15y17}
+  rx16y18[empty]{left:rx15y18,right:rx17y18,up:rx16y17}
+  rx17y18[empty]{left:rx16y18,right:rx18y18,up:rx17y17}
+  rx18y18[empty]{left:rx17y18,up:rx18y17}
+#players = black(100), white(100)
+#pieces = blackStone, dame, empty, toCapture, whiteStone
+#variables = blackPass(1), turn(721), whitePass(1)
+#rules = (
+  ->black
+  (
+      (left* + right*) (up* + down*) {empty} [blackStone] {?
+          {?
+            ((up + down + left + right) {blackStone})*
+            (up + down + left + right)
+            {empty}
+          }
+        + (up + down + left + right) {whiteStone} {!
+            ((up + down + left + right) {whiteStone})*
+            (up + down + left + right)
+            {empty}
+          }
+      } ->> [$ blackPass = 0] (
+          up {whiteStone} {!
+            ((up + down + left + right) {whiteStone})*
+            (up + down + left + right)
+            {empty}
+          } [toCapture] down
+        + {!
+            up
+            {whiteStone}
+            {!
+              ((up + down + left + right) {whiteStone})*
+              (up + down + left + right)
+              {empty}
+            }
+          }
+      ) ->> (
+          down {whiteStone} {!
+            ((up + down + left + right) {whiteStone})*
+            (up + down + left + right)
+            {empty}
+          } [toCapture] up
+        + {!
+            down
+            {whiteStone}
+            {!
+              ((up + down + left + right) {whiteStone})*
+              (up + down + left + right)
+              {empty}
+            }
+          }
+      ) ->> (
+          left {whiteStone} {!
+            ((up + down + left + right) {whiteStone})*
+            (up + down + left + right)
+            {empty}
+          } [toCapture] right
+        + {!
+            left
+            {whiteStone}
+            {!
+              ((up + down + left + right) {whiteStone})*
+              (up + down + left + right)
+              {empty}
+            }
+          }
+      ) ->> (
+          right {whiteStone} {!
+            ((up + down + left + right) {whiteStone})*
+            (up + down + left + right)
+            {empty}
+          } [toCapture] left
+        + {!
+            right
+            {whiteStone}
+            {!
+              ((up + down + left + right) {whiteStone})*
+              (up + down + left + right)
+              {empty}
+            }
+          }
+      ) ->> ->> (
+        (left* + right*)
+        (up* + down*)
+        {toCapture}
+        (up + down + left + right)
+        {whiteStone}
+        [toCapture]
+        ->>
+      )* {!
+        (left* + right*)
+        (up* + down*)
+        {toCapture}
+        (up + down + left + right)
+        {whiteStone}
+      } ->> (
+        (left* + right*)
+        (up* + down*)
+        {toCapture}
+        [empty]
+        ->>
+      )* {! (left* + right*) (up* + down*) {toCapture}}
+    + {!
+        (left* + right*)
+        (up* + down*)
+        {empty}
+        [blackStone]
+        {?
+            {?
+              ((up + down + left + right) {blackStone})*
+              (up + down + left + right)
+              {empty}
+            }
+          + (up + down + left + right) {whiteStone} {!
+              ((up + down + left + right) {whiteStone})*
+              (up + down + left + right)
+              {empty}
+            }
+        }
+      } ->> [$ blackPass = 1]
+  )
+  ->>
+  (
+      {$ (blackPass + whitePass) < 2} [$ turn = (turn + 1)]
+    + (
+        {$ (blackPass + whitePass) == 2} + {$ turn == 721}
+      ) ->> (
+        (left* + right*)
+        (up* + down*)
+        {empty}
+        ->>
+        (
+            (
+                {?
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {dame}
+                }
+              + {?
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {blackStone}
+                } {?
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {whiteStone}
+                }
+            ) [dame]
+          + {!
+              ((up + down + left + right) {empty})*
+              (up + down + left + right)
+              {dame}
+            } (
+                {?
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {blackStone}
+                } {!
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {whiteStone}
+                } [blackStone]
+              + {?
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {whiteStone}
+                } {!
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {blackStone}
+                } [whiteStone]
+            )
+        )
+        ->>
+      )* {! (left* + right*) (up* + down*) {empty}} (
+          {$ whiteStone > blackStone} [$ white = 100] [$ black = 0]
+        + {$ whiteStone < blackStone} [$ white = 0] [$ black = 100]
+        + {$ whiteStone == blackStone} [$ white = 50] [$ black = 50]
+      ) left* {! left} up* {! up} ->> {}
+  )
+  left*
+  {! left}
+  up*
+  {! up}
+  ->white
+  (
+      (left* + right*) (up* + down*) {empty} [whiteStone] {?
+          {?
+            ((up + down + left + right) {whiteStone})*
+            (up + down + left + right)
+            {empty}
+          }
+        + (up + down + left + right) {blackStone} {!
+            ((up + down + left + right) {blackStone})*
+            (up + down + left + right)
+            {empty}
+          }
+      } ->> [$ whitePass = 0] (
+          up {blackStone} {!
+            ((up + down + left + right) {blackStone})*
+            (up + down + left + right)
+            {empty}
+          } [toCapture] down
+        + {!
+            up
+            {blackStone}
+            {!
+              ((up + down + left + right) {blackStone})*
+              (up + down + left + right)
+              {empty}
+            }
+          }
+      ) ->> (
+          down {blackStone} {!
+            ((up + down + left + right) {blackStone})*
+            (up + down + left + right)
+            {empty}
+          } [toCapture] up
+        + {!
+            down
+            {blackStone}
+            {!
+              ((up + down + left + right) {blackStone})*
+              (up + down + left + right)
+              {empty}
+            }
+          }
+      ) ->> (
+          left {blackStone} {!
+            ((up + down + left + right) {blackStone})*
+            (up + down + left + right)
+            {empty}
+          } [toCapture] right
+        + {!
+            left
+            {blackStone}
+            {!
+              ((up + down + left + right) {blackStone})*
+              (up + down + left + right)
+              {empty}
+            }
+          }
+      ) ->> (
+          right {blackStone} {!
+            ((up + down + left + right) {blackStone})*
+            (up + down + left + right)
+            {empty}
+          } [toCapture] left
+        + {!
+            right
+            {blackStone}
+            {!
+              ((up + down + left + right) {blackStone})*
+              (up + down + left + right)
+              {empty}
+            }
+          }
+      ) ->> ->> (
+        (left* + right*)
+        (up* + down*)
+        {toCapture}
+        (up + down + left + right)
+        {blackStone}
+        [toCapture]
+        ->>
+      )* {!
+        (left* + right*)
+        (up* + down*)
+        {toCapture}
+        (up + down + left + right)
+        {blackStone}
+      } ->> (
+        (left* + right*)
+        (up* + down*)
+        {toCapture}
+        [empty]
+        ->>
+      )* {! (left* + right*) (up* + down*) {toCapture}}
+    + {!
+        (left* + right*)
+        (up* + down*)
+        {empty}
+        [whiteStone]
+        {?
+            {?
+              ((up + down + left + right) {whiteStone})*
+              (up + down + left + right)
+              {empty}
+            }
+          + (up + down + left + right) {blackStone} {!
+              ((up + down + left + right) {blackStone})*
+              (up + down + left + right)
+              {empty}
+            }
+        }
+      } ->> [$ whitePass = 1]
+  )
+  ->>
+  (
+      {$ (blackPass + whitePass) < 2} [$ turn = (turn + 1)]
+    + (
+        {$ (blackPass + whitePass) == 2} + {$ turn == 721}
+      ) ->> (
+        (left* + right*)
+        (up* + down*)
+        {empty}
+        ->>
+        (
+            (
+                {?
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {dame}
+                }
+              + {?
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {blackStone}
+                } {?
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {whiteStone}
+                }
+            ) [dame]
+          + {!
+              ((up + down + left + right) {empty})*
+              (up + down + left + right)
+              {dame}
+            } (
+                {?
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {blackStone}
+                } {!
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {whiteStone}
+                } [blackStone]
+              + {?
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {whiteStone}
+                } {!
+                  ((up + down + left + right) {empty})*
+                  (up + down + left + right)
+                  {blackStone}
+                } [whiteStone]
+            )
+        )
+        ->>
+      )* {! (left* + right*) (up* + down*) {empty}} (
+          {$ whiteStone > blackStone} [$ white = 100] [$ black = 0]
+        + {$ whiteStone < blackStone} [$ white = 0] [$ black = 100]
+        + {$ whiteStone == blackStone} [$ white = 50] [$ black = 50]
+      ) left* {! left} up* {! up} ->> {}
+  )
+  left*
+  {! left}
+  up*
+  {! up}
+)*
