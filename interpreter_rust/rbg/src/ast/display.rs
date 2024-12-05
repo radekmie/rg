@@ -5,16 +5,35 @@ use super::{
 use std::fmt::{Display, Formatter, Result};
 use utils::display::write_with_separator;
 
+macro_rules! should_wrap {
+    ($xs:expr) => {
+        $xs.iter().map(|x| x.len()).sum::<usize>() >= 50 || $xs.iter().any(|x| x.contains("\n"))
+    };
+}
+
+fn indent_if_needed(string: String) -> String {
+    if string.contains("\n") {
+        string.replace("\n", "\n  ")
+    } else {
+        string
+    }
+}
+
 impl<Id: Display> Display for Action<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Assignment { variable, rvalue } => write!(f, "[$ {variable} = {rvalue}]"),
-            Self::Check { negated, rule } => match negated {
-                false => write!(f, "{{? {rule}}}"),
-                true => write!(f, "{{! {rule}}}"),
-            },
+            Self::Check { negated, rule } => {
+                let sign = if *negated { '!' } else { '?' };
+                let rule = rule.to_string();
+                if should_wrap!([&rule]) {
+                    write!(f, "{{{sign}\n  {}\n}}", indent_if_needed(rule))
+                } else {
+                    write!(f, "{{{sign} {rule}}}")
+                }
+            }
             Self::Comparison { lhs, rhs, operator } => {
-                write!(f, "{{$ {lhs} {operator} {rhs} }}")
+                write!(f, "{{$ {lhs} {operator} {rhs}}}")
             }
             Self::Off { piece } => write!(f, "[{piece}]"),
             Self::On { pieces } => {
@@ -35,7 +54,14 @@ impl<Id: Display> Display for ActionOrRule<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Action(action) => write!(f, "{action}"),
-            Self::Rule(rule) => write!(f, "({rule})"),
+            Self::Rule(rule) => {
+                let rule = rule.to_string();
+                if should_wrap!([&rule]) {
+                    write!(f, "(\n  {}\n)", indent_if_needed(rule))
+                } else {
+                    write!(f, "({rule})")
+                }
+            }
         }
     }
 }
@@ -43,10 +69,7 @@ impl<Id: Display> Display for ActionOrRule<Id> {
 impl<Id: Display> Display for Atom<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { content, power } = self;
-        match power {
-            false => write!(f, "{content}"),
-            true => write!(f, "{content}*"),
-        }
+        write!(f, "{content}{}", if *power { "*" } else { "" })
     }
 }
 
@@ -83,7 +106,7 @@ impl<Id: Display> Display for Error<Id> {
 impl<Id: Display> Display for Expression<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { lhs, rhs, operator } = self;
-        write!(f, "({lhs}) {operator} ({rhs})")
+        write!(f, "({lhs} {operator} {rhs})")
     }
 }
 
@@ -107,14 +130,14 @@ impl<Id: Display> Display for Game<Id> {
             board,
             rules,
         } = self;
-        write!(f, "#pieces = ")?;
+        write!(f, "#board =\n  ")?;
+        write_with_separator(f, board, "\n  ")?;
+        write!(f, "\n#players = ")?;
+        write_with_separator(f, players, ", ")?;
+        write!(f, "\n#pieces = ")?;
         write_with_separator(f, pieces, ", ")?;
         write!(f, "\n#variables = ")?;
         write_with_separator(f, variables, ", ")?;
-        write!(f, "\n#players = ")?;
-        write_with_separator(f, players, ", ")?;
-        write!(f, "\n#board =\n  ")?;
-        write_with_separator(f, board, "\n  ")?;
         write!(f, "\n#rules = {rules}")
     }
 }
@@ -140,15 +163,30 @@ impl<Id: Display> Display for Node<Id> {
 impl<Id: Display> Display for Rule<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { elements } = self;
-        let mut iter = elements.iter();
-        if let Some(concatenation) = iter.next() {
-            write_with_separator(f, concatenation, " ")?;
-            for concatenation in iter {
-                write!(f, " + ")?;
-                write_with_separator(f, concatenation, " ")?;
-            }
+        if let [atoms] = &elements[..] {
+            let atoms: Vec<_> = atoms.iter().map(ToString::to_string).collect();
+            let separator = if should_wrap!(&atoms) { "\n" } else { " " };
+            return write_with_separator(f, &atoms, separator);
         }
-        Ok(())
+
+        let elements = elements
+            .iter()
+            .map(|concatenation| {
+                concatenation
+                    .iter()
+                    .map(ToString::to_string)
+                    .map(indent_if_needed)
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
+            .collect::<Vec<_>>();
+
+        if should_wrap!(&elements) {
+            write!(f, "  ")?;
+            write_with_separator(f, &elements, "\n+ ")
+        } else {
+            write_with_separator(f, &elements, " + ")
+        }
     }
 }
 
