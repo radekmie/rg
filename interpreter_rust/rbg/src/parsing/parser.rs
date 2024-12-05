@@ -121,7 +121,7 @@ fn expression1(input: Input) -> Result<RValue<Id>> {
 
 fn expression2(input: Input) -> Result<RValue<Id>> {
     alt((
-        map(integer, RValue::new_number),
+        map(ww(integer), RValue::new_number),
         map(identifier, RValue::new_string),
         in_parens(expression),
     ))(input)
@@ -131,10 +131,10 @@ fn comparison_operator(input: Input) -> Result<ComparisonOperator> {
     alt((
         value(ComparisonOperator::Eq, tag("==")),
         value(ComparisonOperator::Ne, tag("!=")),
-        value(ComparisonOperator::Lt, tag("<")),
         value(ComparisonOperator::Lte, tag("<=")),
-        value(ComparisonOperator::Gt, tag(">")),
+        value(ComparisonOperator::Lt, tag("<")),
         value(ComparisonOperator::Gte, tag(">=")),
+        value(ComparisonOperator::Gt, tag(">")),
     ))(input)
 }
 
