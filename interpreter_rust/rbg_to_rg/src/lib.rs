@@ -651,15 +651,6 @@ fn copy_path(
         }
     }
 
-    /// This cannot be inlined because of borrow from `outgoing_edges`.
-    fn nth_outgoing_edge(
-        context: &Context,
-        node: &rg::Node<Id>,
-        index: usize,
-    ) -> Option<Arc<rg::Edge<Id>>> {
-        context.rg.outgoing_edges(node).nth(index).cloned()
-    }
-
     fn copy_if_on_path(
         context: &mut Context,
         distances: &mut BTreeMap<rg::Node<Id>, Option<usize>>,
@@ -672,9 +663,7 @@ fn copy_path(
 
             // If it's not reached, copy and check.
             if distances[node].is_none() {
-                let mut index = 0;
-                while let Some(next) = nth_outgoing_edge(context, node, index) {
-                    index += 1;
+                for next in context.rg.outgoing_edges(node).cloned().collect::<Vec<_>>() {
                     if !next.label.is_player_assignment() {
                         let distance =
                             copy_if_on_path(context, distances, prefix, original_to, &next.rhs)
@@ -889,10 +878,11 @@ fn terminate_on_zero_moves(context: &mut Context) {
 
         let mut visited = BTreeSet::new();
         let mut reachable_player_assignments = Vec::new();
-        for rg::Edge { rhs: c, .. } in context.rg.outgoing_edges(b).map(Arc::as_ref) {
+        let next_edges = context.rg.next_edges();
+        for rg::Edge { rhs: c, .. } in next_edges.get(b).into_iter().flatten().map(|x| x.as_ref()) {
             let mut queue = vec![c.clone()];
             while let Some(node) = queue.pop() {
-                for edge in context.rg.outgoing_edges(&node).map(Arc::as_ref) {
+                for edge in next_edges.get(&node).into_iter().flatten().map(|x| x.as_ref()) {
                     if edge.label.is_player_assignment() {
                         if !reachable_player_assignments.contains(&edge.lhs) {
                             reachable_player_assignments.push(edge.lhs.clone());
@@ -904,12 +894,8 @@ fn terminate_on_zero_moves(context: &mut Context) {
             }
         }
 
-        if reachable_player_assignments.is_empty() {
-            continue;
-        }
-
         match reachable_player_assignments.len() {
-            0 => continue,
+            0 => {},
             1 => {
                 let (lhs, rhs) = copy_path(
                     context,
