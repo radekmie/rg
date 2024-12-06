@@ -263,10 +263,10 @@ graph move(me: Player) {
       $ JUMPDIAGLEFTDOWN2
     } or {
       t = jump_diagrightup1(p)
-      $ JUMPDIAGLEFTUP1
+      $ JUMPDIAGRIGHTUP1
     } or {
       t = jump_diagrightup2(p)
-      $ JUMPDIAGLEFTUP2
+      $ JUMPDIAGRIGHTUP2
     } or {
       t = jump_diagrightdown1(p)
       $ JUMPDIAGRIGHTDOWN1
