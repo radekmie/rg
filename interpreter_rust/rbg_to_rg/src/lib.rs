@@ -879,10 +879,15 @@ fn terminate_on_zero_moves(context: &mut Context) {
         let mut visited = BTreeSet::new();
         let mut reachable_player_assignments = Vec::new();
         let next_edges = context.rg.next_edges();
-        for rg::Edge { rhs: c, .. } in next_edges.get(b).into_iter().flatten().map(|x| x.as_ref()) {
+        for rg::Edge { rhs: c, .. } in next_edges.get(b).into_iter().flatten().map(AsRef::as_ref) {
             let mut queue = vec![c.clone()];
             while let Some(node) = queue.pop() {
-                for edge in next_edges.get(&node).into_iter().flatten().map(|x| x.as_ref()) {
+                for edge in next_edges
+                    .get(&node)
+                    .into_iter()
+                    .flatten()
+                    .map(AsRef::as_ref)
+                {
                     if edge.label.is_player_assignment() {
                         if !reachable_player_assignments.contains(&edge.lhs) {
                             reachable_player_assignments.push(edge.lhs.clone());
@@ -895,7 +900,7 @@ fn terminate_on_zero_moves(context: &mut Context) {
         }
 
         match reachable_player_assignments.len() {
-            0 => {},
+            0 => {}
             1 => {
                 let (lhs, rhs) = copy_path(
                     context,
