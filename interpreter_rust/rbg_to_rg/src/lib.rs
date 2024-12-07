@@ -93,20 +93,37 @@ impl Context {
         rhs: Arc<rg::Expression<Id>>,
         operator: rbg::Operator,
     ) -> Arc<rg::Expression<Id>> {
+        use rbg::Operator::{Comparison, Expression};
+        use rbg::{ComparisonOperator, ExpressionOperator};
+
+        let rhs_is_one = rhs.is_reference_and(|id| id.as_ref() == "1");
+        let operator = match operator {
+            Comparison(ComparisonOperator::Gt) => InternalOperator::Gt,
+            Comparison(ComparisonOperator::Gte) => InternalOperator::Gte,
+            Comparison(ComparisonOperator::Lt) => InternalOperator::Lt,
+            Comparison(ComparisonOperator::Lte) => InternalOperator::Lte,
+            Expression(ExpressionOperator::Add) if rhs_is_one => InternalOperator::Incr,
+            Expression(ExpressionOperator::Add) => InternalOperator::Add,
+            Expression(ExpressionOperator::Sub) if rhs_is_one => InternalOperator::Decr,
+            Expression(ExpressionOperator::Sub) => InternalOperator::Sub,
+            _ => unimplemented!("{operator:?}"),
+        };
+
         let math_operator = Id::from(format!(
             "math_{}_{limit}",
             match operator {
-                rbg::Operator::Comparison(rbg::ComparisonOperator::Gt) => "gt",
-                rbg::Operator::Comparison(rbg::ComparisonOperator::Gte) => "gte",
-                rbg::Operator::Comparison(rbg::ComparisonOperator::Lt) => "lt",
-                rbg::Operator::Comparison(rbg::ComparisonOperator::Lte) => "lte",
-                rbg::Operator::Expression(rbg::ExpressionOperator::Add) => "add",
-                rbg::Operator::Expression(rbg::ExpressionOperator::Div) => "div",
-                rbg::Operator::Expression(rbg::ExpressionOperator::Mul) => "mul",
-                rbg::Operator::Expression(rbg::ExpressionOperator::Sub) => "sub",
-                rbg::Operator::Comparison(_) => unreachable!(),
+                InternalOperator::Add => "add",
+                InternalOperator::Decr => "decr",
+                InternalOperator::Gt => "gt",
+                InternalOperator::Gte => "gte",
+                InternalOperator::Incr => "incr",
+                InternalOperator::Lt => "lt",
+                InternalOperator::Lte => "lte",
+                InternalOperator::Sub => "sub",
             }
         ));
+
+        let is_binary = matches!(operator, InternalOperator::Decr | InternalOperator::Incr);
 
         if !self
             .rg
@@ -116,42 +133,52 @@ impl Context {
         {
             let type_ = self.create_math_type(limit);
             let value = self.create_math_operator_value(limit, operator);
+            let binary = Arc::from(rg::Type::Arrow {
+                lhs: type_.clone(),
+                rhs: type_.clone(),
+            });
+
             self.rg.constants.push(rg::Constant {
                 span: Span::none(),
                 identifier: math_operator.clone(),
-                type_: Arc::from(rg::Type::Arrow {
-                    lhs: type_.clone(),
-                    rhs: Arc::from(rg::Type::Arrow {
-                        lhs: type_.clone(),
-                        rhs: type_,
-                    }),
-                }),
+                type_: if is_binary {
+                    binary
+                } else {
+                    Arc::from(rg::Type::Arrow {
+                        lhs: type_,
+                        rhs: binary,
+                    })
+                },
                 value,
             });
         }
 
-        Arc::from(rg::Expression::Access {
+        let binary = Arc::from(rg::Expression::Access {
             span: Span::none(),
-            lhs: Arc::from(rg::Expression::Access {
+            lhs: Arc::from(rg::Expression::new(math_operator)),
+            rhs: lhs,
+        });
+
+        if is_binary {
+            binary
+        } else {
+            Arc::from(rg::Expression::Access {
                 span: Span::none(),
-                lhs: Arc::from(rg::Expression::new(math_operator)),
-                rhs: lhs,
-            }),
-            rhs,
-        })
+                lhs: binary,
+                rhs,
+            })
+        }
     }
 
     fn create_math_operator_value(
         &self,
         limit: usize,
-        operator: rbg::Operator,
+        operator: InternalOperator,
     ) -> Arc<rg::Value<Id>> {
+        use InternalOperator::{Add, Decr, Gt, Gte, Incr, Lt, Lte, Sub};
+
         let nan = Id::from("nan");
         let nan_value = Arc::from(rg::Value::new(nan.clone()));
-        let nan_map = Arc::from(rg::Value::from_pairs(vec![(
-            nan.clone(),
-            nan_value.clone(),
-        )]));
 
         let mut numbers = BTreeMap::new();
         macro_rules! number {
@@ -164,26 +191,46 @@ impl Context {
             }};
         }
 
+        if operator == Decr || operator == Incr {
+            return Arc::from(rg::Value::from_pairs(
+                (0..limit)
+                    .map(|lhs| {
+                        let value = match operator {
+                            Decr if lhs < 1 => nan_value.clone(),
+                            Decr => number!(lhs - 1),
+                            Incr if lhs + 1 >= limit => nan_value.clone(),
+                            Incr => number!(lhs + 1),
+                            _ => unreachable!(),
+                        };
+
+                        (Id::from(lhs.to_string()), value)
+                    })
+                    .chain([(nan.clone(), nan_value.clone())])
+                    .collect(),
+            ));
+        }
+
+        let nan_map = Arc::from(rg::Value::from_pairs(vec![(
+            nan.clone(),
+            nan_value.clone(),
+        )]));
+
         Arc::from(rg::Value::from_pairs(
             (0..limit)
                 .map(|lhs| {
                     let value = Arc::from(rg::Value::from_pairs(
                         (0..limit)
                             .map(|rhs| {
-                                use rbg::ComparisonOperator::{Gt, Gte, Lt, Lte};
-                                use rbg::ExpressionOperator::{Add, Sub};
-                                use rbg::Operator::{Comparison, Expression};
-
                                 let value = match operator {
-                                    Comparison(Gt) => number!(lhs > rhs),
-                                    Comparison(Gte) => number!(lhs >= rhs),
-                                    Comparison(Lt) => number!(lhs < rhs),
-                                    Comparison(Lte) => number!(lhs <= rhs),
-                                    Expression(Add) if lhs + rhs >= limit => nan_value.clone(),
-                                    Expression(Add) => number!(lhs + rhs),
-                                    Expression(Sub) if lhs < rhs => nan_value.clone(),
-                                    Expression(Sub) => number!(lhs - rhs),
-                                    _ => unimplemented!("create_math_operator of {operator:?}"),
+                                    Add if lhs + rhs >= limit => nan_value.clone(),
+                                    Add => number!(lhs + rhs),
+                                    Gt => number!(lhs > rhs),
+                                    Gte => number!(lhs >= rhs),
+                                    Lt => number!(lhs < rhs),
+                                    Lte => number!(lhs <= rhs),
+                                    Sub if lhs < rhs => nan_value.clone(),
+                                    Sub => number!(lhs - rhs),
+                                    _ => unreachable!(),
                                 };
 
                                 (Id::from(rhs.to_string()), value)
@@ -297,6 +344,18 @@ impl Context {
         self.node_index += 1;
         rg::Node::new(Id::from(self.node_index.to_string()))
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum InternalOperator {
+    Add,
+    Decr,
+    Gt,
+    Gte,
+    Incr,
+    Lt,
+    Lte,
+    Sub,
 }
 
 pub fn rbg_to_rg(rbg: rbg::Game<Id>) -> Result<rg::Game<Id>, rbg::Error<Id>> {
