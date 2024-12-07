@@ -6,6 +6,7 @@ mod validators;
 use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Display;
 use std::sync::Arc;
@@ -96,6 +97,13 @@ impl<Id: Display> Edge<Id> {
 impl<Id: Ord> Edge<Id> {
     pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
         self.lhs.bindings().chain(self.rhs.bindings()).collect()
+    }
+
+    pub fn cmp_outgoing(&self, other: &Self) -> Ordering {
+        self.lhs
+            .cmp(&other.lhs)
+            .then_with(|| self.rhs.cmp(&other.rhs))
+            .then_with(|| self.label.cmp(&other.label))
     }
 }
 
@@ -1224,6 +1232,40 @@ impl<Id: Ord> Game<Id> {
                 prev_edges.entry(&edge.rhs).or_default().insert(edge);
                 prev_edges
             })
+    }
+
+    /// It works only if `self.edges` are sorted by `cmp_outgoing`.
+    pub fn sorted_outgoing_edges<'a>(
+        &'a self,
+        node: &'a Node<Id>,
+    ) -> impl Iterator<Item = &'a Arc<Edge<Id>>> {
+        self.edges
+            .binary_search_by(|x| x.lhs.cmp(node))
+            .map_or_else(
+                |_| self.edges[0..0].iter(),
+                |index| {
+                    let mut from = index;
+                    while from > 0
+                        && self
+                            .edges
+                            .get(from.saturating_sub(1))
+                            .is_some_and(|edge| edge.lhs == *node)
+                    {
+                        from = from.saturating_sub(1);
+                    }
+
+                    let mut to = index;
+                    while self
+                        .edges
+                        .get(to.saturating_add(1))
+                        .is_some_and(|edge| edge.lhs == *node)
+                    {
+                        to = to.saturating_add(1);
+                    }
+
+                    self.edges[from..=to].iter()
+                },
+            )
     }
 
     pub fn to_stats(&self) -> String {

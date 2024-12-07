@@ -629,7 +629,7 @@ fn copy_path(
             return;
         }
 
-        let mut copied_edge = rg::Edge {
+        let mut edge = rg::Edge {
             span: Span::none(),
             label: edge.label.clone(),
             lhs: prefix_node(prefix, edge.lhs.clone()),
@@ -641,13 +641,13 @@ fn copy_path(
         //   - $ coordGenerator
         //   - $ index_N
         if distance <= 3 {
-            copied_edge.lhs.parts.truncate(1);
-            copied_edge.rhs.parts.truncate(1);
-            copied_edge.skip();
+            edge.lhs.parts.truncate(1);
+            edge.rhs.parts.truncate(1);
+            edge.skip();
         }
 
-        if context.rg.edges.iter().all(|edge| **edge != copied_edge) {
-            context.rg.edges.push(Arc::from(copied_edge));
+        if let Err(index) = context.rg.edges.binary_search_by(|x| x.cmp_outgoing(&edge)) {
+            context.rg.edges.insert(index, Arc::from(edge));
         }
     }
 
@@ -663,18 +663,23 @@ fn copy_path(
 
             // If it's not reached, copy and check.
             if distances[node].is_none() {
-                for next in context.rg.outgoing_edges(node).cloned().collect::<Vec<_>>() {
-                    if !next.label.is_player_assignment() {
-                        let distance =
-                            copy_if_on_path(context, distances, prefix, original_to, &next.rhs)
-                                .unwrap_or(usize::MAX)
-                                .saturating_add(1);
-                        copy(context, distances, prefix, &next, distance);
-                        distances.insert(
-                            node.clone(),
-                            Some(distances[node].unwrap_or(usize::MAX).min(distance)),
-                        );
-                    }
+                let next_edges = context
+                    .rg
+                    .sorted_outgoing_edges(node)
+                    .filter(|edge| !edge.label.is_player_assignment())
+                    .cloned()
+                    .collect::<Vec<_>>();
+
+                for next in next_edges {
+                    let distance =
+                        copy_if_on_path(context, distances, prefix, original_to, &next.rhs)
+                            .unwrap_or(usize::MAX)
+                            .saturating_add(1);
+                    copy(context, distances, prefix, &next, distance);
+                    distances.insert(
+                        node.clone(),
+                        Some(distances[node].unwrap_or(usize::MAX).min(distance)),
+                    );
                 }
             }
 
@@ -702,6 +707,7 @@ fn copy_path(
     let mut distances = BTreeMap::new();
     let prefix = Id::from(format!("{original_from}_{original_to}"));
 
+    context.rg.edges.sort_by(|x, y| x.cmp_outgoing(y));
     copy_if_on_path(
         context,
         &mut distances,
@@ -867,27 +873,23 @@ fn terminate_on_zero_moves(context: &mut Context) {
     // 1. For every `A, B: player = P`, where `P != keeper`.
     //   2. Find all paths from `B` to `D` ending in `E, _: player = *`.
     //   3. Add new edges from `B` to `end` with all `! C -> E`, where `C` is a fresh node between `B` and `D`.
-    let mut index = 0;
-    while let Some(edge) = context.rg.edges.get(index).cloned() {
-        index += 1;
+    let player_assignments: Vec<_> = context
+        .rg
+        .edges
+        .iter()
+        .filter(|edge| edge.label.is_player_assignment())
+        .cloned()
+        .collect();
 
-        let rg::Edge { rhs: b, label, .. } = edge.as_ref();
-        if !label.is_player_assignment() {
-            continue;
-        }
-
+    for edge in player_assignments {
+        let b = &edge.rhs;
         let mut visited = BTreeSet::new();
         let mut reachable_player_assignments = Vec::new();
-        let next_edges = context.rg.next_edges();
-        for rg::Edge { rhs: c, .. } in next_edges.get(b).into_iter().flatten().map(AsRef::as_ref) {
+        context.rg.edges.sort_by(|x, y| x.cmp_outgoing(y));
+        for c in context.rg.sorted_outgoing_edges(b).map(|edge| &edge.rhs) {
             let mut queue = vec![c.clone()];
             while let Some(node) = queue.pop() {
-                for edge in next_edges
-                    .get(&node)
-                    .into_iter()
-                    .flatten()
-                    .map(AsRef::as_ref)
-                {
+                for edge in context.rg.sorted_outgoing_edges(&node) {
                     if edge.label.is_player_assignment() {
                         if !reachable_player_assignments.contains(&edge.lhs) {
                             reachable_player_assignments.push(edge.lhs.clone());
