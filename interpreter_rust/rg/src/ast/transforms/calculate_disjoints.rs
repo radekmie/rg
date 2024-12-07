@@ -18,7 +18,8 @@ impl Game<Arc<str>> {
                 continue;
             }
 
-            if let Some((is_exhaustive, nodes)) = game.get_disjoint(edges) {
+            if let Some((is_exhaustive, mut nodes)) = game.get_disjoint(edges) {
+                nodes.sort_unstable();
                 let pragma = if is_exhaustive {
                     Pragma::DisjointExhaustive {
                         span: Span::none(),
@@ -51,7 +52,11 @@ impl Game<Arc<str>> {
         &self,
         mut edges: BTreeSet<&Arc<Edge<Arc<str>>>>,
     ) -> Option<(bool, Vec<Node<Arc<str>>>)> {
-        let e1 = edges.pop_first().unwrap();
+        // Take first comparison (if there is any).
+        let e1 = match edges.iter().find(|edge| edge.label.is_comparison()) {
+            None => edges.pop_first().unwrap(),
+            Some(&edge) => edges.take(&edge.clone()).unwrap(),
+        };
 
         // If-else.
         if edges.len() == 1 {
@@ -188,27 +193,27 @@ mod test {
         calculate_disjoints,
         breakthrough,
         include_str!("../../../../../games/rg/breakthrough.rg"),
-        adds "@disjointExhaustive wincheck : win continue; @disjointExhaustive turn : move lose;"
+        adds "@disjointExhaustive wincheck : continue win; @disjointExhaustive turn : lose move;"
     );
 
     test_transform!(
         calculate_disjoints,
         tictactoe,
         include_str!("../../../../../games/rg/ticTacToe.rg"),
-        adds "@disjointExhaustive checkwin : win nextturn; @disjointExhaustive turn : move preend;"
+        adds "@disjointExhaustive checkwin : nextturn win; @disjointExhaustive turn : move preend;"
     );
 
     test_transform!(
         calculate_disjoints,
         simple_apply_test_5,
         include_str!("../../../../../games/rg/simpleApplyTest5.rg"),
-        adds "@disjointExhaustive readKey : readZero readOne;"
+        adds "@disjointExhaustive readKey : readOne readZero;"
     );
 
     test_transform!(
         calculate_disjoints,
         simple_apply_test_6,
         include_str!("../../../../../games/rg/simpleApplyTest6.rg"),
-        adds "@disjoint readKey : readZero readOne; @disjointExhaustive readHidden : readDone win draw;"
+        adds "@disjoint readKey : readOne readZero; @disjointExhaustive readHidden : draw readDone win;"
     );
 }
