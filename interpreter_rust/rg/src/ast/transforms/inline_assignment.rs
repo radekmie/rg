@@ -78,7 +78,8 @@ impl Game<Id> {
                     .bindings()
                     .iter()
                     .any(|binding| vars_in_rhs.contains(binding.0));
-                let usage_already_modified = usages.iter().any(|usage| modified_edges.contains(usage));
+                let usage_already_modified =
+                    usages.iter().any(|usage| modified_edges.contains(usage));
                 if usage_already_modified {
                     continue;
                 }
