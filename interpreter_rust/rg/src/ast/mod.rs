@@ -1688,6 +1688,13 @@ impl<Id> Value<Id> {
         Self::Element { identifier }
     }
 
+    pub fn new_empty(value: Arc<Self>) -> Self {
+        Self::Map {
+            span: Span::none(),
+            entries: vec![ValueEntry::new_default(value)],
+        }
+    }
+
     pub fn size(&self) -> usize {
         match self {
             Self::Element { .. } => 1,
@@ -1759,6 +1766,10 @@ impl<Id: Ord> Value<Id> {
                 )
                 .collect(),
         }
+    }
+
+    pub fn from_pairs_iter(iter: impl Iterator<Item = (Id, Arc<Self>)>) -> Self {
+        Self::from_pairs(iter.collect())
     }
 
     /// Test:

@@ -7,9 +7,11 @@ use utils::position::Span;
 type Id = Arc<str>;
 
 struct Context {
+    coords: Vec<Id>,
     expose_index: usize,
     node_index: usize,
     rbg: rbg::Game<Id>,
+    reachable_map_index: usize,
     rg: rg::Game<Id>,
     rule_automatons: BTreeMap<rbg::Rule<Id>, (rg::Node<Id>, rg::Node<Id>)>,
     shift_patterns: BTreeMap<(Id, rbg::Rule<Id>), Vec<Id>>,
@@ -192,7 +194,7 @@ impl Context {
         }
 
         if operator == Decr || operator == Incr {
-            return Arc::from(rg::Value::from_pairs(
+            return Arc::from(rg::Value::from_pairs_iter(
                 (0..limit)
                     .map(|lhs| {
                         let value = match operator {
@@ -205,20 +207,15 @@ impl Context {
 
                         (Id::from(lhs.to_string()), value)
                     })
-                    .chain([(nan.clone(), nan_value.clone())])
-                    .collect(),
+                    .chain([(nan.clone(), nan_value.clone())]),
             ));
         }
 
-        let nan_map = Arc::from(rg::Value::from_pairs(vec![(
-            nan.clone(),
-            nan_value.clone(),
-        )]));
-
-        Arc::from(rg::Value::from_pairs(
+        let nan_map = Arc::from(rg::Value::new_empty(nan_value.clone()));
+        Arc::from(rg::Value::from_pairs_iter(
             (0..limit)
                 .map(|lhs| {
-                    let value = Arc::from(rg::Value::from_pairs(
+                    let value = Arc::from(rg::Value::from_pairs_iter(
                         (0..limit)
                             .map(|rhs| {
                                 let value = match operator {
@@ -235,14 +232,12 @@ impl Context {
 
                                 (Id::from(rhs.to_string()), value)
                             })
-                            .chain([(nan.clone(), nan_value.clone())])
-                            .collect(),
+                            .chain([(nan.clone(), nan_value.clone())]),
                     ));
 
                     (Id::from(lhs.to_string()), value)
                 })
-                .chain([(nan.clone(), nan_map.clone())])
-                .collect(),
+                .chain([(nan.clone(), nan_map.clone())]),
         ))
     }
 
@@ -277,6 +272,46 @@ impl Context {
             });
 
         Arc::from(rg::Type::new(identifier))
+    }
+
+    fn create_reachability_map(&mut self, map: &BTreeMap<Id, Vec<Id>>) -> Id {
+        let one = Arc::from(rg::Value::new(Id::from("1")));
+        let zero = Arc::from(rg::Value::new(Id::from("0")));
+
+        let value = Arc::from(rg::Value::from_pairs_iter(self.coords.iter().map(|lhs| {
+            let value = Arc::from(rg::Value::from_pairs_iter(self.coords.iter().map(|rhs| {
+                let value = match map.get(lhs) {
+                    Some(rhss) if rhss.contains(rhs) => one.clone(),
+                    _ => zero.clone(),
+                };
+
+                (rhs.clone(), value)
+            })));
+
+            (lhs.clone(), value)
+        })));
+
+        if let Some(constant) = self.rg.constants.iter().find(|x| x.value == value) {
+            constant.identifier.clone()
+        } else {
+            self.reachable_map_index += 1;
+            let identifier = Id::from(format!("ReachableMap{}", self.reachable_map_index));
+
+            self.rg.constants.push(rg::Constant {
+                span: Span::none(),
+                identifier: identifier.clone(),
+                type_: Arc::from(rg::Type::Arrow {
+                    lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
+                    rhs: Arc::from(rg::Type::Arrow {
+                        lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
+                        rhs: Arc::from(rg::Type::new(Id::from("Bool"))),
+                    }),
+                }),
+                value,
+            });
+
+            identifier
+        }
     }
 
     fn make_shift_pattern(&mut self, coord: &Id, rule: &rbg::Rule<Id>) -> Vec<Id> {
@@ -360,9 +395,14 @@ enum InternalOperator {
 
 pub fn rbg_to_rg(rbg: rbg::Game<Id>) -> Result<rg::Game<Id>, rbg::Error<Id>> {
     let mut context = Context {
+        coords: (Some(Id::from("null")))
+            .into_iter()
+            .chain(rbg.board.iter().map(|node| node.node.clone()))
+            .collect(),
         expose_index: 0,
         node_index: 0,
         rbg,
+        reachable_map_index: 0,
         rg: rg::Game::default(),
         rule_automatons: BTreeMap::new(),
         shift_patterns: BTreeMap::new(),
@@ -536,10 +576,7 @@ fn add_builtin_types(context: &mut Context) {
         identifier: Id::from("Coord"),
         type_: Arc::from(rg::Type::Set {
             span: Span::none(),
-            identifiers: (Some(Id::from("null")))
-                .into_iter()
-                .chain(context.rbg.board.iter().map(|node| node.node.clone()))
-                .collect(),
+            identifiers: context.coords.clone(),
         }),
     });
 
@@ -574,28 +611,20 @@ fn add_builtin_variables(context: &mut Context) {
         span: Span::none(),
         identifier: Id::from("goals"),
         type_: Arc::from(rg::Type::new(Id::from("Goals"))),
-        default_value: Arc::from(rg::Value::Map {
-            span: Span::none(),
-            entries: vec![rg::ValueEntry::new_default(Arc::from(rg::Value::new(
-                Id::from("0"),
-            )))],
-        }),
+        default_value: Arc::from(rg::Value::new_empty(Arc::from(rg::Value::new(Id::from(
+            "0",
+        ))))),
     });
 
     context.rg.variables.push(rg::Variable {
         span: Span::none(),
         identifier: Id::from("board"),
         type_: Arc::from(rg::Type::new(Id::from("Board"))),
-        default_value: Arc::from(rg::Value::from_pairs(
-            context
-                .rbg
-                .board
-                .iter()
-                .map(|rbg::Node { node, piece, .. }| {
-                    (node.clone(), Arc::from(rg::Value::new(piece.clone())))
-                })
-                .collect(),
-        )),
+        default_value: Arc::from(rg::Value::from_pairs_iter(context.rbg.board.iter().map(
+            |rbg::Node { node, piece, .. }| {
+                (node.clone(), Arc::from(rg::Value::new(piece.clone())))
+            },
+        ))),
     });
 
     context.rg.variables.push(rg::Variable {
@@ -609,23 +638,18 @@ fn add_builtin_variables(context: &mut Context) {
         span: Span::none(),
         identifier: Id::from("counters"),
         type_: Arc::from(rg::Type::new(Id::from("Counters"))),
-        default_value: Arc::from(rg::Value::from_pairs(
-            context
-                .rbg
-                .pieces
-                .iter()
-                .map(|piece| {
-                    let count = context
-                        .rbg
-                        .board
-                        .iter()
-                        .filter(|node| node.piece == *piece)
-                        .count()
-                        .to_string();
-                    (piece.clone(), Arc::from(rg::Value::new(Id::from(count))))
-                })
-                .collect(),
-        )),
+        default_value: Arc::from(rg::Value::from_pairs_iter(context.rbg.pieces.iter().map(
+            |piece| {
+                let count = context
+                    .rbg
+                    .board
+                    .iter()
+                    .filter(|node| node.piece == *piece)
+                    .count()
+                    .to_string();
+                (piece.clone(), Arc::from(rg::Value::new(Id::from(count))))
+            },
+        ))),
     });
 }
 
@@ -1349,97 +1373,43 @@ fn translate_atom_content(
                 return;
             }
 
-            for (coord, mut reachable_coords) in pairs {
-                if reachable_coords.is_empty() {
-                    continue;
-                }
+            // Similarly to `join_generators`, we create a mapping representing
+            // all correct pairs (coord, reachable_coord) to check it using only
+            // one generator.
+            let reachability_map = context.create_reachability_map(&BTreeMap::from_iter(pairs));
 
-                let mut local = context.random_node();
-                if reachable_coords.len() == 1 {
-                    context.connect(
-                        from.clone(),
-                        local.clone(),
-                        rg::Label::Comparison {
-                            lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
-                            rhs: Arc::from(rg::Expression::new(coord.clone())),
-                            negated: false,
-                        },
-                    );
-                    context.connect(
-                        local,
-                        to.clone(),
-                        rg::Label::Assignment {
-                            lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
-                            rhs: Arc::from(rg::Expression::new(reachable_coords.pop().unwrap())),
-                        },
-                    );
-                    continue;
-                }
+            let mut local = context.random_node();
+            local.add_binding(
+                Id::from("coordGenerator"),
+                Arc::from(rg::Type::new(Id::from("Coord"))),
+            );
 
-                let uses_all_coords = reachable_coords.len() == pairs_len;
-                local.add_binding(
-                    Id::from("coordGenerator"),
-                    if uses_all_coords {
-                        Arc::from(rg::Type::new(Id::from("Coord")))
-                    } else {
-                        context.create_type_from_set(reachable_coords)
-                    },
-                );
-
-                if uses_all_coords {
-                    context.connect(
-                        from.clone(),
-                        local.clone(),
-                        rg::Label::Comparison {
-                            lhs: Arc::from(rg::Expression::Cast {
-                                span: Span::none(),
-                                lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
-                                rhs: Arc::from(rg::Expression::new(Id::from("coordGenerator"))),
-                            }),
-                            rhs: Arc::from(rg::Expression::Cast {
-                                span: Span::none(),
-                                lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
-                                rhs: Arc::from(rg::Expression::new(Id::from("null"))),
-                            }),
-                            negated: true,
-                        },
-                    );
-
-                    context.connect(
-                        local,
-                        to.clone(),
-                        rg::Label::Assignment {
-                            lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
-                            rhs: Arc::from(rg::Expression::new(Id::from("coordGenerator"))),
-                        },
-                    );
-
-                    continue;
-                }
-
-                context.connect(
-                    from.clone(),
-                    local.clone(),
-                    rg::Label::Comparison {
-                        lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
-                        rhs: Arc::from(rg::Expression::Cast {
+            context.connect(
+                from,
+                local.clone(),
+                rg::Label::Comparison {
+                    lhs: Arc::from(rg::Expression::Access {
+                        span: Span::none(),
+                        lhs: Arc::from(rg::Expression::Access {
                             span: Span::none(),
-                            lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
-                            rhs: Arc::from(rg::Expression::new(coord)),
+                            lhs: Arc::from(rg::Expression::new(reachability_map)),
+                            rhs: Arc::from(rg::Expression::new(Id::from("coord"))),
                         }),
-                        negated: false,
-                    },
-                );
-
-                context.connect(
-                    local.clone(),
-                    to.clone(),
-                    rg::Label::Assignment {
-                        lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
                         rhs: Arc::from(rg::Expression::new(Id::from("coordGenerator"))),
-                    },
-                );
-            }
+                    }),
+                    rhs: Arc::from(rg::Expression::new(Id::from("1"))),
+                    negated: false,
+                },
+            );
+
+            context.connect(
+                local,
+                to,
+                rg::Label::Assignment {
+                    lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
+                    rhs: Arc::from(rg::Expression::new(Id::from("coordGenerator"))),
+                },
+            );
         }
         rbg::ActionOrRule::Rule(rbg::Rule { elements }) => {
             for concatenation in elements {
