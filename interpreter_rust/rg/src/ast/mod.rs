@@ -1000,11 +1000,6 @@ impl<'a, Id: Clone + Ord + 'a> Game<Id> {
 impl<Id: Clone + PartialEq> Game<Id> {
     pub fn infer(&self, identifier: &Id, edge: Option<&Edge<Id>>) -> Arc<Type<Id>> {
         self.infer_or_none(identifier, edge)
-            .or_else(|| {
-                self.typedefs
-                    .iter()
-                    .find_map(|x| x.type_.contains(identifier).then_some(&x.type_))
-            })
             .cloned()
             .unwrap_or_else(|| {
                 Arc::new(Type::Set {
