@@ -78,10 +78,16 @@ impl Game<Id> {
                     .bindings()
                     .iter()
                     .any(|binding| vars_in_rhs.contains(binding.0));
+                let usage_already_modified =
+                    usages.iter().any(|usage| modified_edges.contains(usage));
+                if usage_already_modified {
+                    continue;
+                }
                 if (uses_binding || edge.label.is_map_assignment()) && !usages.is_empty() {
                     continue;
                 }
 
+                modified_edges.insert(edge.clone());
                 modified_edges.extend(usages.iter().cloned());
                 to_inline.insert(((*identifier).clone(), (*rhs).clone(), usages));
                 to_skip.insert((*edge).clone());
@@ -190,8 +196,8 @@ mod test {
         "begin, t2: ;
         t2, t3: z = d;
         t3, t5: d = y;
-        t5, t6: ;
-        t6, end: z == y;"
+        t5, t6: a2 = z;
+        t6, end: a2 == y;"
     );
 
     test_transform!(
@@ -363,6 +369,25 @@ mod test {
         turn_6, turn_9: position != null;
         turn_9, end: ;
         turn_9, rules_begin: ;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        ttt_rbg,
+        "begin, end: ? 32 -> 33;
+        100, 102: coord != null;
+        101, 105: coord = direction[right][coord];
+        102, 101: board[coord] == x;
+        105, 107: coord != null;
+        107, 33: board[coord] == x;
+        32, 100: coord = direction[right][coord];",
+        "begin, end: ? 32 -> 33;
+        100, 102: coord != null;
+        101, 105: ;
+        102, 101: board[coord] == x;
+        105, 107: direction[right][coord] != null;
+        107, 33: board[direction[right][coord]] == x;
+        32, 100: coord = direction[right][coord];"
     );
 
     // TODO: Add tests with forks
