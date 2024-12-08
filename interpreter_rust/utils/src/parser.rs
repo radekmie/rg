@@ -104,7 +104,7 @@ pub fn into_arc<'a, O1, O2: From<O1>>(
 }
 
 pub fn identifier_(input: Input) -> Result<Input> {
-    static KEYWORDS: [&str; 4] = ["any", "const", "type", "var"];
+    static KEYWORDS: [&str; 3] = ["const", "type", "var"];
     verify(
         take_while1(|c: char| c.is_alphanumeric() || c == '_'),
         |identifier: &Input| !KEYWORDS.contains(identifier.fragment()),
