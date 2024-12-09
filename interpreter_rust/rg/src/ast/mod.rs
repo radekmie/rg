@@ -283,20 +283,20 @@ impl<Id: Clone + PartialEq> Label<Id> {
 
 impl<Id: Ord> Label<Id> {
     pub fn used_variables(&self) -> BTreeSet<&Id> {
+        let mut vars = BTreeSet::new();
         match self {
-            Self::Assignment { lhs, rhs } if lhs.is_reference() => rhs.used_variables(),
+            Self::Assignment { lhs, rhs } if lhs.is_reference() => rhs.collect_variables(&mut vars),
             Self::Assignment { lhs, rhs } => {
-                let mut vars = lhs.used_variables();
-                vars.extend(rhs.used_variables());
-                vars
+                lhs.collect_variables(&mut vars);
+                rhs.collect_variables(&mut vars);
             }
             Self::Comparison { lhs, rhs, .. } => {
-                let mut vars = lhs.used_variables();
-                vars.extend(rhs.used_variables());
-                vars
+                lhs.collect_variables(&mut vars);
+                rhs.collect_variables(&mut vars);
             }
-            _ => BTreeSet::new(),
+            _ => {}
         }
+        vars
     }
 }
 
@@ -768,19 +768,17 @@ impl<Id: Clone + PartialEq> Expression<Id> {
 }
 
 impl<Id: Ord> Expression<Id> {
-    pub fn used_variables(&self) -> BTreeSet<&Id> {
-        let mut vars = BTreeSet::new();
+    pub fn collect_variables<'a>(&'a self, vars: &mut BTreeSet<&'a Id>) {
         match self {
             Self::Access { lhs, rhs, .. } => {
-                vars.extend(lhs.used_variables());
-                vars.extend(rhs.used_variables());
+                lhs.collect_variables(vars);
+                rhs.collect_variables(vars);
             }
-            Self::Cast { rhs, .. } => vars.extend(rhs.used_variables()),
+            Self::Cast { rhs, .. } => rhs.collect_variables(vars),
             Self::Reference { identifier } => {
                 vars.insert(identifier);
             }
         }
-        vars
     }
 }
 
@@ -1216,6 +1214,16 @@ impl<Id: Ord> Game<Id> {
             })
     }
 
+    pub fn next_edges_idx(&self) -> BTreeMap<&Node<Id>, BTreeSet<usize>> {
+        self.edges
+            .iter()
+            .enumerate()
+            .fold(BTreeMap::new(), |mut next_edges, (idx, edge)| {
+                next_edges.entry(&edge.lhs).or_default().insert(idx);
+                next_edges
+            })
+    }
+
     pub fn next_nodes(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Node<Id>>> {
         self.edges
             .iter()
@@ -1232,6 +1240,20 @@ impl<Id: Ord> Game<Id> {
                 prev_edges.entry(&edge.rhs).or_default().insert(edge);
                 prev_edges
             })
+    }
+
+    pub fn reachability_targets(&self) -> BTreeSet<&Node<Id>> {
+        self.edges
+            .iter()
+            .filter_map(|edge| {
+                if let Label::Reachability { lhs, rhs, .. } = &edge.label {
+                    Some([lhs, rhs])
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .collect()
     }
 
     /// It works only if `self.edges` are sorted by `cmp_outgoing`.
