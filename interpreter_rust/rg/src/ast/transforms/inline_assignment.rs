@@ -61,8 +61,7 @@ impl Game<Id> {
                     continue;
                 };
 
-                let mut vars_in_rhs = BTreeSet::new();
-                rhs.collect_variables(&mut vars_in_rhs);
+                let vars_in_rhs = rhs.used_variables();
                 let defs_on_assignment =
                     used_definitions(current_definitions, &vars_in_rhs, identifier);
                 let Some(usages) = maybe_inline_assignment(

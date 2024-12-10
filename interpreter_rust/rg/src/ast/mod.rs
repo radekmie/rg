@@ -780,6 +780,12 @@ impl<Id: Ord> Expression<Id> {
             }
         }
     }
+
+    pub fn used_variables(&self) -> BTreeSet<&Id> {
+        let mut vars = BTreeSet::new();
+        self.collect_variables(&mut vars);
+        vars
+    }
 }
 
 impl<Id: Clone + Ord> Expression<Id> {
