@@ -4,17 +4,22 @@ use std::sync::Arc;
 
 impl<Id: Clone + Ord> Game<Id> {
     pub fn join_exclusive_edges(&mut self) -> Result<(), Error<Id>> {
+        let next_edges = self.next_edges_idx();
         let mut to_ignore = BTreeSet::new();
         let mut to_remove = BTreeSet::new();
 
-        for (i, x) in self.edges.iter().enumerate() {
-            if !to_remove.contains(&i) && x.is_conditional() {
-                for (j, y) in self.edges.iter().enumerate() {
-                    if x.lhs == y.lhs && x.rhs == y.rhs && x.label.is_negated(&y.label) {
-                        to_ignore.insert(i);
-                        to_remove.insert(j);
-                    }
-                }
+        for edges in next_edges.values() {
+            let edge_idx = edges.iter().next().unwrap();
+            let edge = &self.edges[*edge_idx];
+            if edge.is_conditional() {
+                let Some(other_edge_idx) = edges.iter().find(|idx| {
+                    let other_edge = &self.edges[**idx];
+                    other_edge.rhs == edge.rhs && other_edge.label.is_negated(&edge.label)
+                }) else {
+                    continue;
+                };
+                to_ignore.insert(*edge_idx);
+                to_remove.insert(*other_edge_idx);
             }
         }
 

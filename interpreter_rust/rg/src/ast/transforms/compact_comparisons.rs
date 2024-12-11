@@ -1,5 +1,6 @@
 use super::{gen_fresh_node, max_node_id};
-use crate::ast::{Edge, Error, Expression, Game, Label, Type};
+use crate::ast::{Edge, Error, Expression, Game, Label, Node, Type};
+use std::collections::{BTreeMap, BTreeSet};
 use std::iter;
 use std::sync::Arc;
 
@@ -9,10 +10,15 @@ type ToCompact = (Arc<Expression<Id>>, Arc<Type<Id>>, Vec<Id>);
 impl Game<Id> {
     pub fn compact_comparisons(&mut self) -> Result<(), Error<Id>> {
         let mut to_compat = vec![];
+        let next_edges = self.next_edges();
         for node in self.nodes() {
-            let Some(((expr, type_, unused_members), edge)) = self
-                .outgoing_edges(node)
-                .find_map(|edge| self.try_compact_edge(edge).zip(Some(edge)))
+            let Some(((expr, type_, unused_members), edge)) =
+                next_edges.get(node).and_then(|edges| {
+                    edges.iter().find_map(|edge| {
+                        self.try_compact_edge(edge, &next_edges)
+                            .zip(Some((**edge).clone()))
+                    })
+                })
             else {
                 continue;
             };
@@ -81,8 +87,12 @@ impl Game<Id> {
         }
     }
 
-    fn try_compact_edge(&self, edge: &Edge<Id>) -> Option<ToCompact> {
-        let (expr, ids) = self.lhs_or_rhs(edge)?;
+    fn try_compact_edge(
+        &self,
+        edge: &Edge<Id>,
+        next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
+    ) -> Option<ToCompact> {
+        let (expr, ids) = self.lhs_or_rhs(edge, next_edges)?;
         let type_ = expr.infer(self, Some(edge)).ok()?;
         let type_members = self.get_type_members(&type_)?;
         if ids.iter().any(|id| !type_members.contains(id))
@@ -102,6 +112,7 @@ impl Game<Id> {
     fn lhs_or_rhs<'a>(
         &'a self,
         edge: &'a Edge<Id>,
+        next_edges: &'a BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     ) -> Option<(&'a Arc<Expression<Id>>, Vec<&'a Id>)> {
         let Label::Comparison { lhs, rhs, negated } = &edge.label else {
             return None;
@@ -109,21 +120,20 @@ impl Game<Id> {
         if *negated {
             return None;
         }
-        get_same_comparisons(lhs, edge, self.outgoing_edges(&edge.lhs))
+        let outgoing_edges = next_edges.get(&edge.lhs)?;
+        get_same_comparisons(lhs, edge, outgoing_edges)
             .map(|ids| (lhs, ids))
-            .or_else(|| {
-                get_same_comparisons(rhs, edge, self.outgoing_edges(&edge.lhs))
-                    .map(|ids| (rhs, ids))
-            })
+            .or_else(|| get_same_comparisons(rhs, edge, outgoing_edges).map(|ids| (rhs, ids)))
     }
 }
 
 fn get_same_comparisons<'a>(
     expr: &'a Arc<Expression<Id>>,
     same_as: &'a Edge<Id>,
-    edges: impl Iterator<Item = &'a Arc<Edge<Id>>>,
+    edges: &'a BTreeSet<&Arc<Edge<Id>>>,
 ) -> Option<Vec<&'a Id>> {
     let same_comparisons: Vec<_> = edges
+        .iter()
         .filter(|edge| {
             let Label::Comparison { lhs, rhs, .. } = &edge.label else {
                 return false;

@@ -12,6 +12,9 @@ impl Game<Arc<str>> {
             self.make_bindings_unique();
         }
 
+        let reachability_targets: BTreeSet<_> =
+            self.reachability_targets().into_iter().cloned().collect();
+
         while let Some(x) = self.find_obsolete_edge() {
             self.edges.remove(x);
         }
@@ -38,7 +41,9 @@ impl Game<Arc<str>> {
             };
         }
 
-        while let Some((xs, y)) = self.compact_skip_edge_backward(&edge_counts) {
+        while let Some((xs, y)) =
+            self.compact_skip_edge_backward(&edge_counts, &reachability_targets)
+        {
             for x in xs {
                 change_edge_count!(&self.edges[x].rhs, 1, saturating_sub);
                 change_edge_count!(&self.edges[y].rhs, 1, saturating_add);
@@ -48,7 +53,9 @@ impl Game<Arc<str>> {
             remove_edge!(y);
         }
 
-        while let Some((x, ys)) = self.compact_skip_edge_forward(&edge_counts) {
+        while let Some((x, ys)) =
+            self.compact_skip_edge_forward(&edge_counts, &reachability_targets)
+        {
             for y in ys {
                 change_edge_count!(&self.edges[y].lhs, 0, saturating_sub);
                 change_edge_count!(&self.edges[x].lhs, 0, saturating_add);
@@ -58,19 +65,19 @@ impl Game<Arc<str>> {
             remove_edge!(x);
         }
 
-        while let Some((x, y)) = self.jump_backward(&edge_counts) {
+        while let Some((x, y)) = self.jump_backward(&edge_counts, &reachability_targets) {
             change_edge_count!(&self.edges[x].rhs, 1, saturating_sub);
             change_edge_count!(&self.edges[y].rhs, 1, saturating_add);
             Arc::make_mut(&mut self.edges[x]).rhs = self.edges[y].rhs.clone();
         }
 
-        while let Some((x, y)) = self.jump_forward(&edge_counts) {
+        while let Some((x, y)) = self.jump_forward(&edge_counts, &reachability_targets) {
             change_edge_count!(&self.edges[y].lhs, 0, saturating_sub);
             change_edge_count!(&self.edges[x].lhs, 0, saturating_add);
             Arc::make_mut(&mut self.edges[y]).lhs = self.edges[x].lhs.clone();
         }
 
-        while let Some(x) = self.compact_skip_edge_single(&edge_counts) {
+        while let Some(x) = self.compact_skip_edge_single(&edge_counts, &reachability_targets) {
             remove_edge!(x);
         }
 
@@ -95,12 +102,16 @@ impl Game<Arc<str>> {
     ///   4. b has no bindings
     ///   5. b is not a reachability target
     ///   6. a -> c will not connect two separate binds
-    fn compact_skip_edge_backward(&self, edge_counts: &EdgeCounts) -> Option<(Vec<usize>, usize)> {
+    fn compact_skip_edge_backward(
+        &self,
+        edge_counts: &EdgeCounts,
+        reachability_targets: &BTreeSet<Node<Arc<str>>>,
+    ) -> Option<(Vec<usize>, usize)> {
         for (y_index, y) in self.edges.iter().enumerate() {
             if y.label.is_skip()
                 && !y.lhs.has_bindings()
                 && edge_counts[&y.lhs].0 == 1
-                && !self.is_reachability_target(&y.lhs)
+                && !reachability_targets.contains(&y.lhs)
             {
                 for x in &self.edges {
                     if x.rhs == y.lhs
@@ -139,12 +150,16 @@ impl Game<Arc<str>> {
     ///   4. b is not a reachability target
     ///   5. y != Assignment of `player` OR a has no bindings
     ///   6. a -> c will not connect two separate binds
-    fn compact_skip_edge_forward(&self, edge_counts: &EdgeCounts) -> Option<(usize, Vec<usize>)> {
+    fn compact_skip_edge_forward(
+        &self,
+        edge_counts: &EdgeCounts,
+        reachability_targets: &BTreeSet<Node<Arc<str>>>,
+    ) -> Option<(usize, Vec<usize>)> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
                 && !x.rhs.has_bindings()
                 && edge_counts[&x.rhs].1 == 1
-                && !self.is_reachability_target(&x.rhs)
+                && !reachability_targets.contains(&x.rhs)
             {
                 for y in &self.edges {
                     if x.rhs == y.lhs
@@ -185,12 +200,16 @@ impl Game<Arc<str>> {
     ///   4. b has no bindings
     ///   5. b is not a reachability target
     ///   6. a -> c will not connect two separate binds
-    fn jump_backward(&self, edge_counts: &EdgeCounts) -> Option<(usize, usize)> {
+    fn jump_backward(
+        &self,
+        edge_counts: &EdgeCounts,
+        reachability_targets: &BTreeSet<Node<Arc<str>>>,
+    ) -> Option<(usize, usize)> {
         for (y_index, y) in self.edges.iter().enumerate() {
             if y.label.is_skip()
                 && !y.lhs.has_bindings()
                 && edge_counts[&y.lhs].0 == 1
-                && !self.is_reachability_target(&y.lhs)
+                && !reachability_targets.contains(&y.lhs)
             {
                 for (x_index, x) in self.edges.iter().enumerate() {
                     if x.rhs == y.lhs
@@ -223,12 +242,16 @@ impl Game<Arc<str>> {
     ///   4. b has no bindings
     ///   5. b is not a reachability target
     ///   6. a -> c will not connect two separate binds
-    fn jump_forward(&self, edge_counts: &EdgeCounts) -> Option<(usize, usize)> {
+    fn jump_forward(
+        &self,
+        edge_counts: &EdgeCounts,
+        reachability_targets: &BTreeSet<Node<Arc<str>>>,
+    ) -> Option<(usize, usize)> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
                 && !x.rhs.has_bindings()
                 && edge_counts[&x.rhs].1 == 1
-                && !self.is_reachability_target(&x.rhs)
+                && !reachability_targets.contains(&x.rhs)
             {
                 for (y_index, y) in self.edges.iter().enumerate() {
                     if x.rhs == y.lhs
@@ -259,14 +282,18 @@ impl Game<Arc<str>> {
     ///   4. a has no bindings
     ///   5. a is not `begin`
     ///   6. a is not a reachability target
-    fn compact_skip_edge_single(&self, edge_counts: &EdgeCounts) -> Option<usize> {
+    fn compact_skip_edge_single(
+        &self,
+        edge_counts: &EdgeCounts,
+        reachability_targets: &BTreeSet<Node<Arc<str>>>,
+    ) -> Option<usize> {
         for (x_index, x) in self.edges.iter().enumerate() {
             if x.label.is_skip()
                 && !x.lhs.has_bindings()
                 && !x.lhs.is_begin()
                 && edge_counts[&x.lhs].0 == 1
                 && edge_counts[&x.lhs].1 == 0
-                && !self.is_reachability_target(&x.lhs)
+                && !reachability_targets.contains(&x.lhs)
             {
                 return Some(x_index);
             }
