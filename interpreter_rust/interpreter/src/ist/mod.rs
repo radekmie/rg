@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
 // Interned strings that the interpreter relies on.
-pub type RuntimeId = u16;
+pub type RuntimeId = u32;
 pub const LABEL_BEGIN: RuntimeId = 0;
 pub const LABEL_END: RuntimeId = 1;
 pub const LABEL_KEEPER: RuntimeId = 2;
