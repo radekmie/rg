@@ -83,7 +83,7 @@ fn main() -> Result<(), String> {
                 &Some(|lines: Vec<_>| {
                     println!("{esc}c{}", lines.join("\n"), esc = 27 as char);
                 }),
-            );
+            )?;
         }
         CliArgs::Source { game_with_flags } => {
             let game = game_with_flags.load()?;

@@ -40,7 +40,7 @@ impl Game<RuntimeId> {
         interner: &Interner<Id, RuntimeId>,
         plays: usize,
         callback: &Option<impl Fn(Vec<String>)>,
-    ) {
+    ) -> Result<(), String> {
         fn stats(counter: &BTreeMap<usize, usize>) -> (usize, usize, f32, f32) {
             let max = *counter.keys().max().unwrap();
             let min = *counter.keys().min().unwrap();
@@ -76,6 +76,13 @@ impl Game<RuntimeId> {
             loop {
                 let states = state.next_states_depth(self, 1, false).collect::<Vec<_>>();
                 if states.is_empty() {
+                    if !state.is_final() {
+                        return Err(format!(
+                            "Game unexpectedly ended in {}.",
+                            interner.recall(&state.position).unwrap()
+                        ));
+                    }
+
                     increase(&mut goals, state.goals.clone());
                     break;
                 }
@@ -172,6 +179,8 @@ impl Game<RuntimeId> {
                 callback(lines);
             }
         }
+
+        Ok(())
     }
 
     /// This should be provided via the `TryFrom` trait, but it's impossible due

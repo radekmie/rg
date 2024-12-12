@@ -20,7 +20,7 @@ fn scenario(criterion: &mut Criterion, name: &str, paths: &[&str]) {
                     let ast = analyze_inner(source, "rg", &flags, &mut None::<fn(_)>).unwrap();
                     Game::try_from(ast).unwrap()
                 });
-                bencher.iter(|| ist.run(&mut rng, &interner, 1, &None::<fn(_)>))
+                bencher.iter(|| ist.run(&mut rng, &interner, 1, &None::<fn(_)>).unwrap())
             });
         }
     }

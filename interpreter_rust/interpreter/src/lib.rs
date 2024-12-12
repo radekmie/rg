@@ -297,7 +297,5 @@ pub fn run(ast: &str, plays: usize, callback: &Function) -> Result<(), String> {
             let lines = Array::from_iter(lines.into_iter().map(JsValue::from));
             callback.call1(&this, &lines).unwrap();
         }),
-    );
-
-    Ok(())
+    )
 }
