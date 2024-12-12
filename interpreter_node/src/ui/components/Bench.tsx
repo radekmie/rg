@@ -10,6 +10,7 @@ import {
 import { useCallback, useMemo, useState } from 'react';
 
 import { RgGameDeclaration } from '../../parse';
+import { pretty } from '../../utils';
 import * as wasm from '../../wasm';
 import { useNumericState } from '../hooks/useNumericState';
 import * as styles from '../index.module.css';
@@ -66,7 +67,11 @@ function BenchBlock({
         setResult(Intent.SUCCESS);
       } catch (error) {
         setResult(Intent.DANGER);
-        console.error(error);
+        logger.log(
+          error instanceof Error && error.name === 'WorkerError'
+            ? error.message
+            : pretty(error, { colors: false }),
+        );
       }
     }
 
