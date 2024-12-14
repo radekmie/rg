@@ -14,6 +14,7 @@ use utils::position::Span;
 
 pub type Binding<'a, Id> = (&'a Id, &'a Arc<Type<Id>>);
 pub type Mapping<Id> = BTreeMap<Id, (Id, Arc<Type<Id>>)>;
+pub type SetWithIdx<'a, T> = BTreeSet<(usize, &'a T)>;
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename = "ConstantDeclaration", tag = "kind")]
@@ -1215,6 +1216,15 @@ impl<Id: Ord> Game<Id> {
             })
     }
 
+    pub fn next_nodes(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Node<Id>>> {
+        self.edges
+            .iter()
+            .fold(BTreeMap::new(), |mut next_nodes, edge| {
+                next_nodes.entry(&edge.lhs).or_default().insert(&edge.rhs);
+                next_nodes
+            })
+    }
+
     pub fn next_edges_idx(&self) -> BTreeMap<&Node<Id>, BTreeSet<usize>> {
         self.edges
             .iter()
@@ -1225,12 +1235,13 @@ impl<Id: Ord> Game<Id> {
             })
     }
 
-    pub fn next_nodes(&self) -> BTreeMap<&Node<Id>, BTreeSet<&Node<Id>>> {
+    pub fn next_edges_with_idx(&self) -> BTreeMap<&Node<Id>, SetWithIdx<Arc<Edge<Id>>>> {
         self.edges
             .iter()
-            .fold(BTreeMap::new(), |mut next_nodes, edge| {
-                next_nodes.entry(&edge.lhs).or_default().insert(&edge.rhs);
-                next_nodes
+            .enumerate()
+            .fold(BTreeMap::new(), |mut next_edges, (idx, edge)| {
+                next_edges.entry(&edge.lhs).or_default().insert((idx, edge));
+                next_edges
             })
     }
 
@@ -1240,6 +1251,16 @@ impl<Id: Ord> Game<Id> {
             .fold(BTreeMap::new(), |mut prev_edges, edge| {
                 prev_edges.entry(&edge.rhs).or_default().insert(edge);
                 prev_edges
+            })
+    }
+
+    pub fn prev_edges_with_idx(&self) -> BTreeMap<&Node<Id>, SetWithIdx<Arc<Edge<Id>>>> {
+        self.edges
+            .iter()
+            .enumerate()
+            .fold(BTreeMap::new(), |mut next_edges, (idx, edge)| {
+                next_edges.entry(&edge.rhs).or_default().insert((idx, edge));
+                next_edges
             })
     }
 
