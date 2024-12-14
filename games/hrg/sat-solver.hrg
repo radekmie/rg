@@ -12,8 +12,6 @@ graph verify() {
   check(values[x] == true)
   check(values[y] == false)
   check(values[z] == false)
-  goals[x] = 1
-  end()
 }
 
 graph missing() {
@@ -37,5 +35,9 @@ graph rules() {
   }
 
   player = keeper
-  verify()
+  if reachable(verify()) {
+    goals[x] = 1
+  }
+
+  end()
 }
