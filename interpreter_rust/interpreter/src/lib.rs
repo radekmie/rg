@@ -157,6 +157,7 @@ fn analyze_rg_inner(
 
     loop {
         check!(game.check_assignments());
+        check!(game.check_duplicated_names());
         check!(game.check_maps());
         // check!(game.check_multiple_edges());
         check!(game.check_reachabilities());

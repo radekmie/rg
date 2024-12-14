@@ -549,9 +549,18 @@ pub enum ErrorReason<Id> {
         identifier: Id,
         label: Label<Id>,
     },
+    DuplicatedConstant {
+        identifier: Id,
+    },
     DuplicatedMapKey {
         key: Option<Id>,
         value: Value<Id>,
+    },
+    DuplicatedTypedef {
+        identifier: Id,
+    },
+    DuplicatedVariable {
+        identifier: Id,
     },
     EmptySetType {
         identifier: Id,

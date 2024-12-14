@@ -133,10 +133,19 @@ impl<Id: Display> Display for ErrorReason<Id> {
             Self::ConstantAssignment { identifier, label } => {
                 write!(f, "{identifier} is constant in {label}")
             }
+            Self::DuplicatedConstant { identifier } => {
+                write!(f, "Multiple constants named {identifier}.")
+            }
             Self::DuplicatedMapKey { key, value } => match key {
                 Some(key) => write!(f, "Duplicated key {key} in map {value}."),
                 None => write!(f, "Duplicated default value in map {value}."),
             },
+            Self::DuplicatedTypedef { identifier } => {
+                write!(f, "Multiple typedefs named {identifier}.")
+            }
+            Self::DuplicatedVariable { identifier } => {
+                write!(f, "Multiple variables named {identifier}.")
+            }
             Self::EmptySetType { identifier } => {
                 write!(f, "Type {identifier} should not be empty.")
             }
