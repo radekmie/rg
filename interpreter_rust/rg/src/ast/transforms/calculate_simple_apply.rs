@@ -125,32 +125,13 @@ impl Game<Arc<str>> {
             }
         }
 
-        // @simpleApply{,Exhaustive} cannot start in a node with binds. If it
-        // does, we move it to the first node without one (or remove it entirely
-        // if there's none).
-        //
-        // TODO: It could break the pragma when the node is moved "behind" the
-        // tag, but it should not happen in practice.
-        pragmas.retain_mut(|(node, _, nodes, _, _)| {
-            if node.has_bindings() {
-                match nodes.iter().position(|x| !x.has_bindings()) {
-                    None => return false,
-                    Some(index) if index == nodes.len() => return false,
-                    Some(index) => {
-                        *node = nodes.drain(0..=index).last().unwrap();
-                    }
-                }
-            }
-
-            true
-        });
-
-        // @simpleApply{,Exhaustive} cannot have a bind that is not bound with
-        // any of the tags.
-        pragmas.retain(|(_, tags, nodes, _, _)| {
-            nodes
-                .iter()
-                .all(|node| node.bindings().all(|bind| tags.contains(bind.0)))
+        // @simpleApply{,Exhaustive} cannot start in a node with binds and all
+        // binds have to be bound with any of the tags.
+        pragmas.retain(|(node, tags, nodes, _, _)| {
+            !node.has_bindings()
+                && nodes
+                    .iter()
+                    .all(|node| node.bindings().all(|bind| tags.contains(bind.0)))
         });
 
         for (node, tags, nodes, _, is_exhaustive) in pragmas {
@@ -215,10 +196,6 @@ mod test {
         ",
         adds "
             @simpleApplyExhaustive begin : rules_begin move_begin;
-            @simpleApplyExhaustive move_8 L : move_10 move_12 move_11 move_9 move_23 move_end turn_5 turn_6;
-            @simpleApplyExhaustive move_8 LL : move_18 move_16 move_9 move_23 move_end turn_5 turn_6;
-            @simpleApplyExhaustive move_8 R : move_10 move_14 move_11 move_9 move_23 move_end turn_5 turn_6;
-            @simpleApplyExhaustive move_8 RR : move_21 move_16 move_9 move_23 move_end turn_5 turn_6;
             @simpleApplyExhaustive move_begin p : move_1(p: Position) move_4(p: Position) move_3(p: Position) move_5(p: Position) move_6(p: Position) move_7(p: Position);
         "
     );
