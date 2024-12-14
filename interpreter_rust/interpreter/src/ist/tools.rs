@@ -74,7 +74,7 @@ impl Game<RuntimeId> {
             let mut turn = 0;
             let now = Instant::now();
             loop {
-                let states = state.next_states_depth(self, 1, false).collect::<Vec<_>>();
+                let mut states = state.next_states_depth(self, 1, false).collect::<Vec<_>>();
                 if states.is_empty() {
                     if !state.is_final() {
                         return Err(format!(
@@ -92,7 +92,24 @@ impl Game<RuntimeId> {
                     turn += 1;
                 }
 
+                // Check if `(position, tags)` implies `values`, i.e., if all
+                // states are derivable from their position and tags.
+                states.sort_unstable_by(|x, y| {
+                    x.position
+                        .cmp(&y.position)
+                        .then_with(|| x.tags.cmp(&y.tags))
+                });
+
+                for states in states.windows(2) {
+                    if let [x, y] = states {
+                        if x.position == y.position && x.tags == y.tags {
+                            assert_eq!(x.values, y.values);
+                        }
+                    }
+                }
+
                 state = states.into_iter().choose(rng).unwrap();
+                state.tags = Rc::default();
             }
 
             increase(&mut times, now.elapsed().as_micros() as usize);

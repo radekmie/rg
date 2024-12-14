@@ -247,16 +247,10 @@ impl Iterator for StateNextDepth<'_> {
 
             let prev = &state.player;
             let skip = *ignore_keeper && prev.is_keeper();
-            let mut tags_set = BTreeSet::default();
-            for mut state in state.next_states(game, true) {
-                if !tags_set.insert(state.tags.clone()) {
-                    continue;
-                }
-
+            for state in state.next_states(game, true) {
                 let next = &state.player;
                 let is_finish = next.is_keeper() && state.is_final() && !*ignore_keeper;
                 let is_switch = next != prev && !skip;
-                state.tags = Rc::default();
                 queue.push((state, depth - usize::from(is_finish || is_switch)));
             }
         }
