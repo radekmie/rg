@@ -14,7 +14,7 @@ use utils::position::Span;
 
 pub type Binding<'a, Id> = (&'a Id, &'a Arc<Type<Id>>);
 pub type Mapping<Id> = BTreeMap<Id, (Id, Arc<Type<Id>>)>;
-pub type SetWithIdx<'a, T> = BTreeSet<(&'a T, usize)>;
+pub type SetWithIdx<'a, T> = BTreeSet<(usize, &'a T)>;
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename = "ConstantDeclaration", tag = "kind")]
@@ -1240,7 +1240,7 @@ impl<Id: Ord> Game<Id> {
             .iter()
             .enumerate()
             .fold(BTreeMap::new(), |mut next_edges, (idx, edge)| {
-                next_edges.entry(&edge.lhs).or_default().insert((edge, idx));
+                next_edges.entry(&edge.lhs).or_default().insert((idx, edge));
                 next_edges
             })
     }
@@ -1259,7 +1259,7 @@ impl<Id: Ord> Game<Id> {
             .iter()
             .enumerate()
             .fold(BTreeMap::new(), |mut next_edges, (idx, edge)| {
-                next_edges.entry(&edge.rhs).or_default().insert((edge, idx));
+                next_edges.entry(&edge.rhs).or_default().insert((idx, edge));
                 next_edges
             })
     }

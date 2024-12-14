@@ -12,7 +12,9 @@ impl Game<Id> {
         }
 
         loop {
-            let mut changed = self.remove_edges(self.skip_all_obsolete());
+            let to_remove = self.skip_all_obsolete();
+            let mut changed = !to_remove.is_empty();
+            self.remove_edges(to_remove);
 
             let (to_remove, to_move) = self.skip_edge_backward();
             changed |= !to_move.is_empty();
@@ -29,7 +31,6 @@ impl Game<Id> {
                 for y_z_idx in y_z_idxs {
                     Arc::make_mut(&mut self.edges[y_z_idx]).lhs = x.clone();
                 }
-                changed = true;
             }
             self.remove_edges(to_remove);
 
@@ -43,13 +44,11 @@ impl Game<Id> {
         Ok(())
     }
 
-    fn remove_edges(&mut self, mut to_remove: Vec<usize>) -> bool {
+    fn remove_edges(&mut self, mut to_remove: Vec<usize>) {
         to_remove.sort_unstable();
-        let changed = !to_remove.is_empty();
         for idx in to_remove.into_iter().rev() {
             self.edges.remove(idx);
         }
-        changed
     }
 
     /// Before:
@@ -64,11 +63,10 @@ impl Game<Id> {
     /// Conditions:
     ///   1. x -> y == Skip
     ///   2. y has no other outgoing edges
-    ///   3. y has no bindings (TODO: Maybe we can remove this condition?)
-    ///   4. y is not a reachability target
-    ///   5. x -> z will not connect two separate binds
-    ///   6. x -> y != Assignment of `player` OR c has no bindings
-    ///   7. If all edges incoming to y satisfy 6. then remove y -> z
+    ///   3. y is not a reachability target
+    ///   4. x -> z will not connect two separate binds
+    ///   5. x -> y != Assignment of `player` OR z has no bindings
+    ///   6. If all edges incoming to y satisfy 6. then remove y -> z
     fn skip_edge_backward(&self) -> RemovedAndMoved<(Vec<usize>, Node<Id>)> {
         let reachability_targets = self.reachability_targets();
         let next_edges = self.next_edges_with_idx();
@@ -80,14 +78,13 @@ impl Game<Id> {
             if used_nodes.contains(z) {
                 continue;
             }
-            for (y_z, y_z_idx) in z_in {
+            for (y_z_idx, y_z) in z_in {
                 let y = &y_z.lhs;
-                if !(y_z.label.is_skip() // (1)
-                    && !y.has_bindings() // (3)
-                    && !used_nodes.contains(y) // For safety, this node could have been modified
-                    && !reachability_targets.contains(y) // (4)
-                    && next_edges.get(y).is_some_and(|n| n.len() == 1))
-                // (2)
+                if !y_z.label.is_skip() // (1)
+                    || used_nodes.contains(y) // For safety, this node could have been modified
+                    || reachability_targets.contains(y) // (3)
+                    || !next_edges.get(y).is_some_and(|n| n.len() == 1 // (2) 
+                    )
                 {
                     continue;
                 }
@@ -95,15 +92,15 @@ impl Game<Id> {
                 if let Some(y_in) = prev_edges.get(y) {
                     let to_move = y_in
                         .iter()
-                        .filter(|(x_y, x_y_idx)| {
-                            are_bindings_safe(&x_y.lhs, y, z) // (5)
-                                && (!z.has_bindings() || !x_y.label.is_player_assignment()) // (6)
+                        .filter(|(x_y_idx, x_y)| {
+                            are_bindings_safe(&x_y.lhs, y, z) // (4)
+                                && (!z.has_bindings() || !x_y.label.is_player_assignment()) // (5)
                                 && !to_remove.contains(x_y_idx) // For safety, this edge could have been removed
                         })
-                        .map(|(_, x_y_idx)| *x_y_idx)
+                        .map(|(x_y_idx, _)| *x_y_idx)
                         .collect::<Vec<_>>();
                     if to_move.len() == y_in.len() {
-                        // (7)
+                        // (6)
                         to_remove.push(*y_z_idx);
                     }
                     if !to_move.is_empty() {
@@ -129,11 +126,10 @@ impl Game<Id> {
     /// Conditions:
     ///   1. x -> y == Skip
     ///   2. y has no other incoming edges
-    ///   3. y has no bindings (TODO: Maybe we can remove this condition?)
-    ///   4. y is not a reachability target
-    ///   5. x -> z will not connect two separate binds
-    ///   6. y -> z != Assignment of `player` OR x has no bindings
-    ///   7. If all edges outgoing from y satisfy 6. then remove x -> y
+    ///   3. y is not a reachability target
+    ///   4. x -> z will not connect two separate binds
+    ///   5. y -> z != Assignment of `player` OR x has no bindings
+    ///   6. If all edges outgoing from y satisfy 6. then remove x -> y
     fn skip_edge_forward(&self) -> RemovedAndMoved<(Node<Id>, Vec<usize>)> {
         let reachability_targets = self.reachability_targets();
         let next_edges = self.next_edges_with_idx();
@@ -145,14 +141,13 @@ impl Game<Id> {
             if used_nodes.contains(x) {
                 continue;
             }
-            for (x_y, x_y_idx) in x_out {
+            for (x_y_idx, x_y) in x_out {
                 let y = &x_y.rhs;
-                if !(x_y.label.is_skip() // (1)
-                    && !y.has_bindings() // (3)
-                    && !used_nodes.contains(y) // For safety, this node could have been modified
-                    && !reachability_targets.contains(y) // (4)
-                    && prev_edges.get(y).is_some_and(|n| n.len() == 1))
-                // (2)
+                if !x_y.label.is_skip() // (1)
+                    || used_nodes.contains(y) // For safety, this node could have been modified
+                    || reachability_targets.contains(y) // (3)
+                    || !prev_edges.get(y).is_some_and(|n| n.len() == 1 // (2) 
+                    )
                 {
                     continue;
                 }
@@ -160,12 +155,12 @@ impl Game<Id> {
                 if let Some(y_out) = next_edges.get(&y) {
                     let to_move = y_out
                         .iter()
-                        .filter(|(y_z, y_z_idx)| {
-                            are_bindings_safe(x, y, &y_z.rhs) // (5)
-                                && (!x.has_bindings() || !y_z.label.is_player_assignment()) // (6)
+                        .filter(|(y_z_idx, y_z)| {
+                            are_bindings_safe(x, y, &y_z.rhs) // (4)
+                                && (!x.has_bindings() || !y_z.label.is_player_assignment()) // (5)
                                 && !to_remove.contains(y_z_idx) // For safety, this edge could have been removed
                         })
-                        .map(|(_, y_z_idx)| *y_z_idx)
+                        .map(|(y_z_idx, _)| *y_z_idx)
                         .collect::<Vec<_>>();
                     if to_move.len() == y_out.len() {
                         // (7)
@@ -189,11 +184,11 @@ impl Game<Id> {
         let mut to_remove = vec![];
         for edges in next_edges.values() {
             for (_, edges) in group_by_rhs(edges) {
-                if let Some((_, skip_idx)) = edges.iter().find(|(edge, _)| edge.label.is_skip()) {
+                if let Some((skip_idx, _)) = edges.iter().find(|(_, edge)| edge.label.is_skip()) {
                     edges
                         .iter()
-                        .filter(|(edge, idx)| idx != skip_idx && !edge.label.is_assignment())
-                        .for_each(|(_, idx)| to_remove.push(*idx));
+                        .filter(|(idx, edge)| idx != skip_idx && !edge.label.is_assignment())
+                        .for_each(|(idx, _)| to_remove.push(*idx));
                 }
             }
         }
@@ -281,14 +276,11 @@ impl Game<Id> {
 }
 
 fn group_by_rhs<'a>(
-    edges: &'a BTreeSet<(&'a Arc<Edge<Id>>, usize)>,
+    edges: &'a BTreeSet<(usize, &'a Arc<Edge<Id>>)>,
 ) -> BTreeMap<&Node<Id>, SetWithIdx<&Arc<Edge<Id>>>> {
-    let mut grouped = BTreeMap::new();
-    for (edge, idx) in edges {
-        grouped
-            .entry(&edge.rhs)
-            .or_insert_with(BTreeSet::new)
-            .insert((edge, *idx));
+    let mut grouped: BTreeMap<_, SetWithIdx<_>> = BTreeMap::new();
+    for (idx, edge) in edges {
+        grouped.entry(&edge.rhs).or_default().insert((*idx, edge));
     }
     grouped
 }
@@ -408,8 +400,7 @@ mod test {
             begin, loop(x: X): ;
             loop(x: X), cond(x: X): ;
             cond(x: X), true(x: X): 1 == 1;
-            cond(x: X), false(x: X): 1 != 1;
-            false(x: X), loop(x: X): ;
+            cond(x: X), cond(x: X): 1 != 1;
             true(x: X), end: player = keeper;
         "
     );
@@ -823,8 +814,7 @@ mod test {
             turn_2(bind_1: Position), turn_4(bind_1: Position): board[Position(bind_1)] == empty;
             turn_4(bind_1: Position), turn_5(bind_1: Position): board[Position(bind_1)] = me;
             turn_5(bind_1: Position), turn_6(bind_1: Position): position = Position(bind_1);
-            turn_6(bind_1: Position), turn_7(bind_1: Position): $ bind_1;
-            turn_7(bind_1: Position), turn_3(bind_1: Position): ;
+            turn_6(bind_1: Position), turn_3(bind_1: Position): $ bind_1;
             turn_3(bind_1: Position), turn_8: ;
             turn_8, turn_9: player = keeper;
             win_call_1, win_begin: position = position;
@@ -844,8 +834,7 @@ mod test {
             turn_13, turn_14: goals[op[me]] = 0;
             turn_14, end: player = keeper;
             findNonempty_call_1, findNonempty_1(position: Position): ;
-            findNonempty_1(position: Position), findNonempty_3(position: Position): board[Position(position)] == empty;
-            findNonempty_3(position: Position), findNonempty_2(position: Position): ;
+            findNonempty_1(position: Position), findNonempty_2(position: Position): board[Position(position)] == empty;
             findNonempty_2(position: Position), findNonempty_end: ;
             turn_11, turn_end: ? findNonempty_call_1 -> findNonempty_end;
             turn_11, turn_15: ! findNonempty_call_1 -> findNonempty_end;
