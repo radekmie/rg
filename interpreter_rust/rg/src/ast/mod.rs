@@ -1263,6 +1263,16 @@ impl<Id: Ord> Game<Id> {
             })
     }
 
+    pub fn prev_edges_idx(&self) -> BTreeMap<&Node<Id>, BTreeSet<usize>> {
+        self.edges
+            .iter()
+            .enumerate()
+            .fold(BTreeMap::new(), |mut next_edges, (idx, edge)| {
+                next_edges.entry(&edge.rhs).or_default().insert(idx);
+                next_edges
+            })
+    }
+
     pub fn prev_edges_with_idx(&self) -> BTreeMap<&Node<Id>, SetWithIdx<Arc<Edge<Id>>>> {
         self.edges
             .iter()

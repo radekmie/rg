@@ -1,5 +1,6 @@
 use crate::ast::{Edge, Error, Game, Node, SetWithIdx, Type};
 use std::collections::{BTreeMap, BTreeSet};
+use std::rc::Rc;
 use std::sync::Arc;
 
 type Id = Arc<str>;
@@ -7,9 +8,7 @@ type RemovedAndMoved<T> = (Vec<usize>, Vec<T>);
 
 impl Game<Id> {
     pub fn compact_skip_edges(&mut self) -> Result<(), Error<Arc<str>>> {
-        if !self.are_bindings_unique() {
-            self.make_bindings_unique();
-        }
+        self.make_bindings_unique();
 
         loop {
             let to_remove = self.skip_all_obsolete();
@@ -52,7 +51,7 @@ impl Game<Id> {
     }
 
     /// Before:
-    ///              
+    ///
     ///   x ----> y ----> z
     ///
     /// After:
@@ -115,11 +114,11 @@ impl Game<Id> {
     }
 
     /// Before:
-    ///              
+    ///
     ///   x ----> y ----> z
     ///
     /// After:
-    ///           
+    ///
     ///   x ------------> z
     ///   x ----> y
     ///
@@ -196,25 +195,10 @@ impl Game<Id> {
         to_remove
     }
 
-    fn are_bindings_unique(&self) -> bool {
-        for edge_index in 0..self.edges.len() {
-            for (binding, _) in self.edges[edge_index].bindings() {
-                let edges_using_binding = get_edges_using_binding(&self.edges, edge_index, binding);
-                for edge_index in 0..self.edges.len() {
-                    if !edges_using_binding.contains(&edge_index)
-                        && self.edges[edge_index].get_binding(binding).is_some()
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        true
-    }
-
     // TODO: Extract to a separate AST transform.
     fn make_bindings_canonical(&mut self) {
+        let edges_using_binding_map = get_edges_using_binding_map(&self.edges);
+
         // Iterate over indexes to eliminate multiple ownership.
         let edges = &mut self.edges;
         for x in 0..edges.len() {
@@ -232,16 +216,24 @@ impl Game<Id> {
                     continue;
                 }
 
-                let edges_to_rename = get_edges_using_binding(edges, x, binding);
+                let edges_to_rename = edges_using_binding_map.get(&(x, binding.clone()));
                 if edges_to_rename
-                    .iter()
-                    .any(|index| edges[*index].label.has_variable(&fresh))
+                    .map(|x| x.iter())
+                    .into_iter()
+                    .flatten()
+                    .cloned()
+                    .any(|index| edges[index].label.has_variable(&fresh))
                 {
                     continue;
                 }
 
                 let mapping = BTreeMap::from([(binding.clone(), (fresh, type_.clone()))]);
-                for y in edges_to_rename {
+                for y in edges_to_rename
+                    .map(|x| x.iter())
+                    .into_iter()
+                    .flatten()
+                    .cloned()
+                {
                     edges[y] = Arc::from(edges[y].rename_variables(&mapping));
                 }
             }
@@ -250,6 +242,26 @@ impl Game<Id> {
 
     // TODO: Extract to a separate AST transform.
     fn make_bindings_unique(&mut self) {
+        let edges_using_binding_map = get_edges_using_binding_map(&self.edges);
+
+        let mut are_bindings_unique = true;
+        for index in 0..self.edges.len() {
+            for (binding, _) in self.edges[index].bindings() {
+                let edges_using_binding = edges_using_binding_map.get(&(index, binding.clone()));
+                for index in 0..self.edges.len() {
+                    if edges_using_binding.is_none_or(|edges| !edges.contains(&index))
+                        && self.edges[index].get_binding(binding).is_some()
+                    {
+                        are_bindings_unique = false;
+                    }
+                }
+            }
+        }
+
+        if are_bindings_unique {
+            return;
+        }
+
         let mut index = 0;
         let mut mapped = BTreeSet::new();
 
@@ -266,7 +278,13 @@ impl Game<Id> {
                 // TODO: All `bind_*` bindings should be renamed before for safety.
                 let fresh: Arc<str> = Arc::from(format!("bind_{index}"));
                 let mapping = BTreeMap::from([(binding.clone(), (fresh.clone(), type_.clone()))]);
-                for y in get_edges_using_binding(edges, x, binding) {
+                for y in edges_using_binding_map
+                    .get(&(x, binding.clone()))
+                    .map(|x| x.iter())
+                    .into_iter()
+                    .flatten()
+                    .cloned()
+                {
                     mapped.insert((y, fresh.clone()));
                     edges[y] = Arc::from(edges[y].rename_variables(&mapping));
                 }
@@ -293,34 +311,57 @@ fn are_bindings_safe(a: &Node<Arc<str>>, b: &Node<Arc<str>>, c: &Node<Arc<str>>)
     }
 }
 
-fn get_edges_using_binding(
+fn get_edges_using_binding_map(
     edges: &[Arc<Edge<Arc<str>>>],
-    starting_edge_index: usize,
-    binding: &Arc<str>,
-) -> BTreeSet<usize> {
-    let mut edges_using_binding = BTreeSet::from([starting_edge_index]);
-    loop {
-        let mut nothing_changed = true;
-        for x in 0..edges.len() {
-            if !edges_using_binding.contains(&x)
-                && edges_using_binding.iter().any(|&y| {
-                    let x = &edges[x];
-                    let y = &edges[y];
-                    x.lhs.has_binding(binding) && (x.lhs == y.lhs || x.lhs == y.rhs)
-                        || x.rhs.has_binding(binding) && (x.rhs == y.lhs || x.rhs == y.rhs)
-                })
-            {
-                nothing_changed = false;
-                edges_using_binding.insert(x);
-            }
-        }
+) -> BTreeMap<(usize, Arc<str>), Rc<BTreeSet<usize>>> {
+    let game = Game {
+        edges: edges.to_vec(),
+        ..Game::default()
+    };
 
-        if nothing_changed {
-            break;
+    let next_edges_idx = game.next_edges_idx();
+    let prev_edges_idx = game.prev_edges_idx();
+
+    let mut edges_using_binding_map = BTreeMap::new();
+    for (index, edge) in edges.iter().enumerate() {
+        for (binding, _) in edge.bindings() {
+            if !edges_using_binding_map.contains_key(&(index, binding.clone())) {
+                let mut queue = vec![index];
+                let mut nodes_using_binding = BTreeSet::from([index]);
+                let mut edges_using_binding = BTreeSet::from([index]);
+
+                while let Some(index) = queue.pop() {
+                    let Edge { lhs, rhs, .. } = edges[index].as_ref();
+                    if rhs.has_binding(binding) {
+                        for lhs_index in next_edges_idx.get(&rhs).into_iter().flatten().copied() {
+                            if nodes_using_binding.insert(lhs_index) {
+                                edges_using_binding.insert(lhs_index);
+                                queue.push(lhs_index);
+                            }
+                        }
+                    }
+
+                    if lhs.has_binding(binding) {
+                        for rhs_index in prev_edges_idx.get(&lhs).into_iter().flatten().copied() {
+                            if nodes_using_binding.insert(rhs_index) {
+                                edges_using_binding.insert(rhs_index);
+                                queue.push(rhs_index);
+                            }
+                        }
+                    }
+                }
+
+                let edges_using_binding = Rc::new(edges_using_binding);
+                for index in edges_using_binding.iter() {
+                    edges_using_binding_map
+                        .entry((*index, binding.clone()))
+                        .or_insert_with(|| edges_using_binding.clone());
+                }
+            }
         }
     }
 
-    edges_using_binding
+    edges_using_binding_map
 }
 
 #[cfg(test)]
