@@ -5,16 +5,16 @@ use std::sync::Arc;
 type Id = Arc<str>;
 type ToInline = (Node<Id>, Vec<Arc<Edge<Id>>>, Vec<Node<Id>>);
 
-/// Before:
-/// b, a1: x = 1;
-/// b, a2: x = 1;
-/// a1, a3: ;
-/// a2, a4: ;
-///
-/// After:
-/// b, a1: x = 1;
-/// a1, a3: ;
-/// a1, a4: ;
+// Before:
+// b, a1: x = 1;
+// b, a2: x = 1;
+// a1, a3: ;
+// a2, a4: ;
+//
+// After:
+// b, a1: x = 1;
+// a1, a3: ;
+// a1, a4: ;
 
 impl Game<Id> {
     pub fn join_fork_prefixes(&mut self) -> Result<(), Error<Id>> {

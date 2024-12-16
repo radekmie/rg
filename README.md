@@ -42,7 +42,7 @@ npm run start
 ## Dependencies
 
 - [Node.js](https://nodejs.org/en/) 20.12.2
-- [Rust](https://www.rust-lang.org) 1.81.0
+- [Rust](https://www.rust-lang.org) 1.83.0
 - [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) 0.13.1
 
 ### Manual installation
@@ -60,7 +60,7 @@ nvm install 20.12.2
 # Rust via rustup
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.bashrc
-rustup install 1.81.0
+rustup install 1.83.0
 
 # wasm-pack
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh

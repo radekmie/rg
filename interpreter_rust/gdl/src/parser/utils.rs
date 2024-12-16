@@ -18,14 +18,14 @@ pub fn comments_and_whitespaces(input: &str) -> Result<()> {
 }
 
 pub fn in_parens<'a, T>(
-    parser: impl FnMut(&'a str) -> Result<T>,
-) -> impl FnMut(&'a str) -> Result<T> {
+    parser: impl FnMut(&'a str) -> Result<'a, T>,
+) -> impl FnMut(&'a str) -> Result<'a, T> {
     delimited(tag("("), parser, tag(")"))
 }
 
 pub fn separated<'a, T>(
-    parser: impl FnMut(&'a str) -> Result<T>,
-) -> impl FnMut(&'a str) -> Result<T> {
+    parser: impl FnMut(&'a str) -> Result<'a, T>,
+) -> impl FnMut(&'a str) -> Result<'a, T> {
     delimited(comments_and_whitespaces, parser, comments_and_whitespaces)
 }
 

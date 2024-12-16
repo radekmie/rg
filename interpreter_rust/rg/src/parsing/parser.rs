@@ -29,7 +29,7 @@ fn identifier(input: Input) -> Result<Identifier> {
     })(input)
 }
 
-fn preceded_opt_id<'a>(context: &'a str) -> impl FnMut(Input<'a>) -> Result<Identifier> {
+fn preceded_opt_id<'a>(context: &'a str) -> impl FnMut(Input<'a>) -> Result<'a, Identifier> {
     move |input| {
         let start = Position::from(&input);
         expect(

@@ -83,8 +83,8 @@ impl Game<Id> {
                 if !y_z.label.is_skip() // (1)
                     || used_nodes.contains(y) // For safety, this node could have been modified
                     || reachability_targets.contains(y) // (3)
-                    || !next_edges.get(y).is_some_and(|n| n.len() == 1 // (2) 
-                    )
+                    || next_edges.get(y).is_none_or(|n| n.len() != 1)
+                // (2)
                 {
                     continue;
                 }
@@ -146,8 +146,8 @@ impl Game<Id> {
                 if !x_y.label.is_skip() // (1)
                     || used_nodes.contains(y) // For safety, this node could have been modified
                     || reachability_targets.contains(y) // (3)
-                    || !prev_edges.get(y).is_some_and(|n| n.len() == 1 // (2) 
-                    )
+                    || prev_edges.get(y).is_none_or(|n| n.len() != 1)
+                // (2)
                 {
                     continue;
                 }
@@ -277,7 +277,7 @@ impl Game<Id> {
 
 fn group_by_rhs<'a>(
     edges: &'a BTreeSet<(usize, &'a Arc<Edge<Id>>)>,
-) -> BTreeMap<&Node<Id>, SetWithIdx<&Arc<Edge<Id>>>> {
+) -> BTreeMap<&'a Node<Id>, SetWithIdx<'a, &'a Arc<Edge<Id>>>> {
     let mut grouped: BTreeMap<_, SetWithIdx<_>> = BTreeMap::new();
     for (idx, edge) in edges {
         grouped.entry(&edge.rhs).or_default().insert((*idx, edge));

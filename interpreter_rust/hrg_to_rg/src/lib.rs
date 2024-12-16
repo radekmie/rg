@@ -116,7 +116,7 @@ fn check_arguments_length(
 ) -> Result<(), hrg::Error<Id>> {
     (expected == got)
         .then_some(())
-        .ok_or_else(|| hrg::Error::IncorrectNumberOfArguments {
+        .ok_or(hrg::Error::IncorrectNumberOfArguments {
             identifier,
             expected,
             got,

@@ -86,9 +86,9 @@ fn term_rc(input: &str) -> Result<Arc<Term<&str>>> {
 
 fn term_template<'a, T, U>(
     string: &'a str,
-    parser: impl FnMut(&'a str) -> Result<T>,
+    parser: impl FnMut(&'a str) -> Result<'a, T>,
     mapper: impl Fn(T) -> U,
-) -> impl FnMut(&'a str) -> Result<U> {
+) -> impl FnMut(&'a str) -> Result<'a, U> {
     map(preceded(tag(string), in_parens(parser)), mapper)
 }
 

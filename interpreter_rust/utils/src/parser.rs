@@ -16,7 +16,7 @@ use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct State<'a>(pub &'a RefCell<Vec<Error>>);
 
-impl<'a> State<'a> {
+impl State<'_> {
     pub fn report_error(&self, error: Error) {
         self.0.borrow_mut().push(error);
     }
@@ -36,9 +36,9 @@ pub fn parse_error_line(input: Input) -> Result<()> {
 }
 
 pub fn with_semicolon<'a, O1, O2, O3: From<(O1, O2, Span)>>(
-    mut first: impl FnMut(Input<'a>) -> Result<O1>,
-    mut second: impl FnMut(Input<'a>) -> Result<Option<O2>>,
-) -> impl FnMut(Input<'a>) -> Result<Option<O3>> {
+    mut first: impl FnMut(Input<'a>) -> Result<'a, O1>,
+    mut second: impl FnMut(Input<'a>) -> Result<'a, Option<O2>>,
+) -> impl FnMut(Input<'a>) -> Result<'a, Option<O3>> {
     move |input| {
         let (input, first) = first(input)?;
         let (input, second) = second(input)?;
@@ -56,9 +56,9 @@ pub fn with_semicolon<'a, O1, O2, O3: From<(O1, O2, Span)>>(
 pub fn expect<'a, F, E, T>(
     mut parser: F,
     error_msg: E,
-) -> impl FnMut(Input<'a>) -> Result<Option<T>>
+) -> impl FnMut(Input<'a>) -> Result<'a, Option<T>>
 where
-    F: FnMut(Input<'a>) -> Result<T>,
+    F: FnMut(Input<'a>) -> Result<'a, T>,
     E: Display,
 {
     move |input| {
@@ -84,16 +84,18 @@ pub fn comments_and_whitespaces(input: Input) -> Result<()> {
 }
 
 pub fn preceded_whitespace<'a, O>(
-    inner: impl FnMut(Input<'a>) -> Result<O>,
-) -> impl FnMut(Input<'a>) -> Result<O> {
+    inner: impl FnMut(Input<'a>) -> Result<'a, O>,
+) -> impl FnMut(Input<'a>) -> Result<'a, O> {
     preceded(comments_and_whitespaces, inner)
 }
 
-pub fn preceded_tag<'a>(str: &'a str) -> impl FnMut(Input<'a>) -> Result<Input> {
+pub fn preceded_tag<'a>(str: &'a str) -> impl FnMut(Input<'a>) -> Result<'a, Input<'a>> {
     preceded_whitespace(tag(str))
 }
 
-pub fn expect_preceded_tag<'a>(str: &'a str) -> impl FnMut(Input<'a>) -> Result<Option<Input>> {
+pub fn expect_preceded_tag<'a>(
+    str: &'a str,
+) -> impl FnMut(Input<'a>) -> Result<'a, Option<Input<'a>>> {
     expect(preceded_tag(str), format!("`{str}`"))
 }
 
@@ -115,44 +117,46 @@ pub fn integer(input: Input) -> Result<usize> {
     map_res(digit1, |digits: Input| digits.parse())(input)
 }
 
-pub fn ww<'a, O>(inner: impl FnMut(Input<'a>) -> Result<O>) -> impl FnMut(Input<'a>) -> Result<O> {
+pub fn ww<'a, O>(
+    inner: impl FnMut(Input<'a>) -> Result<'a, O>,
+) -> impl FnMut(Input<'a>) -> Result<'a, O> {
     delimited(comments_and_whitespaces, inner, comments_and_whitespaces)
 }
 
-pub fn ww_tag<'a>(str: &'a str) -> impl FnMut(Input<'a>) -> Result<Input> {
+pub fn ww_tag<'a>(str: &'a str) -> impl FnMut(Input<'a>) -> Result<'a, Input<'a>> {
     ww(tag(str))
 }
 
-pub fn ww_char<'a>(c: char) -> impl FnMut(Input<'a>) -> Result<char> {
+pub fn ww_char<'a>(c: char) -> impl FnMut(Input<'a>) -> Result<'a, char> {
     ww(char(c))
 }
 
 pub fn in_braces<'a, O>(
-    inner: impl FnMut(Input<'a>) -> Result<O>,
-) -> impl FnMut(Input<'a>) -> Result<O> {
+    inner: impl FnMut(Input<'a>) -> Result<'a, O>,
+) -> impl FnMut(Input<'a>) -> Result<'a, O> {
     delimited(ww_char('{'), inner, ww_char('}'))
 }
 
 pub fn in_parens<'a, O>(
-    inner: impl FnMut(Input<'a>) -> Result<O>,
-) -> impl FnMut(Input<'a>) -> Result<O> {
+    inner: impl FnMut(Input<'a>) -> Result<'a, O>,
+) -> impl FnMut(Input<'a>) -> Result<'a, O> {
     delimited(ww_char('('), inner, ww_char(')'))
 }
 
 pub fn in_brackets<'a, O>(
-    inner: impl FnMut(Input<'a>) -> Result<O>,
-) -> impl FnMut(Input<'a>) -> Result<O> {
+    inner: impl FnMut(Input<'a>) -> Result<'a, O>,
+) -> impl FnMut(Input<'a>) -> Result<'a, O> {
     delimited(ww_char('['), inner, ww_char(']'))
 }
 
 pub fn comma_separated0<'a, O>(
-    inner: impl FnMut(Input<'a>) -> Result<O>,
-) -> impl FnMut(Input<'a>) -> Result<Vec<O>> {
+    inner: impl FnMut(Input<'a>) -> Result<'a, O>,
+) -> impl FnMut(Input<'a>) -> Result<'a, Vec<O>> {
     separated_list0(ww_char(','), inner)
 }
 
 pub fn comma_separated1<'a, O>(
-    inner: impl FnMut(Input<'a>) -> Result<O>,
-) -> impl FnMut(Input<'a>) -> Result<Vec<O>> {
+    inner: impl FnMut(Input<'a>) -> Result<'a, O>,
+) -> impl FnMut(Input<'a>) -> Result<'a, Vec<O>> {
     separated_list1(ww_char(','), inner)
 }

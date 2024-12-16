@@ -2,7 +2,7 @@ use crate::ast::{AtomOrVariable, Term};
 use std::iter::zip;
 
 impl<Id: Clone + Ord> AtomOrVariable<Id> {
-    pub fn unify<'a>(&'a self, other: &'a Self) -> Unification<Id> {
+    pub fn unify<'a>(&'a self, other: &'a Self) -> Unification<'a, Id> {
         use AtomOrVariable::{Atom, Variable};
         use Unification::{Empty, Failed, NotEmpty};
         match (self, other) {
@@ -14,7 +14,7 @@ impl<Id: Clone + Ord> AtomOrVariable<Id> {
 }
 
 impl<Id: Clone + Ord> Term<Id> {
-    pub fn unify<'a>(&'a self, other: &'a Self) -> Unification<Id> {
+    pub fn unify<'a>(&'a self, other: &'a Self) -> Unification<'a, Id> {
         use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
         match (self, other) {
             (Base(x), Base(y)) => x.unify(y),

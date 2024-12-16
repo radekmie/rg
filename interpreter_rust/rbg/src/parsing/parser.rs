@@ -33,8 +33,8 @@ fn identifier(input: Input) -> Result<Id> {
 
 fn section<'a, O>(
     name: &'static str,
-    parser: impl FnMut(Input<'a>) -> Result<O>,
-) -> impl FnMut(Input<'a>) -> Result<O> {
+    parser: impl FnMut(Input<'a>) -> Result<'a, O>,
+) -> impl FnMut(Input<'a>) -> Result<'a, O> {
     preceded(
         pair(ww_char('#'), tag(name)),
         preceded(ww_char('='), parser),
