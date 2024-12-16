@@ -117,15 +117,24 @@ export class AnalyzedGame {
 export async function parse(source: string, settings: Settings) {
   const game = new AnalyzedGame();
 
-  try {
-    game.steps.push({
-      kind: 'source',
-      language: settings.extension,
-      title: 'original',
-      value: source,
-    });
+  game.steps.push({
+    kind: 'source',
+    language: settings.extension,
+    title: 'original',
+    value: source,
+  });
 
-    const steps = await wasm.analyze(source, settings);
+  const [steps, error] = await wasm.analyze(source, settings);
+  if (error) {
+    // If the analysis failed, show the steps accumulated so far.
+    game.steps.push(...steps);
+
+    // If there's no error step (i.e., this error is not an analysis error), add
+    // it to the list of steps.
+    if (game.steps[game.steps.length - 1].kind !== 'error') {
+      game.steps.push({ kind: 'error', value: error });
+    }
+  } else {
     const graphviz = steps.pop();
     utils.assert(graphviz?.kind === 'graphviz', 'Graphviz step expected');
     const stats = steps.pop();
@@ -137,11 +146,6 @@ export async function parse(source: string, settings: Settings) {
       { kind: 'automaton', value: graphviz.value },
       graphviz,
     );
-  } catch (error) {
-    // If the analysis failed, ignore register this error.
-    if (game.steps[game.steps.length - 1].kind !== 'error') {
-      game.steps.push({ kind: 'error', value: error });
-    }
   }
 
   return game;

@@ -61,14 +61,19 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
 
 export async function analyze(source: string, settings: Settings) {
   const steps: AnalyzedGameStep[] = [];
-  await workerMethod(
-    'analyze',
-    [source, settings.extension, JSON.stringify(settings.flags)],
-    (step: string) => {
-      steps.push(JSON.parse(step));
-    },
-  );
-  return steps;
+  try {
+    await workerMethod(
+      'analyze',
+      [source, settings.extension, JSON.stringify(settings.flags)],
+      (step: string) => {
+        steps.push(JSON.parse(step));
+      },
+    );
+
+    return [steps, null] as const;
+  } catch (error) {
+    return [steps, error] as const;
+  }
 }
 
 export type Logger = { log: (message: string) => void };
