@@ -116,16 +116,31 @@ fn analyze_rg_inner(
         }};
     }
 
+    macro_rules! add_game_stats {
+        ($game:expr) => {
+            step!({ "kind": "stats", "value": $game.to_stats() });
+            step!({ "kind": "graphviz", "value": $game.to_graphviz() });
+        }
+    }
+
     macro_rules! check {
-        ($expr:expr) => {
+        ($expr:expr) => { check!($expr, {}) };
+        ($expr:expr, $on_error:stmt) => {
             match $expr {
                 Ok(expr) => expr,
                 Err(error) => {
+                    $on_error
                     let error = error.to_string();
                     step!({ "kind": "error", "value": error });
                     return Err(error);
                 },
             }
+        };
+    }
+
+    macro_rules! game_call {
+        ($game:expr, $fn:ident) => {
+            check!($game.$fn(), add_game_stats!($game))
         };
     }
 
@@ -156,19 +171,19 @@ fn analyze_rg_inner(
     }
 
     loop {
-        check!(game.check_assignments());
-        check!(game.check_duplicated_names());
-        check!(game.check_maps());
-        // check!(game.check_multiple_edges());
-        check!(game.check_reachabilities());
-        check!(game.check_types());
+        game_call!(game, check_assignments);
+        game_call!(game, check_duplicated_names);
+        game_call!(game, check_maps);
+        // game_call!(game, check_multiple_edges);
+        game_call!(game, check_reachabilities);
+        game_call!(game, check_types);
 
         let copy = game.clone();
 
         macro_rules! pass {
             ($fn:ident) => {
                 if flags.$fn {
-                    check!(game.$fn());
+                    game_call!(game, $fn);
                     if game != copy {
                         game_step!(game, stringify!($fn));
                         continue;
@@ -230,8 +245,7 @@ fn analyze_rg_inner(
         game
     );
 
-    step!({ "kind": "stats", "value": game.to_stats() });
-    step!({ "kind": "graphviz", "value": game.to_graphviz() });
+    add_game_stats!(game);
     Ok(game)
 }
 

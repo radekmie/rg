@@ -125,27 +125,28 @@ export async function parse(source: string, settings: Settings) {
   });
 
   const [steps, error] = await wasm.analyze(source, settings);
-  if (error) {
-    // If the analysis failed, show the steps accumulated so far.
-    game.steps.push(...steps);
+  game.steps.push(...steps);
 
-    // If there's no error step (i.e., this error is not an analysis error), add
-    // it to the list of steps.
-    if (game.steps[game.steps.length - 1].kind !== 'error') {
-      game.steps.push({ kind: 'error', value: error });
-    }
-  } else {
-    const graphviz = steps.pop();
-    utils.assert(graphviz?.kind === 'graphviz', 'Graphviz step expected');
-    const stats = steps.pop();
-    utils.assert(stats?.kind === 'stats', 'Stats step expected');
+  // If there's no error step (i.e., this error is not an analysis error), add
+  // it to the list of steps.
+  if (error && game.steps[game.steps.length - 1].kind !== 'error') {
+    game.steps.push({ kind: 'error', value: error });
+  }
 
-    game.steps.push(...steps);
-    game.steps.unshift(
-      { kind: 'bench', stats: stats.value, value: game.astRg },
-      { kind: 'automaton', value: graphviz.value },
-      graphviz,
-    );
+  const graphviz = game.steps.find(x => x.kind === 'graphviz');
+  if (graphviz?.kind === 'graphviz') {
+    game.steps.splice(game.steps.indexOf(graphviz), 1);
+    game.steps.unshift({ kind: 'automaton', value: graphviz.value }, graphviz);
+  }
+
+  const stats = game.steps.find(x => x.kind === 'stats');
+  if (stats?.kind === 'stats') {
+    game.steps.splice(game.steps.indexOf(stats), 1);
+    game.steps.unshift({
+      kind: 'bench',
+      stats: stats.value,
+      value: game.astRg,
+    });
   }
 
   return game;
