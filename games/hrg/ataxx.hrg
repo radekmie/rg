@@ -124,6 +124,11 @@ jump_diagrightdown1(V(X, Y)) = if X == 6 || Y == 6 || X == 5 then null else V(X 
 jump_diagrightdown2 : Position -> Position
 jump_diagrightdown2(null) = null
 jump_diagrightdown2(V(X, Y)) = if X == 6 || Y == 6 || Y == 5 then null else V(X + 1, Y + 2)
+
+nextPos : Position -> Position
+nextPos(null) = null
+nextPos(V(X, 6)) = if X == 6 then null else V(X+1, 0)
+nextPos(V(X, Y)) = V(X, Y+1)
 //--------
 
 
@@ -161,167 +166,135 @@ board : Position -> Piece = {
 
 me : Player = red
 position : Position
-current_score : Count = C(0)
-op_current_score : Count = C(0)
 t : Position
-l : Position
-r : Position
-u : Position
-d : Position
-dlu : Position
-dld : Position
-dru : Position
-drd : Position
 op_piece : Piece
-
-graph counter(me: Player) {
-  current_score = C(0)
-  forall p:Position {
-    check(p != null && board[p] == playerpiece(me))
-    current_score = increase_count(current_score)
-  }
-} 
-
-graph counter_op(me: Player) {
-  op_current_score = C(0)
-  forall p:Position {
-    check(p != null && board[p] == playerpiece(opponent(me)))
-    op_current_score = increase_count(op_current_score)
-  }
-} 
+countRed : Count = C(0)
+countBlue : Count = C(0)
 
 graph move(me: Player) {
   forall p:Position {
-    check(p != null && board[p] == playerpiece(me))
+    position = p
     $ p
+  }
+  check(position != null && board[position] == playerpiece(me))
   // possible directions - one cell away
   branch {
     branch {
-      t = left(p)
+      t = left(position)
       $ LEFT
     } or {
-      t = right(p)
+      t = right(position)
       $ RIGHT
     } or {
-      t = up(p)
+      t = up(position)
       $ UP
     } or {
-      t = down(p)
+      t = down(position)
       $ DOWN
     } or {
-      t = diagleftup(p)
+      t = diagleftup(position)
       $ DIAGLEFTUP
     } or {
-      t = diagrightup(p)
+      t = diagrightup(position)
       $ DIAGRIGHTUP
     } or {
-      t = diagleftdown(p)
+      t = diagleftdown(position)
       $ DIAGLEFTDOWN
     } or {
-      t = diagrightdown(p)
+      t = diagrightdown(position)
       $ DIAGRIGHTDOWN
     }
     check(t != null && board[t] == empty)
-  } 
+  }
   // possible directions - two cells away
   or {
     branch {
-      t = jump_left(p)
+      t = jump_left(position)
       $ JUMPLEFT
     } or {
-      t = jump_right(p)
+      t = jump_right(position)
       $ JUMPRIGHT
     } or {
-      t = jump_up(p)
+      t = jump_up(position)
       $ JUMPUP
     } or {
-      t = jump_down(p)
+      t = jump_down(position)
       $ JUMPDOWN
     } or {
-      t = jump_diagleftup(p)
+      t = jump_diagleftup(position)
       $ JUMPDIAGLEFTUP
     } or {
-      t = jump_diagrightup(p)
+      t = jump_diagrightup(position)
       $ JUMPDIAGRIGHTUP
     } or {
-      t = jump_diagleftdown(p)
+      t = jump_diagleftdown(position)
       $ JUMPDIAGLEFTDOWN
     } or {
-      t = jump_diagrightdown(p)
+      t = jump_diagrightdown(position)
       $ JUMPDIAGRIGHTDOWN
     } or {
-      t = jump_diagleftup1(p)
+      t = jump_diagleftup1(position)
       $ JUMPDIAGLEFTUP1
     } or {
-      t = jump_diagleftup2(p)
+      t = jump_diagleftup2(position)
       $ JUMPDIAGLEFTUP2
     } or {
-      t = jump_diagleftdown1(p)
+      t = jump_diagleftdown1(position)
       $ JUMPDIAGLEFTDOWN1
     } or {
-      t = jump_diagleftdown2(p)
+      t = jump_diagleftdown2(position)
       $ JUMPDIAGLEFTDOWN2
     } or {
-      t = jump_diagrightup1(p)
+      t = jump_diagrightup1(position)
       $ JUMPDIAGRIGHTUP1
     } or {
-      t = jump_diagrightup2(p)
+      t = jump_diagrightup2(position)
       $ JUMPDIAGRIGHTUP2
     } or {
-      t = jump_diagrightdown1(p)
+      t = jump_diagrightdown1(position)
       $ JUMPDIAGRIGHTDOWN1
     } or {
-      t = jump_diagrightdown2(p)
+      t = jump_diagrightdown2(position)
       $ JUMPDIAGRIGHTDOWN2
     }
     check(t != null && board[t] == empty)
-    board[p] = empty
-    }
+    board[position] = empty
+
   }
   player = keeper
 
-  //adjacent cells to the new position
-  l = left(t)
-  r = right(t)
-  u = up(t)
-  d = down(t)
-  dlu = diagleftup(t)
-  dld = diagleftdown(t)
-  dru = diagrightup(t)
-  drd = diagrightdown(t)
-
   // capture opponent's pieces that are adjacent to the new position
   op_piece = playerpiece(opponent(me))
-  if board[l] == op_piece {
-    board[l] = playerpiece(me)
-  } 
-  if board[r] == op_piece {
-    board[r] = playerpiece(me)
+  if board[left(t)] == op_piece {
+    board[left(t)] = playerpiece(me)
   }
-  if board[u] == op_piece {
-    board[u] = playerpiece(me)
-  } 
-  if board[d] == op_piece {
-    board[d] = playerpiece(me)
+  if board[right(t)] == op_piece {
+    board[right(t)] = playerpiece(me)
   }
-  if board[dlu] == op_piece {
-    board[dlu] = playerpiece(me)
-  } 
-  if board[dld] == op_piece {
-    board[dld] = playerpiece(me)
+  if board[up(t)] == op_piece {
+    board[up(t)] = playerpiece(me)
   }
-  if board[dru] == op_piece {
-    board[dru] = playerpiece(me)
+  if board[down(t)] == op_piece {
+    board[down(t)] = playerpiece(me)
   }
-  if board[drd] == op_piece {
-    board[drd] = playerpiece(me)
+  if board[diagleftup(t)] == op_piece {
+    board[diagleftup(t)] = playerpiece(me)
+  }
+  if board[diagleftdown(t)] == op_piece {
+    board[diagleftdown(t)] = playerpiece(me)
+  }
+  if board[diagrightup(t)] == op_piece {
+    board[diagrightup(t)] = playerpiece(me)
+  }
+  if board[diagrightdown(t)] == op_piece {
+    board[diagrightdown(t)] = playerpiece(me)
   }
   board[t] = playerpiece(me)
 }
 
-graph isBoardFull() {
+graph existsEmptyCell() {
   forall p:Position {
-    check(p != null && board[p] != empty)
+    check(p != null && board[p] == empty)
   }
 }
 
@@ -333,23 +306,33 @@ graph turn() {
     player = keeper
   }
   else {
-    if reachable(isBoardFull()) {
-      counter(me)
-      counter_op(me)
-      goals[me] = compare(current_score, op_current_score)
-      if goals[me] == 50 {
-        goals[opponent(me)] = 50
-      }
-      else {
-        if goals[me] == 100 {
-          goals[opponent(me)] = 0
+    if not(reachable(existsEmptyCell())) {
+      position = V(0,0)
+      loop {
+        if board[position] == redpiece {
+          countRed = increase_count(countRed)
+        } else {
+          if board[position] == bluepiece {
+            countBlue = increase_count(countBlue)
+          }
         }
-        else {
-          goals[opponent(me)] = 100
+        position = nextPos(position)
+        if position == null {
+          goals[red] = compare(countRed, countBlue)
+          if goals[red] == 50 {
+            goals[blue] = 50
+          } else {
+            if goals[red] == 100 {
+              goals[blue] = 0
+            } else {
+              goals[blue] = 100
+            }
+          }
+          player = keeper
+          end()
         }
       }
     }
-    end()
   }
   me = opponent(me)
 }
