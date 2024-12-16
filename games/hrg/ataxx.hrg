@@ -1,3 +1,4 @@
+// @author Mariana Carvalho
 
 // Domains
 domain Piece = redpiece | empty | bluepiece
@@ -173,8 +174,8 @@ countBlue : Count = C(0)
 
 graph move(me: Player) {
   forall p:Position {
-    position = p
     $ p
+    position = p
   }
   check(position != null && board[position] == playerpiece(me))
   // possible directions - one cell away
@@ -205,7 +206,7 @@ graph move(me: Player) {
       $ DIAGRIGHTDOWN
     }
     check(t != null && board[t] == empty)
-  }
+  } 
   // possible directions - two cells away
   or {
     branch {
@@ -259,7 +260,7 @@ graph move(me: Player) {
     }
     check(t != null && board[t] == empty)
     board[position] = empty
-
+    
   }
   player = keeper
 
@@ -267,19 +268,19 @@ graph move(me: Player) {
   op_piece = playerpiece(opponent(me))
   if board[left(t)] == op_piece {
     board[left(t)] = playerpiece(me)
-  }
+  } 
   if board[right(t)] == op_piece {
     board[right(t)] = playerpiece(me)
   }
   if board[up(t)] == op_piece {
     board[up(t)] = playerpiece(me)
-  }
+  } 
   if board[down(t)] == op_piece {
     board[down(t)] = playerpiece(me)
   }
   if board[diagleftup(t)] == op_piece {
     board[diagleftup(t)] = playerpiece(me)
-  }
+  } 
   if board[diagleftdown(t)] == op_piece {
     board[diagleftdown(t)] = playerpiece(me)
   }
@@ -324,7 +325,8 @@ graph turn() {
           } else {
             if goals[red] == 100 {
               goals[blue] = 0
-            } else {
+            }
+            else {
               goals[blue] = 100
             }
           }
