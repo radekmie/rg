@@ -1,5 +1,5 @@
 use crate::ast::analyses::ConstantsAnalysis;
-use crate::ast::{Edge, Error, Expression, Game, Label, Value};
+use crate::ast::{Edge, Error, Expression, Game, Label, Type, Value};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -68,6 +68,12 @@ impl Game<Id> {
         let constants = &context.constants;
         let variables = &context.variables;
         let mut unreachable_edges = Vec::new();
+        let game = Self {
+            constants: self.constants.clone(),
+            typedefs: self.typedefs.clone(),
+            variables: self.variables.clone(),
+            ..Self::default()
+        };
 
         for edge in &mut self.edges {
             if edge.label.is_player_assignment() {
@@ -84,8 +90,8 @@ impl Game<Id> {
                         constant_vars: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
                     };
 
-                    let new_lhs = eval_expression(lhs, &context, &edge_clone);
-                    let new_rhs = eval_expression(rhs, &context, &edge_clone);
+                    let new_lhs = eval_expression(lhs, &context, &edge_clone, &game);
+                    let new_rhs = eval_expression(rhs, &context, &edge_clone, &game);
 
                     if new_lhs == new_rhs {
                         edge.skip();
@@ -100,8 +106,8 @@ impl Game<Id> {
                         variables,
                     };
 
-                    *lhs = Arc::new(eval_expression(lhs, &context, &edge_clone));
-                    *rhs = Arc::new(eval_expression(rhs, &context, &edge_clone));
+                    *lhs = Arc::new(eval_expression(lhs, &context, &edge_clone, &game));
+                    *rhs = Arc::new(eval_expression(rhs, &context, &edge_clone, &game));
 
                     let lhs_value = lhs
                         .uncast()
@@ -135,37 +141,60 @@ impl Game<Id> {
 
         Ok(())
     }
+
+    fn new_casted_expression(
+        &self,
+        id: Id,
+        expression: &Expression<Id>,
+        edge: &Edge<Id>,
+    ) -> Option<Expression<Id>> {
+        if self.is_symbol(&id, edge) {
+            let type_ = expression.infer(self, Some(edge)).ok()?;
+            if let Type::TypeReference { .. } = type_.as_ref() {
+                let expr = Expression::new_cast(type_, Arc::new(Expression::new(id)));
+                Some(expr)
+            } else {
+                None
+            }
+        } else {
+            Some(Expression::new(id))
+        }
+    }
 }
 
 fn eval_expression(
     expression: &Expression<Id>,
     context: &Context,
     edge: &Edge<Id>,
+    game: &Game<Id>,
 ) -> Expression<Id> {
+    // expression.infer(game, edge)
     match expression {
         Expression::Access { lhs, rhs, span } => {
             // First, try to evaluate lhs as Value::Map and rhs as Value::Identifier
             eval_access(lhs, rhs, context, edge, false).map_or_else(
                 || Expression::Access {
                     span: *span,
-                    lhs: Arc::new(eval_expression(lhs, context, edge)),
-                    rhs: Arc::new(eval_expression(rhs, context, edge)),
+                    lhs: Arc::new(eval_expression(lhs, context, edge, game)),
+                    rhs: Arc::new(eval_expression(rhs, context, edge, game)),
                 },
                 |value| {
                     value
                         .as_identifier()
-                        .map_or_else(|| expression.clone(), Expression::new)
+                        .and_then(|id| game.new_casted_expression(id, expression, edge))
+                        .unwrap_or_else(|| expression.clone())
                 },
             )
         }
         Expression::Cast { span, lhs, rhs } => Expression::Cast {
             span: *span,
             lhs: lhs.clone(),
-            rhs: Arc::new(eval_expression(rhs, context, edge)),
+            rhs: Arc::new(eval_expression(rhs, context, edge, game)),
         },
         Expression::Reference { identifier } => context
             .get_identifier(identifier, edge)
-            .map_or_else(|| expression.clone(), Expression::new),
+            .and_then(|id| game.new_casted_expression(id, expression, edge))
+            .unwrap_or_else(|| expression.clone()),
     }
 }
 
@@ -223,7 +252,7 @@ mod test {
         type AA = A -> A;
         const down: AA = { 4: 3, 3: 2, :1 };
         var x: A = 3;
-        begin, a(bind_1: A): bind_1 == 2;"
+        begin, a(bind_1: A): bind_1 == A(2);"
     );
 
     test_transform!(
@@ -240,7 +269,7 @@ mod test {
         const down: AA = { 4: 3, 3: 2, :1 };
         var board: A -> A = { 4: 3, :2 };
         var x: A = 3;
-        begin, a(bind_1: A): bind_1 == 1;"
+        begin, a(bind_1: A): bind_1 == A(1);"
     );
 
     test_transform!(
@@ -257,7 +286,7 @@ mod test {
         const down: AA = { 4: 3, 3: 2, :1 };
         var board: A -> A = { 4: 3, :2 };
         var x: A = 3;
-        begin, a(bind_1: A): A(bind_1) == 1;"
+        begin, a(bind_1: A): A(bind_1) == A(1);"
     );
 
     test_transform!(
@@ -313,8 +342,8 @@ mod test {
         const down: AA = { 4: 3, 3: 2, :1 };
         var y: A = 1;
         var x: A = 3;
-        a, c: y = 3;
-        b, c: y = 3;"
+        a, c: y = A(3);
+        b, c: y = A(3);"
     );
 
     test_transform!(
@@ -331,7 +360,7 @@ mod test {
         const down: AA = { 4: 3, 3: 2, :1 };
         var board: A -> A = { 4: 3, :2 };
         var x: A = 3;
-        begin, a(bind_1: AA): x = bind_1[2];"
+        begin, a(bind_1: AA): x = bind_1[A(2)];"
     );
 
     test_transform!(
@@ -348,7 +377,7 @@ mod test {
         const down: AA = { 4: 3, 3: 2, :1 };
         var board: A -> A -> A = { 4: { :3 }, :{ 2: 2, :3 } };
         var x: A = 3;
-        begin, a(bind_1: A): x = 2;"
+        begin, a(bind_1: A): x = A(2);"
     );
 
     test_transform!(
@@ -365,7 +394,7 @@ mod test {
         const down: AA = { 4: 3, 3: 2, :1 };
         var board: A -> A -> A -> A = { :{ 2: { :2 }, :{ :3 } } };
         var x: A = 3;
-        begin, a(bind_1: A): x = board[1][bind_1][2];"
+        begin, a(bind_1: A): x = board[1][bind_1][A(2)];"
     );
 
     test_transform!(
@@ -383,7 +412,7 @@ mod test {
         var board: A -> A = { 4: 3, :2 };
         var x: A = 3;
         begin, a(bind_1: A): board[1] = bind_1;
-        begin, b: x = 2;
+        begin, b: x = A(2);
         a(bind_1: A), a: x = board[2];"
     );
 
@@ -401,7 +430,7 @@ mod test {
         const cst2: A = cst1;
         const cst3: A -> A -> A = { b: { :cst2 }, :{ :cst1 } };
         var x: A -> A -> A = cst3;
-        begin, end: x = a;"
+        begin, end: x = A(a);"
     );
 
     test_transform!(
@@ -418,7 +447,7 @@ mod test {
         const cst2: A = cst1;
         const cst3: A -> A -> A = { b: { a:cst2, :c }, :{ :cst1 } };
         var x: A -> A -> A = cst3;
-        begin, end: x = a;"
+        begin, end: x = A(a);"
     );
 
     test_transform!(
@@ -441,7 +470,7 @@ mod test {
         var x: A = c;
         var y: A -> A = { :cst1 };
         begin, a1: y = board;
-        a1, end: x = a;"
+        a1, end: x = A(a);"
     );
 
     test_transform!(
@@ -466,7 +495,7 @@ mod test {
         var x: A = c;
         var y: A -> A = { :cst1 };
         begin, a1: y = board;
-        a1, end: x = a;"
+        a1, end: x = A(a);"
     );
 
     test_transform!(
@@ -487,7 +516,7 @@ mod test {
         const board1: A -> A = board;
         const cst3: A -> A -> A = { a: board1, :{ a:cst2, :c } };
         var x: A = c;
-        begin, end: x = a;"
+        begin, end: x = A(a);"
     );
 
     test_transform!(

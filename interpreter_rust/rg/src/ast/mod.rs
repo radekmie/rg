@@ -648,6 +648,14 @@ impl<Id> Expression<Id> {
         }
     }
 
+    pub fn new_casted_identifier(identifier: Id, type_: Arc<Type<Id>>) -> Self {
+        Self::Cast {
+            span: Span::none(),
+            lhs: type_,
+            rhs: Arc::from(Self::new(identifier)),
+        }
+    }
+
     pub fn is_access(&self) -> bool {
         matches!(self, Self::Access { .. })
     }
@@ -1098,6 +1106,17 @@ impl<Id: Clone + PartialEq> Game<Id> {
     ) -> Result<bool, Error<Id>> {
         Ok(self.is_assignable_type(lhs, rhs, is_strict)?
             && self.is_assignable_type(rhs, lhs, is_strict)?)
+    }
+
+    pub fn is_symbol(&self, id: &Id, edge: &Edge<Id>) -> bool {
+        if edge.has_binding(id)
+            || self.resolve_constant(id).is_some()
+            || self.resolve_variable(id).is_some()
+        {
+            false
+        } else {
+            true
+        }
     }
 
     pub fn resolve_constant(&self, identifier: &Id) -> Option<&Constant<Id>> {
