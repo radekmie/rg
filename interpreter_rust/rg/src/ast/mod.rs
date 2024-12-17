@@ -648,16 +648,12 @@ impl<Id> Expression<Id> {
         }
     }
 
-    pub fn new_casted_identifier(identifier: Id, type_: Arc<Type<Id>>) -> Self {
-        Self::Cast {
-            span: Span::none(),
-            lhs: type_,
-            rhs: Arc::from(Self::new(identifier)),
-        }
-    }
-
     pub fn is_access(&self) -> bool {
         matches!(self, Self::Access { .. })
+    }
+
+    pub fn is_cast(&self) -> bool {
+        matches!(self, Self::Cast { .. })
     }
 
     pub fn is_cast_and(&self, fn_: impl FnOnce(&Arc<Type<Id>>, &Arc<Self>) -> bool) -> bool {

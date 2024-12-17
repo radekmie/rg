@@ -67,7 +67,6 @@ impl Game<Id> {
         let default_constant_vars = &BTreeMap::new();
         let constants = &context.constants;
         let variables = &context.variables;
-        let mut unreachable_edges = Vec::new();
         let game = Self {
             constants: self.constants.clone(),
             typedefs: self.typedefs.clone(),
@@ -90,8 +89,8 @@ impl Game<Id> {
                         constant_vars: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
                     };
 
-                    let new_lhs = eval_expression(lhs, &context, &edge_clone, &game);
-                    let new_rhs = eval_expression(rhs, &context, &edge_clone, &game);
+                    let new_lhs = eval_expression(lhs, &context, &edge_clone, &game, false);
+                    let new_rhs = eval_expression(rhs, &context, &edge_clone, &game, false);
 
                     if new_lhs == new_rhs {
                         edge.skip();
@@ -106,8 +105,8 @@ impl Game<Id> {
                         variables,
                     };
 
-                    *lhs = Arc::new(eval_expression(lhs, &context, &edge_clone, &game));
-                    *rhs = Arc::new(eval_expression(rhs, &context, &edge_clone, &game));
+                    *lhs = Arc::new(eval_expression(lhs, &context, &edge_clone, &game, false));
+                    *rhs = Arc::new(eval_expression(rhs, &context, &edge_clone, &game, false));
 
                     let lhs_value = lhs
                         .uncast()
@@ -118,26 +117,18 @@ impl Game<Id> {
                         .as_reference()
                         .and_then(|id| context.get_value(id, &edge_clone));
 
-                    // Skip or remove comparisons between constants
+                    // Skip comparisons between constants
                     if let (Some(lhs_value), Some(rhs_value)) = (lhs_value, rhs_value) {
-                        if lhs_value == rhs_value {
-                            if *negated {
-                                unreachable_edges.push(edge.clone());
-                            } else {
-                                edge.skip();
-                            }
-                        } else if *negated {
+                        if (lhs_value == rhs_value && !*negated) // lhs == rhs
+                            || (lhs_value != rhs_value && *negated) // rhs != rhs
+                        {
                             edge.skip();
-                        } else {
-                            unreachable_edges.push(edge.clone());
                         }
                     }
                 }
                 _ => {}
             }
         }
-
-        self.edges.retain(|edge| !unreachable_edges.contains(edge));
 
         Ok(())
     }
@@ -147,8 +138,9 @@ impl Game<Id> {
         id: Id,
         expression: &Expression<Id>,
         edge: &Edge<Id>,
+        in_cast: bool
     ) -> Option<Expression<Id>> {
-        if self.is_symbol(&id, edge) {
+        if !in_cast && self.is_symbol(&id, edge) {
             let type_ = expression.infer(self, Some(edge)).ok()?;
             if let Type::TypeReference { .. } = type_.as_ref() {
                 let expr = Expression::new_cast(type_, Arc::new(Expression::new(id)));
@@ -167,6 +159,7 @@ fn eval_expression(
     context: &Context,
     edge: &Edge<Id>,
     game: &Game<Id>,
+    in_cast: bool,
 ) -> Expression<Id> {
     // expression.infer(game, edge)
     match expression {
@@ -175,13 +168,13 @@ fn eval_expression(
             eval_access(lhs, rhs, context, edge, false).map_or_else(
                 || Expression::Access {
                     span: *span,
-                    lhs: Arc::new(eval_expression(lhs, context, edge, game)),
-                    rhs: Arc::new(eval_expression(rhs, context, edge, game)),
+                    lhs: Arc::new(eval_expression(lhs, context, edge, game, false)),
+                    rhs: Arc::new(eval_expression(rhs, context, edge, game, false)),
                 },
                 |value| {
                     value
                         .as_identifier()
-                        .and_then(|id| game.new_casted_expression(id, expression, edge))
+                        .and_then(|id| game.new_casted_expression(id, expression, edge, in_cast))
                         .unwrap_or_else(|| expression.clone())
                 },
             )
@@ -189,11 +182,11 @@ fn eval_expression(
         Expression::Cast { span, lhs, rhs } => Expression::Cast {
             span: *span,
             lhs: lhs.clone(),
-            rhs: Arc::new(eval_expression(rhs, context, edge, game)),
+            rhs: Arc::new(eval_expression(rhs, context, edge, game, true)),
         },
         Expression::Reference { identifier } => context
             .get_identifier(identifier, edge)
-            .and_then(|id| game.new_casted_expression(id, expression, edge))
+            .and_then(|id| game.new_casted_expression(id, expression, edge, in_cast))
             .unwrap_or_else(|| expression.clone()),
     }
 }
@@ -342,6 +335,8 @@ mod test {
         const down: AA = { 4: 3, 3: 2, :1 };
         var y: A = 1;
         var x: A = 3;
+        begin, a: A(3) == A(1);
+        begin, b: A(3) == A(2);
         a, c: y = A(3);
         b, c: y = A(3);"
     );
@@ -531,6 +526,8 @@ mod test {
         "type A = { 1, 2, 3, 4 };
         begin, end: ;
         a, b: ;
+        a, c: 1 != 1;
+        a, d: 1 == 2;
         a, e: ;"
     );
 
