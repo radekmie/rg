@@ -14,7 +14,12 @@ impl Game<Arc<str>> {
 
         let mut pragmas = vec![];
         for (node, edges) in self.next_edges() {
-            if edges.len() == 1 || node.has_bindings() {
+            if edges.len() == 1 {
+                continue;
+            }
+
+            let node_bindings: BTreeSet<_> = node.bindings().collect();
+            if edges.iter().any(|edge| edge.bindings() != node_bindings) {
                 continue;
             }
 
@@ -187,6 +192,19 @@ mod test {
         calculate_disjoints,
         switch_negated_2,
         "begin, a: x != 0; begin, b: x != 1; a, end: ; b, end: ;"
+    );
+
+    test_transform!(
+        calculate_disjoints,
+        if_else_comparison_binding_nested,
+        "begin, entry: ; entry, a(b: Bool): b == 0; entry, b(b: Bool): b != 0; a(b: Bool), end: ; b(b: Bool), end: ;"
+    );
+
+    test_transform!(
+        calculate_disjoints,
+        if_else_comparison_binding_outer,
+        "begin, entry(b: Bool): ; entry(b: Bool), a(b: Bool): b == 0; entry(b: Bool), b(b: Bool): b != 0; a(b: Bool), end: ; b(b: Bool), end: ;",
+        adds "@disjointExhaustive entry(b: Bool) : a(b: Bool) b(b: Bool);"
     );
 
     test_transform!(
