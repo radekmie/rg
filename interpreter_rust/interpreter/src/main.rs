@@ -6,6 +6,7 @@ use serde_json::{from_str, json, Value};
 use std::ffi::OsStr;
 use std::fs::read_to_string;
 use std::path::PathBuf;
+use std::process::exit;
 use std::sync::Arc;
 
 #[derive(Parser)]
@@ -79,24 +80,20 @@ fn main() -> Result<(), String> {
             let game = GameWithFlags::new(path);
 
             // TODO: Replace `step` with a struct.
-            let mut formatted_source = None;
             game.load_with_callback(&mut Some(|step: String| {
-                if formatted_source.is_some() {
-                    return;
-                }
-
                 if let Value::Object(mut step) = from_str(&step).unwrap() {
                     if let Some(Value::String(title)) = step.remove("title") {
                         if title.starts_with("formatted") {
                             if let Some(Value::String(source)) = step.remove("value") {
-                                formatted_source = Some(source);
+                                println!("{source}");
+                                exit(0);
                             }
                         }
                     }
                 }
             }))?;
 
-            println!("{}", formatted_source.expect("No formatted source found"));
+            panic!("No formatted source found");
         }
         CliArgs::Perf {
             depth,
