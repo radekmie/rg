@@ -17,6 +17,7 @@ Usage: interpreter <COMMAND>
 
 Commands:
   ast     Print RG AST
+  format  Print formatted source
   perf    Benchmark game tree
   run     Benchmark random playouts
   source  Print RG source

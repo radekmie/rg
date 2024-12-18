@@ -49,8 +49,8 @@ fn analyze_gdl_inner(
         .map_err(|error| error.to_string())?
         .1;
 
-    step!({ "kind": "source", "language": "gdl", "value": gdl.as_infix().to_string(), "title": "infix" });
-    step!({ "kind": "source", "language": "gdl", "value": gdl.as_prefix().to_string(), "title": "prefix" });
+    step!({ "kind": "source", "language": "gdl", "value": gdl.as_prefix().to_string(), "title": "formatted (prefix)" });
+    step!({ "kind": "source", "language": "gdl", "value": gdl.as_infix().to_string(), "title": "formatted (infix)" });
 
     Ok(gdl_to_rg::gdl_to_rg(&gdl))
 }
@@ -163,6 +163,10 @@ fn analyze_rg_inner(
     step!({ "kind": "source", "language": "rg", "value": source, "title": "original" });
     step!({ "kind": "ast", "language": "rg", "value": game, "title": "original" });
 
+    let serialized = game.to_string();
+    assert_eq!(safe_parse!(unsafe_parse_rg(&serialized))?, game);
+    step!({ "kind": "source", "language": "rg", "value": serialized, "title": "formatted" });
+
     // Builtins may not be required.
     let copy = game.clone();
     game.add_builtins()?;
@@ -239,11 +243,6 @@ fn analyze_rg_inner(
 
         break;
     }
-
-    assert_eq!(
-        check!(safe_parse!(unsafe_parse_rg(&game.to_string()))),
-        game
-    );
 
     add_game_stats!(game);
     Ok(game)

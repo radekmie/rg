@@ -2,7 +2,7 @@ use clap::{Args, Parser};
 use interpreter::{analyze_inner, Flags, Game};
 use rand::thread_rng;
 use rg::ast::Game as GameAst;
-use serde_json::json;
+use serde_json::{from_str, json, Value};
 use std::ffi::OsStr;
 use std::fs::read_to_string;
 use std::path::PathBuf;
@@ -17,6 +17,8 @@ enum CliArgs {
         #[command(flatten)]
         game_with_flags: GameWithFlags,
     },
+    /// Print formatted source
+    Format { path: PathBuf },
     /// Benchmark game tree
     Perf {
         #[command(flatten)]
@@ -45,13 +47,25 @@ struct GameWithFlags {
 
 impl GameWithFlags {
     fn load(self) -> Result<GameAst<Arc<str>>, String> {
+        self.load_with_callback(&mut None::<fn(String)>)
+    }
+
+    fn load_with_callback(
+        self,
+        callback: &mut Option<impl FnMut(String)>,
+    ) -> Result<GameAst<Arc<str>>, String> {
         let Self { flags, path } = self;
         let Some(extension) = path.extension().and_then(OsStr::to_str) else {
             return Err(format!("Unknown game type: {}.", path.display()));
         };
 
         let source = read_to_string(&path).map_err(|error| error.to_string())?;
-        analyze_inner(source, extension, &flags, &mut None::<fn(String)>)
+        analyze_inner(source, extension, &flags, callback)
+    }
+
+    fn new(path: PathBuf) -> Self {
+        let flags = Flags::none();
+        Self { flags, path }
     }
 }
 
@@ -60,6 +74,29 @@ fn main() -> Result<(), String> {
         CliArgs::Ast { game_with_flags } => {
             let game = game_with_flags.load()?;
             println!("{}", json!(game));
+        }
+        CliArgs::Format { path } => {
+            let game = GameWithFlags::new(path);
+
+            // TODO: Replace `step` with a struct.
+            let mut formatted_source = None;
+            game.load_with_callback(&mut Some(|step: String| {
+                if formatted_source.is_some() {
+                    return;
+                }
+
+                if let Value::Object(mut step) = from_str(&step).unwrap() {
+                    if let Some(Value::String(title)) = step.remove("title") {
+                        if title.starts_with("formatted") {
+                            if let Some(Value::String(source)) = step.remove("value") {
+                                formatted_source = Some(source);
+                            }
+                        }
+                    }
+                }
+            }))?;
+
+            println!("{}", formatted_source.expect("No formatted source found"));
         }
         CliArgs::Perf {
             depth,
