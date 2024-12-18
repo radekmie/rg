@@ -35,51 +35,70 @@
   hx5y7[e]{E:hx6y7,NE:hx5y6,NW:hx4y6,SE:hx6y8,SW:hx5y8,W:hx4y7}
   hx6y7[e]{E:hx7y7,NE:hx6y6,NW:hx5y6,SE:hx7y8,SW:hx6y8,W:hx5y7}
   hx7y7[e]{NW:hx6y6,SE:hx8y8,SW:hx7y8,W:hx6y7}
-  hx0y8[e]{E:hx1y8,NE:hx0y7,SE:hx0y9}
-  hx1y8[e]{E:hx2y8,NE:hx1y7,NW:hx0y7,SE:hx1y9,SW:hx0y9,W:hx0y8}
-  hx2y8[e]{E:hx3y8,NE:hx2y7,NW:hx1y7,SE:hx2y9,SW:hx1y9,W:hx1y8}
-  hx3y8[e]{E:hx4y8,NE:hx3y7,NW:hx2y7,SE:hx3y9,SW:hx2y9,W:hx2y8}
-  hx4y8[e]{E:hx5y8,NE:hx4y7,NW:hx3y7,SE:hx4y9,SW:hx3y9,W:hx3y8}
-  hx5y8[e]{E:hx6y8,NE:hx5y7,NW:hx4y7,SE:hx5y9,SW:hx4y9,W:hx4y8}
-  hx6y8[e]{E:hx7y8,NE:hx6y7,NW:hx5y7,SE:hx6y9,SW:hx5y9,W:hx5y8}
-  hx7y8[e]{E:hx8y8,NE:hx7y7,NW:hx6y7,SE:hx7y9,SW:hx6y9,W:hx6y8}
-  hx8y8[e]{NW:hx7y7,SW:hx7y9,W:hx7y8}
-  hx0y9[e]{E:hx1y9,NE:hx1y8,NW:hx0y8,SE:hx0y10}
-  hx1y9[e]{E:hx2y9,NE:hx2y8,NW:hx1y8,SE:hx1y10,SW:hx0y10,W:hx0y9}
-  hx2y9[e]{E:hx3y9,NE:hx3y8,NW:hx2y8,SE:hx2y10,SW:hx1y10,W:hx1y9}
-  hx3y9[e]{E:hx4y9,NE:hx4y8,NW:hx3y8,SE:hx3y10,SW:hx2y10,W:hx2y9}
-  hx4y9[e]{E:hx5y9,NE:hx5y8,NW:hx4y8,SE:hx4y10,SW:hx3y10,W:hx3y9}
-  hx5y9[e]{E:hx6y9,NE:hx6y8,NW:hx5y8,SE:hx5y10,SW:hx4y10,W:hx4y9}
-  hx6y9[e]{E:hx7y9,NE:hx7y8,NW:hx6y8,SE:hx6y10,SW:hx5y10,W:hx5y9}
-  hx7y9[e]{NE:hx8y8,NW:hx7y8,SW:hx6y10,W:hx6y9}
+  hx0y8[e]{E:hx1y8,NE:hx0y7,SE:hx1y9,SW:hx0y9}
+  hx1y8[e]{E:hx2y8,NE:hx1y7,NW:hx0y7,SE:hx2y9,SW:hx1y9,W:hx0y8}
+  hx2y8[e]{E:hx3y8,NE:hx2y7,NW:hx1y7,SE:hx3y9,SW:hx2y9,W:hx1y8}
+  hx3y8[e]{E:hx4y8,NE:hx3y7,NW:hx2y7,SE:hx4y9,SW:hx3y9,W:hx2y8}
+  hx4y8[e]{E:hx5y8,NE:hx4y7,NW:hx3y7,SE:hx5y9,SW:hx4y9,W:hx3y8}
+  hx5y8[e]{E:hx6y8,NE:hx5y7,NW:hx4y7,SE:hx6y9,SW:hx5y9,W:hx4y8}
+  hx6y8[e]{E:hx7y8,NE:hx6y7,NW:hx5y7,SE:hx7y9,SW:hx6y9,W:hx5y8}
+  hx7y8[e]{E:hx8y8,NE:hx7y7,NW:hx6y7,SE:hx8y9,SW:hx7y9,W:hx6y8}
+  hx8y8[e]{NW:hx7y7,SE:hx9y9,SW:hx8y9,W:hx7y8}
+  hx0y9[e]{E:hx1y9,NE:hx0y8,SE:hx0y10}
+  hx1y9[e]{E:hx2y9,NE:hx1y8,NW:hx0y8,SE:hx1y10,SW:hx0y10,W:hx0y9}
+  hx2y9[e]{E:hx3y9,NE:hx2y8,NW:hx1y8,SE:hx2y10,SW:hx1y10,W:hx1y9}
+  hx3y9[e]{E:hx4y9,NE:hx3y8,NW:hx2y8,SE:hx3y10,SW:hx2y10,W:hx2y9}
+  hx4y9[e]{E:hx5y9,NE:hx4y8,NW:hx3y8,SE:hx4y10,SW:hx3y10,W:hx3y9}
+  hx5y9[e]{E:hx6y9,NE:hx5y8,NW:hx4y8,SE:hx5y10,SW:hx4y10,W:hx4y9}
+  hx6y9[e]{E:hx7y9,NE:hx6y8,NW:hx5y8,SE:hx6y10,SW:hx5y10,W:hx5y9}
+  hx7y9[e]{E:hx8y9,NE:hx7y8,NW:hx6y8,SE:hx7y10,SW:hx6y10,W:hx6y9}
+  hx8y9[e]{E:hx9y9,NE:hx8y8,NW:hx7y8,SE:hx8y10,SW:hx7y10,W:hx7y9}
+  hx9y9[e]{NW:hx8y8,SW:hx8y10,W:hx8y9}
   hx0y10[e]{E:hx1y10,NE:hx1y9,NW:hx0y9,SE:hx0y11}
   hx1y10[e]{E:hx2y10,NE:hx2y9,NW:hx1y9,SE:hx1y11,SW:hx0y11,W:hx0y10}
   hx2y10[e]{E:hx3y10,NE:hx3y9,NW:hx2y9,SE:hx2y11,SW:hx1y11,W:hx1y10}
   hx3y10[e]{E:hx4y10,NE:hx4y9,NW:hx3y9,SE:hx3y11,SW:hx2y11,W:hx2y10}
   hx4y10[e]{E:hx5y10,NE:hx5y9,NW:hx4y9,SE:hx4y11,SW:hx3y11,W:hx3y10}
   hx5y10[e]{E:hx6y10,NE:hx6y9,NW:hx5y9,SE:hx5y11,SW:hx4y11,W:hx4y10}
-  hx6y10[e]{NE:hx7y9,NW:hx6y9,SW:hx5y11,W:hx5y10}
+  hx6y10[e]{E:hx7y10,NE:hx7y9,NW:hx6y9,SE:hx6y11,SW:hx5y11,W:hx5y10}
+  hx7y10[e]{E:hx8y10,NE:hx8y9,NW:hx7y9,SE:hx7y11,SW:hx6y11,W:hx6y10}
+  hx8y10[e]{NE:hx9y9,NW:hx8y9,SW:hx7y11,W:hx7y10}
   hx0y11[e]{E:hx1y11,NE:hx1y10,NW:hx0y10,SE:hx0y12}
   hx1y11[e]{E:hx2y11,NE:hx2y10,NW:hx1y10,SE:hx1y12,SW:hx0y12,W:hx0y11}
   hx2y11[e]{E:hx3y11,NE:hx3y10,NW:hx2y10,SE:hx2y12,SW:hx1y12,W:hx1y11}
   hx3y11[e]{E:hx4y11,NE:hx4y10,NW:hx3y10,SE:hx3y12,SW:hx2y12,W:hx2y11}
   hx4y11[e]{E:hx5y11,NE:hx5y10,NW:hx4y10,SE:hx4y12,SW:hx3y12,W:hx3y11}
-  hx5y11[e]{NE:hx6y10,NW:hx5y10,SW:hx4y12,W:hx4y11}
+  hx5y11[e]{E:hx6y11,NE:hx6y10,NW:hx5y10,SE:hx5y12,SW:hx4y12,W:hx4y11}
+  hx6y11[e]{E:hx7y11,NE:hx7y10,NW:hx6y10,SE:hx6y12,SW:hx5y12,W:hx5y11}
+  hx7y11[e]{NE:hx8y10,NW:hx7y10,SW:hx6y12,W:hx6y11}
   hx0y12[e]{E:hx1y12,NE:hx1y11,NW:hx0y11,SE:hx0y13}
   hx1y12[e]{E:hx2y12,NE:hx2y11,NW:hx1y11,SE:hx1y13,SW:hx0y13,W:hx0y12}
   hx2y12[e]{E:hx3y12,NE:hx3y11,NW:hx2y11,SE:hx2y13,SW:hx1y13,W:hx1y12}
   hx3y12[e]{E:hx4y12,NE:hx4y11,NW:hx3y11,SE:hx3y13,SW:hx2y13,W:hx2y12}
-  hx4y12[e]{NE:hx5y11,NW:hx4y11,SW:hx3y13,W:hx3y12}
+  hx4y12[e]{E:hx5y12,NE:hx5y11,NW:hx4y11,SE:hx4y13,SW:hx3y13,W:hx3y12}
+  hx5y12[e]{E:hx6y12,NE:hx6y11,NW:hx5y11,SE:hx5y13,SW:hx4y13,W:hx4y12}
+  hx6y12[e]{NE:hx7y11,NW:hx6y11,SW:hx5y13,W:hx5y12}
   hx0y13[e]{E:hx1y13,NE:hx1y12,NW:hx0y12,SE:hx0y14}
   hx1y13[e]{E:hx2y13,NE:hx2y12,NW:hx1y12,SE:hx1y14,SW:hx0y14,W:hx0y13}
   hx2y13[e]{E:hx3y13,NE:hx3y12,NW:hx2y12,SE:hx2y14,SW:hx1y14,W:hx1y13}
-  hx3y13[e]{NE:hx4y12,NW:hx3y12,SW:hx2y14,W:hx2y13}
+  hx3y13[e]{E:hx4y13,NE:hx4y12,NW:hx3y12,SE:hx3y14,SW:hx2y14,W:hx2y13}
+  hx4y13[e]{E:hx5y13,NE:hx5y12,NW:hx4y12,SE:hx4y14,SW:hx3y14,W:hx3y13}
+  hx5y13[e]{NE:hx6y12,NW:hx5y12,SW:hx4y14,W:hx4y13}
   hx0y14[e]{E:hx1y14,NE:hx1y13,NW:hx0y13,SE:hx0y15}
   hx1y14[e]{E:hx2y14,NE:hx2y13,NW:hx1y13,SE:hx1y15,SW:hx0y15,W:hx0y14}
-  hx2y14[e]{NE:hx3y13,NW:hx2y13,SW:hx1y15,W:hx1y14}
+  hx2y14[e]{E:hx3y14,NE:hx3y13,NW:hx2y13,SE:hx2y15,SW:hx1y15,W:hx1y14}
+  hx3y14[e]{E:hx4y14,NE:hx4y13,NW:hx3y13,SE:hx3y15,SW:hx2y15,W:hx2y14}
+  hx4y14[e]{NE:hx5y13,NW:hx4y13,SW:hx3y15,W:hx3y14}
   hx0y15[e]{E:hx1y15,NE:hx1y14,NW:hx0y14,SE:hx0y16}
-  hx1y15[e]{NE:hx2y14,NW:hx1y14,SW:hx0y16,W:hx0y15}
-  hx0y16[e]{NE:hx1y15,NW:hx0y15}
+  hx1y15[e]{E:hx2y15,NE:hx2y14,NW:hx1y14,SE:hx1y16,SW:hx0y16,W:hx0y15}
+  hx2y15[e]{E:hx3y15,NE:hx3y14,NW:hx2y14,SE:hx2y16,SW:hx1y16,W:hx1y15}
+  hx3y15[e]{NE:hx4y14,NW:hx3y14,SW:hx2y16,W:hx2y15}
+  hx0y16[e]{E:hx1y16,NE:hx1y15,NW:hx0y15,SE:hx0y17}
+  hx1y16[e]{E:hx2y16,NE:hx2y15,NW:hx1y15,SE:hx1y17,SW:hx0y17,W:hx0y16}
+  hx2y16[e]{NE:hx3y15,NW:hx2y15,SW:hx1y17,W:hx1y16}
+  hx0y17[e]{E:hx1y17,NE:hx1y16,NW:hx0y16,SE:hx0y18}
+  hx1y17[e]{NE:hx2y16,NW:hx1y16,SW:hx0y18,W:hx0y17}
+  hx0y18[e]{NE:hx1y17,NW:hx0y17}
 #players = red(100), blue(100)
 #pieces = b, e, r
 #variables = 

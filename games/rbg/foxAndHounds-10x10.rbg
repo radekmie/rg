@@ -1,0 +1,149 @@
+#board =
+  rx4y0[e]{downLeft:rx4y1}
+  rx3y1[e]{downLeft:rx3y2,downRight:rx4y1}
+  rx4y1[e]{downLeft:rx4y2,downRight:rx5y1,upLeft:rx3y1,upRight:rx4y0}
+  rx5y1[e]{downLeft:rx5y2,upLeft:rx4y1}
+  rx2y2[e]{downLeft:rx2y3,downRight:rx3y2}
+  rx3y2[e]{downLeft:rx3y3,downRight:rx4y2,upLeft:rx2y2,upRight:rx3y1}
+  rx4y2[e]{downLeft:rx4y3,downRight:rx5y2,upLeft:rx3y2,upRight:rx4y1}
+  rx5y2[e]{downLeft:rx5y3,downRight:rx6y2,upLeft:rx4y2,upRight:rx5y1}
+  rx6y2[e]{downLeft:rx6y3,upLeft:rx5y2}
+  rx1y3[e]{downLeft:rx1y4,downRight:rx2y3}
+  rx2y3[e]{downLeft:rx2y4,downRight:rx3y3,upLeft:rx1y3,upRight:rx2y2}
+  rx3y3[e]{downLeft:rx3y4,downRight:rx4y3,upLeft:rx2y3,upRight:rx3y2}
+  rx4y3[e]{downLeft:rx4y4,downRight:rx5y3,upLeft:rx3y3,upRight:rx4y2}
+  rx5y3[e]{downLeft:rx5y4,downRight:rx6y3,upLeft:rx4y3,upRight:rx5y2}
+  rx6y3[e]{downLeft:rx6y4,downRight:rx7y3,upLeft:rx5y3,upRight:rx6y2}
+  rx7y3[e]{downLeft:rx7y4,upLeft:rx6y3}
+  rx0y4[e]{downLeft:rx0y5,downRight:rx1y4}
+  rx1y4[e]{downLeft:rx1y5,downRight:rx2y4,upLeft:rx0y4,upRight:rx1y3}
+  rx2y4[e]{downLeft:rx2y5,downRight:rx3y4,upLeft:rx1y4,upRight:rx2y3}
+  rx3y4[e]{downLeft:rx3y5,downRight:rx4y4,upLeft:rx2y4,upRight:rx3y3}
+  rx4y4[e]{downLeft:rx4y5,downRight:rx5y4,upLeft:rx3y4,upRight:rx4y3}
+  rx5y4[e]{downLeft:rx5y5,downRight:rx6y4,upLeft:rx4y4,upRight:rx5y3}
+  rx6y4[e]{downLeft:rx6y5,downRight:rx7y4,upLeft:rx5y4,upRight:rx6y3}
+  rx7y4[e]{downLeft:rx7y5,downRight:rx8y4,upLeft:rx6y4,upRight:rx7y3}
+  rx8y4[e]{downLeft:rx8y5,upLeft:rx7y4}
+  rx0y5[e]{downRight:rx1y5,upRight:rx0y4}
+  rx1y5[e]{downLeft:rx1y6,downRight:rx2y5,upLeft:rx0y5,upRight:rx1y4}
+  rx2y5[e]{downLeft:rx2y6,downRight:rx3y5,upLeft:rx1y5,upRight:rx2y4}
+  rx3y5[e]{downLeft:rx3y6,downRight:rx4y5,upLeft:rx2y5,upRight:rx3y4}
+  rx4y5[e]{downLeft:rx4y6,downRight:rx5y5,upLeft:rx3y5,upRight:rx4y4}
+  rx5y5[e]{downLeft:rx5y6,downRight:rx6y5,upLeft:rx4y5,upRight:rx5y4}
+  rx6y5[e]{downLeft:rx6y6,downRight:rx7y5,upLeft:rx5y5,upRight:rx6y4}
+  rx7y5[e]{downLeft:rx7y6,downRight:rx8y5,upLeft:rx6y5,upRight:rx7y4}
+  rx8y5[h]{upLeft:rx7y5,upRight:rx8y4}
+  rx1y6[e]{downRight:rx2y6,upRight:rx1y5}
+  rx2y6[e]{downLeft:rx2y7,downRight:rx3y6,upLeft:rx1y6,upRight:rx2y5}
+  rx3y6[e]{downLeft:rx3y7,downRight:rx4y6,upLeft:rx2y6,upRight:rx3y5}
+  rx4y6[e]{downLeft:rx4y7,downRight:rx5y6,upLeft:rx3y6,upRight:rx4y5}
+  rx5y6[e]{downLeft:rx5y7,downRight:rx6y6,upLeft:rx4y6,upRight:rx5y5}
+  rx6y6[e]{downLeft:rx6y7,downRight:rx7y6,upLeft:rx5y6,upRight:rx6y5}
+  rx7y6[h]{upLeft:rx6y6,upRight:rx7y5}
+  rx2y7[e]{downRight:rx3y7,upRight:rx2y6}
+  rx3y7[e]{downLeft:rx3y8,downRight:rx4y7,upLeft:rx2y7,upRight:rx3y6}
+  rx4y7[e]{downLeft:rx4y8,downRight:rx5y7,upLeft:rx3y7,upRight:rx4y6}
+  rx5y7[e]{downLeft:rx5y8,downRight:rx6y7,upLeft:rx4y7,upRight:rx5y6}
+  rx6y7[h]{upLeft:rx5y7,upRight:rx6y6}
+  rx3y8[e]{downRight:rx4y8,upRight:rx3y7}
+  rx4y8[e]{downLeft:rx4y9,downRight:rx5y8,upLeft:rx3y8,upRight:rx4y7}
+  rx5y8[h]{upLeft:rx4y8,upRight:rx5y7}
+  rx4y9[h]{upRight:rx4y8}
+#players = foxPlayer(100), houndPlayer(100)
+#pieces = e, f, h
+#variables = 
+#rules = ->foxPlayer
+(upRight* + downLeft*)
+(upLeft* + downRight*)
+upRight
+upRight
+upRight
+upRight
+downLeft
+downLeft
+downLeft
+downLeft
+downLeft
+downLeft
+downLeft
+downLeft
+downLeft
+upRight
+upRight
+upRight
+upRight
+upRight
+(upRight* + downLeft*)
+(upLeft* + downRight*)
+{! upLeft + upRight}
+->>
+[f]
+(
+  ->>
+  (upRight* + downLeft*)
+  (upLeft* + downRight*)
+  upRight
+  upRight
+  upRight
+  upRight
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  upRight
+  upRight
+  upRight
+  upRight
+  upRight
+  (upRight* + downLeft*)
+  (upLeft* + downRight*)
+  {f}
+  [e]
+  ->foxPlayer
+  (upRight + downLeft + upLeft + downRight)
+  {e}
+  ->>
+  [f]
+  [$ foxPlayer = 100]
+  [$ houndPlayer = 0]
+  (
+      {? downLeft + downRight}
+    + {! downLeft + downRight} ->> {}
+  )
+  ->houndPlayer
+  (upRight* + downLeft*)
+  (upLeft* + downRight*)
+  upRight
+  upRight
+  upRight
+  upRight
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  downLeft
+  upRight
+  upRight
+  upRight
+  upRight
+  upRight
+  (upRight* + downLeft*)
+  (upLeft* + downRight*)
+  {h}
+  [e]
+  (upLeft + upRight)
+  {e}
+  ->>
+  [h]
+  [$ foxPlayer = 0]
+  [$ houndPlayer = 100]
+)*

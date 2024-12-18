@@ -1,0 +1,53 @@
+#board =
+  rx0y0[b]{down:rx0y1,right:rx1y0}
+  rx1y0[b]{down:rx1y1,left:rx0y0,right:rx2y0}
+  rx2y0[b]{down:rx2y1,left:rx1y0,right:rx3y0}
+  rx3y0[b]{down:rx3y1,left:rx2y0,right:rx4y0}
+  rx4y0[b]{down:rx4y1,left:rx3y0}
+  rx0y1[b]{down:rx0y2,right:rx1y1,up:rx0y0}
+  rx1y1[b]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+  rx2y1[b]{down:rx2y2,left:rx1y1,right:rx3y1,up:rx2y0}
+  rx3y1[b]{down:rx3y2,left:rx2y1,right:rx4y1,up:rx3y0}
+  rx4y1[b]{down:rx4y2,left:rx3y1,up:rx4y0}
+  rx0y2[e]{down:rx0y3,right:rx1y2,up:rx0y1}
+  rx1y2[e]{down:rx1y3,left:rx0y2,right:rx2y2,up:rx1y1}
+  rx2y2[e]{down:rx2y3,left:rx1y2,right:rx3y2,up:rx2y1}
+  rx3y2[e]{down:rx3y3,left:rx2y2,right:rx4y2,up:rx3y1}
+  rx4y2[e]{down:rx4y3,left:rx3y2,up:rx4y1}
+  rx0y3[w]{down:rx0y4,right:rx1y3,up:rx0y2}
+  rx1y3[w]{down:rx1y4,left:rx0y3,right:rx2y3,up:rx1y2}
+  rx2y3[w]{down:rx2y4,left:rx1y3,right:rx3y3,up:rx2y2}
+  rx3y3[w]{down:rx3y4,left:rx2y3,right:rx4y3,up:rx3y2}
+  rx4y3[w]{down:rx4y4,left:rx3y3,up:rx4y2}
+  rx0y4[w]{right:rx1y4,up:rx0y3}
+  rx1y4[w]{left:rx0y4,right:rx2y4,up:rx1y3}
+  rx2y4[w]{left:rx1y4,right:rx3y4,up:rx2y3}
+  rx3y4[w]{left:rx2y4,right:rx4y4,up:rx3y3}
+  rx4y4[w]{left:rx3y4,up:rx4y3}
+#players = white(100), black(100)
+#pieces = b, e, w
+#variables = 
+#rules = (
+  ->white
+  (up* + down*)
+  (left* + right*)
+  {w}
+  [e]
+  up
+  ({e} + (left + right) {b, e})
+  ->>
+  [$ white = 100]
+  [$ black = 0]
+  ({? up} [w] + {! up} ->> {})
+  ->black
+  (up* + down*)
+  (left* + right*)
+  {b}
+  [e]
+  down
+  ({e} + (left + right) {e, w})
+  ->>
+  [$ black = 100]
+  [$ white = 0]
+  ({? down} [b] + {! down} ->> {})
+)*

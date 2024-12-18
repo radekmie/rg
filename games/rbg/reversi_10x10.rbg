@@ -1,0 +1,314 @@
+#board =
+  rx0y0[e]{down:rx0y1,right:rx1y0}
+  rx1y0[e]{down:rx1y1,left:rx0y0,right:rx2y0}
+  rx2y0[e]{down:rx2y1,left:rx1y0,right:rx3y0}
+  rx3y0[e]{down:rx3y1,left:rx2y0,right:rx4y0}
+  rx4y0[e]{down:rx4y1,left:rx3y0,right:rx5y0}
+  rx5y0[e]{down:rx5y1,left:rx4y0,right:rx6y0}
+  rx6y0[e]{down:rx6y1,left:rx5y0,right:rx7y0}
+  rx7y0[e]{down:rx7y1,left:rx6y0,right:rx8y0}
+  rx8y0[e]{down:rx8y1,left:rx7y0,right:rx9y0}
+  rx9y0[e]{down:rx9y1,left:rx8y0}
+  rx0y1[e]{down:rx0y2,right:rx1y1,up:rx0y0}
+  rx1y1[e]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+  rx2y1[e]{down:rx2y2,left:rx1y1,right:rx3y1,up:rx2y0}
+  rx3y1[e]{down:rx3y2,left:rx2y1,right:rx4y1,up:rx3y0}
+  rx4y1[e]{down:rx4y2,left:rx3y1,right:rx5y1,up:rx4y0}
+  rx5y1[e]{down:rx5y2,left:rx4y1,right:rx6y1,up:rx5y0}
+  rx6y1[e]{down:rx6y2,left:rx5y1,right:rx7y1,up:rx6y0}
+  rx7y1[e]{down:rx7y2,left:rx6y1,right:rx8y1,up:rx7y0}
+  rx8y1[e]{down:rx8y2,left:rx7y1,right:rx9y1,up:rx8y0}
+  rx9y1[e]{down:rx9y2,left:rx8y1,up:rx9y0}
+  rx0y2[e]{down:rx0y3,right:rx1y2,up:rx0y1}
+  rx1y2[e]{down:rx1y3,left:rx0y2,right:rx2y2,up:rx1y1}
+  rx2y2[e]{down:rx2y3,left:rx1y2,right:rx3y2,up:rx2y1}
+  rx3y2[e]{down:rx3y3,left:rx2y2,right:rx4y2,up:rx3y1}
+  rx4y2[e]{down:rx4y3,left:rx3y2,right:rx5y2,up:rx4y1}
+  rx5y2[e]{down:rx5y3,left:rx4y2,right:rx6y2,up:rx5y1}
+  rx6y2[e]{down:rx6y3,left:rx5y2,right:rx7y2,up:rx6y1}
+  rx7y2[e]{down:rx7y3,left:rx6y2,right:rx8y2,up:rx7y1}
+  rx8y2[e]{down:rx8y3,left:rx7y2,right:rx9y2,up:rx8y1}
+  rx9y2[e]{down:rx9y3,left:rx8y2,up:rx9y1}
+  rx0y3[e]{down:rx0y4,right:rx1y3,up:rx0y2}
+  rx1y3[e]{down:rx1y4,left:rx0y3,right:rx2y3,up:rx1y2}
+  rx2y3[e]{down:rx2y4,left:rx1y3,right:rx3y3,up:rx2y2}
+  rx3y3[e]{down:rx3y4,left:rx2y3,right:rx4y3,up:rx3y2}
+  rx4y3[e]{down:rx4y4,left:rx3y3,right:rx5y3,up:rx4y2}
+  rx5y3[e]{down:rx5y4,left:rx4y3,right:rx6y3,up:rx5y2}
+  rx6y3[e]{down:rx6y4,left:rx5y3,right:rx7y3,up:rx6y2}
+  rx7y3[e]{down:rx7y4,left:rx6y3,right:rx8y3,up:rx7y2}
+  rx8y3[e]{down:rx8y4,left:rx7y3,right:rx9y3,up:rx8y2}
+  rx9y3[e]{down:rx9y4,left:rx8y3,up:rx9y2}
+  rx0y4[e]{down:rx0y5,right:rx1y4,up:rx0y3}
+  rx1y4[e]{down:rx1y5,left:rx0y4,right:rx2y4,up:rx1y3}
+  rx2y4[e]{down:rx2y5,left:rx1y4,right:rx3y4,up:rx2y3}
+  rx3y4[e]{down:rx3y5,left:rx2y4,right:rx4y4,up:rx3y3}
+  rx4y4[w]{down:rx4y5,left:rx3y4,right:rx5y4,up:rx4y3}
+  rx5y4[b]{down:rx5y5,left:rx4y4,right:rx6y4,up:rx5y3}
+  rx6y4[e]{down:rx6y5,left:rx5y4,right:rx7y4,up:rx6y3}
+  rx7y4[e]{down:rx7y5,left:rx6y4,right:rx8y4,up:rx7y3}
+  rx8y4[e]{down:rx8y5,left:rx7y4,right:rx9y4,up:rx8y3}
+  rx9y4[e]{down:rx9y5,left:rx8y4,up:rx9y3}
+  rx0y5[e]{down:rx0y6,right:rx1y5,up:rx0y4}
+  rx1y5[e]{down:rx1y6,left:rx0y5,right:rx2y5,up:rx1y4}
+  rx2y5[e]{down:rx2y6,left:rx1y5,right:rx3y5,up:rx2y4}
+  rx3y5[e]{down:rx3y6,left:rx2y5,right:rx4y5,up:rx3y4}
+  rx4y5[b]{down:rx4y6,left:rx3y5,right:rx5y5,up:rx4y4}
+  rx5y5[w]{down:rx5y6,left:rx4y5,right:rx6y5,up:rx5y4}
+  rx6y5[e]{down:rx6y6,left:rx5y5,right:rx7y5,up:rx6y4}
+  rx7y5[e]{down:rx7y6,left:rx6y5,right:rx8y5,up:rx7y4}
+  rx8y5[e]{down:rx8y6,left:rx7y5,right:rx9y5,up:rx8y4}
+  rx9y5[e]{down:rx9y6,left:rx8y5,up:rx9y4}
+  rx0y6[e]{down:rx0y7,right:rx1y6,up:rx0y5}
+  rx1y6[e]{down:rx1y7,left:rx0y6,right:rx2y6,up:rx1y5}
+  rx2y6[e]{down:rx2y7,left:rx1y6,right:rx3y6,up:rx2y5}
+  rx3y6[e]{down:rx3y7,left:rx2y6,right:rx4y6,up:rx3y5}
+  rx4y6[e]{down:rx4y7,left:rx3y6,right:rx5y6,up:rx4y5}
+  rx5y6[e]{down:rx5y7,left:rx4y6,right:rx6y6,up:rx5y5}
+  rx6y6[e]{down:rx6y7,left:rx5y6,right:rx7y6,up:rx6y5}
+  rx7y6[e]{down:rx7y7,left:rx6y6,right:rx8y6,up:rx7y5}
+  rx8y6[e]{down:rx8y7,left:rx7y6,right:rx9y6,up:rx8y5}
+  rx9y6[e]{down:rx9y7,left:rx8y6,up:rx9y5}
+  rx0y7[e]{down:rx0y8,right:rx1y7,up:rx0y6}
+  rx1y7[e]{down:rx1y8,left:rx0y7,right:rx2y7,up:rx1y6}
+  rx2y7[e]{down:rx2y8,left:rx1y7,right:rx3y7,up:rx2y6}
+  rx3y7[e]{down:rx3y8,left:rx2y7,right:rx4y7,up:rx3y6}
+  rx4y7[e]{down:rx4y8,left:rx3y7,right:rx5y7,up:rx4y6}
+  rx5y7[e]{down:rx5y8,left:rx4y7,right:rx6y7,up:rx5y6}
+  rx6y7[e]{down:rx6y8,left:rx5y7,right:rx7y7,up:rx6y6}
+  rx7y7[e]{down:rx7y8,left:rx6y7,right:rx8y7,up:rx7y6}
+  rx8y7[e]{down:rx8y8,left:rx7y7,right:rx9y7,up:rx8y6}
+  rx9y7[e]{down:rx9y8,left:rx8y7,up:rx9y6}
+  rx0y8[e]{down:rx0y9,right:rx1y8,up:rx0y7}
+  rx1y8[e]{down:rx1y9,left:rx0y8,right:rx2y8,up:rx1y7}
+  rx2y8[e]{down:rx2y9,left:rx1y8,right:rx3y8,up:rx2y7}
+  rx3y8[e]{down:rx3y9,left:rx2y8,right:rx4y8,up:rx3y7}
+  rx4y8[e]{down:rx4y9,left:rx3y8,right:rx5y8,up:rx4y7}
+  rx5y8[e]{down:rx5y9,left:rx4y8,right:rx6y8,up:rx5y7}
+  rx6y8[e]{down:rx6y9,left:rx5y8,right:rx7y8,up:rx6y7}
+  rx7y8[e]{down:rx7y9,left:rx6y8,right:rx8y8,up:rx7y7}
+  rx8y8[e]{down:rx8y9,left:rx7y8,right:rx9y8,up:rx8y7}
+  rx9y8[e]{down:rx9y9,left:rx8y8,up:rx9y7}
+  rx0y9[e]{right:rx1y9,up:rx0y8}
+  rx1y9[e]{left:rx0y9,right:rx2y9,up:rx1y8}
+  rx2y9[e]{left:rx1y9,right:rx3y9,up:rx2y8}
+  rx3y9[e]{left:rx2y9,right:rx4y9,up:rx3y8}
+  rx4y9[e]{left:rx3y9,right:rx5y9,up:rx4y8}
+  rx5y9[e]{left:rx4y9,right:rx6y9,up:rx5y8}
+  rx6y9[e]{left:rx5y9,right:rx7y9,up:rx6y8}
+  rx7y9[e]{left:rx6y9,right:rx8y9,up:rx7y8}
+  rx8y9[e]{left:rx7y9,right:rx9y9,up:rx8y8}
+  rx9y9[e]{left:rx8y9,up:rx9y8}
+#players = black(100), white(100)
+#pieces = b, e, w
+#variables = 
+#rules = (
+  ->black
+  (
+      (up* + down*) (left* + right*) {e} {?
+          up left {w} up left ({w} up left)* {b}
+        + up {w} up ({w} up)* {b}
+        + up right {w} up right ({w} up right)* {b}
+        + left {w} left ({w} left)* {b}
+        + right {w} right ({w} right)* {b}
+        + down left {w} down left ({w} down left)* {b}
+        + down {w} down ({w} down)* {b}
+        + down right {w} down right ({w} down right)* {b}
+      } ->> (
+          {! up left {w} up left ({w} up left)* {b}}
+        + up left {w} [b] up left ({w} [b] up left)* {b} down right ({b} down right)* {e}
+      ) (
+          {! up {w} up ({w} up)* {b}}
+        + up {w} [b] up ({w} [b] up)* {b} down ({b} down)* {e}
+      ) (
+          {! up right {w} up right ({w} up right)* {b}}
+        + up right {w} [b] up right ({w} [b] up right)* {b} down left ({b} down left)* {e}
+      ) (
+          {! left {w} left ({w} left)* {b}}
+        + left {w} [b] left ({w} [b] left)* {b} right ({b} right)* {e}
+      ) (
+          {! right {w} right ({w} right)* {b}}
+        + right {w} [b] right ({w} [b] right)* {b} left ({b} left)* {e}
+      ) (
+          {! down left {w} down left ({w} down left)* {b}}
+        + down left {w} [b] down left ({w} [b] down left)* {b} up right ({b} up right)* {e}
+      ) (
+          {! down {w} down ({w} down)* {b}}
+        + down {w} [b] down ({w} [b] down)* {b} up ({b} up)* {e}
+      ) (
+          {! down right {w} down right ({w} down right)* {b}}
+        + down right {w} [b] down right ({w} [b] down right)* {b} up left ({b} up left)* {e}
+      ) [b]
+    + {!
+        (up* + down*)
+        (left* + right*)
+        {e}
+        {?
+            up left {w} up left ({w} up left)* {b}
+          + up {w} up ({w} up)* {b}
+          + up right {w} up right ({w} up right)* {b}
+          + left {w} left ({w} left)* {b}
+          + right {w} right ({w} right)* {b}
+          + down left {w} down left ({w} down left)* {b}
+          + down {w} down ({w} down)* {b}
+          + down right {w} down right ({w} down right)* {b}
+        }
+      } ->>
+  )
+  (
+      {?
+        (up* + down*)
+        (left* + right*)
+        {e}
+        (
+            up left {w} up left ({w} up left)* {b}
+          + up {w} up ({w} up)* {b}
+          + up right {w} up right ({w} up right)* {b}
+          + left {w} left ({w} left)* {b}
+          + right {w} right ({w} right)* {b}
+          + down left {w} down left ({w} down left)* {b}
+          + down {w} down ({w} down)* {b}
+          + down right {w} down right ({w} down right)* {b}
+          + up left {b} up left ({b} up left)* {w}
+          + up {b} up ({b} up)* {w}
+          + up right {b} up right ({b} up right)* {w}
+          + left {b} left ({b} left)* {w}
+          + right {b} right ({b} right)* {w}
+          + down left {b} down left ({b} down left)* {w}
+          + down {b} down ({b} down)* {w}
+          + down right {b} down right ({b} down right)* {w}
+        )
+      }
+    + {!
+        (up* + down*)
+        (left* + right*)
+        {e}
+        (
+            up left {w} up left ({w} up left)* {b}
+          + up {w} up ({w} up)* {b}
+          + up right {w} up right ({w} up right)* {b}
+          + left {w} left ({w} left)* {b}
+          + right {w} right ({w} right)* {b}
+          + down left {w} down left ({w} down left)* {b}
+          + down {w} down ({w} down)* {b}
+          + down right {w} down right ({w} down right)* {b}
+          + up left {b} up left ({b} up left)* {w}
+          + up {b} up ({b} up)* {w}
+          + up right {b} up right ({b} up right)* {w}
+          + left {b} left ({b} left)* {w}
+          + right {b} right ({b} right)* {w}
+          + down left {b} down left ({b} down left)* {w}
+          + down {b} down ({b} down)* {w}
+          + down right {b} down right ({b} down right)* {w}
+        )
+      } ->> (
+          {$ w > b} [$ white = 100]
+        + {$ w < b} [$ black = 100]
+        + {$ w == b} [$ black = 50] [$ white = 50]
+      ) ->> {}
+  )
+  ->white
+  (
+      (up* + down*) (left* + right*) {e} {?
+          up left {b} up left ({b} up left)* {w}
+        + up {b} up ({b} up)* {w}
+        + up right {b} up right ({b} up right)* {w}
+        + left {b} left ({b} left)* {w}
+        + right {b} right ({b} right)* {w}
+        + down left {b} down left ({b} down left)* {w}
+        + down {b} down ({b} down)* {w}
+        + down right {b} down right ({b} down right)* {w}
+      } ->> (
+          {! up left {b} up left ({b} up left)* {w}}
+        + up left {b} [w] up left ({b} [w] up left)* {w} down right ({w} down right)* {e}
+      ) (
+          {! up {b} up ({b} up)* {w}}
+        + up {b} [w] up ({b} [w] up)* {w} down ({w} down)* {e}
+      ) (
+          {! up right {b} up right ({b} up right)* {w}}
+        + up right {b} [w] up right ({b} [w] up right)* {w} down left ({w} down left)* {e}
+      ) (
+          {! left {b} left ({b} left)* {w}}
+        + left {b} [w] left ({b} [w] left)* {w} right ({w} right)* {e}
+      ) (
+          {! right {b} right ({b} right)* {w}}
+        + right {b} [w] right ({b} [w] right)* {w} left ({w} left)* {e}
+      ) (
+          {! down left {b} down left ({b} down left)* {w}}
+        + down left {b} [w] down left ({b} [w] down left)* {w} up right ({w} up right)* {e}
+      ) (
+          {! down {b} down ({b} down)* {w}}
+        + down {b} [w] down ({b} [w] down)* {w} up ({w} up)* {e}
+      ) (
+          {! down right {b} down right ({b} down right)* {w}}
+        + down right {b} [w] down right ({b} [w] down right)* {w} up left ({w} up left)* {e}
+      ) [w]
+    + {!
+        (up* + down*)
+        (left* + right*)
+        {e}
+        {?
+            up left {b} up left ({b} up left)* {w}
+          + up {b} up ({b} up)* {w}
+          + up right {b} up right ({b} up right)* {w}
+          + left {b} left ({b} left)* {w}
+          + right {b} right ({b} right)* {w}
+          + down left {b} down left ({b} down left)* {w}
+          + down {b} down ({b} down)* {w}
+          + down right {b} down right ({b} down right)* {w}
+        }
+      } ->>
+  )
+  (
+      {?
+        (up* + down*)
+        (left* + right*)
+        {e}
+        (
+            up left {b} up left ({b} up left)* {w}
+          + up {b} up ({b} up)* {w}
+          + up right {b} up right ({b} up right)* {w}
+          + left {b} left ({b} left)* {w}
+          + right {b} right ({b} right)* {w}
+          + down left {b} down left ({b} down left)* {w}
+          + down {b} down ({b} down)* {w}
+          + down right {b} down right ({b} down right)* {w}
+          + up left {w} up left ({w} up left)* {b}
+          + up {w} up ({w} up)* {b}
+          + up right {w} up right ({w} up right)* {b}
+          + left {w} left ({w} left)* {b}
+          + right {w} right ({w} right)* {b}
+          + down left {w} down left ({w} down left)* {b}
+          + down {w} down ({w} down)* {b}
+          + down right {w} down right ({w} down right)* {b}
+        )
+      }
+    + {!
+        (up* + down*)
+        (left* + right*)
+        {e}
+        (
+            up left {b} up left ({b} up left)* {w}
+          + up {b} up ({b} up)* {w}
+          + up right {b} up right ({b} up right)* {w}
+          + left {b} left ({b} left)* {w}
+          + right {b} right ({b} right)* {w}
+          + down left {b} down left ({b} down left)* {w}
+          + down {b} down ({b} down)* {w}
+          + down right {b} down right ({b} down right)* {w}
+          + up left {w} up left ({w} up left)* {b}
+          + up {w} up ({w} up)* {b}
+          + up right {w} up right ({w} up right)* {b}
+          + left {w} left ({w} left)* {b}
+          + right {w} right ({w} right)* {b}
+          + down left {w} down left ({w} down left)* {b}
+          + down {w} down ({w} down)* {b}
+          + down right {w} down right ({w} down right)* {b}
+        )
+      } ->> (
+          {$ w > b} [$ white = 100]
+        + {$ w < b} [$ black = 100]
+        + {$ w == b} [$ black = 50] [$ white = 50]
+      ) ->> {}
+  )
+)*

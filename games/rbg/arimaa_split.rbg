@@ -1,20 +1,20 @@
 #board =
-  cx0y0z0[silverHorse]{backLayer:cx0y0z1,down:cx0y1z0,right:cx1y0z0}
-  cx1y0z0[silverCat]{backLayer:cx1y0z1,down:cx1y1z0,left:cx0y0z0,right:cx2y0z0}
-  cx2y0z0[silverDog]{backLayer:cx2y0z1,down:cx2y1z0,left:cx1y0z0,right:cx3y0z0}
-  cx3y0z0[silverCamel]{backLayer:cx3y0z1,down:cx3y1z0,left:cx2y0z0,right:cx4y0z0}
-  cx4y0z0[silverElephant]{backLayer:cx4y0z1,down:cx4y1z0,left:cx3y0z0,right:cx5y0z0}
-  cx5y0z0[silverDog]{backLayer:cx5y0z1,down:cx5y1z0,left:cx4y0z0,right:cx6y0z0}
-  cx6y0z0[silverCat]{backLayer:cx6y0z1,down:cx6y1z0,left:cx5y0z0,right:cx7y0z0}
-  cx7y0z0[silverHorse]{backLayer:cx7y0z1,down:cx7y1z0,left:cx6y0z0}
-  cx0y1z0[silverRabbit]{backLayer:cx0y1z1,down:cx0y2z0,right:cx1y1z0,up:cx0y0z0}
-  cx1y1z0[silverRabbit]{backLayer:cx1y1z1,down:cx1y2z0,left:cx0y1z0,right:cx2y1z0,up:cx1y0z0}
-  cx2y1z0[silverRabbit]{backLayer:cx2y1z1,down:cx2y2z0,left:cx1y1z0,right:cx3y1z0,up:cx2y0z0}
-  cx3y1z0[silverRabbit]{backLayer:cx3y1z1,down:cx3y2z0,left:cx2y1z0,right:cx4y1z0,up:cx3y0z0}
-  cx4y1z0[silverRabbit]{backLayer:cx4y1z1,down:cx4y2z0,left:cx3y1z0,right:cx5y1z0,up:cx4y0z0}
-  cx5y1z0[silverRabbit]{backLayer:cx5y1z1,down:cx5y2z0,left:cx4y1z0,right:cx6y1z0,up:cx5y0z0}
-  cx6y1z0[silverRabbit]{backLayer:cx6y1z1,down:cx6y2z0,left:cx5y1z0,right:cx7y1z0,up:cx6y0z0}
-  cx7y1z0[silverRabbit]{backLayer:cx7y1z1,down:cx7y2z0,left:cx6y1z0,up:cx7y0z0}
+  cx0y0z0[empty]{backLayer:cx0y0z1,down:cx0y1z0,right:cx1y0z0}
+  cx1y0z0[empty]{backLayer:cx1y0z1,down:cx1y1z0,left:cx0y0z0,right:cx2y0z0}
+  cx2y0z0[empty]{backLayer:cx2y0z1,down:cx2y1z0,left:cx1y0z0,right:cx3y0z0}
+  cx3y0z0[empty]{backLayer:cx3y0z1,down:cx3y1z0,left:cx2y0z0,right:cx4y0z0}
+  cx4y0z0[empty]{backLayer:cx4y0z1,down:cx4y1z0,left:cx3y0z0,right:cx5y0z0}
+  cx5y0z0[empty]{backLayer:cx5y0z1,down:cx5y1z0,left:cx4y0z0,right:cx6y0z0}
+  cx6y0z0[empty]{backLayer:cx6y0z1,down:cx6y1z0,left:cx5y0z0,right:cx7y0z0}
+  cx7y0z0[empty]{backLayer:cx7y0z1,down:cx7y1z0,left:cx6y0z0}
+  cx0y1z0[empty]{backLayer:cx0y1z1,down:cx0y2z0,right:cx1y1z0,up:cx0y0z0}
+  cx1y1z0[empty]{backLayer:cx1y1z1,down:cx1y2z0,left:cx0y1z0,right:cx2y1z0,up:cx1y0z0}
+  cx2y1z0[empty]{backLayer:cx2y1z1,down:cx2y2z0,left:cx1y1z0,right:cx3y1z0,up:cx2y0z0}
+  cx3y1z0[empty]{backLayer:cx3y1z1,down:cx3y2z0,left:cx2y1z0,right:cx4y1z0,up:cx3y0z0}
+  cx4y1z0[empty]{backLayer:cx4y1z1,down:cx4y2z0,left:cx3y1z0,right:cx5y1z0,up:cx4y0z0}
+  cx5y1z0[empty]{backLayer:cx5y1z1,down:cx5y2z0,left:cx4y1z0,right:cx6y1z0,up:cx5y0z0}
+  cx6y1z0[empty]{backLayer:cx6y1z1,down:cx6y2z0,left:cx5y1z0,right:cx7y1z0,up:cx6y0z0}
+  cx7y1z0[empty]{backLayer:cx7y1z1,down:cx7y2z0,left:cx6y1z0,up:cx7y0z0}
   cx0y2z0[empty]{backLayer:cx0y2z1,down:cx0y3z0,right:cx1y2z0,up:cx0y1z0}
   cx1y2z0[empty]{backLayer:cx1y2z1,down:cx1y3z0,left:cx0y2z0,right:cx2y2z0,up:cx1y1z0}
   cx2y2z0[empty]{backLayer:cx2y2z1,down:cx2y3z0,left:cx1y2z0,right:cx3y2z0,up:cx2y1z0}
@@ -47,38 +47,38 @@
   cx5y5z0[empty]{backLayer:cx5y5z1,down:cx5y6z0,left:cx4y5z0,right:cx6y5z0,up:cx5y4z0}
   cx6y5z0[empty]{backLayer:cx6y5z1,down:cx6y6z0,left:cx5y5z0,right:cx7y5z0,up:cx6y4z0}
   cx7y5z0[empty]{backLayer:cx7y5z1,down:cx7y6z0,left:cx6y5z0,up:cx7y4z0}
-  cx0y6z0[goldRabbit]{backLayer:cx0y6z1,down:cx0y7z0,right:cx1y6z0,up:cx0y5z0}
-  cx1y6z0[goldRabbit]{backLayer:cx1y6z1,down:cx1y7z0,left:cx0y6z0,right:cx2y6z0,up:cx1y5z0}
-  cx2y6z0[goldRabbit]{backLayer:cx2y6z1,down:cx2y7z0,left:cx1y6z0,right:cx3y6z0,up:cx2y5z0}
-  cx3y6z0[goldRabbit]{backLayer:cx3y6z1,down:cx3y7z0,left:cx2y6z0,right:cx4y6z0,up:cx3y5z0}
-  cx4y6z0[goldRabbit]{backLayer:cx4y6z1,down:cx4y7z0,left:cx3y6z0,right:cx5y6z0,up:cx4y5z0}
-  cx5y6z0[goldRabbit]{backLayer:cx5y6z1,down:cx5y7z0,left:cx4y6z0,right:cx6y6z0,up:cx5y5z0}
-  cx6y6z0[goldRabbit]{backLayer:cx6y6z1,down:cx6y7z0,left:cx5y6z0,right:cx7y6z0,up:cx6y5z0}
-  cx7y6z0[goldRabbit]{backLayer:cx7y6z1,down:cx7y7z0,left:cx6y6z0,up:cx7y5z0}
-  cx0y7z0[goldHorse]{backLayer:cx0y7z1,right:cx1y7z0,up:cx0y6z0}
-  cx1y7z0[goldCat]{backLayer:cx1y7z1,left:cx0y7z0,right:cx2y7z0,up:cx1y6z0}
-  cx2y7z0[goldDog]{backLayer:cx2y7z1,left:cx1y7z0,right:cx3y7z0,up:cx2y6z0}
-  cx3y7z0[goldCamel]{backLayer:cx3y7z1,left:cx2y7z0,right:cx4y7z0,up:cx3y6z0}
-  cx4y7z0[goldElephant]{backLayer:cx4y7z1,left:cx3y7z0,right:cx5y7z0,up:cx4y6z0}
-  cx5y7z0[goldDog]{backLayer:cx5y7z1,left:cx4y7z0,right:cx6y7z0,up:cx5y6z0}
-  cx6y7z0[goldCat]{backLayer:cx6y7z1,left:cx5y7z0,right:cx7y7z0,up:cx6y6z0}
-  cx7y7z0[goldHorse]{backLayer:cx7y7z1,left:cx6y7z0,up:cx7y6z0}
-  cx0y0z1[silverHorse]{down:cx0y1z1,frontLayer:cx0y0z0,right:cx1y0z1}
-  cx1y0z1[silverCat]{down:cx1y1z1,frontLayer:cx1y0z0,left:cx0y0z1,right:cx2y0z1}
-  cx2y0z1[silverDog]{down:cx2y1z1,frontLayer:cx2y0z0,left:cx1y0z1,right:cx3y0z1}
-  cx3y0z1[silverCamel]{down:cx3y1z1,frontLayer:cx3y0z0,left:cx2y0z1,right:cx4y0z1}
-  cx4y0z1[silverElephant]{down:cx4y1z1,frontLayer:cx4y0z0,left:cx3y0z1,right:cx5y0z1}
-  cx5y0z1[silverDog]{down:cx5y1z1,frontLayer:cx5y0z0,left:cx4y0z1,right:cx6y0z1}
-  cx6y0z1[silverCat]{down:cx6y1z1,frontLayer:cx6y0z0,left:cx5y0z1,right:cx7y0z1}
-  cx7y0z1[silverHorse]{down:cx7y1z1,frontLayer:cx7y0z0,left:cx6y0z1}
-  cx0y1z1[silverRabbit]{down:cx0y2z1,frontLayer:cx0y1z0,right:cx1y1z1,up:cx0y0z1}
-  cx1y1z1[silverRabbit]{down:cx1y2z1,frontLayer:cx1y1z0,left:cx0y1z1,right:cx2y1z1,up:cx1y0z1}
-  cx2y1z1[silverRabbit]{down:cx2y2z1,frontLayer:cx2y1z0,left:cx1y1z1,right:cx3y1z1,up:cx2y0z1}
-  cx3y1z1[silverRabbit]{down:cx3y2z1,frontLayer:cx3y1z0,left:cx2y1z1,right:cx4y1z1,up:cx3y0z1}
-  cx4y1z1[silverRabbit]{down:cx4y2z1,frontLayer:cx4y1z0,left:cx3y1z1,right:cx5y1z1,up:cx4y0z1}
-  cx5y1z1[silverRabbit]{down:cx5y2z1,frontLayer:cx5y1z0,left:cx4y1z1,right:cx6y1z1,up:cx5y0z1}
-  cx6y1z1[silverRabbit]{down:cx6y2z1,frontLayer:cx6y1z0,left:cx5y1z1,right:cx7y1z1,up:cx6y0z1}
-  cx7y1z1[silverRabbit]{down:cx7y2z1,frontLayer:cx7y1z0,left:cx6y1z1,up:cx7y0z1}
+  cx0y6z0[empty]{backLayer:cx0y6z1,down:cx0y7z0,right:cx1y6z0,up:cx0y5z0}
+  cx1y6z0[empty]{backLayer:cx1y6z1,down:cx1y7z0,left:cx0y6z0,right:cx2y6z0,up:cx1y5z0}
+  cx2y6z0[empty]{backLayer:cx2y6z1,down:cx2y7z0,left:cx1y6z0,right:cx3y6z0,up:cx2y5z0}
+  cx3y6z0[empty]{backLayer:cx3y6z1,down:cx3y7z0,left:cx2y6z0,right:cx4y6z0,up:cx3y5z0}
+  cx4y6z0[empty]{backLayer:cx4y6z1,down:cx4y7z0,left:cx3y6z0,right:cx5y6z0,up:cx4y5z0}
+  cx5y6z0[empty]{backLayer:cx5y6z1,down:cx5y7z0,left:cx4y6z0,right:cx6y6z0,up:cx5y5z0}
+  cx6y6z0[empty]{backLayer:cx6y6z1,down:cx6y7z0,left:cx5y6z0,right:cx7y6z0,up:cx6y5z0}
+  cx7y6z0[empty]{backLayer:cx7y6z1,down:cx7y7z0,left:cx6y6z0,up:cx7y5z0}
+  cx0y7z0[empty]{backLayer:cx0y7z1,right:cx1y7z0,up:cx0y6z0}
+  cx1y7z0[empty]{backLayer:cx1y7z1,left:cx0y7z0,right:cx2y7z0,up:cx1y6z0}
+  cx2y7z0[empty]{backLayer:cx2y7z1,left:cx1y7z0,right:cx3y7z0,up:cx2y6z0}
+  cx3y7z0[empty]{backLayer:cx3y7z1,left:cx2y7z0,right:cx4y7z0,up:cx3y6z0}
+  cx4y7z0[empty]{backLayer:cx4y7z1,left:cx3y7z0,right:cx5y7z0,up:cx4y6z0}
+  cx5y7z0[empty]{backLayer:cx5y7z1,left:cx4y7z0,right:cx6y7z0,up:cx5y6z0}
+  cx6y7z0[empty]{backLayer:cx6y7z1,left:cx5y7z0,right:cx7y7z0,up:cx6y6z0}
+  cx7y7z0[empty]{backLayer:cx7y7z1,left:cx6y7z0,up:cx7y6z0}
+  cx0y0z1[empty]{down:cx0y1z1,frontLayer:cx0y0z0,right:cx1y0z1}
+  cx1y0z1[empty]{down:cx1y1z1,frontLayer:cx1y0z0,left:cx0y0z1,right:cx2y0z1}
+  cx2y0z1[empty]{down:cx2y1z1,frontLayer:cx2y0z0,left:cx1y0z1,right:cx3y0z1}
+  cx3y0z1[empty]{down:cx3y1z1,frontLayer:cx3y0z0,left:cx2y0z1,right:cx4y0z1}
+  cx4y0z1[empty]{down:cx4y1z1,frontLayer:cx4y0z0,left:cx3y0z1,right:cx5y0z1}
+  cx5y0z1[empty]{down:cx5y1z1,frontLayer:cx5y0z0,left:cx4y0z1,right:cx6y0z1}
+  cx6y0z1[empty]{down:cx6y1z1,frontLayer:cx6y0z0,left:cx5y0z1,right:cx7y0z1}
+  cx7y0z1[empty]{down:cx7y1z1,frontLayer:cx7y0z0,left:cx6y0z1}
+  cx0y1z1[empty]{down:cx0y2z1,frontLayer:cx0y1z0,right:cx1y1z1,up:cx0y0z1}
+  cx1y1z1[empty]{down:cx1y2z1,frontLayer:cx1y1z0,left:cx0y1z1,right:cx2y1z1,up:cx1y0z1}
+  cx2y1z1[empty]{down:cx2y2z1,frontLayer:cx2y1z0,left:cx1y1z1,right:cx3y1z1,up:cx2y0z1}
+  cx3y1z1[empty]{down:cx3y2z1,frontLayer:cx3y1z0,left:cx2y1z1,right:cx4y1z1,up:cx3y0z1}
+  cx4y1z1[empty]{down:cx4y2z1,frontLayer:cx4y1z0,left:cx3y1z1,right:cx5y1z1,up:cx4y0z1}
+  cx5y1z1[empty]{down:cx5y2z1,frontLayer:cx5y1z0,left:cx4y1z1,right:cx6y1z1,up:cx5y0z1}
+  cx6y1z1[empty]{down:cx6y2z1,frontLayer:cx6y1z0,left:cx5y1z1,right:cx7y1z1,up:cx6y0z1}
+  cx7y1z1[empty]{down:cx7y2z1,frontLayer:cx7y1z0,left:cx6y1z1,up:cx7y0z1}
   cx0y2z1[empty]{down:cx0y3z1,frontLayer:cx0y2z0,right:cx1y2z1,up:cx0y1z1}
   cx1y2z1[empty]{down:cx1y3z1,frontLayer:cx1y2z0,left:cx0y2z1,right:cx2y2z1,up:cx1y1z1}
   cx2y2z1[empty]{down:cx2y3z1,frontLayer:cx2y2z0,left:cx1y2z1,right:cx3y2z1,up:cx2y1z1}
@@ -111,26 +111,77 @@
   cx5y5z1[empty]{down:cx5y6z1,frontLayer:cx5y5z0,left:cx4y5z1,right:cx6y5z1,up:cx5y4z1}
   cx6y5z1[empty]{down:cx6y6z1,frontLayer:cx6y5z0,left:cx5y5z1,right:cx7y5z1,up:cx6y4z1}
   cx7y5z1[empty]{down:cx7y6z1,frontLayer:cx7y5z0,left:cx6y5z1,up:cx7y4z1}
-  cx0y6z1[goldRabbit]{down:cx0y7z1,frontLayer:cx0y6z0,right:cx1y6z1,up:cx0y5z1}
-  cx1y6z1[goldRabbit]{down:cx1y7z1,frontLayer:cx1y6z0,left:cx0y6z1,right:cx2y6z1,up:cx1y5z1}
-  cx2y6z1[goldRabbit]{down:cx2y7z1,frontLayer:cx2y6z0,left:cx1y6z1,right:cx3y6z1,up:cx2y5z1}
-  cx3y6z1[goldRabbit]{down:cx3y7z1,frontLayer:cx3y6z0,left:cx2y6z1,right:cx4y6z1,up:cx3y5z1}
-  cx4y6z1[goldRabbit]{down:cx4y7z1,frontLayer:cx4y6z0,left:cx3y6z1,right:cx5y6z1,up:cx4y5z1}
-  cx5y6z1[goldRabbit]{down:cx5y7z1,frontLayer:cx5y6z0,left:cx4y6z1,right:cx6y6z1,up:cx5y5z1}
-  cx6y6z1[goldRabbit]{down:cx6y7z1,frontLayer:cx6y6z0,left:cx5y6z1,right:cx7y6z1,up:cx6y5z1}
-  cx7y6z1[goldRabbit]{down:cx7y7z1,frontLayer:cx7y6z0,left:cx6y6z1,up:cx7y5z1}
-  cx0y7z1[goldHorse]{frontLayer:cx0y7z0,right:cx1y7z1,up:cx0y6z1}
-  cx1y7z1[goldCat]{frontLayer:cx1y7z0,left:cx0y7z1,right:cx2y7z1,up:cx1y6z1}
-  cx2y7z1[goldDog]{frontLayer:cx2y7z0,left:cx1y7z1,right:cx3y7z1,up:cx2y6z1}
-  cx3y7z1[goldCamel]{frontLayer:cx3y7z0,left:cx2y7z1,right:cx4y7z1,up:cx3y6z1}
-  cx4y7z1[goldElephant]{frontLayer:cx4y7z0,left:cx3y7z1,right:cx5y7z1,up:cx4y6z1}
-  cx5y7z1[goldDog]{frontLayer:cx5y7z0,left:cx4y7z1,right:cx6y7z1,up:cx5y6z1}
-  cx6y7z1[goldCat]{frontLayer:cx6y7z0,left:cx5y7z1,right:cx7y7z1,up:cx6y6z1}
-  cx7y7z1[goldHorse]{frontLayer:cx7y7z0,left:cx6y7z1,up:cx7y6z1}
+  cx0y6z1[empty]{down:cx0y7z1,frontLayer:cx0y6z0,right:cx1y6z1,up:cx0y5z1}
+  cx1y6z1[empty]{down:cx1y7z1,frontLayer:cx1y6z0,left:cx0y6z1,right:cx2y6z1,up:cx1y5z1}
+  cx2y6z1[empty]{down:cx2y7z1,frontLayer:cx2y6z0,left:cx1y6z1,right:cx3y6z1,up:cx2y5z1}
+  cx3y6z1[empty]{down:cx3y7z1,frontLayer:cx3y6z0,left:cx2y6z1,right:cx4y6z1,up:cx3y5z1}
+  cx4y6z1[empty]{down:cx4y7z1,frontLayer:cx4y6z0,left:cx3y6z1,right:cx5y6z1,up:cx4y5z1}
+  cx5y6z1[empty]{down:cx5y7z1,frontLayer:cx5y6z0,left:cx4y6z1,right:cx6y6z1,up:cx5y5z1}
+  cx6y6z1[empty]{down:cx6y7z1,frontLayer:cx6y6z0,left:cx5y6z1,right:cx7y6z1,up:cx6y5z1}
+  cx7y6z1[empty]{down:cx7y7z1,frontLayer:cx7y6z0,left:cx6y6z1,up:cx7y5z1}
+  cx0y7z1[empty]{frontLayer:cx0y7z0,right:cx1y7z1,up:cx0y6z1}
+  cx1y7z1[empty]{frontLayer:cx1y7z0,left:cx0y7z1,right:cx2y7z1,up:cx1y6z1}
+  cx2y7z1[empty]{frontLayer:cx2y7z0,left:cx1y7z1,right:cx3y7z1,up:cx2y6z1}
+  cx3y7z1[empty]{frontLayer:cx3y7z0,left:cx2y7z1,right:cx4y7z1,up:cx3y6z1}
+  cx4y7z1[empty]{frontLayer:cx4y7z0,left:cx3y7z1,right:cx5y7z1,up:cx4y6z1}
+  cx5y7z1[empty]{frontLayer:cx5y7z0,left:cx4y7z1,right:cx6y7z1,up:cx5y6z1}
+  cx6y7z1[empty]{frontLayer:cx6y7z0,left:cx5y7z1,right:cx7y7z1,up:cx6y6z1}
+  cx7y7z1[empty]{frontLayer:cx7y7z0,left:cx6y7z1,up:cx7y6z1}
 #players = gold(100), silver(100)
 #pieces = empty, goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit, goldRabbitSecond, silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit, silverRabbitSecond
-#variables = changed(1), steps(4), turn(199)
+#variables = steps(4), turn(199)
 #rules = (
+  (
+      {$ goldElephant < 1}
+    + {$ goldCamel < 1}
+    + {$ goldHorse < 2}
+    + {$ goldDog < 2}
+    + {$ goldCat < 2}
+    + {$ goldRabbit < 8}
+  )
+  ->gold
+  (
+      {$ goldElephant < 1} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldElephant]
+    + {$ goldCamel < 1} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldCamel]
+    + {$ goldHorse < 2} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldHorse]
+    + {$ goldDog < 2} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldDog]
+    + {$ goldCat < 2} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldCat]
+    + {$ goldRabbit < 8} (left* + right*) (up* + down*) {! down down} {empty} ->> [goldRabbit]
+  )
+)*
+{$ goldElephant == 1}
+{$ goldCamel == 1}
+{$ goldHorse == 2}
+{$ goldDog == 2}
+{$ goldCat == 2}
+{$ goldRabbit == 8}
+(
+  (
+      {$ silverElephant < 1}
+    + {$ silverCamel < 1}
+    + {$ silverHorse < 2}
+    + {$ silverDog < 2}
+    + {$ silverCat < 2}
+    + {$ silverRabbit < 8}
+  )
+  ->silver
+  (
+      {$ silverElephant < 1} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverElephant]
+    + {$ silverCamel < 1} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverCamel]
+    + {$ silverHorse < 2} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverHorse]
+    + {$ silverDog < 2} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverDog]
+    + {$ silverCat < 2} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverCat]
+    + {$ silverRabbit < 8} (left* + right*) (up* + down*) {! up up} {empty} ->> [silverRabbit]
+  )
+)*
+{$ silverElephant == 1}
+{$ silverCamel == 1}
+{$ silverHorse == 2}
+{$ silverDog == 2}
+{$ silverCat == 2}
+{$ silverRabbit == 8}
+->>
+(
   (
     (left* + right*)
     (up* + down*)
@@ -190,7 +241,6 @@
   (up* + down*)
   {! up + left}
   [$ steps = 4]
-  [$ changed = 0]
   ->gold
   (
     {$ steps > 0}
@@ -245,7 +295,7 @@
           + {goldRabbit} [empty] (
                 left {empty} [goldRabbit]
               + right {empty} [goldRabbit]
-              + up {empty} [goldRabbit] [$ changed = 1]
+              + up {empty} [goldRabbit]
             )
         )
       + [$ steps = (steps - 2)] (
@@ -1015,7 +1065,7 @@
           + {!
               (left + right + up + down)
               {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
             {?
@@ -1025,7 +1075,7 @@
           + {!
               (left + right + up + down)
               {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {empty}
     )
@@ -1041,7 +1091,7 @@
           + {!
               (left + right + up + down)
               {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
             {?
@@ -1051,7 +1101,7 @@
           + {!
               (left + right + up + down)
               {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {empty}
     )
@@ -1067,7 +1117,7 @@
           + {!
               (left + right + up + down)
               {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
             {?
@@ -1077,7 +1127,7 @@
           + {!
               (left + right + up + down)
               {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {empty}
     )
@@ -1093,7 +1143,7 @@
           + {!
               (left + right + up + down)
               {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
             {?
@@ -1103,7 +1153,7 @@
           + {!
               (left + right + up + down)
               {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {empty}
     )
@@ -1132,31 +1182,28 @@
             }
         ) [$ gold = 100] [$ silver = 0] ->> {}
     )
+    ({$ steps > 0} ->gold + {$ steps == 0})
   )*
-  (
-      {$ changed == 1}
-    + {$ steps == 1}
-    + {$ steps == 3}
-    + {$ changed == 0} ({$ steps == 0} + {$ steps == 2}) {?
-        (left* + right*)
-        (up* + down*)
-        {!
-            {empty} backLayer {empty}
-          + {goldElephant} backLayer {goldElephant}
-          + {goldCamel} backLayer {goldCamel}
-          + {goldHorse} backLayer {goldHorse}
-          + {goldDog} backLayer {goldDog}
-          + {goldCat} backLayer {goldCat}
-          + {goldRabbit} backLayer {goldRabbitSecond}
-          + {silverElephant} backLayer {silverElephant}
-          + {silverCamel} backLayer {silverCamel}
-          + {silverHorse} backLayer {silverHorse}
-          + {silverDog} backLayer {silverDog}
-          + {silverCat} backLayer {silverCat}
-          + {silverRabbit} backLayer {silverRabbitSecond}
-        }
-      }
-  )
+  {$ steps < 4}
+  {?
+    (left* + right*)
+    (up* + down*)
+    {!
+        {empty} backLayer {empty}
+      + {goldElephant} backLayer {goldElephant}
+      + {goldCamel} backLayer {goldCamel}
+      + {goldHorse} backLayer {goldHorse}
+      + {goldDog} backLayer {goldDog}
+      + {goldCat} backLayer {goldCat}
+      + {goldRabbit} backLayer {goldRabbitSecond}
+      + {silverElephant} backLayer {silverElephant}
+      + {silverCamel} backLayer {silverCamel}
+      + {silverHorse} backLayer {silverHorse}
+      + {silverDog} backLayer {silverDog}
+      + {silverCat} backLayer {silverCat}
+      + {silverRabbit} backLayer {silverRabbitSecond}
+    }
+  }
   ->>
   (
       {$ turn < 199} [$ gold = 100] [$ silver = 0]
@@ -1222,7 +1269,6 @@
   (up* + down*)
   {! up + left}
   [$ steps = 4]
-  [$ changed = 0]
   ->silver
   (
     {$ steps > 0}
@@ -1277,7 +1323,7 @@
           + {silverRabbit} [empty] (
                 left {empty} [silverRabbit]
               + right {empty} [silverRabbit]
-              + down {empty} [silverRabbit] [$ changed = 1]
+              + down {empty} [silverRabbit]
             )
         )
       + [$ steps = (steps - 2)] (
@@ -2047,7 +2093,7 @@
           + {!
               (left + right + up + down)
               {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
             {?
@@ -2057,7 +2103,7 @@
           + {!
               (left + right + up + down)
               {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {empty}
     )
@@ -2073,7 +2119,7 @@
           + {!
               (left + right + up + down)
               {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
             {?
@@ -2083,7 +2129,7 @@
           + {!
               (left + right + up + down)
               {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {empty}
     )
@@ -2099,7 +2145,7 @@
           + {!
               (left + right + up + down)
               {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
             {?
@@ -2109,7 +2155,7 @@
           + {!
               (left + right + up + down)
               {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {empty}
     )
@@ -2125,7 +2171,7 @@
           + {!
               (left + right + up + down)
               {goldCamel, goldCat, goldDog, goldElephant, goldHorse, goldRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit} (
             {?
@@ -2135,7 +2181,7 @@
           + {!
               (left + right + up + down)
               {silverCamel, silverCat, silverDog, silverElephant, silverHorse, silverRabbit}
-            } [empty] [$ changed = 1]
+            } [empty]
         )
       + {empty}
     )
@@ -2164,31 +2210,28 @@
             }
         ) [$ gold = 100] [$ silver = 0] ->> {}
     )
+    ({$ steps > 0} ->silver + {$ steps == 0})
   )*
-  (
-      {$ changed == 1}
-    + {$ steps == 1}
-    + {$ steps == 3}
-    + {$ changed == 0} ({$ steps == 0} + {$ steps == 2}) {?
-        (left* + right*)
-        (up* + down*)
-        {!
-            {empty} backLayer {empty}
-          + {goldElephant} backLayer {goldElephant}
-          + {goldCamel} backLayer {goldCamel}
-          + {goldHorse} backLayer {goldHorse}
-          + {goldDog} backLayer {goldDog}
-          + {goldCat} backLayer {goldCat}
-          + {goldRabbit} backLayer {goldRabbitSecond}
-          + {silverElephant} backLayer {silverElephant}
-          + {silverCamel} backLayer {silverCamel}
-          + {silverHorse} backLayer {silverHorse}
-          + {silverDog} backLayer {silverDog}
-          + {silverCat} backLayer {silverCat}
-          + {silverRabbit} backLayer {silverRabbitSecond}
-        }
-      }
-  )
+  {$ steps < 4}
+  {?
+    (left* + right*)
+    (up* + down*)
+    {!
+        {empty} backLayer {empty}
+      + {goldElephant} backLayer {goldElephant}
+      + {goldCamel} backLayer {goldCamel}
+      + {goldHorse} backLayer {goldHorse}
+      + {goldDog} backLayer {goldDog}
+      + {goldCat} backLayer {goldCat}
+      + {goldRabbit} backLayer {goldRabbitSecond}
+      + {silverElephant} backLayer {silverElephant}
+      + {silverCamel} backLayer {silverCamel}
+      + {silverHorse} backLayer {silverHorse}
+      + {silverDog} backLayer {silverDog}
+      + {silverCat} backLayer {silverCat}
+      + {silverRabbit} backLayer {silverRabbitSecond}
+    }
+  }
   ->>
   (
       {$ turn < 199} [$ silver = 100] [$ gold = 0]

@@ -1,0 +1,655 @@
+#board =
+  outer1[empty]{right:outer8,up:outer2}
+  outer2[empty]{down:outer1,right:middle2,up:outer3}
+  outer3[empty]{down:outer2,right:outer4}
+  outer4[empty]{down:middle4,left:outer3,right:outer5}
+  outer5[empty]{down:outer6,left:outer4}
+  outer6[empty]{down:outer7,left:middle6,up:outer5}
+  outer7[empty]{left:outer8,up:outer6}
+  outer8[empty]{left:outer1,right:outer7,up:middle8}
+  middle1[empty]{right:middle8,up:middle2}
+  middle2[empty]{down:middle1,left:outer2,right:inner2,up:middle3}
+  middle3[empty]{down:middle2,right:middle4}
+  middle4[empty]{down:inner4,left:middle3,right:middle5,up:outer4}
+  middle5[empty]{down:middle6,left:middle4}
+  middle6[empty]{down:middle7,left:inner6,right:outer6,up:middle5}
+  middle7[empty]{left:middle8,up:middle6}
+  middle8[empty]{down:outer8,left:middle1,right:middle7,up:inner8}
+  inner1[empty]{right:inner8,up:inner2}
+  inner2[empty]{down:inner1,left:middle2,up:inner3}
+  inner3[empty]{down:inner2,right:inner4}
+  inner4[empty]{left:inner3,right:inner5,up:middle4}
+  inner5[empty]{down:inner6,left:inner4}
+  inner6[empty]{down:inner7,right:middle6,up:inner5}
+  inner7[empty]{left:inner8,up:inner6}
+  inner8[empty]{down:middle8,left:inner1,right:inner7}
+#players = white(100), black(100)
+#pieces = blackPiece, empty, whitePiece
+#variables = firstPhase(9), stagnation(20)
+#rules = [$ black = 100]
+[$ white = 0]
+(
+  [$ firstPhase = (firstPhase + 1)]
+  [$ stagnation = (stagnation + 1)]
+  (
+      {?
+        left*
+        right
+        right
+        down*
+        up
+        up
+        left*
+        right
+        right
+        left
+        (up* + down*)
+        (
+            right
+          + right down
+          + right down down
+          + right down down left
+          + left
+          + left down
+          + left down down
+          + left right
+        )
+        {blackPiece}
+        {!
+            up {blackPiece} (up + down down) {blackPiece}
+          + down {blackPiece} down {blackPiece}
+          + left {blackPiece} (left + right right) {blackPiece}
+          + right {blackPiece} right {blackPiece}
+        }
+      } ->white left* right right down* up up left* right right left (up* + down*) (
+          right
+        + right down
+        + right down down
+        + right down down left
+        + left
+        + left down
+        + left down down
+        + left right
+      ) {empty} ->> [whitePiece] (
+          {!
+              up {whitePiece} (up + down down) {whitePiece}
+            + down {whitePiece} down {whitePiece}
+            + left {whitePiece} (left + right right) {whitePiece}
+            + right {whitePiece} right {whitePiece}
+          } ->>
+        + {?
+              up {whitePiece} (up + down down) {whitePiece}
+            + down {whitePiece} down {whitePiece}
+            + left {whitePiece} (left + right right) {whitePiece}
+            + right {whitePiece} right {whitePiece}
+          } ->white left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {blackPiece} {!
+              up {blackPiece} (up + down down) {blackPiece}
+            + down {blackPiece} down {blackPiece}
+            + left {blackPiece} (left + right right) {blackPiece}
+            + right {blackPiece} right {blackPiece}
+          } ->> [empty] [$ stagnation = 0]
+      )
+    + {!
+        left*
+        right
+        right
+        down*
+        up
+        up
+        left*
+        right
+        right
+        left
+        (up* + down*)
+        (
+            right
+          + right down
+          + right down down
+          + right down down left
+          + left
+          + left down
+          + left down down
+          + left right
+        )
+        {blackPiece}
+        {!
+            up {blackPiece} (up + down down) {blackPiece}
+          + down {blackPiece} down {blackPiece}
+          + left {blackPiece} (left + right right) {blackPiece}
+          + right {blackPiece} right {blackPiece}
+        }
+      } ->white left* right right down* up up left* right right left (up* + down*) (
+          right
+        + right down
+        + right down down
+        + right down down left
+        + left
+        + left down
+        + left down down
+        + left right
+      ) {empty} ->> [whitePiece] (
+          {!
+              up {whitePiece} (up + down down) {whitePiece}
+            + down {whitePiece} down {whitePiece}
+            + left {whitePiece} (left + right right) {whitePiece}
+            + right {whitePiece} right {whitePiece}
+          } ->>
+        + {?
+              up {whitePiece} (up + down down) {whitePiece}
+            + down {whitePiece} down {whitePiece}
+            + left {whitePiece} (left + right right) {whitePiece}
+            + right {whitePiece} right {whitePiece}
+          } ->white left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {blackPiece} ->> [empty] [$ stagnation = 0]
+      )
+  )
+  [$ stagnation = (stagnation + 1)]
+  (
+      {?
+        left*
+        right
+        right
+        down*
+        up
+        up
+        left*
+        right
+        right
+        left
+        (up* + down*)
+        (
+            right
+          + right down
+          + right down down
+          + right down down left
+          + left
+          + left down
+          + left down down
+          + left right
+        )
+        {whitePiece}
+        {!
+            up {whitePiece} (up + down down) {whitePiece}
+          + down {whitePiece} down {whitePiece}
+          + left {whitePiece} (left + right right) {whitePiece}
+          + right {whitePiece} right {whitePiece}
+        }
+      } ->black left* right right down* up up left* right right left (up* + down*) (
+          right
+        + right down
+        + right down down
+        + right down down left
+        + left
+        + left down
+        + left down down
+        + left right
+      ) {empty} ->> [blackPiece] (
+          {!
+              up {blackPiece} (up + down down) {blackPiece}
+            + down {blackPiece} down {blackPiece}
+            + left {blackPiece} (left + right right) {blackPiece}
+            + right {blackPiece} right {blackPiece}
+          } ->>
+        + {?
+              up {blackPiece} (up + down down) {blackPiece}
+            + down {blackPiece} down {blackPiece}
+            + left {blackPiece} (left + right right) {blackPiece}
+            + right {blackPiece} right {blackPiece}
+          } ->black left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {whitePiece} {!
+              up {whitePiece} (up + down down) {whitePiece}
+            + down {whitePiece} down {whitePiece}
+            + left {whitePiece} (left + right right) {whitePiece}
+            + right {whitePiece} right {whitePiece}
+          } ->> [empty] [$ stagnation = 0]
+      )
+    + {!
+        left*
+        right
+        right
+        down*
+        up
+        up
+        left*
+        right
+        right
+        left
+        (up* + down*)
+        (
+            right
+          + right down
+          + right down down
+          + right down down left
+          + left
+          + left down
+          + left down down
+          + left right
+        )
+        {whitePiece}
+        {!
+            up {whitePiece} (up + down down) {whitePiece}
+          + down {whitePiece} down {whitePiece}
+          + left {whitePiece} (left + right right) {whitePiece}
+          + right {whitePiece} right {whitePiece}
+        }
+      } ->black left* right right down* up up left* right right left (up* + down*) (
+          right
+        + right down
+        + right down down
+        + right down down left
+        + left
+        + left down
+        + left down down
+        + left right
+      ) {empty} ->> [blackPiece] (
+          {!
+              up {blackPiece} (up + down down) {blackPiece}
+            + down {blackPiece} down {blackPiece}
+            + left {blackPiece} (left + right right) {blackPiece}
+            + right {blackPiece} right {blackPiece}
+          } ->>
+        + {?
+              up {blackPiece} (up + down down) {blackPiece}
+            + down {blackPiece} down {blackPiece}
+            + left {blackPiece} (left + right right) {blackPiece}
+            + right {blackPiece} right {blackPiece}
+          } ->black left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {whitePiece} ->> [empty] [$ stagnation = 0]
+      )
+  )
+)*
+{$ firstPhase == 9}
+->>
+(
+  [$ stagnation = (stagnation + 1)]
+  (
+      {?
+        left*
+        right
+        right
+        down*
+        up
+        up
+        left*
+        right
+        right
+        left
+        (up* + down*)
+        (
+            right
+          + right down
+          + right down down
+          + right down down left
+          + left
+          + left down
+          + left down down
+          + left right
+        )
+        {blackPiece}
+        {!
+            up {blackPiece} (up + down down) {blackPiece}
+          + down {blackPiece} down {blackPiece}
+          + left {blackPiece} (left + right right) {blackPiece}
+          + right {blackPiece} right {blackPiece}
+        }
+      } (
+          {$ whitePiece > 3} ->white left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {whitePiece} [empty] (up + down + left + right)
+        + {$ whitePiece == 3} ->white left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {whitePiece} [empty] left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          )
+      ) {empty} ->> [whitePiece] (
+          {!
+              up {whitePiece} (up + down down) {whitePiece}
+            + down {whitePiece} down {whitePiece}
+            + left {whitePiece} (left + right right) {whitePiece}
+            + right {whitePiece} right {whitePiece}
+          } ->>
+        + {?
+              up {whitePiece} (up + down down) {whitePiece}
+            + down {whitePiece} down {whitePiece}
+            + left {whitePiece} (left + right right) {whitePiece}
+            + right {whitePiece} right {whitePiece}
+          } ->white left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {blackPiece} {!
+              up {blackPiece} (up + down down) {blackPiece}
+            + down {blackPiece} down {blackPiece}
+            + left {blackPiece} (left + right right) {blackPiece}
+            + right {blackPiece} right {blackPiece}
+          } ->> [empty] [$ stagnation = 0]
+      )
+    + {!
+        left*
+        right
+        right
+        down*
+        up
+        up
+        left*
+        right
+        right
+        left
+        (up* + down*)
+        (
+            right
+          + right down
+          + right down down
+          + right down down left
+          + left
+          + left down
+          + left down down
+          + left right
+        )
+        {blackPiece}
+        {!
+            up {blackPiece} (up + down down) {blackPiece}
+          + down {blackPiece} down {blackPiece}
+          + left {blackPiece} (left + right right) {blackPiece}
+          + right {blackPiece} right {blackPiece}
+        }
+      } (
+          {$ whitePiece > 3} ->white left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {whitePiece} [empty] (up + down + left + right)
+        + {$ whitePiece == 3} ->white left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {whitePiece} [empty] left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          )
+      ) {empty} ->> [whitePiece] (
+          {!
+              up {whitePiece} (up + down down) {whitePiece}
+            + down {whitePiece} down {whitePiece}
+            + left {whitePiece} (left + right right) {whitePiece}
+            + right {whitePiece} right {whitePiece}
+          } ->>
+        + {?
+              up {whitePiece} (up + down down) {whitePiece}
+            + down {whitePiece} down {whitePiece}
+            + left {whitePiece} (left + right right) {whitePiece}
+            + right {whitePiece} right {whitePiece}
+          } ->white left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {blackPiece} ->> [empty] [$ stagnation = 0]
+      )
+  )
+  (
+      {$ stagnation < 20}
+    + {$ stagnation == 20} [$ white = 50] [$ black = 50] ->> {}
+  )
+  [$ white = 100]
+  [$ black = 0]
+  ({$ blackPiece >= 3} + {$ blackPiece < 3} ->> {})
+  [$ stagnation = (stagnation + 1)]
+  (
+      {?
+        left*
+        right
+        right
+        down*
+        up
+        up
+        left*
+        right
+        right
+        left
+        (up* + down*)
+        (
+            right
+          + right down
+          + right down down
+          + right down down left
+          + left
+          + left down
+          + left down down
+          + left right
+        )
+        {whitePiece}
+        {!
+            up {whitePiece} (up + down down) {whitePiece}
+          + down {whitePiece} down {whitePiece}
+          + left {whitePiece} (left + right right) {whitePiece}
+          + right {whitePiece} right {whitePiece}
+        }
+      } (
+          {$ blackPiece > 3} ->black left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {blackPiece} [empty] (up + down + left + right)
+        + {$ blackPiece == 3} ->black left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {blackPiece} [empty] left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          )
+      ) {empty} ->> [blackPiece] (
+          {!
+              up {blackPiece} (up + down down) {blackPiece}
+            + down {blackPiece} down {blackPiece}
+            + left {blackPiece} (left + right right) {blackPiece}
+            + right {blackPiece} right {blackPiece}
+          } ->>
+        + {?
+              up {blackPiece} (up + down down) {blackPiece}
+            + down {blackPiece} down {blackPiece}
+            + left {blackPiece} (left + right right) {blackPiece}
+            + right {blackPiece} right {blackPiece}
+          } ->black left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {whitePiece} {!
+              up {whitePiece} (up + down down) {whitePiece}
+            + down {whitePiece} down {whitePiece}
+            + left {whitePiece} (left + right right) {whitePiece}
+            + right {whitePiece} right {whitePiece}
+          } ->> [empty] [$ stagnation = 0]
+      )
+    + {!
+        left*
+        right
+        right
+        down*
+        up
+        up
+        left*
+        right
+        right
+        left
+        (up* + down*)
+        (
+            right
+          + right down
+          + right down down
+          + right down down left
+          + left
+          + left down
+          + left down down
+          + left right
+        )
+        {whitePiece}
+        {!
+            up {whitePiece} (up + down down) {whitePiece}
+          + down {whitePiece} down {whitePiece}
+          + left {whitePiece} (left + right right) {whitePiece}
+          + right {whitePiece} right {whitePiece}
+        }
+      } (
+          {$ blackPiece > 3} ->black left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {blackPiece} [empty] (up + down + left + right)
+        + {$ blackPiece == 3} ->black left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {blackPiece} [empty] left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          )
+      ) {empty} ->> [blackPiece] (
+          {!
+              up {blackPiece} (up + down down) {blackPiece}
+            + down {blackPiece} down {blackPiece}
+            + left {blackPiece} (left + right right) {blackPiece}
+            + right {blackPiece} right {blackPiece}
+          } ->>
+        + {?
+              up {blackPiece} (up + down down) {blackPiece}
+            + down {blackPiece} down {blackPiece}
+            + left {blackPiece} (left + right right) {blackPiece}
+            + right {blackPiece} right {blackPiece}
+          } ->black left* right right down* up up left* right right left (up* + down*) (
+              right
+            + right down
+            + right down down
+            + right down down left
+            + left
+            + left down
+            + left down down
+            + left right
+          ) {whitePiece} ->> [empty] [$ stagnation = 0]
+      )
+  )
+  (
+      {$ stagnation < 20}
+    + {$ stagnation == 20} [$ black = 50] [$ white = 50] ->> {}
+  )
+  [$ black = 100]
+  [$ white = 0]
+  ({$ whitePiece >= 3} + {$ whitePiece < 3} ->> {})
+)*

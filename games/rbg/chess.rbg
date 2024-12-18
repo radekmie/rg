@@ -65,7 +65,7 @@
   rx7y7[whiteRookUnmoved]{left:rx6y7,up:rx7y6}
 #players = white(100), black(100)
 #pieces = blackBishop, blackKing, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved, empty, whiteBishop, whiteKing, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved
-#variables = blackKingMoved(1), pawnDoubleMove(1), stagnation(50), whiteKingMoved(1)
+#variables = blackKingMoved(1), pawnDoubleMove(1), stagnation(100), whiteKingMoved(1)
 #rules = (
   [$ stagnation = (stagnation + 1)]
   ->white
@@ -298,7 +298,7 @@
   }
   ->>
   (
-      {$ stagnation < 50} ->> (
+      {$ stagnation < 100} ->> (
           {!
             (left* + right*)
             (up* + down*)
@@ -386,7 +386,7 @@
             )
           } [$ white = 100] [$ black = 0]
       )
-    + {$ stagnation == 50} [$ white = 50] [$ black = 50] ->> (
+    + {$ stagnation == 100} [$ white = 50] [$ black = 50] ->> (
           {!
             (left* + right*)
             (up* + down*)
@@ -934,7 +934,7 @@
   }
   ->>
   (
-      {$ stagnation < 50} ->> (
+      {$ stagnation < 100} ->> (
           {!
             (left* + right*)
             (up* + down*)
@@ -1022,7 +1022,7 @@
             )
           } [$ black = 100] [$ white = 0]
       )
-    + {$ stagnation == 50} [$ black = 50] [$ white = 50] ->> (
+    + {$ stagnation == 100} [$ black = 50] [$ white = 50] ->> (
           {!
             (left* + right*)
             (up* + down*)

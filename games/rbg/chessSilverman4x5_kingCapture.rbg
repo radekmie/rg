@@ -1,0 +1,120 @@
+#board =
+  rx0y0[blackRook]{down:rx0y1,right:rx1y0}
+  rx1y0[blackQueen]{down:rx1y1,left:rx0y0,right:rx2y0}
+  rx2y0[blackKing]{down:rx2y1,left:rx1y0,right:rx3y0}
+  rx3y0[blackRook]{down:rx3y1,left:rx2y0}
+  rx0y1[blackPawn]{down:rx0y2,right:rx1y1,up:rx0y0}
+  rx1y1[blackPawn]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+  rx2y1[blackPawn]{down:rx2y2,left:rx1y1,right:rx3y1,up:rx2y0}
+  rx3y1[blackPawn]{down:rx3y2,left:rx2y1,up:rx3y0}
+  rx0y2[empty]{down:rx0y3,right:rx1y2,up:rx0y1}
+  rx1y2[empty]{down:rx1y3,left:rx0y2,right:rx2y2,up:rx1y1}
+  rx2y2[empty]{down:rx2y3,left:rx1y2,right:rx3y2,up:rx2y1}
+  rx3y2[empty]{down:rx3y3,left:rx2y2,up:rx3y1}
+  rx0y3[whitePawn]{down:rx0y4,right:rx1y3,up:rx0y2}
+  rx1y3[whitePawn]{down:rx1y4,left:rx0y3,right:rx2y3,up:rx1y2}
+  rx2y3[whitePawn]{down:rx2y4,left:rx1y3,right:rx3y3,up:rx2y2}
+  rx3y3[whitePawn]{down:rx3y4,left:rx2y3,up:rx3y2}
+  rx0y4[whiteRook]{right:rx1y4,up:rx0y3}
+  rx1y4[whiteQueen]{left:rx0y4,right:rx2y4,up:rx1y3}
+  rx2y4[whiteKing]{left:rx1y4,right:rx3y4,up:rx2y3}
+  rx3y4[whiteRook]{left:rx2y4,up:rx3y3}
+#players = white(100), black(100)
+#pieces = blackKing, blackPawn, blackQueen, blackRook, empty, whiteKing, whitePawn, whiteQueen, whiteRook
+#variables = stagnation(40)
+#rules = [$ white = 50]
+[$ black = 50]
+(
+  [$ stagnation = (stagnation + 1)]
+  ->white
+  (left* + right*)
+  (up* + down*)
+  (
+      {whiteKing} [empty] (
+        left + right + up + down + (left + right) (up + down)
+      ) (
+          {empty}
+        + {blackKing, blackPawn, blackQueen, blackRook} [$ stagnation = 0]
+      ) [whiteKing]
+    + {whiteRook} [empty] (
+          (up {empty})* up
+        + (down {empty})* down
+        + (right {empty})* right
+        + (left {empty})* left
+      ) (
+          {empty}
+        + {blackKing, blackPawn, blackQueen, blackRook} [$ stagnation = 0]
+      ) [whiteRook]
+    + {whiteQueen} [empty] (
+          (up left {empty})* up left
+        + (up right {empty})* up right
+        + (down left {empty})* down left
+        + (down right {empty})* down right
+        + (up {empty})* up
+        + (down {empty})* down
+        + (right {empty})* right
+        + (left {empty})* left
+      ) (
+          {empty}
+        + {blackKing, blackPawn, blackQueen, blackRook} [$ stagnation = 0]
+      ) [whiteQueen]
+    + {whitePawn} [empty] (
+          up {empty}
+        + up (left + right) {blackKing, blackPawn, blackQueen, blackRook}
+      ) (
+          {? up} [whitePawn]
+        + {! up} ([whiteRook] + [whiteQueen])
+      ) [$ stagnation = 0]
+  )
+  ->>
+  (
+      {$ blackKing > 0}
+    + {$ blackKing == 0} [$ white = 100] [$ black = 0] ->> {}
+  )
+  [$ stagnation = (stagnation + 1)]
+  ->black
+  (left* + right*)
+  (up* + down*)
+  (
+      {blackKing} [empty] (
+        left + right + up + down + (left + right) (up + down)
+      ) (
+          {empty}
+        + {whiteKing, whitePawn, whiteQueen, whiteRook} [$ stagnation = 0]
+      ) [blackKing]
+    + {blackRook} [empty] (
+          (up {empty})* up
+        + (down {empty})* down
+        + (right {empty})* right
+        + (left {empty})* left
+      ) (
+          {empty}
+        + {whiteKing, whitePawn, whiteQueen, whiteRook} [$ stagnation = 0]
+      ) [blackRook]
+    + {blackQueen} [empty] (
+          (up left {empty})* up left
+        + (up right {empty})* up right
+        + (down left {empty})* down left
+        + (down right {empty})* down right
+        + (up {empty})* up
+        + (down {empty})* down
+        + (right {empty})* right
+        + (left {empty})* left
+      ) (
+          {empty}
+        + {whiteKing, whitePawn, whiteQueen, whiteRook} [$ stagnation = 0]
+      ) [blackQueen]
+    + {blackPawn} [empty] (
+          down {empty}
+        + down (left + right) {whiteKing, whitePawn, whiteQueen, whiteRook}
+      ) (
+          {? down} [blackPawn]
+        + {! down} ([blackRook] + [blackQueen])
+      ) [$ stagnation = 0]
+  )
+  ->>
+  (
+      {$ whiteKing > 0}
+    + {$ whiteKing == 0} [$ black = 100] [$ white = 0] ->> {}
+  )
+)*

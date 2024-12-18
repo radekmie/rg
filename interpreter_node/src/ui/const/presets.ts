@@ -15,8 +15,11 @@ import TicTacToeGdl from 'bundle-text:../../../../games/kif/ticTacToe.kif';
 import AmazonsRbg from 'bundle-text:../../../../games/rbg/amazons.rbg';
 import BreakthroughRbg from 'bundle-text:../../../../games/rbg/breakthrough.rbg';
 import Connect4Rbg from 'bundle-text:../../../../games/rbg/connect4.rbg';
-import Hex2Rbg from 'bundle-text:../../../../games/rbg/hex2.rbg';
-import Hex9Rbg from 'bundle-text:../../../../games/rbg/hex9.rbg';
+import Hex5Rbg from 'bundle-text:../../../../games/rbg/hex_5x5.rbg';
+import Hex6Rbg from 'bundle-text:../../../../games/rbg/hex_6x6.rbg';
+import Hex7Rbg from 'bundle-text:../../../../games/rbg/hex_7x7.rbg';
+import Hex8Rbg from 'bundle-text:../../../../games/rbg/hex_8x8.rbg';
+import Hex9Rbg from 'bundle-text:../../../../games/rbg/hex_9x9.rbg';
 import KnightthroughRbg from 'bundle-text:../../../../games/rbg/knightthrough.rbg';
 import TicTacToeRbg from 'bundle-text:../../../../games/rbg/ticTacToe.rbg';
 import BreakthroughRg from 'bundle-text:../../../../games/rg/breakthrough.rg';
@@ -37,7 +40,10 @@ export const presets = [
   ['Dice Throw (compare)', DiceThrowCompareHrg, Language.hrg] as const,
   ['Dice Throw (guess)', DiceThrowGuessHrg, Language.hrg] as const,
   ['Gomoku (freestyle)', GomokuFreestyleHrg, Language.hrg] as const,
-  ['Hex2', Hex2Rbg, Language.rbg] as const,
+  ['Hex5', Hex5Rbg, Language.rbg] as const,
+  ['Hex6', Hex6Rbg, Language.rbg] as const,
+  ['Hex7', Hex7Rbg, Language.rbg] as const,
+  ['Hex8', Hex8Rbg, Language.rbg] as const,
   ['Hex9', Hex9Rbg, Language.rbg] as const,
   ['Knightthrough', KnightthroughHrg, Language.hrg] as const,
   ['Knightthrough', KnightthroughRbg, Language.rbg] as const,

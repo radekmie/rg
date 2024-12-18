@@ -1,0 +1,109 @@
+#board =
+  rx0y0[b]{down:rx0y1,right:rx1y0}
+  rx1y0[b]{down:rx1y1,left:rx0y0,right:rx2y0}
+  rx2y0[b]{down:rx2y1,left:rx1y0,right:rx3y0}
+  rx3y0[b]{down:rx3y1,left:rx2y0,right:rx4y0}
+  rx4y0[b]{down:rx4y1,left:rx3y0,right:rx5y0}
+  rx5y0[b]{down:rx5y1,left:rx4y0,right:rx6y0}
+  rx6y0[b]{down:rx6y1,left:rx5y0,right:rx7y0}
+  rx7y0[b]{down:rx7y1,left:rx6y0,right:rx8y0}
+  rx8y0[b]{down:rx8y1,left:rx7y0}
+  rx0y1[b]{down:rx0y2,right:rx1y1,up:rx0y0}
+  rx1y1[b]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+  rx2y1[b]{down:rx2y2,left:rx1y1,right:rx3y1,up:rx2y0}
+  rx3y1[b]{down:rx3y2,left:rx2y1,right:rx4y1,up:rx3y0}
+  rx4y1[b]{down:rx4y2,left:rx3y1,right:rx5y1,up:rx4y0}
+  rx5y1[b]{down:rx5y2,left:rx4y1,right:rx6y1,up:rx5y0}
+  rx6y1[b]{down:rx6y2,left:rx5y1,right:rx7y1,up:rx6y0}
+  rx7y1[b]{down:rx7y2,left:rx6y1,right:rx8y1,up:rx7y0}
+  rx8y1[b]{down:rx8y2,left:rx7y1,up:rx8y0}
+  rx0y2[e]{down:rx0y3,right:rx1y2,up:rx0y1}
+  rx1y2[e]{down:rx1y3,left:rx0y2,right:rx2y2,up:rx1y1}
+  rx2y2[e]{down:rx2y3,left:rx1y2,right:rx3y2,up:rx2y1}
+  rx3y2[e]{down:rx3y3,left:rx2y2,right:rx4y2,up:rx3y1}
+  rx4y2[e]{down:rx4y3,left:rx3y2,right:rx5y2,up:rx4y1}
+  rx5y2[e]{down:rx5y3,left:rx4y2,right:rx6y2,up:rx5y1}
+  rx6y2[e]{down:rx6y3,left:rx5y2,right:rx7y2,up:rx6y1}
+  rx7y2[e]{down:rx7y3,left:rx6y2,right:rx8y2,up:rx7y1}
+  rx8y2[e]{down:rx8y3,left:rx7y2,up:rx8y1}
+  rx0y3[e]{down:rx0y4,right:rx1y3,up:rx0y2}
+  rx1y3[e]{down:rx1y4,left:rx0y3,right:rx2y3,up:rx1y2}
+  rx2y3[e]{down:rx2y4,left:rx1y3,right:rx3y3,up:rx2y2}
+  rx3y3[e]{down:rx3y4,left:rx2y3,right:rx4y3,up:rx3y2}
+  rx4y3[e]{down:rx4y4,left:rx3y3,right:rx5y3,up:rx4y2}
+  rx5y3[e]{down:rx5y4,left:rx4y3,right:rx6y3,up:rx5y2}
+  rx6y3[e]{down:rx6y4,left:rx5y3,right:rx7y3,up:rx6y2}
+  rx7y3[e]{down:rx7y4,left:rx6y3,right:rx8y3,up:rx7y2}
+  rx8y3[e]{down:rx8y4,left:rx7y3,up:rx8y2}
+  rx0y4[e]{down:rx0y5,right:rx1y4,up:rx0y3}
+  rx1y4[e]{down:rx1y5,left:rx0y4,right:rx2y4,up:rx1y3}
+  rx2y4[e]{down:rx2y5,left:rx1y4,right:rx3y4,up:rx2y3}
+  rx3y4[e]{down:rx3y5,left:rx2y4,right:rx4y4,up:rx3y3}
+  rx4y4[e]{down:rx4y5,left:rx3y4,right:rx5y4,up:rx4y3}
+  rx5y4[e]{down:rx5y5,left:rx4y4,right:rx6y4,up:rx5y3}
+  rx6y4[e]{down:rx6y5,left:rx5y4,right:rx7y4,up:rx6y3}
+  rx7y4[e]{down:rx7y5,left:rx6y4,right:rx8y4,up:rx7y3}
+  rx8y4[e]{down:rx8y5,left:rx7y4,up:rx8y3}
+  rx0y5[e]{down:rx0y6,right:rx1y5,up:rx0y4}
+  rx1y5[e]{down:rx1y6,left:rx0y5,right:rx2y5,up:rx1y4}
+  rx2y5[e]{down:rx2y6,left:rx1y5,right:rx3y5,up:rx2y4}
+  rx3y5[e]{down:rx3y6,left:rx2y5,right:rx4y5,up:rx3y4}
+  rx4y5[e]{down:rx4y6,left:rx3y5,right:rx5y5,up:rx4y4}
+  rx5y5[e]{down:rx5y6,left:rx4y5,right:rx6y5,up:rx5y4}
+  rx6y5[e]{down:rx6y6,left:rx5y5,right:rx7y5,up:rx6y4}
+  rx7y5[e]{down:rx7y6,left:rx6y5,right:rx8y5,up:rx7y4}
+  rx8y5[e]{down:rx8y6,left:rx7y5,up:rx8y4}
+  rx0y6[e]{down:rx0y7,right:rx1y6,up:rx0y5}
+  rx1y6[e]{down:rx1y7,left:rx0y6,right:rx2y6,up:rx1y5}
+  rx2y6[e]{down:rx2y7,left:rx1y6,right:rx3y6,up:rx2y5}
+  rx3y6[e]{down:rx3y7,left:rx2y6,right:rx4y6,up:rx3y5}
+  rx4y6[e]{down:rx4y7,left:rx3y6,right:rx5y6,up:rx4y5}
+  rx5y6[e]{down:rx5y7,left:rx4y6,right:rx6y6,up:rx5y5}
+  rx6y6[e]{down:rx6y7,left:rx5y6,right:rx7y6,up:rx6y5}
+  rx7y6[e]{down:rx7y7,left:rx6y6,right:rx8y6,up:rx7y5}
+  rx8y6[e]{down:rx8y7,left:rx7y6,up:rx8y5}
+  rx0y7[w]{down:rx0y8,right:rx1y7,up:rx0y6}
+  rx1y7[w]{down:rx1y8,left:rx0y7,right:rx2y7,up:rx1y6}
+  rx2y7[w]{down:rx2y8,left:rx1y7,right:rx3y7,up:rx2y6}
+  rx3y7[w]{down:rx3y8,left:rx2y7,right:rx4y7,up:rx3y6}
+  rx4y7[w]{down:rx4y8,left:rx3y7,right:rx5y7,up:rx4y6}
+  rx5y7[w]{down:rx5y8,left:rx4y7,right:rx6y7,up:rx5y6}
+  rx6y7[w]{down:rx6y8,left:rx5y7,right:rx7y7,up:rx6y6}
+  rx7y7[w]{down:rx7y8,left:rx6y7,right:rx8y7,up:rx7y6}
+  rx8y7[w]{down:rx8y8,left:rx7y7,up:rx8y6}
+  rx0y8[w]{right:rx1y8,up:rx0y7}
+  rx1y8[w]{left:rx0y8,right:rx2y8,up:rx1y7}
+  rx2y8[w]{left:rx1y8,right:rx3y8,up:rx2y7}
+  rx3y8[w]{left:rx2y8,right:rx4y8,up:rx3y7}
+  rx4y8[w]{left:rx3y8,right:rx5y8,up:rx4y7}
+  rx5y8[w]{left:rx4y8,right:rx6y8,up:rx5y7}
+  rx6y8[w]{left:rx5y8,right:rx7y8,up:rx6y7}
+  rx7y8[w]{left:rx6y8,right:rx8y8,up:rx7y7}
+  rx8y8[w]{left:rx7y8,up:rx8y7}
+#players = white(100), black(100)
+#pieces = b, e, w
+#variables = 
+#rules = (
+  ->white
+  (up* + down*)
+  (left* + right*)
+  {w}
+  [e]
+  up
+  ({e} + (left + right) {b, e})
+  ->>
+  [$ white = 100]
+  [$ black = 0]
+  ({? up} [w] + {! up} ->> {})
+  ->black
+  (up* + down*)
+  (left* + right*)
+  {b}
+  [e]
+  down
+  ({e} + (left + right) {e, w})
+  ->>
+  [$ black = 100]
+  [$ white = 0]
+  ({? down} [b] + {! down} ->> {})
+)*

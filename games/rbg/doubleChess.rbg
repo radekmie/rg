@@ -428,7 +428,7 @@
   }
   ->>
   (
-      {$ stagnation < 100} ->> (
+      {$ stagnation < 200} ->> (
           {!
             (left* + right*)
             (up* + down*)
@@ -516,7 +516,7 @@
             )
           } [$ white = 100] [$ black = 0]
       )
-    + {$ stagnation == 100} [$ white = 50] [$ black = 50] ->> (
+    + {$ stagnation == 200} [$ white = 50] [$ black = 50] ->> (
           {!
             (left* + right*)
             (up* + down*)
@@ -1068,7 +1068,7 @@
   }
   ->>
   (
-      {$ stagnation < 100} ->> (
+      {$ stagnation < 200} ->> (
           {!
             (left* + right*)
             (up* + down*)
@@ -1156,7 +1156,7 @@
             )
           } [$ black = 100] [$ white = 0]
       )
-    + {$ stagnation == 100} [$ black = 50] [$ white = 50] ->> (
+    + {$ stagnation == 200} [$ black = 50] [$ white = 50] ->> (
           {!
             (left* + right*)
             (up* + down*)
