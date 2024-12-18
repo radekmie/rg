@@ -119,9 +119,7 @@ impl Game<Id> {
 
                     // Skip comparisons between constants
                     if let (Some(lhs_value), Some(rhs_value)) = (lhs_value, rhs_value) {
-                        if (lhs_value == rhs_value && !*negated) // lhs == rhs
-                            || (lhs_value != rhs_value && *negated) // rhs != rhs
-                        {
+                        if (lhs_value == rhs_value) != *negated {
                             edge.skip();
                         }
                     }
@@ -138,13 +136,12 @@ impl Game<Id> {
         id: Id,
         expression: &Expression<Id>,
         edge: &Edge<Id>,
-        in_cast: bool
+        in_cast: bool,
     ) -> Option<Expression<Id>> {
         if !in_cast && self.is_symbol(&id, edge) {
             let type_ = expression.infer(self, Some(edge)).ok()?;
             if let Type::TypeReference { .. } = type_.as_ref() {
-                let expr = Expression::new_cast(type_, Arc::new(Expression::new(id)));
-                Some(expr)
+                Some(Expression::new_cast(type_, Arc::new(Expression::new(id))))
             } else {
                 None
             }
@@ -161,7 +158,6 @@ fn eval_expression(
     game: &Game<Id>,
     in_cast: bool,
 ) -> Expression<Id> {
-    // expression.infer(game, edge)
     match expression {
         Expression::Access { lhs, rhs, span } => {
             // First, try to evaluate lhs as Value::Map and rhs as Value::Identifier

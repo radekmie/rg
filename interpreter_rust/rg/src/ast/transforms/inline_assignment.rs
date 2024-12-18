@@ -1,5 +1,5 @@
 use crate::ast::analyses::{Analysis, ReachingDefinitions};
-use crate::ast::{Edge, Error, Expression, Game, Label, Node, Type};
+use crate::ast::{Edge, Error, Expression, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::iter;
 use std::sync::Arc;
@@ -106,17 +106,16 @@ impl Game<Id> {
         expr: &Arc<Expression<Id>>,
         edge: &Edge<Id>,
     ) -> Arc<Expression<Id>> {
-        match expr.as_ref() {
-            Expression::Reference { identifier } if self.is_symbol(identifier, edge) => {
-                let type_ = self.resolve_variable(variable).unwrap().type_.clone();
-                if let Type::TypeReference { .. } = type_.as_ref() {
-                    Arc::new(Expression::new_cast(type_, expr.clone()))
-                } else {
-                    expr.clone()
-                }
+        if let Expression::Reference { identifier } = expr.as_ref() {
+            if self.is_symbol(identifier, edge) {
+                return self
+                    .infer_or_none(variable, Some(edge))
+                    .filter(|t| t.is_reference())
+                    .map(|t| Arc::new(Expression::new_cast(t.clone(), expr.clone())))
+                    .unwrap_or_else(|| expr.clone());
             }
-            _ => expr.clone(),
         }
+        expr.clone()
     }
 }
 

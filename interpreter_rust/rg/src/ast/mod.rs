@@ -729,7 +729,7 @@ impl<Id: Clone + PartialEq> Expression<Id> {
                 lhs: Arc::new(lhs.remove_casts(identifier)),
                 rhs: Arc::new(rhs.remove_casts(identifier)),
             },
-            Self::Cast { lhs, rhs, .. } if lhs.is_reference(identifier) => {
+            Self::Cast { lhs, rhs, .. } if lhs.is_identifier(identifier) => {
                 rhs.remove_casts(identifier)
             }
             Self::Cast { lhs, rhs, .. } => Self::Cast {
@@ -1105,14 +1105,9 @@ impl<Id: Clone + PartialEq> Game<Id> {
     }
 
     pub fn is_symbol(&self, id: &Id, edge: &Edge<Id>) -> bool {
-        if edge.has_binding(id)
+        !(edge.has_binding(id)
             || self.resolve_constant(id).is_some()
-            || self.resolve_variable(id).is_some()
-        {
-            false
-        } else {
-            true
-        }
+            || self.resolve_variable(id).is_some())
     }
 
     pub fn resolve_constant(&self, identifier: &Id) -> Option<&Constant<Id>> {
@@ -1675,6 +1670,10 @@ impl<Id> Type<Id> {
         matches!(self, Self::Arrow { .. })
     }
 
+    pub fn is_reference(&self) -> bool {
+        matches!(self, Self::TypeReference { .. })
+    }
+
     pub fn is_set(&self) -> bool {
         matches!(self, Self::Set { .. })
     }
@@ -1719,7 +1718,7 @@ impl<Id: PartialEq> Type<Id> {
         matches!(self, Self::Set { identifiers, .. } if identifiers.contains(identifier))
     }
 
-    pub fn is_reference(&self, identifier: &Id) -> bool {
+    pub fn is_identifier(&self, identifier: &Id) -> bool {
         matches!(self, Self::TypeReference { identifier: x } if x == identifier)
     }
 }
