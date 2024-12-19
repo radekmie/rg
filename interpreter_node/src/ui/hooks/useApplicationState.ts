@@ -14,7 +14,7 @@ export type State = {
   view: number;
 };
 
-const initialPreset = presets[presets.length - 1];
+const initialPreset = presets[presets.length - 4];
 const initialState: State = {
   preset: initialPreset.name,
   settings: {
