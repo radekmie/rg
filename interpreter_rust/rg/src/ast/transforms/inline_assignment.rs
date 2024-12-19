@@ -89,11 +89,33 @@ impl Game<Id> {
 
                 modified_edges.insert(edge.clone());
                 modified_edges.extend(usages.iter().cloned());
-                to_inline.insert(((*identifier).clone(), (*rhs).clone(), usages));
+                to_inline.insert((
+                    (*identifier).clone(),
+                    self.new_rhs(identifier, rhs, edge),
+                    usages,
+                ));
                 to_skip.insert((*edge).clone());
             }
         }
         (to_inline, to_skip)
+    }
+
+    fn new_rhs(
+        &self,
+        variable: &Id,
+        expr: &Arc<Expression<Id>>,
+        edge: &Edge<Id>,
+    ) -> Arc<Expression<Id>> {
+        if let Expression::Reference { identifier } = expr.as_ref() {
+            if self.is_symbol(identifier, edge) {
+                return self
+                    .infer_or_none(variable, Some(edge))
+                    .filter(|t| t.is_reference())
+                    .map(|t| Arc::new(Expression::new_cast(t.clone(), expr.clone())))
+                    .unwrap_or_else(|| expr.clone());
+            }
+        }
+        expr.clone()
     }
 }
 
@@ -188,36 +210,52 @@ mod test {
     test_transform!(
         inline_assignment,
         small,
-        "begin, t2: x = y;
+        "type A = { y };
+        var x: A = y;
+        var d: A = y;
+        begin, t2: x = y;
         t2, t3: z = d;
         t3, t5: d = x;
         t5, t6: a2 = z;
         t6, end: a2 == x;",
-        "begin, t2: ;
+        "type A = { y };
+        var x: A = y;
+        var d: A = y;
+        begin, t2: ;
         t2, t3: z = d;
-        t3, t5: d = y;
+        t3, t5: d = A(y);
         t5, t6: a2 = z;
-        t6, end: a2 == y;"
+        t6, end: a2 == A(y);"
     );
 
     test_transform!(
         inline_assignment,
         only_skip,
-        "begin, t1: x = y[z];
+        "type A = { z };
+        var x: A = z;
+        var y: A = z;
+        begin, t1: x = y[z];
         t1, t2: y = z;
         t2, end: y == z;",
-        "begin, t1: ;
+        "type A = { z };
+        var x: A = z;
+        var y: A = z;
+        begin, t1: ;
         t1, t2: ;
-        t2, end: z == z;"
+        t2, end: A(z) == z;"
     );
 
     test_transform!(
         inline_assignment,
         in_lhs,
-        "begin, t1: x = y[z];
+        "type A = { y };
+        var x: A = y;
+        begin, t1: x = y[z];
         t1, t2: a[x] = x;
         t2, end: x = z;",
-        "begin, t1: ;
+        "type A = { y };
+        var x: A = y;
+        begin, t1: ;
         t1, t2: a[y[z]] = y[z];
         t2, end: ;"
     );
@@ -277,9 +315,13 @@ mod test {
     test_transform!(
         inline_assignment,
         skip_map_assignment,
-        "begin, t1: x[y] = z;
+        "type A = { 1 };
+        var x: A -> A = { :1 };
+        begin, t1: x[y] = z;
         t1, end: ;",
-        "begin, t1: ;
+        "type A = { 1 };
+        var x: A -> A = { :1 };
+        begin, t1: ;
         t1, end: ;"
     );
 
@@ -293,10 +335,14 @@ mod test {
     test_transform!(
         inline_assignment,
         skip_goals_assignment,
-        "begin, t1: ? a -> b;
+        "type A = { 1 };
+        var goals: A = 1;
+        begin, t1: ? a -> b;
         a, b: goals[x] = y;
         t1, end: ;",
-        "begin, t1: ? a -> b;
+        "type A = { 1 };
+        var goals: A = 1;
+        begin, t1: ? a -> b;
         a, b: ;
         t1, end: ;"
     );

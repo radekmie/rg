@@ -62,13 +62,13 @@ impl<Id: Clone + PartialEq> Expression<Id> {
                 Arc::make_mut(rhs).add_explicit_casts_type(game, edge, key_type)?;
             }
             Self::Cast { lhs, rhs, .. } => {
-                let cast_to = Some(&*lhs).filter(|type_| type_.is_reference(cast_as));
+                let cast_to = Some(&*lhs).filter(|type_| type_.is_identifier(cast_as));
                 Arc::make_mut(rhs).add_explicit_casts_typedef(game, edge, cast_as, cast_to)?;
             }
             Self::Reference { .. } => {}
         }
 
-        if cast_to.is_none() && !self.is_cast_and(|lhs, _| lhs.is_reference(cast_as)) {
+        if cast_to.is_none() && !self.is_cast_and(|lhs, _| lhs.is_identifier(cast_as)) {
             let identifier = cast_as.clone();
             *self = Self::Cast {
                 span: Span::none(),
