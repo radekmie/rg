@@ -111,8 +111,10 @@ impl Game<Id> {
                 return self
                     .infer_or_none(variable, Some(edge))
                     .filter(|t| t.is_reference())
-                    .map(|t| Arc::new(Expression::new_cast(t.clone(), expr.clone())))
-                    .unwrap_or_else(|| expr.clone());
+                    .map_or_else(
+                        || expr.clone(),
+                        |t| Arc::new(Expression::new_cast(t.clone(), expr.clone())),
+                    );
             }
         }
         expr.clone()
