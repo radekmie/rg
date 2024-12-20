@@ -18,7 +18,7 @@ pub enum AtomOrVariable<Id> {
 
 impl<Id> AtomOrVariable<Id> {
     pub fn as_term(self) -> Term<Id> {
-        Term::Custom(self, vec![])
+        Term::Custom0(self)
     }
 
     pub fn is_variable(&self) -> bool {
@@ -75,8 +75,11 @@ pub enum Term<Id> {
     /// `base(p)` means that `p` is a base proposition in the game.
     Base(Arc<Term<Id>>),
 
+    /// `name` is a custom, game-specific term.
+    Custom0(AtomOrVariable<Id>),
+
     /// `name(...arguments)` is a custom, game-specific term.
-    Custom(AtomOrVariable<Id>, Vec<Arc<Term<Id>>>),
+    CustomN(AtomOrVariable<Id>, Vec<Arc<Term<Id>>>),
 
     /// `does(r, a)` means that player `r` performs action `a` in the current state.
     Does(AtomOrVariable<Id>, Arc<Term<Id>>),
@@ -107,11 +110,22 @@ pub enum Term<Id> {
 }
 
 impl<Id> Term<Id> {
+    pub fn as_custom_atom(&self) -> Option<&Id> {
+        match self {
+            Self::Custom0(AtomOrVariable::Atom(atom))
+            | Self::CustomN(AtomOrVariable::Atom(atom), _) => Some(atom),
+            _ => None,
+        }
+    }
+
     pub fn has_variable(&self) -> bool {
-        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
+        use Term::{
+            Base, Custom0, CustomN, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True,
+        };
         match self {
             Base(proposition) => proposition.has_variable(),
-            Custom(name, arguments) => {
+            Custom0(name) => name.is_variable(),
+            CustomN(name, arguments) => {
                 name.is_variable() || arguments.iter().any(|argument| argument.has_variable())
             }
             Does(role, action) => role.is_variable() || action.has_variable(),
@@ -130,19 +144,27 @@ impl<Id> Term<Id> {
         matches!(self, Self::Init(_))
     }
 
+    pub fn new_custom(name: AtomOrVariable<Id>, arguments: Vec<Arc<Self>>) -> Self {
+        match arguments.is_empty() {
+            true => Self::Custom0(name),
+            false => Self::CustomN(name, arguments),
+        }
+    }
+
     pub fn order(&self) -> usize {
         match self {
             Self::Base(_) => 0,
-            Self::Custom(_, _) => 1,
-            Self::Does(_, _) => 2,
-            Self::Goal(_, _) => 3,
-            Self::Init(_) => 4,
-            Self::Input(_, _) => 5,
-            Self::Legal(_, _) => 6,
-            Self::Next(_) => 7,
-            Self::Role(_) => 8,
-            Self::Terminal => 9,
-            Self::True(_) => 10,
+            Self::Custom0(_) => 1,
+            Self::CustomN(_, _) => 2,
+            Self::Does(_, _) => 3,
+            Self::Goal(_, _) => 4,
+            Self::Init(_) => 5,
+            Self::Input(_, _) => 6,
+            Self::Legal(_, _) => 7,
+            Self::Next(_) => 8,
+            Self::Role(_) => 9,
+            Self::Terminal => 10,
+            Self::True(_) => 11,
         }
     }
 }
@@ -175,7 +197,11 @@ impl<'a, Id: PartialEq> TermIterator<'a, Id> {
     }
 
     fn add_term(&mut self, term: &'a Term<Id>) {
-        if matches!(term, Term::Custom(AtomOrVariable::Variable(_), _)) {
+        if matches!(
+            term,
+            Term::Custom0(AtomOrVariable::Variable(_))
+                | Term::CustomN(AtomOrVariable::Variable(_), _)
+        ) {
             return;
         }
 
@@ -196,14 +222,17 @@ impl<'a, Id: PartialEq> Iterator for TermIterator<'a, Id> {
     type Item = &'a Term<Id>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
+        use Term::{
+            Base, Custom0, CustomN, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True,
+        };
 
         let maybe_term = self.queue.get(self.index).copied();
         if let Some(term) = maybe_term {
             self.index += 1;
             match term {
                 Base(proposition) => self.add_term(proposition),
-                Custom(_, arguments) => arguments
+                Custom0(_) => {}
+                CustomN(_, arguments) => arguments
                     .iter()
                     .for_each(|argument| self.add_term(argument)),
                 Does(_, action) => self.add_term(action),

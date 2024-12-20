@@ -70,10 +70,8 @@ impl<Id: Display> Display for TermPrefix<'_, Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match &**self.0 {
             Term::Base(proposition) => write!(f, "(base {})", TermPrefix(proposition)),
-            Term::Custom(name, arguments) if arguments.is_empty() => {
-                write!(f, "{}", AtomOrVariablePrefix(name))
-            }
-            Term::Custom(name, arguments) => {
+            Term::Custom0(name) => write!(f, "{}", AtomOrVariablePrefix(name)),
+            Term::CustomN(name, arguments) => {
                 write!(f, "({}", AtomOrVariablePrefix(name))?;
                 arguments
                     .iter()

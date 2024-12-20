@@ -1,5 +1,5 @@
 use super::unify::Unification;
-use crate::ast::{AtomOrVariable, Game, Rule, Term};
+use crate::ast::{Game, Rule, Term};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -112,33 +112,28 @@ fn any_unification<'a, Id: Clone + Ord>(
 fn get_static_terms<Id: Clone + Ord>(rules: &[Rule<Id>]) -> BTreeMap<Id, BTreeSet<Arc<Term<Id>>>> {
     rules
         .iter()
-        .filter_map(|rule| {
-            if rule.predicates.is_empty() {
-                if let Term::Custom(AtomOrVariable::Atom(x), _) = rule.term.as_ref() {
-                    return Some(x);
-                }
-            }
-
-            None
+        .filter_map(|rule| match rule.predicates.is_empty() {
+            true => rule.term.as_custom_atom(),
+            false => None,
         })
         .collect::<BTreeSet<_>>()
         .into_iter()
         .filter(|x| {
-            rules.iter().all(|rule| {
-                match rule.term.as_ref() {
-                    Term::Custom(AtomOrVariable::Atom(y), _) if *x == y => rule.predicates.is_empty(),
-                    _ => true,
-                }
+            rules.iter().all(|rule| match rule.term.as_custom_atom() {
+                Some(y) if *x == y => rule.predicates.is_empty(),
+                _ => true,
             })
         })
-        .map(|x| (
-            x.clone(),
-            rules
-                .iter()
-                .filter(move |rule| matches!(rule.term.as_ref(), Term::Custom(AtomOrVariable::Atom(y), _) if x == y))
-                .map(|rule| rule.term.clone())
-                .collect()
-        ))
+        .map(|x| {
+            (
+                x.clone(),
+                rules
+                    .iter()
+                    .filter(move |rule| matches!(rule.term.as_custom_atom(), Some(y) if x == y))
+                    .map(|rule| rule.term.clone())
+                    .collect(),
+            )
+        })
         .collect()
 }
 
@@ -161,7 +156,7 @@ fn prune_static_terms<Id: Ord>(
         }
 
         if !predicate.has_variable() {
-            if let Term::Custom(AtomOrVariable::Atom(id), _) = predicate.term.as_ref() {
+            if let Some(id) = predicate.term.as_custom_atom() {
                 if let Some(terms) = static_terms.get(id) {
                     if predicate.is_negated || !terms.contains(&predicate.term) {
                         has_failed_static_term = true;
@@ -412,6 +407,15 @@ mod test {
         base(cell(3, 3, x))
         base(control(oplayer)) :- role(oplayer)
         base(control(xplayer)) :- role(xplayer)
+        open :- true(cell(1, 1, b))
+        open :- true(cell(1, 2, b))
+        open :- true(cell(1, 3, b))
+        open :- true(cell(2, 1, b))
+        open :- true(cell(2, 2, b))
+        open :- true(cell(2, 3, b))
+        open :- true(cell(3, 1, b))
+        open :- true(cell(3, 2, b))
+        open :- true(cell(3, 3, b))
         column(1, b) :- true(cell(1, 1, b)) & true(cell(2, 1, b)) & true(cell(3, 1, b))
         column(1, o) :- true(cell(1, 1, o)) & true(cell(2, 1, o)) & true(cell(3, 1, o))
         column(1, x) :- true(cell(1, 1, x)) & true(cell(2, 1, x)) & true(cell(3, 1, x))
@@ -451,15 +455,6 @@ mod test {
         line(x) :- row(1, x)
         line(x) :- row(2, x)
         line(x) :- row(3, x)
-        open :- true(cell(1, 1, b))
-        open :- true(cell(1, 2, b))
-        open :- true(cell(1, 3, b))
-        open :- true(cell(2, 1, b))
-        open :- true(cell(2, 2, b))
-        open :- true(cell(2, 3, b))
-        open :- true(cell(3, 1, b))
-        open :- true(cell(3, 2, b))
-        open :- true(cell(3, 3, b))
         row(1, b) :- true(cell(1, 1, b)) & true(cell(1, 2, b)) & true(cell(1, 3, b))
         row(1, o) :- true(cell(1, 1, o)) & true(cell(1, 2, o)) & true(cell(1, 3, o))
         row(1, x) :- true(cell(1, 1, x)) & true(cell(1, 2, x)) & true(cell(1, 3, x))
@@ -471,10 +466,10 @@ mod test {
         row(3, x) :- true(cell(3, 1, x)) & true(cell(3, 2, x)) & true(cell(3, 3, x))
         goal(oplayer, 0) :- line(x)
         goal(oplayer, 100) :- line(o)
-        goal(oplayer, 50) :- ~line(x) & not(line(o)) & ~open
+        goal(oplayer, 50) :- ~open & ~line(x) & not(line(o))
         goal(xplayer, 0) :- line(o)
         goal(xplayer, 100) :- line(x)
-        goal(xplayer, 50) :- ~line(x) & not(line(o)) & ~open
+        goal(xplayer, 50) :- ~open & ~line(x) & not(line(o))
         init(cell(1, 1, b))
         init(cell(1, 2, b))
         init(cell(1, 3, b))
@@ -485,6 +480,7 @@ mod test {
         init(cell(3, 2, b))
         init(cell(3, 3, b))
         init(control(xplayer))
+        input(oplayer, noop) :- role(oplayer)
         input(oplayer, mark(1, 1)) :- role(oplayer)
         input(oplayer, mark(1, 2)) :- role(oplayer)
         input(oplayer, mark(1, 3)) :- role(oplayer)
@@ -494,7 +490,7 @@ mod test {
         input(oplayer, mark(3, 1)) :- role(oplayer)
         input(oplayer, mark(3, 2)) :- role(oplayer)
         input(oplayer, mark(3, 3)) :- role(oplayer)
-        input(oplayer, noop) :- role(oplayer)
+        input(xplayer, noop) :- role(xplayer)
         input(xplayer, mark(1, 1)) :- role(xplayer)
         input(xplayer, mark(1, 2)) :- role(xplayer)
         input(xplayer, mark(1, 3)) :- role(xplayer)
@@ -504,7 +500,7 @@ mod test {
         input(xplayer, mark(3, 1)) :- role(xplayer)
         input(xplayer, mark(3, 2)) :- role(xplayer)
         input(xplayer, mark(3, 3)) :- role(xplayer)
-        input(xplayer, noop) :- role(xplayer)
+        legal(oplayer, noop) :- true(control(xplayer))
         legal(oplayer, mark(1, 1)) :- true(cell(1, 1, b)) & true(control(oplayer))
         legal(oplayer, mark(1, 2)) :- true(cell(1, 2, b)) & true(control(oplayer))
         legal(oplayer, mark(1, 3)) :- true(cell(1, 3, b)) & true(control(oplayer))
@@ -514,7 +510,7 @@ mod test {
         legal(oplayer, mark(3, 1)) :- true(cell(3, 1, b)) & true(control(oplayer))
         legal(oplayer, mark(3, 2)) :- true(cell(3, 2, b)) & true(control(oplayer))
         legal(oplayer, mark(3, 3)) :- true(cell(3, 3, b)) & true(control(oplayer))
-        legal(oplayer, noop) :- true(control(xplayer))
+        legal(xplayer, noop) :- true(control(oplayer))
         legal(xplayer, mark(1, 1)) :- true(cell(1, 1, b)) & true(control(xplayer))
         legal(xplayer, mark(1, 2)) :- true(cell(1, 2, b)) & true(control(xplayer))
         legal(xplayer, mark(1, 3)) :- true(cell(1, 3, b)) & true(control(xplayer))
@@ -524,7 +520,6 @@ mod test {
         legal(xplayer, mark(3, 1)) :- true(cell(3, 1, b)) & true(control(xplayer))
         legal(xplayer, mark(3, 2)) :- true(cell(3, 2, b)) & true(control(xplayer))
         legal(xplayer, mark(3, 3)) :- true(cell(3, 3, b)) & true(control(xplayer))
-        legal(xplayer, noop) :- true(control(oplayer))
         next(cell(1, 1, b)) :- distinct(b, b) & true(cell(1, 1, b))
         next(cell(1, 1, b)) :- or(distinct(1, 1), distinct(1, 1)) & does(oplayer, mark(1, 1)) & true(cell(1, 1, b))
         next(cell(1, 1, b)) :- or(distinct(1, 1), distinct(1, 1)) & does(xplayer, mark(1, 1)) & true(cell(1, 1, b))
@@ -736,9 +731,9 @@ mod test {
         next(control(xplayer)) :- true(control(oplayer))
         role(oplayer)
         role(xplayer)
+        terminal :- ~open
         terminal :- line(o)
         terminal :- line(x)
-        terminal :- ~open
         "
     );
 }

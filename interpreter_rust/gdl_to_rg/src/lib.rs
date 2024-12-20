@@ -78,10 +78,8 @@ fn add_does_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     let mut role_actions: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
     for term in gdl.subterms() {
         if let Term::Legal(AtomOrVariable::Atom(role), action) = term {
-            if let Term::Custom(AtomOrVariable::Atom(id), arguments) = action.as_ref() {
-                if arguments.is_empty() {
-                    role_actions.entry(role).or_default().insert(id.clone());
-                }
+            if let Term::Custom0(AtomOrVariable::Atom(id)) = action.as_ref() {
+                role_actions.entry(role).or_default().insert(id.clone());
             }
         }
     }
@@ -113,10 +111,8 @@ fn add_fact_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     let mut inits = BTreeSet::new();
     for term in gdl.subterms() {
         if let Term::Init(term) = term {
-            if let Term::Custom(AtomOrVariable::Atom(id), arguments) = term.as_ref() {
-                if arguments.is_empty() {
-                    inits.insert(id);
-                }
+            if let Term::Custom0(AtomOrVariable::Atom(id)) = term.as_ref() {
+                inits.insert(id);
             }
         }
     }
@@ -124,8 +120,8 @@ fn add_fact_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     let mut variables = BTreeSet::new();
     for term in gdl.subterms() {
         if let Term::Base(term) | Term::Next(term) | Term::True(term) = term {
-            if let Term::Custom(AtomOrVariable::Atom(id), arguments) = term.as_ref() {
-                if arguments.is_empty() && variables.insert(id) {
+            if let Term::Custom0(AtomOrVariable::Atom(id)) = term.as_ref() {
+                if variables.insert(id) {
                     let default_value = if inits.contains(id) { "1" } else { "0" };
                     rg.variables.push(Variable {
                         span: Span::none(),
@@ -161,10 +157,8 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     let mut legals: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
     for term in gdl.subterms() {
         if let Term::Legal(AtomOrVariable::Atom(role), term) = term {
-            if let Term::Custom(AtomOrVariable::Atom(action), arguments) = term.as_ref() {
-                if arguments.is_empty() {
-                    legals.entry(role).or_default().insert(action);
-                }
+            if let Term::Custom0(AtomOrVariable::Atom(action)) = term.as_ref() {
+                legals.entry(role).or_default().insert(action);
             }
         }
     }
@@ -225,10 +219,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                 gdl,
                 &Term::Legal(
                     AtomOrVariable::Atom((*role).clone()),
-                    Arc::new(Term::Custom(
-                        AtomOrVariable::Atom((*action).clone()),
-                        vec![],
-                    )),
+                    Arc::new(Term::Custom0(AtomOrVariable::Atom((*action).clone()))),
                 ),
                 Id::from(format!("loop_{role}_begin")),
                 Id::from(format!("loop_{role}_{action}_move")),
@@ -291,18 +282,15 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     let mut variables = BTreeSet::new();
     for term in gdl.subterms() {
         if let Term::Init(term) | Term::Next(term) = term {
-            if let Term::Custom(AtomOrVariable::Atom(id), arguments) = term.as_ref() {
-                if !variables.insert(id) || !arguments.is_empty() || term.is_init() {
+            if let Term::Custom0(AtomOrVariable::Atom(id)) = term.as_ref() {
+                if !variables.insert(id) || term.is_init() {
                     continue;
                 }
 
                 connect(
                     rg,
                     gdl,
-                    &Term::Next(Arc::new(Term::Custom(
-                        AtomOrVariable::Atom(id.clone()),
-                        vec![],
-                    ))),
+                    &Term::Next(Arc::new(Term::Custom0(AtomOrVariable::Atom(id.clone())))),
                     Id::from(format!("next_{}", variables.len() - 1)),
                     Id::from(format!("next_{}_0", variables.len())),
                     true,
@@ -311,10 +299,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                 connect(
                     rg,
                     gdl,
-                    &Term::Next(Arc::new(Term::Custom(
-                        AtomOrVariable::Atom(id.clone()),
-                        vec![],
-                    ))),
+                    &Term::Next(Arc::new(Term::Custom0(AtomOrVariable::Atom(id.clone())))),
                     Id::from(format!("next_{}", variables.len() - 1)),
                     Id::from(format!("next_{}_1", variables.len())),
                     false,
@@ -485,7 +470,7 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 fn hash_term(term: &gdl::ast::Term<Id>) -> String {
     use gdl::ast::{AtomOrVariable, Term};
     match term {
-        Term::Custom(AtomOrVariable::Atom(id), arguments) if arguments.is_empty() => id.to_string(),
+        Term::Custom0(AtomOrVariable::Atom(id)) => id.to_string(),
         Term::Goal(AtomOrVariable::Atom(role), AtomOrVariable::Atom(goal)) => {
             format!("goal_{role}_{goal}")
         }
@@ -588,7 +573,7 @@ fn connect_one(
     use utils::position::Span;
 
     match predicate.term.as_ref() {
-        Term::Custom(_, _) => {
+        Term::Custom0(_) | Term::CustomN(_, _) => {
             let lhs = Id::from(format!("{prefix}_begin"));
             let rhs = Id::from(format!("{prefix}_end"));
             connect(rg, gdl, &predicate.term, lhs.clone(), rhs.clone(), false);
@@ -600,23 +585,19 @@ fn connect_one(
             }
         }
         Term::Does(AtomOrVariable::Atom(role), action) => match action.as_ref() {
-            Term::Custom(AtomOrVariable::Atom(id), arguments) if arguments.is_empty() => {
-                Label::Comparison {
-                    lhs: Arc::from(Expression::new(Id::from(format!("does_{role}")))),
-                    rhs: Arc::from(Expression::new(id.clone())),
-                    negated: predicate.is_negated,
-                }
-            }
+            Term::Custom0(AtomOrVariable::Atom(id)) => Label::Comparison {
+                lhs: Arc::from(Expression::new(Id::from(format!("does_{role}")))),
+                rhs: Arc::from(Expression::new(id.clone())),
+                negated: predicate.is_negated,
+            },
             _ => unreachable!(),
         },
         Term::True(proposition) => match proposition.as_ref() {
-            Term::Custom(AtomOrVariable::Atom(id), arguments) if arguments.is_empty() => {
-                Label::Comparison {
-                    lhs: Arc::from(Expression::new(Id::from(format!("{id}_prev")))),
-                    rhs: Arc::from(Expression::new(Id::from("1"))),
-                    negated: predicate.is_negated,
-                }
-            }
+            Term::Custom0(AtomOrVariable::Atom(id)) => Label::Comparison {
+                lhs: Arc::from(Expression::new(Id::from(format!("{id}_prev")))),
+                rhs: Arc::from(Expression::new(Id::from("1"))),
+                negated: predicate.is_negated,
+            },
             _ => unreachable!(),
         },
         _ => unreachable!(),

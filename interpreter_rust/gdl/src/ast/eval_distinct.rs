@@ -43,7 +43,7 @@ impl<Id: Clone + PartialEq> Rule<Id> {
 impl<Id: Clone + PartialEq> Term<Id> {
     pub fn eval_distinct(&self, distinct: &Id) -> Option<bool> {
         match self {
-            Self::Custom(AtomOrVariable::Atom(id), arguments) if id == distinct => {
+            Self::CustomN(AtomOrVariable::Atom(id), arguments) if id == distinct => {
                 assert!(arguments.len() == 2);
                 Some(arguments[0] != arguments[1])
             }

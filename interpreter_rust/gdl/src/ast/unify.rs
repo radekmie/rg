@@ -15,19 +15,34 @@ impl<Id: Clone + Ord> AtomOrVariable<Id> {
 
 impl<Id: Clone + Ord> Term<Id> {
     pub fn unify<'a>(&'a self, other: &'a Self) -> Unification<'a, Id> {
-        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
+        use Term::{
+            Base, Custom0, CustomN, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True,
+        };
         match (self, other) {
             (Base(x), Base(y)) => x.unify(y),
-            (Custom(xn, xa), Custom(yn, ya)) if xa.is_empty() && ya.is_empty() => xn.unify(yn),
-            (Custom(xn, xa), Custom(yn, ya)) if xn == yn => {
-                assert!(xa.len() == ya.len());
-                zip(xa, ya).map(|(x, y)| x.unify(y)).collect()
-            }
-            (Does(xr, xa), Does(yr, ya)) => xr.unify(yr).merge(xa.unify(ya)),
-            (Goal(xr, xu), Goal(yr, yu)) => xr.unify(yr).merge(xu.unify(yu)),
+            (Custom0(xn), Custom0(yn)) => xn.unify(yn),
+            (CustomN(xn, xa), CustomN(yn, ya)) if xn == yn => match (&xa[..], &ya[..]) {
+                // Manually unrolled first few steps.
+                ([a], [b]) => a.unify(b),
+                ([a, b], [c, d]) => a.unify(c).merge(|| b.unify(d)),
+                ([a, b, c], [d, e, f]) => a.unify(d).merge(|| b.unify(e).merge(|| c.unify(f))),
+                (xa, ya) => {
+                    assert!(xa.len() == ya.len());
+                    let mut u = Unification::Empty;
+                    for (x, y) in zip(xa, ya) {
+                        u = u.merge(|| x.unify(y));
+                        if u == Unification::Failed {
+                            break;
+                        }
+                    }
+                    u
+                }
+            },
+            (Does(xr, xa), Does(yr, ya)) => xr.unify(yr).merge(|| xa.unify(ya)),
+            (Goal(xr, xu), Goal(yr, yu)) => xr.unify(yr).merge(|| xu.unify(yu)),
             (Init(x), Init(y)) => x.unify(y),
-            (Input(xr, xa), Input(yr, ya)) => xr.unify(yr).merge(xa.unify(ya)),
-            (Legal(xr, xa), Legal(yr, ya)) => xr.unify(yr).merge(xa.unify(ya)),
+            (Input(xr, xa), Input(yr, ya)) => xr.unify(yr).merge(|| xa.unify(ya)),
+            (Legal(xr, xa), Legal(yr, ya)) => xr.unify(yr).merge(|| xa.unify(ya)),
             (Next(x), Next(y)) => x.unify(y),
             (Role(x), Role(y)) => x.unify(y),
             (Terminal, Terminal) => Unification::Empty,
@@ -71,38 +86,27 @@ impl<Id: Ord> Unification<'_, Id> {
         }
     }
 
-    pub fn merge(self, other: Self) -> Self {
+    pub fn merge(self, other: impl FnOnce() -> Self) -> Self {
         use Unification::{Empty, Failed, NotEmpty};
-        match (self, other) {
-            (x, Empty) => x,
-            (Empty, y) => y,
-            (NotEmpty(mut xs), NotEmpty(ys)) => {
-                for y in ys {
-                    match xs.binary_search_by(|x| x.0.cmp(y.0)) {
-                        Ok(index) if xs[index].1 != y.1 => return Failed,
-                        Ok(_) => {}
-                        Err(index) => xs.insert(index, y),
+        match self {
+            Empty => other(),
+            Failed => Failed,
+            NotEmpty(mut xs) => match other() {
+                Empty => NotEmpty(xs),
+                Failed => Failed,
+                NotEmpty(ys) => {
+                    for y in ys {
+                        match xs.binary_search_by(|x| x.0.cmp(y.0)) {
+                            Ok(index) if xs[index].1 != y.1 => return Failed,
+                            Ok(_) => {}
+                            Err(index) => xs.insert(index, y),
+                        }
                     }
+
+                    NotEmpty(xs)
                 }
-
-                NotEmpty(xs)
-            }
-            _ => Failed,
+            },
         }
-    }
-}
-
-impl<Id: Ord> FromIterator<Self> for Unification<'_, Id> {
-    fn from_iter<I: IntoIterator<Item = Self>>(iter: I) -> Self {
-        let mut u = Self::Empty;
-        for x in iter {
-            u = u.merge(x);
-            if u == Self::Failed {
-                break;
-            }
-        }
-
-        u
     }
 }
 

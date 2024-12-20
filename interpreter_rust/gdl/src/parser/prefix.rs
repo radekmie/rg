@@ -51,7 +51,7 @@ pub fn term(input: &str) -> Result<Term<&str>> {
                 pair(atom_or_variable, success(None)),
                 in_parens(pair(atom_or_variable, opt(many1(term_rc)))),
             )),
-            |(name, arguments)| Term::Custom(name, arguments.unwrap_or_default()),
+            |(name, arguments)| Term::new_custom(name, arguments.unwrap_or_default()),
         ),
     ))(input)
 }

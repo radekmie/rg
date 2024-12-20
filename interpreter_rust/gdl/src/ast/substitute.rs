@@ -38,10 +38,13 @@ impl<Id: Clone + Ord> Rule<Id> {
 
 impl<Id: Clone + Ord> Term<Id> {
     pub fn substitute(&self, u: &Unification<Id>) -> Self {
-        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
+        use Term::{
+            Base, Custom0, CustomN, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True,
+        };
         match self {
             Base(proposition) => Base(Arc::new(proposition.substitute(u))),
-            Custom(name, arguments) => Custom(
+            Custom0(name) => Custom0(name.substitute(u)),
+            CustomN(name, arguments) => CustomN(
                 name.substitute(u),
                 arguments
                     .iter()

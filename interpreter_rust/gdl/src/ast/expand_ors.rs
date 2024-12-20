@@ -54,18 +54,21 @@ impl<Id: Clone + PartialEq> Rule<Id> {
 
 impl<Id: Clone + PartialEq> Term<Id> {
     pub fn expand_ors(&self, or: &Id) -> Vec<Self> {
-        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
+        use Term::{
+            Base, Custom0, CustomN, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True,
+        };
         match self {
             Base(proposition) => proposition
                 .expand_ors(or)
                 .into_iter()
                 .map(|proposition| Base(Arc::new(proposition)))
                 .collect(),
-            Custom(AtomOrVariable::Atom(id), arguments) if id == or => arguments
+            Custom0(role) => vec![Custom0(role.clone())],
+            CustomN(AtomOrVariable::Atom(id), arguments) if id == or => arguments
                 .iter()
                 .flat_map(|argument| argument.expand_ors(or))
                 .collect(),
-            Custom(name, arguments) => arguments
+            CustomN(name, arguments) => arguments
                 .iter()
                 .map(|argument| argument.expand_ors(or))
                 .fold(vec![vec![]], |xs, ys| {
@@ -80,7 +83,7 @@ impl<Id: Clone + PartialEq> Term<Id> {
                     zs
                 })
                 .into_iter()
-                .map(move |terms| Custom(name.clone(), terms))
+                .map(move |terms| CustomN(name.clone(), terms))
                 .collect(),
             Does(role, action) => action
                 .expand_ors(or)

@@ -31,11 +31,14 @@ impl Rule<Arc<str>> {
 
 impl Term<Arc<str>> {
     pub fn symbolify(&self) -> Self {
-        use Term::{Base, Custom, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True};
+        use Term::{
+            Base, Custom0, CustomN, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True,
+        };
         self.maybe_symbolify().map_or_else(
             || match self {
                 Base(proposition) => Base(Arc::new(proposition.symbolify())),
-                Custom(name, arguments) => Custom(
+                Custom0(name) => Custom0(name.clone()),
+                CustomN(name, arguments) => CustomN(
                     name.clone(),
                     arguments
                         .iter()
@@ -52,7 +55,7 @@ impl Term<Arc<str>> {
                 Terminal => Terminal,
                 True(proposition) => True(Arc::new(proposition.symbolify())),
             },
-            |id| Custom(AtomOrVariable::Atom(Arc::from(id)), vec![]),
+            |id| Custom0(AtomOrVariable::Atom(Arc::from(id))),
         )
     }
 
@@ -61,7 +64,8 @@ impl Term<Arc<str>> {
     fn maybe_symbolify(&self) -> Option<String> {
         match self {
             // Self::Custom(AtomOrVariable::Atom(id), _) if id.as_ref() == "distinct" => None,
-            Self::Custom(AtomOrVariable::Atom(id), arguments) => {
+            Self::Custom0(AtomOrVariable::Atom(id)) => Some(id.to_string()),
+            Self::CustomN(AtomOrVariable::Atom(id), arguments) => {
                 let mut symbolified_id = id.to_string();
                 for argument in arguments {
                     symbolified_id.push('_');

@@ -75,7 +75,7 @@ pub fn term(input: &str) -> Result<Term<&str>> {
                 atom_or_variable,
                 opt(in_parens(separated_list1(tag(","), term_rc))),
             ),
-            |(name, arguments)| Term::Custom(name, arguments.unwrap_or_default()),
+            |(name, arguments)| Term::new_custom(name, arguments.unwrap_or_default()),
         ),
     ))(input)
 }

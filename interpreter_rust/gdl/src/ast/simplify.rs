@@ -12,11 +12,13 @@ impl<Id: Clone + Ord> Game<Id> {
                 let (xs, ys) = rules.split_at_mut(i);
                 let (rule, ys) = ys.split_first_mut().unwrap();
                 rule.predicates.retain(|predicate| {
-                    let is_constant = matches!(*predicate.term, Term::Custom(_, _) | Term::Role(_))
-                        && xs
-                            .iter()
-                            .chain(ys.iter())
-                            .any(|rule| rule.predicates.is_empty() && rule.term == predicate.term);
+                    let is_constant = matches!(
+                        *predicate.term,
+                        Term::Custom0(_) | Term::CustomN(_, _) | Term::Role(_)
+                    ) && xs
+                        .iter()
+                        .chain(ys.iter())
+                        .any(|rule| rule.predicates.is_empty() && rule.term == predicate.term);
                     any_simplification_happened = any_simplification_happened || is_constant;
                     !is_constant
                 });
