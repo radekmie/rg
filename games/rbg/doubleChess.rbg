@@ -193,7 +193,7 @@
   rx15y11[whiteRookUnmoved]{left:rx14y11,up:rx15y10}
 #players = white(100), black(100)
 #pieces = blackBishop, blackKingMoved, blackKingUnmoved, blackKnight, blackPawn, blackQueen, blackRookMoved, blackRookUnmoved, empty, whiteBishop, whiteKingMoved, whiteKingUnmoved, whiteKnight, whitePawn, whiteQueen, whiteRookMoved, whiteRookUnmoved
-#variables = pawnDoubleMove(1), stagnation(100)
+#variables = pawnDoubleMove(1), stagnation(200)
 #rules = (
   [$ stagnation = (stagnation + 1)]
   ->white
