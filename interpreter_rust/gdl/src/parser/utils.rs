@@ -30,5 +30,5 @@ pub fn separated<'a, T>(
 }
 
 pub fn symbol(input: &str) -> Result<&str> {
-    take_while1(|c: char| c.is_alphanumeric() || c == '_')(input)
+    take_while1(|c: char| c.is_alphanumeric() || c == '_' || c == '+')(input)
 }

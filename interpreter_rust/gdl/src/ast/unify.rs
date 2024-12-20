@@ -27,15 +27,18 @@ impl<Id: Clone + Ord> Term<Id> {
                 ([a, b], [c, d]) => a.unify(c).merge(|| b.unify(d)),
                 ([a, b, c], [d, e, f]) => a.unify(d).merge(|| b.unify(e).merge(|| c.unify(f))),
                 (xa, ya) => {
-                    assert!(xa.len() == ya.len());
-                    let mut u = Unification::Empty;
-                    for (x, y) in zip(xa, ya) {
-                        u = u.merge(|| x.unify(y));
-                        if u == Unification::Failed {
-                            break;
+                    if xa == ya {
+                        Unification::Failed
+                    } else {
+                        let mut u = Unification::Empty;
+                        for (x, y) in zip(xa, ya) {
+                            u = u.merge(|| x.unify(y));
+                            if u == Unification::Failed {
+                                break;
+                            }
                         }
+                        u
                     }
-                    u
                 }
             },
             (Does(xr, xa), Does(yr, ya)) => xr.unify(yr).merge(|| xa.unify(ya)),
