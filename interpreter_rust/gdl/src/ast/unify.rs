@@ -27,9 +27,7 @@ impl<Id: Clone + Ord> Term<Id> {
                 ([a, b], [c, d]) => a.unify(c).merge(|| b.unify(d)),
                 ([a, b, c], [d, e, f]) => a.unify(d).merge(|| b.unify(e).merge(|| c.unify(f))),
                 (xa, ya) => {
-                    if xa == ya {
-                        Unification::Failed
-                    } else {
+                    if xa.len() == ya.len() {
                         let mut u = Unification::Empty;
                         for (x, y) in zip(xa, ya) {
                             u = u.merge(|| x.unify(y));
@@ -38,6 +36,8 @@ impl<Id: Clone + Ord> Term<Id> {
                             }
                         }
                         u
+                    } else {
+                        Unification::Failed
                     }
                 }
             },
