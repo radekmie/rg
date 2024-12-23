@@ -12,6 +12,7 @@ mod unify;
 
 use map_id::MapId;
 use map_id_macro::MapId;
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
@@ -44,7 +45,7 @@ impl<Id> AtomOrVariable<Id> {
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub struct Game<Id>(pub Vec<Rule<Id>>);
 
-impl<Id: PartialEq> Game<Id> {
+impl<Id: Ord> Game<Id> {
     pub fn subterms(&self) -> TermIterator<Id> {
         let mut iterator = TermIterator::new();
         iterator.add_game(self);
@@ -76,7 +77,7 @@ impl<Id> Rule<Id> {
     }
 }
 
-impl<Id: PartialEq> Rule<Id> {
+impl<Id: Ord> Rule<Id> {
     pub fn subterms(&self) -> TermIterator<Id> {
         let mut iterator = TermIterator::new();
         iterator.add_rule(self);
@@ -196,7 +197,7 @@ impl<Id> Term<Id> {
     }
 }
 
-impl<Id: PartialEq> Term<Id> {
+impl<Id: Ord> Term<Id> {
     pub fn subterms(&self) -> TermIterator<Id> {
         let mut iterator = TermIterator::new();
         iterator.add_term(self);
@@ -207,9 +208,10 @@ impl<Id: PartialEq> Term<Id> {
 pub struct TermIterator<'a, Id> {
     index: usize,
     queue: Vec<&'a Term<Id>>,
+    seen: BTreeSet<&'a Term<Id>>,
 }
 
-impl<'a, Id: PartialEq> TermIterator<'a, Id> {
+impl<'a, Id: Ord> TermIterator<'a, Id> {
     fn add_game(&mut self, game: &'a Game<Id>) {
         for rule in &game.0 {
             self.add_rule(rule);
@@ -232,7 +234,7 @@ impl<'a, Id: PartialEq> TermIterator<'a, Id> {
             return;
         }
 
-        if !self.queue.contains(&term) {
+        if self.seen.insert(term) {
             self.queue.push(term);
         }
     }
@@ -241,11 +243,17 @@ impl<'a, Id: PartialEq> TermIterator<'a, Id> {
         Self {
             index: 0,
             queue: vec![],
+            seen: BTreeSet::new(),
         }
+    }
+
+    pub fn to_vec(mut self) -> Vec<&'a Term<Id>> {
+        while self.next().is_some() {}
+        self.queue
     }
 }
 
-impl<'a, Id: PartialEq> Iterator for TermIterator<'a, Id> {
+impl<'a, Id: Ord> Iterator for TermIterator<'a, Id> {
     type Item = &'a Term<Id>;
 
     fn next(&mut self) -> Option<Self::Item> {
