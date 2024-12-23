@@ -1196,6 +1196,13 @@ impl<Id: Clone + PartialEq> Game<Id> {
 }
 
 impl<Id: Ord> Game<Id> {
+    /// It works only if `self.edges` are sorted by `cmp_outgoing`.
+    pub fn add_edge_sorted(&mut self, edge: Arc<Edge<Id>>) {
+        if let Err(index) = self.edges.binary_search_by(|x| x.cmp_outgoing(&edge)) {
+            self.edges.insert(index, edge);
+        }
+    }
+
     pub fn make_is_reachable(&self) -> impl Fn(&Node<Id>, &Node<Id>) -> bool + '_ {
         let next_nodes = self.next_nodes();
         move |a: &Node<_>, b: &Node<_>| -> bool {

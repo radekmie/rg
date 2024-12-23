@@ -1,43 +1,55 @@
+use gdl::ast as gdl;
 use map_id::MapId;
+use rg::ast as rg;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use utils::interner::Interner;
 
 type Id = Arc<str>;
 
-pub fn gdl_to_rg(gdl: &gdl::ast::Game<&str>) -> rg::ast::Game<Id> {
+pub fn gdl_to_rg(gdl: &gdl::Game<&str>) -> rg::Game<Id> {
     let mut interner: Interner<&str, u8> = Interner::default();
-    let gdl = gdl
-        .map_id(&mut |id| interner.intern(id))
-        .ground_smart(&interner.intern(&"distinct"), &interner.intern(&"or"))
-        .expand_ors(&interner.intern(&"or"))
-        .eval_distinct(&interner.intern(&"distinct"), &interner.intern(&"or"))
-        .simplify()
-        .map_id(&mut |id| Arc::from(*interner.recall(id).unwrap()))
-        .symbolify();
+    let gdl = gdl.map_id(&mut |id| interner.intern(id));
+    let gdl = gdl.ground_smart(&interner.intern(&"distinct"), &interner.intern(&"or"));
+    let gdl = gdl.expand_ors(&interner.intern(&"or"));
+    let gdl = gdl.eval_distinct(&interner.intern(&"distinct"), &interner.intern(&"or"));
+    let gdl = gdl.simplify();
+    let gdl = gdl.map_id(&mut |id| Arc::from(*interner.recall(id).unwrap()));
+    let gdl = gdl.symbolify();
 
-    let mut rg = rg::ast::Game::default();
-    add_common_typedefs(&mut rg, &gdl);
+    let mut rg = rg::Game::default();
+    let subterms = gdl.subterms().to_vec();
+    let rules_by_term: BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>> =
+        gdl.0
+            .iter()
+            .fold(BTreeMap::new(), |mut rules_by_term, rule| {
+                rules_by_term
+                    .entry(rule.term.as_ref())
+                    .or_default()
+                    .push(rule);
+                rules_by_term
+            });
+
+    add_common_typedefs(&mut rg, &subterms);
     rg.add_builtins().unwrap();
-    add_does_variables(&mut rg, &gdl);
-    add_fact_variables(&mut rg, &gdl);
-    add_loop_edges(&mut rg, &gdl);
-    add_next_edges(&mut rg, &gdl);
-    add_terminal_edges(&mut rg, &gdl);
-    add_goal_edges(&mut rg, &gdl);
+    add_does_variables(&mut rg, &subterms);
+    add_fact_variables(&mut rg, &subterms);
+    add_loop_edges(&mut rg, &subterms, &rules_by_term);
+    add_next_edges(&mut rg, &subterms, &rules_by_term);
+    add_terminal_edges(&mut rg, &rules_by_term);
+    add_goal_edges(&mut rg, &subterms, &rules_by_term);
 
     rg
 }
 
-fn add_common_typedefs(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
-    use gdl::ast::{AtomOrVariable, Term};
-    use rg::ast::{Type, Typedef};
+fn add_common_typedefs(rg: &mut rg::Game<Id>, subterms: &[&gdl::Term<Id>]) {
+    use gdl::{AtomOrVariable, Term};
+    use rg::{Type, Typedef};
     use utils::position::Span;
 
-    let roles = gdl
-        .0
+    let roles = subterms
         .iter()
-        .filter_map(|rule| match rule.term.as_ref() {
+        .filter_map(|term| match term {
             Term::Legal(AtomOrVariable::Atom(role), _) => Some(role),
             _ => None,
         })
@@ -52,8 +64,8 @@ fn add_common_typedefs(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         }),
     });
 
-    let goals = gdl
-        .subterms()
+    let goals = subterms
+        .iter()
         .filter_map(|term| match term {
             Term::Goal(_, AtomOrVariable::Atom(goal)) => Some(goal),
             _ => None,
@@ -70,13 +82,13 @@ fn add_common_typedefs(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     });
 }
 
-fn add_does_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
-    use gdl::ast::{AtomOrVariable, Term};
-    use rg::ast::{Type, Typedef, Value, Variable};
+fn add_does_variables(rg: &mut rg::Game<Id>, subterms: &[&gdl::Term<Id>]) {
+    use gdl::{AtomOrVariable, Term};
+    use rg::{Type, Typedef, Value, Variable};
     use utils::position::Span;
 
     let mut role_actions: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
-    for term in gdl.subterms() {
+    for term in subterms {
         if let Term::Legal(AtomOrVariable::Atom(role), action) = term {
             if let Term::Custom0(AtomOrVariable::Atom(id)) = action.as_ref() {
                 role_actions.entry(role).or_default().insert(id.clone());
@@ -103,13 +115,13 @@ fn add_does_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     }
 }
 
-fn add_fact_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
-    use gdl::ast::{AtomOrVariable, Term};
-    use rg::ast::{Type, Value, Variable};
+fn add_fact_variables(rg: &mut rg::Game<Id>, subterms: &[&gdl::Term<Id>]) {
+    use gdl::{AtomOrVariable, Term};
+    use rg::{Type, Value, Variable};
     use utils::position::Span;
 
     let mut inits = BTreeSet::new();
-    for term in gdl.subterms() {
+    for term in subterms {
         if let Term::Init(term) = term {
             if let Term::Custom0(AtomOrVariable::Atom(id)) = term.as_ref() {
                 inits.insert(id);
@@ -118,7 +130,7 @@ fn add_fact_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     }
 
     let mut variables = BTreeSet::new();
-    for term in gdl.subterms() {
+    for term in subterms {
         if let Term::Base(term) | Term::Next(term) | Term::True(term) = term {
             if let Term::Custom0(AtomOrVariable::Atom(id)) = term.as_ref() {
                 if variables.insert(id) {
@@ -142,12 +154,16 @@ fn add_fact_variables(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     }
 }
 
-fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
-    use gdl::ast::{AtomOrVariable, Term};
-    use rg::ast::{Edge, Expression, Label, Node};
+fn add_loop_edges(
+    rg: &mut rg::Game<Id>,
+    subterms: &[&gdl::Term<Id>],
+    rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+) {
+    use gdl::{AtomOrVariable, Term};
+    use rg::{Edge, Expression, Label, Node};
     use utils::position::Span;
 
-    rg.edges.push(Arc::from(Edge {
+    rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from("begin")),
         rhs: Node::new(Id::from("loop_begin")),
@@ -155,7 +171,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     }));
 
     let mut legals: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
-    for term in gdl.subterms() {
+    for term in subterms {
         if let Term::Legal(AtomOrVariable::Atom(role), term) = term {
             if let Term::Custom0(AtomOrVariable::Atom(action)) = term.as_ref() {
                 legals.entry(role).or_default().insert(action);
@@ -163,10 +179,9 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         }
     }
 
-    let roles = gdl
-        .0
+    let roles = subterms
         .iter()
-        .filter_map(|rule| match rule.term.as_ref() {
+        .filter_map(|term| match term {
             Term::Legal(AtomOrVariable::Atom(role), _) => Some(role),
             _ => None,
         })
@@ -175,7 +190,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         .collect::<Vec<_>>();
 
     for (role_index, role) in roles.iter().enumerate() {
-        rg.edges.push(Arc::from(Edge {
+        rg.add_edge_sorted(Arc::from(Edge {
             span: Span::none(),
             lhs: Node::new(if role_index == 0 {
                 Id::from("loop_begin")
@@ -188,7 +203,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
         for (op_index, op) in roles.iter().enumerate() {
             let is_visible = if role_index == op_index { "1" } else { "0" };
-            rg.edges.push(Arc::from(Edge {
+            rg.add_edge_sorted(Arc::from(Edge {
                 span: Span::none(),
                 lhs: Node::new(Id::from(format!("loop_{role}_visibility_{op_index}"))),
                 rhs: Node::new(Id::from(format!("loop_{role}_visibility_{}", op_index + 1))),
@@ -203,7 +218,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
             }));
         }
 
-        rg.edges.push(Arc::from(Edge {
+        rg.add_edge_sorted(Arc::from(Edge {
             span: Span::none(),
             lhs: Node::new(Id::from(format!("loop_{role}_visibility_{}", roles.len()))),
             rhs: Node::new(Id::from(format!("loop_{role}_begin"))),
@@ -216,7 +231,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         for action in legals.get(role).unwrap() {
             connect(
                 rg,
-                gdl,
+                rules_by_term,
                 &Term::Legal(
                     AtomOrVariable::Atom((*role).clone()),
                     Arc::new(Term::Custom0(AtomOrVariable::Atom((*action).clone()))),
@@ -228,7 +243,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         }
 
         for action in legals.get(role).unwrap() {
-            rg.edges.push(Arc::from(Edge {
+            rg.add_edge_sorted(Arc::from(Edge {
                 span: Span::none(),
                 lhs: Node::new(Id::from(format!("loop_{role}_{action}_move"))),
                 rhs: Node::new(Id::from(format!("loop_{role}_{action}_tag"))),
@@ -238,7 +253,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                 },
             }));
 
-            rg.edges.push(Arc::from(Edge {
+            rg.add_edge_sorted(Arc::from(Edge {
                 span: Span::none(),
                 lhs: Node::new(Id::from(format!("loop_{role}_{action}_tag"))),
                 rhs: Node::new(Id::from(format!("loop_{role}_switch"))),
@@ -248,7 +263,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
             }));
         }
 
-        rg.edges.push(Arc::from(Edge {
+        rg.add_edge_sorted(Arc::from(Edge {
             span: Span::none(),
             lhs: Node::new(Id::from(format!("loop_{role}_switch"))),
             rhs: Node::new(Id::from(format!("loop_{role}_end"))),
@@ -259,7 +274,7 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         }));
     }
 
-    rg.edges.push(Arc::from(Edge {
+    rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from(format!("loop_{}_end", roles.last().unwrap()))),
         rhs: Node::new(Id::from("loop_end")),
@@ -267,12 +282,16 @@ fn add_loop_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     }));
 }
 
-fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
-    use gdl::ast::{AtomOrVariable, Term};
-    use rg::ast::{Edge, Expression, Label, Node};
+fn add_next_edges(
+    rg: &mut rg::Game<Id>,
+    subterms: &[&gdl::Term<Id>],
+    rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+) {
+    use gdl::{AtomOrVariable, Term};
+    use rg::{Edge, Expression, Label, Node};
     use utils::position::Span;
 
-    rg.edges.push(Arc::from(Edge {
+    rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from("loop_end")),
         rhs: Node::new(Id::from("next_0")),
@@ -280,7 +299,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     }));
 
     let mut variables = BTreeSet::new();
-    for term in gdl.subterms() {
+    for term in subterms {
         if let Term::Init(term) | Term::Next(term) = term {
             if let Term::Custom0(AtomOrVariable::Atom(id)) = term.as_ref() {
                 if !variables.insert(id) || term.is_init() {
@@ -289,7 +308,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
                 connect(
                     rg,
-                    gdl,
+                    rules_by_term,
                     &Term::Next(Arc::new(Term::Custom0(AtomOrVariable::Atom(id.clone())))),
                     Id::from(format!("next_{}", variables.len() - 1)),
                     Id::from(format!("next_{}_0", variables.len())),
@@ -298,14 +317,14 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
                 connect(
                     rg,
-                    gdl,
+                    rules_by_term,
                     &Term::Next(Arc::new(Term::Custom0(AtomOrVariable::Atom(id.clone())))),
                     Id::from(format!("next_{}", variables.len() - 1)),
                     Id::from(format!("next_{}_1", variables.len())),
                     false,
                 );
 
-                rg.edges.push(Arc::from(Edge {
+                rg.add_edge_sorted(Arc::from(Edge {
                     span: Span::none(),
                     lhs: Node::new(Id::from(format!("next_{}_0", variables.len()))),
                     rhs: Node::new(Id::from(format!("next_{}", variables.len()))),
@@ -315,7 +334,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
                     },
                 }));
 
-                rg.edges.push(Arc::from(Edge {
+                rg.add_edge_sorted(Arc::from(Edge {
                     span: Span::none(),
                     lhs: Node::new(Id::from(format!("next_{}_1", variables.len()))),
                     rhs: Node::new(Id::from(format!("next_{}", variables.len()))),
@@ -328,7 +347,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         }
     }
 
-    rg.edges.push(Arc::from(Edge {
+    rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from(format!("next_{}", variables.len()))),
         rhs: Node::new(Id::from("next_0_set")),
@@ -336,7 +355,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     }));
 
     for (index, variable) in variables.iter().enumerate() {
-        rg.edges.push(Arc::from(Edge {
+        rg.add_edge_sorted(Arc::from(Edge {
             span: Span::none(),
             lhs: Node::new(Id::from(format!("next_{index}_set"))),
             rhs: Node::new(Id::from(format!("next_{}_set", index + 1))),
@@ -347,7 +366,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         }));
     }
 
-    rg.edges.push(Arc::from(Edge {
+    rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from(format!("next_{}_set", variables.len()))),
         rhs: Node::new(Id::from("next_0_clear")),
@@ -355,7 +374,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     }));
 
     for (index, variable) in variables.iter().enumerate() {
-        rg.edges.push(Arc::from(Edge {
+        rg.add_edge_sorted(Arc::from(Edge {
             span: Span::none(),
             lhs: Node::new(Id::from(format!("next_{index}_clear"))),
             rhs: Node::new(Id::from(format!("next_{}_clear", index + 1))),
@@ -366,7 +385,7 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         }));
     }
 
-    rg.edges.push(Arc::from(Edge {
+    rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from(format!("next_{}_clear", variables.len()))),
         rhs: Node::new(Id::from("next_end")),
@@ -374,12 +393,15 @@ fn add_next_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     }));
 }
 
-fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
-    use gdl::ast::Term;
-    use rg::ast::{Edge, Label, Node};
+fn add_terminal_edges(
+    rg: &mut rg::Game<Id>,
+    rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+) {
+    use gdl::Term;
+    use rg::{Edge, Label, Node};
     use utils::position::Span;
 
-    rg.edges.push(Arc::from(Edge {
+    rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from("next_end")),
         rhs: Node::new(Id::from("terminal")),
@@ -388,7 +410,7 @@ fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
     connect(
         rg,
-        gdl,
+        rules_by_term,
         &Term::Terminal,
         Id::from("terminal"),
         Id::from("loop_begin"),
@@ -397,7 +419,7 @@ fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
 
     connect(
         rg,
-        gdl,
+        rules_by_term,
         &Term::Terminal,
         Id::from("terminal"),
         Id::from("terminal_end"),
@@ -405,12 +427,16 @@ fn add_terminal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     );
 }
 
-fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
-    use gdl::ast::{AtomOrVariable, Rule, Term};
-    use rg::ast::{Edge, Expression, Label, Node};
+fn add_goal_edges(
+    rg: &mut rg::Game<Id>,
+    subterms: &[&gdl::Term<Id>],
+    rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+) {
+    use gdl::{AtomOrVariable, Term};
+    use rg::{Edge, Expression, Label, Node};
     use utils::position::Span;
 
-    rg.edges.push(Arc::from(Edge {
+    rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from("terminal_end")),
         rhs: Node::new(Id::from("goals_0_set")),
@@ -418,8 +444,8 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     }));
 
     let mut goals: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
-    for Rule { term, .. } in &gdl.0 {
-        if let Term::Goal(AtomOrVariable::Atom(role), AtomOrVariable::Atom(goal)) = term.as_ref() {
+    for term in subterms {
+        if let Term::Goal(AtomOrVariable::Atom(role), AtomOrVariable::Atom(goal)) = term {
             goals.entry(role).or_default().insert(goal);
         }
     }
@@ -428,7 +454,7 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         for goal in goals {
             connect(
                 rg,
-                gdl,
+                rules_by_term,
                 &Term::Goal(
                     AtomOrVariable::Atom((*role).clone()),
                     AtomOrVariable::Atom((*goal).clone()),
@@ -440,7 +466,7 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         }
 
         for goal in goals {
-            rg.edges.push(Arc::from(Edge {
+            rg.add_edge_sorted(Arc::from(Edge {
                 span: Span::none(),
                 lhs: Node::new(Id::from(format!("goals_{}_check_{goal}", index + 1))),
                 rhs: Node::new(Id::from(format!("goals_{}_set", index + 1))),
@@ -456,7 +482,7 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
         }
     }
 
-    rg.edges.push(Arc::from(Edge {
+    rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from(format!("goals_{}_set", goals.len()))),
         rhs: Node::new(Id::from("end")),
@@ -467,8 +493,8 @@ fn add_goal_edges(rg: &mut rg::ast::Game<Id>, gdl: &gdl::ast::Game<Id>) {
     }));
 }
 
-fn hash_term(term: &gdl::ast::Term<Id>) -> String {
-    use gdl::ast::{AtomOrVariable, Term};
+fn hash_term(term: &gdl::Term<Id>) -> String {
+    use gdl::{AtomOrVariable, Term};
     match term {
         Term::Custom0(AtomOrVariable::Atom(id)) => id.to_string(),
         Term::Goal(AtomOrVariable::Atom(role), AtomOrVariable::Atom(goal)) => {
@@ -484,32 +510,28 @@ fn hash_term(term: &gdl::ast::Term<Id>) -> String {
 }
 
 fn connect(
-    rg: &mut rg::ast::Game<Id>,
-    gdl: &gdl::ast::Game<Id>,
-    goal: &gdl::ast::Term<Id>,
+    rg: &mut rg::Game<Id>,
+    rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+    goal: &gdl::Term<Id>,
     begin: Id,
     end: Id,
     negated: bool,
 ) {
-    use rg::ast::{Edge, Expression, Label, Node};
+    use rg::{Edge, Expression, Label, Node};
     use utils::position::Span;
 
     let hash = hash_term(goal);
     let lhs = Node::new(Id::from(format!("__{hash}_begin")));
     let rhs = Node::new(Id::from(format!("__{hash}_end")));
 
-    let start_present = rg.edges.iter().any(|edge| edge.lhs == lhs);
+    let start_present = rg.sorted_outgoing_edges(&lhs).next().is_some();
     if !start_present {
         let mut edge_added = false;
-        for (index, rule) in gdl.0.iter().enumerate() {
-            if rule.term.as_ref() != goal {
-                continue;
-            }
-
+        for (index, rule) in rules_by_term.get(goal).into_iter().flatten().enumerate() {
             edge_added = true;
 
             let prefix = format!("__{hash}_{index}");
-            rg.edges.push(Arc::from(Edge {
+            rg.add_edge_sorted(Arc::from(Edge {
                 span: Span::none(),
                 lhs: lhs.clone(),
                 rhs: Node::new(Id::from(format!("{prefix}_0"))),
@@ -517,8 +539,13 @@ fn connect(
             }));
 
             for (step, predicate) in rule.predicates.iter().enumerate() {
-                let label = connect_one(rg, gdl, predicate, &format!("{prefix}_{}", step + 1));
-                rg.edges.push(Arc::from(Edge {
+                let label = connect_one(
+                    rg,
+                    rules_by_term,
+                    predicate,
+                    &format!("{prefix}_{}", step + 1),
+                );
+                rg.add_edge_sorted(Arc::from(Edge {
                     span: Span::none(),
                     lhs: Node::new(Id::from(format!("{prefix}_{step}"))),
                     rhs: Node::new(Id::from(format!("{prefix}_{}", step + 1))),
@@ -526,7 +553,7 @@ fn connect(
                 }));
             }
 
-            rg.edges.push(Arc::from(Edge {
+            rg.add_edge_sorted(Arc::from(Edge {
                 span: Span::none(),
                 lhs: Node::new(Id::from(format!("{prefix}_{}", rule.predicates.len()))),
                 rhs: rhs.clone(),
@@ -536,7 +563,7 @@ fn connect(
 
         // If no edges were added, add an always-false one.
         if !edge_added {
-            rg.edges.push(Arc::from(Edge {
+            rg.add_edge_sorted(Arc::from(Edge {
                 span: Span::none(),
                 lhs: lhs.clone(),
                 rhs: rhs.clone(),
@@ -549,7 +576,7 @@ fn connect(
         }
     }
 
-    rg.edges.push(Arc::from(Edge {
+    rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(begin),
         rhs: Node::new(end),
@@ -563,20 +590,27 @@ fn connect(
 }
 
 fn connect_one(
-    rg: &mut rg::ast::Game<Id>,
-    gdl: &gdl::ast::Game<Id>,
-    predicate: &gdl::ast::Predicate<Id>,
+    rg: &mut rg::Game<Id>,
+    rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+    predicate: &gdl::Predicate<Id>,
     prefix: &str,
-) -> rg::ast::Label<Id> {
-    use gdl::ast::{AtomOrVariable, Term};
-    use rg::ast::{Expression, Label, Node};
+) -> rg::Label<Id> {
+    use gdl::{AtomOrVariable, Term};
+    use rg::{Expression, Label, Node};
     use utils::position::Span;
 
     match predicate.term.as_ref() {
         Term::Custom0(_) | Term::CustomN(_, _) => {
             let lhs = Id::from(format!("{prefix}_begin"));
             let rhs = Id::from(format!("{prefix}_end"));
-            connect(rg, gdl, &predicate.term, lhs.clone(), rhs.clone(), false);
+            connect(
+                rg,
+                rules_by_term,
+                &predicate.term,
+                lhs.clone(),
+                rhs.clone(),
+                false,
+            );
             Label::Reachability {
                 span: Span::none(),
                 lhs: Node::new(lhs),
@@ -592,6 +626,11 @@ fn connect_one(
             },
             _ => unreachable!(),
         },
+        Term::Role(AtomOrVariable::Atom(role)) => Label::Comparison {
+            lhs: Arc::from(Expression::new(Id::from("player"))),
+            rhs: Arc::from(Expression::new(role.clone())),
+            negated: predicate.is_negated,
+        },
         Term::True(proposition) => match proposition.as_ref() {
             Term::Custom0(AtomOrVariable::Atom(id)) => Label::Comparison {
                 lhs: Arc::from(Expression::new(Id::from(format!("{id}_prev")))),
@@ -600,6 +639,6 @@ fn connect_one(
             },
             _ => unreachable!(),
         },
-        _ => unreachable!(),
+        term => unreachable!("{term:?}"),
     }
 }
