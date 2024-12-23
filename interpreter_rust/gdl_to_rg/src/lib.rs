@@ -9,13 +9,14 @@ type Id = Arc<str>;
 
 pub fn gdl_to_rg(gdl: &gdl::Game<&str>) -> rg::Game<Id> {
     let mut interner: Interner<&str, u8> = Interner::default();
-    let gdl = gdl.map_id(&mut |id| interner.intern(id));
-    let gdl = gdl.ground_smart(&interner.intern(&"distinct"), &interner.intern(&"or"));
-    let gdl = gdl.expand_ors(&interner.intern(&"or"));
-    let gdl = gdl.eval_distinct(&interner.intern(&"distinct"), &interner.intern(&"or"));
-    let gdl = gdl.simplify();
-    let gdl = gdl.map_id(&mut |id| Arc::from(*interner.recall(id).unwrap()));
-    let gdl = gdl.symbolify();
+    let gdl = gdl
+        .map_id(&mut |id| interner.intern(id))
+        .ground_smart(&interner.intern(&"distinct"), &interner.intern(&"or"))
+        .expand_ors(&interner.intern(&"or"))
+        .eval_distinct(&interner.intern(&"distinct"), &interner.intern(&"or"))
+        .simplify()
+        .map_id(&mut |id| Arc::from(*interner.recall(id).unwrap()))
+        .symbolify();
 
     let mut rg = rg::Game::default();
     let subterms = gdl.subterms().to_vec();
@@ -494,19 +495,34 @@ fn add_goal_edges(
 }
 
 fn hash_term(term: &gdl::Term<Id>) -> String {
-    use gdl::{AtomOrVariable, Term};
-    match term {
-        Term::Custom0(AtomOrVariable::Atom(id)) => id.to_string(),
-        Term::Goal(AtomOrVariable::Atom(role), AtomOrVariable::Atom(goal)) => {
-            format!("goal_{role}_{goal}")
+    fn hash_term_inner(term: &gdl::Term<Id>, string: &mut String) {
+        use gdl::{AtomOrVariable, Term};
+        match term {
+            Term::Custom0(AtomOrVariable::Atom(id)) => string.push_str(id),
+            Term::Goal(AtomOrVariable::Atom(role), AtomOrVariable::Atom(goal)) => {
+                string.push_str("goal_");
+                string.push_str(role);
+                string.push('_');
+                string.push_str(goal);
+            }
+            Term::Legal(AtomOrVariable::Atom(role), action) => {
+                string.push_str("legal_");
+                string.push_str(role);
+                string.push('_');
+                hash_term_inner(action, string);
+            }
+            Term::Next(term) => {
+                string.push_str("next_");
+                hash_term_inner(term, string);
+            }
+            Term::Terminal => string.push_str("terminal"),
+            _ => unimplemented!("{term:?}"),
         }
-        Term::Legal(AtomOrVariable::Atom(role), action) => {
-            format!("legal_{role}_{}", hash_term(action))
-        }
-        Term::Next(term) => format!("next_{}", hash_term(term)),
-        Term::Terminal => "terminal".to_string(),
-        _ => unimplemented!("{term:?}"),
     }
+
+    let mut string = String::new();
+    hash_term_inner(term, &mut string);
+    string
 }
 
 fn connect(
@@ -539,7 +555,7 @@ fn connect(
             }));
 
             for (step, predicate) in rule.predicates.iter().enumerate() {
-                let label = connect_one(
+                let label = connect_predicate(
                     rg,
                     rules_by_term,
                     predicate,
@@ -589,7 +605,7 @@ fn connect(
     }));
 }
 
-fn connect_one(
+fn connect_predicate(
     rg: &mut rg::Game<Id>,
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
     predicate: &gdl::Predicate<Id>,
@@ -639,6 +655,6 @@ fn connect_one(
             },
             _ => unreachable!(),
         },
-        term => unreachable!("{term:?}"),
+        _ => unreachable!(),
     }
 }

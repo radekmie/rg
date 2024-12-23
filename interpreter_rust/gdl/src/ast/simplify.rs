@@ -6,25 +6,29 @@ impl<Id: Clone + Ord> Game<Id> {
         let mut rules = self.0;
         rules.sort_unstable();
         rules.dedup();
-        let mut consts: BTreeSet<_> = rules
-            .iter()
-            .filter(|rule| rule.is_const())
-            .map(|rule| rule.term.clone())
-            .collect();
+
+        let mut consts_map = vec![false; rules.len()];
+        let mut consts_set = BTreeSet::new();
 
         loop {
             let mut any_rule_simplified = false;
-            for rule in &mut rules {
+            for (index, rule) in rules.iter_mut().enumerate() {
+                if consts_map[index] {
+                    continue;
+                }
+
                 let mut rule_simplified = false;
                 rule.predicates.retain(|predicate| {
-                    let is_const = predicate.can_be_const() && consts.contains(&predicate.term);
+                    let is_const = predicate.can_be_const() && consts_set.contains(&predicate.term);
                     rule_simplified |= is_const;
                     !is_const
                 });
 
                 any_rule_simplified |= rule_simplified;
-                if rule_simplified && rule.is_const() {
-                    consts.insert(rule.term.clone());
+                if rule.is_const() {
+                    any_rule_simplified = true;
+                    consts_map[index] = true;
+                    consts_set.insert(rule.term.clone());
                 }
             }
 
