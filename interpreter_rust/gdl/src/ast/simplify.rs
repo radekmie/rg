@@ -1,35 +1,57 @@
-use crate::ast::{Game, Term};
+use crate::ast::{Game, Predicate, Rule, Term};
+use std::collections::BTreeSet;
 
 impl<Id: Clone + Ord> Game<Id> {
     pub fn simplify(self) -> Self {
         let mut rules = self.0;
         rules.sort_unstable();
         rules.dedup();
+        let mut consts: BTreeSet<_> = rules
+            .iter()
+            .filter(|rule| rule.is_const())
+            .map(|rule| rule.term.clone())
+            .collect();
 
         loop {
-            let mut any_simplification_happened = false;
-            for i in 0..rules.len() {
-                let (xs, ys) = rules.split_at_mut(i);
-                let (rule, ys) = ys.split_first_mut().unwrap();
+            let mut any_rule_simplified = false;
+            for rule in &mut rules {
+                let mut rule_simplified = false;
                 rule.predicates.retain(|predicate| {
-                    let is_constant = matches!(
-                        *predicate.term,
-                        Term::Custom0(_) | Term::CustomN(_, _) | Term::Role(_)
-                    ) && xs
-                        .iter()
-                        .chain(ys.iter())
-                        .any(|rule| rule.predicates.is_empty() && rule.term == predicate.term);
-                    any_simplification_happened = any_simplification_happened || is_constant;
-                    !is_constant
+                    let is_const = predicate.can_be_const() && consts.contains(&predicate.term);
+                    rule_simplified |= is_const;
+                    !is_const
                 });
+
+                any_rule_simplified |= rule_simplified;
+                if rule_simplified && rule.is_const() {
+                    consts.insert(rule.term.clone());
+                }
             }
 
-            if !any_simplification_happened {
+            if !any_rule_simplified {
                 break;
             }
         }
 
         Self(rules)
+    }
+}
+
+impl<Id> Predicate<Id> {
+    fn can_be_const(&self) -> bool {
+        self.term.can_be_const()
+    }
+}
+
+impl<Id> Rule<Id> {
+    fn is_const(&self) -> bool {
+        self.term.can_be_const() && self.predicates.is_empty()
+    }
+}
+
+impl<Id> Term<Id> {
+    fn can_be_const(&self) -> bool {
+        matches!(self, Self::Custom0(_) | Self::CustomN(_, _) | Self::Role(_))
     }
 }
 
