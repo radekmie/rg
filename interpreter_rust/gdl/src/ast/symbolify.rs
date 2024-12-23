@@ -81,7 +81,7 @@ impl Term<Arc<str>> {
 #[cfg(test)]
 mod test {
     use crate::ast::Game;
-    use crate::parser::infix::game;
+    use crate::parser::game;
     use map_id::MapId;
     use nom::combinator::all_consuming;
     use std::sync::Arc;

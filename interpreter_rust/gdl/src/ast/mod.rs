@@ -1,7 +1,11 @@
+mod domain_graph;
+mod domain_map;
 mod eval_distinct;
 mod expand_ors;
-mod ground;
+mod ground_naive;
+mod ground_smart;
 mod simplify;
+mod static_terms;
 mod substitute;
 mod symbolify;
 mod unify;
@@ -17,8 +21,19 @@ pub enum AtomOrVariable<Id> {
 }
 
 impl<Id> AtomOrVariable<Id> {
-    pub fn as_term(self) -> Term<Id> {
+    pub fn as_atom(&self) -> Option<&Id> {
+        match self {
+            Self::Atom(id) => Some(id),
+            Self::Variable(_) => None,
+        }
+    }
+
+    pub fn into_term(self) -> Term<Id> {
         Term::Custom0(self)
+    }
+
+    pub fn is_atom(&self) -> bool {
+        matches!(self, Self::Atom(_))
     }
 
     pub fn is_variable(&self) -> bool {
@@ -110,10 +125,22 @@ pub enum Term<Id> {
 }
 
 impl<Id> Term<Id> {
-    pub fn as_custom_atom(&self) -> Option<&Id> {
+    pub const ORDER_BASE: u8 = 0;
+    pub const ORDER_CUSTOM_0: u8 = 1;
+    pub const ORDER_CUSTOM_N: u8 = 2;
+    pub const ORDER_DOES: u8 = 3;
+    pub const ORDER_GOAL: u8 = 4;
+    pub const ORDER_INIT: u8 = 5;
+    pub const ORDER_INPUT: u8 = 6;
+    pub const ORDER_LEGAL: u8 = 7;
+    pub const ORDER_NEXT: u8 = 8;
+    pub const ORDER_ROLE: u8 = 9;
+    pub const ORDER_TERMINAL: u8 = 10;
+    pub const ORDER_TRUE: u8 = 11;
+
+    pub fn as_atom(&self) -> Option<&Id> {
         match self {
-            Self::Custom0(AtomOrVariable::Atom(atom))
-            | Self::CustomN(AtomOrVariable::Atom(atom), _) => Some(atom),
+            Self::Custom0(name) | Self::CustomN(name, _) => name.as_atom(),
             _ => None,
         }
     }
@@ -151,20 +178,20 @@ impl<Id> Term<Id> {
         }
     }
 
-    pub fn order(&self) -> usize {
+    pub fn order(&self) -> u8 {
         match self {
-            Self::Base(_) => 0,
-            Self::Custom0(_) => 1,
-            Self::CustomN(_, _) => 2,
-            Self::Does(_, _) => 3,
-            Self::Goal(_, _) => 4,
-            Self::Init(_) => 5,
-            Self::Input(_, _) => 6,
-            Self::Legal(_, _) => 7,
-            Self::Next(_) => 8,
-            Self::Role(_) => 9,
-            Self::Terminal => 10,
-            Self::True(_) => 11,
+            Self::Base(_) => Self::ORDER_BASE,
+            Self::Custom0(_) => Self::ORDER_CUSTOM_0,
+            Self::CustomN(_, _) => Self::ORDER_CUSTOM_N,
+            Self::Does(_, _) => Self::ORDER_DOES,
+            Self::Goal(_, _) => Self::ORDER_GOAL,
+            Self::Init(_) => Self::ORDER_INIT,
+            Self::Input(_, _) => Self::ORDER_INPUT,
+            Self::Legal(_, _) => Self::ORDER_LEGAL,
+            Self::Next(_) => Self::ORDER_NEXT,
+            Self::Role(_) => Self::ORDER_ROLE,
+            Self::Terminal => Self::ORDER_TERMINAL,
+            Self::True(_) => Self::ORDER_TRUE,
         }
     }
 }

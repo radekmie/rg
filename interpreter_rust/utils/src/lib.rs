@@ -1,3 +1,4 @@
+pub mod cartesian;
 pub mod display;
 pub mod interner;
 pub mod parser;

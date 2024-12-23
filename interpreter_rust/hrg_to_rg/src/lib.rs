@@ -4,6 +4,7 @@ use rg::ast as rg;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
+use utils::cartesian::cartesian;
 use utils::position::Span;
 
 type Id = Arc<str>;
@@ -94,19 +95,6 @@ fn add_bindings(mut node: rg::Node<Id>, bindings: &[(&Id, &Arc<rg::Type<Id>>)]) 
         .iter()
         .for_each(|(identifier, type_)| node.add_binding((*identifier).clone(), (*type_).clone()));
     node
-}
-
-#[expect(clippy::needless_pass_by_value)]
-fn cartesian<T: Clone>(xss: Vec<Vec<T>>, ys: Vec<T>) -> Vec<Vec<T>> {
-    xss.into_iter()
-        .flat_map(|xs| {
-            ys.iter().cloned().map(move |y| {
-                let mut xs = xs.clone();
-                xs.push(y);
-                xs
-            })
-        })
-        .collect()
 }
 
 fn check_arguments_length(

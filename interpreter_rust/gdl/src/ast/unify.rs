@@ -55,7 +55,7 @@ impl<Id: Clone + Ord> Term<Id> {
     }
 }
 
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Unification<'a, Id> {
     Empty,
     Failed,
@@ -65,6 +65,30 @@ pub enum Unification<'a, Id> {
 impl<Id> Unification<'_, Id> {
     pub fn is_empty(&self) -> bool {
         matches!(self, Self::Empty | Self::Failed)
+    }
+
+    pub fn is_failed(&self) -> bool {
+        matches!(self, Self::Failed)
+    }
+}
+
+impl<'a, Id: Clone> Unification<'a, Id> {
+    pub fn from_pairs(pairs: &'a [(Id, Id)]) -> Self {
+        match pairs.is_empty() {
+            false => Self::NotEmpty(pairs.iter().map(|(x, y)| (x, y)).collect()),
+            true => Self::Empty,
+        }
+    }
+
+    pub fn into_pairs(self) -> Vec<(Id, Id)> {
+        match self {
+            Self::Empty => vec![],
+            Self::Failed => unreachable!(),
+            Self::NotEmpty(pairs) => pairs
+                .into_iter()
+                .map(|(x, y)| (x.clone(), y.clone()))
+                .collect(),
+        }
     }
 }
 

@@ -1,61 +1,88 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
+use std::sync::Arc;
 
 impl<Id: Clone + PartialEq> Game<Id> {
-    pub fn eval_distinct(self, distinct: &Id) -> Self {
+    pub fn eval_distinct(self, distinct: &Id, or: &Id) -> Self {
         Self(
             self.0
                 .into_iter()
-                .filter_map(|rule| rule.eval_distinct(distinct))
+                .filter_map(|rule| rule.eval_distinct(distinct, or))
                 .collect(),
         )
     }
 }
 
 impl<Id: Clone + PartialEq> Predicate<Id> {
-    pub fn eval_distinct(&self, distinct: &Id) -> Option<bool> {
-        self.term
-            .eval_distinct(distinct)
+    pub fn eval_distinct(&mut self, distinct: &Id, or: &Id) -> Option<bool> {
+        Arc::make_mut(&mut self.term)
+            .eval_distinct(distinct, or)
             .map(|is_distinct| is_distinct != self.is_negated)
     }
 }
 
 impl<Id: Clone + PartialEq> Rule<Id> {
-    pub fn eval_distinct(self, distinct: &Id) -> Option<Self> {
+    pub fn eval_distinct(self, distinct: &Id, or: &Id) -> Option<Self> {
         self.predicates
-            .iter()
-            .try_fold(vec![], |mut predicates, predicate| {
-                match predicate.eval_distinct(distinct) {
+            .into_iter()
+            .try_fold(vec![], |mut predicates, mut predicate| {
+                match predicate.eval_distinct(distinct, or) {
                     Some(false) => None,
                     Some(true) => Some(predicates),
                     None => {
-                        predicates.push(predicate.clone());
+                        predicates.push(predicate);
                         Some(predicates)
                     }
                 }
             })
             .map(|predicates| Self {
-                term: self.term.clone(),
+                term: self.term,
                 predicates,
             })
     }
 }
 
 impl<Id: Clone + PartialEq> Term<Id> {
-    pub fn eval_distinct(&self, distinct: &Id) -> Option<bool> {
-        match self {
-            Self::CustomN(AtomOrVariable::Atom(id), arguments) if id == distinct => {
-                assert!(arguments.len() == 2);
-                Some(arguments[0] != arguments[1])
+    pub fn eval_distinct(&mut self, distinct: &Id, or: &Id) -> Option<bool> {
+        if let Self::CustomN(AtomOrVariable::Atom(id), arguments) = self {
+            if id == distinct {
+                if let [lhs, rhs] = &arguments[..] {
+                    if !lhs.has_variable() && !rhs.has_variable() {
+                        return Some(lhs != rhs);
+                    }
+                }
+            } else if id == or {
+                let arguments = arguments
+                    .iter_mut()
+                    .try_fold(vec![], |mut arguments, argument| {
+                        match Arc::make_mut(argument).eval_distinct(distinct, or) {
+                            Some(false) => Some(arguments),
+                            Some(true) => None,
+                            None => {
+                                arguments.push(argument);
+                                Some(arguments)
+                            }
+                        }
+                    });
+
+                match arguments {
+                    None => return Some(true),
+                    Some(mut arguments) => match arguments.len() {
+                        0 => return Some(false),
+                        1 => *self = Arc::unwrap_or_clone(arguments.pop().unwrap().clone()),
+                        _ => {}
+                    },
+                }
             }
-            _ => None,
         }
+
+        None
     }
 }
 
 #[cfg(test)]
 mod test {
     use crate::ast::Game;
-    use crate::parser::infix::game;
+    use crate::parser::game;
     use nom::combinator::all_consuming;
 
     fn parse(input: &str) -> Game<&str> {
@@ -66,7 +93,7 @@ mod test {
         ($name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                let mut actual = parse($actual).eval_distinct(&"distinct");
+                let mut actual = parse($actual).eval_distinct(&"distinct", &"or");
                 let mut expect = parse($expect);
 
                 actual.0.sort_unstable();
@@ -79,4 +106,29 @@ mod test {
 
     test!(negative, "a :- distinct(1, 1)", "");
     test!(positive, "a :- distinct(1, 2)", "a");
+
+    test!(unknown_lhs, "a :- distinct(X, 2)", "a :- distinct(X, 2)");
+    test!(unknown_rhs, "a :- distinct(1, Y)", "a :- distinct(1, Y)");
+    test!(unknown_both, "a :- distinct(X, Y)", "a :- distinct(X, Y)");
+
+    test!(
+        or_negative_lhs,
+        "a :- or(distinct(1, 1), distinct(X, Y))",
+        "a :- distinct(X, Y)"
+    );
+    test!(
+        or_negative_rhs,
+        "a :- or(distinct(X, Y), distinct(1, 1))",
+        "a :- distinct(X, Y)"
+    );
+    test!(
+        or_positive_lhs,
+        "a :- or(distinct(1, 2), distinct(X, Y))",
+        "a"
+    );
+    test!(
+        or_positive_rhs,
+        "a :- or(distinct(X, Y), distinct(1, 2))",
+        "a"
+    );
 }

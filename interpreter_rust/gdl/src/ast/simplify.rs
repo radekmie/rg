@@ -36,7 +36,7 @@ impl<Id: Clone + Ord> Game<Id> {
 #[cfg(test)]
 mod test {
     use crate::ast::Game;
-    use crate::parser::infix::game;
+    use crate::parser::game;
     use nom::combinator::all_consuming;
 
     fn parse(input: &str) -> Game<&str> {

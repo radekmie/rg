@@ -9,9 +9,9 @@ pub fn gdl_to_rg(gdl: &gdl::ast::Game<&str>) -> rg::ast::Game<Id> {
     let mut interner: Interner<&str, u8> = Interner::default();
     let gdl = gdl
         .map_id(&mut |id| interner.intern(id))
-        .ground()
+        .ground_smart(&interner.intern(&"distinct"), &interner.intern(&"or"))
         .expand_ors(&interner.intern(&"or"))
-        .eval_distinct(&interner.intern(&"distinct"))
+        .eval_distinct(&interner.intern(&"distinct"), &interner.intern(&"or"))
         .simplify()
         .map_id(&mut |id| Arc::from(*interner.recall(id).unwrap()))
         .symbolify();
