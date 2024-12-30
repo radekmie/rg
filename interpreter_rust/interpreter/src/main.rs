@@ -37,6 +37,11 @@ enum CliArgs {
         #[command(flatten)]
         game_with_flags: GameWithFlags,
     },
+    /// Print game stats
+    Stats {
+        #[command(flatten)]
+        game_with_flags: GameWithFlags,
+    },
 }
 
 #[derive(Args)]
@@ -122,6 +127,23 @@ fn main() -> Result<(), String> {
         CliArgs::Source { game_with_flags } => {
             let game = game_with_flags.load()?;
             println!("{game}");
+        }
+        CliArgs::Stats { game_with_flags } => {
+            // TODO: Replace `step` with a struct.
+            game_with_flags.load_with_callback(&mut Some(|step: String| {
+                if let Value::Object(mut step) = from_str(&step).unwrap() {
+                    if let Some(Value::String(kind)) = step.remove("kind") {
+                        if kind == "stats" {
+                            if let Some(Value::String(stats)) = step.remove("value") {
+                                print!("{stats}");
+                                exit(0);
+                            }
+                        }
+                    }
+                }
+            }))?;
+
+            panic!("No stats found");
         }
     }
 

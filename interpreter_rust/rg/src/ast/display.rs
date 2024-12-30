@@ -82,7 +82,13 @@ impl<Id: Display> Display for Error<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let Self { game, reason } = self;
 
-        writeln!(f, "{reason}")?;
+        write!(f, "{reason}")?;
+
+        let Some(game) = game else {
+            return Ok(());
+        };
+
+        writeln!(f)?;
 
         if !game.typedefs.is_empty() {
             writeln!(f, "  Type definitions:")?;

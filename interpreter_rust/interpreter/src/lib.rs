@@ -11,6 +11,7 @@ use rbg::parsing::parser::parse_with_errors as unsafe_parse_rbg;
 use rg::ast::Game as GameAst;
 use rg::parsing::parser::parse_with_errors as unsafe_parse_rg;
 use serde_json::{from_str, json, to_string};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
@@ -118,7 +119,20 @@ fn analyze_rg_inner(
 
     macro_rules! add_game_stats {
         ($game:expr) => {
-            step!({ "kind": "stats", "value": $game.to_stats() });
+            // TODO: Should warnings be a separate step?
+            let mut stats_and_warnings = $game.to_stats();
+            let mut warnings = BTreeSet::new();
+            warnings.extend($game.lint_reachabilities());
+            if !warnings.is_empty() {
+                stats_and_warnings.push_str("warnings:\n");
+                for warning in warnings {
+                    stats_and_warnings.push_str("  ");
+                    stats_and_warnings.push_str(&warning.to_string());
+                    stats_and_warnings.push('\n');
+                }
+            }
+
+            step!({ "kind": "stats", "value": stats_and_warnings });
             step!({ "kind": "graphviz", "value": $game.to_graphviz() });
         }
     }

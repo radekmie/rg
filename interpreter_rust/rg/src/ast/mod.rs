@@ -519,9 +519,9 @@ impl<Id: Clone + Ord> NodePart<Id> {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Error<Id> {
-    pub game: Game<Id>,
+    pub game: Option<Game<Id>>,
     pub reason: ErrorReason<Id>,
 }
 
@@ -532,7 +532,7 @@ impl<Id: Display> From<Error<Id>> for String {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ErrorReason<Id> {
     ArrowTypeExpected {
         got: Arc<Type<Id>>,
@@ -938,7 +938,7 @@ pub struct Game<Id> {
 impl<Id: Clone> Game<Id> {
     pub fn make_error<T>(&self, reason: ErrorReason<Id>) -> Result<T, Error<Id>> {
         Err(Error {
-            game: self.clone(),
+            game: Some(self.clone()),
             reason,
         })
     }
