@@ -533,8 +533,14 @@ fn connect(
     end: Id,
     negated: bool,
 ) {
-    use rg::{Edge, Expression, Label, Node};
+    use rg::{Edge, Label, Node};
     use utils::position::Span;
+
+    let rules = match rules_by_term.get(goal).map(Vec::as_slice) {
+        // If no edges were added, add an always-false one.
+        None | Some([]) => return,
+        Some(rules) => rules,
+    };
 
     let hash = hash_term(goal);
     let lhs = Node::new(Id::from(format!("__{hash}_begin")));
@@ -542,10 +548,7 @@ fn connect(
 
     let start_present = rg.sorted_outgoing_edges(&lhs).next().is_some();
     if !start_present {
-        let mut edge_added = false;
-        for (index, rule) in rules_by_term.get(goal).into_iter().flatten().enumerate() {
-            edge_added = true;
-
+        for (index, rule) in rules.iter().enumerate() {
             let prefix = format!("__{hash}_{index}");
             rg.add_edge_sorted(Arc::from(Edge {
                 span: Span::none(),
@@ -555,7 +558,7 @@ fn connect(
             }));
 
             for (step, predicate) in rule.predicates.iter().enumerate() {
-                let label = connect_predicate(
+                let label = connect_label(
                     rg,
                     rules_by_term,
                     predicate,
@@ -576,20 +579,6 @@ fn connect(
                 label: Label::Skip { span: Span::none() },
             }));
         }
-
-        // If no edges were added, add an always-false one.
-        if !edge_added {
-            rg.add_edge_sorted(Arc::from(Edge {
-                span: Span::none(),
-                lhs: lhs.clone(),
-                rhs: rhs.clone(),
-                label: Label::Comparison {
-                    lhs: Arc::from(Expression::new(Id::from("0"))),
-                    rhs: Arc::from(Expression::new(Id::from("0"))),
-                    negated: true,
-                },
-            }));
-        }
     }
 
     rg.add_edge_sorted(Arc::from(Edge {
@@ -605,7 +594,7 @@ fn connect(
     }));
 }
 
-fn connect_predicate(
+fn connect_label(
     rg: &mut rg::Game<Id>,
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
     predicate: &gdl::Predicate<Id>,
