@@ -160,12 +160,6 @@ pub enum Label<Id> {
     },
 }
 
-impl<Id> Default for Label<Id> {
-    fn default() -> Self {
-        Self::Skip { span: Span::none() }
-    }
-}
-
 impl<Id> Label<Id> {
     pub fn as_var_assignment(&self) -> Option<(&Id, &Arc<Expression<Id>>)> {
         if let Self::Assignment { lhs, rhs } = self {

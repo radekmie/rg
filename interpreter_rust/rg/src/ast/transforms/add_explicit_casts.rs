@@ -5,7 +5,7 @@ use utils::position::Span;
 
 impl<Id: Clone + PartialEq> Edge<Id> {
     fn add_explicit_casts(&mut self, game: &Game<Id>) -> Result<(), Error<Id>> {
-        let mut label = take(&mut self.label);
+        let mut label = replace(&mut self.label, Label::new_skip());
         label.add_explicit_casts(game, Some(self))?;
         self.label = label;
         Ok(())

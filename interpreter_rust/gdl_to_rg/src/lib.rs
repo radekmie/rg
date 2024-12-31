@@ -168,7 +168,7 @@ fn add_loop_edges(
         span: Span::none(),
         lhs: Node::new(Id::from("begin")),
         rhs: Node::new(Id::from("loop_begin")),
-        label: Label::Skip { span: Span::none() },
+        label: Label::new_skip(),
     }));
 
     let mut legals: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
@@ -199,7 +199,7 @@ fn add_loop_edges(
                 Id::from(format!("loop_{}_end", roles[role_index - 1]))
             }),
             rhs: Node::new(Id::from(format!("loop_{role}_visibility_0"))),
-            label: Label::Skip { span: Span::none() },
+            label: Label::new_skip(),
         }));
 
         for (op_index, op) in roles.iter().enumerate() {
@@ -279,7 +279,7 @@ fn add_loop_edges(
         span: Span::none(),
         lhs: Node::new(Id::from(format!("loop_{}_end", roles.last().unwrap()))),
         rhs: Node::new(Id::from("loop_end")),
-        label: Label::Skip { span: Span::none() },
+        label: Label::new_skip(),
     }));
 }
 
@@ -296,7 +296,7 @@ fn add_next_edges(
         span: Span::none(),
         lhs: Node::new(Id::from("loop_end")),
         rhs: Node::new(Id::from("next_0")),
-        label: Label::Skip { span: Span::none() },
+        label: Label::new_skip(),
     }));
 
     let mut variables = BTreeSet::new();
@@ -352,7 +352,7 @@ fn add_next_edges(
         span: Span::none(),
         lhs: Node::new(Id::from(format!("next_{}", variables.len()))),
         rhs: Node::new(Id::from("next_0_set")),
-        label: Label::Skip { span: Span::none() },
+        label: Label::new_skip(),
     }));
 
     for (index, variable) in variables.iter().enumerate() {
@@ -371,7 +371,7 @@ fn add_next_edges(
         span: Span::none(),
         lhs: Node::new(Id::from(format!("next_{}_set", variables.len()))),
         rhs: Node::new(Id::from("next_0_clear")),
-        label: Label::Skip { span: Span::none() },
+        label: Label::new_skip(),
     }));
 
     for (index, variable) in variables.iter().enumerate() {
@@ -390,7 +390,7 @@ fn add_next_edges(
         span: Span::none(),
         lhs: Node::new(Id::from(format!("next_{}_clear", variables.len()))),
         rhs: Node::new(Id::from("next_end")),
-        label: Label::Skip { span: Span::none() },
+        label: Label::new_skip(),
     }));
 }
 
@@ -406,7 +406,7 @@ fn add_terminal_edges(
         span: Span::none(),
         lhs: Node::new(Id::from("next_end")),
         rhs: Node::new(Id::from("terminal")),
-        label: Label::Skip { span: Span::none() },
+        label: Label::new_skip(),
     }));
 
     connect(
@@ -441,7 +441,7 @@ fn add_goal_edges(
         span: Span::none(),
         lhs: Node::new(Id::from("terminal_end")),
         rhs: Node::new(Id::from("goals_0_set")),
-        label: Label::Skip { span: Span::none() },
+        label: Label::new_skip(),
     }));
 
     let mut goals: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
@@ -554,7 +554,7 @@ fn connect(
                 span: Span::none(),
                 lhs: lhs.clone(),
                 rhs: Node::new(Id::from(format!("{prefix}_0"))),
-                label: Label::Skip { span: Span::none() },
+                label: Label::new_skip(),
             }));
 
             for (step, predicate) in rule.predicates.iter().enumerate() {
@@ -576,7 +576,7 @@ fn connect(
                 span: Span::none(),
                 lhs: Node::new(Id::from(format!("{prefix}_{}", rule.predicates.len()))),
                 rhs: rhs.clone(),
-                label: Label::Skip { span: Span::none() },
+                label: Label::new_skip(),
             }));
         }
     }
@@ -614,13 +614,13 @@ fn connect_label(
                 &predicate.term,
                 lhs.clone(),
                 rhs.clone(),
-                false,
+                predicate.is_negated,
             );
             Label::Reachability {
                 span: Span::none(),
                 lhs: Node::new(lhs),
                 rhs: Node::new(rhs),
-                negated: predicate.is_negated,
+                negated: false,
             }
         }
         Term::Does(AtomOrVariable::Atom(role), action) => match action.as_ref() {
