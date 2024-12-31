@@ -536,9 +536,32 @@ fn connect(
     use rg::{Edge, Label, Node};
     use utils::position::Span;
 
+    if let Some((lhs, rhs)) = connect_inner(rg, rules_by_term, goal) {
+        rg.add_edge_sorted(Arc::from(Edge {
+            span: Span::none(),
+            lhs: Node::new(begin),
+            rhs: Node::new(end),
+            label: Label::Reachability {
+                span: Span::none(),
+                lhs,
+                rhs,
+                negated,
+            },
+        }));
+    }
+}
+
+fn connect_inner(
+    rg: &mut rg::Game<Id>,
+    rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+    goal: &gdl::Term<Id>,
+) -> Option<(rg::Node<Id>, rg::Node<Id>)> {
+    use rg::{Edge, Label, Node};
+    use utils::position::Span;
+
     let rules = match rules_by_term.get(goal).map(Vec::as_slice) {
         // If no edges were added, add an always-false one.
-        None | Some([]) => return,
+        None | Some([]) => return None,
         Some(rules) => rules,
     };
 
@@ -558,18 +581,14 @@ fn connect(
             }));
 
             for (step, predicate) in rule.predicates.iter().enumerate() {
-                let label = connect_label(
-                    rg,
-                    rules_by_term,
-                    predicate,
-                    &format!("{prefix}_{}", step + 1),
-                );
-                rg.add_edge_sorted(Arc::from(Edge {
-                    span: Span::none(),
-                    lhs: Node::new(Id::from(format!("{prefix}_{step}"))),
-                    rhs: Node::new(Id::from(format!("{prefix}_{}", step + 1))),
-                    label,
-                }));
+                if let Some(label) = connect_label(rg, rules_by_term, predicate) {
+                    rg.add_edge_sorted(Arc::from(Edge {
+                        span: Span::none(),
+                        lhs: Node::new(Id::from(format!("{prefix}_{step}"))),
+                        rhs: Node::new(Id::from(format!("{prefix}_{}", step + 1))),
+                        label,
+                    }));
+                }
             }
 
             rg.add_edge_sorted(Arc::from(Edge {
@@ -581,46 +600,26 @@ fn connect(
         }
     }
 
-    rg.add_edge_sorted(Arc::from(Edge {
-        span: Span::none(),
-        lhs: Node::new(begin),
-        rhs: Node::new(end),
-        label: Label::Reachability {
-            span: Span::none(),
-            lhs,
-            rhs,
-            negated,
-        },
-    }));
+    Some((lhs, rhs))
 }
 
 fn connect_label(
     rg: &mut rg::Game<Id>,
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
     predicate: &gdl::Predicate<Id>,
-    prefix: &str,
-) -> rg::Label<Id> {
+) -> Option<rg::Label<Id>> {
     use gdl::{AtomOrVariable, Term};
-    use rg::{Expression, Label, Node};
+    use rg::{Expression, Label};
     use utils::position::Span;
 
-    match predicate.term.as_ref() {
+    Some(match predicate.term.as_ref() {
         Term::Custom0(_) | Term::CustomN(_, _) => {
-            let lhs = Id::from(format!("{prefix}_begin"));
-            let rhs = Id::from(format!("{prefix}_end"));
-            connect(
-                rg,
-                rules_by_term,
-                &predicate.term,
-                lhs.clone(),
-                rhs.clone(),
-                predicate.is_negated,
-            );
+            let (lhs, rhs) = connect_inner(rg, rules_by_term, &predicate.term)?;
             Label::Reachability {
                 span: Span::none(),
-                lhs: Node::new(lhs),
-                rhs: Node::new(rhs),
-                negated: false,
+                lhs,
+                rhs,
+                negated: predicate.is_negated,
             }
         }
         Term::Does(AtomOrVariable::Atom(role), action) => match action.as_ref() {
@@ -645,5 +644,5 @@ fn connect_label(
             _ => unreachable!(),
         },
         _ => unreachable!(),
-    }
+    })
 }
