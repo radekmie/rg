@@ -556,7 +556,7 @@ fn connect_inner(
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
     goal: &gdl::Term<Id>,
 ) -> Option<(rg::Node<Id>, rg::Node<Id>)> {
-    use rg::{Edge, Label, Node};
+    use rg::{Edge, Node};
     use utils::position::Span;
 
     let rules = match rules_by_term.get(goal).map(Vec::as_slice) {
@@ -573,30 +573,24 @@ fn connect_inner(
     if !start_present {
         for (index, rule) in rules.iter().enumerate() {
             let prefix = format!("__{hash}_{index}");
-            rg.add_edge_sorted(Arc::from(Edge {
-                span: Span::none(),
-                lhs: lhs.clone(),
-                rhs: Node::new(Id::from(format!("{prefix}_0"))),
-                label: Label::new_skip(),
-            }));
-
             for (step, predicate) in rule.predicates.iter().enumerate() {
                 if let Some(label) = connect_label(rg, rules_by_term, predicate) {
                     rg.add_edge_sorted(Arc::from(Edge {
                         span: Span::none(),
-                        lhs: Node::new(Id::from(format!("{prefix}_{step}"))),
-                        rhs: Node::new(Id::from(format!("{prefix}_{}", step + 1))),
+                        lhs: if step == 0 {
+                            lhs.clone()
+                        } else {
+                            Node::new(Id::from(format!("{prefix}_{}", step - 1)))
+                        },
+                        rhs: if step == rule.predicates.len() - 1 {
+                            rhs.clone()
+                        } else {
+                            Node::new(Id::from(format!("{prefix}_{step}")))
+                        },
                         label,
                     }));
                 }
             }
-
-            rg.add_edge_sorted(Arc::from(Edge {
-                span: Span::none(),
-                lhs: Node::new(Id::from(format!("{prefix}_{}", rule.predicates.len()))),
-                rhs: rhs.clone(),
-                label: Label::new_skip(),
-            }));
         }
     }
 
