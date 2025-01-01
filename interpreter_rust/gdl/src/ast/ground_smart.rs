@@ -115,6 +115,52 @@ mod test {
     );
 
     test!(
+        chain,
+        "
+        lessThan(X, Z) :- succ(X, Y) & lessThan(Y, Z)
+        lessThan(X, Y) :- succ(X, Y)
+
+        succ(0, 1)
+        succ(1, 2)
+        succ(2, 3)
+        succ(3, 4)
+        succ(4, 5)
+        ",
+        "
+        lessThan(0, 1)
+        lessThan(0, 1) :- lessThan(1, 1)
+        lessThan(0, 2) :- lessThan(1, 2)
+        lessThan(0, 3) :- lessThan(1, 3)
+        lessThan(0, 4) :- lessThan(1, 4)
+        lessThan(0, 5) :- lessThan(1, 5)
+        lessThan(1, 1) :- lessThan(2, 1)
+        lessThan(1, 2)
+        lessThan(1, 2) :- lessThan(2, 2)
+        lessThan(1, 3) :- lessThan(2, 3)
+        lessThan(1, 4) :- lessThan(2, 4)
+        lessThan(1, 5) :- lessThan(2, 5)
+        lessThan(2, 1) :- lessThan(3, 1)
+        lessThan(2, 2) :- lessThan(3, 2)
+        lessThan(2, 3)
+        lessThan(2, 3) :- lessThan(3, 3)
+        lessThan(2, 4) :- lessThan(3, 4)
+        lessThan(2, 5) :- lessThan(3, 5)
+        lessThan(3, 1) :- lessThan(4, 1)
+        lessThan(3, 2) :- lessThan(4, 2)
+        lessThan(3, 3) :- lessThan(4, 3)
+        lessThan(3, 4)
+        lessThan(3, 4) :- lessThan(4, 4)
+        lessThan(3, 5) :- lessThan(4, 5)
+        lessThan(4, 5)
+        succ(0, 1)
+        succ(1, 2)
+        succ(2, 3)
+        succ(3, 4)
+        succ(4, 5)
+        "
+    );
+
+    test!(
         nested_complex,
         "
         index(1)

@@ -7,6 +7,7 @@ impl<Id: Clone + Ord> Game<Id> {
         rules.sort_unstable();
         rules.dedup();
 
+        // Simplify predicates.
         let mut consts_map = vec![false; rules.len()];
         let mut consts_set = BTreeSet::new();
 
@@ -33,6 +34,26 @@ impl<Id: Clone + Ord> Game<Id> {
             }
 
             if !any_rule_simplified {
+                break;
+            }
+        }
+
+        // Remove impossible rules.
+        loop {
+            let rules_before = rules.len();
+            let possible_goals: BTreeSet<_> = rules.iter().map(|rule| rule.term.clone()).collect();
+            rules.retain(|rule| {
+                rule.predicates
+                    .iter()
+                    .all(|predicate| match predicate.term.as_ref() {
+                        Term::Custom0(_) | Term::CustomN(_, _) => {
+                            possible_goals.contains(&predicate.term)
+                        }
+                        _ => true,
+                    })
+            });
+
+            if rules_before == rules.len() {
                 break;
             }
         }
@@ -110,4 +131,62 @@ mod test {
 
     test!(chain_1, "a :- b b :- c c :- d d :- e e", "a b c d e");
     test!(chain_2, "e d :- e c :- d b :- c a :- b", "a b c d e");
+
+    test!(
+        chain,
+        "
+        lessThan(0, 1)
+        lessThan(0, 1) :- lessThan(1, 1)
+        lessThan(0, 2) :- lessThan(1, 2)
+        lessThan(0, 3) :- lessThan(1, 3)
+        lessThan(0, 4) :- lessThan(1, 4)
+        lessThan(0, 5) :- lessThan(1, 5)
+        lessThan(1, 1) :- lessThan(2, 1)
+        lessThan(1, 2)
+        lessThan(1, 2) :- lessThan(2, 2)
+        lessThan(1, 3) :- lessThan(2, 3)
+        lessThan(1, 4) :- lessThan(2, 4)
+        lessThan(1, 5) :- lessThan(2, 5)
+        lessThan(2, 1) :- lessThan(3, 1)
+        lessThan(2, 2) :- lessThan(3, 2)
+        lessThan(2, 3)
+        lessThan(2, 3) :- lessThan(3, 3)
+        lessThan(2, 4) :- lessThan(3, 4)
+        lessThan(2, 5) :- lessThan(3, 5)
+        lessThan(3, 1) :- lessThan(4, 1)
+        lessThan(3, 2) :- lessThan(4, 2)
+        lessThan(3, 3) :- lessThan(4, 3)
+        lessThan(3, 4)
+        lessThan(3, 4) :- lessThan(4, 4)
+        lessThan(3, 5) :- lessThan(4, 5)
+        lessThan(4, 5)
+        succ(0, 1)
+        succ(1, 2)
+        succ(2, 3)
+        succ(3, 4)
+        succ(4, 5)
+        ",
+        "
+        lessThan(0, 1)
+        lessThan(0, 2)
+        lessThan(0, 3)
+        lessThan(0, 4)
+        lessThan(0, 5)
+        lessThan(1, 2)
+        lessThan(1, 3)
+        lessThan(1, 4)
+        lessThan(1, 5)
+        lessThan(2, 3)
+        lessThan(2, 4)
+        lessThan(2, 5)
+        lessThan(3, 4)
+        lessThan(3, 5)
+        lessThan(4, 5)
+        succ(0, 1)
+        succ(1, 2)
+        succ(2, 3)
+        succ(3, 4)
+        succ(4, 5)
+        "
+    );
 }
