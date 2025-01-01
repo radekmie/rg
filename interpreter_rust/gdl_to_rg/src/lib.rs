@@ -546,22 +546,24 @@ fn connect(
     end: Id,
     negated: bool,
 ) {
-    use rg::{Edge, Label, Node};
+    use rg::{Edge, Expression, Label, Node};
     use utils::position::Span;
 
-    if let Some((lhs, rhs)) = connect_inner(rg, rules_by_term, translated_goals, goal) {
-        rg.add_edge_sorted(Arc::from(Edge {
-            span: Span::none(),
-            lhs: Node::new(begin),
-            rhs: Node::new(end),
-            label: Label::Reachability {
-                span: Span::none(),
-                lhs,
-                rhs,
-                negated,
-            },
-        }));
-    }
+    let label =
+        connect_inner(rg, rules_by_term, translated_goals, goal, negated).unwrap_or_else(|| {
+            Label::Comparison {
+                lhs: Arc::from(Expression::new(Id::from("0"))),
+                rhs: Arc::from(Expression::new(Id::from("0"))),
+                negated: !negated,
+            }
+        });
+
+    rg.add_edge_sorted(Arc::from(Edge {
+        span: Span::none(),
+        lhs: Node::new(begin),
+        rhs: Node::new(end),
+        label,
+    }));
 }
 
 fn connect_inner(
@@ -569,8 +571,9 @@ fn connect_inner(
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
     translated_goals: &mut BTreeSet<gdl::Term<Id>>,
     goal: &gdl::Term<Id>,
-) -> Option<(rg::Node<Id>, rg::Node<Id>)> {
-    use rg::{Edge, Node};
+    negated: bool,
+) -> Option<rg::Label<Id>> {
+    use rg::{Edge, Label, Node};
     use utils::position::Span;
 
     let rules = match rules_by_term.get(goal).map(Vec::as_slice) {
@@ -578,6 +581,11 @@ fn connect_inner(
         None | Some([]) => return None,
         Some(rules) => rules,
     };
+
+    // Some rules are trivial and cannot be reduced, e.g., `goal(random, 0)`.
+    if rules.iter().all(|rule| rule.predicates.is_empty()) {
+        return Some(Label::new_skip());
+    }
 
     let hash = hash_term(goal);
     let lhs = Node::new(Id::from(format!("{hash}_begin")));
@@ -605,7 +613,12 @@ fn connect_inner(
         }
     }
 
-    Some((lhs, rhs))
+    Some(Label::Reachability {
+        span: Span::none(),
+        lhs,
+        rhs,
+        negated,
+    })
 }
 
 fn connect_label(
@@ -616,18 +629,15 @@ fn connect_label(
 ) -> Option<rg::Label<Id>> {
     use gdl::{AtomOrVariable, Term};
     use rg::{Expression, Label};
-    use utils::position::Span;
 
     Some(match predicate.term.as_ref() {
-        Term::Custom0(_) | Term::CustomN(_, _) => {
-            let (lhs, rhs) = connect_inner(rg, rules_by_term, translated_goals, &predicate.term)?;
-            Label::Reachability {
-                span: Span::none(),
-                lhs,
-                rhs,
-                negated: predicate.is_negated,
-            }
-        }
+        Term::Custom0(_) | Term::CustomN(_, _) => connect_inner(
+            rg,
+            rules_by_term,
+            translated_goals,
+            &predicate.term,
+            predicate.is_negated,
+        )?,
         Term::Does(AtomOrVariable::Atom(role), action) => match action.as_ref() {
             Term::Custom0(AtomOrVariable::Atom(id)) => Label::Comparison {
                 lhs: Arc::from(Expression::new(Id::from(format!("does_{role}")))),
