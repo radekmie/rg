@@ -405,7 +405,7 @@ fn add_terminal_edges(
     rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
         lhs: Node::new(Id::from("next_end")),
-        rhs: Node::new(Id::from("terminal")),
+        rhs: Node::new(Id::from("terminal_check")),
         label: Label::new_skip(),
     }));
 
@@ -413,7 +413,7 @@ fn add_terminal_edges(
         rg,
         rules_by_term,
         &Term::Terminal,
-        Id::from("terminal"),
+        Id::from("terminal_check"),
         Id::from("loop_begin"),
         true,
     );
@@ -422,8 +422,8 @@ fn add_terminal_edges(
         rg,
         rules_by_term,
         &Term::Terminal,
+        Id::from("terminal_check"),
         Id::from("terminal"),
-        Id::from("terminal_end"),
         false,
     );
 }
@@ -439,7 +439,7 @@ fn add_goal_edges(
 
     rg.add_edge_sorted(Arc::from(Edge {
         span: Span::none(),
-        lhs: Node::new(Id::from("terminal_end")),
+        lhs: Node::new(Id::from("terminal")),
         rhs: Node::new(Id::from("goals_0_set")),
         label: Label::new_skip(),
     }));
@@ -566,27 +566,25 @@ fn connect_inner(
     };
 
     let hash = hash_term(goal);
-    let lhs = Node::new(Id::from(format!("__{hash}_begin")));
-    let rhs = Node::new(Id::from(format!("__{hash}_end")));
+    let lhs = Node::new(Id::from(format!("{hash}_begin")));
+    let rhs = Node::new(Id::from(format!("{hash}_end")));
 
     let start_present = rg.sorted_outgoing_edges(&lhs).next().is_some();
     if !start_present {
         for (index, rule) in rules.iter().enumerate() {
-            let prefix = format!("__{hash}_{index}");
+            let nodes: Vec<_> = (0..=rule.predicates.len())
+                .map(|step| match step {
+                    0 => lhs.clone(),
+                    step if step == rule.predicates.len() => rhs.clone(),
+                    step => Node::new(Id::from(format!("{hash}_{index}_{step}"))),
+                })
+                .collect();
             for (step, predicate) in rule.predicates.iter().enumerate() {
                 if let Some(label) = connect_label(rg, rules_by_term, predicate) {
                     rg.add_edge_sorted(Arc::from(Edge {
                         span: Span::none(),
-                        lhs: if step == 0 {
-                            lhs.clone()
-                        } else {
-                            Node::new(Id::from(format!("{prefix}_{}", step - 1)))
-                        },
-                        rhs: if step == rule.predicates.len() - 1 {
-                            rhs.clone()
-                        } else {
-                            Node::new(Id::from(format!("{prefix}_{step}")))
-                        },
+                        lhs: nodes[step].clone(),
+                        rhs: nodes[step + 1].clone(),
                         label,
                     }));
                 }
