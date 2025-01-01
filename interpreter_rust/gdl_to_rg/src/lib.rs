@@ -20,6 +20,7 @@ pub fn gdl_to_rg(gdl: &gdl::Game<&str>) -> rg::Game<Id> {
         .symbolify();
 
     let mut rg = rg::Game::default();
+    let mut translated_goals = BTreeSet::new();
     let subterms = gdl.subterms().to_vec();
     let rules_by_term: BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>> =
         gdl.0
@@ -36,10 +37,10 @@ pub fn gdl_to_rg(gdl: &gdl::Game<&str>) -> rg::Game<Id> {
     rg.add_builtins().unwrap();
     add_does_variables(&mut rg, &subterms);
     add_fact_variables(&mut rg, &subterms);
-    add_loop_edges(&mut rg, &subterms, &rules_by_term);
-    add_next_edges(&mut rg, &subterms, &rules_by_term);
-    add_terminal_edges(&mut rg, &rules_by_term);
-    add_goal_edges(&mut rg, &subterms, &rules_by_term);
+    add_loop_edges(&mut rg, &subterms, &rules_by_term, &mut translated_goals);
+    add_next_edges(&mut rg, &subterms, &rules_by_term, &mut translated_goals);
+    add_terminal_edges(&mut rg, &rules_by_term, &mut translated_goals);
+    add_goal_edges(&mut rg, &subterms, &rules_by_term, &mut translated_goals);
 
     rg
 }
@@ -160,6 +161,7 @@ fn add_loop_edges(
     rg: &mut rg::Game<Id>,
     subterms: &[&gdl::Term<Id>],
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+    translated_goals: &mut BTreeSet<gdl::Term<Id>>,
 ) {
     use gdl::{AtomOrVariable, Term};
     use rg::{Edge, Expression, Label, Node};
@@ -234,6 +236,7 @@ fn add_loop_edges(
             connect(
                 rg,
                 rules_by_term,
+                translated_goals,
                 &Term::Legal(
                     AtomOrVariable::Atom((*role).clone()),
                     Arc::new(Term::Custom0(AtomOrVariable::Atom((*action).clone()))),
@@ -288,6 +291,7 @@ fn add_next_edges(
     rg: &mut rg::Game<Id>,
     subterms: &[&gdl::Term<Id>],
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+    translated_goals: &mut BTreeSet<gdl::Term<Id>>,
 ) {
     use gdl::{AtomOrVariable, Term};
     use rg::{Edge, Expression, Label, Node};
@@ -311,6 +315,7 @@ fn add_next_edges(
                 connect(
                     rg,
                     rules_by_term,
+                    translated_goals,
                     &Term::Next(Arc::new(Term::Custom0(AtomOrVariable::Atom(id.clone())))),
                     Id::from(format!("next_{}", variables.len() - 1)),
                     Id::from(format!("next_{}_0", variables.len())),
@@ -320,6 +325,7 @@ fn add_next_edges(
                 connect(
                     rg,
                     rules_by_term,
+                    translated_goals,
                     &Term::Next(Arc::new(Term::Custom0(AtomOrVariable::Atom(id.clone())))),
                     Id::from(format!("next_{}", variables.len() - 1)),
                     Id::from(format!("next_{}_1", variables.len())),
@@ -398,6 +404,7 @@ fn add_next_edges(
 fn add_terminal_edges(
     rg: &mut rg::Game<Id>,
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+    translated_goals: &mut BTreeSet<gdl::Term<Id>>,
 ) {
     use gdl::Term;
     use rg::{Edge, Label, Node};
@@ -413,6 +420,7 @@ fn add_terminal_edges(
     connect(
         rg,
         rules_by_term,
+        translated_goals,
         &Term::Terminal,
         Id::from("terminal_check"),
         Id::from("loop_begin"),
@@ -422,6 +430,7 @@ fn add_terminal_edges(
     connect(
         rg,
         rules_by_term,
+        translated_goals,
         &Term::Terminal,
         Id::from("terminal_check"),
         Id::from("terminal"),
@@ -433,6 +442,7 @@ fn add_goal_edges(
     rg: &mut rg::Game<Id>,
     subterms: &[&gdl::Term<Id>],
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+    translated_goals: &mut BTreeSet<gdl::Term<Id>>,
 ) {
     use gdl::{AtomOrVariable, Term};
     use rg::{Edge, Expression, Label, Node};
@@ -457,6 +467,7 @@ fn add_goal_edges(
             connect(
                 rg,
                 rules_by_term,
+                translated_goals,
                 &Term::Goal(
                     AtomOrVariable::Atom((*role).clone()),
                     AtomOrVariable::Atom((*goal).clone()),
@@ -529,6 +540,7 @@ fn hash_term(term: &gdl::Term<Id>) -> String {
 fn connect(
     rg: &mut rg::Game<Id>,
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+    translated_goals: &mut BTreeSet<gdl::Term<Id>>,
     goal: &gdl::Term<Id>,
     begin: Id,
     end: Id,
@@ -537,7 +549,7 @@ fn connect(
     use rg::{Edge, Label, Node};
     use utils::position::Span;
 
-    if let Some((lhs, rhs)) = connect_inner(rg, rules_by_term, goal) {
+    if let Some((lhs, rhs)) = connect_inner(rg, rules_by_term, translated_goals, goal) {
         rg.add_edge_sorted(Arc::from(Edge {
             span: Span::none(),
             lhs: Node::new(begin),
@@ -555,6 +567,7 @@ fn connect(
 fn connect_inner(
     rg: &mut rg::Game<Id>,
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+    translated_goals: &mut BTreeSet<gdl::Term<Id>>,
     goal: &gdl::Term<Id>,
 ) -> Option<(rg::Node<Id>, rg::Node<Id>)> {
     use rg::{Edge, Node};
@@ -570,8 +583,7 @@ fn connect_inner(
     let lhs = Node::new(Id::from(format!("{hash}_begin")));
     let rhs = Node::new(Id::from(format!("{hash}_end")));
 
-    let start_present = rg.sorted_outgoing_edges(&lhs).next().is_some();
-    if !start_present {
+    if translated_goals.insert(goal.clone()) {
         for (index, rule) in rules.iter().enumerate() {
             let nodes: Vec<_> = (0..=rule.predicates.len())
                 .map(|step| match step {
@@ -581,7 +593,7 @@ fn connect_inner(
                 })
                 .collect();
             for (step, predicate) in rule.predicates.iter().enumerate() {
-                if let Some(label) = connect_label(rg, rules_by_term, predicate) {
+                if let Some(label) = connect_label(rg, rules_by_term, translated_goals, predicate) {
                     rg.add_edge_sorted(Arc::from(Edge {
                         span: Span::none(),
                         lhs: nodes[step].clone(),
@@ -599,6 +611,7 @@ fn connect_inner(
 fn connect_label(
     rg: &mut rg::Game<Id>,
     rules_by_term: &BTreeMap<&gdl::Term<Id>, Vec<&gdl::Rule<Id>>>,
+    translated_goals: &mut BTreeSet<gdl::Term<Id>>,
     predicate: &gdl::Predicate<Id>,
 ) -> Option<rg::Label<Id>> {
     use gdl::{AtomOrVariable, Term};
@@ -607,7 +620,7 @@ fn connect_label(
 
     Some(match predicate.term.as_ref() {
         Term::Custom0(_) | Term::CustomN(_, _) => {
-            let (lhs, rhs) = connect_inner(rg, rules_by_term, &predicate.term)?;
+            let (lhs, rhs) = connect_inner(rg, rules_by_term, translated_goals, &predicate.term)?;
             Label::Reachability {
                 span: Span::none(),
                 lhs,
