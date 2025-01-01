@@ -1,3 +1,4 @@
+mod canonicalize;
 mod domain_graph;
 mod domain_map;
 mod eval_distinct;

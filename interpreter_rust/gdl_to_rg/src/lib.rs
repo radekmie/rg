@@ -16,6 +16,7 @@ pub fn gdl_to_rg(gdl: &gdl::Game<&str>) -> rg::Game<Id> {
         .eval_distinct(&interner.intern(&"distinct"), &interner.intern(&"or"))
         .simplify()
         .map_id(&mut |id| Arc::from(*interner.recall(id).unwrap()))
+        .canonicalize()
         .symbolify();
 
     let mut rg = rg::Game::default();
