@@ -24,8 +24,8 @@ impl Game<Arc<str>> {
 
         let mut pragmas = vec![];
         'outer: for node in nodes {
+            let mut path_to_player = None;
             let mut paths_to_edges: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
-            let mut paths_to_players: BTreeMap<_, _> = BTreeMap::new();
             let mut paths_to_tags: BTreeMap<_, BTreeSet<(_, _, _)>> = BTreeMap::new();
             let mut queue = vec![(node.clone(), vec![], vec![])];
             while let Some((lhs, path, assignments)) = queue.pop() {
@@ -46,13 +46,11 @@ impl Game<Arc<str>> {
 
                     let mut assignments = assignments.clone();
                     match &edge.label {
-                        Label::Assignment { lhs, rhs } => {
+                        Label::Assignment { lhs, .. } => {
                             assignments.push(edge.label.clone());
                             if lhs.uncast().is_player_reference() {
-                                paths_to_players.entry(rhs.clone()).or_insert(path);
-
-                                // This will not be `@simpleApply`.
-                                if paths_to_players.len() == 2 {
+                                if path_to_player.replace(path).is_some() {
+                                    // This will not be `@simpleApply`.
                                     continue 'outer;
                                 }
                             } else {
@@ -73,21 +71,18 @@ impl Game<Arc<str>> {
                 }
             }
 
-            if paths_to_players.len() <= 1 {
-                let is_exhaustive = paths_to_edges
-                    .values()
-                    .all(|assignments| assignments.len() == 1);
+            let is_exhaustive = paths_to_edges
+                .values()
+                .all(|assignments| assignments.len() == 1);
 
-                if paths_to_players.len() == 1 {
-                    let path = paths_to_players.pop_first().unwrap().1;
-                    pragmas.push((node.clone(), vec![], path, true, is_exhaustive));
-                }
+            if let Some(path) = path_to_player {
+                pragmas.push((node.clone(), vec![], path, true, is_exhaustive));
+            }
 
-                for (tag, mut paths) in paths_to_tags {
-                    if paths.len() == 1 {
-                        let path = paths.pop_first().unwrap().1;
-                        pragmas.push((node.clone(), vec![tag], path, false, is_exhaustive));
-                    }
+            for (tag, mut paths) in paths_to_tags {
+                if paths.len() == 1 {
+                    let path = paths.pop_first().unwrap().1;
+                    pragmas.push((node.clone(), vec![tag], path, false, is_exhaustive));
                 }
             }
         }
@@ -230,6 +225,17 @@ mod test {
             16(bind_3: Coord), 17: $ bind_3;
             17, 12: $ index_2;
             12, end: ;
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        same_player,
+        "
+            begin, x: ;
+            begin, y: ;
+            x, end: player = keeper;
+            y, end: player = keeper;
         "
     );
 
