@@ -42,6 +42,10 @@ impl Game<RuntimeId> {
         callback: &Option<impl Fn(Vec<String>)>,
     ) -> Result<(), String> {
         fn stats(counter: &BTreeMap<usize, usize>) -> (usize, usize, f32, f32) {
+            if counter.is_empty() {
+                return (0, 0, 0.0, 0.0);
+            }
+
             let max = *counter.keys().max().unwrap();
             let min = *counter.keys().min().unwrap();
             let (x0, n0) = counter

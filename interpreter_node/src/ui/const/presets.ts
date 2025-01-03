@@ -86,6 +86,7 @@ import TicTacToeRbg from 'bundle-text:../../../../games/rbg/ticTacToe.rbg';
 import YavalathRbg from 'bundle-text:../../../../games/rbg/yavalath.rbg';
 import BreakthroughOptRg from 'bundle-text:../../../../games/rg/breakthrough-opt.rg';
 import BreakthroughRg from 'bundle-text:../../../../games/rg/breakthrough.rg';
+import MinimalRg from 'bundle-text:../../../../games/rg/minimal.rg';
 import TicTacToeRg from 'bundle-text:../../../../games/rg/ticTacToe.rg';
 
 import { Language } from '../../types';
@@ -162,6 +163,7 @@ const games = [
   ['Knightthrough', KnightthroughHrg, Language.hrg],
   ['Knightthrough', KnightthroughRbg, Language.rbg],
   ['Knightthrough (split)', KnightthroughSplitRbg, Language.rbg],
+  ['Minimal', MinimalRg, Language.rg],
   ['MontyHall', MontyHallGdl, Language.gdl],
   ['PaperSoccer', PaperSoccerRbg, Language.rbg],
   ['Pentago', PentagoHrg, Language.hrg],
