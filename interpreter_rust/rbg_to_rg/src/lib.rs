@@ -506,21 +506,6 @@ fn add_builtin_types(context: &mut Context) {
 
     context.rg.typedefs.push(rg::Typedef {
         span: Span::none(),
-        identifier: Id::from("PlayerOrKeeper"),
-        type_: Arc::from(rg::Type::Set {
-            span: Span::none(),
-            identifiers: context
-                .rbg
-                .players
-                .iter()
-                .map(|player| player.name.clone())
-                .chain(Some(Id::from("keeper")))
-                .collect(),
-        }),
-    });
-
-    context.rg.typedefs.push(rg::Typedef {
-        span: Span::none(),
         identifier: Id::from("Score"),
         type_: Arc::from(rg::Type::Set {
             span: Span::none(),
@@ -533,15 +518,6 @@ fn add_builtin_types(context: &mut Context) {
                 .unwrap_or(0))
                 .map(|index| Id::from(index.to_string()))
                 .collect(),
-        }),
-    });
-
-    context.rg.typedefs.push(rg::Typedef {
-        span: Span::none(),
-        identifier: Id::from("Goals"),
-        type_: Arc::from(rg::Type::Arrow {
-            lhs: Arc::from(rg::Type::new(Id::from("Player"))),
-            rhs: Arc::from(rg::Type::new(Id::from("Score"))),
         }),
     });
 
@@ -600,22 +576,6 @@ fn add_builtin_types(context: &mut Context) {
 }
 
 fn add_builtin_variables(context: &mut Context) {
-    context.rg.variables.push(rg::Variable {
-        span: Span::none(),
-        identifier: Id::from("player"),
-        type_: Arc::from(rg::Type::new(Id::from("PlayerOrKeeper"))),
-        default_value: Arc::from(rg::Value::new(Id::from("keeper"))),
-    });
-
-    context.rg.variables.push(rg::Variable {
-        span: Span::none(),
-        identifier: Id::from("goals"),
-        type_: Arc::from(rg::Type::new(Id::from("Goals"))),
-        default_value: Arc::from(rg::Value::new_empty(Arc::from(rg::Value::new(Id::from(
-            "0",
-        ))))),
-    });
-
     context.rg.variables.push(rg::Variable {
         span: Span::none(),
         identifier: Id::from("board"),
