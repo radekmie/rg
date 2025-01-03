@@ -1183,11 +1183,8 @@ fn translate_atom_content(
         }
         rbg::ActionOrRule::Action(rbg::Action::On { pieces }) => {
             for piece in pieces {
-                // Add an empty edge to make sure we won't create multiedges.
-                let local = context.random_node();
-                context.connect(from.clone(), local.clone(), rg::Label::new_skip());
                 context.connect(
-                    local,
+                    from.clone(),
                     to.clone(),
                     rg::Label::Comparison {
                         lhs: Arc::from(rg::Expression::Access {
