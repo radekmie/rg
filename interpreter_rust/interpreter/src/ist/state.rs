@@ -111,11 +111,9 @@ impl State {
         &'a self,
         game: &'a Game<RuntimeId>,
         depth: usize,
-        ignore_keeper: bool,
     ) -> StateNextDepth<'a> {
         StateNextDepth {
             game,
-            ignore_keeper,
             queue: vec![(self.clone(), depth)],
         }
     }
@@ -226,7 +224,6 @@ impl Iterator for StateNext<'_> {
 
 pub struct StateNextDepth<'a> {
     game: &'a Game<RuntimeId>,
-    ignore_keeper: bool,
     queue: Vec<(State, usize)>,
 }
 
@@ -234,24 +231,18 @@ impl Iterator for StateNextDepth<'_> {
     type Item = State;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Self {
-            game,
-            ignore_keeper,
-            queue,
-        } = self;
-
+        let Self { game, queue } = self;
         while let Some((state, depth)) = queue.pop() {
             if depth == 0 {
                 return Some(state);
             }
 
             let prev = &state.player;
-            let skip = *ignore_keeper && prev.is_keeper();
+            let skip = prev.is_keeper();
             for state in state.next_states(game, true) {
                 let next = &state.player;
-                let is_finish = next.is_keeper() && state.is_final() && !*ignore_keeper;
-                let is_switch = next != prev && !skip;
-                queue.push((state, depth - usize::from(is_finish || is_switch)));
+                let switch = if next != prev && !skip { 1 } else { 0 };
+                queue.push((state, depth - switch));
             }
         }
 

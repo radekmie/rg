@@ -27,10 +27,7 @@ impl Game<RuntimeId> {
 
     pub fn perf(&self, depth: usize) -> (usize, f32) {
         let now = Instant::now();
-        let count = self
-            .initial_state()
-            .next_states_depth(self, depth, true)
-            .count();
+        let count = self.initial_state().next_states_depth(self, depth).count();
         (count, now.elapsed().as_micros() as f32 / 1e3)
     }
 
@@ -78,7 +75,7 @@ impl Game<RuntimeId> {
             let mut turn = 0;
             let now = Instant::now();
             loop {
-                let mut states = state.next_states_depth(self, 1, false).collect::<Vec<_>>();
+                let mut states = state.next_states(self, true).collect::<Vec<_>>();
                 if states.is_empty() {
                     if !state.is_final() {
                         return Err(format!(
