@@ -29,7 +29,7 @@ impl<Id: Display> Display for GamePrefix<'_, Id> {
             .map(RulePrefix)
             .enumerate()
             .try_for_each(|(index, rule)| {
-                let separator = if index == 0 { "" } else { " " };
+                let separator = if index == 0 { "" } else { "\n" };
                 write!(f, "{separator}{rule}")
             })
     }

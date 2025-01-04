@@ -32,7 +32,7 @@ impl<Id: Display> Display for GameInfix<'_, Id> {
             .map(RuleInfix)
             .enumerate()
             .try_for_each(|(index, rule)| {
-                let separator = if index == 0 { "" } else { " " };
+                let separator = if index == 0 { "" } else { "\n" };
                 write!(f, "{separator}{rule}")
             })
     }
