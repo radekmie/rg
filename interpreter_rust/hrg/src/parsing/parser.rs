@@ -69,6 +69,16 @@ fn loop_(input: Input) -> Result<Statement<Identifier>> {
     })(input)
 }
 
+fn repeat(input: Input) -> Result<Statement<Identifier>> {
+    map(
+        pair(
+            preceded(ww_tag("repeat"), integer),
+            in_braces(many0(statement)),
+        ),
+        |(count, body)| Statement::Repeat { count, body },
+    )(input)
+}
+
 fn if_(input: Input) -> Result<Statement<Identifier>> {
     map(
         tuple((
@@ -108,6 +118,7 @@ fn statement(input: Input) -> Result<Statement<Identifier>> {
         forall,
         if_,
         loop_,
+        repeat,
         while_,
         tag_statement,
     )))(input)

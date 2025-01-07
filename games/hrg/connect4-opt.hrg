@@ -95,21 +95,13 @@ graph findNonempty() {
 }
 
 graph goDown() {
-//  repeat 5 {
-//    if board[down[position]] != empty {return()}
-//    position = down[position]
-//  }
+  repeat 5 {
+    if board[down[position]] != empty {
+      return()
+    }
 
-  if board[down[position]] != empty {return()}
-  position = down[position]
-  if board[down[position]] != empty {return()}
-  position = down[position]
-  if board[down[position]] != empty {return()}
-  position = down[position]
-  if board[down[position]] != empty {return()}
-  position = down[position]
-  if board[down[position]] != empty {return()}
-  position = down[position]
+    position = down[position]
+  }
 }
 
 graph turn(me: Player, op: Player, piece: Piece) {

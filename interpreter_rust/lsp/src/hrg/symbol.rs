@@ -46,7 +46,7 @@ impl Symbols {
                     .flatten()
                     .for_each(|statement| self.add_from_statement(statement));
             }
-            Statement::Loop { body } => body
+            Statement::Loop { body } | Statement::Repeat { body, .. } => body
                 .iter()
                 .for_each(|statement| self.add_from_statement(statement)),
             Statement::Assignment {

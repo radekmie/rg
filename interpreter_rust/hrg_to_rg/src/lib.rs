@@ -1104,6 +1104,25 @@ fn translate_automaton_statements(
                 )?;
                 current_node = local_node;
             }
+            hrg::Statement::Repeat { count, body } => {
+                for _ in 0..*count {
+                    let local_node = context.random_node(prefix);
+                    translate_automaton_statements(
+                        context,
+                        body,
+                        bindings,
+                        break_node,
+                        continue_node,
+                        end_node,
+                        current_node.clone(),
+                        Some(&local_node),
+                        prefix,
+                        return_node,
+                        automaton_function,
+                    )?;
+                    current_node = local_node;
+                }
+            }
             hrg::Statement::Tag { symbol } => {
                 let local_node = context.random_node(prefix);
                 context.connect(

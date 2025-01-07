@@ -88,7 +88,7 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
                 add_from_statement(table, statement);
             }
         }
-        Statement::Loop { body } => {
+        Statement::Loop { body } | Statement::Repeat { body, .. } => {
             for statement in body {
                 add_from_statement(table, statement);
             }

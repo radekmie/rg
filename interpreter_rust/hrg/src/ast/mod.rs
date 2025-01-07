@@ -32,6 +32,10 @@ pub enum Statement<Id> {
     Loop {
         body: Vec<Statement<Id>>,
     },
+    Repeat {
+        count: usize,
+        body: Vec<Statement<Id>>,
+    },
     Tag {
         symbol: Id,
     },
