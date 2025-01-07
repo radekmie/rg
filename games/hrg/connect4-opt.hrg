@@ -26,7 +26,7 @@ left(V(X, Y)) = if X == 1 then null else V(X - 1, Y)
 left(_) = null
 
 // Variables
-board : Position -> Piece = { V(X, Y) = empty where X in 1..7, Y in 1..6 }
+board : Position -> Piece = { V(X, 6) = empty where X in 1..7; null = border }
 
 position : Position
 
@@ -95,24 +95,10 @@ graph findNonempty() {
 }
 
 graph goDown() {
-//  loop {
-//    if down[position] == null || board[down[position]] != empty {
-//      return()
-//    } else {
-//      position = down[position]
-//    }
+//  repeat 5 {
+//    if board[down[position]] != empty {return()}
+//    position = down[position]
 //  }
-
-//  if down[position] == null || board[down[position]] != empty {return()}
-//  position = down[position]
-//  if down[position] == null || board[down[position]] != empty {return()}
-//  position = down[position]
-//  if down[position] == null || board[down[position]] != empty {return()}
-//  position = down[position]
-//  if down[position] == null || board[down[position]] != empty {return()}
-//  position = down[position]
-//  if down[position] == null || board[down[position]] != empty {return()}
-//  position = down[position]
 
   if board[down[position]] != empty {return()}
   position = down[position]
@@ -146,7 +132,6 @@ graph turn(me: Player, op: Player, piece: Piece) {
 }
 
 graph rules() {
-  board[null] = border
   loop {
     turn(red, yellow, red)
     turn(yellow, red, yellow)
