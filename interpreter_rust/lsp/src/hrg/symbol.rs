@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use hrg::ast::{
-    DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionDeclaration, Game,
-    Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
+    DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression, Function,
+    FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
 };
 use utils::Identifier;
 
@@ -122,8 +122,10 @@ impl Symbols {
                     self.symbols.push(symbol);
                 }
                 for arg in args {
-                    if let Some(symbol) = untyped(arg, Flag::Param) {
-                        self.symbols.push(symbol);
+                    if let DomainElementPattern::Variable { identifier } = arg {
+                        if let Some(symbol) = untyped(identifier, Flag::Param) {
+                            self.symbols.push(symbol);
+                        }
                     }
                 }
                 values.iter().for_each(|value| match value {

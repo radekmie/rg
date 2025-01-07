@@ -1,6 +1,7 @@
 use crate::ast::{
-    DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg, FunctionCase,
-    FunctionDeclaration, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
+    DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression, Function,
+    FunctionArg, FunctionCase, FunctionDeclaration, Pattern, Statement, Type, TypeDeclaration,
+    VariableDeclaration,
 };
 use std::sync::Arc;
 
@@ -38,8 +39,10 @@ impl<Id> From<Id> for DomainElement<Id> {
     }
 }
 
-impl<Id> From<(Id, Vec<Id>, Vec<DomainValue<Id>>)> for DomainElement<Id> {
-    fn from((identifier, args, values): (Id, Vec<Id>, Vec<DomainValue<Id>>)) -> Self {
+impl<Id> From<(Id, Vec<DomainElementPattern<Id>>, Vec<DomainValue<Id>>)> for DomainElement<Id> {
+    fn from(
+        (identifier, args, values): (Id, Vec<DomainElementPattern<Id>>, Vec<DomainValue<Id>>),
+    ) -> Self {
         Self::Generator {
             identifier,
             args,

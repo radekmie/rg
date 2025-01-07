@@ -1,6 +1,7 @@
 use crate::ast::{
-    Binop, DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg,
-    FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
+    Binop, DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression,
+    Function, FunctionArg, FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration,
+    VariableDeclaration,
 };
 use nom::branch::alt;
 use nom::bytes::complete::tag;
@@ -116,11 +117,21 @@ fn domain_element(input: Input) -> Result<DomainElement<Identifier>> {
     ww(alt((
         into(tuple((
             identifier,
-            in_parens(comma_separated0(identifier)),
+            in_parens(comma_separated0(domain_element_pattern)),
             preceded(ww_tag("where"), comma_separated0(domain_value)),
         ))),
         into(identifier),
     )))(input)
+}
+
+fn domain_element_pattern(input: Input) -> Result<DomainElementPattern<Identifier>> {
+    map(identifier, |identifier| {
+        if Pattern::is_literal(&identifier.identifier) {
+            DomainElementPattern::Literal { identifier }
+        } else {
+            DomainElementPattern::Variable { identifier }
+        }
+    })(input)
 }
 
 fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {

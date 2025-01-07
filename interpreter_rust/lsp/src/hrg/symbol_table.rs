@@ -1,8 +1,9 @@
 use crate::common::symbol::{make_builtin, Flag};
 use crate::common::symbol_table::{SymbolTable, SymbolTableBuilder};
 use hrg::ast::{
-    DomainDeclaration, DomainElement, DomainValue, Expression, Function, FunctionArg, FunctionCase,
-    FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
+    DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression, Function,
+    FunctionArg, FunctionCase, FunctionDeclaration, Game, Pattern, Statement, Type,
+    TypeDeclaration, VariableDeclaration,
 };
 use utils::position::Positioned;
 use utils::{Error, Identifier};
@@ -162,7 +163,9 @@ fn add_from_domain_element(table: &mut SymbolTableBuilder, element: &DomainEleme
         } => {
             table.add_occ(identifier);
             for arg in args {
-                table.add_occ(arg);
+                if let DomainElementPattern::Variable { identifier } = arg {
+                    table.add_occ(identifier);
+                }
             }
             for value in values {
                 add_from_domain_value(table, value);

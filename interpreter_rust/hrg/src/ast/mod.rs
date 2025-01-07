@@ -95,12 +95,18 @@ pub struct DomainDeclaration<Id> {
 pub enum DomainElement<Id> {
     Generator {
         identifier: Id,
-        args: Vec<Id>,
+        args: Vec<DomainElementPattern<Id>>,
         values: Vec<DomainValue<Id>>,
     },
     Literal {
         identifier: Id,
     },
+}
+
+#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+pub enum DomainElementPattern<Id> {
+    Literal { identifier: Id },
+    Variable { identifier: Id },
 }
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

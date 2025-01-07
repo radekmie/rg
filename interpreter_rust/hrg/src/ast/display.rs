@@ -1,7 +1,7 @@
 use super::{
-    Binop, DomainDeclaration, DomainElement, DomainValue, Error, Expression, Function, FunctionArg,
-    FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, Value, ValueMapEntry,
-    VariableDeclaration,
+    Binop, DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Error, Expression,
+    Function, FunctionArg, FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration,
+    Value, ValueMapEntry, VariableDeclaration,
 };
 use std::fmt::{Display, Formatter, Result};
 use utils::display::write_with_separator;
@@ -30,6 +30,15 @@ impl<Id: Display> Display for DomainElement<Id> {
                 Ok(())
             }
             Self::Literal { identifier } => write!(f, "{identifier}"),
+        }
+    }
+}
+
+impl<Id: Display> Display for DomainElementPattern<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Self::Literal { identifier } => write!(f, "{identifier}"),
+            Self::Variable { identifier } => write!(f, "{identifier}"),
         }
     }
 }

@@ -1445,22 +1445,29 @@ fn translate_domain_element(
             values,
         } => args
             .iter()
-            .map(|identifier| {
-                let domain_value = values
-                    .iter()
-                    .find(|x| x.identifier() == identifier)
-                    .unwrap_or_else(|| panic!("Missing values for \"{identifier}\"."));
-                let identifiers = match domain_value {
-                    hrg::DomainValue::Range { min, max, .. } => (*min..=*max)
-                        .map(|index: usize| Id::from(index.to_string()))
-                        .collect(),
-                    hrg::DomainValue::Set { elements, .. } => elements.clone(),
-                };
+            .map(|pattern| match pattern {
+                hrg::DomainElementPattern::Literal { identifier } => {
+                    vec![Arc::from(hrg::Value::Element {
+                        identifier: identifier.clone(),
+                    })]
+                }
+                hrg::DomainElementPattern::Variable { identifier } => {
+                    let domain_value = values
+                        .iter()
+                        .find(|x| x.identifier() == identifier)
+                        .unwrap_or_else(|| panic!("Missing values for \"{identifier}\"."));
+                    let identifiers = match domain_value {
+                        hrg::DomainValue::Range { min, max, .. } => (*min..=*max)
+                            .map(|index: usize| Id::from(index.to_string()))
+                            .collect(),
+                        hrg::DomainValue::Set { elements, .. } => elements.clone(),
+                    };
 
-                identifiers
-                    .into_iter()
-                    .map(|identifier| Arc::from(hrg::Value::Element { identifier }))
-                    .collect()
+                    identifiers
+                        .into_iter()
+                        .map(|identifier| Arc::from(hrg::Value::Element { identifier }))
+                        .collect()
+                }
             })
             .fold(vec![vec![]], cartesian)
             .into_iter()
