@@ -69,6 +69,9 @@ impl<Id: Display> Display for Error<Id> {
             Self::DuplicatedDomainValue { identifier } => {
                 write!(f, "Duplicated domain value \"{identifier}\".")
             }
+            Self::DuplicatedMapKey { key } => {
+                write!(f, "Duplicated map key \"{key}\".")
+            }
             Self::EmptyMap => write!(f, "At least one map entry is required to construct a map."),
             Self::FunctionCaseNotCovered { identifier, args } => {
                 write!(f, "No case for {identifier}(")?;
@@ -263,23 +266,28 @@ fn write_expression<Id: Display>(
             write!(f, ")")
         }
         Expression::Literal { identifier } => write!(f, "{identifier}"),
-        Expression::Map {
-            pattern,
-            expression,
-            domains,
-        } => {
+        Expression::Map { parts } => {
             let indent = if indent == 0 { 0 } else { indent - 2 };
             writeln!(f, "{{")?;
-            write_indent(f, indent + 2)?;
-            write!(f, "{pattern} = ")?;
-            write_expression(f, expression, indent + 4)?;
-            if !domains.is_empty() {
-                writeln!(f)?;
+
+            for (index, part) in parts.iter().enumerate() {
                 write_indent(f, indent + 2)?;
-                write!(f, "where ")?;
-                write_with_separator(f, domains, ", ")?;
+                write!(f, "{} = ", part.pattern)?;
+                write_expression(f, &part.expression, indent + 4)?;
+                if !part.domains.is_empty() {
+                    writeln!(f)?;
+                    write_indent(f, indent + 4)?;
+                    write!(f, "where ")?;
+                    write_with_separator(f, &part.domains, ", ")?;
+                }
+
+                if index + 1 != parts.len() {
+                    write!(f, ";")?;
+                }
+
+                writeln!(f)?;
             }
-            writeln!(f)?;
+
             write_rbrace(f, indent)
         }
         Expression::If { cond, then, else_ } => {

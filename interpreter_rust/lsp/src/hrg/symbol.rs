@@ -1,15 +1,10 @@
-use std::sync::Arc;
-
+use crate::common::symbol::{Flag, Symbol, Type as SymbolType};
 use hrg::ast::{
     DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression, Function,
     FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
 };
+use std::sync::Arc;
 use utils::Identifier;
-
-use crate::common::{
-    self,
-    symbol::{Flag, Symbol},
-};
 
 pub struct Symbols {
     pub symbols: Vec<Symbol>,
@@ -90,13 +85,11 @@ impl Symbols {
                 self.add_from_expression(else_);
             }
             Expression::Literal { .. } => {}
-            Expression::Map {
-                pattern,
-                expression,
-                ..
-            } => {
-                self.add_from_pattern(pattern);
-                self.add_from_expression(expression);
+            Expression::Map { parts } => {
+                for part in parts {
+                    self.add_from_pattern(&part.pattern);
+                    self.add_from_expression(&part.expression);
+                }
             }
         }
     }
@@ -218,9 +211,9 @@ impl Symbols {
 }
 
 fn typed(identifier: &Identifier, flag: Flag, type_: Arc<Type<Identifier>>) -> Option<Symbol> {
-    Symbol::from_id(identifier, flag, common::symbol::Type::Hrg(type_))
+    Symbol::from_id(identifier, flag, SymbolType::Hrg(type_))
 }
 
 fn untyped(identifier: &Identifier, flag: Flag) -> Option<Symbol> {
-    Symbol::from_id(identifier, flag, common::symbol::Type::NoType)
+    Symbol::from_id(identifier, flag, SymbolType::NoType)
 }

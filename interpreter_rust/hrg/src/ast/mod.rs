@@ -136,6 +136,9 @@ pub enum Error<Id> {
     DuplicatedDomainValue {
         identifier: Id,
     },
+    DuplicatedMapKey {
+        key: Value<Id>,
+    },
     EmptyMap,
     FunctionCaseNotCovered {
         identifier: Id,
@@ -231,10 +234,15 @@ pub enum Expression<Id> {
         identifier: Id,
     },
     Map {
-        pattern: Arc<Pattern<Id>>,
-        expression: Arc<Expression<Id>>,
-        domains: Vec<DomainValue<Id>>,
+        parts: Vec<ExpressionMapPart<Id>>,
     },
+}
+
+#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct ExpressionMapPart<Id> {
+    pub pattern: Arc<Pattern<Id>>,
+    pub expression: Arc<Expression<Id>>,
+    pub domains: Vec<DomainValue<Id>>,
 }
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

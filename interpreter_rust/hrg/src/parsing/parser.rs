@@ -1,14 +1,14 @@
 use crate::ast::{
     Binop, DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression,
-    Function, FunctionArg, FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration,
-    VariableDeclaration,
+    ExpressionMapPart, Function, FunctionArg, FunctionDeclaration, Game, Pattern, Statement, Type,
+    TypeDeclaration, VariableDeclaration,
 };
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
 use nom::combinator::{all_consuming, into, map, opt, value, verify};
 use nom::error::context;
-use nom::multi::{fold_many0, many0, many1, separated_list0};
+use nom::multi::{fold_many0, many0, many1, separated_list0, separated_list1};
 use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
 use std::cell::RefCell;
 use std::sync::Arc;
@@ -154,10 +154,7 @@ fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
             preceded(tag("then"), expression),
             preceded(tag("else"), expression),
         ))),
-        into_arc(in_braces(pair(
-            separated_pair(pattern, char('='), expression),
-            opt(preceded(tag("where"), comma_separated0(domain_value))),
-        ))),
+        into_arc(in_braces(separated_list1(char(';'), expression_map_part))),
         map(
             pair(expression2, opt(preceded(ww_tag("||"), expression))),
             |(lhs, rhs)| match rhs {
@@ -245,6 +242,14 @@ fn expression5(input: Input) -> Result<Arc<Expression<Identifier>>> {
         }
         None => in_parens(expression)(input),
     }
+}
+
+fn expression_map_part(input: Input) -> Result<ExpressionMapPart<Identifier>> {
+    into(tuple((
+        pattern,
+        preceded(char('='), expression),
+        opt(preceded(tag("where"), comma_separated0(domain_value))),
+    )))(input)
 }
 
 fn expression_suffix(

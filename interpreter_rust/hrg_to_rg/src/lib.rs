@@ -262,6 +262,11 @@ fn evaluate_default_value(
 fn evaluate_domain_values(
     domain_values: &[hrg::DomainValue<Id>],
 ) -> Result<Vec<BTreeMap<Id, hrg::Value<Id>>>, hrg::Error<Id>> {
+    // No `where ...` part is present, so no bindings are generated.
+    if domain_values.is_empty() {
+        return Ok(vec![BTreeMap::default()]);
+    }
+
     for domain_value in &domain_values[1..] {
         if domain_value.identifier() == domain_values.first().unwrap().identifier() {
             return Err(hrg::Error::DuplicatedDomainValue {
@@ -388,25 +393,24 @@ fn evaluate_expression(
             },
             Ok,
         )?,
-        hrg::Expression::Map {
-            pattern,
-            expression,
-            domains,
-        } => hrg::Value::Map {
-            entries: evaluate_domain_values(domains)?
+        hrg::Expression::Map { parts } => hrg::Value::Map {
+            entries: parts
+                .iter()
+                .map(|part| evaluate_expression_map_part(context, part, binding))
+                .collect::<Result<Vec<_>, _>>()?
                 .into_iter()
-                .map(|subbinding| {
-                    let mut binding = binding.clone();
-                    binding.extend(subbinding);
-                    binding
-                })
-                .map(|binding| {
-                    Ok(hrg::ValueMapEntry {
-                        key: Arc::from(evaluate_pattern(pattern, &binding)),
-                        value: Arc::from(evaluate_expression(context, expression, &binding)?),
-                    })
-                })
-                .collect::<Result<_, _>>()?,
+                .try_fold(vec![], |mut xs: Vec<hrg::ValueMapEntry<_>>, ys| {
+                    for y in ys {
+                        if let Err(index) = xs.binary_search_by(|x| x.key.cmp(&y.key)) {
+                            xs.insert(index, y);
+                        } else {
+                            let key = Arc::unwrap_or_clone(y.key);
+                            return Err(hrg::Error::DuplicatedMapKey { key });
+                        }
+                    }
+
+                    Ok(xs)
+                })?,
         },
         _ => unimplemented!(),
     })
@@ -449,6 +453,27 @@ fn evaluate_expression_identifier(
         hrg::Value::Element { identifier } => Ok(identifier.clone()),
         _ => panic!("Expected ValueElement."),
     }
+}
+
+fn evaluate_expression_map_part(
+    context: &Context,
+    part: &hrg::ExpressionMapPart<Id>,
+    binding: &BTreeMap<Id, hrg::Value<Id>>,
+) -> Result<Vec<hrg::ValueMapEntry<Id>>, hrg::Error<Id>> {
+    evaluate_domain_values(&part.domains)?
+        .into_iter()
+        .map(|subbinding| {
+            let mut binding = binding.clone();
+            binding.extend(subbinding);
+            binding
+        })
+        .map(|binding| {
+            Ok(hrg::ValueMapEntry {
+                key: Arc::from(evaluate_pattern(&part.pattern, &binding)),
+                value: Arc::from(evaluate_expression(context, &part.expression, &binding)?),
+            })
+        })
+        .collect()
 }
 
 fn evaluate_pattern(
@@ -1691,30 +1716,23 @@ fn translate_variable_default_value(
     default_value: &Option<Arc<hrg::Expression<Id>>>,
     type_: &rg::Type<Id>,
 ) -> Result<Arc<rg::Value<Id>>, hrg::Error<Id>> {
-    match default_value.as_deref() {
+    let Some(default_value) = default_value.as_deref() else {
         // If there's none, build one from the type.
-        None => translate_value(&evaluate_default_value(context, type_)?),
+        return translate_value(&evaluate_default_value(context, type_)?);
+    };
 
-        // If it's a map with a wildcard pattern, set it as the default value.
-        Some(hrg::Expression::Map {
-            pattern,
-            expression,
-            ..
-        }) if **pattern == hrg::Pattern::Wildcard => Ok(Arc::from(rg::Value::Map {
-            span: Span::none(),
-            entries: vec![rg::ValueEntry::new_default(translate_value(
-                &evaluate_expression(context, expression, &BTreeMap::new())?,
-            )?)],
-        })),
-
-        // Build the map.
-        // TODO: Check whether map domains match type domains.
-        Some(default_value) => translate_value(&evaluate_expression(
-            context,
-            default_value,
-            &BTreeMap::new(),
-        )?),
+    // If it's a map with a wildcard pattern, set it as the default.
+    if let hrg::Expression::Map { parts } = default_value {
+        if parts.len() == 1 && *parts[0].pattern == hrg::Pattern::Wildcard {
+            let value = evaluate_expression(context, &parts[0].expression, &BTreeMap::new())?;
+            return Ok(Arc::from(rg::Value::new_empty(translate_value(&value)?)));
+        }
     }
+
+    // Build the map.
+    // TODO: Check whether map domains match type domains.
+    let value = evaluate_expression(context, default_value, &BTreeMap::new());
+    translate_value(&value?)
 }
 
 fn translate_variables(context: &mut Context) -> Result<(), hrg::Error<Id>> {

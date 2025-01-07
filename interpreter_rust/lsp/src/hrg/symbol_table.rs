@@ -216,15 +216,13 @@ fn add_from_expression(table: &mut SymbolTableBuilder, expr: &Expression<Identif
         Expression::Literal { identifier } => {
             table.add_occ(identifier);
         }
-        Expression::Map {
-            pattern,
-            expression,
-            domains,
-        } => {
-            add_from_pattern(table, pattern);
-            add_from_expression(table, expression);
-            for domain in domains {
-                add_from_domain_value(table, domain);
+        Expression::Map { parts } => {
+            for part in parts {
+                add_from_pattern(table, &part.pattern);
+                add_from_expression(table, &part.expression);
+                for domain in &part.domains {
+                    add_from_domain_value(table, domain);
+                }
             }
         }
     }

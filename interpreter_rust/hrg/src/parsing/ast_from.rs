@@ -1,7 +1,7 @@
 use crate::ast::{
-    DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression, Function,
-    FunctionArg, FunctionCase, FunctionDeclaration, Pattern, Statement, Type, TypeDeclaration,
-    VariableDeclaration,
+    DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression,
+    ExpressionMapPart, Function, FunctionArg, FunctionCase, FunctionDeclaration, Pattern,
+    Statement, Type, TypeDeclaration, VariableDeclaration,
 };
 use std::sync::Arc;
 
@@ -88,14 +88,27 @@ impl<Id> From<(Id, Vec<Arc<Self>>)> for Expression<Id> {
     }
 }
 
-impl<Id> From<((Arc<Pattern<Id>>, Arc<Self>), Option<Vec<DomainValue<Id>>>)> for Expression<Id> {
+impl<Id> From<Vec<ExpressionMapPart<Id>>> for Expression<Id> {
+    fn from(parts: Vec<ExpressionMapPart<Id>>) -> Self {
+        Self::Map { parts }
+    }
+}
+
+impl<Id>
+    From<(
+        Arc<Pattern<Id>>,
+        Arc<Expression<Id>>,
+        Option<Vec<DomainValue<Id>>>,
+    )> for ExpressionMapPart<Id>
+{
     fn from(
-        ((pattern, expression), domains): (
-            (Arc<Pattern<Id>>, Arc<Self>),
+        (pattern, expression, domains): (
+            Arc<Pattern<Id>>,
+            Arc<Expression<Id>>,
             Option<Vec<DomainValue<Id>>>,
         ),
     ) -> Self {
-        Self::Map {
+        Self {
             pattern,
             expression,
             domains: domains.unwrap_or_default(),

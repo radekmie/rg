@@ -1766,10 +1766,10 @@ impl<Id> Value<Id> {
         Self::Element { identifier }
     }
 
-    pub fn new_empty(value: Arc<Self>) -> Self {
+    pub fn new_empty(default_value: Arc<Self>) -> Self {
         Self::Map {
             span: Span::none(),
-            entries: vec![ValueEntry::new_default(value)],
+            entries: vec![ValueEntry::new_default(default_value)],
         }
     }
 
