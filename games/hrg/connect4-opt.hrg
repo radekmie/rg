@@ -5,7 +5,7 @@
 domain Piece = empty | red | yellow | border
 domain Player = red | yellow
 domain Position = null | V(X, Y) where X in 1..7, Y in 1..6
-domain TopPosition = V(X, Y) where X in 1..7, Y in 6..6
+domain TopPosition = V(X, 6) where X in 1..7
 domain Score = 50 | 0 | 100
 
 // Helpers
