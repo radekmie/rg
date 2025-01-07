@@ -1,0 +1,154 @@
+
+// Moves form: Position
+
+// Domains
+domain Piece = empty | red | yellow | border
+domain Player = red | yellow
+domain Position = null | V(X, Y) where X in 1..7, Y in 1..6
+domain TopPosition = V(X, Y) where X in 1..7, Y in 6..6
+domain Score = 50 | 0 | 100
+
+// Helpers
+up : Position -> Position
+up(V(X, Y)) = if Y == 6 then null else V(X, Y + 1)
+up(_) = null
+
+right : Position -> Position
+right(V(X, Y)) = if X == 7 then null else V(X + 1, Y)
+right(_) = null
+
+down : Position -> Position
+down(V(X, Y)) = if Y == 1 then null else V(X, Y - 1)
+down(_) = null
+
+left : Position -> Position
+left(V(X, Y)) = if X == 1 then null else V(X - 1, Y)
+left(_) = null
+
+// Variables
+board : Position -> Piece = { V(X, Y) = empty where X in 1..7, Y in 1..6 }
+
+position : Position
+
+
+// Automaton
+graph win(piece: Piece) {
+  branch {
+    check(board[up(left(position))] == piece)
+    check(board[up(left(up(left(position))))] == piece)
+    branch {
+      check(board[up(left(up(left(up(left(position))))))] == piece)
+    } or {
+      check(board[down(right(position))] == piece)
+    }
+  } or {
+    check(board[left(position)] == piece)
+    check(board[left(left(position))] == piece)
+    branch {
+      check(board[left(left(left(position)))] == piece)
+    } or {
+      check(board[right(position)] == piece)
+    }
+  } or {
+    check(board[down(left(position))] == piece)
+    check(board[down(left(down(left(position))))] == piece)
+    branch {
+      check(board[down(left(down(left(down(left(position))))))] == piece)
+    } or {
+      check(board[up(right(position))] == piece)
+    }
+  } or {
+    check(board[down(position)] == piece)
+    check(board[down(down(position))] == piece)
+    check(board[down(down(down(position)))] == piece)
+  } or {
+    check(board[down(right(position))] == piece)
+    check(board[down(right(down(right(position))))] == piece)
+    branch {
+      check(board[down(right(down(right(down(right(position))))))] == piece)
+    } or {
+      check(board[up(left(position))] == piece)
+    }
+  } or {
+    check(board[right(position)] == piece)
+    check(board[right(right(position))] == piece)
+    branch {
+      check(board[right(right(right(position)))] == piece)
+    } or {
+      check(board[left(position)] == piece)
+    }
+  } or {
+    check(board[up(right(position))] == piece)
+    check(board[up(right(up(right(position))))] == piece)
+    branch {
+      check(board[up(right(up(right(up(right(position))))))] == piece)
+    } or {
+      check(board[down(left(position))] == piece)
+    }
+  }
+}
+
+graph findNonempty() {
+  forall p:TopPosition {
+    check(board[p] == empty)
+  }
+}
+
+graph goDown() {
+//  loop {
+//    if down[position] == null || board[down[position]] != empty {
+//      return()
+//    } else {
+//      position = down[position]
+//    }
+//  }
+
+//  if down[position] == null || board[down[position]] != empty {return()}
+//  position = down[position]
+//  if down[position] == null || board[down[position]] != empty {return()}
+//  position = down[position]
+//  if down[position] == null || board[down[position]] != empty {return()}
+//  position = down[position]
+//  if down[position] == null || board[down[position]] != empty {return()}
+//  position = down[position]
+//  if down[position] == null || board[down[position]] != empty {return()}
+//  position = down[position]
+
+  if board[down[position]] != empty {return()}
+  position = down[position]
+  if board[down[position]] != empty {return()}
+  position = down[position]
+  if board[down[position]] != empty {return()}
+  position = down[position]
+  if board[down[position]] != empty {return()}
+  position = down[position]
+  if board[down[position]] != empty {return()}
+  position = down[position]
+}
+
+graph turn(me: Player, op: Player, piece: Piece) {
+  player = me
+  forall p:TopPosition {
+    position = p
+    $ p
+  }
+  player = keeper
+  goDown()
+  board[position] = piece
+  if reachable(win(piece)) {
+    goals[me] = 100
+    goals[op] = 0
+    end()
+  }
+  if not(reachable(findNonempty())) {// Draw
+    end()
+  }
+}
+
+graph rules() {
+  board[null] = border
+  loop {
+    turn(red, yellow, red)
+    turn(yellow, red, yellow)
+  }
+}
