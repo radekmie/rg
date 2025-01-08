@@ -122,12 +122,22 @@ impl Game<Arc<str>> {
 
         // @simpleApply{,Exhaustive} cannot start in a node with binds and all
         // binds have to be bound with any of the tags.
-        pragmas.retain(|(node, tags, nodes, _, _)| {
-            !node.has_bindings()
+        let mut affected_exhaustive_nodes = BTreeSet::new();
+        pragmas.retain(|(node, tags, nodes, _, is_exhaustive)| {
+            let is_correct = !node.has_bindings()
                 && nodes
                     .iter()
-                    .all(|node| node.bindings().all(|bind| tags.contains(bind.0)))
+                    .all(|node| node.bindings().all(|bind| tags.contains(bind.0)));
+            if !is_correct && *is_exhaustive {
+                affected_exhaustive_nodes.insert(node.clone());
+            }
+
+            is_correct
         });
+
+        for (node, _, _, _, is_exhaustive) in &mut pragmas {
+            *is_exhaustive &= !affected_exhaustive_nodes.contains(node);
+        }
 
         for (node, tags, nodes, _, is_exhaustive) in pragmas {
             let pragma = if is_exhaustive {
