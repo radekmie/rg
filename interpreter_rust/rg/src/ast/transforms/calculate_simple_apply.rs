@@ -240,6 +240,23 @@ mod test {
 
     test_transform!(
         calculate_simple_apply,
+        adjust_exhaustiveness,
+        "
+            begin, x1: ;
+            begin, y1: ;
+            x1, x2: ;
+            x2, x3(_: Boolean): ;
+            x3(_: Boolean), x4: ;
+            x4, x5: $ x;
+            y1, y2: $ y;
+            x5, end: player = keeper;
+            y2, end: player = keeper;
+        ",
+        adds "@simpleApply begin y : y1 y2 end;"
+    );
+
+    test_transform!(
+        calculate_simple_apply,
         same_player,
         "
             begin, x: ;
