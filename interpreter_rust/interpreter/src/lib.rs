@@ -205,6 +205,7 @@ fn analyze_rg_inner(
         game_call!(game, check_types);
 
         let copy = game.clone();
+        let mut restart = true;
 
         macro_rules! pass {
             ($fn:ident) => {
@@ -212,7 +213,9 @@ fn analyze_rg_inner(
                     game_call!(game, $fn);
                     if game != copy {
                         game_step!(game, stringify!($fn));
-                        continue;
+                        if restart {
+                            continue;
+                        }
                     }
                 }
             };
@@ -252,6 +255,9 @@ fn analyze_rg_inner(
 
         // Expand generator nodes before calculating pragmas.
         pass!(expand_generator_nodes);
+
+        // Point of no return -- these passes are forward-only.
+        restart = false;
 
         // Pragmas.
         pass!(calculate_disjoints);
