@@ -106,6 +106,7 @@ fn analyze_rbg_inner(
 fn analyze_rg_inner(
     game_or_source: Result<GameAst<Id>, String>,
     flags: &Flags,
+    verbose: bool,
     callback: &mut Option<impl FnMut(String)>,
 ) -> Result<GameAst<Id>, String> {
     macro_rules! step {
@@ -154,7 +155,14 @@ fn analyze_rg_inner(
 
     macro_rules! game_call {
         ($game:expr, $fn:ident) => {
-            check!($game.$fn(), add_game_stats!($game))
+            #[cfg(not(target_arch = "wasm32"))]
+            let now = std::time::Instant::now();
+            let result = $game.$fn();
+            #[cfg(not(target_arch = "wasm32"))]
+            if verbose {
+                eprintln!("{} {:?}", stringify!($fn), now.elapsed());
+            }
+            check!(result, add_game_stats!($game))
         };
     }
 
@@ -183,7 +191,7 @@ fn analyze_rg_inner(
 
     // Builtins may not be required.
     let copy = game.clone();
-    game.add_builtins()?;
+    game_call!(game, add_builtins);
     if copy != game {
         game_step!(game, "add_builtins");
     }
@@ -266,6 +274,7 @@ pub fn analyze_inner(
     source: String,
     extension: &str,
     flags: &Flags,
+    verbose: bool,
     callback: &mut Option<impl FnMut(String)>,
 ) -> Result<GameAst<Id>, String> {
     let game_or_source = match extension {
@@ -276,7 +285,7 @@ pub fn analyze_inner(
         _ => return Err("Unknown game type: {extension}.".to_string()),
     };
 
-    analyze_rg_inner(game_or_source, flags, callback)
+    analyze_rg_inner(game_or_source, flags, verbose, callback)
 }
 
 #[wasm_bindgen(js_name = analyze)]
@@ -291,6 +300,7 @@ pub fn analyze(
         source,
         extension,
         &from_str::<Flags>(flags).unwrap(),
+        false,
         &mut Some(|step| {
             callback
                 .call1(&JsValue::null(), &JsValue::from(step))

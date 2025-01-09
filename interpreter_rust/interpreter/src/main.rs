@@ -49,6 +49,9 @@ struct GameWithFlags {
     #[command(flatten)]
     flags: Flags,
     path: PathBuf,
+    /// prints detailed timings of all transformations
+    #[arg(long)]
+    verbose: bool,
 }
 
 impl GameWithFlags {
@@ -60,18 +63,26 @@ impl GameWithFlags {
         self,
         callback: &mut Option<impl FnMut(String)>,
     ) -> Result<GameAst<Arc<str>>, String> {
-        let Self { flags, path } = self;
+        let Self {
+            flags,
+            path,
+            verbose,
+        } = self;
         let Some(extension) = path.extension().and_then(OsStr::to_str) else {
             return Err(format!("Unknown game type: {}.", path.display()));
         };
 
         let source = read_to_string(&path).map_err(|error| error.to_string())?;
-        analyze_inner(source, extension, &flags, callback)
+        analyze_inner(source, extension, &flags, verbose, callback)
     }
 
     fn new(path: PathBuf) -> Self {
         let flags = Flags::none();
-        Self { flags, path }
+        Self {
+            flags,
+            path,
+            verbose: false,
+        }
     }
 }
 
