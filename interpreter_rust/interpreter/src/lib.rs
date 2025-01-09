@@ -106,6 +106,7 @@ fn analyze_rbg_inner(
 fn analyze_rg_inner(
     game_or_source: Result<GameAst<Id>, String>,
     flags: &Flags,
+    #[allow(unused_variables)] // It's used only in non-WASM builds.
     verbose: bool,
     callback: &mut Option<impl FnMut(String)>,
 ) -> Result<GameAst<Id>, String> {
