@@ -26,7 +26,7 @@ left(V(X, Y)) = if X == 1 then null else V(X - 1, Y)
 left(_) = null
 
 // Variables
-board : Position -> Piece = { V(X, 6) = empty where X in 1..7; null = border }
+board : Position -> Piece = { :empty; null = border }
 
 position : Position
 

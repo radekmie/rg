@@ -88,9 +88,12 @@ impl<Id> From<(Id, Vec<Arc<Self>>)> for Expression<Id> {
     }
 }
 
-impl<Id> From<Vec<ExpressionMapPart<Id>>> for Expression<Id> {
-    fn from(parts: Vec<ExpressionMapPart<Id>>) -> Self {
-        Self::Map { parts }
+impl<Id> From<(Option<Arc<Self>>, Vec<ExpressionMapPart<Id>>)> for Expression<Id> {
+    fn from((default_value, parts): (Option<Arc<Self>>, Vec<ExpressionMapPart<Id>>)) -> Self {
+        Self::Map {
+            default_value,
+            parts,
+        }
     }
 }
 

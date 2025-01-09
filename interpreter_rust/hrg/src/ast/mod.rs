@@ -238,6 +238,7 @@ pub enum Expression<Id> {
         identifier: Id,
     },
     Map {
+        default_value: Option<Arc<Expression<Id>>>,
         parts: Vec<ExpressionMapPart<Id>>,
     },
 }
@@ -307,6 +308,7 @@ pub enum Value<Id> {
         identifier: Id,
     },
     Map {
+        default_value: Option<Arc<Value<Id>>>,
         entries: Vec<ValueMapEntry<Id>>,
     },
 }

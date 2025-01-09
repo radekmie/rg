@@ -85,7 +85,14 @@ impl Symbols {
                 self.add_from_expression(else_);
             }
             Expression::Literal { .. } => {}
-            Expression::Map { parts } => {
+            Expression::Map {
+                default_value,
+                parts,
+            } => {
+                if let Some(default_value) = default_value {
+                    self.add_from_expression(default_value);
+                }
+
                 for part in parts {
                     self.add_from_pattern(&part.pattern);
                     self.add_from_expression(&part.expression);

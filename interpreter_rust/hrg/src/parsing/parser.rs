@@ -6,7 +6,7 @@ use crate::ast::{
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
-use nom::combinator::{all_consuming, into, map, opt, value, verify};
+use nom::combinator::{all_consuming, cut, into, map, opt, success, value, verify};
 use nom::error::context;
 use nom::multi::{fold_many0, many0, many1, separated_list0, separated_list1};
 use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
@@ -165,7 +165,19 @@ fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
             preceded(tag("then"), expression),
             preceded(tag("else"), expression),
         ))),
-        into_arc(in_braces(separated_list1(char(';'), expression_map_part))),
+        into_arc(in_braces(alt((
+            pair(
+                preceded(char(':'), cut(map(expression, Some))),
+                alt((
+                    preceded(char(';'), separated_list1(char(';'), expression_map_part)),
+                    success(vec![]),
+                )),
+            ),
+            pair(
+                success(None),
+                separated_list1(char(';'), expression_map_part),
+            ),
+        )))),
         map(
             pair(expression2, opt(preceded(ww_tag("||"), expression))),
             |(lhs, rhs)| match rhs {

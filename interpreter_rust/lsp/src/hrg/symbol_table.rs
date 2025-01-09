@@ -216,7 +216,14 @@ fn add_from_expression(table: &mut SymbolTableBuilder, expr: &Expression<Identif
         Expression::Literal { identifier } => {
             table.add_occ(identifier);
         }
-        Expression::Map { parts } => {
+        Expression::Map {
+            default_value,
+            parts,
+        } => {
+            if let Some(default_value) = default_value {
+                add_from_expression(table, default_value);
+            }
+
             for part in parts {
                 add_from_pattern(table, &part.pattern);
                 add_from_expression(table, &part.expression);

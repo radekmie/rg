@@ -241,6 +241,7 @@ fn evaluate_default_value(
     Ok(match type_ {
         // NOTE: Is this even correct?
         rg::Type::Arrow { lhs, rhs } => hrg::Value::Map {
+            default_value: None,
             entries: evaluate_type_values(context, lhs)?
                 .iter()
                 .map(|value| {
@@ -393,7 +394,18 @@ fn evaluate_expression(
             },
             Ok,
         )?,
-        hrg::Expression::Map { parts } => hrg::Value::Map {
+        hrg::Expression::Map {
+            default_value,
+            parts,
+        } => hrg::Value::Map {
+            default_value: match default_value {
+                None => None,
+                Some(default_value) => Some(Arc::from(evaluate_expression(
+                    context,
+                    default_value,
+                    binding,
+                )?)),
+            },
             entries: parts
                 .iter()
                 .map(|part| evaluate_expression_map_part(context, part, binding))
@@ -1700,7 +1712,10 @@ fn translate_value(value: &hrg::Value<Id>) -> Result<Arc<rg::Value<Id>>, hrg::Er
         hrg::Value::Element { identifier } => rg::Value::Element {
             identifier: identifier.clone(),
         },
-        hrg::Value::Map { entries } => rg::Value::from_pairs(
+        hrg::Value::Map {
+            default_value: None,
+            entries,
+        } => rg::Value::from_pairs(
             entries
                 .iter()
                 .map(|entry| {
@@ -1710,6 +1725,24 @@ fn translate_value(value: &hrg::Value<Id>) -> Result<Arc<rg::Value<Id>>, hrg::Er
                 })
                 .collect::<Result<_, _>>()?,
         ),
+        hrg::Value::Map {
+            default_value: Some(default_value),
+            entries,
+        } => rg::Value::Map {
+            span: Span::none(),
+            entries: Some(Ok(rg::ValueEntry::new_default(translate_value(
+                default_value.as_ref(),
+            )?)))
+            .into_iter()
+            .chain(entries.iter().map(|entry| {
+                Ok(rg::ValueEntry {
+                    span: Span::none(),
+                    identifier: Some(serialize_value(&entry.key)),
+                    value: translate_value(&entry.value)?,
+                })
+            }))
+            .collect::<Result<Vec<_>, _>>()?,
+        },
     }))
 }
 
@@ -1741,7 +1774,11 @@ fn translate_variable_default_value(
     };
 
     // If it's a map with a wildcard pattern, set it as the default.
-    if let hrg::Expression::Map { parts } = default_value {
+    if let hrg::Expression::Map {
+        default_value: None,
+        parts,
+    } = default_value
+    {
         if parts.len() == 1 && *parts[0].pattern == hrg::Pattern::Wildcard {
             let value = evaluate_expression(context, &parts[0].expression, &BTreeMap::new())?;
             return Ok(Arc::from(rg::Value::new_empty(translate_value(&value)?)));

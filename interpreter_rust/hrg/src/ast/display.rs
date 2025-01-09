@@ -266,9 +266,22 @@ fn write_expression<Id: Display>(
             write!(f, ")")
         }
         Expression::Literal { identifier } => write!(f, "{identifier}"),
-        Expression::Map { parts } => {
+        Expression::Map {
+            default_value,
+            parts,
+        } => {
             let indent = if indent == 0 { 0 } else { indent - 2 };
             writeln!(f, "{{")?;
+
+            if let Some(default_value) = default_value {
+                write_indent(f, indent + 2)?;
+                write!(f, ":")?;
+                write_expression(f, default_value, indent + 4)?;
+
+                if !parts.is_empty() {
+                    writeln!(f, ";")?;
+                }
+            }
 
             for (index, part) in parts.iter().enumerate() {
                 write_indent(f, indent + 2)?;
