@@ -138,7 +138,7 @@ graph existsMoveableQueen(me: Player) {
 }
 
 graph move(me: Player) {
-  // @simpleApplyExhaustive move endMove ; p1:Position p2:Position p3:Position ; position = p1, board[position] = empty, position = p2; board[position] = piece(me); position = p3;
+  // @simpleApplyExhaustive move endMove ; p1:Position p2:Position p3:Position ; position = p1, board[position] = empty, position = p2, board[position] = piece(me), position = p3;
   
   player = me
   forall p:Position {
