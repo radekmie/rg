@@ -14,6 +14,7 @@ export const language: monaco.languages.IMonarchLanguage = {
     'in',
     'loop',
     'or',
+    'repeat',
     'then',
     'where',
     'while',
