@@ -131,14 +131,14 @@ mod test {
     test_transform!(
         expand_generator_nodes,
         pragma3,
-        "type T = { a, b }; @simpleApply x y(t: T) [t];",
+        "type T = { a, b }; @simpleApply x y(t: T) [t: T];",
         "type T = { a, b }; @simpleApply x y__bind__a [a]; @simpleApply x y__bind__b [b];"
     );
 
     test_transform!(
         expand_generator_nodes,
         pragma4,
-        "type T = { a, b }; var v: T = a; @simpleApply x y(t: T) [t] v = t;",
+        "type T = { a, b }; var v: T = a; @simpleApply x y(t: T) [t: T] v = t;",
         "type T = { a, b }; var v: T = a; @simpleApply x y__bind__a [a] v = T(a); @simpleApply x y__bind__b [b] v = T(b);"
     );
 

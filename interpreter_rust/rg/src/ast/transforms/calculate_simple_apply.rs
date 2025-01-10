@@ -1,4 +1,4 @@
-use crate::ast::{Error, Game, Label, Pragma, PragmaAssignment, Span};
+use crate::ast::{Error, Game, Label, Pragma, PragmaAssignment, PragmaTag, Span};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -86,10 +86,17 @@ impl Game<Arc<str>> {
             for (tag, mut paths) in paths_to_tags {
                 if paths.len() == 1 {
                     let (_, path, assignments) = paths.pop_first().unwrap();
+                    let type_ = path.last().and_then(|node| {
+                        node.bindings()
+                            .find(|binding| *binding.0 == tag)
+                            .map(|binding| binding.1)
+                            .cloned()
+                    });
+
                     pragmas.push((
                         node.clone(),
                         assignments,
-                        vec![tag],
+                        vec![PragmaTag { tag, type_ }],
                         path,
                         false,
                         is_exhaustive,
@@ -99,10 +106,10 @@ impl Game<Arc<str>> {
         }
 
         // Merge all pairs of
-        //   @simpleApply x ...xtags : ...xs;
-        //   @simpleApply y ...ytags : ...ys x;
+        //   @simpleApply x1 x2 [...xtags] ...xassignments;
+        //   @simpleApply y1 y2 [...ytags] ...yassignments;
         // Into
-        //   @simpleApply y ...ytags ...xtags : ...ys x ...xs;
+        //   @simpleApply y1 x2 [...ytags ...xtags] ...yassignments ...xassignments;
         // If there's exactly one `@simpleApply x : ...;` and there's no
         // `player` assignment merged on the resulting path (except the end).
         for index_x in (0..pragmas.len()).rev() {
@@ -137,9 +144,10 @@ impl Game<Arc<str>> {
         let mut affected_exhaustive_nodes = BTreeSet::new();
         pragmas.retain(|(node, _, tags, nodes, _, is_exhaustive)| {
             let is_correct = !node.has_bindings()
-                && nodes
-                    .iter()
-                    .all(|node| node.bindings().all(|bind| tags.contains(bind.0)));
+                && nodes.iter().all(|node| {
+                    node.bindings()
+                        .all(|bind| tags.iter().any(|tag| tag.tag == *bind.0))
+                });
             if !is_correct && *is_exhaustive {
                 affected_exhaustive_nodes.insert(node.clone());
             }
@@ -215,7 +223,7 @@ mod test {
         ",
         adds "
             @simpleApplyExhaustive begin move_begin [] player = me;
-            @simpleApplyExhaustive move_begin move_7(p: Position) [p] board[p] = empty, position = direction[me][p];
+            @simpleApplyExhaustive move_begin move_7(p: Position) [p: Position] board[p] = empty, position = direction[me][p];
         "
     );
 

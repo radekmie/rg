@@ -1467,7 +1467,7 @@ pub enum Pragma<Id> {
         span: Span,
         lhs: Node<Id>,
         rhs: Node<Id>,
-        tags: Vec<Id>,
+        tags: Vec<PragmaTag<Id>>,
         assignments: Vec<PragmaAssignment<Id>>,
     },
     SimpleApplyExhaustive {
@@ -1475,7 +1475,7 @@ pub enum Pragma<Id> {
         span: Span,
         lhs: Node<Id>,
         rhs: Node<Id>,
-        tags: Vec<Id>,
+        tags: Vec<PragmaTag<Id>>,
         assignments: Vec<PragmaAssignment<Id>>,
     },
     TagIndex {
@@ -1621,8 +1621,7 @@ impl Pragma<Arc<str>> {
                         rhs: rhs.substitute_bindings(mapping),
                         tags: tags
                             .iter()
-                            .map(|tag| mapping.get(tag).map_or(tag, |(tag, _)| tag))
-                            .cloned()
+                            .map(|tag| tag.rename_variables(mapping))
                             .collect(),
                         assignments: assignments
                             .iter()
@@ -1646,8 +1645,7 @@ impl Pragma<Arc<str>> {
                         rhs: rhs.substitute_bindings(mapping),
                         tags: tags
                             .iter()
-                            .map(|tag| mapping.get(tag).map_or(tag, |(tag, _)| tag))
-                            .cloned()
+                            .map(|tag| tag.rename_variables(mapping))
                             .collect(),
                         assignments: assignments
                             .iter()
@@ -1672,6 +1670,25 @@ impl PragmaAssignment<Arc<str>> {
         Self {
             lhs: Arc::from(self.lhs.rename_variables(mapping)),
             rhs: Arc::from(self.rhs.rename_variables(mapping)),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct PragmaTag<Id> {
+    pub tag: Id,
+    #[serde(rename = "type")]
+    pub type_: Option<Arc<Type<Id>>>,
+}
+
+impl PragmaTag<Arc<str>> {
+    pub fn rename_variables(&self, mapping: &Mapping<Arc<str>>) -> Self {
+        match mapping.get(&self.tag) {
+            None => self.clone(),
+            Some((tag, _)) => Self {
+                tag: tag.clone(),
+                type_: None,
+            },
         }
     }
 }

@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, Expression, Label, Node, NodePart, PragmaAssignment, Type, Typedef, Value,
-    ValueEntry, Variable,
+    Constant, Edge, Expression, Label, Node, NodePart, PragmaAssignment, PragmaTag, Type, Typedef,
+    Value, ValueEntry, Variable,
 };
 use std::sync::Arc;
 use utils::parser::Input;
@@ -120,6 +120,12 @@ impl<Id> From<Id> for NodePart<Id> {
 impl<Id> From<(Arc<Expression<Id>>, Arc<Expression<Id>>)> for PragmaAssignment<Id> {
     fn from((lhs, rhs): (Arc<Expression<Id>>, Arc<Expression<Id>>)) -> Self {
         Self { lhs, rhs }
+    }
+}
+
+impl<Id> From<(Id, Option<Arc<Type<Id>>>)> for PragmaTag<Id> {
+    fn from((tag, type_): (Id, Option<Arc<Type<Id>>>)) -> Self {
+        Self { tag, type_ }
     }
 }
 
