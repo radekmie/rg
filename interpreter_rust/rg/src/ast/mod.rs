@@ -1465,16 +1465,18 @@ pub enum Pragma<Id> {
     SimpleApply {
         #[serde(skip)]
         span: Span,
-        node: Node<Id>,
+        lhs: Node<Id>,
+        rhs: Node<Id>,
         tags: Vec<Id>,
-        nodes: Vec<Node<Id>>,
+        assignments: Vec<PragmaAssignment<Id>>,
     },
     SimpleApplyExhaustive {
         #[serde(skip)]
         span: Span,
-        node: Node<Id>,
+        lhs: Node<Id>,
+        rhs: Node<Id>,
         tags: Vec<Id>,
-        nodes: Vec<Node<Id>>,
+        assignments: Vec<PragmaAssignment<Id>>,
     },
     TagIndex {
         #[serde(skip)]
@@ -1503,18 +1505,18 @@ impl<Id> Pragma<Id> {
         self.nodes().any(Node::has_bindings)
     }
 
-    pub fn nodes(&self) -> impl Iterator<Item = &Node<Id>> {
+    pub fn nodes(&self) -> Box<dyn Iterator<Item = &Node<Id>> + '_> {
         match self {
-            Self::Disjoint { node, nodes, .. }
-            | Self::DisjointExhaustive { node, nodes, .. }
-            | Self::SimpleApply { node, nodes, .. }
-            | Self::SimpleApplyExhaustive { node, nodes, .. } => {
-                Some(node).into_iter().chain(nodes)
+            Self::Disjoint { node, nodes, .. } | Self::DisjointExhaustive { node, nodes, .. } => {
+                Box::new(Some(node).into_iter().chain(nodes))
             }
             Self::Repeat { nodes, .. }
             | Self::TagIndex { nodes, .. }
             | Self::TagMaxIndex { nodes, .. }
-            | Self::Unique { nodes, .. } => None.into_iter().chain(nodes),
+            | Self::Unique { nodes, .. } => Box::new(nodes.iter()),
+            Self::SimpleApply { lhs, rhs, .. } | Self::SimpleApplyExhaustive { lhs, rhs, .. } => {
+                Box::new(Some(lhs).into_iter().chain(Some(rhs)))
+            }
         }
     }
 }
@@ -1527,22 +1529,18 @@ impl<Id: Ord> Pragma<Id> {
 
 impl<Id: Clone + PartialEq> Pragma<Id> {
     pub fn rename_node(&mut self, old_node: &Node<Id>, new_node: &Node<Id>) {
-        if let Self::Disjoint { node, .. }
-        | Self::DisjointExhaustive { node, .. }
-        | Self::SimpleApply { node, .. }
-        | Self::SimpleApplyExhaustive { node, .. } = self
-        {
-            if node == old_node {
-                *node = new_node.clone();
-            }
-        };
-
         match self {
-            Self::Disjoint { nodes, .. }
-            | Self::DisjointExhaustive { nodes, .. }
-            | Self::SimpleApply { nodes, .. }
-            | Self::SimpleApplyExhaustive { nodes, .. }
-            | Self::Repeat { nodes, .. }
+            Self::Disjoint { node, nodes, .. } | Self::DisjointExhaustive { node, nodes, .. } => {
+                if node == old_node {
+                    *node = new_node.clone();
+                }
+                for node in nodes {
+                    if node == old_node {
+                        *node = new_node.clone();
+                    }
+                }
+            }
+            Self::Repeat { nodes, .. }
             | Self::TagIndex { nodes, .. }
             | Self::TagMaxIndex { nodes, .. }
             | Self::Unique { nodes, .. } => {
@@ -1552,6 +1550,14 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
                     }
                 }
             }
+            Self::SimpleApply { lhs, rhs, .. } | Self::SimpleApplyExhaustive { lhs, rhs, .. } => {
+                if lhs == old_node {
+                    *lhs = new_node.clone();
+                }
+                if rhs == old_node {
+                    *rhs = new_node.clone();
+                }
+            }
         }
     }
 }
@@ -1559,11 +1565,7 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
 impl Pragma<Arc<str>> {
     /// Substitute bindings in-place if possible and yield substituted `Self`s instead.
     pub fn substitute_bindings_mut(&mut self, mappings: &[Mapping<Arc<str>>]) -> Option<Vec<Self>> {
-        if let Self::Disjoint { node, .. }
-        | Self::DisjointExhaustive { node, .. }
-        | Self::SimpleApply { node, .. }
-        | Self::SimpleApplyExhaustive { node, .. } = self
-        {
+        if let Self::Disjoint { node, .. } | Self::DisjointExhaustive { node, .. } = self {
             let mut node_variants = mappings
                 .iter()
                 .map(|mapping| node.substitute_bindings(mapping))
@@ -1574,6 +1576,19 @@ impl Pragma<Arc<str>> {
                 "Cannot `substitute_bindings_mut` of a `Pragma` with bindings in `node`."
             );
             *node = node_variants.pop_first().unwrap();
+        };
+
+        if let Self::SimpleApply { lhs, .. } | Self::SimpleApplyExhaustive { lhs, .. } = self {
+            let mut lhs_variants = mappings
+                .iter()
+                .map(|mapping| lhs.substitute_bindings(mapping))
+                .collect::<BTreeSet<_>>();
+            assert_eq!(
+                lhs_variants.len(),
+                1,
+                "Cannot `substitute_bindings_mut` of a `Pragma` with bindings in `lhs`."
+            );
+            *lhs = lhs_variants.pop_first().unwrap();
         };
 
         match self {
@@ -1593,51 +1608,70 @@ impl Pragma<Arc<str>> {
             }
             // TODO: Can we deduplicate this code?
             Self::SimpleApply {
-                node,
-                nodes,
                 span,
+                lhs,
+                rhs,
                 tags,
+                assignments,
             } => Some(
                 mappings
                     .iter()
                     .map(|mapping| Self::SimpleApply {
-                        node: node.clone(),
-                        nodes: nodes
-                            .iter()
-                            .map(|node| node.substitute_bindings(mapping))
-                            .collect(),
+                        lhs: lhs.clone(),
+                        rhs: rhs.substitute_bindings(mapping),
                         tags: tags
                             .iter()
                             .map(|tag| mapping.get(tag).map_or(tag, |(tag, _)| tag))
                             .cloned()
+                            .collect(),
+                        assignments: assignments
+                            .iter()
+                            .map(|assignment| assignment.rename_variables(mapping))
                             .collect(),
                         span: *span,
                     })
                     .collect(),
             ),
             Self::SimpleApplyExhaustive {
-                node,
-                nodes,
                 span,
+                lhs,
+                rhs,
                 tags,
+                assignments,
             } => Some(
                 mappings
                     .iter()
                     .map(|mapping| Self::SimpleApplyExhaustive {
-                        node: node.clone(),
-                        nodes: nodes
-                            .iter()
-                            .map(|node| node.substitute_bindings(mapping))
-                            .collect(),
+                        lhs: lhs.clone(),
+                        rhs: rhs.substitute_bindings(mapping),
                         tags: tags
                             .iter()
                             .map(|tag| mapping.get(tag).map_or(tag, |(tag, _)| tag))
                             .cloned()
                             .collect(),
+                        assignments: assignments
+                            .iter()
+                            .map(|assignment| assignment.rename_variables(mapping))
+                            .collect(),
                         span: *span,
                     })
                     .collect(),
             ),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct PragmaAssignment<Id> {
+    pub lhs: Arc<Expression<Id>>,
+    pub rhs: Arc<Expression<Id>>,
+}
+
+impl PragmaAssignment<Arc<str>> {
+    pub fn rename_variables(&self, mapping: &Mapping<Arc<str>>) -> Self {
+        Self {
+            lhs: Arc::from(self.lhs.rename_variables(mapping)),
+            rhs: Arc::from(self.rhs.rename_variables(mapping)),
         }
     }
 }

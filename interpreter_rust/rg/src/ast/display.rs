@@ -1,8 +1,9 @@
 use crate::ast::{
-    Constant, Edge, Error, ErrorReason, Expression, Game, Label, Node, NodePart, Pragma, Type,
-    Typedef, Value, ValueEntry, Variable,
+    Constant, Edge, Error, ErrorReason, Expression, Game, Label, Node, NodePart, Pragma,
+    PragmaAssignment, Type, Typedef, Value, ValueEntry, Variable,
 };
 use std::fmt::{Display, Formatter, Result};
+use utils::display::write_with_separator;
 
 impl<Id: Display> Display for Constant<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
@@ -247,21 +248,29 @@ impl<Id: Display> Display for Pragma<Id> {
                 write!(f, ";")
             }
             Self::SimpleApply {
-                node, nodes, tags, ..
+                lhs,
+                rhs,
+                tags,
+                assignments,
+                ..
             } => {
-                write!(f, "@simpleApply {node}")?;
-                tags.iter().try_for_each(|tag| write!(f, " {tag}"))?;
-                write!(f, " :")?;
-                nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
+                write!(f, "@simpleApply {lhs} {rhs} [")?;
+                write_with_separator(f, tags, ", ")?;
+                write!(f, "{}", if assignments.is_empty() { "]" } else { "] " })?;
+                write_with_separator(f, assignments, ", ")?;
                 write!(f, ";")
             }
             Self::SimpleApplyExhaustive {
-                node, nodes, tags, ..
+                lhs,
+                rhs,
+                tags,
+                assignments,
+                ..
             } => {
-                write!(f, "@simpleApplyExhaustive {node}")?;
-                tags.iter().try_for_each(|tag| write!(f, " {tag}"))?;
-                write!(f, " :")?;
-                nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
+                write!(f, "@simpleApplyExhaustive {lhs} {rhs} [")?;
+                write_with_separator(f, tags, ", ")?;
+                write!(f, "{}", if assignments.is_empty() { "]" } else { "] " })?;
+                write_with_separator(f, assignments, ", ")?;
                 write!(f, ";")
             }
             Self::TagIndex { nodes, index, .. } => {
@@ -280,6 +289,12 @@ impl<Id: Display> Display for Pragma<Id> {
                 write!(f, ";")
             }
         }
+    }
+}
+
+impl<Id: Display> Display for PragmaAssignment<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{} = {}", self.lhs, self.rhs)
     }
 }
 

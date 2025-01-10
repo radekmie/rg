@@ -145,16 +145,16 @@ mod test {
         @disjoint a(bind_1: A): a(bind_1: A);
         @disjointExhaustive a(bind_1: A): a(bind_1: A);
         @repeat a(bind_1: A): 1;
-        @simpleApply a(bind_1: A) 1 : a(bind_1: A);
-        @simpleApplyExhaustive a(bind_1: A) 1 : a(bind_1: A);
+        @simpleApply a(bind_1: A) a(bind_1: A) [1];
+        @simpleApplyExhaustive a(bind_1: A) a(bind_1: A) [1];
         @tagIndex a(bind_1: A): 1;
         @tagMaxIndex a(bind_1: A): 1;
         @unique a(bind_1: A);",
         "@disjoint 1 : 1;
         @disjointExhaustive 1 : 1;
         @repeat 1 : 1;
-        @simpleApply 1 1 : 1;
-        @simpleApplyExhaustive 1 1 : 1;
+        @simpleApply 1 1 [1];
+        @simpleApplyExhaustive 1 1 [1];
         @tagIndex 1 : 1;
         @tagMaxIndex 1 : 1;
         @unique 1;

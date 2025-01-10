@@ -72,32 +72,8 @@ impl Pragma<Id> {
                     identifiers: identifiers.clone(),
                 })
                 .collect(),
-            Self::SimpleApply {
-                span,
-                node,
-                tags,
-                nodes,
-            } => group_by_bindings(nodes)
-                .map(|nodes| Self::SimpleApply {
-                    span,
-                    node: node.clone(),
-                    tags: tags.clone(),
-                    nodes,
-                })
-                .collect(),
-            Self::SimpleApplyExhaustive {
-                span,
-                node,
-                tags,
-                nodes,
-            } => group_by_bindings(nodes)
-                .map(|nodes| Self::SimpleApplyExhaustive {
-                    span,
-                    node: node.clone(),
-                    tags: tags.clone(),
-                    nodes,
-                })
-                .collect(),
+            // `@simpleApply{,Exhaustive}` cannot have binds in thier nodes.
+            Self::SimpleApply { .. } | Self::SimpleApplyExhaustive { .. } => vec![self.clone()],
             Self::TagIndex { span, index, nodes } => group_by_bindings(nodes)
                 .map(|nodes| Self::TagIndex { span, index, nodes })
                 .collect(),
@@ -155,15 +131,15 @@ mod test {
     test_transform!(
         expand_generator_nodes,
         pragma3,
-        "type T = { a, b }; @simpleApply x u : y(t: T);",
-        "type T = { a, b }; @simpleApply x u : y__bind__a; @simpleApply x u : y__bind__b;"
+        "type T = { a, b }; @simpleApply x y(t: T) [t];",
+        "type T = { a, b }; @simpleApply x y__bind__a [a]; @simpleApply x y__bind__b [b];"
     );
 
     test_transform!(
         expand_generator_nodes,
         pragma4,
-        "type T = { a, b }; @simpleApply x t : y(t: T);",
-        "type T = { a, b }; @simpleApply x a : y__bind__a; @simpleApply x b : y__bind__b;"
+        "type T = { a, b }; var v: T = a; @simpleApply x y(t: T) [t] v = t;",
+        "type T = { a, b }; var v: T = a; @simpleApply x y__bind__a [a] v = T(a); @simpleApply x y__bind__b [b] v = T(b);"
     );
 
     test_transform!(

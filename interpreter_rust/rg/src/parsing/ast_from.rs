@@ -1,5 +1,6 @@
 use crate::ast::{
-    Constant, Edge, Expression, Label, Node, NodePart, Type, Typedef, Value, ValueEntry, Variable,
+    Constant, Edge, Expression, Label, Node, NodePart, PragmaAssignment, Type, Typedef, Value,
+    ValueEntry, Variable,
 };
 use std::sync::Arc;
 use utils::parser::Input;
@@ -113,6 +114,12 @@ impl<Id: Positioned> From<(Input<'_>, Id, Arc<Type<Id>>, Input<'_>)> for NodePar
 impl<Id> From<Id> for NodePart<Id> {
     fn from(identifier: Id) -> Self {
         Self::Literal { identifier }
+    }
+}
+
+impl<Id> From<(Arc<Expression<Id>>, Arc<Expression<Id>>)> for PragmaAssignment<Id> {
+    fn from((lhs, rhs): (Arc<Expression<Id>>, Arc<Expression<Id>>)) -> Self {
+        Self { lhs, rhs }
     }
 }
 

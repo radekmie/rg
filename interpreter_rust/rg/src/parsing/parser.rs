@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, Expression, Game, Label, Node, NodePart, Pragma, Type, Typedef, Value,
-    ValueEntry, Variable,
+    Constant, Edge, Expression, Game, Label, Node, NodePart, Pragma, PragmaAssignment, Type,
+    Typedef, Value, ValueEntry, Variable,
 };
 use nom::branch::alt;
 use nom::bytes::complete::tag;
@@ -12,8 +12,9 @@ use nom::sequence::{pair, preceded, separated_pair, terminated, tuple};
 use std::cell::RefCell;
 use std::sync::Arc;
 use utils::parser::{
-    comments_and_whitespaces, expect, expect_preceded_tag, identifier_, integer, into_arc,
-    parse_error_line, preceded_tag, preceded_whitespace, with_semicolon, Input, Result, State,
+    comments_and_whitespaces, expect, expect_preceded_tag, identifier_, in_brackets, integer,
+    into_arc, parse_error_line, preceded_tag, preceded_whitespace, with_semicolon, ww_char, Input,
+    Result, State,
 };
 use utils::position::{Position, Positioned, Span};
 use utils::{Error, Identifier};
@@ -334,32 +335,34 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
             tuple((
                 tag("simpleApplyExhaustive"),
                 cut(preceded_whitespace(node)),
-                cut(many0(preceded_whitespace(identifier))),
-                cut(preceded_whitespace(tag(":"))),
-                cut(many1(preceded_whitespace(node))),
+                preceded_whitespace(node),
+                in_brackets(separated_list0(ww_char(','), identifier)),
+                separated_list0(ww_char(','), pragma_assignment),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, node, tags, _, nodes, semicolon)| Pragma::SimpleApplyExhaustive {
+            |(tag, lhs, rhs, tags, assignments, semicolon)| Pragma::SimpleApplyExhaustive {
                 span: Span::from((&tag, &semicolon)),
-                node,
-                nodes,
+                lhs,
+                rhs,
                 tags,
+                assignments,
             },
         ),
         map(
             tuple((
                 tag("simpleApply"),
                 cut(preceded_whitespace(node)),
-                cut(many0(preceded_whitespace(identifier))),
-                cut(preceded_whitespace(tag(":"))),
-                cut(many1(preceded_whitespace(node))),
+                preceded_whitespace(node),
+                in_brackets(separated_list0(ww_char(','), identifier)),
+                separated_list0(ww_char(','), pragma_assignment),
                 preceded_whitespace(tag(";")),
             )),
-            |(tag, node, tags, _, nodes, semicolon)| Pragma::SimpleApply {
+            |(tag, lhs, rhs, tags, assignments, semicolon)| Pragma::SimpleApply {
                 span: Span::from((&tag, &semicolon)),
-                node,
-                nodes,
+                lhs,
+                rhs,
                 tags,
+                assignments,
             },
         ),
         map(
@@ -404,6 +407,14 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
     ));
 
     context("pragma", preceded(tag("@"), expect(pragma, "pragma")))(input)
+}
+
+fn pragma_assignment(input: Input) -> Result<PragmaAssignment<Identifier>> {
+    into(separated_pair(
+        expression,
+        cut(ww_char('=')),
+        expect_expression,
+    ))(input)
 }
 
 pub fn game(input: Input) -> Result<Game<Identifier>> {

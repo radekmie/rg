@@ -1,4 +1,4 @@
-use crate::ast::{Error, Game, Label, Pragma, Span};
+use crate::ast::{Error, Game, Label, Pragma, PragmaAssignment, Span};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -46,10 +46,14 @@ impl Game<Arc<str>> {
 
                     let mut assignments = assignments.clone();
                     match &edge.label {
-                        Label::Assignment { lhs, .. } => {
-                            assignments.push(edge.label.clone());
+                        Label::Assignment { lhs, rhs, .. } => {
+                            assignments.push(PragmaAssignment {
+                                lhs: lhs.clone(),
+                                rhs: rhs.clone(),
+                            });
+
                             if lhs.uncast().is_player_reference() {
-                                if path_to_player.replace(path).is_some() {
+                                if path_to_player.replace((path, assignments)).is_some() {
                                     // This will not be `@simpleApply`.
                                     continue 'outer;
                                 }
@@ -75,14 +79,21 @@ impl Game<Arc<str>> {
                 .values()
                 .all(|assignments| assignments.len() == 1);
 
-            if let Some(path) = path_to_player {
-                pragmas.push((node.clone(), vec![], path, true, is_exhaustive));
+            if let Some((path, assignments)) = path_to_player {
+                pragmas.push((node.clone(), assignments, vec![], path, true, is_exhaustive));
             }
 
             for (tag, mut paths) in paths_to_tags {
                 if paths.len() == 1 {
-                    let path = paths.pop_first().unwrap().1;
-                    pragmas.push((node.clone(), vec![tag], path, false, is_exhaustive));
+                    let (_, path, assignments) = paths.pop_first().unwrap();
+                    pragmas.push((
+                        node.clone(),
+                        assignments,
+                        vec![tag],
+                        path,
+                        false,
+                        is_exhaustive,
+                    ));
                 }
             }
         }
@@ -96,18 +107,19 @@ impl Game<Arc<str>> {
         // `player` assignment merged on the resulting path (except the end).
         for index_x in (0..pragmas.len()).rev() {
             let (prev, next) = pragmas.split_at_mut(index_x);
-            let ((x, xtags, xs, xplayer, _), next) = next.split_first_mut().unwrap();
+            let ((x, xassignments, xtags, xs, xplayer, _), next) = next.split_first_mut().unwrap();
             if prev
                 .iter()
                 .chain(next.iter())
-                .any(|(node, _, _, _, _)| node == x)
+                .any(|(node, _, _, _, _, _)| node == x)
             {
                 continue;
             }
 
             let mut any_matched = false;
-            for (_, ytags, ys, yplayer, _) in prev.iter_mut().chain(next) {
+            for (_, yassignments, ytags, ys, yplayer, _) in prev.iter_mut().chain(next) {
                 if ys.last() == Some(x) && !*yplayer {
+                    yassignments.extend_from_slice(xassignments);
                     ytags.extend_from_slice(xtags);
                     ys.extend_from_slice(xs);
                     *yplayer |= *xplayer;
@@ -123,7 +135,7 @@ impl Game<Arc<str>> {
         // @simpleApply{,Exhaustive} cannot start in a node with binds and all
         // binds have to be bound with any of the tags.
         let mut affected_exhaustive_nodes = BTreeSet::new();
-        pragmas.retain(|(node, tags, nodes, _, is_exhaustive)| {
+        pragmas.retain(|(node, _, tags, nodes, _, is_exhaustive)| {
             let is_correct = !node.has_bindings()
                 && nodes
                     .iter()
@@ -135,24 +147,26 @@ impl Game<Arc<str>> {
             is_correct
         });
 
-        for (node, _, _, _, is_exhaustive) in &mut pragmas {
+        for (node, _, _, _, _, is_exhaustive) in &mut pragmas {
             *is_exhaustive &= !affected_exhaustive_nodes.contains(node);
         }
 
-        for (node, tags, nodes, _, is_exhaustive) in pragmas {
+        for (node, assignments, tags, mut nodes, _, is_exhaustive) in pragmas {
             let pragma = if is_exhaustive {
                 Pragma::SimpleApplyExhaustive {
                     span: Span::none(),
-                    node,
+                    lhs: node,
+                    rhs: nodes.pop().unwrap(),
                     tags,
-                    nodes,
+                    assignments,
                 }
             } else {
                 Pragma::SimpleApply {
                     span: Span::none(),
-                    node,
+                    lhs: node,
+                    rhs: nodes.pop().unwrap(),
                     tags,
-                    nodes,
+                    assignments,
                 }
             };
 
@@ -200,8 +214,8 @@ mod test {
             turn_5, turn_6: player = keeper;
         ",
         adds "
-            @simpleApplyExhaustive begin : rules_begin move_begin;
-            @simpleApplyExhaustive move_begin p : move_1(p: Position) move_4(p: Position) move_3(p: Position) move_5(p: Position) move_6(p: Position) move_7(p: Position);
+            @simpleApplyExhaustive begin move_begin [] player = me;
+            @simpleApplyExhaustive move_begin move_7(p: Position) [p] board[p] = empty, position = direction[me][p];
         "
     );
 
@@ -252,7 +266,7 @@ mod test {
             x5, end: player = keeper;
             y2, end: player = keeper;
         ",
-        adds "@simpleApply begin y : y1 y2 end;"
+        adds "@simpleApply begin end [y] player = keeper;"
     );
 
     test_transform!(
@@ -271,10 +285,10 @@ mod test {
         complex_1,
         include_str!("../../../../../games/rg/simpleApplyTest1.rg"),
         adds "
-            @simpleApplyExhaustive doneB dummytag : extraB preend;
-            @simpleApplyExhaustive moveA 0 : tagA0 doneA moveB;
-            @simpleApplyExhaustive moveA 1 : tagA1 doneA moveB;
-            @simpleApplyExhaustive preend : end;
+            @simpleApplyExhaustive doneB preend [dummytag] player = PlayerOrKeeper(keeper);
+            @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrKeeper(B);
+            @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrKeeper(B);
+            @simpleApplyExhaustive preend end [] player = PlayerOrKeeper(keeper);
         "
     );
 
@@ -283,11 +297,11 @@ mod test {
         complex_2,
         include_str!("../../../../../games/rg/simpleApplyTest2.rg"),
         adds "
-            @simpleApplyExhaustive moveA 0 : tagA0 doneA moveB;
-            @simpleApplyExhaustive moveA 1 : tagA1 doneA moveB;
-            @simpleApplyExhaustive moveB 0 dummytag : tagB0same tagB0 doneB extraB preend;
-            @simpleApplyExhaustive moveB 1 dummytag : tagB1same tagB1 doneB extraB preend;
-            @simpleApplyExhaustive preend : end;
+            @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrKeeper(B);
+            @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrKeeper(B);
+            @simpleApplyExhaustive moveB preend [0, dummytag] goals[B] = Score(100), player = PlayerOrKeeper(keeper);
+            @simpleApplyExhaustive moveB preend [1, dummytag] goals[B] = Score(100), player = PlayerOrKeeper(keeper);
+            @simpleApplyExhaustive preend end [] player = PlayerOrKeeper(keeper);
         "
     );
 
@@ -296,10 +310,10 @@ mod test {
         complex_3,
         include_str!("../../../../../games/rg/simpleApplyTest3.rg"),
         adds "
-            @simpleApplyExhaustive moveA 0 : tagA0 doneA moveB;
-            @simpleApplyExhaustive moveA 1 : tagA1 doneA moveB;
-            @simpleApply moveB 1 dummytag : tagB1same tagB1 doneB extraB preend;
-            @simpleApplyExhaustive preend : end;
+            @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrKeeper(B);
+            @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrKeeper(B);
+            @simpleApply moveB preend [1, dummytag] goals[B] = Score(100), player = PlayerOrKeeper(keeper);
+            @simpleApplyExhaustive preend end [] player = PlayerOrKeeper(keeper);
         "
     );
 }
