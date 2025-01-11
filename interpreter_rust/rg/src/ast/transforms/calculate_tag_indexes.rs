@@ -19,14 +19,11 @@ impl Game<Arc<str>> {
                                 if edge.label.is_tag() {
                                     let indexes = tag_indexes.entry(lhs.clone()).or_default();
                                     match indexes.iter().max() {
-                                        None => {
-                                            indexes.insert(index);
-                                        }
                                         Some(max) if *max < index => {
                                             indexes.insert(usize::MAX);
                                             continue;
                                         }
-                                        Some(_) => {}
+                                        _ => indexes.insert(index),
                                     };
 
                                     queue.push((&edge.rhs, index + 1));
@@ -91,4 +88,20 @@ impl Game<Arc<str>> {
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::test_transform;
+
+    test_transform!(
+        calculate_tag_indexes,
+        complex_4,
+        include_str!("../../../../../games/rg/simpleApplyTest4.rg"),
+        adds "
+            @tagIndex moveB tagA1 tagB1 : 0;
+            @tagIndex tagB0 : 1;
+            @tagMaxIndex doneB : 2;
+        "
+    );
 }
