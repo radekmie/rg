@@ -399,8 +399,12 @@ impl<Id> Node<Id> {
 }
 
 impl<Id: PartialEq> Node<Id> {
+    pub fn get_binding(&self, identifier: &Id) -> Option<Binding<Id>> {
+        self.bindings().find(|binding| binding.0 == identifier)
+    }
+
     pub fn has_binding(&self, identifier: &Id) -> bool {
-        self.bindings().any(|binding| binding.0 == identifier)
+        self.get_binding(identifier).is_some()
     }
 
     pub fn has_equal_bindings(&self, other: &Self) -> bool {

@@ -1,4 +1,4 @@
-use crate::ast::{Error, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag, Span};
+use crate::ast::{Error, Expression, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag, Span};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -7,8 +7,20 @@ type Id = Arc<str>;
 impl Game<Id> {
     pub fn calculate_simple_apply(&mut self) -> Result<(), Error<Id>> {
         let mut simple_paths = self.calculate_simple_paths();
+        println!("\ninit");
+        for x in &simple_paths {
+            println!("  {}", x.clone().into_pragma());
+        }
         SimplePath::merge_all(&mut simple_paths);
+        println!("\nmerge_all");
+        for x in &simple_paths {
+            println!("  {}", x.clone().into_pragma());
+        }
         SimplePath::remove_invalid(&mut simple_paths);
+        println!("\nremove_invalid");
+        for x in &simple_paths {
+            println!("  {}", x.clone().into_pragma());
+        }
 
         for simple_path in simple_paths {
             let pragma = simple_path.into_pragma();
@@ -92,15 +104,17 @@ impl Game<Id> {
             }
 
             for (tag, mut paths) in paths_to_tags {
-                if paths.len() == 1 {
-                    let (_, path, assignments) = paths.pop_first().unwrap();
-                    let type_ = path.last().and_then(|node| {
-                        node.bindings()
-                            .find(|binding| *binding.0 == tag)
-                            .map(|binding| binding.1)
-                            .cloned()
-                    });
+                let (_, mut path, mut assignments) = paths.pop_first().unwrap();
+                let type_ = path
+                    .iter()
+                    .rev()
+                    .take(2)
+                    .map(|node| node.get_binding(&tag).map(|binding| binding.1).cloned())
+                    .find(Option::is_some)
+                    .flatten();
 
+                // If there's exactly one path to a tag, it's trivially simple.
+                if paths.is_empty() {
                     simple_paths.push(SimplePath {
                         assignments,
                         is_exhaustive,
@@ -109,7 +123,110 @@ impl Game<Id> {
                         path,
                         tags: vec![PragmaTag { tag, type_ }],
                     });
+                    continue;
                 }
+
+                // If there are more paths, it can be simple if:
+                //   1. All paths end in the same node.
+                if paths.iter().any(|x| x.1.last() != path.last()) {
+                    continue;
+                }
+
+                //   2. All paths have the assignments. There's one exception:
+                //      if the last two edges are "exposing a variable", i.e.,
+                //      there's a comparison of a variable and a bind + a tag of
+                //      from this bind, we can remove all trailing assignments
+                //      to this variable.
+                let exposed_variable = (type_.is_some() && path.len() > 2)
+                    .then(|| {
+                        let a = &path[path.len() - 3];
+                        let b = &path[path.len() - 2];
+
+                        // "a -> b -> c" is isolated.
+                        if next_edges[a].len() != 1 || next_edges[b].len() != 1 {
+                            return None;
+                        }
+
+                        // "a -> b" has our tag as a binding.
+                        let a_first = next_edges[a].first().unwrap();
+                        if !a_first.has_binding(&tag) {
+                            return None;
+                        }
+
+                        // "a -> b" has our tag as a binding.
+                        let b_first = next_edges[b].first().unwrap();
+                        if !b_first.has_binding(&tag) {
+                            return None;
+                        }
+
+                        // "a -> b" is a comparison.
+                        let Label::Comparison { lhs, rhs, .. } = &a_first.label else {
+                            return None;
+                        };
+
+                        // "a -> b" is a variable to tag comparison.
+                        let variable = lhs.uncast();
+                        if !variable.is_reference()
+                            || !rhs.uncast().is_reference_and(|id| *id == tag)
+                        {
+                            return None;
+                        }
+
+                        // "b -> c" is our tag.
+                        if !b_first.label.is_tag_and(|id| *id == tag) {
+                            return None;
+                        }
+
+                        Some(Arc::from(variable.clone()))
+                    })
+                    .flatten();
+
+                if let Some(exposed_variable) = &exposed_variable {
+                    macro_rules! expose_variable {
+                        ($assignments:expr) => {
+                            while $assignments
+                                .last()
+                                .is_some_and(|x| x.lhs.uncast() == exposed_variable.as_ref())
+                            {
+                                $assignments.pop();
+                            }
+                        };
+                    }
+
+                    expose_variable!(assignments);
+                    paths = paths
+                        .into_iter()
+                        .map(|(node, nodes, mut assignments)| {
+                            expose_variable!(assignments);
+                            (node, nodes, assignments)
+                        })
+                        .collect();
+                }
+
+                if paths.iter().any(|x| x.2 != assignments) {
+                    continue;
+                }
+
+                // Exposed variable assignments are stripped, so we add it again
+                // but with bind instead.
+                if let Some(exposed_variable) = exposed_variable {
+                    assignments.push(PragmaAssignment {
+                        lhs: exposed_variable,
+                        rhs: Arc::from(Expression::new_cast(
+                            type_.clone().unwrap(),
+                            Arc::from(Expression::new(tag.clone())),
+                        )),
+                    });
+                }
+
+                simple_paths.push(SimplePath {
+                    assignments,
+                    is_exhaustive: true,
+                    is_player: false,
+                    node: node.clone(),
+                    path: vec![node.clone(), path.pop().unwrap()],
+                    tags: vec![PragmaTag { tag, type_ }],
+                });
             }
         }
 
@@ -337,6 +454,53 @@ mod test {
             x, end: player = keeper;
             y, end: player = keeper;
         "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        multiple_paths_with_expose,
+        "
+            begin, x: position = north[position];
+            begin, y: position = south[position];
+            x, show(p: Position): position == p;
+            y, show(p: Position): position == p;
+            show(p: Position), shown: $ p;
+            shown, end: player = keeper;
+        ",
+        adds "@simpleApplyExhaustive begin end [p: Position] position = Position(p), player = keeper;"
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        multiple_paths_with_expose_and_exit,
+        "
+            begin, x: position = north[position];
+            begin, y: position = south[position];
+            x, shown: ;
+            x, show(p: Position): position == p;
+            y, show(p: Position): position == p;
+            show(p: Position), shown: $ p;
+            shown, end: player = keeper;
+        ",
+        adds "
+            @simpleApply begin end [] position = north[position], player = keeper;
+            @simpleApplyExhaustive shown end [] player = keeper;
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        multiple_paths_with_expose_and_a_different_assignment,
+        "
+            begin, x1: position = north[position];
+            begin, y: position = south[position];
+            x1, x2: other_variable = 1;
+            x2, show(p: Position): position == p;
+            y, show(p: Position): position == p;
+            show(p: Position), shown: $ p;
+            shown, end: player = keeper;
+        ",
+        adds "@simpleApplyExhaustive shown end [] player = keeper;"
     );
 
     test_transform!(
