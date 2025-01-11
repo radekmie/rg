@@ -333,14 +333,13 @@ impl SimplePath {
         // the same node are not exhaustive anymore.
         let mut affected_exhaustive_nodes = BTreeSet::new();
 
-        // Simple paths cannot start in a node with binds and all binds have to
-        // be bound with any of the tags.
+        // All binds have to be bound with any of the tags. First node _can_, as
+        // when applying it, we're in a bind already.
         simple_paths.retain(|simple_path| {
-            let is_correct = !simple_path.node.has_bindings()
-                && simple_path.path.iter().all(|node| {
-                    node.bindings()
-                        .all(|bind| simple_path.tags.iter().any(|tag| tag.tag == *bind.0))
-                });
+            let is_correct = simple_path.path[1..].iter().all(|node| {
+                node.bindings()
+                    .all(|bind| simple_path.tags.iter().any(|tag| tag.tag == *bind.0))
+            });
 
             if !is_correct && simple_path.is_exhaustive {
                 affected_exhaustive_nodes.insert(simple_path.node.clone());
@@ -392,6 +391,10 @@ mod test {
         adds "
             @simpleApplyExhaustive begin move_begin [] player = me;
             @simpleApplyExhaustive move_begin move_7(p: Position) [p: Position] board[p] = empty, position = direction[me][p];
+            @simpleApplyExhaustive move_7(p: Position) turn_6 [L] position = left[direction[me][position]], board[position] = piece[me], player = keeper;
+            @simpleApplyExhaustive move_7(p: Position) turn_6 [LL] position = left[left[position]], board[position] = piece[me], player = keeper;
+            @simpleApplyExhaustive move_7(p: Position) turn_6 [R] position = right[direction[me][position]], board[position] = piece[me], player = keeper;
+            @simpleApplyExhaustive move_7(p: Position) turn_6 [RR] position = right[right[position]], board[position] = piece[me], player = keeper;
         "
     );
 
