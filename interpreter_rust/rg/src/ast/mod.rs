@@ -1722,6 +1722,13 @@ impl<Id> Type<Id> {
         }
     }
 
+    pub fn as_type_reference(&self) -> Option<&Id> {
+        match self {
+            Self::TypeReference { identifier } => Some(identifier),
+            _ => None,
+        }
+    }
+
     pub fn is_arrow(&self) -> bool {
         matches!(self, Self::Arrow { .. })
     }

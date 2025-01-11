@@ -1,4 +1,4 @@
-use crate::ast::{Edge, Error, Game, Node, SetWithIdx, Type};
+use crate::ast::{Edge, Error, Game, Node, SetWithIdx};
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -37,8 +37,6 @@ impl Game<Id> {
                 break;
             }
         }
-
-        self.make_bindings_canonical();
 
         Ok(())
     }
@@ -196,51 +194,6 @@ impl Game<Id> {
     }
 
     // TODO: Extract to a separate AST transform.
-    fn make_bindings_canonical(&mut self) {
-        let edges_using_binding_map = get_edges_using_binding_map(&self.edges);
-
-        // Iterate over indexes to eliminate multiple ownership.
-        let edges = &mut self.edges;
-        for x in 0..edges.len() {
-            for (binding, type_) in edges[x].clone().bindings() {
-                let Type::TypeReference { ref identifier } = type_.as_ref() else {
-                    continue;
-                };
-
-                if !binding.starts_with("bind_") {
-                    continue;
-                }
-
-                let fresh: Arc<str> = Arc::from(identifier.to_lowercase());
-                if *binding == fresh {
-                    continue;
-                }
-
-                let edges_to_rename = edges_using_binding_map.get(&(x, binding.clone()));
-                if edges_to_rename
-                    .map(|x| x.iter())
-                    .into_iter()
-                    .flatten()
-                    .cloned()
-                    .any(|index| edges[index].label.has_variable(&fresh))
-                {
-                    continue;
-                }
-
-                let mapping = BTreeMap::from([(binding.clone(), (fresh, type_.clone()))]);
-                for y in edges_to_rename
-                    .map(|x| x.iter())
-                    .into_iter()
-                    .flatten()
-                    .cloned()
-                {
-                    edges[y] = Arc::from(edges[y].rename_variables(&mapping));
-                }
-            }
-        }
-    }
-
-    // TODO: Extract to a separate AST transform.
     fn make_bindings_unique(&mut self) {
         let edges_using_binding_map = get_edges_using_binding_map(&self.edges);
 
@@ -262,7 +215,7 @@ impl Game<Id> {
             return;
         }
 
-        let mut index = 0;
+        let mut counts: BTreeMap<_, usize> = BTreeMap::new();
         let mut mapped = BTreeSet::new();
 
         // Iterate over indexes to eliminate multiple ownership.
@@ -273,10 +226,16 @@ impl Game<Id> {
                     continue;
                 }
 
-                index += 1;
+                let type_id = type_.as_type_reference().cloned();
+                let index = counts.entry(type_id.clone()).or_default();
+                *index += 1;
 
-                // TODO: All `bind_*` bindings should be renamed before for safety.
-                let fresh: Arc<str> = Arc::from(format!("bind_{index}"));
+                // TODO: All bindings equal to `fresh` should be renamed before for safety.
+                let fresh: Arc<str> = Arc::from(type_id.map_or_else(
+                    || format!("bind_{index}"),
+                    |id| format!("bind_{id}_{index}"),
+                ));
+
                 let mapping = BTreeMap::from([(binding.clone(), (fresh.clone(), type_.clone()))]);
                 for y in edges_using_binding_map
                     .get(&(x, binding.clone()))
@@ -464,12 +423,12 @@ mod test {
             type X = { x };
             type Y = { y };
             type Z = { z };
-            begin, loop(x: X)(y: Y): ;
-            loop(x: X)(y: Y), cond(x: X)(z: Z): ;
-            cond(x: X)(z: Z), true(x: X)(y: Y): 1 == 1;
-            cond(x: X)(z: Z), false(x: X)(z: Z): 1 != 1;
-            false(x: X)(z: Z), loop(x: X)(y: Y): ;
-            true(x: X)(y: Y), end: player = keeper;
+            begin, loop(bind_X_1: X)(bind_Y_1: Y): ;
+            loop(bind_X_1: X)(bind_Y_1: Y), cond(bind_X_1: X)(bind_Z_1: Z): ;
+            cond(bind_X_1: X)(bind_Z_1: Z), true(bind_X_1: X)(bind_Y_2: Y): 1 == 1;
+            cond(bind_X_1: X)(bind_Z_1: Z), false(bind_X_1: X)(bind_Z_1: Z): 1 != 1;
+            false(bind_X_1: X)(bind_Z_1: Z), loop(bind_X_1: X)(bind_Y_1: Y): ;
+            true(bind_X_1: X)(bind_Y_2: Y), end: player = keeper;
         "
     );
 
@@ -495,11 +454,11 @@ mod test {
             type T = { a, b };
             var v: T = a;
             begin, b: ;
-            b, c(t: T): T(t) != T(a);
-            c(t: T), d: v = T(t);
+            b, c(bind_T_1: T): T(bind_T_1) != T(a);
+            c(bind_T_1: T), d: v = T(bind_T_1);
             d, end: ;
-            d, g(t: T): T(t) != T(a);
-            g(t: T), h: v = T(t);
+            d, g(bind_T_2: T): T(bind_T_2) != T(a);
+            g(bind_T_2: T), h: v = T(bind_T_2);
             h, b: ;
             h, end: ;
         "
@@ -588,6 +547,12 @@ mod test {
             x1(position: Position), y: ;
             y, x2(position: Position): ;
             x2(position: Position), end: ;
+        ",
+        "
+            begin, x1(bind_Position_1: Position): ;
+            x1(bind_Position_1: Position), y: ;
+            y, x2(bind_Position_2: Position): ;
+            x2(bind_Position_2: Position), end: ;
         "
     );
 
@@ -595,7 +560,7 @@ mod test {
         compact_skip_edges,
         canonical_form,
         "type T = { 0, 1 }; var t: T = 0; a, b(x: T): x == t; c, d(x: T): x == t;",
-        "type T = { 0, 1 }; var t: T = 0; a, b(bind_1: T): T(bind_1) == t; c, d(bind_2: T): T(bind_2) == t;"
+        "type T = { 0, 1 }; var t: T = 0; a, b(bind_T_1: T): T(bind_T_1) == t; c, d(bind_T_2: T): T(bind_T_2) == t;"
     );
 
     test_transform!(
@@ -851,12 +816,12 @@ mod test {
             rules_begin, rules_2: turn_return = turn_call_1;
             rules_2, turn_begin: me = x;
             turn_begin, turn_1: player = me;
-            turn_1, turn_2(bind_1: Position): ;
-            turn_2(bind_1: Position), turn_4(bind_1: Position): board[Position(bind_1)] == empty;
-            turn_4(bind_1: Position), turn_5(bind_1: Position): board[Position(bind_1)] = me;
-            turn_5(bind_1: Position), turn_6(bind_1: Position): position = Position(bind_1);
-            turn_6(bind_1: Position), turn_3(bind_1: Position): $ bind_1;
-            turn_3(bind_1: Position), turn_8: ;
+            turn_1, turn_2(bind_Position_1: Position): ;
+            turn_2(bind_Position_1: Position), turn_4(bind_Position_1: Position): board[Position(bind_Position_1)] == empty;
+            turn_4(bind_Position_1: Position), turn_5(bind_Position_1: Position): board[Position(bind_Position_1)] = me;
+            turn_5(bind_Position_1: Position), turn_6(bind_Position_1: Position): position = Position(bind_Position_1);
+            turn_6(bind_Position_1: Position), turn_3(bind_Position_1: Position): $ bind_Position_1;
+            turn_3(bind_Position_1: Position), turn_8: ;
             turn_8, turn_9: player = keeper;
             win_call_1, win_begin: position = position;
             win_begin, win_2: position != next_d1[position];
@@ -874,9 +839,9 @@ mod test {
             turn_10, turn_13: goals[me] = 100;
             turn_13, turn_14: goals[op[me]] = 0;
             turn_14, end: player = keeper;
-            findNonempty_call_1, findNonempty_1(position: Position): ;
-            findNonempty_1(position: Position), findNonempty_2(position: Position): board[Position(position)] == empty;
-            findNonempty_2(position: Position), findNonempty_end: ;
+            findNonempty_call_1, findNonempty_1(bind_Position_2: Position): ;
+            findNonempty_1(bind_Position_2: Position), findNonempty_2(bind_Position_2: Position): board[Position(bind_Position_2)] == empty;
+            findNonempty_2(bind_Position_2: Position), findNonempty_end: ;
             turn_11, turn_end: ? findNonempty_call_1 -> findNonempty_end;
             turn_11, turn_15: ! findNonempty_call_1 -> findNonempty_end;
             turn_15, end: player = keeper;
