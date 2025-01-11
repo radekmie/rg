@@ -14,22 +14,12 @@ impl Game<Arc<str>> {
                 while let Some((lhs, index)) = queue.pop() {
                     let maybe_edges = next_edges.get(&lhs);
                     if seen.insert((lhs, index)) {
-                        if let Some(edges) = maybe_edges {
-                            for edge in edges {
-                                if edge.label.is_tag() {
-                                    let indexes = tag_indexes.entry(lhs.clone()).or_default();
-                                    match indexes.iter().max() {
-                                        Some(max) if *max < index => {
-                                            indexes.insert(usize::MAX);
-                                            continue;
-                                        }
-                                        _ => indexes.insert(index),
-                                    };
-
-                                    queue.push((&edge.rhs, index + 1));
-                                } else if !edge.label.is_player_assignment() {
-                                    queue.push((&edge.rhs, index));
-                                }
+                        for edge in maybe_edges.into_iter().flatten() {
+                            if edge.label.is_tag() {
+                                queue.push((&edge.rhs, index + 1));
+                                tag_indexes.entry(lhs.clone()).or_default().insert(index);
+                            } else if !edge.label.is_player_assignment() {
+                                queue.push((&edge.rhs, index));
                             }
                         }
                     }
@@ -46,16 +36,8 @@ impl Game<Arc<str>> {
             |mut groups: BTreeMap<_, Vec<_>>, (node, indexes)| {
                 let maybe_index = match indexes.len() {
                     0 => None,
-                    1 => indexes
-                        .first()
-                        .copied()
-                        .filter(|index| *index < usize::MAX)
-                        .map(Ok),
-                    _ => indexes
-                        .into_iter()
-                        .max()
-                        .filter(|index| *index < usize::MAX)
-                        .map(Err),
+                    1 => indexes.first().copied().map(Ok),
+                    _ => indexes.into_iter().max().map(Err),
                 };
 
                 if let Some(index) = maybe_index {
