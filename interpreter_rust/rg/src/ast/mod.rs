@@ -1201,6 +1201,13 @@ impl<Id: Ord> Game<Id> {
         }
     }
 
+    pub fn add_pragma(&mut self, pragma: Pragma<Id>) {
+        self.pragmas.sort_unstable();
+        if let Err(index) = self.pragmas.binary_search(&pragma) {
+            self.pragmas.insert(index, pragma);
+        }
+    }
+
     pub fn make_is_reachable(&self) -> impl Fn(&Node<Id>, &Node<Id>) -> bool + '_ {
         let next_nodes = self.next_nodes();
         move |a: &Node<_>, b: &Node<_>| -> bool {

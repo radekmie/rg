@@ -51,21 +51,11 @@ impl Game<Arc<str>> {
         );
 
         for (index, nodes) in tag_indexes_by_index {
-            let pragma = match index {
-                Ok(index) => Pragma::TagIndex {
-                    span: Span::none(),
-                    nodes,
-                    index,
-                },
-                Err(index) => Pragma::TagMaxIndex {
-                    span: Span::none(),
-                    nodes,
-                    index,
-                },
-            };
-
-            let index = self.pragmas.partition_point(|x| *x < pragma);
-            self.pragmas.insert(index, pragma);
+            let span = Span::none();
+            self.add_pragma(match index {
+                Ok(index) => Pragma::TagIndex { span, nodes, index },
+                Err(index) => Pragma::TagMaxIndex { span, nodes, index },
+            });
         }
 
         Ok(())

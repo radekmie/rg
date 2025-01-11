@@ -27,12 +27,10 @@ impl Game<Arc<str>> {
         });
 
         if !unique_nodes.is_empty() {
-            let pragma = Pragma::Unique {
+            self.add_pragma(Pragma::Unique {
                 span: Span::none(),
                 nodes: unique_nodes.into_iter().collect(),
-            };
-            let index = self.pragmas.partition_point(|x| *x < pragma);
-            self.pragmas.insert(index, pragma);
+            });
         }
 
         Ok(())

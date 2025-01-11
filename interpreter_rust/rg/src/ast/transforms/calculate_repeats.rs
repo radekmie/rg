@@ -35,14 +35,11 @@ impl Game<Arc<str>> {
                     nodes.insert(index, node);
                 }
             } else {
-                let pragma = Pragma::Repeat {
+                self.add_pragma(Pragma::Repeat {
                     span: Span::none(),
                     nodes: vec![node],
                     identifiers,
-                };
-
-                let index = self.pragmas.partition_point(|x| *x < pragma);
-                self.pragmas.insert(index, pragma);
+                });
             }
         }
 

@@ -25,29 +25,18 @@ impl Game<Arc<str>> {
 
             if let Some((is_exhaustive, mut nodes)) = game.get_disjoint(edges) {
                 nodes.sort_unstable();
-                let pragma = if is_exhaustive {
-                    Pragma::DisjointExhaustive {
-                        span: Span::none(),
-                        node: node.clone(),
-                        nodes,
-                    }
+                let node = node.clone();
+                let span = Span::none();
+                pragmas.push(if is_exhaustive {
+                    Pragma::DisjointExhaustive { span, node, nodes }
                 } else {
-                    Pragma::Disjoint {
-                        span: Span::none(),
-                        node: node.clone(),
-                        nodes,
-                    }
-                };
-
-                pragmas.push(pragma);
+                    Pragma::Disjoint { span, node, nodes }
+                });
             }
         }
 
         for pragma in pragmas {
-            let index = self.pragmas.partition_point(|x| *x < pragma);
-            if self.pragmas.get(index) != Some(&pragma) {
-                self.pragmas.insert(index, pragma);
-            }
+            self.add_pragma(pragma);
         }
 
         Ok(())
