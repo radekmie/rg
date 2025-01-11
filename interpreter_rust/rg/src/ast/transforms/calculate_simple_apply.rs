@@ -1,29 +1,30 @@
-use crate::ast::{Error, Game, Label, Pragma, PragmaAssignment, PragmaTag, Span};
+use crate::ast::{Error, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag, Span};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-impl Game<Arc<str>> {
-    pub fn calculate_simple_apply(&mut self) -> Result<(), Error<Arc<str>>> {
-        let next_edges = self.next_edges();
-        let nodes: BTreeSet<_> = self
-            .edges
-            .iter()
-            .filter_map(|edge| {
-                if edge.label.is_player_assignment() || edge.label.is_tag() {
-                    Some(&edge.rhs)
-                } else if let Label::Reachability { lhs, .. } = &edge.label {
-                    Some(lhs)
-                } else if edge.lhs.is_begin() {
-                    Some(&edge.lhs)
-                } else {
-                    None
-                }
-            })
-            .cloned()
-            .collect();
+type Id = Arc<str>;
 
-        let mut pragmas = vec![];
-        'outer: for node in nodes {
+impl Game<Id> {
+    pub fn calculate_simple_apply(&mut self) -> Result<(), Error<Id>> {
+        let mut simple_paths = self.calculate_simple_paths();
+        SimplePath::merge_all(&mut simple_paths);
+        SimplePath::remove_invalid(&mut simple_paths);
+
+        for simple_path in simple_paths {
+            let pragma = simple_path.into_pragma();
+            if let Err(index) = self.pragmas.binary_search(&pragma) {
+                self.pragmas.insert(index, pragma);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// A list of "short" simple paths, i.e., with at most one tag.
+    fn calculate_simple_paths(&self) -> Vec<SimplePath> {
+        let next_edges = self.next_edges();
+        let mut simple_paths = vec![];
+        'outer: for node in self.calculate_simple_paths_candidates() {
             let mut path_to_player = None;
             let mut paths_to_edges: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
             let mut paths_to_tags: BTreeMap<_, BTreeSet<(_, _, _)>> = BTreeMap::new();
@@ -54,7 +55,7 @@ impl Game<Arc<str>> {
 
                             if lhs.uncast().is_player_reference() {
                                 if path_to_player.replace((path, assignments)).is_some() {
-                                    // This will not be `@simpleApply`.
+                                    // This will not be a simple path.
                                     continue 'outer;
                                 }
                             } else {
@@ -77,10 +78,17 @@ impl Game<Arc<str>> {
 
             let is_exhaustive = paths_to_edges
                 .values()
-                .all(|assignments| assignments.len() == 1);
+                .all(|assignments_set| assignments_set.len() == 1);
 
             if let Some((path, assignments)) = path_to_player {
-                pragmas.push((node.clone(), assignments, vec![], path, true, is_exhaustive));
+                simple_paths.push(SimplePath {
+                    assignments,
+                    is_exhaustive,
+                    is_player: true,
+                    node: node.clone(),
+                    path,
+                    tags: vec![],
+                });
             }
 
             for (tag, mut paths) in paths_to_tags {
@@ -93,97 +101,140 @@ impl Game<Arc<str>> {
                             .cloned()
                     });
 
-                    pragmas.push((
-                        node.clone(),
+                    simple_paths.push(SimplePath {
                         assignments,
-                        vec![PragmaTag { tag, type_ }],
-                        path,
-                        false,
                         is_exhaustive,
-                    ));
+                        is_player: false,
+                        node: node.clone(),
+                        path,
+                        tags: vec![PragmaTag { tag, type_ }],
+                    });
                 }
             }
         }
 
-        // Merge all pairs of
-        //   @simpleApply x1 x2 [...xtags] ...xassignments;
-        //   @simpleApply y1 y2 [...ytags] ...yassignments;
-        // Into
-        //   @simpleApply y1 x2 [...ytags ...xtags] ...yassignments ...xassignments;
-        // If there's exactly one `@simpleApply x : ...;` and there's no
-        // `player` assignment merged on the resulting path (except the end).
-        for index_x in (0..pragmas.len()).rev() {
-            let (prev, next) = pragmas.split_at_mut(index_x);
-            let ((x, xassignments, xtags, xs, xplayer, _), next) = next.split_first_mut().unwrap();
-            if prev
-                .iter()
-                .chain(next.iter())
-                .any(|(node, _, _, _, _, _)| node == x)
-            {
+        simple_paths
+    }
+
+    /// A set of `Node`s that can start a simple path.
+    fn calculate_simple_paths_candidates(&self) -> BTreeSet<Node<Id>> {
+        self.edges
+            .iter()
+            .filter_map(|edge| {
+                if edge.label.is_player_assignment() || edge.label.is_tag() {
+                    Some(&edge.rhs)
+                } else if let Label::Reachability { lhs, .. } = &edge.label {
+                    Some(lhs)
+                } else if edge.lhs.is_begin() {
+                    Some(&edge.lhs)
+                } else {
+                    None
+                }
+            })
+            .cloned()
+            .collect()
+    }
+}
+
+#[derive(Clone, Eq, Ord, PartialEq, PartialOrd)]
+struct SimplePath {
+    assignments: Vec<PragmaAssignment<Id>>,
+    is_exhaustive: bool,
+    is_player: bool,
+    node: Node<Id>,
+    path: Vec<Node<Id>>,
+    tags: Vec<PragmaTag<Id>>,
+}
+
+impl SimplePath {
+    fn into_pragma(mut self) -> Pragma<Id> {
+        if self.is_exhaustive {
+            Pragma::SimpleApplyExhaustive {
+                span: Span::none(),
+                lhs: self.node,
+                rhs: self.path.pop().unwrap(),
+                tags: self.tags,
+                assignments: self.assignments,
+            }
+        } else {
+            Pragma::SimpleApply {
+                span: Span::none(),
+                lhs: self.node,
+                rhs: self.path.pop().unwrap(),
+                tags: self.tags,
+                assignments: self.assignments,
+            }
+        }
+    }
+
+    /// It's allowed to merge
+    ///   @simpleApply x1 x2 [...xtags] ...xassignments;
+    ///   @simpleApply y1 y2 [...ytags] ...yassignments;
+    /// Into
+    ///   @simpleApply y1 x2 [...ytags ...xtags] ...yassignments ...xassignments;
+    /// If there's no `player` assignment in the middle of the resulting path.
+    fn merge(&self, other: &Self) -> Option<Self> {
+        if self.path.last() == Some(&other.node) && !self.is_player {
+            let mut clone = self.clone();
+            clone.assignments.extend_from_slice(&other.assignments);
+            clone.tags.extend_from_slice(&other.tags);
+            clone.path.extend_from_slice(&other.path);
+            clone.is_player |= other.is_player;
+            Some(clone)
+        } else {
+            None
+        }
+    }
+
+    /// Merge all paths pair-wise.
+    fn merge_all(simple_paths: &mut Vec<Self>) {
+        for index_x in (0..simple_paths.len()).rev() {
+            let (prev, next) = simple_paths.split_at_mut(index_x);
+            let (x, next) = next.split_first_mut().unwrap();
+
+            // Merging is allowed only if there's one extension possiblity.
+            if prev.iter().chain(next.iter()).any(|y| y.node == x.node) {
                 continue;
             }
 
             let mut any_matched = false;
-            for (_, yassignments, ytags, ys, yplayer, _) in prev.iter_mut().chain(next) {
-                if ys.last() == Some(x) && !*yplayer {
-                    yassignments.extend_from_slice(xassignments);
-                    ytags.extend_from_slice(xtags);
-                    ys.extend_from_slice(xs);
-                    *yplayer |= *xplayer;
+            for y in prev.iter_mut().chain(next) {
+                if let Some(y_extended) = y.merge(x) {
+                    *y = y_extended;
                     any_matched = true;
                 }
             }
 
             if any_matched {
-                pragmas.swap_remove(index_x);
+                simple_paths.swap_remove(index_x);
             }
         }
+    }
 
-        // @simpleApply{,Exhaustive} cannot start in a node with binds and all
-        // binds have to be bound with any of the tags.
+    fn remove_invalid(simple_paths: &mut Vec<Self>) {
+        // When an exhaustive simple path is removed, other simple paths from
+        // the same node are not exhaustive anymore.
         let mut affected_exhaustive_nodes = BTreeSet::new();
-        pragmas.retain(|(node, _, tags, nodes, _, is_exhaustive)| {
-            let is_correct = !node.has_bindings()
-                && nodes.iter().all(|node| {
+
+        // Simple paths cannot start in a node with binds and all binds have to
+        // be bound with any of the tags.
+        simple_paths.retain(|simple_path| {
+            let is_correct = !simple_path.node.has_bindings()
+                && simple_path.path.iter().all(|node| {
                     node.bindings()
-                        .all(|bind| tags.iter().any(|tag| tag.tag == *bind.0))
+                        .all(|bind| simple_path.tags.iter().any(|tag| tag.tag == *bind.0))
                 });
-            if !is_correct && *is_exhaustive {
-                affected_exhaustive_nodes.insert(node.clone());
+
+            if !is_correct && simple_path.is_exhaustive {
+                affected_exhaustive_nodes.insert(simple_path.node.clone());
             }
 
             is_correct
         });
 
-        for (node, _, _, _, _, is_exhaustive) in &mut pragmas {
-            *is_exhaustive &= !affected_exhaustive_nodes.contains(node);
+        for simple_path in simple_paths {
+            simple_path.is_exhaustive &= !affected_exhaustive_nodes.contains(&simple_path.node);
         }
-
-        for (node, assignments, tags, mut nodes, _, is_exhaustive) in pragmas {
-            let pragma = if is_exhaustive {
-                Pragma::SimpleApplyExhaustive {
-                    span: Span::none(),
-                    lhs: node,
-                    rhs: nodes.pop().unwrap(),
-                    tags,
-                    assignments,
-                }
-            } else {
-                Pragma::SimpleApply {
-                    span: Span::none(),
-                    lhs: node,
-                    rhs: nodes.pop().unwrap(),
-                    tags,
-                    assignments,
-                }
-            };
-
-            if let Err(index) = self.pragmas.binary_search(&pragma) {
-                self.pragmas.insert(index, pragma);
-            }
-        }
-
-        Ok(())
     }
 }
 
