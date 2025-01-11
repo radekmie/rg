@@ -22,7 +22,6 @@
     "@types/react-svg-pan-zoom": "3.3.5",
     "@types/vscode": "1.83.2",
     "buffer": "5.7.1",
-    "commander": "9.4.1",
     "eslint-config-vazco": "7.1.0",
     "fflate": "0.8.2",
     "json-rpc-2.0": "1.6.0",
@@ -51,15 +50,6 @@
     "vscode": "npm:@codingame/monaco-vscode-api@1.83.5"
   },
   "targets": {
-    "cli": {
-      "context": "node",
-      "distDir": "lib/cli",
-      "engines": {
-        "node": ">= 18.15.0"
-      },
-      "optimize": false,
-      "source": "src/cli/index.ts"
-    },
     "ui": {
       "context": "browser",
       "distDir": "lib/ui",
