@@ -7,20 +7,8 @@ type Id = Arc<str>;
 impl Game<Id> {
     pub fn calculate_simple_apply(&mut self) -> Result<(), Error<Id>> {
         let mut simple_paths = self.calculate_simple_paths();
-        println!("\ninit");
-        for x in &simple_paths {
-            println!("  {}", x.clone().into_pragma());
-        }
         SimplePath::merge_all(&mut simple_paths);
-        println!("\nmerge_all");
-        for x in &simple_paths {
-            println!("  {}", x.clone().into_pragma());
-        }
         SimplePath::remove_invalid(&mut simple_paths);
-        println!("\nremove_invalid");
-        for x in &simple_paths {
-            println!("  {}", x.clone().into_pragma());
-        }
 
         for simple_path in simple_paths {
             let pragma = simple_path.into_pragma();
