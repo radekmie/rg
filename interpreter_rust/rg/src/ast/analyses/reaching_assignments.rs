@@ -75,7 +75,7 @@ impl Assignment {
 }
 
 pub struct Context {
-    disjoints: Vec<(Node<Id>, Vec<Node<Id>>)>,
+    disjoints: BTreeMap<Node<Id>, BTreeSet<Node<Id>>>,
     is_translated_from_rbg: bool,
 }
 
@@ -85,9 +85,10 @@ impl Context {
         // or `@disjointExhaustive` pragma already.
         x.label.is_negated(&y.label)
             || x.lhs == y.lhs
-                && self.disjoints.iter().any(|(node, nodes)| {
-                    *node == x.lhs && nodes.contains(&x.rhs) && nodes.contains(&y.rhs)
-                })
+                && self
+                    .disjoints
+                    .get(&x.lhs)
+                    .is_some_and(|nodes| nodes.contains(&x.rhs) && nodes.contains(&y.rhs))
     }
 
     fn is_ignored_variable(&self, id: &Id) -> bool {
@@ -100,14 +101,17 @@ impl Context {
             disjoints: game
                 .pragmas
                 .iter()
-                .filter_map(|pragma| match pragma {
-                    Pragma::Disjoint { node, nodes, .. }
-                    | Pragma::DisjointExhaustive { node, nodes, .. } => {
-                        Some((node.clone(), nodes.clone()))
+                .fold(BTreeMap::new(), |mut disjoints, pragma| {
+                    if let Pragma::Disjoint { node, nodes, .. }
+                    | Pragma::DisjointExhaustive { node, nodes, .. } = pragma
+                    {
+                        disjoints
+                            .entry(node.clone())
+                            .or_default()
+                            .extend(nodes.iter().cloned());
                     }
-                    _ => None,
-                })
-                .collect(),
+                    disjoints
+                }),
             is_translated_from_rbg: game
                 .pragmas
                 .iter()
