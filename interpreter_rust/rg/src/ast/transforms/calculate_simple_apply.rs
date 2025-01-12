@@ -1,4 +1,6 @@
-use crate::ast::{Error, Expression, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag, Span};
+use crate::ast::{
+    Edge, Error, Expression, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag, Span,
+};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -38,12 +40,12 @@ impl Game<Id> {
                 }
 
                 for edge in next_edges.get(&lhs).into_iter().flatten() {
-                    if path.contains(&edge.rhs) {
+                    if path.iter().any(|x: &Arc<Edge<_>>| x.rhs == edge.rhs) {
                         continue;
                     }
 
                     let mut path = path.clone();
-                    path.push(edge.rhs.clone());
+                    path.push((*edge).clone());
 
                     let mut assignments = assignments.clone();
                     match &edge.label {
@@ -92,6 +94,20 @@ impl Game<Id> {
             }
 
             for (tag, mut paths) in paths_to_tags {
+                // There can be no bindings used in assignments other than the
+                // tag we've reached.
+                if paths.iter().any(|(_, edges, _)| {
+                    edges.iter().any(|edge| {
+                        edge.label.as_var_assignment().is_some_and(|(_, rhs)| {
+                            edge.bindings()
+                                .into_iter()
+                                .any(|(id, _)| *id != tag && rhs.has_variable(id))
+                        })
+                    })
+                }) {
+                    continue;
+                }
+
                 let (_, mut path, mut assignments) = paths.pop_first().unwrap();
                 let type_ = path
                     .iter()
@@ -127,8 +143,8 @@ impl Game<Id> {
                 //      to this variable.
                 let exposed_variable = (type_.is_some() && path.len() > 2)
                     .then(|| {
-                        let a = &path[path.len() - 3];
-                        let b = &path[path.len() - 2];
+                        let a = &path[path.len() - 3].rhs;
+                        let b = &path[path.len() - 2].rhs;
 
                         // "a -> b -> c" is isolated.
                         if next_edges[a].len() != 1 || next_edges[b].len() != 1 {
@@ -212,7 +228,7 @@ impl Game<Id> {
                     is_exhaustive: true,
                     is_player: false,
                     node: node.clone(),
-                    path: vec![node.clone(), path.pop().unwrap()],
+                    path: vec![path.remove(0), path.pop().unwrap()],
                     tags: vec![PragmaTag { tag, type_ }],
                 });
             }
@@ -247,7 +263,7 @@ struct SimplePath {
     is_exhaustive: bool,
     is_player: bool,
     node: Node<Id>,
-    path: Vec<Node<Id>>,
+    path: Vec<Arc<Edge<Id>>>,
     tags: Vec<PragmaTag<Id>>,
 }
 
@@ -257,7 +273,7 @@ impl SimplePath {
             Pragma::SimpleApplyExhaustive {
                 span: Span::none(),
                 lhs: self.node,
-                rhs: self.path.pop().unwrap(),
+                rhs: self.path.pop().unwrap().rhs.clone(),
                 tags: self.tags,
                 assignments: self.assignments,
             }
@@ -265,7 +281,7 @@ impl SimplePath {
             Pragma::SimpleApply {
                 span: Span::none(),
                 lhs: self.node,
-                rhs: self.path.pop().unwrap(),
+                rhs: self.path.pop().unwrap().rhs.clone(),
                 tags: self.tags,
                 assignments: self.assignments,
             }
@@ -279,7 +295,7 @@ impl SimplePath {
     ///   @simpleApply y1 x2 [...ytags ...xtags] ...yassignments ...xassignments;
     /// If there's no `player` assignment in the middle of the resulting path.
     fn merge(&self, other: &Self) -> Option<Self> {
-        if self.path.last() == Some(&other.node) && !self.is_player {
+        if self.path.last().map(|node| &node.rhs) == Some(&other.node) && !self.is_player {
             let mut clone = self.clone();
             clone.assignments.extend_from_slice(&other.assignments);
             clone.tags.extend_from_slice(&other.tags);
@@ -324,8 +340,9 @@ impl SimplePath {
         // All binds have to be bound with any of the tags. First node _can_, as
         // when applying it, we're in a bind already.
         simple_paths.retain(|simple_path| {
-            let is_correct = simple_path.path[1..].iter().all(|node| {
-                node.bindings()
+            let is_correct = simple_path.path[1..].iter().all(|edge| {
+                edge.rhs
+                    .bindings()
                     .all(|bind| simple_path.tags.iter().any(|tag| tag.tag == *bind.0))
             });
 
@@ -399,7 +416,8 @@ mod test {
             16(bind_3: Coord), 17: $ bind_3;
             17, 12: $ index_2;
             12, end: ;
-        "
+        ",
+        adds "@simpleApplyExhaustive 17 12 [index_2];"
     );
 
     test_transform!(
@@ -416,7 +434,8 @@ mod test {
             16(bind_3: Coord), 17: $ bind_3;
             17, 12: $ index_2;
             12, end: ;
-        "
+        ",
+        adds "@simpleApplyExhaustive 17 12 [index_2];"
     );
 
     test_transform!(
@@ -506,6 +525,23 @@ mod test {
             shown, end: player = keeper;
         ",
         adds "@simpleApplyExhaustive begin end [p: Position] position = Position(p), player = keeper;"
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        contained_binds,
+        "
+            begin, 203: player = keeper;
+            203, 208(bind_Coord_12: Coord): Coord(bind_Coord_12) != Coord(null);
+            208(bind_Coord_12: Coord), 207: coord = Coord(bind_Coord_12);
+            207, 211: board[coord] == b;
+            211, 213: board[coord] = e;
+            213, 214(bind_Coord_16: Coord): Coord(bind_Coord_16) == coord;
+            214(bind_Coord_16: Coord), 215: $ bind_Coord_16;
+            215, 210: $ index_9;
+            210, end: player = keeper;
+        ",
+        adds "@simpleApplyExhaustive 215 end [index_9] player = keeper;"
     );
 
     test_transform!(
