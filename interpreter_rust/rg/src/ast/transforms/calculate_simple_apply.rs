@@ -153,19 +153,19 @@ impl Game<Id> {
                         };
 
                         // "a -> b" is a variable to tag comparison.
-                        let variable = lhs.uncast();
-                        if !variable.is_reference()
-                            || !rhs.uncast().is_reference_and(|id| *id == tag)
-                        {
-                            return None;
-                        }
+                        let variable =
+                            match (lhs.uncast().as_reference(), rhs.uncast().as_reference()) {
+                                (Some(lhs_id), Some(_)) if *lhs_id == tag => rhs,
+                                (Some(_), Some(rhs_id)) if *rhs_id == tag => lhs,
+                                _ => return None,
+                            };
 
                         // "b -> c" is our tag.
                         if !b_first.label.is_tag_and(|id| *id == tag) {
                             return None;
                         }
 
-                        Some(Arc::from(variable.clone()))
+                        Some(variable.clone())
                     })
                     .flatten();
 
@@ -492,6 +492,20 @@ mod test {
             shown, end: player = keeper;
         ",
         adds "@simpleApplyExhaustive shown end [] player = keeper;"
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        multiple_paths_with_expose_reversed,
+        "
+            begin, x: position = north[position];
+            begin, y: position = south[position];
+            x, show(p: Position): position == p;
+            y, show(p: Position): p == position;
+            show(p: Position), shown: $ p;
+            shown, end: player = keeper;
+        ",
+        adds "@simpleApplyExhaustive begin end [p: Position] position = Position(p), player = keeper;"
     );
 
     test_transform!(
