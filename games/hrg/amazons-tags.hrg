@@ -1,0 +1,182 @@
+// Amazons
+// Moves form: position position position
+
+domain Piece = arrow | blackqueen | empty | whitequeen
+domain Player = black | white
+domain Score = 0 | 100
+domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
+
+left : Position -> Position
+left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
+left(_) = null
+
+right : Position -> Position
+right(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
+right(_) = null
+
+up : Position -> Position
+up(V(X, Y)) = if Y == 0 then null else V(X, Y - 1)
+up(_) = null
+
+down : Position -> Position
+down(V(X, Y)) = if Y == 9 then null else V(X, Y + 1)
+down(_) = null
+
+upleft : Position -> Position
+upleft(V(X, Y)) = up(left(V(X, Y)))
+upleft(_) = null
+
+upright : Position -> Position
+upright(V(X, Y)) = up(right(V(X, Y)))
+upright(_) = null
+
+downleft : Position -> Position
+downleft(V(X, Y)) = down(left(V(X, Y)))
+downleft(_) = null
+
+downright : Position -> Position
+downright(V(X, Y)) = down(right(V(X, Y)))
+downright(_) = null
+
+piece : Player -> Piece
+piece(white) = whitequeen
+piece(_) = blackqueen
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(_) = white
+
+
+// Variables
+board : Position -> Piece = {
+  V(X, Y) =
+    if Y == 0 && (X == 3 || X == 6) || Y == 3 && (X == 0 || X == 9) then blackqueen else
+    if Y == 6 && (X == 0 || X == 9) || Y == 9 && (X == 3 || X == 6) then whitequeen else
+    empty
+    where X in 0..9, Y in 0..9;
+  null = arrow
+}
+
+me : Player = white
+
+position : Position
+
+graph queenShift() {
+  branch {
+    repeat 9 {
+      position = upleft(position) check(board[position] == empty)
+      $ UL
+      branch {return()} or {}
+    }
+  } or {
+    repeat 9 {
+      position = up(position) check(board[position] == empty)
+      $ U
+      branch {return()} or {}
+    }
+  } or {
+    repeat 9 {
+      position = upright(position) check(board[position] == empty)
+      $ UR
+      branch {return()} or {}
+    }
+  } or {
+    repeat 9 {
+      position = left(position) check(board[position] == empty)
+      $ L
+      branch {return()} or {}
+    }
+  } or {
+    repeat 9 {
+      position = right(position) check(board[position] == empty)
+      $ R
+      branch {return()} or {}
+    }
+  } or {
+    repeat 9 {
+      position = downleft(position) check(board[position] == empty)
+      $ DL
+      branch {return()} or {}
+    }
+  } or {
+    repeat 9 {
+      position = down(position) check(board[position] == empty)
+      $ D
+      branch {return()} or {}
+    }
+  } or {
+    repeat 9 {
+      position = downright(position) check(board[position] == empty)
+      $ DR
+      branch {return()} or {}
+    }
+  }
+}
+
+graph existsMoveableQueen(me: Player) {
+  forall p:Position {
+    position = p
+  }
+  check(board[position] == piece(me))
+  branch {
+    check(board[upleft(position)] == empty)
+  } or {
+    check(board[up(position)] == empty)
+  } or {
+    check(board[upright(position)] == empty)
+  } or {
+    check(board[left(position)] == empty)
+  } or {
+    check(board[right(position)] == empty)
+  } or {
+    check(board[downleft(position)] == empty)
+  } or {
+    check(board[down(position)] == empty)
+  } or {
+    check(board[downright(position)] == empty)
+  }
+}
+
+graph move(me: Player) {
+  // @simpleApplyExhaustive move endMove ; p1:Position p2:Position p3:Position ; position = p1, board[position] = empty, position = p2, board[position] = piece(me), position = p3;
+  
+  player = me
+  forall p:Position {
+    position = p
+    $ p // Choose a queen
+  }
+  check(board[position] == piece(me))
+  board[position] = empty
+    
+  queenShift()
+  forall p:Position {
+    check(position == p)
+    $ p // Move queen here
+  }
+  board[position] = piece(me)
+  $ SHOOT
+  
+  queenShift()
+  forall p:Position {
+    check(position == p)
+    $ p // Shoot arrow here
+  }
+  player = keeper
+  board[position] = arrow
+}
+
+graph turn() {
+  move(me)
+  me = opponent(me)
+  if not(reachable(existsMoveableQueen(me))) {
+    goals[me] = 0
+    goals[opponent(me)] = 100
+    end()
+  }
+}
+
+graph rules() {
+  loop {
+    turn()
+  }
+}
