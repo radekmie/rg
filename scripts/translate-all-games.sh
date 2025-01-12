@@ -5,7 +5,7 @@ set -e
 
 timeout=${1:-2s}
 
-cd interpreter_rust
+cd ../interpreter_rust
 cargo build --release
 ./target/release/interpreter &> /dev/null || true # Preload.
 
