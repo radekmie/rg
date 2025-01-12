@@ -3,6 +3,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use utils::position::Span;
 
+const LIMIT_HARD: usize = 150;
+const LIMIT_SOFT: usize = 100;
+
 impl Game<Arc<str>> {
     pub fn calculate_tag_indexes(&mut self) -> Result<(), Error<Arc<str>>> {
         let next_edges = self.next_edges();
@@ -12,6 +15,12 @@ impl Game<Arc<str>> {
                 let mut seen = BTreeSet::new();
                 let mut queue = vec![(rhs, 0)];
                 while let Some((lhs, index)) = queue.pop() {
+                    // TODO: Handle cycles with tags.
+                    if index == LIMIT_HARD {
+                        tag_indexes.remove(lhs);
+                        break;
+                    }
+
                     let maybe_edges = next_edges.get(&lhs);
                     if seen.insert((lhs, index)) {
                         for edge in maybe_edges.into_iter().flatten() {
@@ -51,6 +60,11 @@ impl Game<Arc<str>> {
         );
 
         for (index, nodes) in tag_indexes_by_index {
+            // TODO: Handle cycles with tags.
+            if *index.as_ref().unwrap_or_else(|index| index) >= LIMIT_SOFT {
+                continue;
+            }
+
             let span = Span::none();
             self.add_pragma(match index {
                 Ok(index) => Pragma::TagIndex { span, nodes, index },
@@ -65,6 +79,18 @@ impl Game<Arc<str>> {
 #[cfg(test)]
 mod test {
     use crate::test_transform;
+
+    test_transform!(
+        calculate_tag_indexes,
+        cycle_immediate,
+        "begin, x: player = keeper; x, x: $ tag; x, end:;"
+    );
+
+    test_transform!(
+        calculate_tag_indexes,
+        cycle_delayed,
+        "begin, x: player = keeper; x, y:; y, y: $ tag; y, end:;"
+    );
 
     test_transform!(
         calculate_tag_indexes,
