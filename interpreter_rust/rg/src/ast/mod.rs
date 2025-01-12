@@ -3,6 +3,7 @@ mod display;
 mod transforms;
 mod validators;
 
+use analyses::ReachableNodes;
 use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
@@ -1378,12 +1379,12 @@ impl Game<Arc<str>> {
             })
             .collect::<BTreeSet<_>>()
             .len();
-        let is_reachable = self.make_is_reachable();
-        let begin = Node::new(Arc::from("begin"));
-        let main_automaton_nodes = self.nodes().iter().filter(|node| {
-            is_reachable(node, &begin)
-        }).count();
-        let branchings: Vec<_> = self.next_edges().iter().map(|(_, edges)| edges.len()).collect();
+        let main_automaton_nodes = self
+            .analyse::<ReachableNodes>(false)
+            .values()
+            .filter(|reachable| **reachable)
+            .count();
+        let branchings: Vec<_> = self.next_edges().values().map(BTreeSet::len).collect();
         let max_branching = branchings.iter().max().copied().unwrap_or(0);
         let average_branching = branchings.iter().sum::<usize>() as f64 / branchings.len() as f64;
         let repeat_nodes = self
@@ -1401,7 +1402,7 @@ impl Game<Arc<str>> {
         let unique_nodes = self
             .pragmas
             .iter()
-            .flat_map(|pragma| {
+            .filter_map(|pragma| {
                 if let Pragma::Unique { nodes, .. } = pragma {
                     Some(nodes)
                 } else {

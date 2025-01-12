@@ -1,4 +1,5 @@
 use super::{gen_fresh_node, max_node_id};
+use crate::ast::analyses::ReachableNodes;
 use crate::ast::{Edge, Error, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -9,13 +10,19 @@ type Subgraph = BTreeSet<Arc<Edge<Id>>>;
 
 impl Game<Id> {
     pub fn inline_reachability(&mut self) -> Result<(), Error<Id>> {
+        let begin = Node::new(Arc::from("begin"));
+        let in_main_automaton = self.analyse::<ReachableNodes>(false);
         for edge in self.edges.clone() {
             if let Label::Reachability {
                 lhs, rhs, negated, ..
             } = &edge.label
             {
+                let is_main_automaton = lhs == &begin
+                    || in_main_automaton
+                        .get(&edge.lhs)
+                        .is_some_and(|reachable| *reachable);
                 if let Some((subgraph, defined_vars)) =
-                    self.find_rechability_paths(lhs, rhs, *negated)
+                    self.find_rechability_paths(lhs, rhs, *negated, is_main_automaton)
                 {
                     self.substitute_reachability(edge.clone(), subgraph, defined_vars);
                 }
@@ -35,6 +42,7 @@ impl Game<Id> {
         start: &Node<Id>,
         target: &Node<Id>,
         negated: bool,
+        is_main_automaton: bool,
     ) -> Option<(Subgraph, Option<BTreeSet<Id>>)> {
         if negated {
             let edge = self
@@ -47,9 +55,17 @@ impl Game<Id> {
                 Label::Comparison { .. } | Label::Reachability { .. } => {
                     Some((BTreeSet::from([edge.clone()]), None))
                 }
-                // Skips and tags are always passable, so a negated reachability
+                // Do not inline tags into the main automaton.
+                Label::Tag { .. } => {
+                    if is_main_automaton {
+                        None
+                    } else {
+                        Some((BTreeSet::new(), None))
+                    }
+                }
+                // Skips are always passable, so a negated reachability
                 // should never pass them - the edge should be removed.
-                Label::Skip { .. } | Label::Tag { .. } => Some((BTreeSet::new(), None)),
+                Label::Skip { .. } => Some((BTreeSet::new(), None)),
             }
         } else {
             let negated_label = Label::Reachability {
@@ -60,11 +76,13 @@ impl Game<Id> {
             };
             // Do not inline `? a -> b` if `! a -> b` exists and cannot be inlined
             if self.edges.iter().any(|edge| edge.label == negated_label)
-                && self.find_rechability_paths(start, target, true).is_none()
+                && self
+                    .find_rechability_paths(start, target, true, is_main_automaton)
+                    .is_none()
             {
                 return None;
             }
-            self.find_acceptable_paths(start, target)
+            self.find_acceptable_paths(start, target, is_main_automaton)
         }
     }
 
@@ -72,6 +90,7 @@ impl Game<Id> {
         &self,
         start: &Node<Id>,
         target: &Node<Id>,
+        is_main_automaton: bool,
     ) -> Option<(Subgraph, Option<BTreeSet<Id>>)> {
         let next_edges = self.next_edges();
         let mut defined_vars = BTreeSet::new();
@@ -84,6 +103,9 @@ impl Game<Id> {
                 for edge in edges {
                     if let Some((id, _)) = edge.label.as_var_assignment() {
                         defined_vars.insert(id.clone());
+                    }
+                    if edge.label.is_tag() && is_main_automaton {
+                        return None;
                     }
                     result.insert((*edge).clone());
                     if edge.rhs != *target && !previous.contains(&edge.rhs) {
@@ -398,7 +420,13 @@ mod test {
         "type T = { null };
         begin, end: ? a -> c;
         a, b(t: T): t == null;
-        b(t: T), c: t == null;"
+        b(t: T), c: t == null;",
+        "type T = { null };
+        a, b(t: T): t == null;
+        b(t: T), c: t == null;
+        begin, 1: ;
+        1, 2(t: T): t == null;
+        2(t: T), end: t == null;"
     );
 
     test_transform!(
@@ -425,6 +453,33 @@ mod test {
         "a, b: ! x -> y;
         x, y: $ a;",
         "x, y: $ a;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        tag_in_main,
+        "begin, a: ;
+        a, b: ? x -> y;
+        x, y: $ a;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        tag_in_sub,
+        "a1, a: ;
+        a, b: ? x -> y;
+        x, y: $ a;",
+        "a1, a: ;
+        x, y: $ a;
+        a, 1: ;
+        1, b: $ a;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        negated_tag_begin,
+        "begin, end: ! x -> y;
+        x, y: $ a;"
     );
 
     test_transform!(

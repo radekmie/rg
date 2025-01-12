@@ -300,7 +300,8 @@ impl<Id: Display> Display for Pragma<Id> {
 
 impl Display for Stats {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f,
+        write!(
+            f,
             "edges: {}\n\
             nodes: {}\n\
             constants: {}\n\

@@ -141,7 +141,10 @@ fn main() -> Result<(), String> {
             let game = game_with_flags.load()?;
             println!("{game}");
         }
-        CliArgs::Stats { game_with_flags, json } => {
+        CliArgs::Stats {
+            game_with_flags,
+            json,
+        } => {
             let game = game_with_flags.load()?;
             let stats = game.to_stats();
             if json {
