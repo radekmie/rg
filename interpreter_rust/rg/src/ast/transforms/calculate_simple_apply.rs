@@ -546,6 +546,44 @@ mod test {
 
     test_transform!(
         calculate_simple_apply,
+        too_many_binds_1,
+        "
+            begin, 1(bind_Coord_1: Coord): coord = bind_Coord_1;
+            1(bind_Coord_1: Coord), 2: ;
+            2, 3: board[coord] = a;
+            3, 4(bind_Coord_2: Coord): coord = bind_Coord_2;
+            4(bind_Coord_2: Coord), 5: ;
+            5, 6: board[coord] = b;
+            6, 7: coord = left[coord];
+            7, 8: board[coord] = c;
+            8, 9(bind_Coord_3: Coord): bind_Coord_3 == coord;
+            9(bind_Coord_3: Coord), 10: $ bind_Coord_3;
+            10, end: player = keeper;
+        ",
+        adds "@simpleApplyExhaustive 10 end [] player = keeper;"
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        too_many_binds_2,
+        "
+            begin, 1(bind_Coord_1: Coord): coord = bind_Coord_1;
+            1(bind_Coord_1: Coord), 2: ;
+            2, 3: ;
+            3, 4(bind_Coord_2: Coord): coord = bind_Coord_2;
+            4(bind_Coord_2: Coord), 5: ;
+            5, 6: ;
+            6, 7: coord = left[coord];
+            7, 8: board[coord] = c;
+            8, 9(bind_Coord_3: Coord): bind_Coord_3 == coord;
+            9(bind_Coord_3: Coord), 10: $ bind_Coord_3;
+            10, end: player = keeper;
+        ",
+        adds "@simpleApplyExhaustive 10 end [] player = keeper;"
+    );
+
+    test_transform!(
+        calculate_simple_apply,
         complex_1,
         include_str!("../../../../../games/rg/simpleApplyTest1.rg"),
         adds "
