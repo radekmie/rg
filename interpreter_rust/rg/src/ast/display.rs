@@ -1,6 +1,6 @@
 use crate::ast::{
     Constant, Edge, Error, ErrorReason, Expression, Game, Label, Node, NodePart, Pragma,
-    PragmaAssignment, PragmaTag, Type, Typedef, Value, ValueEntry, Variable,
+    PragmaAssignment, PragmaTag, Stats, Type, Typedef, Value, ValueEntry, Variable,
 };
 use std::fmt::{Display, Formatter, Result};
 use utils::display::write_with_separator;
@@ -295,6 +295,32 @@ impl<Id: Display> Display for Pragma<Id> {
                 write!(f, ";")
             }
         }
+    }
+}
+
+impl Display for Stats {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f,
+            "edges: {}\n\
+            nodes: {}\n\
+            constants: {}\n\
+            variables: {}\n\
+            typedefs: {}\n\
+            @repeat or @unique nodes: {} ({:.2}%)\n\
+            @repeat nodes: {} ({:.2}%)\n\
+            @unique nodes: {} ({:.2}%)\n",
+            self.edges,
+            self.nodes,
+            self.constants,
+            self.variables,
+            self.typedefs,
+            self.repeat_or_unique_nodes,
+            100.0 * self.repeat_or_unique_nodes as f32 / self.nodes as f32,
+            self.repeat_nodes,
+            100.0 * self.repeat_nodes as f32 / self.nodes as f32,
+            self.unique_nodes,
+            100.0 * self.unique_nodes as f32 / self.nodes as f32,
+        )
     }
 }
 

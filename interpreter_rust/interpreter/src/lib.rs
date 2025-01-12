@@ -121,7 +121,7 @@ fn analyze_rg_inner(
     macro_rules! add_game_stats {
         ($game:expr) => {
             // TODO: Should warnings be a separate step?
-            let mut stats_and_warnings = $game.to_stats();
+            let mut stats_and_warnings = $game.to_stats().to_string();
             let mut warnings = BTreeSet::new();
             warnings.extend($game.lint_reachabilities());
             if !warnings.is_empty() {
