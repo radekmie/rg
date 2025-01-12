@@ -283,6 +283,7 @@ impl<Id: Display> Display for Pragma<Id> {
                 nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, " : {index};")
             }
+            Self::TranslatedFromRbg { .. } => write!(f, "@translatedFromRbg;"),
             Self::Unique { nodes, .. } => {
                 write!(f, "@unique")?;
                 nodes.iter().try_for_each(|node| write!(f, " {node}"))?;

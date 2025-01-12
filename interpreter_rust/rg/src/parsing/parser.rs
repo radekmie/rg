@@ -393,6 +393,9 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
                 index,
             },
         ),
+        map(tag("translatedFromRbg;"), |tag| Pragma::TranslatedFromRbg {
+            span: Span::from((&tag, &tag)),
+        }),
         map(
             tuple((
                 tag("unique"),

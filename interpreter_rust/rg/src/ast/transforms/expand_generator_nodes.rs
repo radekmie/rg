@@ -80,6 +80,7 @@ impl Pragma<Id> {
             Self::TagMaxIndex { span, index, nodes } => group_by_bindings(nodes)
                 .map(|nodes| Self::TagMaxIndex { span, index, nodes })
                 .collect(),
+            Self::TranslatedFromRbg { .. } => vec![self.clone()],
             Self::Unique { span, nodes } => group_by_bindings(nodes)
                 .map(|nodes| Self::Unique { span, nodes })
                 .collect(),

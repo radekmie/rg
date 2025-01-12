@@ -60,6 +60,34 @@ mod test {
 
     test_transform!(
         calculate_repeats,
+        repeat_example_rbg_board,
+        "begin, a: ; a, a: board[coord] = b; a, end: board[coord] == b;",
+        adds "@repeat a : board;"
+    );
+
+    test_transform!(
+        calculate_repeats,
+        repeat_example_rbg_board_with_pragma,
+        "begin, a: ; a, a: board[coord] = b; a, end: board[coord] == b; @translatedFromRbg;",
+        adds "@repeat a :;"
+    );
+
+    test_transform!(
+        calculate_repeats,
+        repeat_example_rbg_coord,
+        "begin, a: ; a, a: coord = rx0y0; a, end: coord == rx0y0;",
+        adds "@repeat a : coord;"
+    );
+
+    test_transform!(
+        calculate_repeats,
+        repeat_example_rbg_coord_with_pragma,
+        "begin, a: ; a, a: coord = rx0y0; a, end: coord == rx0y0; @translatedFromRbg;",
+        adds "@repeat a : coord;"
+    );
+
+    test_transform!(
+        calculate_repeats,
         small_loop,
         "begin, x: ; x, y: ; y, x: ; y, end: ;",
         adds "@repeat x :;"

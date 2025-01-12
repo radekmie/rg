@@ -62,6 +62,7 @@ impl<Id> Positioned for Pragma<Id> {
             | Self::SimpleApplyExhaustive { span, .. }
             | Self::TagIndex { span, .. }
             | Self::TagMaxIndex { span, .. }
+            | Self::TranslatedFromRbg { span }
             | Self::Unique { span, .. } => *span,
         }
     }

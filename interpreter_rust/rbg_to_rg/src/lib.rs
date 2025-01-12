@@ -408,6 +408,9 @@ pub fn rbg_to_rg(rbg: rbg::Game<Id>) -> Result<rg::Game<Id>, rbg::Error<Id>> {
         shift_patterns: BTreeMap::new(),
     };
 
+    context
+        .rg
+        .add_pragma(rg::Pragma::TranslatedFromRbg { span: Span::none() });
     context.rbg.rules = group_shift_patterns(context.rbg.rules);
     translate_game(&mut context);
 

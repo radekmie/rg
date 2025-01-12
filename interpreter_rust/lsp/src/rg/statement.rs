@@ -96,6 +96,7 @@ impl Statement for Pragma<Identifier> {
             Self::SimpleApplyExhaustive { .. } => "@simpleApplyExhaustive",
             Self::TagIndex { .. } => "@tagIndex",
             Self::TagMaxIndex { .. } => "@tagMaxIndex",
+            Self::TranslatedFromRbg { .. } => "@translatedFromRbg",
             Self::Unique { .. } => "@unique",
         }
     }

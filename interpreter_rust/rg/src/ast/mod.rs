@@ -1503,6 +1503,10 @@ pub enum Pragma<Id> {
         #[serde(rename = "edgeNames")]
         nodes: Vec<Node<Id>>,
     },
+    TranslatedFromRbg {
+        #[serde(skip)]
+        span: Span,
+    },
     Unique {
         #[serde(skip)]
         span: Span,
@@ -1528,6 +1532,7 @@ impl<Id> Pragma<Id> {
             Self::SimpleApply { lhs, rhs, .. } | Self::SimpleApplyExhaustive { lhs, rhs, .. } => {
                 Box::new(Some(lhs).into_iter().chain(Some(rhs)))
             }
+            Self::TranslatedFromRbg { .. } => Box::new([].into_iter()),
         }
     }
 }
@@ -1569,6 +1574,7 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
                     *rhs = new_node.clone();
                 }
             }
+            Self::TranslatedFromRbg { .. } => {}
         }
     }
 }
@@ -1666,6 +1672,7 @@ impl Pragma<Arc<str>> {
                     })
                     .collect(),
             ),
+            Self::TranslatedFromRbg { .. } => None,
         }
     }
 }

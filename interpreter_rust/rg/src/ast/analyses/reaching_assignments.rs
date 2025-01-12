@@ -5,8 +5,6 @@ use std::sync::Arc;
 
 type Id = Arc<str>;
 
-const IMPORTANT_VARIABLES: [&str; 3] = ["player", "goals", "visible"];
-
 #[derive(Clone, Eq, PartialEq)]
 pub struct Assignment {
     /// Set of edges with `Label::Comparison` and `Label::Reachability` labels
@@ -21,12 +19,12 @@ pub struct Assignment {
 }
 
 impl Assignment {
-    fn add_condition(&mut self, condition: &Arc<Edge<Id>>, disjoints: &Disjoints) {
+    fn add_condition(&mut self, condition: &Arc<Edge<Id>>, context: &Context) {
         self.is_conflicting = self.is_conflicting
             || self
                 .conditions
                 .iter()
-                .any(|x| disjoints.is_disjoint(x, condition));
+                .any(|x| context.is_disjoint(x, condition));
 
         // Add condition only if it may cause a conflict in the future.
         if !self.is_conflicting {
@@ -43,13 +41,13 @@ impl Assignment {
         }
     }
 
-    fn join(&mut self, other: &Self, disjoints: &Disjoints) {
+    fn join(&mut self, other: &Self, context: &Context) {
         self.is_conflicting = self.is_conflicting
             || other.is_conflicting
             || self
                 .conditions
                 .iter()
-                .any(|x| other.conditions.iter().any(|y| disjoints.is_disjoint(x, y)));
+                .any(|x| other.conditions.iter().any(|y| context.is_disjoint(x, y)));
 
         // Add conditions only if they may cause a conflict in the future.
         if !self.is_conflicting {
@@ -76,22 +74,31 @@ impl Assignment {
     }
 }
 
-pub struct Disjoints(Vec<(Node<Id>, Vec<Node<Id>>)>);
+pub struct Context {
+    disjoints: Vec<(Node<Id>, Vec<Node<Id>>)>,
+    is_translated_from_rbg: bool,
+}
 
-impl Disjoints {
+impl Context {
     fn is_disjoint(&self, x: &Edge<Id>, y: &Edge<Id>) -> bool {
         // Either their labels are negated or they are marked with a `@disjoint`
         // or `@disjointExhaustive` pragma already.
         x.label.is_negated(&y.label)
             || x.lhs == y.lhs
-                && self.0.iter().any(|(node, nodes)| {
+                && self.disjoints.iter().any(|(node, nodes)| {
                     *node == x.lhs && nodes.contains(&x.rhs) && nodes.contains(&y.rhs)
                 })
     }
 
+    fn is_ignored_variable(&self, id: &Id) -> bool {
+        const VARIABLES: [&str; 3] = ["player", "goals", "visible"];
+        VARIABLES.contains(&id.as_ref()) || (self.is_translated_from_rbg && id.as_ref() != "coord")
+    }
+
     fn new(game: &Game<Id>) -> Self {
-        Self(
-            game.pragmas
+        Self {
+            disjoints: game
+                .pragmas
                 .iter()
                 .filter_map(|pragma| match pragma {
                     Pragma::Disjoint { node, nodes, .. }
@@ -101,14 +108,18 @@ impl Disjoints {
                     _ => None,
                 })
                 .collect(),
-        )
+            is_translated_from_rbg: game
+                .pragmas
+                .iter()
+                .any(|pragma| matches!(pragma, Pragma::TranslatedFromRbg { .. })),
+        }
     }
 }
 
 pub struct ReachingAssignments;
 
 impl Analysis for ReachingAssignments {
-    type Context = Disjoints;
+    type Context = Context;
     type Domain = BTreeMap<Option<Id>, Assignment>;
 
     fn bot() -> Self::Domain {
@@ -161,7 +172,7 @@ impl Analysis for ReachingAssignments {
     fn gen(mut input: Self::Domain, edge: &Arc<Edge<Id>>, ctx: &Self::Context) -> Self::Domain {
         if edge.label.is_assignment() {
             let variable = edge.label.as_var_assignment().unwrap().0;
-            if !IMPORTANT_VARIABLES.contains(&variable.as_ref()) {
+            if !ctx.is_ignored_variable(variable) {
                 input
                     .entry(Some(variable.clone()))
                     .and_modify(|a_reached| a_reached.add_source(&edge.lhs))
