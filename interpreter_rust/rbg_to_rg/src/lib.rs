@@ -1164,11 +1164,14 @@ fn translate_atom_content(
                 },
             );
 
+            // Expose variable.
+            let expose = context.random_node();
+            expose_position(context, counter_inc, expose.clone());
+
             // Set piece.
-            let set_piece = context.random_node();
             context.connect(
-                counter_inc,
-                set_piece.clone(),
+                expose,
+                to,
                 rg::Label::Assignment {
                     lhs: Arc::from(rg::Expression::Access {
                         span: Span::none(),
@@ -1178,8 +1181,6 @@ fn translate_atom_content(
                     rhs: Arc::from(rg::Expression::new(piece.clone())),
                 },
             );
-
-            expose_position(context, set_piece, to);
         }
         rbg::ActionOrRule::Action(rbg::Action::On { pieces }) if pieces.is_empty() => {
             context.connect(from, rg::Node::new(Id::from("end")), rg::Label::new_skip());
