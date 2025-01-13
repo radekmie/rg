@@ -71,7 +71,9 @@ goRight,goRight: pos = Position(right[pos]);
 goRight,main: ;
 
 main, win1: pos == v66;
-win1, setScore: goals[player] = Score(100);
+win1, win1Tag: $ WIN1;
+win1Tag, setScore: goals[player] = Score(100);
 main, win2: pos == v77;
-win2, setScore: goals[player] = Score(100);
+win2, win2Tag: $ WIN2;
+win2Tag, setScore: goals[player] = Score(100);
 setScore, end: player = PlayerOrKeeper(keeper);
