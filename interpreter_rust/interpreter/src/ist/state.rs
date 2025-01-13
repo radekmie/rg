@@ -16,7 +16,7 @@ impl State {
     pub fn clone_at(&self, position: RuntimeId) -> Self {
         Self {
             goals: self.goals.clone(),
-            player: self.goals.clone(),
+            player: self.player.clone(),
             position,
             tags: self.tags.clone(),
             values: self.values.clone(),
