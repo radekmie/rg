@@ -229,6 +229,7 @@ fn analyze_rg_inner(
         pass!(inline_reachability);
         pass!(propagate_constants);
         pass!(merge_accesses);
+        pass!(merge_bindings);
 
         // Compact the automaton.
         pass!(compact_comparisons);

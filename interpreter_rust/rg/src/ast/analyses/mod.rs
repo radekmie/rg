@@ -1,12 +1,14 @@
 mod constants_analysis;
 mod reachable_nodes;
 mod reaching_assignments;
+mod reaching_binding_assignments;
 mod reaching_definitions;
 
 use crate::ast::{Edge, Game, Label, Node};
 pub use constants_analysis::ConstantsAnalysis;
 pub use reachable_nodes::ReachableNodes;
 pub use reaching_assignments::ReachingAssignments;
+pub use reaching_binding_assignments::ReachingBindingAssignments;
 pub use reaching_definitions::ReachingDefinitions;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
