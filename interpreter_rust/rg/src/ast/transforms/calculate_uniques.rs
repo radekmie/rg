@@ -104,7 +104,7 @@ mod test {
         calculate_uniques,
         repeat_test_big,
         include_str!("../../../../../games/rg/repeatTestBig.rg"),
-        adds "@unique begin end win1 win2;"
+        adds "@unique begin end setScore win1 win1Tag win2 win2Tag;"
     );
 
     test_transform!(

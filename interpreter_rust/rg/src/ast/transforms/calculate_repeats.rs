@@ -195,7 +195,7 @@ mod test {
         calculate_repeats,
         repeat_test_big,
         include_str!("../../../../../games/rg/repeatTestBig.rg"),
-        adds "@repeat goDown goLeft goRight goUp main : pos; @repeat setScore :;"
+        adds "@repeat goDown goLeft goRight goUp main : pos;"
     );
 
     test_transform!(
