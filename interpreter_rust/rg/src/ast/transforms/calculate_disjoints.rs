@@ -72,6 +72,7 @@ impl Game<Arc<str>> {
                 let lhs1 = lhs.uncast();
                 let mut nodes = vec![e1.rhs.clone()];
                 let mut symbols = BTreeSet::from([identifier]);
+                let mut all_edges = true;
                 for edge in edges {
                     if let Label::Comparison {
                         lhs: lhs2,
@@ -88,18 +89,20 @@ impl Game<Arc<str>> {
                             }
                         }
                     }
+
+                    all_edges = false;
                 }
 
                 if nodes.len() == 1 {
                     return None;
                 }
 
-                let is_exhaustive = lhs1
+                let all_values = lhs1
                     .infer(self, None)
                     .and_then(|type_| type_.values(self))
                     .is_ok_and(|values| values.len() == nodes.len());
 
-                return Some((is_exhaustive, nodes));
+                return Some((all_edges && all_values, nodes));
             }
         }
 
@@ -208,6 +211,13 @@ mod test {
         tictactoe,
         include_str!("../../../../../games/rg/ticTacToe.rg"),
         adds "@disjointExhaustive checkwin : nextturn win; @disjointExhaustive turn : move preend;"
+    );
+
+    test_transform!(
+        calculate_disjoints,
+        simple_apply_test_1,
+        include_str!("../../../../../games/rg/simpleApplyTest1.rg"),
+        adds "@disjoint moveB : tagB0same tagB1same;"
     );
 
     test_transform!(
