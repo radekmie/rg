@@ -102,7 +102,6 @@ graph turn() {
   move(me)
   if directionF(me)(pos) == pos || not(reachable(existsPawn(opponent(me)))) {
     goals[me] = 100
-    goals[opponent(me)] = 0
     end()
   }
   me = opponent(me)
