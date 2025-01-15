@@ -100,10 +100,13 @@ var pos: Position = v00;
 
 begin, move: ;
 
-turn, move: ? selectPos -> selectDir;
-turn, lose: ! selectPos -> selectDir;
+turn, move: ? findPawn -> pawnExists;
+turn, lose: ! findPawn -> pawnExists;
 
 move, selectPos: player = PlayerOrKeeper(currentPlayer);
+
+findPawn, findPawnPos(position:Position): board[position] == pieceOfPlayer[currentPlayer];
+findPawnPos(position:Position), pawnExists: ;
 
 selectPos, setPos(position:Position): $ position;
 setPos(position:Position), checkOwn: pos = Position(position);
@@ -127,7 +130,7 @@ rightDirSetP, rightDirSet: player = PlayerOrKeeper(keeper);
 rightDirSet, rightMove: board[pos] = Piece(e);
 rightMove, moved: pos = Position(RDirOfPlayer[currentPlayer][pos]);
 
-moved, done: ;//player = PlayerOrKeeper(keeper);
+moved, done: ;
 done, wincheck: board[pos] = pieceOfPlayer[currentPlayer];
 
 wincheck, win: FDirOfPlayer[currentPlayer][pos] == pos;
