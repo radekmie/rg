@@ -1,0 +1,190 @@
+//  Bombardment Jakub Iliński
+//  MOVE: On each turn, each player must do one of the following actions:
+//       - Move one friendly stone (the missiles) one cell forward (orthogonally or diagonally)
+//       - Explode one friendly stone, i.e., capture all stones of either color orthogonally and diagonally adjacent including itself.
+//  GOAL: Wins the player that move a stone into the last row, or is the only with stones in the board.
+//
+// Implementation idea: Instead of filtering whether a piece is exploded beyond the board (because I didn't find a good way to implement that), 
+//                      I simply extended the board from an 8x8 grid to a 10x10 grid by adding a border where normal pieces can't move. 
+//                      This allows me to explode my bomb without checking if the explosion affects a region beyond the board.
+
+//
+domain Piece = blackBomb | empty | whiteBomb | border
+domain Player = black | white
+domain Score = 0 | 100
+domain Position = null | V(X, Y) where X in 0..7, Y in 0..7
+domain Int = I(X) where X in 0..7
+
+// help functions for move
+left : Position -> Position
+left(null) = null
+left(V(0, _)) = null 
+left(V(X, Y)) = V(X - 1, Y)
+
+right : Position -> Position
+right(null) = null
+right(V(7, _)) = null 
+right(V(X, Y)) = V(X + 1, Y)
+
+up : Position -> Position
+up(null) = null
+up(V(_, 0)) = null 
+up(V(X, Y)) = V(X, Y - 1)
+
+down : Position -> Position
+down(null) = null
+down(V(_, 7)) = null
+down(V(X, Y)) = V(X, Y + 1)
+
+// helps to determin in which direction should we head to 
+direction: Player -> Position -> Position
+direction(white) = up
+direction(_) = down
+
+// diagonal moves
+upLeft: Position -> Position 
+upLeft(V(X, Y)) = up(left(V(X, Y)))
+upLeft(_) = null
+
+upRight: Position -> Position
+upRight(V(X, Y)) = up(right(V(X, Y)))
+upRight(_) = null 
+
+downLeft: Position -> Position
+downLeft(V(X, Y)) = down(left(V(X, Y)))
+downLeft(_) = null 
+
+downRight: Position -> Position
+downRight(V(X, Y)) = down(right(V(X, Y)))
+downRight(_) = null
+
+forwardLeft: Player -> Position -> Position
+forwardLeft(white) = upLeft
+forwardLeft(_) = downLeft
+
+forwardRight: Player -> Position -> Position
+forwardRight(white) = upRight 
+forwardRight(_) = downRight
+
+// if possible returns target position, else curent possition
+tryUp: Position -> Position
+tryUp(null) = null
+tryUp(V(X, 0)) = V(X, 0)
+tryUp(V(X, Y)) = V(X, Y - 1) 
+
+tryDown: Position -> Position
+tryDown(null) = null
+tryDown(V(X, 7)) = V(X, 7)
+tryDown(V(X, Y)) = V(X, Y + 1) 
+
+tryLeft: Position -> Position 
+tryLeft(null) = null 
+tryLeft(V(0, Y)) = V(0, Y)
+tryLeft(V(X, Y)) = V(X - 1, Y)
+
+tryRight: Position -> Position 
+tryRight(null) = null 
+tryRight(V(7, Y)) = V(7, Y)
+tryRight(V(X, Y)) = V(X + 1, Y)
+
+tryUpLeft: Position -> Position
+tryUpLeft(V(X, Y)) = tryUp(tryLeft(V(X, Y)))
+tryUpLeft(null) = null
+
+tryUpRight: Position -> Position
+tryUpRight(V(X, Y)) = tryUp(tryRight(V(X, Y)))
+tryUpRight(null) = null
+
+tryDownRight: Position -> Position
+tryDownRight(V(X, Y)) = tryDown(tryRight(V(X, Y)))
+tryDownRight(null) = null 
+
+tryDownLeft: Position -> Position
+tryDownLeft(V(X, Y)) = tryDown(tryLeft(V(X, Y)))
+tryDownLeft(null) = null 
+
+// return which type of bomb has player
+piece : Player -> Piece
+piece(white) = whiteBomb
+piece(_) = blackBomb
+
+// returns opponent of player
+opponent : Player -> Player
+opponent(white) = black
+opponent(_) = white
+
+board : Position -> Piece = {
+  V(X, Y) = if (Y < 2)
+    then blackBomb
+    else if (5 < Y)
+      then whiteBomb
+      else empty
+  where X in 0..7, Y in 0..7;
+  null = border
+}
+
+me : Player = white
+position : Position
+
+// Automaton
+graph move(me: Player) {
+  player = me
+  forall p:Position { // take a piece
+    check(board[p] == piece(me))
+    position = p
+    $ p
+  }
+
+  board[position] = empty 
+  branch {
+    branch {
+      position = direction(me)(position)
+      check(board[position] == empty)
+      $ F 
+    } or {
+      position = forwardLeft(me)(position)
+      check(board[position] == empty)
+      $ L
+    } or {
+      position = forwardRight(me)(position)
+      check(board[position] == empty)
+      $ R
+    }
+    player = keeper
+    board[position] = piece(me)
+  } or {
+    $ E
+    player = keeper
+    board[position] = empty
+    board[tryUpLeft(position)] = empty
+    board[tryUp(position)] = empty
+    board[tryUpRight(position)] = empty
+    board[tryLeft(position)] = empty
+    board[tryRight(position)] = empty
+    board[tryDownLeft(position)] = empty
+    board[tryDown(position)] = empty
+    board[tryDownRight(position)] = empty
+  }
+}
+
+graph existsOpponentPiece(me: Player) {
+  forall p:Position {
+    check(board[p] == piece(opponent(me)))
+  }
+}
+
+graph turn() {
+  move(me)
+  if direction(me)(position) == null || not(reachable(existsOpponentPiece(me))) {
+    goals[me] = 100
+    goals[opponent(me)] = 0
+    end()
+  }
+  me = opponent(me)
+}
+
+graph rules() {
+  loop {
+    turn() // make one turn
+  }
+}
