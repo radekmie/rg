@@ -1,3 +1,6 @@
+// Bombardment
+// Move form: pos (F + L + R + E)
+
 //  Bombardment Jakub Iliński
 //  MOVE: On each turn, each player must do one of the following actions:
 //       - Move one friendly stone (the missiles) one cell forward (orthogonally or diagonally)
@@ -8,14 +11,13 @@
 //                      I simply extended the board from an 8x8 grid to a 10x10 grid by adding a border where normal pieces can't move. 
 //                      This allows me to explode my bomb without checking if the explosion affects a region beyond the board.
 
-//
+
 domain Piece = blackBomb | empty | whiteBomb | border
 domain Player = black | white
 domain Score = 0 | 100
 domain Position = null | V(X, Y) where X in 0..7, Y in 0..7
 domain Int = I(X) where X in 0..7
 
-// help functions for move
 left : Position -> Position
 left(null) = null
 left(V(0, _)) = null 
@@ -103,7 +105,6 @@ tryDownLeft: Position -> Position
 tryDownLeft(V(X, Y)) = tryDown(tryLeft(V(X, Y)))
 tryDownLeft(null) = null 
 
-// return which type of bomb has player
 piece : Player -> Piece
 piece(white) = whiteBomb
 piece(_) = blackBomb
@@ -126,7 +127,6 @@ board : Position -> Piece = {
 me : Player = white
 position : Position
 
-// Automaton
 graph move(me: Player) {
   player = me
   forall p:Position { // take a piece
@@ -177,7 +177,6 @@ graph turn() {
   move(me)
   if direction(me)(position) == null || not(reachable(existsOpponentPiece(me))) {
     goals[me] = 100
-    goals[opponent(me)] = 0
     end()
   }
   me = opponent(me)
@@ -185,6 +184,6 @@ graph turn() {
 
 graph rules() {
   loop {
-    turn() // make one turn
+    turn()
   }
 }

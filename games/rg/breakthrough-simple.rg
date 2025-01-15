@@ -1,5 +1,5 @@
-
-// Moves form: Position (F + L + R)
+// Breakthrough unoptimized
+// Move form: Position (F + L + R)
 
 type Player = {white, black};
 type Score = {0, 100};
@@ -118,5 +118,4 @@ continue, turn: turnPlayer = opponent[turnPlayer];
 
 lose, win: turnPlayer = opponent[turnPlayer];
 win, score: goals[turnPlayer] = Score(100);
-score, finish: goals[opponent[turnPlayer]] = Score(0);
-finish, end: player = PlayerOrKeeper(keeper);
+score, end: player = PlayerOrKeeper(keeper);

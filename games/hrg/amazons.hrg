@@ -166,7 +166,6 @@ graph turn() {
   move(me)
   me = opponent(me)
   if not(reachable(existsMoveableQueen(me))) {
-    goals[me] = 0
     goals[opponent(me)] = 100
     end()
   }

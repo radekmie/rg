@@ -125,7 +125,6 @@ graph turn() {
   move(me)
   if dirF(me)(pos) == null || not(reachable(existsPiece(opponent(me)))) {
     goals[me] = 100
-    goals[opponent(me)] = 0
     end()
   }
   me = opponent(me)
