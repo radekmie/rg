@@ -4,7 +4,7 @@ import BreakthroughHrg from 'bundle-text:../../../../games/hrg/breakthrough.hrg'
 import Connect4Hrg from 'bundle-text:../../../../games/hrg/connect4.hrg';
 import DiceThrowCompareHrg from 'bundle-text:../../../../games/hrg/diceThrowCompare.hrg';
 import DiceThrowGuessHrg from 'bundle-text:../../../../games/hrg/diceThrowGuess.hrg';
-import GomokuFreestyleHrg from 'bundle-text:../../../../games/hrg/gomok_freeStyle.hrg';
+import GomokuFreestyleHrg from 'bundle-text:../../../../games/hrg/gomoku_freeStyle.hrg';
 import KnightthroughHrg from 'bundle-text:../../../../games/hrg/knightthrough.hrg';
 import PentagoHrg from 'bundle-text:../../../../games/hrg/pentago.hrg';
 import SatSolverHrg from 'bundle-text:../../../../games/hrg/satSolver.hrg';
@@ -57,8 +57,8 @@ import TheMillGameRbg from 'bundle-text:../../../../games/rbg/theMillGame.rbg';
 import TheMillGameSplitRbg from 'bundle-text:../../../../games/rbg/theMillGame_split.rbg';
 import TicTacToeRbg from 'bundle-text:../../../../games/rbg/ticTacToe.rbg';
 import YavalathRbg from 'bundle-text:../../../../games/rbg/yavalath.rbg';
-import BreakthroughOptRg from 'bundle-text:../../../../games/rg/breakthrough-opt.rg';
 import BreakthroughRg from 'bundle-text:../../../../games/rg/breakthrough.rg';
+import BreakthroughSimpleRg from 'bundle-text:../../../../games/rg/breakthrough-simple.rg';
 import MinimalRg from 'bundle-text:../../../../games/rg/minimal.rg';
 import TicTacToeRg from 'bundle-text:../../../../games/rg/ticTacToe.rg';
 
@@ -76,7 +76,7 @@ const games = [
   ['Breakthrough', BreakthroughHrg, Language.hrg],
   ['Breakthrough', BreakthroughRbg, Language.rbg],
   ['Breakthrough', BreakthroughRg, Language.rg],
-  ['Breakthrough (opt)', BreakthroughOptRg, Language.rg],
+  ['Breakthrough (simple unoptimized)', BreakthroughSimpleRg, Language.rg],
   ['Breakthru', BreakthruRbg, Language.rbg],
   ['Breakthru (split)', BreakthruSplitRbg, Language.rbg],
   ['CanadianDraughts', CanadianDraughtsRbg, Language.rbg],
