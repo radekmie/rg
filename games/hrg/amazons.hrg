@@ -1,5 +1,5 @@
 // Amazons
-// Moves form: position position position
+// Move form: position position position
 
 domain Piece = arrow | blackqueen | empty | whitequeen
 domain Player = black | white
@@ -138,8 +138,6 @@ graph existsMoveableQueen(me: Player) {
 }
 
 graph move(me: Player) {
-  // @simpleApplyExhaustive move endMove ; p1:Position p2:Position p3:Position ; position = p1, board[position] = empty, position = p2, board[position] = piece(me), position = p3;
-  
   player = me
   forall p:Position {
     position = p
