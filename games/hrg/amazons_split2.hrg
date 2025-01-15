@@ -1,0 +1,180 @@
+// Amazons split2
+// Move form: "pos pos", "pos"
+
+domain Piece = arrow | blackqueen | empty | whitequeen
+domain Player = black | white
+domain Score = 0 | 100
+domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
+
+left : Position -> Position
+left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
+left(_) = null
+
+right : Position -> Position
+right(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
+right(_) = null
+
+up : Position -> Position
+up(V(X, Y)) = if Y == 0 then null else V(X, Y - 1)
+up(_) = null
+
+down : Position -> Position
+down(V(X, Y)) = if Y == 9 then null else V(X, Y + 1)
+down(_) = null
+
+upleft : Position -> Position
+upleft(V(X, Y)) = up(left(V(X, Y)))
+upleft(_) = null
+
+upright : Position -> Position
+upright(V(X, Y)) = up(right(V(X, Y)))
+upright(_) = null
+
+downleft : Position -> Position
+downleft(V(X, Y)) = down(left(V(X, Y)))
+downleft(_) = null
+
+downright : Position -> Position
+downright(V(X, Y)) = down(right(V(X, Y)))
+downright(_) = null
+
+piece : Player -> Piece
+piece(white) = whitequeen
+piece(_) = blackqueen
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(_) = white
+
+
+// Variables
+board : Position -> Piece = {
+  V(X, Y) =
+    if Y == 0 && (X == 3 || X == 6) || Y == 3 && (X == 0 || X == 9) then blackqueen else
+    if Y == 6 && (X == 0 || X == 9) || Y == 9 && (X == 3 || X == 6) then whitequeen else
+    empty
+    where X in 0..9, Y in 0..9;
+  null = arrow
+}
+
+me : Player = white
+
+pos : Position
+
+graph queenShift() {
+  branch {
+    pos = upleft(pos) check(board[pos] == empty)
+    repeat 8 {
+      branch {return()} or {}
+      pos = upleft(pos) check(board[pos] == empty)
+    }
+  } or {
+    pos = up(pos) check(board[pos] == empty)
+    repeat 8 {
+      branch {return()} or {}
+      pos = up(pos) check(board[pos] == empty)
+    }
+  } or {
+    pos = upright(pos) check(board[pos] == empty)
+    repeat 8 {
+      branch {return()} or {}
+      pos = upright(pos) check(board[pos] == empty)
+    }
+  } or {
+    pos = left(pos) check(board[pos] == empty)
+    repeat 8 {
+      branch {return()} or {}
+      pos = left(pos) check(board[pos] == empty)
+    }
+  } or {
+    pos = right(pos) check(board[pos] == empty)
+    repeat 8 {
+      branch {return()} or {}
+      pos = right(pos) check(board[pos] == empty)
+    }
+  } or {
+    pos = downleft(pos) check(board[pos] == empty)
+    repeat 8 {
+      branch {return()} or {}
+      pos = downleft(pos) check(board[pos] == empty)
+    }
+  } or {
+    pos = down(pos) check(board[pos] == empty)
+    repeat 8 {
+      branch {return()} or {}
+      pos = down(pos) check(board[pos] == empty)
+    }
+  } or {
+    pos = downright(pos) check(board[pos] == empty)
+    repeat 8 {
+      branch {return()} or {}
+      pos = downright(pos) check(board[pos] == empty)
+    }
+  }
+}
+
+graph existsMoveableQueen(me: Player) {
+  forall p:Position {
+    pos = p
+  }
+  check(board[pos] == piece(me))
+  branch {
+    check(board[upleft(pos)] == empty)
+  } or {
+    check(board[up(pos)] == empty)
+  } or {
+    check(board[upright(pos)] == empty)
+  } or {
+    check(board[left(pos)] == empty)
+  } or {
+    check(board[right(pos)] == empty)
+  } or {
+    check(board[downleft(pos)] == empty)
+  } or {
+    check(board[down(pos)] == empty)
+  } or {
+    check(board[downright(pos)] == empty)
+  }
+}
+
+graph move(me: Player) {
+  player = me
+  forall p:Position {
+    pos = p
+    $ p // Choose a queen
+  }
+  check(board[pos] == piece(me))
+  board[pos] = empty
+  
+  queenShift()
+  forall p:Position {
+    check(pos == p)
+    $ p // Move queen here
+  }
+  player = keeper
+  board[pos] = piece(me)
+  
+  player = me
+  queenShift()
+  forall p:Position {
+    check(pos == p)
+    $ p // Shoot arrow here
+  }
+  player = keeper
+  board[pos] = arrow
+}
+
+graph turn() {
+  move(me)
+  me = opponent(me)
+  if not(reachable(existsMoveableQueen(me))) {
+    goals[opponent(me)] = 100
+    end()
+  }
+}
+
+graph rules() {
+  loop {
+    turn()
+  }
+}
