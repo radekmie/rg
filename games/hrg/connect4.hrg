@@ -2,9 +2,10 @@
 // Moves form: Position
 
 // Domains
-domain Piece = empty | red | yellow
+domain Piece = empty | red | yellow | border
 domain Player = red | yellow
 domain Position = null | V(X, Y) where X in 1..7, Y in 1..6
+domain TopPosition = V(X, 6) where X in 1..7
 domain Score = 50 | 0 | 100
 
 // Helpers
@@ -24,9 +25,8 @@ left : Position -> Position
 left(V(X, Y)) = if X == 1 then null else V(X - 1, Y)
 left(_) = null
 
-
 // Variables
-board : Position -> Piece = { V(X, Y) = empty where X in 1..7, Y in 1..6 }
+board : Position -> Piece = { :empty; null = border }
 
 position : Position
 
@@ -89,21 +89,30 @@ graph win(piece: Piece) {
 }
 
 graph findNonempty() {
-  forall p:Position {
-    check(p != null && board[p] == empty)
+  forall p:TopPosition {
+    check(board[p] == empty)
+  }
+}
+
+graph goDown() {
+  repeat 5 {
+    if board[down[position]] != empty {
+      return()
+    }
+
+    position = down[position]
   }
 }
 
 graph turn(me: Player, op: Player, piece: Piece) {
   player = me
-  forall p:Position {// TODO Make it XPosition
-    check(p != null && board[p] == empty)
-    check(down(p) == null || board[down(p)] != empty)
+  forall p:TopPosition {
     position = p
     $ p
   }
-  board[position] = piece
   player = keeper
+  goDown()
+  board[position] = piece
   if reachable(win(piece)) {
     goals[me] = 100
     goals[op] = 0
