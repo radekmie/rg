@@ -32,120 +32,57 @@ upRight: Position -> Position
 upRight(V(X, Y)) = up(right(V(X, Y)))
 upRight(_) = null
 
-
 downLeft: Position -> Position
 downLeft(V(X, Y)) = down(left(V(X, Y)))
 downLeft(_) = null
-
 
 downRight: Position -> Position
 downRight(V(X, Y)) = down(right(V(X, Y)))
 downRight(_) = null
 
 
-
-// Variables
 board : Position -> Piece = { V(X, Y) = empty where X in 1..15, Y in 1..15; null = border }
-
 pos : Position
 
 
-// Automaton
+graph winInDir(piece: Piece, dir1: Position->Position, dir2: Position->Position) {
+  branch {
+    check(board[dir1[pos]] == piece)
+    branch {
+      check(board[dir1[dir1[pos]]] == piece)
+      branch {
+        check(board[dir1[dir1[dir1[pos]]]] == piece)
+        branch {
+          check(board[dir1[dir1[dir1[dir1[pos]]]]] == piece)
+        } or {
+          check(board[dir2[pos]] == piece)
+        }
+      } or {
+        check(board[dir2[pos]] == piece)
+        check(board[dir2[dir2[pos]]] == piece)
+      }
+    } or {
+      check(board[dir2[pos]] == piece)
+      check(board[dir2[dir2[pos]]] == piece)
+      check(board[dir2[dir2[dir2[pos]]]] == piece)
+    }
+  } or {
+    check(board[dir2[pos]] == piece)
+    check(board[dir2[dir2[pos]]] == piece)
+    check(board[dir2[dir2[dir2[pos]]]] == piece)
+    check(board[dir2[dir2[dir2[dir2[pos]]]]] == piece)
+  }
+}
+
 graph win(piece: Piece) {
-  
-  branch { // 2x upLeft 2x downRight / 3x upLeft 1x downRight / 4x upLeft
-    check(board[upLeft(pos)] == piece)
-    check(board[upLeft(upLeft(pos))] == piece)
-    branch {
-      check(board[upLeft(upLeft(upLeft(pos)))] == piece)
-      // 3x upLeft
-      branch {
-        check(board[upLeft(upLeft(upLeft(upLeft(pos))))] == piece)
-      } or {
-        check(board[downRight(pos)] == piece)
-      }
-    } or {
-      check(board[downRight(pos)] == piece)
-      check(board[downRight(downRight(pos))] == piece)
-    }
-  } or { // 2x left 2x right / 3x left 1x right / 4x left
-    check(board[left(pos)] == piece)
-    check(board[left(left(pos))] == piece)
-    branch {
-      check(board[left(left(left(pos)))] == piece)
-      branch {
-        check(board[left(left(left(left(pos))))] == piece)
-      } or {
-        check(board[right(pos)] == piece)
-      }
-    } or {
-      check(board[right(pos)] == piece)
-      check(board[right(right(pos))] == piece)
-    }
-  } or { // 2x downLeft 2x upRight / 3x downLeft 1x upRight / 4x downLeft
-    check(board[downLeft(pos)] == piece)
-    check(board[downLeft(downLeft(pos))] == piece)
-    branch {
-      check(board[downLeft(downLeft(downLeft(pos)))] == piece)
-      branch {
-        check(board[downLeft(downLeft(downLeft(downLeft(pos))))] == piece)
-      } or {
-        check(board[upRight(pos)] == piece)
-      }
-    } or {
-      check(board[upRight(pos)] == piece)
-      check(board[upRight(upRight(pos))] == piece)
-    }
-  } or { // 2x down 2x up / 3x down 1x up / 4x down
-    check(board[down(pos)] == piece)
-    check(board[down(down(pos))] == piece)
-    branch {
-      check(board[down(down(down(pos)))] == piece)
-      branch {
-        check(board[down(down(down(down(pos))))] == piece)
-      } or {
-        check(board[up(pos)] == piece)
-      }
-    } or {
-      check(board[up(pos)] == piece)
-      check(board[up(up((pos)))] == piece)
-    }
-  } or { // 3x up 1x down / 4x up
-    check(board[up(pos)] == piece)
-    check(board[up(up(pos))] == piece)
-    check(board[up(up(up(pos)))] == piece)
-    branch {
-      check(board[up(up(up(up(pos))))] == piece)
-    } or {
-      check(board[down(pos)] == piece)
-    }
-  } or { // 3x downRight 1x upLeft / 4x downRight
-    check(board[downRight(pos)] == piece)
-    check(board[downRight(downRight(pos))] == piece)
-    check(board[downRight(downRight(downRight(pos)))] == piece)
-    branch {
-      check(board[downRight(downRight(downRight(downRight(pos))))] == piece)
-    } or {
-      check(board[upLeft(pos)] == piece)
-    }
-  } or { // 3x right 1x left / 4x right
-    check(board[right(pos)] == piece)
-    check(board[right(right(pos))] == piece)
-    check(board[right(right(right(pos)))] == piece)
-    branch {
-      check(board[right(right(right(right(pos))))] == piece)
-    } or {
-      check(board[left(pos)] == piece)
-    }
-  } or { // 3x upRight 1x left / 4x upRight
-    check(board[upRight(pos)] == piece)
-    check(board[upRight(upRight(pos))] == piece)
-    check(board[upRight(upRight(upRight(pos)))] == piece)
-    branch {
-      check(board[upRight(upRight(upRight(upRight(pos))))] == piece)
-    } or {
-      check(board[downLeft(pos)] == piece)
-    }
+  branch {
+    winInDir(piece, upLeft, downRight)
+  } or {
+    winInDir(piece, up, down)
+  } or {
+    winInDir(piece, upRight, downLeft)
+  } or {
+    winInDir(piece, left, right)
   }
 }
 
