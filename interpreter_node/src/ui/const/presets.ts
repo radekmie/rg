@@ -4,7 +4,7 @@ import BreakthroughHrg from 'bundle-text:../../../../games/hrg/breakthrough.hrg'
 import Connect4Hrg from 'bundle-text:../../../../games/hrg/connect4.hrg';
 import DiceThrowCompareHrg from 'bundle-text:../../../../games/hrg/diceThrowCompare.hrg';
 import DiceThrowGuessHrg from 'bundle-text:../../../../games/hrg/diceThrowGuess.hrg';
-import GomokuFreestyleHrg from 'bundle-text:../../../../games/hrg/gomoku-freestyle.hrg';
+import GomokuFreestyleHrg from 'bundle-text:../../../../games/hrg/gomok_freeStyle.hrg';
 import KnightthroughHrg from 'bundle-text:../../../../games/hrg/knightthrough.hrg';
 import PentagoHrg from 'bundle-text:../../../../games/hrg/pentago.hrg';
 import SatSolverHrg from 'bundle-text:../../../../games/hrg/satSolver.hrg';
