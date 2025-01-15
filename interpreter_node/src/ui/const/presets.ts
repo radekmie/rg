@@ -57,8 +57,8 @@ import TheMillGameRbg from 'bundle-text:../../../../games/rbg/theMillGame.rbg';
 import TheMillGameSplitRbg from 'bundle-text:../../../../games/rbg/theMillGame_split.rbg';
 import TicTacToeRbg from 'bundle-text:../../../../games/rbg/ticTacToe.rbg';
 import YavalathRbg from 'bundle-text:../../../../games/rbg/yavalath.rbg';
-import BreakthroughRg from 'bundle-text:../../../../games/rg/breakthrough.rg';
 import BreakthroughSimpleRg from 'bundle-text:../../../../games/rg/breakthrough-simple.rg';
+import BreakthroughRg from 'bundle-text:../../../../games/rg/breakthrough.rg';
 import MinimalRg from 'bundle-text:../../../../games/rg/minimal.rg';
 import TicTacToeRg from 'bundle-text:../../../../games/rg/ticTacToe.rg';
 

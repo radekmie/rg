@@ -111,7 +111,7 @@ mod test {
         calculate_uniques,
         breakthrough,
         include_str!("../../../../../games/rg/breakthrough.rg"),
-        adds "@unique begin checkOwn continue directionForward directionLeft directionLeftChecked directionOK directionRight directionRightChecked done end finish forward lose move moved score selectDirection selectPos selectedPos(position: Position) setFinished setPos(position: Position) turn win wincheck;"
+        adds "@unique begin checkOwn continue done end findPawn findPawnPos(position: Position) forwardDirCheck forwardDirSet forwardDirSetP forwardMove leftDirCheck leftDirSet leftDirSetP leftMove lose move moved pawnExists rightDirCheck rightDirSet rightDirSetP rightMove score selectDir selectPos setPos(position: Position) turn win wincheck;"
     );
 
     test_transform!(
