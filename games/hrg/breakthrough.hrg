@@ -2,33 +2,47 @@
 // Moves form: Position (F + L + R)
 
 // Domains
-domain Piece = blackpawn | empty | whitepawn
+domain Piece = blackpawn | empty | whitepawn | border
 domain Player = black | white
 domain Score = 0 | 100
 domain Position = null | V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
 
-// Helpers
 left : Position -> Position
 left(null) = null
 left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
-
 right : Position -> Position
 right(null) = null
 right(V(X, Y)) = if X == 7 then null else V(X + 1, Y)
-
 up : Position -> Position
 up(null) = null
-up(V(_, 0)) = null
+up(V(X, 0)) = V(X, 0)
 up(V(X, Y)) = V(X, Y - 1)
-
 down : Position -> Position
 down(null) = null
-down(V(_, 7)) = null
+down(V(X, 7)) = V(X, 7)
 down(V(X, Y)) = V(X, Y + 1)
+upLeft : Position -> Position
+upLeft(null) = null
+upLeft(V(X,Y)) = up(left(V(X,Y)))
+upRight : Position -> Position
+upRight(null) = null
+upRight(V(X,Y)) = up(right(V(X,Y)))
+downLeft : Position -> Position
+downLeft(null) = null
+downLeft(V(X,Y)) = down(left(V(X,Y)))
+downRight : Position -> Position
+downRight(null) = null
+downRight(V(X,Y)) = down(right(V(X,Y)))
 
-direction : Player -> Position -> Position
-direction(white) = up
-direction(_) = down
+directionF : Player -> Position -> Position
+directionF(white) = up
+directionF(_) = down
+directionFL : Player -> Position -> Position
+directionFL(white) = upLeft
+directionFL(_) = downLeft
+directionFR : Player -> Position -> Position
+directionFR(white) = upRight
+directionFR(_) = downRight
 
 piece : Player -> Piece
 piece(white) = whitepawn
@@ -38,52 +52,55 @@ opponent : Player -> Player
 opponent(white) = black
 opponent(_) = white
 
-
-// Variables
 board : Position -> Piece = {
   V(X, Y) = if Y < 2
     then blackpawn
     else if Y > 5
       then whitepawn
       else empty
-  where X in 0..7, Y in 0..7
+  where X in 0..7, Y in 0..7;
+  null = border
 }
 
 me : Player = white
 
-position : Position
+pos : Position
 
-
-// Automaton
-graph move(me: Player) {
+graph existsPawn(me: Player) {
   forall p:Position {
-    check(p != null && board[p] == piece(me))
-    board[p] = empty
-    position = direction(me)(p)
-    $ p
-  }
-  branch {
-    check(board[position] == empty)
-    $ F
-  } or {
-    branch {
-      position = left(position)
-      $ L
-    } or {
-      position = right(position)
-      $ R
-    }
-    check(position != null)
-    check(board[position] != piece[me])
+    check(board[p] == piece(me))
   }
 }
 
-graph turn() {
+graph move(me: Player) {
   player = me
-  move(me)
-  board[position] = piece(me)
+  forall p:Position {
+    check(board[p] == piece(me))
+    $ p
+    board[p] = empty
+    pos = p
+  }
+  branch {
+    $ F
+    pos = directionF(me)(pos)
+    check(board[pos] == empty)
+  } or {
+    branch {
+      $ L
+      pos = directionFL(me)(pos)
+    } or {
+      $ R
+      pos = directionFR(me)(pos)
+    }
+    check(board[pos] == empty || board[pos] == piece[opponent(me)])
+  }
   player = keeper
-  if direction(me)(position) == null || not(reachable(move(opponent(me)))) {
+  board[pos] = piece(me)
+}
+
+graph turn() {
+  move(me)
+  if directionF(me)(pos) == pos || not(reachable(existsPawn(opponent(me)))) {
     goals[me] = 100
     goals[opponent(me)] = 0
     end()
