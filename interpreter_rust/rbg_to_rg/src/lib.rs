@@ -1247,7 +1247,7 @@ fn translate_atom_content(
             );
         }
         rbg::ActionOrRule::Rule(rule) if is_expandable_shift_pattern(&rule) => {
-            let pairs: Vec<_> = context
+            let mut pairs: Vec<_> = context
                 .rbg
                 .board
                 .clone()
@@ -1261,6 +1261,7 @@ fn translate_atom_content(
                 .collect();
             let pairs_len = pairs.len();
 
+            // All coords are reachable -> (bind: Coord).
             if pairs.iter().all(|(_, coords)| coords.len() == pairs_len) {
                 let mut local = context.random_node();
                 local.add_binding(
@@ -1297,6 +1298,7 @@ fn translate_atom_content(
                 return;
             }
 
+            // At most one coord is reachable -> map.
             if pairs.iter().all(|(_, coords)| coords.len() <= 1) {
                 let map: Vec<_> = pairs
                     .into_iter()
@@ -1329,6 +1331,34 @@ fn translate_atom_content(
                         lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
                         rhs: Arc::from(rg::Expression::new(Id::from("null"))),
                         negated: true,
+                    },
+                );
+                return;
+            }
+
+            // Always the same coords are reachable -> (bind: RbgType).
+            if pairs.iter().all(|(_, coords)| *coords == pairs[0].1) {
+                let coords = pairs.pop().unwrap().1;
+                let type_ = context.create_type_from_set(coords);
+                let mut local = context.random_node();
+                local.add_binding(Id::from("coordPossibility"), type_.clone());
+
+                context.connect(
+                    from,
+                    local.clone(),
+                    rg::Label::Comparison {
+                        lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
+                        rhs: Arc::from(rg::Expression::new(Id::from("null"))),
+                        negated: true,
+                    },
+                );
+
+                context.connect(
+                    local,
+                    to.clone(),
+                    rg::Label::Assignment {
+                        lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
+                        rhs: Arc::from(rg::Expression::new(Id::from("coordPossibility"))),
                     },
                 );
                 return;
