@@ -1,5 +1,5 @@
 // Pentago
-// Move form: pos rotation
+// Move form: pos | rotation
 
 
 // Dominik Biernacki
@@ -236,10 +236,10 @@ graph primary_turn(me: Player) {
     board[p] = me
     $ p
   }
-  // player = keeper // uncomment this for faster computations (~8x), but the
+  player = keeper // uncomment this for faster computations (~8x), but the
   // keeper breaks turns so every statistic (except winratio) is less desirable
 
-  // check for a win (in this case anly player adding a piece can win)
+  // check for a win (in this case only player adding a piece can win)
   if reachable(win(me)) {
     goals[me] = 100
     goals[op(me)] = 0
@@ -249,6 +249,7 @@ graph primary_turn(me: Player) {
 
 // second part of the turn (performing rotation)
 graph secondary_turn(me: Player) {
+  player = me
   // generate all possible rotations
   forall r:Rotation {
     if r == 0 {
