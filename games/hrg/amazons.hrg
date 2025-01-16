@@ -64,51 +64,67 @@ position : Position
 graph queenShift() {
   branch {
     position = upleft(position) check(board[position] == empty)
+    $ _upleft
     repeat 8 {
       branch {return()} or {}
       position = upleft(position) check(board[position] == empty)
+      $ _upleft
     }
   } or {
     position = up(position) check(board[position] == empty)
+    $ _up
     repeat 8 {
       branch {return()} or {}
       position = up(position) check(board[position] == empty)
+      $ _up
     }
   } or {
     position = upright(position) check(board[position] == empty)
+    $ _upright
     repeat 8 {
       branch {return()} or {}
       position = upright(position) check(board[position] == empty)
+      $ _upright
     }
   } or {
     position = left(position) check(board[position] == empty)
+    $ _left
     repeat 8 {
       branch {return()} or {}
       position = left(position) check(board[position] == empty)
+      $ _left
     }
   } or {
     position = right(position) check(board[position] == empty)
+    $ _right
     repeat 8 {
       branch {return()} or {}
       position = right(position) check(board[position] == empty)
+      $ _right
     }
   } or {
     position = downleft(position) check(board[position] == empty)
+    $ _downleft
     repeat 8 {
       branch {return()} or {}
       position = downleft(position) check(board[position] == empty)
+      $ _downleft
     }
   } or {
     position = down(position) check(board[position] == empty)
+    $ _down
     repeat 8 {
       branch {return()} or {}
       position = down(position) check(board[position] == empty)
+      $ _down
     }
   } or {
     position = downright(position) check(board[position] == empty)
+    $ _downright
     repeat 8 {
       branch {return()} or {}
       position = downright(position) check(board[position] == empty)
+      $ _downright
     }
   }
 }

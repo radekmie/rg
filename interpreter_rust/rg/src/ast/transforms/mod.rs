@@ -24,6 +24,7 @@ mod prune_unreachable_nodes;
 mod prune_unused_bindings;
 mod prune_unused_constants;
 mod prune_unused_variables;
+mod skip_artificial_tags;
 mod skip_generator_comparisons;
 mod skip_self_assignments;
 mod skip_self_comparisons;

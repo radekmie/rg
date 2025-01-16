@@ -174,6 +174,15 @@ pub struct Flags {
     )]
     pub prune_unused_variables: bool,
 
+    /// skip tag edges marked with `@artificialTag`
+    #[arg(
+        long,
+        help_heading = "Optimizations",
+        conflicts_with = "enable_all_optimizations",
+        default_value_if("enable_all_optimizations", "true", Some("true"))
+    )]
+    pub skip_artificial_tags: bool,
+
     /// skips all comparisons to a generator (e.g., `x, y(t: T): t == null`)
     #[arg(
         long,

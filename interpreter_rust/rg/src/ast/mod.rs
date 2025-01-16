@@ -1449,6 +1449,11 @@ impl<Id: PartialEq> Game<Id> {
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Pragma<Id> {
+    ArtificialTag {
+        #[serde(skip)]
+        span: Span,
+        tags: Vec<Id>,
+    },
     Disjoint {
         #[serde(skip)]
         span: Span,
@@ -1522,6 +1527,7 @@ impl<Id> Pragma<Id> {
 
     pub fn nodes(&self) -> Box<dyn Iterator<Item = &Node<Id>> + '_> {
         match self {
+            Self::ArtificialTag { .. } => Box::new(None.into_iter()),
             Self::Disjoint { node, nodes, .. } | Self::DisjointExhaustive { node, nodes, .. } => {
                 Box::new(Some(node).into_iter().chain(nodes))
             }
@@ -1546,6 +1552,7 @@ impl<Id: Ord> Pragma<Id> {
 impl<Id: Clone + PartialEq> Pragma<Id> {
     pub fn rename_node(&mut self, old_node: &Node<Id>, new_node: &Node<Id>) {
         match self {
+            Self::ArtificialTag { .. } => {}
             Self::Disjoint { node, nodes, .. } | Self::DisjointExhaustive { node, nodes, .. } => {
                 if node == old_node {
                     *node = new_node.clone();
@@ -1609,6 +1616,7 @@ impl Pragma<Arc<str>> {
         };
 
         match self {
+            Self::ArtificialTag { .. } => None,
             Self::Disjoint { nodes, .. }
             | Self::DisjointExhaustive { nodes, .. }
             | Self::Repeat { nodes, .. }

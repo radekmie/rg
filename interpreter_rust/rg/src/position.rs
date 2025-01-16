@@ -55,7 +55,8 @@ impl<Id: Positioned> Positioned for Expression<Id> {
 impl<Id> Positioned for Pragma<Id> {
     fn span(&self) -> Span {
         match self {
-            Self::Disjoint { span, .. }
+            Self::ArtificialTag { span, .. }
+            | Self::Disjoint { span, .. }
             | Self::DisjointExhaustive { span, .. }
             | Self::Repeat { span, .. }
             | Self::SimpleApply { span, .. }

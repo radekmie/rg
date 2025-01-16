@@ -47,6 +47,7 @@ impl Game<Id> {
 impl Pragma<Id> {
     fn split_by_bindings(self) -> Vec<Self> {
         match self {
+            Self::ArtificialTag { .. } => vec![self.clone()],
             Self::Disjoint { span, node, nodes } => group_by_bindings(nodes)
                 .map(|nodes| Self::Disjoint {
                     span,

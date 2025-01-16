@@ -89,6 +89,7 @@ impl Statement for Pragma<Identifier> {
 
     fn keyword(&self) -> &'static str {
         match self {
+            Self::ArtificialTag { .. } => "@artificialTag",
             Self::Disjoint { .. } => "@disjoint",
             Self::DisjointExhaustive { .. } => "@disjointExhaustive",
             Self::Repeat { .. } => "@repeat",

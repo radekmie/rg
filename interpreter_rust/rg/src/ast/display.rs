@@ -226,6 +226,11 @@ impl<Id: Display> Display for Game<Id> {
 impl<Id: Display> Display for Pragma<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
+            Self::ArtificialTag { tags, .. } => {
+                write!(f, "@artificialTag ")?;
+                write_with_separator(f, tags, " ")?;
+                write!(f, ";")
+            }
             Self::Disjoint { node, nodes, .. } => {
                 write!(f, "@disjoint {node} :")?;
                 nodes.iter().try_for_each(|node| write!(f, " {node}"))?;

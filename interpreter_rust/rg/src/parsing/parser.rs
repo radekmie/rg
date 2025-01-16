@@ -291,6 +291,17 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
     let pragma = alt((
         map(
             tuple((
+                tag("artificialTag"),
+                cut(many1(preceded_whitespace(identifier))),
+                preceded_whitespace(tag(";")),
+            )),
+            |(tag, tags, semicolon)| Pragma::ArtificialTag {
+                span: Span::from((&tag, &semicolon)),
+                tags,
+            },
+        ),
+        map(
+            tuple((
                 tag("disjointExhaustive"),
                 cut(preceded_whitespace(node)),
                 preceded_whitespace(tag(":")),

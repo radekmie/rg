@@ -1136,6 +1136,14 @@ fn translate_automaton_statements(
                 }
             }
             hrg::Statement::Tag { symbol } => {
+                // By convention, all tags starting with `_` are artificial.
+                if symbol.starts_with("_") {
+                    context.rg.add_pragma(rg::Pragma::ArtificialTag {
+                        span: Span::none(),
+                        tags: vec![symbol.clone()],
+                    });
+                }
+
                 let local_node = context.random_node(prefix);
                 context.connect(
                     current_node,
