@@ -1,0 +1,89 @@
+// Clobber
+// Move form: Position (U + D + L + R)
+
+domain Piece = black | empty | white
+domain Player = black | white
+domain Score = 0 | 100
+domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
+
+left : Position -> Position
+left(null) = null
+left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
+
+right : Position -> Position
+right(null) = null
+right(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
+
+up : Position -> Position
+up(null) = null
+up(V(_, 0)) = null
+up(V(X, Y)) = V(X, Y - 1)
+
+down : Position -> Position
+down(null) = null
+down(V(_, 9)) = null
+down(V(X, Y)) = V(X, Y + 1)
+
+piece : Player -> Piece
+piece(white) = white
+piece(_) = black
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(_) = white
+
+board : Position -> Piece = {
+  V(X, Y) = if (X + Y) % 2 == 0
+    then black
+    else white
+  where X in 0..9, Y in 0..9
+}
+
+me : Player = white
+
+pos : Position
+
+graph move(me: Player) {
+  forall p:Position {
+    check(p != null && board[p] == piece(me))
+    board[p] = empty
+    pos = p
+    $ p
+  }
+  branch {
+    pos = up(pos)
+    check(pos != null && board[pos] == piece(opponent(me)))
+    $ U
+  } or {
+    pos = left(pos)
+    check(pos != null && board[pos] == piece(opponent(me)))
+    $ L
+  } or {
+    pos = right(pos)
+    check(pos != null && board[pos] == piece(opponent(me)))
+    $ R
+  } or {
+    pos = down(pos)
+    check(pos != null && board[pos] == piece(opponent(me)))
+    $ D
+  }
+}
+
+graph turn() {
+  player = me
+  move(me)
+  board[pos] = piece(me)
+  player = keeper
+  if not(reachable(move(opponent(me)))) {
+    goals[me] = 100
+    goals[opponent(me)] = 0
+    end()
+  }
+  me = opponent(me)
+}
+
+graph rules() {
+  loop {
+    turn()
+  }
+}
