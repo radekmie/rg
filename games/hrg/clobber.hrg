@@ -1,8 +1,8 @@
 // Clobber
 // Move form: Position (U + D + L + R)
 
-domain Piece = black | empty | white
 domain Player = black | white
+domain Piece = blackPawn | empty | whitePawn
 domain Score = 0 | 100
 domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
 
@@ -25,8 +25,8 @@ down(V(_, 9)) = null
 down(V(X, Y)) = V(X, Y + 1)
 
 piece : Player -> Piece
-piece(white) = white
-piece(_) = black
+piece(white) = whitePawn
+piece(_) = blackPawn
 
 opponent : Player -> Player
 opponent(white) = black
@@ -34,8 +34,8 @@ opponent(_) = white
 
 board : Position -> Piece = {
   V(X, Y) = if (X + Y) % 2 == 0
-    then black
-    else white
+    then blackPawn
+    else whitePawn
   where X in 0..9, Y in 0..9
 }
 
@@ -43,28 +43,44 @@ me : Player = white
 
 pos : Position
 
+graph moveExists(me: Player) {
+  forall p:Position {
+    check(board[p] == piece(me))
+    pos = p
+  }
+  branch {
+    check(board[up(pos)] == piece(opponent(me)))
+  } or {
+    check(board[left(pos)] == piece(opponent(me)))
+  } or {
+    check(board[right(pos)] == piece(opponent(me)))
+  } or {
+    check(board[down(pos)] == piece(opponent(me)))
+  }
+}
+
 graph move(me: Player) {
   forall p:Position {
-    check(p != null && board[p] == piece(me))
+    check(board[p] == piece(me))
     board[p] = empty
     pos = p
     $ p
   }
   branch {
     pos = up(pos)
-    check(pos != null && board[pos] == piece(opponent(me)))
+    check(board[pos] == piece(opponent(me)))
     $ U
   } or {
     pos = left(pos)
-    check(pos != null && board[pos] == piece(opponent(me)))
+    check(board[pos] == piece(opponent(me)))
     $ L
   } or {
     pos = right(pos)
-    check(pos != null && board[pos] == piece(opponent(me)))
+    check(board[pos] == piece(opponent(me)))
     $ R
   } or {
     pos = down(pos)
-    check(pos != null && board[pos] == piece(opponent(me)))
+    check(board[pos] == piece(opponent(me)))
     $ D
   }
 }
@@ -72,9 +88,9 @@ graph move(me: Player) {
 graph turn() {
   player = me
   move(me)
-  board[pos] = piece(me)
   player = keeper
-  if not(reachable(move(opponent(me)))) {
+  board[pos] = piece(me)
+  if not(reachable(moveExists(opponent(me)))) {
     goals[me] = 100
     goals[opponent(me)] = 0
     end()
