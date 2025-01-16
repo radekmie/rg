@@ -23,7 +23,7 @@ const initialState: State = {
       ...noFlagsEnabled,
       compactSkipEdges: true,
       pruneUnreachableNodes: true,
-      reuseFunctions: true,
+      skipArtificialTags: true,
       skipSelfAssignments: true,
       skipSelfComparisons: true,
     },

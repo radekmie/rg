@@ -36,6 +36,7 @@ export type Settings = {
     pruneUnusedConstants: boolean;
     pruneUnusedVariables: boolean;
     reuseFunctions: boolean;
+    skipArtificialTags: boolean;
     skipGeneratorComparisons: boolean;
     skipSelfAssignments: boolean;
     skipSelfComparisons: boolean;
@@ -70,6 +71,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   pruneUnusedConstants: false,
   pruneUnusedVariables: false,
   reuseFunctions: false,
+  skipArtificialTags: false,
   skipGeneratorComparisons: false,
   skipSelfAssignments: false,
   skipSelfComparisons: false,
@@ -95,6 +97,7 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
       'pruneUnusedBindings',
       'pruneUnusedConstants',
       'pruneUnusedVariables',
+      'skipArtificialTags',
       'skipGeneratorComparisons',
       'skipSelfAssignments',
       'skipSelfComparisons',
