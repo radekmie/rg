@@ -278,10 +278,11 @@ fn add_from_variable_declaration(
     }
 }
 
-const BUILDIN_SYMBOLS: [(&str, Flag); 10] = [
+const BUILDIN_SYMBOLS: [(&str, Flag); 11] = [
     ("keeper", Flag::Variable),
     ("goals", Flag::Variable),
     ("player", Flag::Variable),
+    ("visible", Flag::Variable),
     ("not", Flag::Function),
     ("check", Flag::Function),
     ("reachable", Flag::Function),
