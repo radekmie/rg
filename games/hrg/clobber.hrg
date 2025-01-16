@@ -2,7 +2,7 @@
 // Move form: Position (U + D + L + R)
 
 domain Player = black | white
-domain Piece = blackPawn | empty | whitePawn
+domain Piece = empty | blackPawn | whitePawn
 domain Score = 0 | 100
 domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
 
@@ -36,7 +36,8 @@ board : Position -> Piece = {
   V(X, Y) = if (X + Y) % 2 == 0
     then blackPawn
     else whitePawn
-  where X in 0..9, Y in 0..9
+  where X in 0..9, Y in 0..9;
+  null = empty
 }
 
 me : Player = white
