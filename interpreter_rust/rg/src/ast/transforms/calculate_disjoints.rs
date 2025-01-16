@@ -1,10 +1,12 @@
-use crate::ast::{Edge, Error, Expression, Game, Label, Node, Pragma};
+use crate::ast::{Edge, Error, Game, Label, Node, Pragma};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use utils::position::Span;
 
-impl Game<Arc<str>> {
-    pub fn calculate_disjoints(&mut self) -> Result<(), Error<Arc<str>>> {
+type Id = Arc<str>;
+
+impl Game<Id> {
+    pub fn calculate_disjoints(&mut self) -> Result<(), Error<Id>> {
         let game = Self {
             constants: self.constants.clone(),
             typedefs: self.typedefs.clone(),
@@ -23,7 +25,8 @@ impl Game<Arc<str>> {
                 continue;
             }
 
-            if let Some((is_exhaustive, mut nodes)) = game.get_disjoint(edges) {
+            let edges: Vec<_> = edges.into_iter().collect();
+            for (is_exhaustive, mut nodes) in game.get_disjoints(&edges).into_iter() {
                 nodes.sort_unstable();
                 let node = node.clone();
                 let span = Span::none();
@@ -42,71 +45,82 @@ impl Game<Arc<str>> {
         Ok(())
     }
 
-    fn get_disjoint(
-        &self,
-        mut edges: BTreeSet<&Arc<Edge<Arc<str>>>>,
-    ) -> Option<(bool, Vec<Node<Arc<str>>>)> {
-        // Take first comparison (if there is any).
-        let e1 = match edges.iter().find(|edge| edge.label.is_comparison()) {
-            None => edges.pop_first().unwrap(),
-            Some(&edge) => edges.take(&edge.clone()).unwrap(),
-        };
+    fn get_disjoints(&self, edges: &[&Arc<Edge<Id>>]) -> Vec<(bool, Vec<Node<Id>>)> {
+        let mut disjoints = vec![];
 
         // If-else.
-        if edges.len() == 1 {
-            if let Some(e2) = edges.first() {
+        for index1 in (0..edges.len()).rev() {
+            let e1 = edges[index1];
+            for index2 in (0..edges.len()).rev() {
+                let e2 = edges[index2];
                 if e1.rhs != e2.rhs && e1.label.is_negated(&e2.label) {
-                    return Some((true, vec![e1.rhs.clone(), e2.rhs.clone()]));
+                    disjoints.push((true, vec![e1.rhs.clone(), e2.rhs.clone()]));
                 }
             }
         }
 
         // Switch.
-        if let Label::Comparison {
-            lhs,
-            rhs,
-            negated: false,
-        } = &e1.label
-        {
-            if let Expression::Reference { identifier } = rhs.uncast() {
-                let lhs1 = lhs.uncast();
-                let mut nodes = vec![e1.rhs.clone()];
-                let mut symbols = BTreeSet::from([identifier]);
-                let mut all_edges = true;
-                for edge in edges {
-                    if let Label::Comparison {
-                        lhs: lhs2,
-                        rhs,
-                        negated: false,
-                    } = &edge.label
-                    {
-                        if lhs1 == lhs2.uncast() {
-                            if let Expression::Reference { identifier } = rhs.uncast() {
-                                if symbols.insert(identifier) {
-                                    nodes.push(edge.rhs.clone());
-                                    continue;
-                                }
+        for index1 in (0..edges.len()).rev() {
+            let Label::Comparison {
+                lhs,
+                rhs,
+                negated: false,
+            } = &edges[index1].label
+            else {
+                continue;
+            };
+
+            let Some(identifier) = rhs.uncast().as_reference() else {
+                continue;
+            };
+
+            let lhs1 = lhs.uncast();
+            let mut nodes = vec![edges[index1].rhs.clone()];
+            let mut symbols = BTreeSet::from([identifier]);
+            for index2 in (0..edges.len()).rev() {
+                if index1 == index2 {
+                    continue;
+                }
+
+                if let Label::Comparison {
+                    lhs: lhs2,
+                    rhs,
+                    negated: false,
+                } = &edges[index2].label
+                {
+                    if lhs1 == lhs2.uncast() {
+                        if let Some(identifier) = rhs.uncast().as_reference() {
+                            if symbols.insert(identifier) {
+                                nodes.push(edges[index2].rhs.clone());
+                                continue;
                             }
                         }
                     }
-
-                    all_edges = false;
                 }
-
-                if nodes.len() == 1 {
-                    return None;
-                }
-
-                let all_values = lhs1
-                    .infer(self, None)
-                    .and_then(|type_| type_.values(self))
-                    .is_ok_and(|values| values.len() == nodes.len());
-
-                return Some((all_edges && all_values, nodes));
             }
+
+            if nodes.len() == 1 {
+                continue;
+            }
+
+            let all_values = lhs1
+                .infer(self, None)
+                .and_then(|type_| type_.values(self))
+                .is_ok_and(|values| values.len() == nodes.len());
+            println!(
+                "{} all_values={all_values} nodes=[{}]",
+                &edges[index1],
+                nodes
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            );
+
+            disjoints.push((all_values, nodes));
         }
 
-        None
+        disjoints
     }
 }
 
@@ -217,7 +231,11 @@ mod test {
         calculate_disjoints,
         simple_apply_test_1,
         include_str!("../../../../../games/rg/simpleApplyTest1.rg"),
-        adds "@disjoint moveB : tagB0same tagB1same;"
+        adds "
+            @disjointExhaustive moveB : tagB0same tagB1same;
+            @disjointExhaustive moveB : tagB0 tagB0same;
+            @disjointExhaustive moveB : tagB1 tagB1same;
+        "
     );
 
     test_transform!(
