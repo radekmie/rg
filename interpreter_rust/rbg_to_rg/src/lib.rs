@@ -421,69 +421,45 @@ fn add_builtin_constants(context: &mut Context) {
     let default_direction =
         rg::ValueEntry::new_default(Arc::from(rg::Value::new(Id::from("null"))));
 
-    context.rg.constants.push(rg::Constant {
-        span: Span::none(),
-        identifier: Id::from("direction"),
-        type_: Arc::from(rg::Type::Arrow {
-            lhs: Arc::from(rg::Type::new(Id::from("Label"))),
-            rhs: Arc::from(rg::Type::Arrow {
-                lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
-                rhs: Arc::from(rg::Type::new(Id::from("Coord"))),
-            }),
-        }),
-        value: Arc::from(rg::Value::Map {
-            span: Span::none(),
-            entries: Some(rg::ValueEntry::new_default(Arc::from(rg::Value::Map {
-                span: Span::none(),
-                entries: vec![default_direction.clone()],
-            })))
-            .into_iter()
-            .chain(
-                context
-                    .rbg
-                    .board
-                    .iter()
-                    .flat_map(|node| {
-                        node.edges.iter().map(|edge| {
-                            (
-                                edge.label.clone(),
-                                rg::ValueEntry {
-                                    span: Span::none(),
-                                    identifier: Some(node.node.clone()),
-                                    value: Arc::from(rg::Value::new(edge.node.clone())),
-                                },
-                            )
-                        })
-                    })
-                    .fold(
-                        Vec::<(_, _)>::new(),
-                        |mut entries, (identifier, value_entry)| {
-                            match entries.iter_mut().find(|entry| entry.0 == identifier) {
-                                None => entries.push((
-                                    identifier,
-                                    vec![default_direction.clone(), value_entry],
-                                )),
-                                Some(entry) => entry.1.push(value_entry),
-                            }
+    context
+        .rbg
+        .board
+        .iter()
+        .flat_map(|node| {
+            node.edges.iter().map(|edge| {
+                (
+                    edge.label.clone(),
+                    rg::ValueEntry {
+                        span: Span::none(),
+                        identifier: Some(node.node.clone()),
+                        value: Arc::from(rg::Value::new(edge.node.clone())),
+                    },
+                )
+            })
+        })
+        .fold(Vec::<(_, _)>::new(), |mut entries, (label, value_entry)| {
+            match entries.iter_mut().find(|entry| entry.0 == label) {
+                None => entries.push((label, vec![default_direction.clone(), value_entry])),
+                Some(entry) => entry.1.push(value_entry),
+            }
 
-                            entries
-                        },
-                    )
-                    .into_iter()
-                    .map(|(identifier, entries)| {
-                        rg::ValueEntry::new(
-                            Span::none(),
-                            Some(identifier),
-                            Arc::from(rg::Value::Map {
-                                span: Span::none(),
-                                entries,
-                            }),
-                        )
-                    }),
-            )
-            .collect(),
-        }),
-    });
+            entries
+        })
+        .into_iter()
+        .for_each(|(label, entries)| {
+            context.rg.constants.push(rg::Constant {
+                span: Span::none(),
+                identifier: Id::from(format!("direction_{label}")),
+                type_: Arc::from(rg::Type::Arrow {
+                    lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
+                    rhs: Arc::from(rg::Type::new(Id::from("Coord"))),
+                }),
+                value: Arc::from(rg::Value::Map {
+                    span: Span::none(),
+                    entries,
+                }),
+            });
+        });
 }
 
 fn add_builtin_types(context: &mut Context) {
@@ -530,23 +506,6 @@ fn add_builtin_types(context: &mut Context) {
         type_: Arc::from(rg::Type::Set {
             span: Span::none(),
             identifiers: context.rbg.pieces.clone(),
-        }),
-    });
-
-    context.rg.typedefs.push(rg::Typedef {
-        span: Span::none(),
-        identifier: Id::from("Label"),
-        type_: Arc::from(rg::Type::Set {
-            span: Span::none(),
-            identifiers: context
-                .rbg
-                .board
-                .iter()
-                .flat_map(|node| &node.edges)
-                .map(|edge| edge.label.clone())
-                .collect::<BTreeSet<_>>()
-                .into_iter()
-                .collect::<Vec<_>>(),
         }),
     });
 
@@ -1212,11 +1171,7 @@ fn translate_atom_content(
                     lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
                     rhs: Arc::from(rg::Expression::Access {
                         span: Span::none(),
-                        lhs: Arc::from(rg::Expression::Access {
-                            span: Span::none(),
-                            lhs: Arc::from(rg::Expression::new(Id::from("direction"))),
-                            rhs: Arc::from(rg::Expression::new(label)),
-                        }),
+                        lhs: Arc::from(rg::Expression::new(Id::from(format!("direction_{label}")))),
                         rhs: Arc::from(rg::Expression::new(Id::from("coord"))),
                     }),
                 },
