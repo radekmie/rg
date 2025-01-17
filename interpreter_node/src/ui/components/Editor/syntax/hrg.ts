@@ -41,6 +41,10 @@ export const language: monaco.languages.IMonarchLanguage = {
     root: [
       [/\d+/, 'number'],
       [
+        /\b(reusable)(?=\s+graph\b)/,
+        'declarationKeyword', // "reusable" before "graph"
+      ],
+      [
         /[a-z0-9_][a-zA-Z0-9_]*/,
         {
           cases: {
