@@ -212,7 +212,7 @@ mod test {
         30, 28: board[coord] == r;
         32, 30: coord != null;
         46, 47: direction[coord][NW] != null;",
-        adds "@repeat 27 32 : coord; @unique 24 25 28 30 46 47 begin end;"
+        adds "@repeat 27 32 : coord; @unique 24 25 26 28 30 46 47 begin end;"
     );
 
     test_transform!(
