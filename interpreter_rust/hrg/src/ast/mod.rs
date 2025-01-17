@@ -47,6 +47,7 @@ pub enum Statement<Id> {
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Function<Id> {
+    pub reusable: bool,
     pub name: Id,
     pub args: Vec<FunctionArg<Id>>,
     pub body: Vec<Statement<Id>>,

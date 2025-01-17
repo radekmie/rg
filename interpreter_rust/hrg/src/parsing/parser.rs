@@ -333,6 +333,7 @@ fn type_(input: Input) -> Result<Arc<Type<Identifier>>> {
 
 fn function(input: Input) -> Result<Function<Identifier>> {
     into(tuple((
+        alt((value(true, ww_tag("reusable")), success(false))),
         preceded(ww_tag("graph"), identifier),
         in_parens(comma_separated0(function_arg)),
         in_braces(many0(statement)),

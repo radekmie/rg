@@ -58,7 +58,6 @@ fn analyze_gdl_inner(
 
 fn analyze_hrg_inner(
     source: &str,
-    reuse_functions: bool,
     callback: &mut Option<impl FnMut(String)>,
 ) -> Result<GameAst<Id>, String> {
     macro_rules! step {
@@ -77,7 +76,7 @@ fn analyze_hrg_inner(
     assert_eq!(safe_parse!(unsafe_parse_hrg(&serialized))?, hrg);
     step!({ "kind": "source", "language": "hrg", "value": serialized, "title": "formatted" });
 
-    hrg_to_rg::hrg_to_rg(hrg, reuse_functions).map_err(|error| error.to_string())
+    hrg_to_rg::hrg_to_rg(hrg).map_err(|error| error.to_string())
 }
 
 fn analyze_rbg_inner(
@@ -285,7 +284,7 @@ pub fn analyze_inner(
     callback: &mut Option<impl FnMut(String)>,
 ) -> Result<GameAst<Id>, String> {
     let game_or_source = match extension {
-        "hrg" => Ok(analyze_hrg_inner(&source, flags.reuse_functions, callback)?),
+        "hrg" => Ok(analyze_hrg_inner(&source, callback)?),
         "kif" => Ok(analyze_gdl_inner(&source, callback)?),
         "rbg" => Ok(analyze_rbg_inner(&source, callback)?),
         "rg" => Err(source),

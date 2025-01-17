@@ -23,13 +23,13 @@ op(o) = x
 
 position : Position
 
-graph findNonempty() {
+reusable graph findNonempty() {
   forall p:Position {
     check(board[p] == empty)
   }
 }
 
-graph win() {
+reusable graph win() {
   branch {
     check(position != next_d1(position))
     check(board[position] == board[next_d1(position)])

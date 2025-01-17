@@ -34,7 +34,6 @@ export type Settings = {
     pruneUnusedBindings: boolean;
     pruneUnusedConstants: boolean;
     pruneUnusedVariables: boolean;
-    reuseFunctions: boolean;
     skipArtificialTags: boolean;
     skipGeneratorComparisons: boolean;
     skipSelfAssignments: boolean;
@@ -68,7 +67,6 @@ export const noFlagsEnabled: Settings['flags'] = {
   pruneUnusedBindings: false,
   pruneUnusedConstants: false,
   pruneUnusedVariables: false,
-  reuseFunctions: false,
   skipArtificialTags: false,
   skipGeneratorComparisons: false,
   skipSelfAssignments: false,
@@ -119,7 +117,6 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
       'mangleSymbols',
       'normalizeConstants',
       'normalizeTypes',
-      'reuseFunctions',
     ],
   },
 ];

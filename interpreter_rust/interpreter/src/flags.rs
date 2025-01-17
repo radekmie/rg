@@ -27,10 +27,6 @@ pub struct Flags {
     #[arg(long)]
     pub normalize_types: bool,
 
-    /// reuse subautomatons when translating function calls (.hrg only)
-    #[arg(long)]
-    pub reuse_functions: bool,
-
     //
     // Optimizations
     //
@@ -291,7 +287,6 @@ impl Flags {
             prune_unused_bindings: true,
             prune_unused_constants: true,
             prune_unused_variables: true,
-            reuse_functions: true,
             skip_generator_comparisons: true,
             skip_self_assignments: true,
             skip_self_comparisons: true,

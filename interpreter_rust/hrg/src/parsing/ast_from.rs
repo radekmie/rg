@@ -131,9 +131,16 @@ impl<Id> From<Id> for Type<Id> {
     }
 }
 
-impl<Id> From<(Id, Vec<FunctionArg<Id>>, Vec<Statement<Id>>)> for Function<Id> {
-    fn from((name, args, body): (Id, Vec<FunctionArg<Id>>, Vec<Statement<Id>>)) -> Self {
-        Self { name, args, body }
+impl<Id> From<(bool, Id, Vec<FunctionArg<Id>>, Vec<Statement<Id>>)> for Function<Id> {
+    fn from(
+        (reusable, name, args, body): (bool, Id, Vec<FunctionArg<Id>>, Vec<Statement<Id>>),
+    ) -> Self {
+        Self {
+            reusable,
+            name,
+            args,
+            body,
+        }
     }
 }
 

@@ -440,6 +440,9 @@ fn write_function<Id: Display>(
     indent: usize,
 ) -> Result {
     write_indent(f, indent)?;
+    if function.reusable {
+        write!(f, "reusable ")?;
+    }
     write!(f, "graph {}(", function.name)?;
     write_with_separator(f, &function.args, ", ")?;
     writeln!(f, ") {{")?;

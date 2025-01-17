@@ -12,7 +12,6 @@ type Id = Arc<str>;
 struct Context {
     counters: BTreeMap<Id, usize>,
     hrg: hrg::Game<Id>,
-    reuse_functions: bool,
     rg: rg::Game<Id>,
     translated_functions: BTreeSet<Id>,
     type_values: BTreeMap<Id, Vec<hrg::Value<Id>>>,
@@ -45,14 +44,10 @@ impl Context {
     }
 }
 
-pub fn hrg_to_rg(
-    hrg: hrg::Game<Id>,
-    reuse_functions: bool,
-) -> Result<rg::Game<Id>, hrg::Error<Id>> {
+pub fn hrg_to_rg(hrg: hrg::Game<Id>) -> Result<rg::Game<Id>, hrg::Error<Id>> {
     let mut context = Context {
         counters: BTreeMap::new(),
         hrg,
-        reuse_functions,
         rg: rg::Game::default(),
         translated_functions: BTreeSet::new(),
         type_values: BTreeMap::new(),
@@ -576,7 +571,7 @@ fn translate_automaton_function(
         }
     }
 
-    let next_node = rg::Node::new(Id::from(if context.reuse_functions {
+    let next_node = rg::Node::new(Id::from(if automaton_function.reusable {
         format!("{}_end", automaton_function.name)
     } else {
         format!("{prefix}{}_end", automaton_function.name)
@@ -589,7 +584,7 @@ fn translate_automaton_function(
         None,
         None,
         end_node,
-        rg::Node::new(Id::from(if context.reuse_functions {
+        rg::Node::new(Id::from(if automaton_function.reusable {
             format!("{}_begin", automaton_function.name)
         } else {
             format!("{prefix}{}_begin", automaton_function.name)
@@ -791,7 +786,7 @@ fn translate_automaton_statements(
                         args.len(),
                     )?;
 
-                    if context.reuse_functions {
+                    if called_automaton_function.reusable {
                         let call_id = context.random(&Id::from(format!(
                             "{}_call",
                             &called_automaton_function.name
@@ -1371,7 +1366,7 @@ fn translate_condition(
                         "{}_call",
                         called_automaton_function.name
                     )));
-                    let automaton_start_node = if context.reuse_functions {
+                    let automaton_start_node = if called_automaton_function.reusable {
                         rg::Node::new(call_id)
                     } else {
                         context.random_node(&prefix)
@@ -1401,7 +1396,7 @@ fn translate_condition(
 
                     context.connect(
                         automaton_current_node,
-                        rg::Node::new(Id::from(if context.reuse_functions {
+                        rg::Node::new(Id::from(if called_automaton_function.reusable {
                             format!("{identifier}_begin")
                         } else {
                             format!("{prefix}_{identifier}_begin")
@@ -1410,13 +1405,14 @@ fn translate_condition(
                         bindings,
                     );
 
-                    let automaton_end_node = rg::Node::new(Id::from(if context.reuse_functions {
-                        format!("{identifier}_end")
-                    } else {
-                        format!("{prefix}_{identifier}_end")
-                    }));
+                    let automaton_end_node =
+                        rg::Node::new(Id::from(if called_automaton_function.reusable {
+                            format!("{identifier}_end")
+                        } else {
+                            format!("{prefix}_{identifier}_end")
+                        }));
 
-                    if context.reuse_functions {
+                    if called_automaton_function.reusable {
                         if context
                             .translated_functions
                             .insert(called_automaton_function.name.clone())
