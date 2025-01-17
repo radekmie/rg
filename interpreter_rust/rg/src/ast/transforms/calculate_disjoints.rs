@@ -107,15 +107,6 @@ impl Game<Id> {
                 .infer(self, None)
                 .and_then(|type_| type_.values(self))
                 .is_ok_and(|values| values.len() == nodes.len());
-            println!(
-                "{} all_values={all_values} nodes=[{}]",
-                &edges[index1],
-                nodes
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            );
 
             disjoints.push((all_values, nodes));
         }
