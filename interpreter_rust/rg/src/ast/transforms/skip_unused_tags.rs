@@ -4,10 +4,10 @@ use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn skip_unused_tags(&mut self) -> Result<(), Error<Arc<str>>> {
-        let reaching_paths = self.analyse::<ReachableNodes>(false);
+        let reachable_nodes = self.analyse::<ReachableNodes>(false);
         for edge in &mut self.edges {
             if edge.label.is_tag()
-                && !reaching_paths
+                && !reachable_nodes
                     .get(&edge.lhs)
                     .is_some_and(|reachable| *reachable)
             {

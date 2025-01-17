@@ -1,52 +1,36 @@
-use crate::ast::analyses::ReachingAssignments;
-use crate::ast::{Error, Game, Pragma};
+use crate::ast::analyses::{ReachableNodes, ReachingAssignments};
+use crate::ast::{Error, Game, Node, Pragma};
 use std::collections::BTreeSet;
+use std::mem::swap;
 use std::sync::Arc;
 use utils::position::Span;
 
-impl Game<Arc<str>> {
-    pub fn calculate_repeats_and_uniques(&mut self) -> Result<(), Error<Arc<str>>> {
+type Id = Arc<str>;
+
+impl Game<Id> {
+    pub fn calculate_repeats_and_uniques(&mut self) -> Result<(), Error<Id>> {
         let has_next_edges: BTreeSet<_> = self.edges.iter().map(|edge| edge.lhs.clone()).collect();
-        let reaching_paths = self.analyse::<ReachingAssignments>(false);
-        let mut unique_nodes = BTreeSet::new();
+        let reachable_nodes = self.analyse::<ReachableNodes>(false);
+        let reaching_assignments = self.analyse::<ReachingAssignments>(false);
 
-        for (node, variables) in reaching_paths {
-            if !has_next_edges.contains(&node) {
-                unique_nodes.insert(node);
-                continue;
-            }
+        // Temporary clone for `is_reachable`.
+        let mut clone = Self::default();
+        swap(&mut self.edges, &mut clone.edges);
+        let is_reachable = clone.make_is_reachable();
 
-            let has_none_repeat = variables
-                .get(&None)
-                .is_some_and(|reached| reached.is_repeated);
-            let identifiers: Vec<_> = variables
-                .into_iter()
-                .filter(|(_, reached)| has_none_repeat || reached.is_repeated)
-                .filter_map(|(variable, _)| variable)
-                .collect::<BTreeSet<_>>()
-                .into_iter()
-                .collect();
-
-            if identifiers.is_empty() && !has_none_repeat {
-                unique_nodes.insert(node);
-                continue;
-            }
-
-            if let Some(Pragma::Repeat { nodes, .. }) = self.pragmas.iter_mut().find(
-                |x| matches!(x, Pragma::Repeat { identifiers: ids, .. } if *ids == identifiers),
-            ) {
-                if let Err(index) = nodes.binary_search(&node) {
-                    nodes.insert(index, node);
-                }
-            } else {
-                self.add_pragma(Pragma::Repeat {
-                    span: Span::none(),
-                    nodes: vec![node],
-                    identifiers,
-                });
+        // Sort existing `@repeat`s.
+        for pragma in &mut self.pragmas {
+            if let Pragma::Repeat {
+                nodes, identifiers, ..
+            } = pragma
+            {
+                identifiers.sort_unstable();
+                nodes.sort_unstable();
             }
         }
 
+        // Collect existing `@unique`s.
+        let mut unique_nodes = BTreeSet::new();
         self.pragmas.retain(|pragma| {
             if let Pragma::Unique { nodes, .. } = pragma {
                 unique_nodes.extend(nodes.iter().cloned());
@@ -56,6 +40,50 @@ impl Game<Arc<str>> {
             }
         });
 
+        for (node, variables) in reaching_assignments {
+            // If it was marked as unique, trust it.
+            if unique_nodes.contains(&node) {
+                continue;
+            }
+
+            // If there are no next edges, consider it unique.
+            if !has_next_edges.contains(&node) {
+                unique_nodes.insert(node);
+                continue;
+            }
+
+            let has_empty_repeat = variables
+                .get(&None)
+                .is_some_and(|assignment| assignment.is_repeated);
+            let identifiers: Vec<_> = variables
+                .into_iter()
+                .filter(|(_, assignment)| has_empty_repeat || assignment.is_repeated)
+                .filter_map(|(variable, _)| variable)
+                .collect::<BTreeSet<_>>()
+                .into_iter()
+                .collect();
+
+            // If there's nothing to repeat, consider it unique.
+            if !has_empty_repeat && identifiers.is_empty() {
+                unique_nodes.insert(node);
+                continue;
+            }
+
+            // Entire subautomatas are unique as long as they're not on cycles.
+            if reachable_nodes
+                .get(&node)
+                .is_none_or(|reachable| !*reachable)
+                && !is_reachable(&node, &node)
+            {
+                unique_nodes.insert(node);
+                continue;
+            }
+
+            // Add `@repeat`.
+            self.add_repeat(node, identifiers);
+        }
+
+        // Add `@unique`.
         if !unique_nodes.is_empty() {
             self.add_pragma(Pragma::Unique {
                 span: Span::none(),
@@ -63,7 +91,34 @@ impl Game<Arc<str>> {
             });
         }
 
+        drop(is_reachable);
+        swap(&mut self.edges, &mut clone.edges);
         Ok(())
+    }
+
+    fn add_repeat(&mut self, node: Node<Id>, identifiers: Vec<Id>) {
+        // Merge with existing `@repeat` if possible.
+        for pragma in &mut self.pragmas {
+            if let Pragma::Repeat {
+                nodes,
+                identifiers: ids,
+                ..
+            } = pragma
+            {
+                if *ids == identifiers {
+                    if let Err(index) = nodes.binary_search(&node) {
+                        nodes.insert(index, node);
+                    }
+                    return;
+                }
+            }
+        }
+
+        self.add_pragma(Pragma::Repeat {
+            span: Span::none(),
+            nodes: vec![node],
+            identifiers,
+        });
     }
 }
 
@@ -122,6 +177,25 @@ mod test {
 
     test_transform!(
         calculate_repeats_and_uniques,
+        breakthrough_join,
+        "
+            begin, end: ? 4_30_4 -> 4_30_30;
+            4_30_4, 4_30_9(bind_Coord_17: Coord): Coord(bind_Coord_17) != Coord(null);
+            4_30_9(bind_Coord_17: Coord), 4_30_8: coord = Coord(bind_Coord_17);
+            4_30_8, 130: board[coord] == w;
+            130, 4_30_19: board[coord] = e;
+            4_30_19, 4_30_17: direction[up][coord] != null;
+            4_30_17, 4_30_30: board[direction[up][coord]] == e;
+            4_30_17, 4_30_25: coord = direction[left][direction[up][coord]];
+            4_30_17, 4_30_25: coord = direction[right][direction[up][coord]];
+            4_30_25, 4_30_22: coord != null;
+            4_30_22, 4_30_30: board[coord] != Piece(w);
+        ",
+        adds "@unique 130 4_30_17 4_30_19 4_30_22 4_30_25 4_30_30 4_30_4 4_30_8 4_30_9(bind_Coord_17: Coord) begin end;"
+    );
+
+    test_transform!(
+        calculate_repeats_and_uniques,
         hex_loop,
         "begin, end: ? 24 -> 25;
         24, 27: ;
@@ -138,7 +212,7 @@ mod test {
         30, 28: board[coord] == r;
         32, 30: coord != null;
         46, 47: direction[coord][NW] != null;",
-        adds "@repeat 26 27 32 : coord; @unique 24 25 28 30 46 47 begin end;"
+        adds "@repeat 27 32 : coord; @unique 24 25 28 30 46 47 begin end;"
     );
 
     test_transform!(
