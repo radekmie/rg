@@ -26,7 +26,7 @@ impl Game<Id> {
             }
 
             let edges: Vec<_> = edges.into_iter().collect();
-            for (is_exhaustive, mut nodes) in game.get_disjoints(&edges).into_iter() {
+            if let Some((is_exhaustive, mut nodes)) = game.get_disjoint(&edges) {
                 nodes.sort_unstable();
                 let node = node.clone();
                 let span = Span::none();
@@ -45,7 +45,7 @@ impl Game<Id> {
         Ok(())
     }
 
-    fn get_disjoints(&self, edges: &[&Arc<Edge<Id>>]) -> Vec<(bool, Vec<Node<Id>>)> {
+    fn get_disjoint(&self, edges: &[&Arc<Edge<Id>>]) -> Option<(bool, Vec<Node<Id>>)> {
         let mut disjoints = vec![];
 
         // If-else.
@@ -111,7 +111,10 @@ impl Game<Id> {
             disjoints.push((all_values, nodes));
         }
 
+        // Select the best one.
         disjoints
+            .into_iter()
+            .max_by_key(|(is_exhaustive, nodes)| (nodes.len(), *is_exhaustive))
     }
 }
 
@@ -222,11 +225,7 @@ mod test {
         calculate_disjoints,
         simple_apply_test_1,
         include_str!("../../../../../games/rg/simpleApplyTest1.rg"),
-        adds "
-            @disjointExhaustive moveB : tagB0same tagB1same;
-            @disjointExhaustive moveB : tagB0 tagB0same;
-            @disjointExhaustive moveB : tagB1 tagB1same;
-        "
+        adds "@disjointExhaustive moveB : tagB0same tagB1same;"
     );
 
     test_transform!(
