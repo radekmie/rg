@@ -19,7 +19,8 @@ fn scenario(criterion: &mut Criterion, name: &str, paths: &[&str]) {
                 |bencher| {
                     let (ist, interner) = ist.get_or_insert_with(|| {
                         let source = read_to_string(format!("../../games/{path}")).unwrap();
-                        let ast = analyze_inner(source, "rg", &flags, &mut None::<fn(_)>).unwrap();
+                        let ast =
+                            analyze_inner(source, "rg", &flags, false, &mut None::<fn(_)>).unwrap();
                         Game::try_from(ast).unwrap()
                     });
                     bencher.iter(|| ist.run(&mut rng, interner, 1, &None::<fn(_)>).unwrap());

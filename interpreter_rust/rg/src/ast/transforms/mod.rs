@@ -15,6 +15,7 @@ mod join_fork_suffixes;
 mod join_generators;
 mod mangle_symbols;
 mod merge_accesses;
+mod merge_bindings;
 mod normalize_constants;
 mod normalize_types;
 mod propagate_constants;

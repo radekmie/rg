@@ -116,6 +116,15 @@ pub struct Flags {
     )]
     pub merge_accesses: bool,
 
+    /// merge bindings with the same type and value
+    #[arg(
+        long,
+        help_heading = "Optimizations",
+        conflicts_with = "enable_all_optimizations",
+        default_value_if("enable_all_optimizations", "true", Some("true"))
+    )]
+    pub merge_bindings: bool,
+
     /// inline constants and skip obvious comparisons
     #[arg(
         long,
@@ -279,6 +288,7 @@ impl Flags {
             join_generators: true,
             mangle_symbols: true,
             merge_accesses: true,
+            merge_bindings: true,
             normalize_constants: true,
             normalize_types: true,
             propagate_constants: true,

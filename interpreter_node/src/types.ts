@@ -26,6 +26,7 @@ export type Settings = {
     joinGenerators: boolean;
     mangleSymbols: boolean;
     mergeAccesses: boolean;
+    mergeBindings: boolean;
     normalizeConstants: boolean;
     normalizeTypes: boolean;
     propagateConstants: boolean;
@@ -59,6 +60,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   joinGenerators: false,
   mangleSymbols: false,
   mergeAccesses: false,
+  mergeBindings: false,
   normalizeConstants: false,
   normalizeTypes: false,
   propagateConstants: false,
@@ -87,6 +89,7 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
       'joinForkSuffixes',
       'joinGenerators',
       'mergeAccesses',
+      'mergeBindings',
       'propagateConstants',
       'pruneSingletonTypes',
       'pruneUnreachableNodes',
