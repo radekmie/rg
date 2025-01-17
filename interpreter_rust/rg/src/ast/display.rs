@@ -298,6 +298,21 @@ impl<Id: Display> Display for Pragma<Id> {
     }
 }
 
+impl<Id: Display> Display for PragmaAssignment<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{} = {}", self.lhs, self.rhs)
+    }
+}
+
+impl<Id: Display> Display for PragmaTag<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match &self.type_ {
+            None => write!(f, "{}", self.tag),
+            Some(type_) => write!(f, "{}: {type_}", self.tag),
+        }
+    }
+}
+
 impl Display for Stats {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(
@@ -322,21 +337,6 @@ impl Display for Stats {
             self.unique_nodes,
             100.0 * self.unique_nodes as f32 / self.nodes as f32,
         )
-    }
-}
-
-impl<Id: Display> Display for PragmaAssignment<Id> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{} = {}", self.lhs, self.rhs)
-    }
-}
-
-impl<Id: Display> Display for PragmaTag<Id> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match &self.type_ {
-            None => write!(f, "{}", self.tag),
-            Some(type_) => write!(f, "{}: {type_}", self.tag),
-        }
     }
 }
 

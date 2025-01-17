@@ -1364,7 +1364,7 @@ impl Game<Arc<str>> {
         let state_size = self
             .variables
             .iter()
-            .map(|variable| variable.type_.memory_size(self))
+            .map(|variable| variable.type_.memory_size(self).unwrap_or(0))
             .sum::<usize>();
         let typedefs = self.typedefs.len();
         let reachability_subautomatons = self
@@ -1718,23 +1718,6 @@ impl Pragma<Arc<str>> {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Stats {
-    edges: usize,
-    nodes: usize,
-    main_automaton_nodes: usize,
-    reachability_subautomatons: usize,
-    max_branching: usize,
-    average_branching: f64,
-    constants: usize,
-    variables: usize,
-    typedefs: usize,
-    state_size: usize,
-    repeat_or_unique_nodes: usize,
-    repeat_nodes: usize,
-    unique_nodes: usize,
-}
-
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct PragmaAssignment<Id> {
     pub lhs: Arc<Expression<Id>>,
@@ -1767,6 +1750,23 @@ impl PragmaTag<Arc<str>> {
             },
         }
     }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Stats {
+    edges: usize,
+    nodes: usize,
+    main_automaton_nodes: usize,
+    reachability_subautomatons: usize,
+    max_branching: usize,
+    average_branching: f64,
+    constants: usize,
+    variables: usize,
+    typedefs: usize,
+    state_size: usize,
+    repeat_or_unique_nodes: usize,
+    repeat_nodes: usize,
+    unique_nodes: usize,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
@@ -1827,24 +1827,18 @@ impl<Id> Type<Id> {
 }
 
 impl<Id: Clone + PartialEq> Type<Id> {
-    fn memory_size(&self, game: &Game<Id>) -> usize {
+    /// Used to determine how much memory a variable of this type could take.
+    fn memory_size(&self, game: &Game<Id>) -> Result<usize, Error<Id>> {
         match self {
             Self::Arrow { lhs, rhs } => {
-                let lhs = lhs
-                    .resolve(game)
-                    .map(|lhs| lhs.memory_size(game))
-                    .unwrap_or(1);
-                let rhs = rhs
-                    .resolve(game)
-                    .map(|rhs| rhs.memory_size(game))
-                    .unwrap_or(1);
-                lhs * rhs
+                let lhs = lhs.resolve(game).and_then(|lhs| lhs.memory_size(game));
+                let rhs = rhs.resolve(game).and_then(|rhs| rhs.memory_size(game));
+                lhs.and_then(|lhs| rhs.map(|rhs| lhs * rhs))
             }
-            Self::Set { identifiers, .. } => identifiers.len(),
+            Self::Set { identifiers, .. } => Ok(identifiers.len()),
             Self::TypeReference { identifier } => game
                 .resolve_typedef_or_fail(identifier)
-                .map(|type_| type_.type_.memory_size(game))
-                .unwrap_or(1),
+                .and_then(|type_| type_.type_.memory_size(game)),
         }
     }
 
