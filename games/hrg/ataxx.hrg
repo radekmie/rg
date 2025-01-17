@@ -180,83 +180,78 @@ graph existsMove(me: Player) {
   check(board[position] == playerpiece(me))
   // possible directions - one cell away
   branch {
-    branch {
-      t = left(position)
-      $ LEFT
-    } or {
-      t = right(position)
-      $ RIGHT
-    } or {
-      t = up(position)
-      $ UP
-    } or {
-      t = down(position)
-      $ DOWN
-    } or {
-      t = diagleftup(position)
-      $ DIAGLEFTUP
-    } or {
-      t = diagrightup(position)
-      $ DIAGRIGHTUP
-    } or {
-      t = diagleftdown(position)
-      $ DIAGLEFTDOWN
-    } or {
-      t = diagrightdown(position)
-      $ DIAGRIGHTDOWN
-    }
-  } 
+    t = left(position)
+    $ LEFT
+  } or {
+    t = right(position)
+    $ RIGHT
+  } or {
+    t = up(position)
+    $ UP
+  } or {
+    t = down(position)
+    $ DOWN
+  } or {
+    t = diagleftup(position)
+    $ DIAGLEFTUP
+  } or {
+    t = diagrightup(position)
+    $ DIAGRIGHTUP
+  } or {
+    t = diagleftdown(position)
+    $ DIAGLEFTDOWN
+  } or {
+    t = diagrightdown(position)
+    $ DIAGRIGHTDOWN
+  } or {
   // possible directions - two cells away
-  or {
-    branch {
-      t = jump_left(position)
-      $ JUMPLEFT
-    } or {
-      t = jump_right(position)
-      $ JUMPRIGHT
-    } or {
-      t = jump_up(position)
-      $ JUMPUP
-    } or {
-      t = jump_down(position)
-      $ JUMPDOWN
-    } or {
-      t = jump_diagleftup(position)
-      $ JUMPDIAGLEFTUP
-    } or {
-      t = jump_diagrightup(position)
-      $ JUMPDIAGRIGHTUP
-    } or {
-      t = jump_diagleftdown(position)
-      $ JUMPDIAGLEFTDOWN
-    } or {
-      t = jump_diagrightdown(position)
-      $ JUMPDIAGRIGHTDOWN
-    } or {
-      t = jump_diagleftup1(position)
-      $ JUMPDIAGLEFTUP1
-    } or {
-      t = jump_diagleftup2(position)
-      $ JUMPDIAGLEFTUP2
-    } or {
-      t = jump_diagleftdown1(position)
-      $ JUMPDIAGLEFTDOWN1
-    } or {
-      t = jump_diagleftdown2(position)
-      $ JUMPDIAGLEFTDOWN2
-    } or {
-      t = jump_diagrightup1(position)
-      $ JUMPDIAGRIGHTUP1
-    } or {
-      t = jump_diagrightup2(position)
-      $ JUMPDIAGRIGHTUP2
-    } or {
-      t = jump_diagrightdown1(position)
-      $ JUMPDIAGRIGHTDOWN1
-    } or {
-      t = jump_diagrightdown2(position)
-      $ JUMPDIAGRIGHTDOWN2
-    }
+    t = jump_left(position)
+    $ JUMPLEFT
+  } or {
+    t = jump_right(position)
+    $ JUMPRIGHT
+  } or {
+    t = jump_up(position)
+    $ JUMPUP
+  } or {
+    t = jump_down(position)
+    $ JUMPDOWN
+  } or {
+    t = jump_diagleftup(position)
+    $ JUMPDIAGLEFTUP
+  } or {
+    t = jump_diagrightup(position)
+    $ JUMPDIAGRIGHTUP
+  } or {
+    t = jump_diagleftdown(position)
+    $ JUMPDIAGLEFTDOWN
+  } or {
+    t = jump_diagrightdown(position)
+    $ JUMPDIAGRIGHTDOWN
+  } or {
+    t = jump_diagleftup1(position)
+    $ JUMPDIAGLEFTUP1
+  } or {
+    t = jump_diagleftup2(position)
+    $ JUMPDIAGLEFTUP2
+  } or {
+    t = jump_diagleftdown1(position)
+    $ JUMPDIAGLEFTDOWN1
+  } or {
+    t = jump_diagleftdown2(position)
+    $ JUMPDIAGLEFTDOWN2
+  } or {
+    t = jump_diagrightup1(position)
+    $ JUMPDIAGRIGHTUP1
+  } or {
+    t = jump_diagrightup2(position)
+    $ JUMPDIAGRIGHTUP2
+  } or {
+    t = jump_diagrightdown1(position)
+    $ JUMPDIAGRIGHTDOWN1
+  } or {
+    t = jump_diagrightdown2(position)
+    $ JUMPDIAGRIGHTDOWN2
   }
   check(board[t] == empty)
 }
@@ -388,13 +383,11 @@ graph existsEmptyCell() {
 }
 
 graph turn() {
-  // checking if the player has a possible move
   if reachable(existsMove(me)) {
     player = me
     move(me)
     player = keeper
-  }
-  else {
+  } else {
     if not(reachable(existsEmptyCell())) {
       position = V(0,0)
       loop {
@@ -403,6 +396,7 @@ graph turn() {
         } else {
           countBlue = increase_count(countBlue)
         }
+        $ _C
         position = nextPos(position)
         if position == null {
           goals[red] = compare(countRed, countBlue)
@@ -421,6 +415,7 @@ graph turn() {
       }
     }
   }
+  $ _T
   me = opponent(me)
 }
 
