@@ -93,6 +93,8 @@ impl Game<Id> {
                 });
             }
 
+            let tags_count = paths_to_tags.len();
+            let mut simple_paths_to_tags = vec![];
             for (tag, mut paths) in paths_to_tags {
                 // There can be no bindings used in assignments other than the
                 // tag we've reached.
@@ -119,7 +121,7 @@ impl Game<Id> {
 
                 // If there's exactly one path to a tag, it's trivially simple.
                 if paths.is_empty() {
-                    simple_paths.push(SimplePath {
+                    simple_paths_to_tags.push(SimplePath {
                         assignments,
                         is_exhaustive,
                         is_player: false,
@@ -223,7 +225,7 @@ impl Game<Id> {
                     });
                 }
 
-                simple_paths.push(SimplePath {
+                simple_paths_to_tags.push(SimplePath {
                     assignments,
                     is_exhaustive: true,
                     is_player: false,
@@ -232,6 +234,15 @@ impl Game<Id> {
                     tags: vec![PragmaTag { tag, type_ }],
                 });
             }
+
+            // If not all tags were reachable, nothing is exhaustive.
+            if simple_paths_to_tags.len() != tags_count {
+                for simple_path in &mut simple_paths_to_tags {
+                    simple_path.is_exhaustive = false;
+                }
+            }
+
+            simple_paths.extend(simple_paths_to_tags);
         }
 
         simple_paths
@@ -300,6 +311,7 @@ impl SimplePath {
             clone.assignments.extend_from_slice(&other.assignments);
             clone.tags.extend_from_slice(&other.tags);
             clone.path.extend_from_slice(&other.path);
+            clone.is_exhaustive &= other.is_exhaustive;
             clone.is_player |= other.is_player;
             Some(clone)
         } else {
@@ -525,6 +537,29 @@ mod test {
             shown, end: player = keeper;
         ",
         adds "@simpleApplyExhaustive begin end [p: Position] position = Position(p), player = keeper;"
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        multiple_paths_with_expose_and_multiple_tags,
+        "
+            begin, x: position = north[position];
+            begin, y: position = south[position];
+            x, show(p: Position): position == p;
+            y, show(p: Position): position == p;
+            show(p: Position), shown: $ p;
+            shown, end: player = keeper;
+            begin, a(bool: Bool): ;
+            a(bool: Bool), b: x = bool;
+            b, c: ;
+            c, d(p: Position): position == p;
+            d(p: Position), other: $ p;
+            other, end: player = keeper;
+        ",
+        adds "
+            @simpleApplyExhaustive other end [] player = keeper;
+            @simpleApplyExhaustive shown end [] player = keeper;
+        "
     );
 
     test_transform!(
