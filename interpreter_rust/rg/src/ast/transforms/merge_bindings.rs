@@ -129,9 +129,9 @@ fn find_simple_path(
 ) -> Option<Vec<usize>> {
     let mut path = vec![];
     let mut curr = start;
-    while let Some((idx, next)) = get_singleton(next_edges, curr) {
+    while let Some((idx, next)) = get_singleton(next_edges, &curr) {
         // Must have one predecessor
-        let _ = get_singleton(prev_edges, &next.rhs)?;
+        let _ = get_singleton(prev_edges, &&next.rhs)?;
 
         path.push(*idx);
 
@@ -182,8 +182,11 @@ fn edges_using_binding(
     Some(to_rename)
 }
 
-fn get_singleton<K: Ord, V: Ord>(map: &BTreeMap<K, BTreeSet<V>>, key: K) -> Option<&V> {
-    if let Some(set) = map.get(&key) {
+fn get_singleton<'a, K: Ord, V: Ord>(
+    map: &'a BTreeMap<K, BTreeSet<V>>,
+    key: &'a K,
+) -> Option<&'a V> {
+    if let Some(set) = map.get(key) {
         if set.len() == 1 {
             return set.iter().next();
         }
