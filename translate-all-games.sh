@@ -1,8 +1,4 @@
 # Translate all non-RG games in the `games` directory to RG.
-#   - RBG and GDL games are translated once.
-#   - HRG games are translated twice, once with `--reuse-functions` flag enabled
-#     and once without.
-#
 # All previously translated games are removed beforehand.
 
 set -e
@@ -14,15 +10,13 @@ cargo build --release
 ./target/release/interpreter &> /dev/null || true # Preload.
 
 function translate {
-  local source=$1
-  local target=$2
-  local args=($3)
+  local game="$1"
 
-  echo "$target\c"
+  echo "${game}\c"
   time=$(date +%s%N)
 
   set +e
-  timeout --foreground $timeout ./target/release/interpreter source "${args[@]}" "${source}" > "${target}"
+  timeout --foreground $timeout ./target/release/interpreter source "${game}" > "${game}.rg"
   timeout_code=$?
   set -e
 
@@ -34,10 +28,7 @@ function translate {
   fi
 }
 
-rm -f games/**/*.*.rg
+rm -f ../games/**/*.*.rg
 for game in ../games/**/*.{hrg,kif,rbg}; do
-  translate "${game}" "${game}.rg" ""
-  if [[ $game == *.hrg ]] ; then
-    translate "${game}" "${game}.reuse.rg" "--reuse-functions"
-  fi
+  translate "${game}"
 done
