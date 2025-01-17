@@ -236,14 +236,14 @@ pub struct Flags {
     )]
     pub calculate_disjoints: bool,
 
-    /// calculate missing @repeat pragmas automatically
+    /// calculate missing @repeat and @unique pragmas automatically
     #[arg(
         long,
         help_heading = "Pragmas",
         conflicts_with = "enable_all_pragmas",
         default_value_if("enable_all_pragmas", "true", Some("true"))
     )]
-    pub calculate_repeats: bool,
+    pub calculate_repeats_and_uniques: bool,
 
     /// calculate missing @simpleApply and @simpleApplyExhaustive pragmas automatically
     #[arg(
@@ -262,15 +262,6 @@ pub struct Flags {
         default_value_if("enable_all_pragmas", "true", Some("true"))
     )]
     pub calculate_tag_indexes: bool,
-
-    /// calculate missing @unique pragmas automatically
-    #[arg(
-        long,
-        help_heading = "Pragmas",
-        conflicts_with = "enable_all_pragmas",
-        default_value_if("enable_all_pragmas", "true", Some("true"))
-    )]
-    pub calculate_uniques: bool,
 }
 
 impl Flags {
@@ -278,10 +269,9 @@ impl Flags {
         Self {
             add_explicit_casts: true,
             calculate_disjoints: true,
-            calculate_repeats: true,
+            calculate_repeats_and_uniques: true,
             calculate_simple_apply: true,
             calculate_tag_indexes: true,
-            calculate_uniques: true,
             compact_comparisons: true,
             compact_skip_edges: true,
             expand_generator_nodes: true,

@@ -1,10 +1,9 @@
 mod add_builtins;
 mod add_explicit_casts;
 mod calculate_disjoints;
-mod calculate_repeats;
+mod calculate_repeats_and_uniques;
 mod calculate_simple_apply;
 mod calculate_tag_indexes;
-mod calculate_uniques;
 mod compact_comparisons;
 mod compact_skip_edges;
 mod expand_generator_nodes;
