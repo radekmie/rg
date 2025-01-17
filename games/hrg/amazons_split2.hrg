@@ -1,5 +1,5 @@
-// Amazons split2
-// Move form: "pos pos", "pos"
+// Amazons
+// Move form: pos pos pos
 
 domain Piece = arrow | blackqueen | empty | whitequeen
 domain Player = black | white
@@ -63,52 +63,52 @@ pos : Position
 
 graph queenShift() {
   branch {
-    pos = upleft(pos) check(board[pos] == empty)
-    repeat 8 {
-      branch {return()} or {}
+    repeat 9 {
       pos = upleft(pos) check(board[pos] == empty)
+      $ _UL
+      branch {return()} or {}
     }
   } or {
-    pos = up(pos) check(board[pos] == empty)
-    repeat 8 {
-      branch {return()} or {}
+    repeat 9 {
       pos = up(pos) check(board[pos] == empty)
+      $ _U
+      branch {return()} or {}
     }
   } or {
-    pos = upright(pos) check(board[pos] == empty)
-    repeat 8 {
-      branch {return()} or {}
+    repeat 9 {
       pos = upright(pos) check(board[pos] == empty)
+      $ _UR
+      branch {return()} or {}
     }
   } or {
-    pos = left(pos) check(board[pos] == empty)
-    repeat 8 {
-      branch {return()} or {}
+    repeat 9 {
       pos = left(pos) check(board[pos] == empty)
+      $ _L
+      branch {return()} or {}
     }
   } or {
-    pos = right(pos) check(board[pos] == empty)
-    repeat 8 {
-      branch {return()} or {}
+    repeat 9 {
       pos = right(pos) check(board[pos] == empty)
+      $ _R
+      branch {return()} or {}
     }
   } or {
-    pos = downleft(pos) check(board[pos] == empty)
-    repeat 8 {
-      branch {return()} or {}
+    repeat 9 {
       pos = downleft(pos) check(board[pos] == empty)
+      $ _DL
+      branch {return()} or {}
     }
   } or {
-    pos = down(pos) check(board[pos] == empty)
-    repeat 8 {
-      branch {return()} or {}
+    repeat 9 {
       pos = down(pos) check(board[pos] == empty)
+      $ _D
+      branch {return()} or {}
     }
   } or {
-    pos = downright(pos) check(board[pos] == empty)
-    repeat 8 {
-      branch {return()} or {}
+    repeat 9 {
       pos = downright(pos) check(board[pos] == empty)
+      $ _DR
+      branch {return()} or {}
     }
   }
 }
@@ -154,7 +154,7 @@ graph move(me: Player) {
   player = keeper
   board[pos] = piece(me)
   
-  player = me
+  player = me  
   queenShift()
   forall p:Position {
     check(pos == p)

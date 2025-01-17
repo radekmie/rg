@@ -1,5 +1,5 @@
 // Amazons
-// Move form: position position position
+// Move form: pos pos pos
 
 domain Piece = arrow | blackqueen | empty | whitequeen
 domain Player = black | white
@@ -59,123 +59,107 @@ board : Position -> Piece = {
 
 me : Player = white
 
-position : Position
+pos : Position
 
 graph queenShift() {
   branch {
-    position = upleft(position) check(board[position] == empty)
-    $ _upleft
-    repeat 8 {
+    repeat 9 {
+      pos = upleft(pos) check(board[pos] == empty)
+      $ _UL
       branch {return()} or {}
-      position = upleft(position) check(board[position] == empty)
-      $ _upleft
     }
   } or {
-    position = up(position) check(board[position] == empty)
-    $ _up
-    repeat 8 {
+    repeat 9 {
+      pos = up(pos) check(board[pos] == empty)
+      $ _U
       branch {return()} or {}
-      position = up(position) check(board[position] == empty)
-      $ _up
     }
   } or {
-    position = upright(position) check(board[position] == empty)
-    $ _upright
-    repeat 8 {
+    repeat 9 {
+      pos = upright(pos) check(board[pos] == empty)
+      $ _UR
       branch {return()} or {}
-      position = upright(position) check(board[position] == empty)
-      $ _upright
     }
   } or {
-    position = left(position) check(board[position] == empty)
-    $ _left
-    repeat 8 {
+    repeat 9 {
+      pos = left(pos) check(board[pos] == empty)
+      $ _L
       branch {return()} or {}
-      position = left(position) check(board[position] == empty)
-      $ _left
     }
   } or {
-    position = right(position) check(board[position] == empty)
-    $ _right
-    repeat 8 {
+    repeat 9 {
+      pos = right(pos) check(board[pos] == empty)
+      $ _R
       branch {return()} or {}
-      position = right(position) check(board[position] == empty)
-      $ _right
     }
   } or {
-    position = downleft(position) check(board[position] == empty)
-    $ _downleft
-    repeat 8 {
+    repeat 9 {
+      pos = downleft(pos) check(board[pos] == empty)
+      $ _DL
       branch {return()} or {}
-      position = downleft(position) check(board[position] == empty)
-      $ _downleft
     }
   } or {
-    position = down(position) check(board[position] == empty)
-    $ _down
-    repeat 8 {
+    repeat 9 {
+      pos = down(pos) check(board[pos] == empty)
+      $ _D
       branch {return()} or {}
-      position = down(position) check(board[position] == empty)
-      $ _down
     }
   } or {
-    position = downright(position) check(board[position] == empty)
-    $ _downright
-    repeat 8 {
+    repeat 9 {
+      pos = downright(pos) check(board[pos] == empty)
+      $ _DR
       branch {return()} or {}
-      position = downright(position) check(board[position] == empty)
-      $ _downright
     }
   }
 }
 
 graph existsMoveableQueen(me: Player) {
   forall p:Position {
-    position = p
+    pos = p
   }
-  check(board[position] == piece(me))
+  check(board[pos] == piece(me))
   branch {
-    check(board[upleft(position)] == empty)
+    check(board[upleft(pos)] == empty)
   } or {
-    check(board[up(position)] == empty)
+    check(board[up(pos)] == empty)
   } or {
-    check(board[upright(position)] == empty)
+    check(board[upright(pos)] == empty)
   } or {
-    check(board[left(position)] == empty)
+    check(board[left(pos)] == empty)
   } or {
-    check(board[right(position)] == empty)
+    check(board[right(pos)] == empty)
   } or {
-    check(board[downleft(position)] == empty)
+    check(board[downleft(pos)] == empty)
   } or {
-    check(board[down(position)] == empty)
+    check(board[down(pos)] == empty)
   } or {
-    check(board[downright(position)] == empty)
+    check(board[downright(pos)] == empty)
   }
 }
 
 graph move(me: Player) {
   player = me
   forall p:Position {
-    position = p
+    pos = p
     $ p // Choose a queen
   }
-  check(board[position] == piece(me))
-  board[position] = empty
+  check(board[pos] == piece(me))
+  board[pos] = empty
   
   queenShift()
   forall p:Position {
-    check(position == p)
+    check(pos == p)
     $ p // Move queen here
   }
-  board[position] = piece(me)
+  board[pos] = piece(me)
   
   queenShift()
   forall p:Position {
-    check(position == p)
+    check(pos == p)
     $ p // Shoot arrow here
   }
   player = keeper
-  board[position] = arrow
+  board[pos] = arrow
 }
 
 graph turn() {
