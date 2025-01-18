@@ -304,14 +304,17 @@ impl SimplePath {
     ///   @simpleApply y1 y2 [...ytags] ...yassignments;
     /// Into
     ///   @simpleApply y1 x2 [...ytags ...xtags] ...yassignments ...xassignments;
-    /// If there's no `player` assignment in the middle of the resulting path.
+    /// If there's no `player` assignment in the middle of the resulting path and
+    /// if the merge will not get rid of any exhaustiveness.
     fn merge(&self, other: &Self) -> Option<Self> {
-        if self.path.last().map(|node| &node.rhs) == Some(&other.node) && !self.is_player {
+        if !self.is_player
+            && (!self.is_exhaustive || other.is_exhaustive)
+            && self.path.last().map(|node| &node.rhs) == Some(&other.node)
+        {
             let mut clone = self.clone();
             clone.assignments.extend_from_slice(&other.assignments);
             clone.tags.extend_from_slice(&other.tags);
             clone.path.extend_from_slice(&other.path);
-            clone.is_exhaustive &= other.is_exhaustive;
             clone.is_player |= other.is_player;
             Some(clone)
         } else {
@@ -457,8 +460,8 @@ mod test {
             begin, x1: ;
             begin, y1: ;
             x1, x2: ;
-            x2, x3(_: Boolean): ;
-            x3(_: Boolean), x4: ;
+            x2, x3(_: Bool): ;
+            x3(_: Bool), x4: ;
             x4, x5: $ x;
             y1, y2: $ y;
             x5, end: player = keeper;
@@ -559,6 +562,33 @@ mod test {
         adds "
             @simpleApplyExhaustive other end [] player = keeper;
             @simpleApplyExhaustive shown end [] player = keeper;
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        multiple_paths_with_expose_and_different_continuations,
+        "
+            begin, x: position = north[position];
+            begin, y: position = south[position];
+            x, show(p: Position): position == p;
+            y, show(p: Position): position == p;
+            show(p: Position), shown: $ p;
+
+            shown, x1: ;
+            shown, y1: ;
+            x1, x2: ;
+            x2, x3(bool: Bool): ;
+            x3(bool: Bool), x4: b = bool;
+            x4, x5: $ x;
+            y1, y2: $ y;
+            x5, end: player = keeper;
+            y2, end: player = keeper;
+        ",
+        adds "
+            @simpleApply shown end [y] player = keeper;
+            @simpleApplyExhaustive begin shown [p: Position] position = Position(p);
+            @simpleApplyExhaustive x5 end [] player = keeper;
         "
     );
 
