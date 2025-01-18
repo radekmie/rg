@@ -335,6 +335,12 @@ impl Context {
 
                         for mut coord in coords {
                             match content {
+                                rbg::ActionOrRule::Action(rbg::Action::Check { negated, rule }) => {
+                                    if *negated != self.make_shift_pattern(&coord, rule).is_empty()
+                                    {
+                                        reachable_coords.remove(&coord);
+                                    }
+                                }
                                 rbg::ActionOrRule::Action(rbg::Action::Shift { label }) => loop {
                                     let node =
                                         self.rbg.board.iter().find(|node| node.node == coord);
@@ -821,7 +827,11 @@ fn is_expandable_shift_pattern(rule: &rbg::Rule<Id>) -> bool {
 
 fn is_shift_pattern(content: &rbg::ActionOrRule<Id>) -> bool {
     match content {
-        rbg::ActionOrRule::Action(action) => matches!(action, rbg::Action::Shift { .. }),
+        rbg::ActionOrRule::Action(action) => match action {
+            rbg::Action::Check { rule, .. } => is_shift_pattern_rule(rule),
+            rbg::Action::Shift { .. } => true,
+            _ => false,
+        },
         rbg::ActionOrRule::Rule(rule) => is_shift_pattern_rule(rule),
     }
 }
