@@ -66,6 +66,7 @@ impl<Id: Clone + Ord> Game<Id> {
         let prev_edges = self.prev_edges();
 
         let mut to_join = vec![];
+        let mut to_change = BTreeSet::new();
         let mut to_remove = BTreeSet::new();
         for x in self.nodes() {
             for e1 in prev_edges.get(x).into_iter().flat_map(|x| x.iter()) {
@@ -98,6 +99,10 @@ impl<Id: Clone + Ord> Game<Id> {
                         continue;
                     };
 
+                    if to_change.contains(&e4.lhs) {
+                        continue;
+                    }
+
                     let Some(e3) = prev_edges
                         .get(&e1.lhs)
                         .into_iter()
@@ -108,6 +113,7 @@ impl<Id: Clone + Ord> Game<Id> {
                         continue;
                     };
 
+                    to_change.insert(&e4.lhs);
                     to_remove.insert(&e2.lhs);
                     to_join.push(((*e4).clone(), e3.rhs.clone(), (*e2).clone()));
                 }
