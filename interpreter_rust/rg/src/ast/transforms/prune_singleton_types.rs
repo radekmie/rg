@@ -6,13 +6,16 @@ const IGNORED_TYPES: [&str; 2] = ["Player", "Score"];
 
 impl Game<Arc<str>> {
     pub fn prune_singleton_types(&mut self) -> Result<(), Error<Arc<str>>> {
-        let used_types: BTreeSet<_> = self
-            .typedefs
-            .iter()
-            .filter_map(|typedef| typedef.type_.type_references())
-            .flatten()
-            .map(Arc::as_ref)
-            .chain(IGNORED_TYPES)
+        let used_types: BTreeSet<_> = IGNORED_TYPES
+            .into_iter()
+            .chain(
+                None.into_iter()
+                    .chain(self.constants.iter().map(|constant| &constant.type_))
+                    .chain(self.typedefs.iter().map(|typedef| &typedef.type_))
+                    .filter_map(|type_| type_.type_references())
+                    .flatten()
+                    .map(Arc::as_ref),
+            )
             .collect();
 
         let types: BTreeMap<_, _> = self
@@ -97,6 +100,12 @@ mod test {
         remove_casts,
         "type T = { 1 }; begin, end: T(1) == T(1);",
         "begin, end: 1 == 1;"
+    );
+
+    test_transform!(
+        prune_singleton_types,
+        referenced_in_constant,
+        "type T = { 1 }; type U = { 2, 3 }; const C: U -> T = { :1 }; begin, end: ;"
     );
 
     test_transform!(
