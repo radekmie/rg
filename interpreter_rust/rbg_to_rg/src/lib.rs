@@ -336,9 +336,8 @@ impl Context {
                         for mut coord in coords {
                             match content {
                                 rbg::ActionOrRule::Action(rbg::Action::Check { negated, rule }) => {
-                                    if *negated != self.make_shift_pattern(&coord, rule).is_empty()
-                                    {
-                                        reachable_coords.remove(&coord);
+                                    if *negated == self.make_shift_pattern(&coord, rule).is_empty() {
+                                        reachable_coords.insert(coord);
                                     }
                                 }
                                 rbg::ActionOrRule::Action(rbg::Action::Shift { label }) => loop {
