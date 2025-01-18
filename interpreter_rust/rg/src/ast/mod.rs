@@ -3,6 +3,7 @@ mod display;
 mod transforms;
 mod validators;
 
+use analyses::ReachableNodes;
 use map_id::MapId;
 use map_id_macro::MapId;
 use serde::{Deserialize, Serialize};
@@ -1352,10 +1353,40 @@ impl<Id: Ord> Game<Id> {
                 },
             )
     }
+}
 
-    pub fn to_stats(&self) -> String {
+impl Game<Arc<str>> {
+    pub fn to_stats(&self) -> Stats {
         let edges = self.edges.len();
         let nodes = self.nodes().len();
+        let constants = self.constants.len();
+        let variables = self.variables.len();
+        let state_size = self
+            .variables
+            .iter()
+            .map(|variable| variable.type_.memory_size(self).unwrap_or(0))
+            .sum::<usize>();
+        let typedefs = self.typedefs.len();
+        let reachability_subautomatons = self
+            .edges
+            .iter()
+            .filter_map(|e| {
+                if let Label::Reachability { lhs, .. } = &e.label {
+                    Some(lhs)
+                } else {
+                    None
+                }
+            })
+            .collect::<BTreeSet<_>>()
+            .len();
+        let main_automaton_nodes = self
+            .analyse::<ReachableNodes>(false)
+            .values()
+            .filter(|reachable| **reachable)
+            .count();
+        let branchings: Vec<_> = self.next_edges().values().map(BTreeSet::len).collect();
+        let max_branching = branchings.iter().max().copied().unwrap_or(0);
+        let average_branching = branchings.iter().sum::<usize>() as f64 / branchings.len() as f64;
         let repeat_nodes = self
             .pragmas
             .iter()
@@ -1382,19 +1413,21 @@ impl<Id: Ord> Game<Id> {
             .collect::<BTreeSet<_>>();
         let repeat_or_unique_nodes = repeat_nodes.union(&unique_nodes).collect::<BTreeSet<_>>();
 
-        format!(
-            "edges: {edges}\n\
-            nodes: {nodes}\n\
-            @repeat or @unique nodes: {} ({:.2}%)\n\
-            @repeat nodes: {} ({:.2}%)\n\
-            @unique nodes: {} ({:.2}%)\n",
-            repeat_or_unique_nodes.len(),
-            100.0 * repeat_or_unique_nodes.len() as f32 / nodes as f32,
-            repeat_nodes.len(),
-            100.0 * repeat_nodes.len() as f32 / nodes as f32,
-            unique_nodes.len(),
-            100.0 * unique_nodes.len() as f32 / nodes as f32,
-        )
+        Stats {
+            edges,
+            nodes,
+            main_automaton_nodes,
+            reachability_subautomatons,
+            max_branching,
+            average_branching,
+            constants,
+            variables,
+            typedefs,
+            state_size,
+            repeat_nodes: repeat_nodes.len(),
+            unique_nodes: unique_nodes.len(),
+            repeat_or_unique_nodes: repeat_or_unique_nodes.len(),
+        }
     }
 }
 
@@ -1719,6 +1752,23 @@ impl PragmaTag<Arc<str>> {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Stats {
+    edges: usize,
+    nodes: usize,
+    main_automaton_nodes: usize,
+    reachability_subautomatons: usize,
+    max_branching: usize,
+    average_branching: f64,
+    constants: usize,
+    variables: usize,
+    typedefs: usize,
+    state_size: usize,
+    repeat_or_unique_nodes: usize,
+    repeat_nodes: usize,
+    unique_nodes: usize,
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(tag = "kind")]
 pub enum Type<Id> {
@@ -1777,6 +1827,21 @@ impl<Id> Type<Id> {
 }
 
 impl<Id: Clone + PartialEq> Type<Id> {
+    /// Used to determine how much memory a variable of this type could take.
+    fn memory_size(&self, game: &Game<Id>) -> Result<usize, Error<Id>> {
+        match self {
+            Self::Arrow { lhs, rhs } => {
+                let lhs = lhs.resolve(game).and_then(|lhs| lhs.memory_size(game));
+                let rhs = rhs.resolve(game).and_then(|rhs| rhs.memory_size(game));
+                lhs.and_then(|lhs| rhs.map(|rhs| lhs * rhs))
+            }
+            Self::Set { identifiers, .. } => Ok(identifiers.len()),
+            Self::TypeReference { identifier } => game
+                .resolve_typedef_or_fail(identifier)
+                .and_then(|type_| type_.type_.memory_size(game)),
+        }
+    }
+
     pub fn resolve<'a>(&'a self, game: &'a Game<Id>) -> Result<&'a Self, Error<Id>> {
         if let Self::TypeReference { identifier } = self {
             game.resolve_typedef_or_fail(identifier)?

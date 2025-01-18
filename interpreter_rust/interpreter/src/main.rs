@@ -41,6 +41,8 @@ enum CliArgs {
     Stats {
         #[command(flatten)]
         game_with_flags: GameWithFlags,
+        #[arg(long)]
+        json: bool,
     },
 }
 
@@ -139,22 +141,17 @@ fn main() -> Result<(), String> {
             let game = game_with_flags.load()?;
             println!("{game}");
         }
-        CliArgs::Stats { game_with_flags } => {
-            // TODO: Replace `step` with a struct.
-            game_with_flags.load_with_callback(&mut Some(|step: String| {
-                if let Value::Object(mut step) = from_str(&step).unwrap() {
-                    if let Some(Value::String(kind)) = step.remove("kind") {
-                        if kind == "stats" {
-                            if let Some(Value::String(stats)) = step.remove("value") {
-                                print!("{stats}");
-                                exit(0);
-                            }
-                        }
-                    }
-                }
-            }))?;
-
-            panic!("No stats found");
+        CliArgs::Stats {
+            game_with_flags,
+            json,
+        } => {
+            let game = game_with_flags.load()?;
+            let stats = game.to_stats();
+            if json {
+                println!("{}", json!(stats));
+            } else {
+                println!("{stats}");
+            }
         }
     }
 
