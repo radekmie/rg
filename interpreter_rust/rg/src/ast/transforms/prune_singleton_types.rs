@@ -1,15 +1,24 @@
 use crate::ast::{Error, Expression, Game, Label};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-const SINGLETON_TYPES: [&str; 2] = ["Player", "Score"];
+const IGNORED_TYPES: [&str; 2] = ["Player", "Score"];
 
 impl Game<Arc<str>> {
     pub fn prune_singleton_types(&mut self) -> Result<(), Error<Arc<str>>> {
+        let used_types: BTreeSet<_> = self
+            .typedefs
+            .iter()
+            .filter_map(|typedef| typedef.type_.type_references())
+            .flatten()
+            .map(Arc::as_ref)
+            .chain(IGNORED_TYPES)
+            .collect();
+
         let types: BTreeMap<_, _> = self
             .typedefs
             .iter()
-            .filter(|typedef| !SINGLETON_TYPES.contains(&typedef.identifier.as_ref()))
+            .filter(|typedef| !used_types.contains(&typedef.identifier.as_ref()))
             .filter_map(|typedef| {
                 typedef.type_.as_singleton().map(|id| {
                     let pair = (typedef.identifier.clone(), id.clone());
@@ -60,7 +69,6 @@ impl Game<Arc<str>> {
             .retain(|variable| !variables.contains_key(&variable.identifier));
 
         // TODO: Inline singleton types in bindings.
-        // TODO: Inline singleton types in other types.
 
         Ok(())
     }
@@ -89,6 +97,12 @@ mod test {
         remove_casts,
         "type T = { 1 }; begin, end: T(1) == T(1);",
         "begin, end: 1 == 1;"
+    );
+
+    test_transform!(
+        prune_singleton_types,
+        referenced_in_typedef,
+        "type T = { 1 }; type U = T -> T; begin, end: ;"
     );
 
     test_transform!(

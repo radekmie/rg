@@ -1863,6 +1863,27 @@ impl<Id: Clone + PartialEq> Type<Id> {
     }
 }
 
+impl<Id: Ord> Type<Id> {
+    pub fn type_references(&self) -> Option<BTreeSet<&Id>> {
+        let mut type_references = None;
+        self.type_references_mut(&mut type_references);
+        type_references
+    }
+
+    fn type_references_mut<'a>(&'a self, type_references: &mut Option<BTreeSet<&'a Id>>) {
+        match self {
+            Self::Arrow { lhs, rhs } => {
+                lhs.type_references_mut(type_references);
+                rhs.type_references_mut(type_references);
+            }
+            Self::Set { .. } => {}
+            Self::TypeReference { identifier } => {
+                type_references.get_or_insert_default().insert(identifier);
+            }
+        }
+    }
+}
+
 impl<Id: PartialEq> Type<Id> {
     pub fn contains(&self, identifier: &Id) -> bool {
         matches!(self, Self::Set { identifiers, .. } if identifiers.contains(identifier))
