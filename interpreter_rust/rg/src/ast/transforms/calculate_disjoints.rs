@@ -1,5 +1,5 @@
 use crate::ast::{Edge, Error, Game, Label, Node, Pragma};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use utils::position::Span;
 
@@ -46,20 +46,41 @@ impl Game<Id> {
     }
 
     fn get_disjoint(&self, edges: &[&Arc<Edge<Id>>]) -> Option<(bool, Vec<Node<Id>>)> {
-        let mut disjoints = vec![];
+        self.get_disjoint_switch(edges)
+            .or_else(|| self.get_disjoint_if_else(edges))
+    }
 
-        // If-else.
-        for index1 in (0..edges.len()).rev() {
-            let e1 = edges[index1];
-            for index2 in (0..edges.len()).rev() {
-                let e2 = edges[index2];
-                if e1.rhs != e2.rhs && e1.label.is_negated(&e2.label) {
-                    disjoints.push((true, vec![e1.rhs.clone(), e2.rhs.clone()]));
+    fn get_disjoint_if_else(&self, edges: &[&Arc<Edge<Id>>]) -> Option<(bool, Vec<Node<Id>>)> {
+        // Fast-path for two edges.
+        if let [x, y] = edges {
+            let is_disjoint = x.rhs != y.rhs && x.label.is_negated(&y.label);
+            return is_disjoint.then(|| (true, vec![x.rhs.clone(), y.rhs.clone()]));
+        }
+
+        let labels_by_rhs: BTreeMap<_, Vec<_>> =
+            edges
+                .iter()
+                .fold(BTreeMap::new(), |mut edges_by_rhs, edge| {
+                    edges_by_rhs.entry(&edge.rhs).or_default().push(&edge.label);
+                    edges_by_rhs
+                });
+
+        for (a, xs) in &labels_by_rhs {
+            for (b, ys) in &labels_by_rhs {
+                if a != b
+                    && xs.iter().all(|x| ys.iter().any(|y| x.is_negated(y)))
+                    && ys.iter().all(|x| xs.iter().any(|y| x.is_negated(y)))
+                {
+                    return Some((true, vec![(*a).clone(), (*b).clone()]));
                 }
             }
         }
 
-        // Switch.
+        None
+    }
+
+    fn get_disjoint_switch(&self, edges: &[&Arc<Edge<Id>>]) -> Option<(bool, Vec<Node<Id>>)> {
+        let mut disjoints = vec![];
         for index1 in (0..edges.len()).rev() {
             let Label::Comparison {
                 lhs,
@@ -133,6 +154,19 @@ mod test {
         calculate_disjoints,
         if_else,
         "begin, a: ? x -> y; begin, b: ! x -> y; a, end: ; b, end: ; x, y: ;",
+        adds "@disjointExhaustive begin : a b;"
+    );
+
+    test_transform!(
+        calculate_disjoints,
+        if_else_parallel,
+        "begin, a: ? x1 -> y1; begin, b: ! x1 -> y1; begin, b: ? x2 -> y2; a, end: ; b, end: ; x1, y1: ; x2, y2: ;"
+    );
+
+    test_transform!(
+        calculate_disjoints,
+        if_else_parallel_double,
+        "begin, a: ? x1 -> y1; begin, a: ! x2 -> y2; begin, b: ! x1 -> y1; begin, b: ? x2 -> y2; a, end: ; b, end: ; x1, y1: ; x2, y2: ;",
         adds "@disjointExhaustive begin : a b;"
     );
 
