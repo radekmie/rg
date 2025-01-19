@@ -66,13 +66,13 @@ me : Player = white
 
 pos : Position
 
-graph existsPawn(me: Player) {
+graph existsOppPawn() {
   forall p:Position {
-    check(board[p] == piece(me))
+    check(board[p] == piece(opponent(me)))
   }
 }
 
-graph move(me: Player) {
+graph move() {
   player = me
   forall p:Position {
     check(board[p] == piece(me))
@@ -99,8 +99,8 @@ graph move(me: Player) {
 }
 
 graph turn() {
-  move(me)
-  if directionF(me)(pos) == pos || not(reachable(existsPawn(opponent(me)))) {
+  move()
+  if directionF(me)(pos) == pos || not(reachable(existsOppPawn())) {
     goals[me] = 100
     end()
   }

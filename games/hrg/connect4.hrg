@@ -26,60 +26,64 @@ left(_) = null
 
 board : Position -> Piece = { :empty; null = border }
 pos : Position
+me : Player
 
+opponent : Player -> Player
+opponent(red) = yellow
+opponent(_) = red
 
-graph win(piece: Piece) {
+graph win() {
   branch {
-    check(board[up(left(pos))] == piece)
-    check(board[up(left(up(left(pos))))] == piece)
+    check(board[up(left(pos))] == me)
+    check(board[up(left(up(left(pos))))] == me)
     branch {
-      check(board[up(left(up(left(up(left(pos))))))] == piece)
+      check(board[up(left(up(left(up(left(pos))))))] == me)
     } or {
-      check(board[down(right(pos))] == piece)
+      check(board[down(right(pos))] == me)
     }
   } or {
-    check(board[left(pos)] == piece)
-    check(board[left(left(pos))] == piece)
+    check(board[left(pos)] == me)
+    check(board[left(left(pos))] == me)
     branch {
-      check(board[left(left(left(pos)))] == piece)
+      check(board[left(left(left(pos)))] == me)
     } or {
-      check(board[right(pos)] == piece)
+      check(board[right(pos)] == me)
     }
   } or {
-    check(board[down(left(pos))] == piece)
-    check(board[down(left(down(left(pos))))] == piece)
+    check(board[down(left(pos))] == me)
+    check(board[down(left(down(left(pos))))] == me)
     branch {
-      check(board[down(left(down(left(down(left(pos))))))] == piece)
+      check(board[down(left(down(left(down(left(pos))))))] == me)
     } or {
-      check(board[up(right(pos))] == piece)
+      check(board[up(right(pos))] == me)
     }
   } or {
-    check(board[down(pos)] == piece)
-    check(board[down(down(pos))] == piece)
-    check(board[down(down(down(pos)))] == piece)
+    check(board[down(pos)] == me)
+    check(board[down(down(pos))] == me)
+    check(board[down(down(down(pos)))] == me)
   } or {
-    check(board[down(right(pos))] == piece)
-    check(board[down(right(down(right(pos))))] == piece)
+    check(board[down(right(pos))] == me)
+    check(board[down(right(down(right(pos))))] == me)
     branch {
-      check(board[down(right(down(right(down(right(pos))))))] == piece)
+      check(board[down(right(down(right(down(right(pos))))))] == me)
     } or {
-      check(board[up(left(pos))] == piece)
+      check(board[up(left(pos))] == me)
     }
   } or {
-    check(board[right(pos)] == piece)
-    check(board[right(right(pos))] == piece)
+    check(board[right(pos)] == me)
+    check(board[right(right(pos))] == me)
     branch {
-      check(board[right(right(right(pos)))] == piece)
+      check(board[right(right(right(pos)))] == me)
     } or {
-      check(board[left(pos)] == piece)
+      check(board[left(pos)] == me)
     }
   } or {
-    check(board[up(right(pos))] == piece)
-    check(board[up(right(up(right(pos))))] == piece)
+    check(board[up(right(pos))] == me)
+    check(board[up(right(up(right(pos))))] == me)
     branch {
-      check(board[up(right(up(right(up(right(pos))))))] == piece)
+      check(board[up(right(up(right(up(right(pos))))))] == me)
     } or {
-      check(board[down(left(pos))] == piece)
+      check(board[down(left(pos))] == me)
     }
   }
 }
@@ -100,7 +104,7 @@ graph goDown() {
   }
 }
 
-graph turn(me: Player, op: Player, piece: Piece) {
+graph turn() {
   player = me
   forall p:TopPosition {
     pos = p
@@ -108,20 +112,20 @@ graph turn(me: Player, op: Player, piece: Piece) {
   }
   player = keeper
   goDown()
-  if reachable(win(piece)) {
+  if reachable(win()) {
     goals[me] = 100
-    goals[op] = 0
+    goals[opponent(me)] = 0
     end()
   }
-  board[pos] = piece
+  board[pos] = me
   if not(reachable(findNonempty())) {// Draw
     end()
   }
+  me = opponent(me)
 }
 
 graph rules() {
   loop {
-    turn(red, yellow, red)
-    turn(yellow, red, yellow)
+    turn()
   }
 }

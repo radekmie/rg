@@ -89,9 +89,9 @@ board : PositionOrNull -> Piece = {
 me : Player = white
 pos : PositionOrNull
 
-graph existsPiece(me: Player) {
+graph existsOppPiece() {
   forall p:PositionOrNull {
-    check(board[p] == piece(me))
+    check(board[p] == piece(opponent(me)))
   }
 }
 
@@ -123,7 +123,7 @@ graph move(me: Player) {
 
 graph turn() {
   move(me)
-  if dirF(me)(pos) == null || not(reachable(existsPiece(opponent(me)))) {
+  if dirF(me)(pos) == null || not(reachable(existsOppPiece())) {
     goals[me] = 100
     end()
   }
