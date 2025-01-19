@@ -1,0 +1,416 @@
+// English draughts
+
+domain Piece = empty | white_pawn | white_king | black_pawn | black_king | border
+domain Player = white | black
+domain Score = 0 | 50 | 100
+domain Position = null | V(X, Y) where X in 0..7, Y in 0..7
+domain Stagnation = S(X) where X in 0..50
+domain Bool = 0 | 1
+
+left : Position -> Position
+left(null) = null
+left(V(0, _)) = null
+left(V(X, Y)) = V(X - 1, Y)
+
+right : Position -> Position
+right(null) = null
+right(V(7, _)) = null
+right(V(X, Y)) = V(X + 1, Y)
+
+up : Position -> Position
+up(null) = null
+up(V(_, 0)) = null
+up(V(X, Y)) = V(X, Y - 1)
+
+down : Position -> Position
+down(null) = null
+down(V(_, 7)) = null
+down(V(X, Y)) = V(X, Y + 1)
+
+fwd_direction : Player -> Position -> Position
+fwd_direction(white) = down
+fwd_direction(black) = up
+
+piece_color : Piece -> Player
+piece_color(white_pawn) = white
+piece_color(white_king) = white
+piece_color(_) = black
+
+my_pawn : Player -> Piece
+my_pawn(white) = white_pawn
+my_pawn(black) = black_pawn
+
+my_king : Player -> Piece
+my_king(white) = white_king
+my_king(black) = black_king
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(black) = white
+
+increment : Stagnation -> Stagnation
+increment(S(X)) = if X < 50 then S(X + 1) else S(X)
+
+compare : Stagnation -> Stagnation -> Bool
+compare(S(X), S(Y)) = if X < Y then 0 else 1
+
+board : Position -> Piece = {
+  V(X, Y) = 
+    if (X + Y) % 2 == 0 && Y < 3 then white_pawn
+    else if (X + Y) % 2 == 0 && Y > 4 then black_pawn
+    else empty
+    where X in 0..7, Y in 0..7;
+    null = border
+}
+me : Player = white
+position : Position
+move_vertical_direction: Position -> Position
+move_horizontal_direction: Position -> Position
+stagnation : Stagnation = S(0)
+
+
+graph pawn_capture_available(me: Player) {
+  forall p : Position {
+    check(board[p] == my_pawn(me))
+    position = p
+  }
+
+  branch {
+    move_horizontal_direction = left
+  } or {
+    move_horizontal_direction = right
+  }
+
+  position = fwd_direction(me)(position)
+  position = move_horizontal_direction(position)
+  check(position != null)
+  check(board[position] != empty)
+  check(piece_color(board[position]) == opponent(me))
+  position = fwd_direction(me)(position)
+  position = move_horizontal_direction(position)
+  check(position != null)
+  check(board[position] == empty)
+}
+
+graph pawn_capture_available_at_position(me: Player, pos: Position) {
+  branch {
+    move_horizontal_direction = left
+  } or {
+    move_horizontal_direction = right
+  }
+
+  position = fwd_direction(me)(pos)
+  position = move_horizontal_direction(position)
+  check(position != null)
+  check(board[position] != empty)
+  check(piece_color(board[position]) == opponent(me))
+  position = fwd_direction(me)(position)
+  position = move_horizontal_direction(position)
+  check(position != null)
+  check(board[position] == empty)
+}
+
+graph king_capture_available(me: Player) {
+  forall p : Position {
+    check(board[p] == my_king(me))
+    position = p
+  }
+
+  branch {
+    move_vertical_direction = fwd_direction(me)
+    move_horizontal_direction = left
+  } or {
+    move_vertical_direction = fwd_direction(me)
+    move_horizontal_direction = right
+  } or {
+    move_vertical_direction = fwd_direction(opponent(me))
+    move_horizontal_direction = left
+  } or {
+    move_vertical_direction = fwd_direction(opponent(me))
+    move_horizontal_direction = right
+  }
+
+  position = move_vertical_direction(position)
+  position = move_horizontal_direction(position)
+  check(position != null)
+  check(board[position] != empty)
+  check(piece_color(board[position]) == opponent(me))
+  position = move_vertical_direction(position)
+  position = move_horizontal_direction(position)
+  check(position != null)
+  check(board[position] == empty)
+}
+
+graph king_capture_available_at_position(me: Player, pos: Position) {
+  branch {
+    move_vertical_direction = fwd_direction(me)
+    move_horizontal_direction = left
+  } or {
+    move_vertical_direction = fwd_direction(me)
+    move_horizontal_direction = right
+  } or {
+    move_vertical_direction = fwd_direction(opponent(me))
+    move_horizontal_direction = left
+  } or {
+    move_vertical_direction = fwd_direction(opponent(me))
+    move_horizontal_direction = right
+  }
+
+  position = move_vertical_direction(pos)
+  position = move_horizontal_direction(position)
+  check(position != null)
+  check(board[position] != empty)
+  check(piece_color(board[position]) == opponent(me))
+  position = move_vertical_direction(position)
+  position = move_horizontal_direction(position)
+  check(position != null)
+  check(board[position] == empty)
+}
+
+graph pawn_normal_move_available(me: Player) {
+  forall p : Position {
+    check(board[p] == my_pawn(me))
+    position = p
+  }
+
+  position = fwd_direction(me)(position)
+  branch {
+    position = left(position)
+  } or {
+    position = right(position)
+  }
+  check(position != null)
+  check(board[position] == empty)
+}
+
+graph king_normal_move_available(me: Player) {
+  forall p : Position {
+    check(board[p] == my_king(me))
+    position = p
+  }
+
+  branch {
+    position = fwd_direction(me)(position)
+    position = left(position)
+  } or {
+    position = fwd_direction(me)(position)
+    position = right(position)
+  } or {
+    position = fwd_direction(opponent(me))(position)
+    position = left(position)
+  } or {
+    position = fwd_direction(opponent(me))(position)
+    position = right(position)
+  }
+  check(position != null)
+  check(board[position] == empty)
+}
+
+graph move_pawn_normal(me: Player) {
+  forall p : Position {
+    check(board[p] == my_pawn(me))
+    board[p] = empty
+    position = p
+    $ p
+  }
+
+  position = fwd_direction(me)(position)
+  branch {
+    position = left(position)
+    $ L_EMPTY
+  } or {
+    position = right(position)
+    $ R_EMPTY
+  }
+  check(position != null)
+  check(board[position] == empty)
+}
+
+graph move_pawn_capture(me: Player) {
+  forall p : Position {
+    check(board[p] == my_pawn(me))
+    board[p] = empty
+    position = p
+    $ p
+  }
+
+  loop {
+    branch {
+      move_horizontal_direction = left
+      $ L_TAKES
+    } or {
+      move_horizontal_direction = right
+      $ R_TAKES
+    }
+    // position is now on enemy piece
+    position = fwd_direction(me)(position)
+    position = move_horizontal_direction(position)
+
+    // confirm we are on the board and on the enemy piece
+    check(position != null)
+    check(board[position] != empty)
+    check(piece_color(board[position]) == opponent(me))
+
+    // remove that enemy piece
+    board[position] = empty
+
+    // go diagonally in the move direction
+    position = fwd_direction(me)(position)
+    position = move_horizontal_direction(position)
+
+    // confirm we land behind the enemy piece on an empty tile
+    check(position != null)
+    check(board[position] == empty)
+
+    if not(reachable(pawn_capture_available_at_position(me, position))) {
+      break()
+    }
+  }
+}
+
+graph move_king_normal(me: Player) {
+  forall p : Position {
+    check(board[p] == my_king(me))
+    board[p] = empty
+    position = p
+    $ p
+  }
+
+  branch {
+    position = fwd_direction(me)(position)
+    position = left(position)
+    $ LF_EMPTY
+  } or {
+    position = fwd_direction(me)(position)
+    position = right(position)
+    $ RF_EMPTY
+  } or {
+    position = fwd_direction(opponent(me))(position)
+    position = left(position)
+    $ LB_EMPTY
+  } or {
+    position = fwd_direction(opponent(me))(position)
+    position = right(position)
+    $ RB_EMPTY
+  }
+  check(position != null)
+  check(board[position] == empty)
+}
+
+graph move_king_capture(me: Player) {
+  forall p : Position {
+    check(board[p] == my_king(me))
+    board[p] = empty
+    position = p
+    $ p
+  }
+  
+  loop {
+    branch {
+      move_vertical_direction = fwd_direction(me)
+      move_horizontal_direction = left
+      $ LF_TAKES
+    } or {
+      move_vertical_direction = fwd_direction(me)
+      move_horizontal_direction = right
+      $ RF_TAKES
+    } or {
+      move_vertical_direction = fwd_direction(opponent(me))
+      move_horizontal_direction = left
+      $ LB_TAKES
+    } or {
+      move_vertical_direction = fwd_direction(opponent(me))
+      move_horizontal_direction = right
+      $ RB_TAKES
+    }
+    // position is now on enemy piece
+    position = move_vertical_direction(position)
+    position = move_horizontal_direction(position)
+
+    // confirm we are on the board and on the enemy piece
+    check(position != null)
+    check(board[position] != empty)
+    check(piece_color(board[position]) == opponent(me))
+
+    // remove that enemy piece
+    board[position] = empty
+
+    // go diagonally in the move direction
+    position = move_vertical_direction(position)
+    position = move_horizontal_direction(position)
+
+    // confirm we land behind the enemy piece on an empty tile
+    check(position != null)
+    check(board[position] == empty)
+
+    if not(reachable(king_capture_available_at_position(me, position))) {
+      break()
+    }
+  }
+}
+
+graph move(me: Player) {
+  if not(reachable(pawn_capture_available(me))) && not(reachable(king_capture_available(me))) {
+    branch {
+      move_pawn_normal(me)
+      board[position] = my_pawn(me)
+      // Promotions
+      if fwd_direction(me)(position) == null {
+        board[position] = my_king(me)
+      }
+      stagnation = S(0)
+    } or {
+      move_king_normal(me)
+      board[position] = my_king(me)
+      stagnation = increment(stagnation)
+    }
+  } else {
+    branch {
+      move_pawn_capture(me)
+      board[position] = my_pawn(me)
+      // Promotions
+      if fwd_direction(me)(position) == null {
+        board[position] = my_king(me)
+      }
+      stagnation = S(0)
+    } or {
+      move_king_capture(me)
+      board[position] = my_king(me)
+      stagnation = S(0)
+    } 
+  }
+}
+
+// graph opponent_has_pieces(me: Player) {
+//   forall p : Position {
+//     // Check if there isn't enemy piece in p
+//     check(board[p] == my_pawn(opponent(me)) || board[p] == my_king(opponent(me)))
+//   }
+// }
+
+graph turn() {
+  player = me
+  move(me)
+  player = keeper
+  if //not(reachable(opponent_has_pieces(me))) ||
+     not(reachable(pawn_normal_move_available(opponent(me)))) &&
+     not(reachable(king_normal_move_available(opponent(me)))) && 
+     not(reachable(pawn_capture_available(opponent(me)))) &&
+     not(reachable(king_capture_available(opponent(me)))) {
+    goals[me] = 100
+    goals[opponent(me)] = 0
+    end()
+  }
+  if compare(stagnation, S(50)) == 1 {
+    goals[me] = 50
+    goals[opponent(me)] = 50
+    end()
+  }
+  me = opponent(me)
+}
+
+graph rules() {
+  loop {
+    turn()
+  }
+}
