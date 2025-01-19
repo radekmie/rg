@@ -36,23 +36,25 @@ impl Game<Arc<str>> {
             }),
         })?;
 
-        // Player ^ isSet(Player) |- PlayerOrKeeper
+        // Player ^ isSet(Player) |- PlayerOrSystem
         let player_type = &self.resolve_typedef_or_fail(&Arc::from("Player"))?.type_;
         let Type::Set { identifiers, .. } = &**player_type else {
             return self.make_error(ErrorReason::SetTypeExpected {
                 got: player_type.clone(),
             });
         };
-        let players = if identifiers.contains(&Arc::from("keeper")) {
-            identifiers.clone()
-        } else {
-            let mut identifiers = identifiers.clone();
-            identifiers.push(Arc::from("keeper"));
-            identifiers
-        };
+        let mut players = identifiers.clone();
+        let keeper = Arc::from("keeper");
+        let random = Arc::from("random");
+        if !players.contains(&keeper) {
+            players.push(keeper);
+        }
+        if !players.contains(&random) {
+            players.push(random);
+        }
         self.add_builtin_type(Typedef {
             span: Span::none(),
-            identifier: Arc::from("PlayerOrKeeper"),
+            identifier: Arc::from("PlayerOrSystem"),
             type_: Arc::new(Type::Set {
                 span: Span::none(),
                 identifiers: players,
@@ -84,12 +86,12 @@ impl Game<Arc<str>> {
             }),
         })?;
 
-        // PlayerOrKeeper |- player
-        self.resolve_typedef_or_fail(&Arc::from("PlayerOrKeeper"))?;
+        // PlayerOrSystem |- player
+        self.resolve_typedef_or_fail(&Arc::from("PlayerOrSystem"))?;
         self.add_builtin_variable(Variable {
             span: Span::none(),
             identifier: Arc::from("player"),
-            type_: Arc::new(Type::from(Arc::from("PlayerOrKeeper"))),
+            type_: Arc::new(Type::from(Arc::from("PlayerOrSystem"))),
             default_value: Arc::new(Value::from(Arc::from("keeper"))),
         })?;
 

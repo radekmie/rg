@@ -3,7 +3,7 @@
 // The higher score wins. Ties are, of course, possible.
 //
 // As the dice throws should be random, i.e., not chosen
-// by the players, the `keeper` player does the actual
+// by the players, the `random` player does the actual
 // throw. The players are given control but their moves
 // are empty, as they don't have to do anything.
 
@@ -19,14 +19,14 @@ compare(D(A), D(B)) = if A < B then 0 else if A == B then 50 else 100
 
 graph rules() {
   player = a // Empty move.
-  player = keeper
+  player = random
   forall dice:Dice {
     throw_a = dice
     $ dice
   }
 
   player = b // Empty move.
-  player = keeper
+  player = random
   forall dice:Dice {
     throw_b = dice
     $ dice

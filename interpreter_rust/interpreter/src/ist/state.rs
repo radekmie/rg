@@ -24,6 +24,17 @@ impl State {
         }
     }
 
+    pub fn clone_without_tags(&self) -> Self {
+        Self {
+            goals: self.goals.clone(),
+            player: self.player.clone(),
+            position: self.position,
+            tags: Rc::new(vec![]),
+            values: self.values.clone(),
+            visible: self.visible.clone(),
+        }
+    }
+
     pub fn eval<'a>(
         &'a self,
         game: &'a Game<RuntimeId>,
@@ -238,11 +249,21 @@ impl Iterator for StateNextDepth<'_> {
             }
 
             let prev = &state.player;
-            let skip = prev.is_keeper();
-            for state in state.next_states(game, true) {
-                let next = &state.player;
-                let switch = if next != prev && !skip { 1 } else { 0 };
-                queue.push((state, depth - switch));
+            if prev.is_random() {
+                let mut cache = BTreeSet::new();
+                for state in state.next_states(game, true) {
+                    let cached_state = state.clone_without_tags();
+                    if cache.insert(cached_state) {
+                        queue.push((state, depth - 1));
+                    }
+                }
+            } else {
+                let skip = prev.is_keeper();
+                for state in state.next_states(game, true) {
+                    let next = &state.player;
+                    let switch = if next != prev && !skip { 1 } else { 0 };
+                    queue.push((state, depth - switch));
+                }
             }
         }
 

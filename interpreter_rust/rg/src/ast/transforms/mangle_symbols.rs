@@ -22,7 +22,7 @@ const RESERVED_TYPES: [&str; 6] = [
     "Bool",
     "Goals",
     "Player",
-    "PlayerOrKeeper",
+    "PlayerOrSystem",
     "Score",
     "Visibility",
 ];
@@ -70,14 +70,14 @@ mod test {
         type Goals = Player -> Score;
         type Int = { 0, 1, 2 };
         type Player = { x };
-        type PlayerOrKeeper = { x, keeper };
+        type PlayerOrSystem = { x, keeper, random };
         type Score = { 5 };
         type Visibility = Player -> Bool;
 
         const dec: Int -> Int = { 2: 1, :0 };
 
         var goals: Goals = { :5 };
-        var player: PlayerOrKeeper = keeper;
+        var player: PlayerOrSystem = random;
         var v: Int = 2;
         var visible: Visibility = { :1 };
 
@@ -93,27 +93,27 @@ mod test {
         "
         type Bool = { 0, 1 };
         type Goals = Player -> Score;
-        type _j = { 0, 1, _k };
+        type _k = { 0, 1, _l };
         type Player = { x };
-        type PlayerOrKeeper = { x, keeper };
+        type PlayerOrSystem = { x, keeper, random };
         type Score = { 5 };
         type Visibility = Player -> Bool;
 
-        const _i: _j -> _j = { _k: 1, :0 };
+        const _j: _k -> _k = { _l: 1, :0 };
 
         var goals: Goals = { :5 };
-        var player: PlayerOrKeeper = keeper;
-        var _p: _j = _k;
+        var player: PlayerOrSystem = random;
+        var _q: _k = _l;
         var visible: Visibility = { :1 };
 
-        begin, _l: player = x;
-        _l, _l: ;
-        _l, _n: $ _m;
-        _l, _o: $ _m;
-        _n, _q: _p != 0;
-        _o, _q: _p != 0;
-        _q, _l: _p = _i[_p];
-        _l, end: player = keeper;
+        begin, _m: player = x;
+        _m, _m: ;
+        _m, _o: $ _n;
+        _m, _p: $ _n;
+        _o, _r: _q != 0;
+        _p, _r: _q != 0;
+        _r, _m: _q = _j[_q];
+        _m, end: player = keeper;
         "
     );
 }

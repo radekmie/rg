@@ -203,10 +203,13 @@ fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
     if !table.is_defined("keeper") {
         table.symbols.push(make_builtin("keeper", Flag::Variable));
     }
-    if !table.is_defined("PlayerOrKeeper") {
+    if !table.is_defined("random") {
+        table.symbols.push(make_builtin("random", Flag::Variable));
+    }
+    if !table.is_defined("PlayerOrSystem") {
         table
             .symbols
-            .push(make_builtin("PlayerOrKeeper", Flag::Type));
+            .push(make_builtin("PlayerOrSystem", Flag::Type));
     }
     if !table.is_defined("goals") {
         table.symbols.push(make_builtin("goals", Flag::Variable));

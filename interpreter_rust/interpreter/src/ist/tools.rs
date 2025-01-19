@@ -1,5 +1,5 @@
 use super::state::State;
-use crate::ist::{Game, RuntimeId, Value, LABEL_BEGIN, LABEL_END, LABEL_KEEPER};
+use crate::ist::{Game, RuntimeId, Value, LABEL_BEGIN, LABEL_END, LABEL_KEEPER, LABEL_RANDOM};
 use map_id::MapId;
 use rand::seq::IteratorRandom;
 use rand::Rng;
@@ -88,7 +88,15 @@ impl Game<RuntimeId> {
                     break;
                 }
 
-                if !state.player.is_keeper() {
+                if state.player.is_keeper() {
+                    if states.len() != 1 {
+                        return Err(format!(
+                            "keeper had {} moves in {}.",
+                            states.len(),
+                            interner.recall(&state.position).unwrap()
+                        ));
+                    }
+                } else if !state.player.is_random() {
                     increase(&mut moves, states.len());
                     turn += 1;
                 }
@@ -214,6 +222,7 @@ impl Game<RuntimeId> {
         interner.intern_as(&Arc::from("begin"), LABEL_BEGIN);
         interner.intern_as(&Arc::from("end"), LABEL_END);
         interner.intern_as(&Arc::from("keeper"), LABEL_KEEPER);
+        interner.intern_as(&Arc::from("random"), LABEL_RANDOM);
 
         game.expand_generator_nodes()?;
         let game = Game::from(game);

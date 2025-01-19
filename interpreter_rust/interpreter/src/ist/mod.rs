@@ -13,6 +13,7 @@ pub type RuntimeId = u32;
 pub const LABEL_BEGIN: RuntimeId = 0;
 pub const LABEL_END: RuntimeId = 1;
 pub const LABEL_KEEPER: RuntimeId = 2;
+pub const LABEL_RANDOM: RuntimeId = 3;
 
 #[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
 pub struct Edge<Id: Ord> {
@@ -98,5 +99,13 @@ pub enum Value<Id: Ord> {
 impl Value<RuntimeId> {
     pub fn is_keeper(&self) -> bool {
         matches!(self, Self::Element { value } if *value == LABEL_KEEPER)
+    }
+
+    pub fn is_random(&self) -> bool {
+        matches!(self, Self::Element { value } if *value == LABEL_RANDOM)
+    }
+
+    pub fn is_system(&self) -> bool {
+        matches!(self, Self::Element { value } if *value == LABEL_KEEPER || *value == LABEL_RANDOM)
     }
 }

@@ -3,7 +3,7 @@
 // They win only if they guessed correctly.
 //
 // As the dice throws should be random, i.e., not chosen
-// by the player, the `keeper` player does the actual
+// by the player, the `random` player does the actual
 // throw.
 
 domain Player = a
@@ -23,7 +23,7 @@ graph rules() {
     $ dice
   }
 
-  player = keeper
+  player = random
   forall dice:Dice {
     throw = dice
     $ dice

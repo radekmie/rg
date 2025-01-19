@@ -885,7 +885,7 @@ fn remove_power_skip_edges(context: &mut Context) {
 fn terminate_on_zero_moves(context: &mut Context) {
     let mut moves = vec![];
 
-    // 1. For every `A, B: player = P`, where `P != keeper`.
+    // 1. For every `A, B: player = P`, where `P != keeper && P != random`.
     //   2. Find all paths from `B` to `D` ending in `E, _: player = *`.
     //   3. Add new edges from `B` to `end` with all `! C -> E`, where `C` is a fresh node between `B` and `D`.
     let player_assignments: Vec<_> = context
