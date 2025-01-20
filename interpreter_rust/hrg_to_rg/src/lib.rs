@@ -1095,21 +1095,24 @@ fn translate_automaton_statements(
                 current_node = next_node;
             }
             hrg::Statement::Loop { body } => {
-                let local_node = context.random_node(prefix);
+                let loop_init = context.random_node(prefix);
+                context.connect(current_node, loop_init.clone(), rg::Label::new_skip(), &[]);
+
+                let loop_end = context.random_node(prefix);
                 translate_automaton_statements(
                     context,
                     body,
                     bindings,
-                    Some(&local_node),
-                    Some(&current_node.clone()),
+                    Some(&loop_end),
+                    Some(&loop_init.clone()),
                     end_node,
-                    current_node.clone(),
-                    Some(&current_node),
+                    loop_init.clone(),
+                    Some(&loop_init),
                     prefix,
                     return_node,
                     automaton_function,
                 )?;
-                current_node = local_node;
+                current_node = loop_end;
             }
             hrg::Statement::Repeat { count, body } => {
                 for _ in 0..*count {
@@ -1804,4 +1807,86 @@ fn translate_variables(context: &mut Context) -> Result<(), hrg::Error<Id>> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use super::hrg_to_rg;
+    use hrg::parsing::parser::parse_with_errors as parse_hrg;
+    use map_id::MapId;
+    use rg::parsing::parser::parse_with_errors as parse_rg;
+    use std::sync::Arc;
+
+    macro_rules! test_translation {
+        ($name:ident, $actual:expr, $expect:expr) => {
+            #[test]
+            fn $name() {
+                let actual = hrg_to_rg({
+                    let (game, errors) = parse_hrg($actual);
+                    assert!(errors.is_empty(), "Parse errors: {errors:?}");
+                    game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
+                })
+                .unwrap();
+                let expect = {
+                    let (game, errors) = parse_rg($expect);
+                    assert!(errors.is_empty(), "Parse errors: {errors:?}");
+                    game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
+                };
+
+                // `assert_eq` prints the entire structs and it's not helpful.
+                assert!(
+                    actual == expect,
+                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
+                );
+            }
+        };
+    }
+
+    test_translation!(
+        empty_branch_or_loop,
+        "
+            graph rules() {
+                branch {} or {
+                    loop {
+                        check(0 == 0)
+                    }
+                }
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_1: ;
+            rules_begin, rules_2: ;
+            rules_2, rules_4: 0 == 0;
+            rules_4, rules_2: ;
+            rules_3, rules_1: ;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        loop_with_branch_break,
+        "
+            graph rules() {
+                loop {
+                    branch {
+                        break()
+                    } or {
+                        check(0 == 0)
+                    }
+                }
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_1: ;
+            rules_1, rules_2: ;
+            rules_1, rules_4: 0 == 0;
+            rules_4, rules_3: ;
+            rules_3, rules_1: ;
+            rules_2, rules_end: ;
+            rules_end, end: ;
+        "
+    );
 }
