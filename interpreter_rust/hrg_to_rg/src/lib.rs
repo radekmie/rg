@@ -1096,14 +1096,19 @@ fn translate_automaton_statements(
             }
             hrg::Statement::Loop { body } => {
                 let loop_init = context.random_node(prefix);
-                context.connect(current_node, loop_init.clone(), rg::Label::new_skip(), &[]);
+                context.connect(
+                    current_node,
+                    loop_init.clone(),
+                    rg::Label::new_skip(),
+                    bindings,
+                );
 
                 let loop_end = context.random_node(prefix);
                 translate_automaton_statements(
                     context,
                     body,
                     bindings,
-                    Some(&loop_end),
+                    Some(&add_bindings(loop_end.clone(), bindings)),
                     Some(&loop_init.clone()),
                     end_node,
                     loop_init.clone(),
@@ -1861,6 +1866,36 @@ mod test {
             rules_4, rules_2: ;
             rules_3, rules_1: ;
             rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        forall_with_loop,
+        "
+            graph rules() {
+                forall bool:Bool {
+                    loop {
+                        branch {
+                            break()
+                        } or {
+                            check(0 == 0)
+                        }
+                    }
+                }
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_1(bool: Bool): ;
+            rules_1(bool: Bool), rules_3(bool: Bool): ;
+            rules_3(bool: Bool), rules_4(bool: Bool): ;
+            rules_3(bool: Bool), rules_6(bool: Bool): 0 == 0;
+            rules_6(bool: Bool), rules_5(bool: Bool): ;
+            rules_5(bool: Bool), rules_3(bool: Bool): ;
+            rules_4(bool: Bool), rules_2(bool: Bool): ;
+            rules_2(bool: Bool), rules_7: ;
+            rules_7, rules_end: ;
             rules_end, end: ;
         "
     );
