@@ -11,10 +11,10 @@ const right: Direction = {v0:v1,v1:v2,v2:v3,v3:v4,v4:v0,:v0};
 
 var pos: Position = v0;
 
-begin, selectDir4: player = PlayerOrKeeper(tester);
+begin, selectDir4: player = PlayerOrSystem(tester);
 selectDir4, selectDir4: pos = Position(left[pos]);
 selectDir4, selectDir4: pos = Position(right[pos]);
 selectDir4, win: pos == Position(v4);
 
 win, setScore: goals[player] = Score(100);
-setScore, end: player = PlayerOrKeeper(keeper);
+setScore, end: player = PlayerOrSystem(keeper);

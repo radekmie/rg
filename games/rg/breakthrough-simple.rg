@@ -88,7 +88,7 @@ begin, move: ;
 turn, move: ? move -> moved;
 turn, lose: ! move -> moved;
 
-move, selectPos: player = PlayerOrKeeper(turnPlayer);
+move, selectPos: player = PlayerOrSystem(turnPlayer);
 selectPos, selectedPos(position:Position): $ position;
 selectedPos(position:Position), setPos(position:Position): position != Position(null);
 setPos(position:Position), setFinished: pos = Position(position);
@@ -110,7 +110,7 @@ directionRightChecked, directionOK: pos = Position(right[pos]);
 directionOK, moved: opponentOrEmpty[turnPlayer][board[pos]] == Bool(1);
 
 moved, done: board[pos] = pieceOfPlayer[turnPlayer];
-done, wincheck: player = PlayerOrKeeper(keeper);
+done, wincheck: player = PlayerOrSystem(keeper);
 
 wincheck, win: directionOfPlayer[turnPlayer][pos] == Position(null);
 wincheck, continue: directionOfPlayer[turnPlayer][pos] != Position(null);
@@ -118,4 +118,4 @@ continue, turn: turnPlayer = opponent[turnPlayer];
 
 lose, win: turnPlayer = opponent[turnPlayer];
 win, score: goals[turnPlayer] = Score(100);
-score, end: player = PlayerOrKeeper(keeper);
+score, end: player = PlayerOrSystem(keeper);

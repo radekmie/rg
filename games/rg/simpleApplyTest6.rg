@@ -18,7 +18,7 @@ type Int = {0,1,2};
 
 var key: Int = 0;
 
-begin, setKey: player = PlayerOrKeeper(A);
+begin, setKey: player = PlayerOrSystem(A);
 setKey, setZero: key = 0;
 setZero, setKeyDone: $ 0;
 setKey, setOne: key = 1;
@@ -26,7 +26,7 @@ setOne, setKeyDone: $ 1;
 setKey, setTwo: key = 2;
 setTwo, setKeyDone: $ 2;
 
-setKeyDone, readKey: player = PlayerOrKeeper(B);
+setKeyDone, readKey: player = PlayerOrSystem(B);
 readKey, readZero: key == 0;
 readKey, readOne: key == 1;
 readZero, readDone: $ 0;
@@ -40,4 +40,4 @@ readHidden, draw: key == 2;
 draw, readDone: goals[B]=Score(50);
 
 readDone, preend: $ done;
-preend, end: player = PlayerOrKeeper(keeper);
+preend, end: player = PlayerOrSystem(keeper);

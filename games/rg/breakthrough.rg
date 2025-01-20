@@ -103,7 +103,7 @@ begin, move: ;
 turn, move: ? findPawn -> pawnExists;
 turn, lose: ! findPawn -> pawnExists;
 
-move, selectPos: player = PlayerOrKeeper(currentPlayer);
+move, selectPos: player = PlayerOrSystem(currentPlayer);
 
 findPawn, findPawnPos(position:Position): board[position] == pieceOfPlayer[currentPlayer];
 findPawnPos(position:Position), pawnExists: ;
@@ -114,19 +114,19 @@ checkOwn, selectDir: board[pos] == pieceOfPlayer[currentPlayer];
 
 selectDir, forwardDirCheck: board[Position(FDirOfPlayer[currentPlayer][pos])] == Piece(e);
 forwardDirCheck, forwardDirSetP: $ F;
-forwardDirSetP, forwardDirSet: player = PlayerOrKeeper(keeper);
+forwardDirSetP, forwardDirSet: player = PlayerOrSystem(keeper);
 forwardDirSet, forwardMove: board[pos] = Piece(e);
 forwardMove, moved: pos = Position(FDirOfPlayer[currentPlayer][pos]);
 
 selectDir, leftDirCheck: opponentOrEmpty[currentPlayer][board[LDirOfPlayer[currentPlayer][pos]]] == Bool(1);
 leftDirCheck, leftDirSetP: $ L;
-leftDirSetP, leftDirSet: player = PlayerOrKeeper(keeper);
+leftDirSetP, leftDirSet: player = PlayerOrSystem(keeper);
 leftDirSet, leftMove: board[pos] = Piece(e);
 leftMove, moved: pos = Position(LDirOfPlayer[currentPlayer][pos]);
 
 selectDir, rightDirCheck: opponentOrEmpty[currentPlayer][board[RDirOfPlayer[currentPlayer][pos]]] == Bool(1);
 rightDirCheck, rightDirSetP: $ R;
-rightDirSetP, rightDirSet: player = PlayerOrKeeper(keeper);
+rightDirSetP, rightDirSet: player = PlayerOrSystem(keeper);
 rightDirSet, rightMove: board[pos] = Piece(e);
 rightMove, moved: pos = Position(RDirOfPlayer[currentPlayer][pos]);
 
@@ -139,4 +139,4 @@ continue, turn: currentPlayer = opponent[currentPlayer];
 
 lose, win: currentPlayer = opponent[currentPlayer];
 win, score: goals[currentPlayer] = Score(100);
-score, end: player = PlayerOrKeeper(keeper);
+score, end: player = PlayerOrSystem(keeper);

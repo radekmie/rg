@@ -719,7 +719,7 @@ mod test {
             type Bool = { 0, 1 };
             type Goals = Player -> Score;
             type Visibility = Player -> Bool;
-            type PlayerOrKeeper = { x, o, keeper };
+            type PlayerOrSystem = { x, o, keeper, random };
             const next_d1: Position -> Position = { :p__1_1, p__0_1: p__0_1, p__0_2: p__0_2, p__1_0: p__1_0, p__1_1: p__2_2, p__1_2: p__1_2, p__2_0: p__2_0, p__2_1: p__2_1, p__2_2: p__0_0 };
             const next_d2: Position -> Position = { :p__0_0, p__0_1: p__0_1, p__0_2: p__1_1, p__1_0: p__1_0, p__1_1: p__2_0, p__1_2: p__1_2, p__2_0: p__0_2, p__2_1: p__2_1, p__2_2: p__2_2 };
             const next_h: Position -> Position = { :p__0_1, p__0_1: p__0_2, p__0_2: p__0_0, p__1_0: p__1_1, p__1_1: p__1_2, p__1_2: p__1_0, p__2_0: p__2_1, p__2_1: p__2_2, p__2_2: p__2_0 };
@@ -730,7 +730,7 @@ mod test {
             var me: Player = x;
             var position: Position = p__0_0;
             var goals: Goals = { :50 };
-            var player: PlayerOrKeeper = keeper;
+            var player: PlayerOrSystem = keeper;
             var visible: Visibility = { :1 };
             begin, rules_begin: ;
             rules_begin, turn_call_1: ;
@@ -799,7 +799,7 @@ mod test {
             type Bool = { 0, 1 };
             type Goals = Player -> Score;
             type Visibility = Player -> Bool;
-            type PlayerOrKeeper = { x, o, keeper };
+            type PlayerOrSystem = { x, o, keeper, random };
             const next_d1: Position -> Position = { :p__1_1, p__0_1: p__0_1, p__0_2: p__0_2, p__1_0: p__1_0, p__1_1: p__2_2, p__1_2: p__1_2, p__2_0: p__2_0, p__2_1: p__2_1, p__2_2: p__0_0 };
             const next_d2: Position -> Position = { :p__0_0, p__0_1: p__0_1, p__0_2: p__1_1, p__1_0: p__1_0, p__1_1: p__2_0, p__1_2: p__1_2, p__2_0: p__0_2, p__2_1: p__2_1, p__2_2: p__2_2 };
             const next_h: Position -> Position = { :p__0_1, p__0_1: p__0_2, p__0_2: p__0_0, p__1_0: p__1_1, p__1_1: p__1_2, p__1_2: p__1_0, p__2_0: p__2_1, p__2_1: p__2_2, p__2_2: p__2_0 };
@@ -810,7 +810,7 @@ mod test {
             var me: Player = x;
             var position: Position = p__0_0;
             var goals: Goals = { :50 };
-            var player: PlayerOrKeeper = keeper;
+            var player: PlayerOrSystem = keeper;
             var visible: Visibility = { :1 };
             begin, rules_begin: ;
             rules_begin, rules_2: turn_return = turn_call_1;

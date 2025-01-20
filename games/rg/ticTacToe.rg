@@ -27,9 +27,9 @@ begin,turn: playerTurn = Player(X);
 
 turn,move: ? move -> set;
 turn,preend: ! move -> set;
-preend,end: player = PlayerOrKeeper(keeper);
+preend,end: player = PlayerOrSystem(keeper);
 
-move,chooseX: player = PlayerOrKeeper(playerTurn);
+move,chooseX: player = PlayerOrSystem(playerTurn);
 chooseX,chooseX(coordX:Coord): $ coordX;
 chooseX(coordX:Coord),chooseY: posX = Coord(coordX);
 chooseY,chooseY(coordY:Coord): $ coordY;
@@ -37,7 +37,7 @@ chooseY(coordY:Coord),check: posY = Coord(coordY);
 check,set: board[posX][posY] == Piece(e);
 set,endmove: board[posX][posY] = Piece(playerTurn);
 
-endmove,checkwin: player = PlayerOrKeeper(keeper);
+endmove,checkwin: player = PlayerOrSystem(keeper);
 checkwin,win: ? checkline -> endcheckline;
 checkwin,nextturn: ! checkline -> endcheckline;
 nextturn,turn: playerTurn = opponent[playerTurn];
@@ -57,4 +57,4 @@ checklineRL2,endcheckline: board[otherInLine2[posX]][otherInLine1[posY]] == Piec
 
 win,win1: goals[playerTurn] = Score(100);
 win1,win2: goals[opponent[playerTurn]] = Score(0);
-win2,end: player = PlayerOrKeeper(keeper);
+win2,end: player = PlayerOrSystem(keeper);

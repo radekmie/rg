@@ -7,7 +7,7 @@ var key: Bool = 0;
 //@simpleApplyExhaustive move A 0 : key0 tagA done end;
 //@simpleApplyExhaustive move B 1 : key1 tagB done end;
 
-begin, move: player = PlayerOrKeeper(P);
+begin, move: player = PlayerOrSystem(P);
 
 move, key0: key = 0;
 key0, tagA: $ A;
@@ -17,4 +17,4 @@ move, key1: key = 1;
 key1, tagB: $ B;
 tagB, done: $ 1;
 
-done, end: player = PlayerOrKeeper(keeper);
+done, end: player = PlayerOrSystem(keeper);

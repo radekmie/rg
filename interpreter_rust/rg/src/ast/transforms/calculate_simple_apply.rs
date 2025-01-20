@@ -652,10 +652,10 @@ mod test {
         complex_1,
         include_str!("../../../../../games/rg/simpleApplyTest1.rg"),
         adds "
-            @simpleApplyExhaustive doneB preend [dummytag] player = PlayerOrKeeper(keeper);
-            @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrKeeper(B);
-            @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrKeeper(B);
-            @simpleApplyExhaustive preend end [] player = PlayerOrKeeper(keeper);
+            @simpleApplyExhaustive doneB preend [dummytag] player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrSystem(B);
+            @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrSystem(B);
+            @simpleApplyExhaustive preend end [] player = PlayerOrSystem(keeper);
         "
     );
 
@@ -664,11 +664,11 @@ mod test {
         complex_2,
         include_str!("../../../../../games/rg/simpleApplyTest2.rg"),
         adds "
-            @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrKeeper(B);
-            @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrKeeper(B);
-            @simpleApplyExhaustive moveB preend [0, dummytag] goals[B] = Score(100), player = PlayerOrKeeper(keeper);
-            @simpleApplyExhaustive moveB preend [1, dummytag] goals[B] = Score(100), player = PlayerOrKeeper(keeper);
-            @simpleApplyExhaustive preend end [] player = PlayerOrKeeper(keeper);
+            @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrSystem(B);
+            @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrSystem(B);
+            @simpleApplyExhaustive moveB preend [0, dummytag] goals[B] = Score(100), player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive moveB preend [1, dummytag] goals[B] = Score(100), player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive preend end [] player = PlayerOrSystem(keeper);
         "
     );
 
@@ -677,10 +677,10 @@ mod test {
         complex_3,
         include_str!("../../../../../games/rg/simpleApplyTest3.rg"),
         adds "
-            @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrKeeper(B);
-            @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrKeeper(B);
-            @simpleApply moveB preend [1, dummytag] goals[B] = Score(100), player = PlayerOrKeeper(keeper);
-            @simpleApplyExhaustive preend end [] player = PlayerOrKeeper(keeper);
+            @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrSystem(B);
+            @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrSystem(B);
+            @simpleApply moveB preend [1, dummytag] goals[B] = Score(100), player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive preend end [] player = PlayerOrSystem(keeper);
         "
     );
 }

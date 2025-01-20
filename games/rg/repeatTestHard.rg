@@ -9,7 +9,7 @@ const right: Direction = {v0:v1,v1:v2,v2:v3,v3:v4,v4:v5,v5:v6,v6:v6,:v0};
 
 var pos: Position = v0;
 
-begin, chooseTag: player = PlayerOrKeeper(tester);
+begin, chooseTag: player = PlayerOrSystem(tester);
 chooseTag, choosenLeft: $ A;
 choosenLeft, loop: pos=Position(v0);
 chooseTag, choosenRight: $ B;
@@ -26,4 +26,4 @@ setscore, exit: $ WIN;
 loop, lose: $ LOSE;
 lose, show(p:Position): p==pos;
 show(p:Position), exit: $ p;
-exit, end: player = PlayerOrKeeper(keeper);
+exit, end: player = PlayerOrSystem(keeper);

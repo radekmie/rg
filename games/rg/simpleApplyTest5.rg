@@ -13,7 +13,7 @@ type Bool = {0,1};
 
 var key: Bool = 0;
 
-begin, setKey: player = PlayerOrKeeper(A);
+begin, setKey: player = PlayerOrSystem(A);
 setKey, setZero: key = 0;
 setZero, setKeyDone: $ 0;
 setKey, setOne: key = 1;
@@ -27,4 +27,4 @@ readOne, win: ;
 win, readDone: goals[A]=Score(100);
 
 readDone, preend: $ done;
-preend, end: player = PlayerOrKeeper(keeper);
+preend, end: player = PlayerOrSystem(keeper);

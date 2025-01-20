@@ -11,13 +11,13 @@ type Bool = {0,1};
 
 var key: Bool = 0;
 
-begin, moveA: player = PlayerOrKeeper(A);
+begin, moveA: player = PlayerOrSystem(A);
 moveA, tagA0: key = 0;
 tagA0, doneA: $ 0;
 moveA, tagA1: key = 1;
 tagA1, doneA: $ 1;
 
-doneA, moveB: player = PlayerOrKeeper(B);
+doneA, moveB: player = PlayerOrSystem(B);
 moveB, tagB0same: key == 0;
 moveB, tagB0: key != 0;
 tagB0same, tagB0: goals[B]=Score(100);
@@ -29,6 +29,6 @@ tagB1same, tagB1: goals[B]=Score(100);
 tagB1, doneB: $ 1;
 
 doneB, extraB: $ dummytag;
-extraB, preend: player = PlayerOrKeeper(keeper);
-preend, end: player = PlayerOrKeeper(keeper);
+extraB, preend: player = PlayerOrSystem(keeper);
+preend, end: player = PlayerOrSystem(keeper);
 
