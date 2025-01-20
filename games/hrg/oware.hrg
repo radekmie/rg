@@ -1,0 +1,377 @@
+// ****************************************
+//     IMPLEMENTATION OF THE OWARE GAME
+// IN THE HIGH-LEVEL REGULAR GAMES LANGUAGE
+//        BY CZMELEN (JAN MĄCZYŃSKI)
+// ****************************************
+
+// ---------------
+// DOMAINS SECTION
+// ---------------
+
+domain Player = white | black
+domain Hole = H(J) where J in 0..11
+domain Bool = 0 | 1
+domain Int = I(J) where J in 0..48
+domain Sign = greater | equal | less
+domain Captured = C(P) where P in { white, black }
+domain Score = 0 | 50 | 100 
+
+// ---------------
+// HELPERS SECTION
+// ---------------
+
+nextHole: Hole -> Hole
+nextHole(H(ID)) = H((ID + 1) % 12)
+
+prevHole: Hole -> Hole
+prevHole(H(ID)) = if ID == 0 then H(11) else H(ID - 1)
+
+belongsTo: Player -> Hole -> Bool
+belongsTo(white, H(ID)) = if ID < 6 then 1 else 0
+belongsTo(black, H(ID)) = if ID > 5 then 1 else 0
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(black) = white
+
+comp: Int -> Int -> Sign
+comp(I(VA), I(VB)) = if VA < VB then less else if VA > VB then greater else equal
+
+incr: Int -> Int
+incr(I(V)) = if V == 48 then I(0) else I(V + 1)
+
+decr: Int -> Int
+decr(I(V)) = if V == 0 then I(48) else I(V - 1)
+
+// -----------------
+// VARIABLES SECTION
+// -----------------
+
+// Initial board - all holes have 4 seeds
+board: Hole -> Int = {
+  H(ID) = I(4) where ID in 0..11
+}
+
+// Scores for each player
+captured: Player -> Int = {
+  C(P) = I(0) where P in { white, black }
+}
+
+// Current player
+me: Player = white
+
+toSow: Int = I(0)
+toAdd: Int = I(0)
+startSowing: Hole = H(0)
+endedSowing: Hole = H(0)
+currHole: Hole = H(0)
+sinceCapture: Int = I(0)
+capFields: Int = I(0)
+allCaptured: Int = I(0)
+maxCaptured: Int = I(0)
+
+// ------------------
+// AUTOMATON SECTION
+// ------------------
+
+graph takeAll() {
+  currHole = H(0)
+  while currHole != H(6) {
+    if board[currHole] != I(0) {
+      toAdd = board[currHole]
+      board[currHole] = I(0)
+      while toAdd != I(0) {
+        captured[white] = incr(captured[white])
+        toAdd = decr(toAdd)
+        allCaptured = incr(allCaptured)
+      }
+    }
+    currHole = nextHole(currHole)
+  }
+  while currHole != H(0) {
+    if board[currHole] != I(0) {
+      toAdd = board[currHole]
+      board[currHole] = I(0)
+      while toAdd != I(0) {
+        captured[black] = incr(captured[black])
+        toAdd = decr(toAdd)
+        allCaptured = incr(allCaptured)
+      }
+    }
+    currHole = nextHole(currHole)
+  }
+  $ takeall
+}
+
+graph move(player: Player) {
+  if player == white {
+    // Opponent starving
+    if board[H(6)] == I(0) && board[H(7)] == I(0) && board[H(8)] == I(0) && board[H(9)] == I(0) && board[H(10)] == I(0) && board[H(11)] == I(0) {
+      // Feeding is impossible -> take all mine
+      if comp(board[H(5)], I(1)) == less && comp(board[H(4)], I(2)) == less && comp(board[H(3)], I(3)) == less && comp(board[H(2)], I(4)) == less && comp(board[H(1)], I(5)) == less && comp(board[H(0)], I(6)) == less {
+        currHole = H(0)
+        while currHole != H(6) {
+          toAdd = board[currHole]
+          board[currHole] = I(0)
+          while toAdd != I(0) {
+            captured[white] = incr(captured[white])
+            toAdd = decr(toAdd)
+            allCaptured = incr(allCaptured)
+          }
+          currHole = nextHole(currHole)
+        }
+        $ takewhite
+      } else { // Feeding is possible -> can sow from feeding holes
+        branch {
+          check(comp(board[H(6)], I(5)) == greater)
+          currHole = H(0)
+          $ h6
+        } or {
+          check(comp(board[H(7)], I(4)) == greater)
+          currHole = H(1)
+          $ h7
+        } or {
+          check(comp(board[H(8)], I(3)) == greater)
+          currHole = H(2)
+          $ h8
+        } or {
+          check(comp(board[H(9)], I(2)) == greater)
+          currHole = H(3)
+          $ h9
+        } or {
+          check(comp(board[H(10)], I(1)) == greater)
+          currHole = H(10)
+          $ h10
+        } or {
+          check(board[H(11)] != I(0))
+          currHole = H(11)
+          $ h11
+        }
+        // Sowing
+        startSowing = currHole
+        toSow = board[currHole]
+        board[currHole] = I(0)
+        while toSow != I(0) {
+          currHole = nextHole(currHole)
+          if startSowing != currHole {
+            board[currHole] = incr(board[currHole])
+            toSow = decr(toSow)
+          }
+        }
+      }
+    } else { // Normal move
+      forall h: Hole {
+        check(belongsTo(white, h) == 1 && board[h] != I(0))
+        // Sowing
+        currHole = h
+        startSowing = currHole
+        toSow = board[currHole]
+        board[currHole] = I(0)
+        while toSow != I(0) {
+          currHole = nextHole(currHole)
+          if startSowing != currHole {
+            board[currHole] = incr(board[currHole])
+            toSow = decr(toSow)
+          }
+        }
+        endedSowing = currHole
+        // Capturing
+        capFields = I(0)
+        maxCaptured = I(0)
+        currHole = H(6)
+        while currHole != H(0) {
+          if board[currHole] != I(0) {
+            maxCaptured = incr(maxCaptured)
+          }
+          currHole = nextHole(currHole)
+        }
+        currHole = endedSowing
+        while belongsTo(black, currHole) == 1 && (board[currHole] == I(2) || board[currHole] == I(3)) {
+          toAdd = board[currHole]
+          board[currHole] = I(0)
+          while toAdd != I(0) {
+            toAdd = decr(toAdd)
+            captured[white] = incr(captured[white])
+            allCaptured = incr(allCaptured)
+          }
+          capFields = incr(capFields)
+          currHole = prevHole(currHole)
+          sinceCapture = I(0)
+        }
+        check(capFields != maxCaptured) // Cannot capture all the fields
+        $ h
+      }
+    }
+  }
+  else {
+    // Opponent starving
+    if board[H(0)] == I(0) && board[H(1)] == I(0) && board[H(2)] == I(0) && board[H(3)] == I(0) && board[H(4)] == I(0) && board[H(5)] == I(0) {
+      // Feeding is impossible -> take all mine
+      if comp(board[H(11)], I(1)) == less && comp(board[H(10)], I(2)) == less && comp(board[H(9)], I(3)) == less && comp(board[H(8)], I(4)) == less && comp(board[H(7)], I(5)) == less && comp(board[H(6)], I(6)) == less {
+        currHole = H(6)
+        while currHole != H(0) {
+          toAdd = board[currHole]
+          board[currHole] = I(0)
+          while toAdd != I(0) {
+            captured[black] = incr(captured[black])
+            toAdd = decr(toAdd)
+            allCaptured = incr(allCaptured)
+          }
+          currHole = nextHole(currHole)
+        }
+        $ takeblack
+      } else { // Feeding is possible -> can sow from feeding holes
+        branch {
+          check(comp(board[H(0)], I(5)) == greater)
+          currHole = H(0)
+          $ h0
+        } or {
+          check(comp(board[H(1)], I(4)) == greater)
+          currHole = H(1)
+          $ h1
+        } or {
+          check(comp(board[H(2)], I(3)) == greater)
+          currHole = H(2)
+          $ h2
+        } or {
+          check(comp(board[H(3)], I(2)) == greater)
+          currHole = H(3)
+          $ h3
+        } or {
+          check(comp(board[H(4)], I(1)) == greater)
+          currHole = H(4)
+          $ h4
+        } or {
+          check(board[H(5)] != I(0))
+          currHole = H(5)
+          $ h5
+        }
+        // Sowing
+        startSowing = currHole
+        toSow = board[currHole]
+        board[currHole] = I(0)
+        while toSow != I(0) {
+          currHole = nextHole(currHole)
+          if startSowing != currHole {
+            board[currHole] = incr(board[currHole])
+            toSow = decr(toSow)
+          }
+        }
+      }
+    }
+    else { // Normal move
+      forall h: Hole {
+        check(belongsTo(black, h) == 1 && board[h] != I(0))
+        // Sowing
+        currHole = h
+        startSowing = currHole
+        toSow = board[currHole]
+        board[currHole] = I(0)
+        while toSow != I(0) {
+          currHole = nextHole(currHole)
+          if startSowing != currHole {
+            board[currHole] = incr(board[currHole])
+            toSow = decr(toSow)
+          }
+        }
+        endedSowing = currHole
+        // Capturing
+        capFields = I(0)
+        maxCaptured = I(0)
+        currHole = H(0)
+        while currHole != H(6) {
+          if board[currHole] != I(0) {
+            maxCaptured = incr(maxCaptured)
+          }
+          currHole = nextHole(currHole)
+        }
+        currHole = endedSowing
+        while belongsTo(white, currHole) == 1 && (board[currHole] == I(2) || board[currHole] == I(3)) {
+          toAdd = board[currHole]
+          board[currHole] = I(0)
+          while toAdd != I(0) {
+            toAdd = decr(toAdd)
+            captured[black] = incr(captured[black])
+            allCaptured = incr(allCaptured)
+          }
+          capFields = incr(capFields)
+          sinceCapture = I(0)
+          currHole = prevHole(currHole)
+        }
+        check(capFields != maxCaptured) // Cannot capture all the fields
+        $ h
+      }
+    }  
+  }
+}
+
+graph turn() {
+  player = me
+
+  if not(reachable(move(me))) { // No legal moves -> player captures all his instead
+    if me == white {
+      currHole = H(0)
+      while currHole != H(6) {
+        toAdd = board[currHole]
+        board[currHole] = I(0)
+        while toAdd != I(0) {
+          captured[white] = incr(captured[white])
+          toAdd = decr(toAdd)
+          allCaptured = incr(allCaptured)
+        }
+        currHole = nextHole(currHole)
+      }
+    }
+    else {
+      currHole = H(6)
+      while currHole != H(0) {
+        toAdd = board[currHole]
+        board[currHole] = I(0)
+        while toAdd != I(0) {
+          captured[black] = incr(captured[black])
+          toAdd = decr(toAdd)
+          allCaptured = incr(allCaptured)
+        }
+        currHole = nextHole(currHole)
+      }
+    }
+  } else {
+    move(me)
+  }
+
+  player = keeper
+
+  // When the game is in a loop, players capture all the seeds on their sides
+  sinceCapture = incr(sinceCapture)
+  if sinceCapture == I(24) {
+    takeAll()
+  }
+
+  // All seeds are always captured at the end
+  if allCaptured == I(48) {
+    if comp(captured[me], I(24)) == greater {
+      goals[me] = 100
+      goals[opponent(me)] = 0
+    }
+    else { 
+      if comp(captured[opponent(me)], I(24)) == greater {
+        goals[me] = 0
+        goals[opponent(me)] = 100
+      }
+      else {
+        goals[me] = 50
+        goals[opponent(me)] = 50
+      }
+    }
+    end()
+  }
+
+  me = opponent(me)
+}
+
+graph rules() {
+  loop {
+    turn()
+  }
+}
+
