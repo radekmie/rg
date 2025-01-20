@@ -1,0 +1,263 @@
+// variant of rules as described in https://www.hasbro.com/common/instruct/battleship.pdf
+// * only one move per turn for each player (no extra move after hit)
+// * after move player is informed about type of attacked ship (or miss)
+// * ships can be placed on adjacent squares (but cannot overlap)
+// * there are 5 ships, each of different type:
+//   * carrier - 5 squares
+//   * battleship - 4 squares
+//   * cruiser - 3 squares
+//   * submarine - 3 squares
+//   * destroyer - 2 squares
+
+domain Player = black | white
+domain Piece = empty | miss | carrier | battleship | cruiser | submarine | destroyer
+domain Position = null | V(I, J) where I in 0..9, J in 0..9
+domain Score = 0 | 100
+domain Nat = N(I) where I in 0..17
+domain Board = own | opp
+
+// helpers
+down : Position -> Position
+down(null) = null
+down(V(X, Y)) = if Y == 9 then null else V(X, Y + 1)
+
+right : Position -> Position
+right(null) = null
+right(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
+
+inc : Nat -> Nat
+inc(N(I)) = if I == 17 then N(17) else N(I + 1)
+
+op : Player -> Player
+op(black) = white
+op(white) = black
+
+
+// two board for each player: first board is for placing own ships, second is for shooting
+// boards : Player -> Board -> Position -> Piece = { _ = { _ = { _ = empty}}}
+boards : Player -> Board -> Position -> Piece
+
+position : Position
+
+// hits counter (for more effective checking if game is finished)
+hits : Player -> Nat = { _ = N(0)}
+
+graph place_ships(me : Player) {
+    // this part of game is invisible for opponent
+    visible[me] = 1
+    visible[op[me]] = 0
+
+    // choose position for each ship:
+    // first one to place is carrier - the whole board is empty so not needed to check every single square
+    player = me
+    branch {
+        // put it vertically...
+        $ V
+        forall p:Position {
+            check(down[down[down[down[p]]]] != null)
+            boards[me][own][p] = carrier
+            boards[me][own][down[p]] = carrier
+            boards[me][own][down[down[p]]] = carrier
+            boards[me][own][down[down[down[p]]]] = carrier
+            boards[me][own][down[down[down[down[p]]]]] = carrier
+            $ p
+        }
+    } or {
+        // ...or horizontally
+        $ H
+        forall p:Position {
+            check(right[right[right[right[p]]]] != null)
+            position = p
+            boards[me][own][position] = carrier
+            boards[me][own][right[position]] = carrier
+            boards[me][own][right[right[position]]] = carrier
+            boards[me][own][right[right[right[position]]]] = carrier
+            boards[me][own][right[right[right[right[position]]]]] = carrier
+            $ p
+        }
+    }
+    // keeper takes control after placing each ship to reduce branching factor - choosing position for each ship is a separate move
+    player = keeper
+
+    // battleship
+    player = me
+    branch {
+        $ V
+        forall p:Position {
+            // when player chooses position for next ships, each square must be checked (because ships cannot overlap)
+            check(down[down[down[p]]] != null)
+            check(boards[me][own][p] == empty)
+            check(boards[me][own][down[p]] == empty)
+            check(boards[me][own][down[down[p]]] == empty)
+            check(boards[me][own][down[down[down[p]]]] == empty)
+            boards[me][own][p] = battleship
+            boards[me][own][down[p]] = battleship
+            boards[me][own][down[down[p]]] = battleship
+            boards[me][own][down[down[down[p]]]] = battleship
+            $ p
+        }
+    } or {
+        $ H
+        forall p:Position {
+            check(right[right[right[p]]] != null)
+            check(boards[me][own][p] == empty)
+            check(boards[me][own][right[p]] == empty)
+            check(boards[me][own][right[right[p]]] == empty)
+            check(boards[me][own][right[right[right[p]]]] == empty)
+            boards[me][own][p] = battleship
+            boards[me][own][right[p]] = battleship
+            boards[me][own][right[right[p]]] = battleship
+            boards[me][own][right[right[right[p]]]] = battleship
+            $ p
+        }
+    }
+    player = keeper
+
+    // cruiser
+    player = me
+    branch {
+        $ V
+        forall p:Position {
+            check(down[down[p]] != null)
+            check(boards[me][own][p] == empty)
+            check(boards[me][own][down[p]] == empty)
+            check(boards[me][own][down[down[p]]] == empty)
+            boards[me][own][p] = cruiser
+            boards[me][own][down[p]] = cruiser
+            boards[me][own][down[down[p]]] = cruiser
+            $ p
+        }
+    } or {
+        $ H
+        forall p:Position {
+            check(right[right[p]] != null)
+            check(boards[me][own][p] == empty)
+            check(boards[me][own][right[p]] == empty)
+            check(boards[me][own][right[right[p]]] == empty)
+            boards[me][own][p] = cruiser
+            boards[me][own][right[p]] = cruiser
+            boards[me][own][right[right[p]]] = cruiser
+            $ p
+        }
+    }
+    player = keeper
+
+    // submarine
+    player = me
+    branch {
+        $ V
+        forall p:Position {
+            check(down[down[p]] != null)
+            check(boards[me][own][p] == empty)
+            check(boards[me][own][down[p]] == empty)
+            check(boards[me][own][down[down[p]]] == empty)
+            boards[me][own][p] = submarine
+            boards[me][own][down[p]] = submarine
+            boards[me][own][down[down[p]]] = submarine
+            $ p
+        }
+    } or {
+        $ H
+        forall p:Position {
+            check(right[right[p]] != null)
+            check(boards[me][own][p] == empty)
+            check(boards[me][own][right[p]] == empty)
+            check(boards[me][own][right[right[p]]] == empty)
+            boards[me][own][p] = submarine
+            boards[me][own][right[p]] = submarine
+            boards[me][own][right[right[p]]] = submarine
+            $ p
+        }
+    }
+    player = keeper
+
+    // destroyer
+    player = me
+    branch {
+        $ V
+        forall p:Position {
+            check(down[p] != null)
+            check(boards[me][own][p] == empty)
+            check(boards[me][own][down[p]] == empty)
+            boards[me][own][p] = destroyer
+            boards[me][own][down[p]] = destroyer
+            $ p
+        }
+    } or {
+        $ H
+        forall p:Position {
+            check(right[p] != null)
+            check(boards[me][own][p] == empty)
+            check(boards[me][own][right[p]] == empty)
+            boards[me][own][p] = destroyer
+            boards[me][own][right[p]] = destroyer
+            $ p
+        }
+    }
+    player = keeper
+}
+
+graph turn(me: Player) {
+    player = me
+
+    // choose position to shoot
+    forall p:Position {
+        check(p != null)
+        check(boards[me][opp][p] == empty)
+        position = p
+        $ p
+    }
+
+    player = keeper
+    // keeper discovers part of opponent's board
+    branch { // mark as `miss` if empty...
+        check(boards[op[me]][own][position] == empty)
+        boards[me][opp][position] = miss
+        $ M
+    } or { // ...or mark type of ship if hit
+        check(boards[op[me]][own][position] == carrier)
+        boards[me][opp][position] = miss
+        hits[me] = inc(hits[me])
+        $ CA
+    } or {
+        check(boards[op[me]][own][position] == battleship)
+        boards[me][opp][position] = miss
+        hits[me] = inc(hits[me])
+        $ BS
+    } or {
+        check(boards[op[me]][own][position] == cruiser)
+        boards[me][opp][position] = miss
+        hits[me] = inc(hits[me])
+        $ CR
+    } or {
+        check(boards[op[me]][own][position] == submarine)
+        boards[me][opp][position] = miss
+        hits[me] = inc(hits[me])
+        $ SM
+    } or {
+        check(boards[op[me]][own][position] == destroyer)
+        boards[me][opp][position] = miss
+        hits[me] = inc(hits[me])
+        $ DS
+    }
+
+    // end game after sinking all ships (17 hits)
+    if hits[me] == N(17) {
+        goals[me] = 100
+        goals[op[me]] = 0
+        end()
+    }
+}
+
+graph rules() {
+    place_ships(white)
+    place_ships(black)
+    // trun on full visibility...
+    visible[white] = 1
+    visible[black] = 1
+    // ...and start the game
+    loop {
+        turn(white)
+        turn(black)
+    }
+}
