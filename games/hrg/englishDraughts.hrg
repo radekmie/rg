@@ -3,47 +3,74 @@
 domain Piece = empty | white_pawn | white_king | black_pawn | black_king | border
 domain Player = white | black
 domain Score = 50 | 0 | 100
-domain Position = null | V(X, Y) where X in 0..7, Y in 0..7
+//domain Position = null | V(X, Y) where X in 0..7, Y in 0..7
 domain Stagnation = S(X) where X in 0..50
 domain Bool = 0 | 1
 
-left : Position -> Position
-left(null) = null
-left(V(0, _)) = null
-left(V(X, Y)) = V(X - 1, Y)
+domain Position =
+  V(X,Y) where X in {0,2,4,6}, Y in {0,2,4,6} |
+  V(X,Y) where X in {1,3,5,7}, Y in {1,3,5,7}
+domain PositionOrNull = null | Position
 
-right : Position -> Position
-right(null) = null
-right(V(7, _)) = null
-right(V(X, Y)) = V(X + 1, Y)
+// left : Position -> Position
+// left(null) = null
+// left(V(0, _)) = null
+// left(V(X, Y)) = V(X - 1, Y)
 
-up : Position -> Position
-up(null) = null
-up(V(_, 0)) = null
-up(V(X, Y)) = V(X, Y - 1)
+// right : Position -> Position
+// right(null) = null
+// right(V(7, _)) = null
+// right(V(X, Y)) = V(X + 1, Y)
 
-down : Position -> Position
-down(null) = null
-down(V(_, 7)) = null
-down(V(X, Y)) = V(X, Y + 1)
+// up : Position -> Position
+// up(null) = null
+// up(V(_, 0)) = null
+// up(V(X, Y)) = V(X, Y - 1)
 
-upLeft : Position -> Position
-upLeft(P) = up(left(P))
-upRight : Position -> Position
-upRight(P) = up(right(P))
-downLeft : Position -> Position
-downLeft(P) = down(left(P))
-downRight : Position -> Position
-downRight(P) = down(right(P))
+// down : Position -> Position
+// down(null) = null
+// down(V(_, 7)) = null
+// down(V(X, Y)) = V(X, Y + 1)
 
-fwd_direction : Player -> Position -> Position
-fwd_direction(white) = down
-fwd_direction(black) = up
+// upLeft : Position -> Position
+// upLeft(P) = up(left(P))
+// upRight : Position -> Position
+// upRight(P) = up(right(P))
+// downLeft : Position -> Position
+// downLeft(P) = down(left(P))
+// downRight : Position -> Position
+// downRight(P) = down(right(P))
+upLeft : PositionOrNull -> PositionOrNull
+upLeft(null) = null
+upLeft(V(X, Y)) = if X == 0 || Y == 0 then null else V(X - 1, Y - 1)
+upRight : PositionOrNull -> PositionOrNull
+upRight(null) = null
+upRight(V(X, Y)) = if X == 7 || Y == 0 then null else V(X + 1, Y - 1)
+downLeft : PositionOrNull -> PositionOrNull
+downLeft(null) = null
+downLeft(V(X, Y)) = if X == 0 || Y == 7 then null else V(X - 1, Y + 1)
+downRight : PositionOrNull -> PositionOrNull
+downRight(null) = null
+downRight(V(X, Y)) = if X == 7 || Y == 7 then null else V(X + 1, Y + 1)
 
-fwdLeft : Player -> Position -> Position
+topLine : PositionOrNull -> Bool
+topLine(V(X,Y)) = if Y == 0 then 1 else 0
+topLine(null) = 0
+bottomLine : PositionOrNull -> Bool
+bottomLine(V(X,Y)) = if Y == 7 then 1 else 0
+bottomLine(null) = 0
+promotionLine : Player -> PositionOrNull -> Bool
+promotionLine(white) = bottomLine
+promotionLine(black) = topLine
+
+// fwd_direction : Player -> Position -> Position
+// fwd_direction(white) = down
+// fwd_direction(black) = up
+
+fwdLeft : Player -> PositionOrNull -> PositionOrNull
 fwdLeft(white) = downLeft
 fwdLeft(black) = upLeft
-fwdRight : Player -> Position -> Position
+fwdRight : Player -> PositionOrNull -> PositionOrNull
 fwdRight(white) = downRight
 fwdRight(black) = upRight
 
@@ -72,7 +99,7 @@ increment(S(X)) = if X < 20 then S(X + 1) else S(X)
 compare : Stagnation -> Stagnation -> Bool
 compare(S(X), S(Y)) = if X < Y then 0 else 1
 
-board : Position -> Piece = {
+board : PositionOrNull -> Piece = {
   V(X, Y) = 
     if (X + Y) % 2 == 0 && Y < 3 then white_pawn
     else if (X + Y) % 2 == 0 && Y > 4 then black_pawn
@@ -81,9 +108,9 @@ board : Position -> Piece = {
     null = border
 }
 me : Player = white
-position : Position
-move_vertical_direction: Position -> Position
-move_horizontal_direction: Position -> Position
+position : PositionOrNull
+move_vertical_direction: PositionOrNull -> PositionOrNull
+move_horizontal_direction: PositionOrNull -> PositionOrNull
 stagnation : Stagnation = S(0)
 
 graph pawn_capture_available_at_position() {
@@ -222,12 +249,11 @@ graph move_pawn_normal() {
     position = p
     $ p
   }
-  position = fwd_direction(me)(position)
   branch {
-    position = left(position)
+    position = fwdLeft(me)(position)
     $ L_EMPTY
   } or {
-    position = right(position)
+    position = fwdRight(me)(position)
     $ R_EMPTY
   }
   check(board[position] == empty)
@@ -268,27 +294,23 @@ graph move_pawn_capture() {
     branch {
       $ L_TAKES    
       // position is now on enemy piece
-      position = fwd_direction(me)(position)
-      position = left(position)
+      position = fwdLeft(me)(position)
       // confirm we are on the board and on the enemy piece
       check(piece_color(board[position]) == opponent(me))
       // remove that enemy piece
       board[position] = empty
       // go diagonally in the move direction
-      position = fwd_direction(me)(position)
-      position = left(position)
+      position = fwdLeft(me)(position)
     } or {
       $ R_TAKES
       // position is now on enemy piece
-      position = fwd_direction(me)(position)
-      position = right(position)
+      position = fwdRight(me)(position)
       // confirm we are on the board and on the enemy piece
       check(piece_color(board[position]) == opponent(me))
       // remove that enemy piece
       board[position] = empty
       // go diagonally in the move direction
-      position = fwd_direction(me)(position)
-      position = right(position)
+      position = fwdRight(me)(position)
     }
 
     // confirm we land behind the enemy piece on an empty tile
@@ -402,7 +424,7 @@ graph move() {
       move_pawn_normal()
       board[position] = my_pawn(me)
       // Promotion
-      if fwd_direction(me)(position) == null {
+      if promotionLine(me)(position) == 1 {
         board[position] = my_king(me)
       }
       stagnation = S(0)
@@ -416,7 +438,7 @@ graph move() {
       move_pawn_capture()
       board[position] = my_pawn(me)
       // Promotion
-      if fwd_direction(me)(position) == null {
+      if promotionLine(me)(position) == 1 {
         board[position] = my_king(me)
       }
     } or {
