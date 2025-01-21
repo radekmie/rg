@@ -22,8 +22,11 @@ impl Game<Id> {
             }
         }
 
-        self.constants
-            .extend(new_constants.into_iter().map(|(constant, _, _)| constant));
+        for (constant, _, _) in new_constants {
+            if !self.constants.contains(&constant) {
+                self.constants.push(constant);
+            }
+        }
 
         Ok(())
     }
