@@ -7,6 +7,7 @@ type BindingAssignments<Id> = BTreeMap<Id, (Arc<Edge<Id>>, Id)>;
 type EdgesWithIdx<'a, Id> = BTreeSet<(usize, &'a Arc<Edge<Id>>)>;
 type Id = Arc<str>;
 type MappingEntry<Id> = (Id, Arc<Type<Id>>, Id);
+type RenameSkip = (Vec<usize>, usize);
 
 impl Game<Id> {
     pub fn merge_bindings(&mut self) -> Result<(), Error<Arc<str>>> {
@@ -16,9 +17,12 @@ impl Game<Id> {
 
     fn merge_bindings_step(&mut self) -> bool {
         let mut changed = false;
-        while let Some((simple_path, to_rename, (bind, type_, orig_bind))) = self.find_to_join() {
+        while let Some((simple_path, (to_rename, to_skip), (bind, type_, orig_bind))) =
+            self.find_to_join()
+        {
             changed = true;
             let mapping = BTreeMap::from([(bind.clone(), (orig_bind.clone(), type_.clone()))]);
+            Arc::make_mut(&mut self.edges[to_skip]).skip();
             for idx in to_rename {
                 self.edges[idx] = Arc::from(self.edges[idx].rename_variables(&mapping));
             }
@@ -38,7 +42,7 @@ impl Game<Id> {
         changed
     }
 
-    fn find_to_join(&self) -> Option<(Vec<usize>, Vec<usize>, MappingEntry<Id>)> {
+    fn find_to_join(&self) -> Option<(Vec<usize>, RenameSkip, MappingEntry<Id>)> {
         let prev_edges = self.prev_edges();
         let next_edges = self.next_edges_with_idx();
         let binding_assignments = self.analyse::<ReachingBindingAssignments>(true);
@@ -48,7 +52,7 @@ impl Game<Id> {
                 continue;
             }
             for (bind, type_) in edge.rhs.bindings() {
-                let Some((simple_path, mut to_rename, orig_bind)) = self.try_this(
+                let Some((simple_path, mut to_rename, orig_bind)) = self.try_joinging_binds(
                     edge,
                     (bind, type_),
                     &prev_edges,
@@ -63,7 +67,7 @@ impl Game<Id> {
 
                 return Some((
                     simple_path,
-                    to_rename,
+                    (to_rename, edge_idx),
                     ((*bind).clone(), (*type_).clone(), orig_bind),
                 ));
             }
@@ -72,7 +76,7 @@ impl Game<Id> {
         None
     }
 
-    fn try_this<'a>(
+    fn try_joinging_binds<'a>(
         &'a self,
         edge: &'a Arc<Edge<Id>>,
         (bind, type_): (&'a Id, &'a Arc<Type<Id>>),
@@ -216,7 +220,7 @@ mod test {
         a, b(bind: Coord): bind != 1;
         b(bind: Coord), c(bind: Coord): posX = bind;
         c(bind: Coord), d(bind: Coord): ;
-        d(bind: Coord), e(bind: Coord): Coord(bind) == posX;
+        d(bind: Coord), e(bind: Coord): ;
         e(bind: Coord), f: $ bind;
         f, end: ;"
     );
