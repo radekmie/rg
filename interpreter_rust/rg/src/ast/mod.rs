@@ -1627,11 +1627,12 @@ impl Pragma<Arc<str>> {
                 .iter()
                 .map(|mapping| node.substitute_bindings(mapping))
                 .collect::<BTreeSet<_>>();
-            assert_eq!(
-                node_variants.len(),
-                1,
-                "Cannot `substitute_bindings_mut` of a `Pragma` with bindings in `node`."
-            );
+
+            if node_variants.len() != 1 {
+                // Cannot `substitute_bindings_mut` of a `Pragma` with bindings in `node`.
+                return None;
+            }
+
             *node = node_variants.pop_first().unwrap();
         };
 
@@ -1640,11 +1641,12 @@ impl Pragma<Arc<str>> {
                 .iter()
                 .map(|mapping| lhs.substitute_bindings(mapping))
                 .collect::<BTreeSet<_>>();
-            assert_eq!(
-                lhs_variants.len(),
-                1,
-                "Cannot `substitute_bindings_mut` of a `Pragma` with bindings in `lhs`."
-            );
+
+            if lhs_variants.len() != 1 {
+                // Cannot `substitute_bindings_mut` of a `Pragma` with bindings in `lhs`.
+                return None;
+            }
+
             *lhs = lhs_variants.pop_first().unwrap();
         };
 
