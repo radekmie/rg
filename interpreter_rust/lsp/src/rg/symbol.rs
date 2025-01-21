@@ -158,10 +158,23 @@ impl Symbols {
                         match (left_param_idx, right_param_idx) {
                             (Some(left_param_idx), Some(right_param_idx)) => {
                                 if left_param_idx != right_param_idx {
-                                    let right_params =
-                                        self.edge_params[right_param_idx].owners.clone();
-                                    self.edge_params[left_param_idx].owners.extend(right_params);
-                                    self.edge_params.remove(right_param_idx);
+                                    let left_span = self.edge_params[left_param_idx].param.span();
+                                    let right_span = self.edge_params[right_param_idx].param.span();
+                                    if left_span < right_span {
+                                        let right_params =
+                                            self.edge_params[right_param_idx].owners.clone();
+                                        self.edge_params[left_param_idx]
+                                            .owners
+                                            .extend(right_params);
+                                        self.edge_params.remove(right_param_idx);
+                                    } else {
+                                        let left_params =
+                                            self.edge_params[left_param_idx].owners.clone();
+                                        self.edge_params[right_param_idx]
+                                            .owners
+                                            .extend(left_params);
+                                        self.edge_params.remove(left_param_idx);
+                                    }
                                 }
                             }
                             (Some(left_param_idx), None) => {
