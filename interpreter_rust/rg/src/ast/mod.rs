@@ -1630,7 +1630,7 @@ impl Pragma<Arc<str>> {
 
             if node_variants.len() != 1 {
                 // Cannot `substitute_bindings_mut` of a `Pragma` with bindings in `node`.
-                return None;
+                return Some(vec![]);
             }
 
             *node = node_variants.pop_first().unwrap();
@@ -1644,7 +1644,7 @@ impl Pragma<Arc<str>> {
 
             if lhs_variants.len() != 1 {
                 // Cannot `substitute_bindings_mut` of a `Pragma` with bindings in `lhs`.
-                return None;
+                return Some(vec![]);
             }
 
             *lhs = lhs_variants.pop_first().unwrap();
