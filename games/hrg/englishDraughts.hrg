@@ -108,130 +108,111 @@ board : PositionOrNull -> Piece = {
     null = border
 }
 me : Player = white
-position : PositionOrNull
+pos : PositionOrNull
 move_vertical_direction: PositionOrNull -> PositionOrNull
 move_horizontal_direction: PositionOrNull -> PositionOrNull
 stagnation : Stagnation = S(0)
 
 graph pawn_capture_available_at_position() {
   branch {
-    check(piece_color(board[fwdLeft(me)(position)]) == opponent(me))
-    position = fwdLeft(me)(fwdLeft(me)(position))
+    pos = fwdLeft(me)(pos)
+    check(piece_color(board[pos]) == opponent(me))
+    check(board[fwdLeft(me)(pos)] == empty)
   } or {
-    check(piece_color(board[fwdRight(me)(position)]) == opponent(me))
-    position = fwdRight(me)(fwdRight(me)(position))
+    pos = fwdRight(me)(pos)
+    check(piece_color(board[pos]) == opponent(me))
+    check(board[fwdRight(me)(pos)] == empty)
   }
-  check(board[position] == empty)
 }
-graph pawn_capture_available() {
-  forall p : Position {
-    check(board[p] == my_pawn(me))
-    position = p
-  }
-  pawn_capture_available_at_position()
-}
-
 graph king_capture_available_at_position() {
   branch {
-    check(piece_color(board[upLeft(position)]) == opponent(me))
-    position = upLeft(upLeft(position))
-    check(board[position] == empty)
+    check(piece_color(board[upLeft(pos)]) == opponent(me))
+    check(board[upLeft(upLeft(pos))] == empty)
   } or {
-    check(piece_color(board[upRight(position)]) == opponent(me))
-    position = upRight(upRight(position))
-    check(board[position] == empty)
+    check(piece_color(board[upRight(pos)]) == opponent(me))
+    check(board[upRight(upRight(pos))] == empty)
   } or {
-    check(piece_color(board[downLeft(position)]) == opponent(me))
-    position = downLeft(downLeft(position))
-    check(board[position] == empty)
+    check(piece_color(board[downLeft(pos)]) == opponent(me))
+    check(board[downLeft(downLeft(pos))] == empty)
   } or {
-    check(piece_color(board[downRight(position)]) == opponent(me))
-    position = downRight(downRight(position))
-    check(board[position] == empty)
+    check(piece_color(board[downRight(pos)]) == opponent(me))
+    check(board[downRight(downRight(pos))] == empty)
   }
-}
-graph king_capture_available() {
-  forall p : Position {
-    check(board[p] == my_king(me))
-    position = p
-  }
-  king_capture_available_at_position()
 }
 graph capture_available() {
   forall p : Position {
-    position = p
+    pos = p
   }
   branch {
-    check(board[position] == my_pawn(me))
+    check(board[pos] == my_pawn(me))
     pawn_capture_available_at_position()
   } or {
-    check(board[position] == my_king(me))
+    check(board[pos] == my_king(me))
     king_capture_available_at_position()
   }
 }
 
-
 graph pawn_normal_move_available() {
   forall p : Position {
     check(board[p] == my_pawn(me))
-    position = p
+    pos = p
   }
   branch {
-    position = fwdLeft(me)(position)
+    pos = fwdLeft(me)(pos)
   } or {
-    position = fwdRight(me)(position)
+    pos = fwdRight(me)(pos)
   }
-  check(board[position] == empty)
+  check(board[pos] == empty)
 }
 
 graph king_normal_move_available() {
   forall p : Position {
     check(board[p] == my_king(me))
-    position = p
+    pos = p
   }
   branch {
-    position = upLeft(position)
+    pos = upLeft(pos)
   } or {
-    position = upRight(position)
+    pos = upRight(pos)
   } or {
-    position = downLeft(position)
+    pos = downLeft(pos)
   } or {
-    position = downRight(position)
+    pos = downRight(pos)
   }
-  check(board[position] == empty)
+  check(board[pos] == empty)
 }
 
 graph move_available() {
   forall p : Position {
-    position = p
+    pos = p
   }
   branch {
-    check(board[position] == my_pawn(me))
+    check(board[pos] == my_pawn(me))
     branch {
       branch {
-        position = fwdLeft(me)(position)
+        pos = fwdLeft(me)(pos)
       } or {
-        position = fwdRight(me)(position)
+        pos = fwdRight(me)(pos)
       }
-      check(board[position] == empty)
+      check(board[pos] == empty)
     } or {
-      pawn_capture_available_at_position()      
+      pawn_capture_available_at_position()
     }
   } or {
-    check(board[position] == my_king(me))
+    check(board[pos] == my_king(me))
     branch {
       branch {
-        position = upLeft(position)
+        pos = upLeft(pos)
       } or {
-        position = upRight(position)
+        pos = upRight(pos)
       } or {
-        position = downLeft(position)
+        pos = downLeft(pos)
       } or {
-        position = downRight(position)
+        pos = downRight(pos)
       }
-      check(board[position] == empty)
+      check(board[pos] == empty)
     } or {
-      king_capture_available_at_position()      
+      king_capture_available_at_position()
     }
   }
 }
@@ -240,65 +221,55 @@ graph move_pawn_normal() {
   forall p : Position {
     check(board[p] == my_pawn(me))
     board[p] = empty
-    position = p
+    pos = p
     $ p
   }
   branch {
-    position = fwdLeft(me)(position)
+    pos = fwdLeft(me)(pos)
     $ L_EMPTY
   } or {
-    position = fwdRight(me)(position)
+    pos = fwdRight(me)(pos)
     $ R_EMPTY
   }
-  check(board[position] == empty)
-  if promotionLine(me)(position) == 1 {
-    board[position] = my_king(me)
-  } else {
-    board[position] = my_pawn(me)
-  }
+  check(board[pos] == empty)
 }
 
 graph move_pawn_capture() {
   forall p : Position {
     check(board[p] == my_pawn(me))
     board[p] = empty
-    position = p
+    pos = p
     $ p
   }
   loop {
-     branch {
-      position = fwdLeft(me)(position)
-      check(piece_color(board[position]) == opponent(me))
-      // remove that enemy piece
-      board[position] = empty
-      // go diagonally in the move direction
-      position = fwdLeft(me)(position)
+    branch {
       $ L_TAKES    
-    } or {
       // position is now on enemy piece
-      position = fwdRight(me)(position)
+      pos = fwdLeft(me)(pos)
       // confirm we are on the board and on the enemy piece
-      check(piece_color(board[position]) == opponent(me))
+      check(piece_color(board[pos]) == opponent(me))
       // remove that enemy piece
-      board[position] = empty
+      board[pos] = empty
       // go diagonally in the move direction
-      position = fwdRight(me)(position)
+      pos = fwdLeft(me)(pos)
+    } or {
       $ R_TAKES
+      // position is now on enemy piece
+      pos = fwdRight(me)(pos)
+      // confirm we are on the board and on the enemy piece
+      check(piece_color(board[pos]) == opponent(me))
+      // remove that enemy piece
+      board[pos] = empty
+      // go diagonally in the move direction
+      pos = fwdRight(me)(pos)
     }
 
     // confirm we land behind the enemy piece on an empty tile
-    check(board[position] == empty)
-
+    check(board[pos] == empty)
 
     if not(reachable(pawn_capture_available_at_position())) {
       break()
     }
-  }
-  
-  if promotionLine(me)(position) == 1 {
-    board[position] = my_king(me)
-  } else {
-    board[position] = my_pawn(me)
   }
 }
 
@@ -306,175 +277,126 @@ graph move_king_normal() {
   forall p : Position {
     check(board[p] == my_king(me))
     board[p] = empty
-    position = p
+    pos = p
     $ p
   }
   branch {
     $ UL_EMPTY
-    position = upLeft(position)
+    pos = upLeft(pos)
   } or {
     $ UR_EMPTY
-    position = upRight(position)
+    pos = upRight(pos)
   } or {
     $ DL_EMPTY
-    position = downLeft(position)
+    pos = downLeft(pos)
   } or {
     $ DR_EMPTY
-    position = downRight(position)
+    pos = downRight(pos)
   }
-  check(board[position] == empty)
-  board[position] = my_king(me)
+  check(board[pos] == empty)
 }
 
 graph move_king_capture() {
   forall p : Position {
     check(board[p] == my_king(me))
     board[p] = empty
-    position = p
+    pos = p
     $ p
   }
   loop {
     branch {
       // position is now on enemy piece
-      position = upLeft(position)
+      pos = upLeft(pos)
       // confirm we are on the board and on the enemy piece
-      check(piece_color(board[position]) == opponent(me))
+      check(piece_color(board[pos]) == opponent(me))
       // remove that enemy piece
-      board[position] = empty
+      board[pos] = empty
       // go diagonally in the move direction
-      position = upLeft(position)
+      pos = upLeft(pos)
       $ UL_TAKES
     } or {
       // position is now on enemy piece
-      position = upRight(position)
+      pos = upRight(pos)
       // confirm we are on the board and on the enemy piece
-      check(piece_color(board[position]) == opponent(me))
+      check(piece_color(board[pos]) == opponent(me))
       // remove that enemy piece
-      board[position] = empty
+      board[pos] = empty
       // go diagonally in the move direction
-      position = upRight(position)
+      pos = upRight(pos)
       $ UR_TAKES
     } or {
       // position is now on enemy piece
-      position = downLeft(position)
+      pos = downLeft(pos)
       // confirm we are on the board and on the enemy piece
-      check(piece_color(board[position]) == opponent(me))
+      check(piece_color(board[pos]) == opponent(me))
       // remove that enemy piece
-      board[position] = empty
+      board[pos] = empty
       // go diagonally in the move direction
-      position = downLeft(position)
+      pos = downLeft(pos)
       $ DL_TAKES
     } or {
       // position is now on enemy piece
-      position = downRight(position)
+      pos = downRight(pos)
       // confirm we are on the board and on the enemy piece
-      check(piece_color(board[position]) == opponent(me))
+      check(piece_color(board[pos]) == opponent(me))
       // remove that enemy piece
-      board[position] = empty
+      board[pos] = empty
       // go diagonally in the move direction
-      position = downRight(position)
+      pos = downRight(pos)
       $ DR_TAKES
     }
-    // // position is now on enemy piece
-    // position = move_vertical_direction(position)
-    // position = move_horizontal_direction(position)
-
-    // // confirm we are on the board and on the enemy piece
-    // check(piece_color(board[position]) == opponent(me))
-
-    // // remove that enemy piece
-    // board[position] = empty
-
-    // // go diagonally in the move direction
-    // position = move_vertical_direction(position)
-    // position = move_horizontal_direction(position)
 
     // confirm we land behind the enemy piece on an empty tile
-    check(board[position] == empty)
+    check(board[pos] == empty)
 
     if not(reachable(king_capture_available_at_position())) {
       break()
     }
   }
-  board[position] = my_king(me)
 }
 
 graph move() {
   if not(reachable(capture_available())) {
     branch {
       move_pawn_normal()
+      if promotionLine(me)(pos) == 1 {
+        board[pos] = my_king(me)
+      } else {
+        board[pos] = my_pawn(me)
+      }
       stagnation = S(0)
     } or {
       move_king_normal()
+      board[pos] = my_king(me)
       stagnation = increment(stagnation)
     }
   } else {
     branch {
       move_pawn_capture()
+      if promotionLine(me)(pos) == 1 {
+        board[pos] = my_king(me)
+      } else {
+        board[pos] = my_pawn(me)
+      }
     } or {
       move_king_capture()
+      board[pos] = my_king(me)
     } 
     stagnation = S(0)
   }
 }
-graph moveNormal() {
-  branch {
-    move_pawn_normal()
-    stagnation = S(0)
-  } or {
-    move_king_normal()
-    stagnation = increment(stagnation)
-  }
-}
-graph moveCapture() {
-  branch {
-    move_pawn_capture()
-  } or {
-    move_king_capture()
-  } 
-  stagnation = S(0)
-}
-
-
 
 graph turn() {
-  // if not(reachable(capture_available())) {
-  //   if not(reachable(pawn_normal_move_available())) && not(reachable(king_normal_move_available())) {
-  //     goals[opponent(me)] = 100
-  //     goals[me] = 0
-  //     end()
-  //   }
-  //    if compare(stagnation, S(20)) == 1 {
-  //   end()
-  // } player = me
-  //   moveNormal()
-  // } else {
-  // if compare(stagnation, S(20)) == 1 {
-  //   end()
-  // }    player = me
-  //   moveCapture()
-  // }
-  
-  
-  // if not(reachable(capture_available())) {
-  //   player = me
-  //   branch {
-  //     move_pawn_normal()
-  //   } or {
-  //     move_king_normal()
-  //   }
-  // } else {
-  //   player = me
-  //   moveCapture()
-  // }
   player = me
   move()
   player = keeper
   me = opponent(me)
-
   if not(reachable(move_available())) {
     goals[opponent(me)] = 100
     goals[me] = 0
+    end()
+  }
+  if compare(stagnation, S(20)) == 1 {
     end()
   }
 }
