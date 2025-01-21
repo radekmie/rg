@@ -1,0 +1,96 @@
+// Twenty-one card game
+// The player chooses whether to continue to draw a card or stop. It can also decide whether an ace scores 1 or 11.
+// The score is 0, if the sum of the card values exceeds 21
+// Otherwise, it is equal to the sum of the card values
+
+domain Player = thePlayer
+domain Score = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21
+domain Card = C(R, C) where R in { 2, 3, 4, 5, 6, 7, 8, 9, 10, j, q, k, a }, C in { s, d, c, h }
+domain Int = I(V) where V in 0..52
+domain Bool = 0 | 1
+
+isAce: Card -> Bool
+isAce(C(R, _)) = if R == a then 1 else 0
+
+greaterS: Score -> Score -> Bool
+greaterS(A, B) = if A > B then 1 else 0
+
+greater: Int -> Int -> Bool
+greater(I(A), I(B)) = if A > B then 1 else 0
+equal: Int -> Int -> Bool
+equal(I(A), I(B)) = if A == B then 1 else 0
+add: Int -> Int -> Int
+add(I(A), I(B)) = if A + B > 52 then I(52) else I(A+B)
+
+cardVal : Card -> Int
+cardVal(C(2, _)) = I(2)
+cardVal(C(3, _)) = I(3)
+cardVal(C(4, _)) = I(4)
+cardVal(C(5, _)) = I(5)
+cardVal(C(6, _)) = I(6)
+cardVal(C(7, _)) = I(7)
+cardVal(C(8, _)) = I(8)
+cardVal(C(9, _)) = I(9)
+cardVal(C(_, _)) = I(10)
+
+unwrap : Int -> Score
+unwrap(I(V)) = if V > 0 then 0 else V
+
+domain Choice = STOP | CONTINUE
+
+remainingDeck : Card -> Bool = {:1}
+card : Card
+choice : Choice
+score : Int = I(0)
+
+graph rules() {
+  loop {
+    player = thePlayer
+    branch {
+      choice = CONTINUE
+      $ CONTINUE
+    } or {
+      choice = STOP
+      $ STOP
+    }
+
+    player = keeper
+    if choice == STOP {
+      goals[thePlayer] = unwrap(score)
+      end()
+    }
+
+    player = random
+    forall c:Card {
+      $ c
+      check(remainingDeck[c] == 1)
+      card = c
+    }
+
+    player = keeper
+    remainingDeck[card] = 0
+    if isAce(card) == 1 {
+      player = thePlayer
+      branch {
+        $ ONE
+        player = keeper
+        score = add(score,I(1))
+      } or {
+        $ ELEVEN
+        player = keeper
+        score = add(score,I(11))
+      }
+    } else {
+      score = add(score,cardVal(card))
+    }
+
+    if greater(score,I(21)) == 1 {
+      goals[thePlayer] = 0
+      end()
+    }
+    if equal(score,I(21)) == 1 {
+      goals[thePlayer] = 21
+      end()
+    }
+  }
+}
