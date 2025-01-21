@@ -10,7 +10,7 @@ pub use reachable_nodes::ReachableNodes;
 pub use reaching_assignments::ReachingAssignments;
 pub use reaching_binding_assignments::ReachingBindingAssignments;
 pub use reaching_definitions::ReachingDefinitions;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::sync::Arc;
 
 type Id = Arc<str>;
@@ -113,7 +113,6 @@ struct Worker<'a, A: Analysis + ?Sized> {
     ctx: A::Context,
     flow: &'a Flow<'a>,
     result: BTreeMap<Node<Id>, A::Domain>,
-    worklist: BTreeSet<&'a Node<Id>>,
 }
 
 impl<'a, A: Analysis + ?Sized> Worker<'a, A> {
@@ -124,19 +123,25 @@ impl<'a, A: Analysis + ?Sized> Worker<'a, A> {
     fn new(game: &'a Game<Arc<str>>, flow: &'a Flow<'a>) -> Self {
         let ctx = A::get_context(game);
         let result = BTreeMap::from([(Flow::entry(), A::extreme(game, &ctx))]);
-        Worker {
-            ctx,
-            flow,
-            result,
-            worklist: flow.nodes.clone(),
-        }
+        Worker { ctx, flow, result }
     }
 
     fn run(&mut self) {
-        while let Some(node) = self.worklist.pop_first() {
+        let mut worklist_set = self.flow.nodes.clone();
+        let mut worklist_vec: VecDeque<_> = worklist_set.iter().cloned().collect();
+        let mut transfer_limit = 10 * worklist_vec.len();
+        while let Some(node) = worklist_vec.pop_front() {
+            worklist_set.remove(&node);
             if self.transfer(node) {
-                if let Some(next_nodes) = self.flow.next_nodes.get(node) {
-                    self.worklist.extend(next_nodes.iter());
+                for node in self.flow.next_nodes.get(node).into_iter().flatten() {
+                    if worklist_set.insert(node) {
+                        worklist_vec.push_back(node);
+                    }
+                }
+
+                transfer_limit -= 1;
+                if transfer_limit == 0 {
+                    break;
                 }
             }
         }

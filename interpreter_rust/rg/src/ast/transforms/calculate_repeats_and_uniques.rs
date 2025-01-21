@@ -289,6 +289,24 @@ mod test {
 
     test_transform!(
         calculate_repeats_and_uniques,
+        oware_double_loop,
+        "
+            begin, 151: ;
+            151, 152: toSow = board[currHole];
+            152, 153: board[currHole] = I__0;
+            153, 154: toSow != I__0;
+            153, end: toSow == I__0;
+            154, 156: currHole = nextHole[currHole];
+            156, 157: startSowing != currHole;
+            156, 153: startSowing == currHole;
+            157, 159: board[currHole] = incr[board[currHole]];
+            159, 153: toSow = decr[toSow];
+        ",
+        adds "@repeat 156 : currHole; @repeat 159 : board; @unique 151 152 153 154 157 begin end;"
+    );
+
+    test_transform!(
+        calculate_repeats_and_uniques,
         repeat_test,
         include_str!("../../../../../games/rg/repeatTest.rg"),
         adds "@repeat selectDir4 : pos; @unique begin end setScore win;"
