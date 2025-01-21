@@ -10,7 +10,7 @@ pub use reachable_nodes::ReachableNodes;
 pub use reaching_assignments::ReachingAssignments;
 pub use reaching_binding_assignments::ReachingBindingAssignments;
 pub use reaching_definitions::ReachingDefinitions;
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 type Id = Arc<str>;
@@ -127,22 +127,10 @@ impl<'a, A: Analysis + ?Sized> Worker<'a, A> {
     }
 
     fn run(&mut self) {
-        let mut worklist_set = self.flow.nodes.clone();
-        let mut worklist_vec: VecDeque<_> = worklist_set.iter().cloned().collect();
-        let mut transfer_limit = 10 * worklist_vec.len();
-        while let Some(node) = worklist_vec.pop_front() {
-            worklist_set.remove(&node);
+        let mut worklist = self.flow.nodes.clone();
+        while let Some(node) = worklist.pop_first() {
             if self.transfer(node) {
-                for node in self.flow.next_nodes.get(node).into_iter().flatten() {
-                    if worklist_set.insert(node) {
-                        worklist_vec.push_back(node);
-                    }
-                }
-
-                transfer_limit -= 1;
-                if transfer_limit == 0 {
-                    break;
-                }
+                worklist.extend(self.flow.next_nodes.get(node).into_iter().flatten());
             }
         }
     }

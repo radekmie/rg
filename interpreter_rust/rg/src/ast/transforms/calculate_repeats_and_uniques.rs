@@ -292,6 +292,7 @@ mod test {
         oware_double_loop,
         "
             begin, 151: ;
+            132, 151: startSowing = currHole;
             151, 152: toSow = board[currHole];
             152, 153: board[currHole] = I__0;
             153, 154: toSow != I__0;
@@ -302,7 +303,12 @@ mod test {
             157, 159: board[currHole] = incr[board[currHole]];
             159, 153: toSow = decr[toSow];
         ",
-        adds "@repeat 156 : currHole; @repeat 159 : board; @unique 151 152 153 154 157 begin end;"
+        adds "
+            @repeat 153 : board startSowing toSow;
+            @repeat 154 157 159 : board toSow;
+            @repeat 156 : board currHole toSow;
+            @unique 132 151 152 begin end;
+        "
     );
 
     test_transform!(

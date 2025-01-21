@@ -167,7 +167,9 @@ impl Analysis for ReachingAssignments {
         // If it was repeated in the previous node, it does not have to be
         // repeated here.
         for assignment in input.values_mut() {
-            assignment.is_repeated = false;
+            if !assignment.is_conflicting {
+                assignment.is_repeated = false;
+            }
         }
 
         input
