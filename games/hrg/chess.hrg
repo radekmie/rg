@@ -283,9 +283,11 @@ graph pawnMove() {
      branch {
        check(leftdir(pos) == en_passant_position)
        pos = pawn_direction(upleft, me)(pos)
+       $_EL
      } or {
        check(rightdir(pos) == en_passant_position)
        pos = pawn_direction(upright, me)(pos)
+       $_ER
      }
      showPos()
      board[pos] = myPawn(me)
@@ -298,9 +300,11 @@ graph queenMoves() {
   forall di: AllDir {
     repeat 8 {
       pos = all_direction(di)(pos)
+      $_Q
       branch {
         check(owner(board[pos]) == opponent(me))
         stagnation_counter = C(0)
+        $_C
         return()
       } or {
         check(board[pos] == empty)
@@ -325,9 +329,11 @@ graph rookMoves() {
   forall di: RookDir {
     repeat 8 {
       pos = all_direction(di)(pos)
+      $_R
       branch {
         check(owner(board[pos]) == opponent(me))
         stagnation_counter = C(0)
+        $_C
         return()
       } or {
         check(board[pos] == empty)
@@ -371,9 +377,11 @@ graph bishopMoves() {
   forall di: BishopDir {
     repeat 8 {
       pos = all_direction(di)(pos)
+      $_B
       branch {
         check(owner(board[pos]) == opponent(me))
         stagnation_counter = C(0)
+        $_C
         return()
       } or {
         check(board[pos] == empty)
@@ -405,6 +413,7 @@ graph knightMove() {
   } or {
     check(owner(board[pos]) == opponent(me))
     stagnation_counter = C(0)
+    $_C
   }
   
   showPos()
@@ -424,6 +433,7 @@ graph kingStandardMove() {
   } or {
     check(owner(board[pos]) == opponent(me))
     stagnation_counter = C(0)
+    $_C
   }
   board[pos] = myKing(me)
 }
