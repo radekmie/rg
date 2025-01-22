@@ -283,13 +283,9 @@ graph pawnMove() {
      branch {
        check(leftdir(pos) == en_passant_position)
        pos = pawn_direction(upleft, me)(pos)
-       check(pos != null)
-       //check(pos == en_passant_position)
      } or {
        check(rightdir(pos) == en_passant_position)
        pos = pawn_direction(upright, me)(pos)
-       check(pos != null)
-       //check(pos == en_passant_position)
      }
      showPos()
      board[pos] = myPawn(me)
@@ -402,14 +398,13 @@ graph knightMove() {
   $ N
 
   forall di: KnightDir {
-    pos = knight_direction(di)(pos) 
-    branch {
-      check(board[pos] == empty)
-    } or {
-      check(owner(board[pos]) == opponent(me))
-      stagnation_counter = C(0)
-      $ di
-    }
+    pos = knight_direction(di)(pos)
+  }
+  branch {
+    check(board[pos] == empty)
+  } or {
+    check(owner(board[pos]) == opponent(me))
+    stagnation_counter = C(0)
   }
   
   showPos()
