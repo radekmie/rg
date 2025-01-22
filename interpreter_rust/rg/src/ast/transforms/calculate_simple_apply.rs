@@ -11,6 +11,7 @@ impl Game<Id> {
         let mut simple_paths = self.calculate_simple_paths();
         SimplePath::merge_all(&mut simple_paths);
         SimplePath::remove_invalid(&mut simple_paths);
+        SimplePath::remove_ambiguous(&mut simple_paths);
         SimplePath::propagate_exhaustiveness(&mut simple_paths);
 
         for simple_path in simple_paths {
@@ -390,6 +391,58 @@ impl SimplePath {
 
         for simple_path in simple_paths {
             simple_path.is_exhaustive &= simple_path.is_direct_from_player;
+        }
+    }
+
+    /// Remove multiple simple paths that start in one node and are ambiguous,
+    /// i.e., have tag bindings at the same tag position following the same tag
+    /// prefix.
+    fn remove_ambiguous(simple_paths: &mut Vec<Self>) {
+        for index in (0..simple_paths.len()).rev() {
+            if index >= simple_paths.len() {
+                continue;
+            }
+
+            let x = &simple_paths[index];
+            let indexes: Vec<_> = simple_paths
+                .iter()
+                .enumerate()
+                .filter(|(_, y)| y.node == x.node)
+                .map(|(index, _)| index)
+                .collect();
+            if indexes.len() == 1 {
+                continue;
+            }
+
+            let mut tagsets: Vec<_> = indexes
+                .iter()
+                .map(|index| &simple_paths[*index].tags)
+                .collect();
+
+            let mut ambiguous = false;
+            while let Some(x) = tagsets.pop() {
+                ambiguous |= tagsets.iter().any(|y| {
+                    for index in 0..(x.len().min(y.len())) {
+                        if x[index].type_.is_some() && y[index].type_.is_some() {
+                            return true;
+                        }
+
+                        if x[index].tag != y[index].tag {
+                            break;
+                        }
+                    }
+
+                    false
+                });
+            }
+
+            if !ambiguous {
+                continue;
+            }
+
+            for index in indexes.into_iter().rev() {
+                simple_paths.swap_remove(index);
+            }
         }
     }
 
