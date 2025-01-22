@@ -11,6 +11,7 @@ impl Game<Id> {
         let mut simple_paths = self.calculate_simple_paths();
         SimplePath::merge_all(&mut simple_paths);
         SimplePath::remove_invalid(&mut simple_paths);
+        SimplePath::propagate_exhaustiveness(&mut simple_paths);
 
         for simple_path in simple_paths {
             let pragma = simple_path.into_pragma();
@@ -26,7 +27,7 @@ impl Game<Id> {
     fn calculate_simple_paths(&self) -> Vec<SimplePath> {
         let next_edges = self.next_edges();
         let mut simple_paths = vec![];
-        'outer: for node in self.calculate_simple_paths_candidates() {
+        'outer: for (is_direct_from_player, node) in self.calculate_simple_paths_candidates() {
             let mut path_to_player = None;
             let mut paths_to_edges: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
             let mut paths_to_tags: BTreeMap<_, BTreeSet<(_, _, _)>> = BTreeMap::new();
@@ -85,11 +86,12 @@ impl Game<Id> {
             if let Some((path, assignments)) = path_to_player {
                 simple_paths.push(SimplePath {
                     assignments,
+                    is_direct_from_player,
                     is_exhaustive,
-                    is_player: true,
                     node: node.clone(),
                     path,
                     tags: vec![],
+                    to_player: true,
                 });
             }
 
@@ -123,11 +125,12 @@ impl Game<Id> {
                 if paths.is_empty() {
                     simple_paths_to_tags.push(SimplePath {
                         assignments,
+                        is_direct_from_player,
                         is_exhaustive,
-                        is_player: false,
                         node: node.clone(),
                         path,
                         tags: vec![PragmaTag { tag, type_ }],
+                        to_player: false,
                     });
                     continue;
                 }
@@ -227,11 +230,12 @@ impl Game<Id> {
 
                 simple_paths_to_tags.push(SimplePath {
                     assignments,
+                    is_direct_from_player,
                     is_exhaustive: true,
-                    is_player: false,
                     node: node.clone(),
                     path: vec![path.remove(0), path.pop().unwrap()],
                     tags: vec![PragmaTag { tag, type_ }],
+                    to_player: false,
                 });
             }
 
@@ -249,33 +253,47 @@ impl Game<Id> {
     }
 
     /// A set of `Node`s that can start a simple path.
-    fn calculate_simple_paths_candidates(&self) -> BTreeSet<Node<Id>> {
-        self.edges
-            .iter()
-            .filter_map(|edge| {
-                if edge.label.is_player_assignment() || edge.label.is_tag() {
-                    Some(&edge.rhs)
-                } else if let Label::Reachability { lhs, .. } = &edge.label {
-                    Some(lhs)
-                } else if edge.lhs.is_begin() {
-                    Some(&edge.lhs)
-                } else {
-                    None
+    fn calculate_simple_paths_candidates(&self) -> BTreeSet<(bool, Node<Id>)> {
+        let mut candidates = BTreeSet::new();
+        macro_rules! add_candidate {
+            ($is_direct_from_player:expr, $node:expr) => {
+                let mut key = ($is_direct_from_player, $node.clone());
+                if $is_direct_from_player {
+                    key.0 = false;
+                    candidates.remove(&key);
+                    key.0 = true;
                 }
-            })
-            .cloned()
-            .collect()
+                candidates.insert(key);
+            };
+        }
+
+        for edge in &self.edges {
+            if edge.lhs.is_begin() {
+                add_candidate!(true, &edge.lhs);
+            }
+
+            if edge.label.is_player_assignment() {
+                add_candidate!(true, &edge.rhs);
+            } else if edge.label.is_tag() {
+                add_candidate!(false, &edge.rhs);
+            } else if let Label::Reachability { lhs, .. } = &edge.label {
+                add_candidate!(false, lhs);
+            }
+        }
+
+        candidates
     }
 }
 
 #[derive(Clone, Eq, Ord, PartialEq, PartialOrd)]
 struct SimplePath {
     assignments: Vec<PragmaAssignment<Id>>,
+    is_direct_from_player: bool,
     is_exhaustive: bool,
-    is_player: bool,
     node: Node<Id>,
     path: Vec<Arc<Edge<Id>>>,
     tags: Vec<PragmaTag<Id>>,
+    to_player: bool,
 }
 
 impl SimplePath {
@@ -307,7 +325,7 @@ impl SimplePath {
     /// If there's no `player` assignment in the middle of the resulting path and
     /// if the merge will not get rid of any exhaustiveness.
     fn merge(&self, other: &Self) -> Option<Self> {
-        if !self.is_player
+        if !self.to_player
             && (!self.is_exhaustive || other.is_exhaustive)
             && self.path.last().map(|node| &node.rhs) == Some(&other.node)
         {
@@ -315,7 +333,7 @@ impl SimplePath {
             clone.assignments.extend_from_slice(&other.assignments);
             clone.tags.extend_from_slice(&other.tags);
             clone.path.extend_from_slice(&other.path);
-            clone.is_player |= other.is_player;
+            clone.to_player |= other.to_player;
             Some(clone)
         } else {
             None
@@ -344,6 +362,34 @@ impl SimplePath {
             if any_matched {
                 simple_paths.swap_remove(index_x);
             }
+        }
+    }
+
+    /// To be exhaustive, it has to follow another simple path _and_ be directly
+    /// following from the player assignment.
+    fn propagate_exhaustiveness(simple_paths: &mut [Self]) {
+        loop {
+            let mut changed = false;
+            for index in 0..simple_paths.len() {
+                if !simple_paths[index].is_direct_from_player {
+                    simple_paths[index].is_direct_from_player = simple_paths.iter().any(|y| {
+                        y.is_direct_from_player
+                            && y.path.last().unwrap().rhs == simple_paths[index].node
+                    });
+
+                    if simple_paths[index].is_direct_from_player {
+                        changed = true;
+                    }
+                }
+            }
+
+            if !changed {
+                break;
+            }
+        }
+
+        for simple_path in simple_paths {
+            simple_path.is_exhaustive &= simple_path.is_direct_from_player;
         }
     }
 
@@ -432,7 +478,7 @@ mod test {
             17, 12: $ index_2;
             12, end: ;
         ",
-        adds "@simpleApplyExhaustive 17 12 [index_2];"
+        adds "@simpleApply 17 12 [index_2];"
     );
 
     test_transform!(
@@ -450,7 +496,7 @@ mod test {
             17, 12: $ index_2;
             12, end: ;
         ",
-        adds "@simpleApplyExhaustive 17 12 [index_2];"
+        adds "@simpleApply 17 12 [index_2];"
     );
 
     test_transform!(
@@ -509,7 +555,7 @@ mod test {
         ",
         adds "
             @simpleApply begin end [] position = north[position], player = keeper;
-            @simpleApplyExhaustive shown end [] player = keeper;
+            @simpleApply shown end [] player = keeper;
         "
     );
 
@@ -525,7 +571,7 @@ mod test {
             show(p: Position), shown: $ p;
             shown, end: player = keeper;
         ",
-        adds "@simpleApplyExhaustive shown end [] player = keeper;"
+        adds "@simpleApply shown end [] player = keeper;"
     );
 
     test_transform!(
@@ -560,8 +606,8 @@ mod test {
             other, end: player = keeper;
         ",
         adds "
-            @simpleApplyExhaustive other end [] player = keeper;
-            @simpleApplyExhaustive shown end [] player = keeper;
+            @simpleApply other end [] player = keeper;
+            @simpleApply shown end [] player = keeper;
         "
     );
 
@@ -587,8 +633,8 @@ mod test {
         ",
         adds "
             @simpleApply shown end [y] player = keeper;
+            @simpleApply x5 end [] player = keeper;
             @simpleApplyExhaustive begin shown [p: Position] position = Position(p);
-            @simpleApplyExhaustive x5 end [] player = keeper;
         "
     );
 
@@ -606,7 +652,10 @@ mod test {
             215, 210: $ index_9;
             210, end: player = keeper;
         ",
-        adds "@simpleApplyExhaustive 215 end [index_9] player = keeper;"
+        adds "
+            @simpleApply 215 end [index_9] player = keeper;
+            @simpleApplyExhaustive begin 203 [] player = keeper;
+        "
     );
 
     test_transform!(
@@ -625,7 +674,7 @@ mod test {
             9(bind_Coord_3: Coord), 10: $ bind_Coord_3;
             10, end: player = keeper;
         ",
-        adds "@simpleApplyExhaustive 10 end [] player = keeper;"
+        adds "@simpleApply 10 end [] player = keeper;"
     );
 
     test_transform!(
@@ -644,7 +693,7 @@ mod test {
             9(bind_Coord_3: Coord), 10: $ bind_Coord_3;
             10, end: player = keeper;
         ",
-        adds "@simpleApplyExhaustive 10 end [] player = keeper;"
+        adds "@simpleApply 10 end [] player = keeper;"
     );
 
     test_transform!(
@@ -652,7 +701,8 @@ mod test {
         complex_1,
         include_str!("../../../../../games/rg/simpleApplyTest1.rg"),
         adds "
-            @simpleApplyExhaustive doneB preend [dummytag] player = PlayerOrSystem(keeper);
+            @simpleApply doneB preend [dummytag] player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive begin moveA [] player = PlayerOrSystem(A);
             @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrSystem(B);
             @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrSystem(B);
             @simpleApplyExhaustive preend end [] player = PlayerOrSystem(keeper);
@@ -664,6 +714,7 @@ mod test {
         complex_2,
         include_str!("../../../../../games/rg/simpleApplyTest2.rg"),
         adds "
+            @simpleApplyExhaustive begin moveA [] player = PlayerOrSystem(A);
             @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrSystem(B);
             @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrSystem(B);
             @simpleApplyExhaustive moveB preend [0, dummytag] goals[B] = Score(100), player = PlayerOrSystem(keeper);
@@ -677,9 +728,10 @@ mod test {
         complex_3,
         include_str!("../../../../../games/rg/simpleApplyTest3.rg"),
         adds "
+            @simpleApply moveB preend [1, dummytag] goals[B] = Score(100), player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive begin moveA [] player = PlayerOrSystem(A);
             @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrSystem(B);
             @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrSystem(B);
-            @simpleApply moveB preend [1, dummytag] goals[B] = Score(100), player = PlayerOrSystem(keeper);
             @simpleApplyExhaustive preend end [] player = PlayerOrSystem(keeper);
         "
     );
