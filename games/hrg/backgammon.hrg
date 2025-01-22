@@ -1,9 +1,3 @@
-// To whomever reads this:
-// This version of the backgammon is developed to work similarly to Ludii implementation
-// (Though Ludii is severly bugged)
-// I promised to deliver a version conforming to the official backgammon rules
-// This version is not yet the final one
-
 // Backgammon game
 // The rules are taken from
 // https://www.bkgm.com/rules.html
@@ -273,7 +267,6 @@ graph moveChecker(playerToMove: Player, moveToExecute: Dice) {
 }
 
 graph moveOrBearOff(playerToPerform: Player, roll: Dice) {
-
   branch {
     moveChecker(playerToPerform, roll)
   } or {
@@ -281,41 +274,93 @@ graph moveOrBearOff(playerToPerform: Player, roll: Dice) {
   }
 }
 
+graph moveOrder(playerToPerform: Player, roll1: Dice, roll2: Dice) {
+  moveOrBearOff(playerToPerform, roll1)
+  moveOrBearOff(playerToPerform, roll2)
+}
+
+graph maxMoves4(playerToPerform: Player, roll: Dice) {
+  moveOrBearOff(playerToPerform, roll)
+  moveOrBearOff(playerToPerform, roll)  
+  moveOrBearOff(playerToPerform, roll)
+  moveOrBearOff(playerToPerform, roll)
+}
+
+graph maxMoves3(playerToPerform: Player, roll: Dice) {
+  moveOrBearOff(playerToPerform, roll)
+  moveOrBearOff(playerToPerform, roll)  
+  moveOrBearOff(playerToPerform, roll)
+}
+
+graph maxMoves2(playerToPerform: Player, roll: Dice) {
+  moveOrBearOff(playerToPerform, roll)
+  moveOrBearOff(playerToPerform, roll)
+}
+
+graph maxMoves1(playerToPerform: Player, roll: Dice) {
+  moveOrBearOff(playerToPerform, roll)
+}
+
 graph performMove(playerToPerform: Player) {
   
   player = playerToPerform
-  
+
   // Order in which we perform moves may have an impact 
   // on the final state of the board, thus the branch
   if comparedice(roll1, roll2) == false {
-    branch {
+
+    // Case when there doesn't exists ordering of moves such that we can play both
+    // i.e. we can play at most one move
+    if not(reachable(moveOrder(playerToPerform, roll1, roll2))) &&
+       not(reachable(moveOrder(playerToPerform, roll2, roll1))) {
+      // We play whichever move is legal 
+      // Or the highest if both are
       if reachable(moveOrBearOff(playerToPerform, roll1)) {
-        moveOrBearOff(playerToPerform, roll1)
-      }
-      if reachable(moveOrBearOff(playerToPerform, roll2)) {
-        moveOrBearOff(playerToPerform, roll2)
-      }
-    } or {
-      if reachable(moveOrBearOff(playerToPerform, roll2)) {
-        moveOrBearOff(playerToPerform, roll2)
-      }
-      if reachable(moveOrBearOff(playerToPerform, roll1)) {
-        moveOrBearOff(playerToPerform, roll1)
-      }
-    }
-  } else { // If doubles were rolled we perform up to 4 moves if legal
-    if reachable(moveOrBearOff(playerToPerform, roll1)) {
-      moveOrBearOff(playerToPerform, roll1)
-      if reachable(moveOrBearOff(playerToPerform, roll1)) {
-        moveOrBearOff(playerToPerform, roll1)
-        if reachable(moveOrBearOff(playerToPerform, roll1)) {
-          moveOrBearOff(playerToPerform, roll1)
-          if reachable(moveOrBearOff(playerToPerform, roll1)) {
+        if reachable(moveOrBearOff(playerToPerform, roll2)) {
+          // If we can play either first OR second roll
+          // We must play the higher
+          if dicesmallerorequal(roll1, roll2) == true {
+            moveOrBearOff(playerToPerform, roll2)
+          } else {
             moveOrBearOff(playerToPerform, roll1)
-          }   
+          }
+        } else {
+          moveOrBearOff(playerToPerform, roll1)
+        }
+      } else {
+        if reachable(moveOrBearOff(playerToPerform, roll2)) {
+          moveOrBearOff(playerToPerform, roll2)
         }
       }
-    } 
+      // We only pass if there are no legal moves to be played  
+    } else {
+      // If there exists an ordering of moves such that we can play both
+      // We must do so
+      branch {
+        check(reachable(moveOrder(playerToPerform, roll1, roll2)))
+        moveOrder(playerToPerform, roll1, roll2)
+      } or {
+        check(reachable(moveOrder(playerToPerform, roll2, roll1)))
+        moveOrder(playerToPerform, roll2, roll1)
+      }  
+    }
+    
+  } else { // If doubles were rolled we must maximal legal number of moves
+     if reachable(maxMoves1(playerToPerform, roll1)) {
+        if reachable(maxMoves2(playerToPerform, roll1)) {
+          if reachable(maxMoves3(playerToPerform, roll1)) {
+            if reachable(maxMoves4(playerToPerform, roll1)) {
+              maxMoves4(playerToPerform, roll1)
+            } else {
+              maxMoves3(playerToPerform, roll1)
+            }
+          } else {
+            maxMoves2(playerToPerform, roll1)
+          }
+        } else {
+          maxMoves1(playerToPerform, roll1)
+        }
+     } // If none legal, we pass
   }
 }
 
