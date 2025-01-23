@@ -1,7 +1,6 @@
 [package]
 name = "hrg"
 version = "0.1.0"
-authors = ["Jakub Ciesluk <323892@uwr.edu.pl>"]
 edition = "2021"
 
 [dependencies]

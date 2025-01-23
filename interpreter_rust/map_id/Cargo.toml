@@ -1,5 +1,4 @@
 [package]
 name = "map_id"
 version = "0.1.0"
-authors = ["Radosław Miernik <radekmie@gmail.com>"]
 edition = "2021"

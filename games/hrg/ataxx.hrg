@@ -1,5 +1,3 @@
-// @author Mariana Carvalho
-
 // Domains
 domain Piece = redpiece | empty | bluepiece | border
 domain Player = red | blue

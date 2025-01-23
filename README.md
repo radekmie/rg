@@ -1,5 +1,3 @@
-[![docs](https://github.com/radekmie/rg/actions/workflows/docs.yml/badge.svg)](https://github.com/radekmie/rg/actions/workflows/docs.yml)
-
 # Regular Games repo
 
 ## Quick start (CLI)

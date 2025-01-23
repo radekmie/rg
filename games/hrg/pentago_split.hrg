@@ -2,7 +2,6 @@
 // Move form: pos | rotation
 
 
-// Dominik Biernacki
 
 // domain statement
 domain Piece = empty | x | o
