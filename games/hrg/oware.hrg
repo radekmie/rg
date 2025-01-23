@@ -77,10 +77,12 @@ maxCaptured: Int = I(0)
 graph takeAll() {
   currHole = H(0)
   while currHole != H(6) {
+    $_i
     if board[currHole] != I(0) {
       toAdd = board[currHole]
       board[currHole] = I(0)
       while toAdd != I(0) {
+        $_i
         captured[white] = incr(captured[white])
         toAdd = decr(toAdd)
         allCaptured = incr(allCaptured)
@@ -89,10 +91,12 @@ graph takeAll() {
     currHole = nextHole(currHole)
   }
   while currHole != H(0) {
+    $_i
     if board[currHole] != I(0) {
       toAdd = board[currHole]
       board[currHole] = I(0)
       while toAdd != I(0) {
+        $_i
         captured[black] = incr(captured[black])
         toAdd = decr(toAdd)
         allCaptured = incr(allCaptured)
@@ -103,7 +107,7 @@ graph takeAll() {
   $ takeall
 }
 
-graph move(player: Player) {
+graph move() {
   if player == white {
     // Opponent starving
     if board[H(6)] == I(0) && board[H(7)] == I(0) && board[H(8)] == I(0) && board[H(9)] == I(0) && board[H(10)] == I(0) && board[H(11)] == I(0) {
@@ -111,9 +115,11 @@ graph move(player: Player) {
       if comp(board[H(5)], I(1)) == less && comp(board[H(4)], I(2)) == less && comp(board[H(3)], I(3)) == less && comp(board[H(2)], I(4)) == less && comp(board[H(1)], I(5)) == less && comp(board[H(0)], I(6)) == less {
         currHole = H(0)
         while currHole != H(6) {
+          $_i
           toAdd = board[currHole]
           board[currHole] = I(0)
           while toAdd != I(0) {
+            $_i
             captured[white] = incr(captured[white])
             toAdd = decr(toAdd)
             allCaptured = incr(allCaptured)
@@ -152,6 +158,7 @@ graph move(player: Player) {
         toSow = board[currHole]
         board[currHole] = I(0)
         while toSow != I(0) {
+          $_i
           currHole = nextHole(currHole)
           if startSowing != currHole {
             board[currHole] = incr(board[currHole])
@@ -168,8 +175,10 @@ graph move(player: Player) {
         toSow = board[currHole]
         board[currHole] = I(0)
         while toSow != I(0) {
+          $_i
           currHole = nextHole(currHole)
           if startSowing != currHole {
+            $_i
             board[currHole] = incr(board[currHole])
             toSow = decr(toSow)
           }
@@ -180,16 +189,20 @@ graph move(player: Player) {
         maxCaptured = I(0)
         currHole = H(6)
         while currHole != H(0) {
+          $_i
           if board[currHole] != I(0) {
+            $_i
             maxCaptured = incr(maxCaptured)
           }
           currHole = nextHole(currHole)
         }
         currHole = endedSowing
         while belongsTo(black, currHole) == 1 && (board[currHole] == I(2) || board[currHole] == I(3)) {
+          $_i
           toAdd = board[currHole]
           board[currHole] = I(0)
           while toAdd != I(0) {
+            $_i
             toAdd = decr(toAdd)
             captured[white] = incr(captured[white])
             allCaptured = incr(allCaptured)
@@ -210,9 +223,11 @@ graph move(player: Player) {
       if comp(board[H(11)], I(1)) == less && comp(board[H(10)], I(2)) == less && comp(board[H(9)], I(3)) == less && comp(board[H(8)], I(4)) == less && comp(board[H(7)], I(5)) == less && comp(board[H(6)], I(6)) == less {
         currHole = H(6)
         while currHole != H(0) {
+          $_i
           toAdd = board[currHole]
           board[currHole] = I(0)
           while toAdd != I(0) {
+            $_i
             captured[black] = incr(captured[black])
             toAdd = decr(toAdd)
             allCaptured = incr(allCaptured)
@@ -251,8 +266,10 @@ graph move(player: Player) {
         toSow = board[currHole]
         board[currHole] = I(0)
         while toSow != I(0) {
+          $_i
           currHole = nextHole(currHole)
           if startSowing != currHole {
+            $_i
             board[currHole] = incr(board[currHole])
             toSow = decr(toSow)
           }
@@ -268,8 +285,10 @@ graph move(player: Player) {
         toSow = board[currHole]
         board[currHole] = I(0)
         while toSow != I(0) {
+          $_i
           currHole = nextHole(currHole)
           if startSowing != currHole {
+            $_i
             board[currHole] = incr(board[currHole])
             toSow = decr(toSow)
           }
@@ -280,16 +299,20 @@ graph move(player: Player) {
         maxCaptured = I(0)
         currHole = H(0)
         while currHole != H(6) {
+          $_i
           if board[currHole] != I(0) {
+            $_i
             maxCaptured = incr(maxCaptured)
           }
           currHole = nextHole(currHole)
         }
         currHole = endedSowing
         while belongsTo(white, currHole) == 1 && (board[currHole] == I(2) || board[currHole] == I(3)) {
+          $_i
           toAdd = board[currHole]
           board[currHole] = I(0)
           while toAdd != I(0) {
+            $_i
             toAdd = decr(toAdd)
             captured[black] = incr(captured[black])
             allCaptured = incr(allCaptured)
@@ -308,13 +331,16 @@ graph move(player: Player) {
 graph turn() {
   player = me
 
-  if not(reachable(move(me))) { // No legal moves -> player captures all his instead
+  if not(reachable(move())) { // No legal moves -> player captures all his instead
+    player = keeper
     if me == white {
       currHole = H(0)
       while currHole != H(6) {
+        $_i
         toAdd = board[currHole]
         board[currHole] = I(0)
         while toAdd != I(0) {
+          $_i
           captured[white] = incr(captured[white])
           toAdd = decr(toAdd)
           allCaptured = incr(allCaptured)
@@ -325,9 +351,11 @@ graph turn() {
     else {
       currHole = H(6)
       while currHole != H(0) {
+        $_i
         toAdd = board[currHole]
         board[currHole] = I(0)
         while toAdd != I(0) {
+          $_i
           captured[black] = incr(captured[black])
           toAdd = decr(toAdd)
           allCaptured = incr(allCaptured)
@@ -336,7 +364,7 @@ graph turn() {
       }
     }
   } else {
-    move(me)
+    move()
   }
 
   player = keeper

@@ -218,6 +218,7 @@ graph move_available() {
 }
 
 graph move_pawn_normal() {
+  $ PN
   forall p : Position {
     check(board[p] == my_pawn(me))
     board[p] = empty
@@ -235,6 +236,7 @@ graph move_pawn_normal() {
 }
 
 graph move_pawn_capture() {
+  $ PC
   forall p : Position {
     check(board[p] == my_pawn(me))
     board[p] = empty
@@ -274,6 +276,7 @@ graph move_pawn_capture() {
 }
 
 graph move_king_normal() {
+  $ KN
   forall p : Position {
     check(board[p] == my_king(me))
     board[p] = empty
@@ -297,6 +300,7 @@ graph move_king_normal() {
 }
 
 graph move_king_capture() {
+  $ KC
   forall p : Position {
     check(board[p] == my_king(me))
     board[p] = empty

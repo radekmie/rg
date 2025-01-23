@@ -155,7 +155,7 @@ graph calculateHighest(playerCalculate: Player, moveCalculate: Dice) {
 
   // This is assuming in forall loop dice values are traversed increasingly
   forall dice:Dice {
-    
+   
     check(dicesmallerorequal(dice, moveCalculate) == true)
 
     currPosition = calculatemoveposition(playerCalculate, initPosition, dice)
@@ -180,6 +180,7 @@ graph calculateHomeBoardCheckersCount(playerToCount: Player) {
   diceIte = D(1)
   
   while comparedice(diceIte, D(6)) == false {
+    $_i
     diceIte = diceincr(diceIte)
     homeBoardCheckersCount[playerToCount] = 
       sumcheckercount(homeBoardCheckersCount[playerToCount], playercheckercount(playerToCount, board[calculatehomeboardposition(playerToCount, diceIte)]))  
@@ -308,11 +309,13 @@ graph performMove(playerToPerform: Player) {
   // Order in which we perform moves may have an impact 
   // on the final state of the board, thus the branch
   if comparedice(roll1, roll2) == false {
+    $_diff
 
     // Case when there doesn't exists ordering of moves such that we can play both
     // i.e. we can play at most one move
     if not(reachable(moveOrder(playerToPerform, roll1, roll2))) &&
        not(reachable(moveOrder(playerToPerform, roll2, roll1))) {
+      $_one
       // We play whichever move is legal 
       // Or the highest if both are
       if reachable(moveOrBearOff(playerToPerform, roll1)) {
@@ -337,12 +340,14 @@ graph performMove(playerToPerform: Player) {
       // If there exists an ordering of moves such that we can play both
       // We must do so
       branch {
+        $_r12
         check(reachable(moveOrder(playerToPerform, roll1, roll2)))
         moveOrder(playerToPerform, roll1, roll2)
       } or {
+        $_r21
         check(reachable(moveOrder(playerToPerform, roll2, roll1)))
         moveOrder(playerToPerform, roll2, roll1)
-      }  
+      }
     }
     
   } else { // If doubles were rolled we must maximal legal number of moves
@@ -350,14 +355,18 @@ graph performMove(playerToPerform: Player) {
         if reachable(maxMoves2(playerToPerform, roll1)) {
           if reachable(maxMoves3(playerToPerform, roll1)) {
             if reachable(maxMoves4(playerToPerform, roll1)) {
+              $_m4
               maxMoves4(playerToPerform, roll1)
             } else {
+              $_m3
               maxMoves3(playerToPerform, roll1)
             }
           } else {
+            $_m2
             maxMoves2(playerToPerform, roll1)
           }
         } else {
+          $_m1
           maxMoves1(playerToPerform, roll1)
         }
      } // If none legal, we pass
