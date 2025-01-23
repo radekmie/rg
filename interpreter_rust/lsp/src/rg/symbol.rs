@@ -160,7 +160,7 @@ impl Symbols {
                                 if left_param_idx != right_param_idx {
                                     let left_span = self.edge_params[left_param_idx].param.span();
                                     let right_span = self.edge_params[right_param_idx].param.span();
-                                    if left_span < right_span {
+                                    if left_span.start < right_span.start {
                                         let right_params =
                                             self.edge_params[right_param_idx].owners.clone();
                                         self.edge_params[left_param_idx]
