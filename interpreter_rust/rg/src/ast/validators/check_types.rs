@@ -1,7 +1,7 @@
 use crate::ast::{Constant, Edge, Error, ErrorReason, Game, Label, Type, Value, Variable};
 use std::{mem::take, sync::Arc};
 
-impl<Id: Clone + PartialEq + std::fmt::Debug> Constant<Id> {
+impl<Id: Clone + PartialEq> Constant<Id> {
     fn check_type(&self, game: &Game<Id>) -> Result<(), Error<Id>> {
         self.value.check_type(game, &self.type_)
     }
@@ -39,7 +39,7 @@ impl<Id: Clone + PartialEq> Label<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq + std::fmt::Debug> Game<Id> {
+impl<Id: Clone + PartialEq> Game<Id> {
     pub fn check_types(&self) -> Result<(), Error<Id>> {
         for edge in &self.edges {
             edge.check_type(self)?;
@@ -77,7 +77,7 @@ impl<Id: Clone + PartialEq + std::fmt::Debug> Game<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq + std::fmt::Debug> Value<Id> {
+impl<Id: Clone + PartialEq> Value<Id> {
     fn check_type(&self, game: &Game<Id>, type_: &Arc<Type<Id>>) -> Result<(), Error<Id>> {
         match self {
             Self::Element { identifier } => game.check_is_assignable_identifier(type_, identifier),
@@ -103,7 +103,7 @@ impl<Id: Clone + PartialEq + std::fmt::Debug> Value<Id> {
     }
 }
 
-impl<Id: Clone + PartialEq + std::fmt::Debug> Variable<Id> {
+impl<Id: Clone + PartialEq> Variable<Id> {
     fn check_type(&self, game: &Game<Id>) -> Result<(), Error<Id>> {
         self.default_value.check_type(game, &self.type_)
     }
