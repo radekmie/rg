@@ -396,52 +396,126 @@ impl SimplePath {
 
     /// Remove multiple simple paths that start in one node and are ambiguous,
     /// i.e., have tag bindings at the same tag position following the same tag
-    /// prefix.
+    /// prefix and having the same suffix.
+    // TODO: Add prefix tests (chess.hrg).
+    // TODO: Add suffix tests (englishDraughts.hrg).
+    // TODO: Add continuations tests (englishDraughts.hrg).
     fn remove_ambiguous(simple_paths: &mut Vec<Self>) {
-        for index in (0..simple_paths.len()).rev() {
-            if index >= simple_paths.len() {
-                continue;
-            }
+        loop {
+            let mut any_continuations_merged = false;
+            for index in (0..simple_paths.len()).rev() {
+                if index >= simple_paths.len() {
+                    continue;
+                }
 
-            let x = &simple_paths[index];
-            let indexes: Vec<_> = simple_paths
-                .iter()
-                .enumerate()
-                .filter(|(_, y)| y.node == x.node)
-                .map(|(index, _)| index)
-                .collect();
-            if indexes.len() == 1 {
-                continue;
-            }
+                let x = &simple_paths[index];
+                let indexes: Vec<_> = simple_paths
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, y)| y.node == x.node)
+                    .map(|(index, _)| index)
+                    .collect();
+                if indexes.len() == 1 {
+                    continue;
+                }
 
-            let mut tagsets: Vec<_> = indexes
-                .iter()
-                .map(|index| &simple_paths[*index].tags)
-                .collect();
+                let mut tagsets: Vec<_> = indexes
+                    .iter()
+                    .map(|index| &simple_paths[*index].tags)
+                    .collect();
 
-            let mut ambiguous = false;
-            while let Some(x) = tagsets.pop() {
-                ambiguous |= tagsets.iter().any(|y| {
-                    for index in 0..(x.len().min(y.len())) {
-                        if x[index].type_.is_some() && y[index].type_.is_some() {
-                            return true;
+                let mut ambiguous = false;
+                while let Some(x) = tagsets.pop() {
+                    ambiguous |= tagsets.iter().any(|y| {
+                        let mut ambiguous_prefix = false;
+                        for index in 0..(x.len().min(y.len())) {
+                            if x[index].type_.is_some() && y[index].type_.is_some() {
+                                ambiguous_prefix = true;
+                                break;
+                            }
+
+                            if x[index].tag != y[index].tag {
+                                break;
+                            }
                         }
 
-                        if x[index].tag != y[index].tag {
-                            break;
+                        if !ambiguous_prefix {
+                            return false;
+                        }
+
+                        let mut ambiguous_suffix = false;
+                        for index in (0..(x.len().min(y.len()))).rev() {
+                            if x[index].type_.is_some() && y[index].type_.is_some() {
+                                ambiguous_suffix = true;
+                                break;
+                            }
+
+                            if x[index].tag != y[index].tag {
+                                break;
+                            }
+                        }
+
+                        ambiguous_suffix
+                    });
+                }
+
+                if !ambiguous {
+                    continue;
+                }
+
+                // We have to remove these, as they're not
+                let all_continuations: Result<Vec<_>, _> = indexes
+                    .iter()
+                    .map(|index| {
+                        let x = &simple_paths[*index];
+                        let indexes: Vec<_> = simple_paths
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, y)| y.node == x.path.last().unwrap().rhs)
+                            .map(|(index, _)| index)
+                            .collect();
+
+                        // No available continuations.
+                        if indexes.is_empty() {
+                            return Err(());
+                        }
+
+                        let merged: Vec<_> = indexes
+                            .iter()
+                            .filter_map(|index| x.merge(&simple_paths[*index]))
+                            .collect();
+
+                        // Not all continuations are allowed.
+                        if merged.len() < indexes.len() {
+                            return Err(());
+                        }
+
+                        Ok((*index, merged))
+                    })
+                    .collect();
+
+                match all_continuations {
+                    Err(()) => {
+                        for index in indexes.into_iter().rev() {
+                            simple_paths.swap_remove(index);
                         }
                     }
+                    Ok(all_continuations) => {
+                        let (indexes, merged): (Vec<_>, Vec<_>) =
+                            all_continuations.into_iter().unzip();
 
-                    false
-                });
+                        for index in indexes.into_iter().rev() {
+                            simple_paths.swap_remove(index);
+                        }
+
+                        simple_paths.extend(merged.into_iter().flatten());
+                        any_continuations_merged = true;
+                    }
+                }
             }
 
-            if !ambiguous {
-                continue;
-            }
-
-            for index in indexes.into_iter().rev() {
-                simple_paths.swap_remove(index);
+            if !any_continuations_merged {
+                break;
             }
         }
     }
