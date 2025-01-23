@@ -231,19 +231,19 @@ graph pawnMove() {
   check(board[pos] == myPawn(me))
   stagnation_counter = C(0)
   board[pos] = empty
-  $ P
   
   branch {// Normal move
      branch {// Forward move by 1 square
        pos = pawn_direction(up,me)(pos)
        check(board[pos] == empty)
+       $ PF
      } or {// Captures diagonal
        branch {
          pos = pawn_direction(upleft,me)(pos)
-         $_PL
+         $ PCL
        } or {
          pos = pawn_direction(upright,me)(pos)
-         $_PR
+         $ PCR
        }
        check(owner(board[pos]) == opponent(me))
      }
@@ -252,16 +252,16 @@ graph pawnMove() {
      if pawn_direction(up,me)(pos) == null {
         branch { // Promote to queen
           board[pos] = myQueen(me)
-          $ PQ
+          $ P_Q
         } or { // Promote to rook
           board[pos] = myRook(me)
-          $ PR
+          $ P_R
         } or { // Promote to knight
           board[pos] = myKnight(me)
-          $ PN
+          $ P_N
         } or { // Promote to bishop
           board[pos] = myBishop(me)
-          $ PB
+          $ P_B
         }
      } else {
       board[pos] = myPawn(me)
@@ -269,6 +269,7 @@ graph pawnMove() {
      en_passant_position = null
 
    } or { // Forward move by 2 squares
+     $ PFF
      check(pawn_starting_pos(me)(pos) == true)
      pos = pawn_direction(nn, me)(pos)
      check(board[pos] == empty)
@@ -277,9 +278,9 @@ graph pawnMove() {
      showPos()
      en_passant_position = pos
      board[pos] = myPawn(me)
-
    } or { // En passant
      check(en_passant_position != null)
+     $ PEN
      branch {
        check(leftdir(pos) == en_passant_position)
        pos = pawn_direction(upleft, me)(pos)
