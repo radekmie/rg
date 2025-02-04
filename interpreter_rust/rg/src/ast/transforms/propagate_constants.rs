@@ -31,9 +31,7 @@ impl Context<'_> {
     }
 
     fn get_identifier(&self, identifier: &Id, edge: &Edge<Id>) -> Option<Id> {
-        if edge.has_binding(identifier) {
-            None
-        } else if self.variables.contains(identifier) {
+        if self.variables.contains(identifier) {
             self.dereference_constant(self.constant_vars.get(identifier)?, false)
                 .to_identifier()
                 .cloned()
@@ -45,9 +43,7 @@ impl Context<'_> {
     }
 
     fn get_value(&self, identifier: &Id, edge: &Edge<Id>) -> Option<Value<Id>> {
-        if edge.has_binding(identifier) {
-            None
-        } else if self.variables.contains(identifier) {
+        if self.variables.contains(identifier) {
             Some(
                 self.dereference_constant(self.constant_vars.get(identifier)?, true)
                     .clone(),
@@ -138,8 +134,8 @@ impl Game<Id> {
         edge: &Edge<Id>,
         in_cast: bool,
     ) -> Option<Expression<Id>> {
-        if !in_cast && self.is_symbol(&id, edge) {
-            let type_ = expression.infer(self, Some(edge)).ok()?;
+        if !in_cast && self.is_symbol(&id) {
+            let type_ = expression.infer(self).ok()?;
             if let Type::TypeReference { .. } = type_.as_ref() {
                 Some(Expression::new_cast(type_, Arc::new(Expression::new(id))))
             } else {

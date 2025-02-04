@@ -154,10 +154,7 @@ impl Game<Id> {
                     if let Some(lhs) = mapping.get(&edge.lhs) {
                         Arc::make_mut(&mut edge).lhs = lhs.clone();
                     } else {
-                        let mut lhs = gen_fresh_node(&mut max_id);
-                        for (id, type_) in edge.lhs.bindings() {
-                            lhs.add_binding(id.clone(), type_.clone());
-                        }
+                        let lhs = gen_fresh_node(&mut max_id);
                         mapping.insert(edge.lhs.clone(), lhs.clone());
                         Arc::make_mut(&mut edge).lhs = lhs;
                     }
@@ -165,10 +162,7 @@ impl Game<Id> {
                     if let Some(rhs) = mapping.get(&edge.rhs) {
                         Arc::make_mut(&mut edge).rhs = rhs.clone();
                     } else {
-                        let mut rhs = gen_fresh_node(&mut max_id);
-                        for (id, type_) in edge.rhs.bindings() {
-                            rhs.add_binding(id.clone(), type_.clone());
-                        }
+                        let rhs = gen_fresh_node(&mut max_id);
                         mapping.insert(edge.rhs.clone(), rhs.clone());
                         Arc::make_mut(&mut edge).rhs = rhs;
                     }

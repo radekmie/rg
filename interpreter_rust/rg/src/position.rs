@@ -1,6 +1,5 @@
 use crate::ast::{
-    Constant, Edge, Expression, Label, Node, Pragma, Type, Typedef, Value, ValueEntry,
-    Variable,
+    Constant, Edge, Expression, Label, Node, Pragma, Type, Typedef, Value, ValueEntry, Variable,
 };
 use utils::position::{Positioned, Span};
 

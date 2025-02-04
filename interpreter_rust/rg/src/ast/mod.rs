@@ -337,9 +337,7 @@ pub struct Node<Id> {
 
 impl<Id> Node<Id> {
     pub fn new(identifier: Id) -> Self {
-        Self {
-            identifier,
-        }
+        Self { identifier }
     }
 }
 
@@ -511,10 +509,7 @@ impl<Id> Expression<Id> {
 }
 
 impl<Id: Clone + PartialEq> Expression<Id> {
-    pub fn infer(
-        &self,
-        game: &Game<Id>,
-    ) -> Result<Arc<Type<Id>>, Error<Id>> {
+    pub fn infer(&self, game: &Game<Id>) -> Result<Arc<Type<Id>>, Error<Id>> {
         match self {
             Self::Access { lhs, rhs, .. } => {
                 let accessed_type = lhs.infer(game)?;
@@ -850,21 +845,17 @@ impl<'a, Id: Clone + Ord + 'a> Game<Id> {
 
 impl<Id: Clone + PartialEq> Game<Id> {
     pub fn infer(&self, identifier: &Id) -> Arc<Type<Id>> {
-        self.infer_or_none(identifier)
-            .cloned()
-            .unwrap_or_else(|| {
-                Arc::new(Type::Set {
-                    span: Span::none(),
-                    identifiers: vec![identifier.clone()],
-                })
+        self.infer_or_none(identifier).cloned().unwrap_or_else(|| {
+            Arc::new(Type::Set {
+                span: Span::none(),
+                identifiers: vec![identifier.clone()],
             })
+        })
     }
 
-    pub fn infer_or_none<'a>(
-        &'a self,
-        identifier: &Id,
-    ) -> Option<&'a Arc<Type<Id>>> {
-        self.resolve_constant(identifier).map(|x| &x.type_)
+    pub fn infer_or_none<'a>(&'a self, identifier: &Id) -> Option<&'a Arc<Type<Id>>> {
+        self.resolve_constant(identifier)
+            .map(|x| &x.type_)
             .or_else(|| self.resolve_variable(identifier).map(|x| &x.type_))
     }
 
@@ -935,8 +926,7 @@ impl<Id: Clone + PartialEq> Game<Id> {
     }
 
     pub fn is_symbol(&self, id: &Id) -> bool {
-        self.resolve_constant(id).is_some()
-            || self.resolve_variable(id).is_some()
+        self.resolve_constant(id).is_some() || self.resolve_variable(id).is_some()
     }
 
     pub fn resolve_constant(&self, identifier: &Id) -> Option<&Constant<Id>> {

@@ -46,9 +46,7 @@ impl Game<Id> {
             let nodes: Vec<_> = unused_members
                 .iter()
                 .map(|_| {
-                    let mut node = gen_fresh_node(&mut max_id);
-                    let mut bindings: Vec<_> = edge.lhs.parts.iter().skip(1).cloned().collect();
-                    node.parts.append(&mut bindings);
+                    let node = gen_fresh_node(&mut max_id);
                     node
                 })
                 .collect();
@@ -93,7 +91,7 @@ impl Game<Id> {
         next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     ) -> Option<ToCompact> {
         let (expr, ids) = self.lhs_or_rhs(edge, next_edges)?;
-        let type_ = expr.infer(self, Some(edge)).ok()?;
+        let type_ = expr.infer(self).ok()?;
         let type_members = self.get_type_members(&type_)?;
         if ids.iter().any(|id| !type_members.contains(id))
             || type_members.iter().filter(|id| !ids.contains(id)).count() >= ids.len()

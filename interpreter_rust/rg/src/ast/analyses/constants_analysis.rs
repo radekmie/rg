@@ -88,12 +88,7 @@ fn as_constant_assignment(
     if edge.label.is_map_assignment() {
         return None;
     }
-
     let (id, expr) = edge.label.as_var_assignment()?;
-    if edge.has_binding(id) {
-        return None;
-    }
-
     Some((id.clone(), evaluate_constant(expr, knowledge, ctx, edge)?))
 }
 
@@ -111,8 +106,7 @@ fn as_constant_comparison(
         let lhs = lhs.uncast();
         let rhs = rhs.uncast();
 
-        let can_be_replaced =
-            |id: &Id| !edge.has_binding(id) && ctx.is_variable(id) && !knowledge.contains_key(id);
+        let can_be_replaced = |id: &Id| ctx.is_variable(id) && !knowledge.contains_key(id);
         if lhs.is_reference_and(can_be_replaced) {
             let value = evaluate_constant(rhs, knowledge, ctx, edge)?;
             return lhs.as_reference().map(|id| (id.clone(), value));
@@ -146,7 +140,6 @@ fn evaluate_constant(
                 })
         }
         Expression::Cast { rhs, .. } => evaluate_constant(rhs, knowledge, ctx, edge),
-        Expression::Reference { identifier } if edge.has_binding(identifier) => None,
         Expression::Reference { identifier } if ctx.is_variable(identifier) => {
             knowledge.get(identifier).cloned()
         }

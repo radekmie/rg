@@ -15,17 +15,14 @@ mod join_fork_suffixes;
 mod join_generators;
 mod mangle_symbols;
 mod merge_accesses;
-mod merge_bindings;
 mod normalize_constants;
 mod normalize_types;
 mod propagate_constants;
 mod prune_singleton_types;
 mod prune_unreachable_nodes;
-mod prune_unused_bindings;
 mod prune_unused_constants;
 mod prune_unused_variables;
 mod skip_artificial_tags;
-mod skip_generator_comparisons;
 mod skip_self_assignments;
 mod skip_self_comparisons;
 mod skip_unused_tags;
@@ -42,7 +39,7 @@ pub fn gen_fresh_node(max_node_id: &mut usize) -> Node<Arc<str>> {
 pub fn max_node_id(nodes: &BTreeSet<&Node<Arc<str>>>) -> usize {
     nodes
         .iter()
-        .map(|node| node.literal().parse::<usize>().unwrap_or(0))
+        .map(|node| node.identifier.parse::<usize>().unwrap_or(0))
         .max()
         .unwrap_or(0)
 }

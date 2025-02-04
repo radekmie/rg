@@ -38,8 +38,6 @@ use std::sync::Arc;
 //   2. y2 has no other outgoing edges
 //   3. y2 has no other incoming edges
 //   4. y2 is not a reachability target -- it's deleted
-//   5. y1 and y2 have the same bindings
-//   6. z1 and z2 have the same bindings
 //   7. e1 and e2 have the same label
 //   8. y1 is not a reachability target -- it gains reachability paths
 
@@ -86,8 +84,6 @@ impl<Id: Clone + Ord> Game<Id> {
                         // (7)
                         || e1.label != e2.label
                         // (5)
-                        || !e1.lhs.has_equal_bindings(&e2.lhs)
-                        // (2)
                         || self.outgoing_edge(&e2.lhs).is_none()
                         // (4)
                         || self.is_reachability_target(&e2.lhs)
@@ -105,13 +101,7 @@ impl<Id: Clone + Ord> Game<Id> {
                         continue;
                     }
 
-                    let Some(e3) = prev_edges
-                        .get(&e1.lhs)
-                        .into_iter()
-                        .flat_map(|x| x.iter())
-                        // (6)
-                        .find(|e3| e3.lhs.has_equal_bindings(&e4.lhs))
-                    else {
+                    let Some(e3) = prev_edges.get(&e1.lhs).and_then(|x| x.iter().next()) else {
                         continue;
                     };
 

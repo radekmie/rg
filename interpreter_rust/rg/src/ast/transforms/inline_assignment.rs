@@ -74,42 +74,29 @@ impl Game<Id> {
                 ) else {
                     continue;
                 };
-                let uses_binding = edge
-                    .bindings()
-                    .iter()
-                    .any(|binding| vars_in_rhs.contains(binding.0));
                 let usage_already_modified =
                     usages.iter().any(|usage| modified_edges.contains(usage));
                 if usage_already_modified {
                     continue;
                 }
-                if (uses_binding || edge.label.is_map_assignment()) && !usages.is_empty() {
+                if (edge.label.is_map_assignment()) && !usages.is_empty() {
                     continue;
                 }
 
                 modified_edges.insert(edge.clone());
                 modified_edges.extend(usages.iter().cloned());
-                to_inline.insert((
-                    (*identifier).clone(),
-                    self.new_rhs(identifier, rhs, edge),
-                    usages,
-                ));
+                to_inline.insert(((*identifier).clone(), self.new_rhs(identifier, rhs), usages));
                 to_skip.insert((*edge).clone());
             }
         }
         (to_inline, to_skip)
     }
 
-    fn new_rhs(
-        &self,
-        variable: &Id,
-        expr: &Arc<Expression<Id>>,
-        edge: &Edge<Id>,
-    ) -> Arc<Expression<Id>> {
+    fn new_rhs(&self, variable: &Id, expr: &Arc<Expression<Id>>) -> Arc<Expression<Id>> {
         if let Expression::Reference { identifier } = expr.as_ref() {
-            if self.is_symbol(identifier, edge) {
+            if self.is_symbol(identifier) {
                 return self
-                    .infer_or_none(variable, Some(edge))
+                    .infer_or_none(variable)
                     .filter(|t| t.is_reference())
                     .map_or_else(
                         || expr.clone(),

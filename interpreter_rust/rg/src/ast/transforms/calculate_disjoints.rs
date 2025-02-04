@@ -20,11 +20,6 @@ impl Game<Id> {
                 continue;
             }
 
-            let node_bindings: BTreeSet<_> = node.bindings().collect();
-            if edges.iter().any(|edge| edge.bindings() != node_bindings) {
-                continue;
-            }
-
             let edges: Vec<_> = edges.into_iter().collect();
             if let Some((is_exhaustive, mut nodes)) = game.get_disjoint(&edges) {
                 nodes.sort_unstable();
@@ -125,7 +120,7 @@ impl Game<Id> {
             }
 
             let all_values = lhs1
-                .infer(self, None)
+                .infer(self)
                 .and_then(|type_| type_.values(self))
                 .is_ok_and(|values| values.len() == nodes.len());
 

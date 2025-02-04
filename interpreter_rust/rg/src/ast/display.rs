@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, Error, ErrorReason, Expression, Game, Label, Node, Pragma,
-    PragmaAssignment, PragmaTag, Stats, Type, Typedef, Value, ValueEntry, Variable,
+    Constant, Edge, Error, ErrorReason, Expression, Game, Label, Node, Pragma, PragmaAssignment,
+    PragmaTag, Stats, Type, Typedef, Value, ValueEntry, Variable,
 };
 use std::fmt::{Display, Formatter, Result};
 use utils::display::write_with_separator;
