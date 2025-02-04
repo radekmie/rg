@@ -1,4 +1,3 @@
-use crate::common::symbol::Symbol;
 use crate::completions::CompletionKind;
 use rg::ast::{Constant, Edge, Label, Pragma, Type, Typedef, Variable};
 use utils::{
@@ -9,7 +8,6 @@ use utils::{
 pub trait Statement: Positioned {
     fn completion_kind(&self, pos: &Position) -> CompletionKind;
     fn keyword(&self) -> &'static str;
-    fn symbol_type(&self, symbol: &Symbol) -> Option<String>;
     fn token_type(&self) -> &'static str {
         "keyword"
     }
@@ -31,10 +29,6 @@ impl Statement for Constant<Identifier> {
     fn keyword(&self) -> &'static str {
         "const"
     }
-
-    fn symbol_type(&self, _symbol: &Symbol) -> Option<String> {
-        Some(self.type_.to_string())
-    }
 }
 
 impl Statement for Edge<Identifier> {
@@ -46,8 +40,8 @@ impl Statement for Edge<Identifier> {
                 Label::Comparison { .. } => CompletionKind::Variable,
                 Label::Reachability { .. } => CompletionKind::Edge,
                 Label::Skip { .. } => CompletionKind::Variable,
-                Label::Tag { .. } => CompletionKind::Param,
-                Label::TagVariable { .. } => CompletionKind::Param,
+                Label::Tag { .. } => CompletionKind::Value,
+                Label::TagVariable { .. } => CompletionKind::Variable,
             }
         } else {
             CompletionKind::Edge
@@ -56,10 +50,6 @@ impl Statement for Edge<Identifier> {
 
     fn keyword(&self) -> &'static str {
         ""
-    }
-
-    fn symbol_type(&self, _symbol: &Symbol) -> Option<String> {
-        None
     }
 }
 
@@ -81,10 +71,6 @@ impl Statement for Pragma<Identifier> {
             Self::TranslatedFromRbg { .. } => "@translatedFromRbg",
             Self::Unique { .. } => "@unique",
         }
-    }
-
-    fn symbol_type(&self, _symbol: &Symbol) -> Option<String> {
-        None
     }
 
     fn token_type(&self) -> &'static str {
@@ -109,10 +95,6 @@ impl Statement for Typedef<Identifier> {
     fn keyword(&self) -> &'static str {
         "type"
     }
-
-    fn symbol_type(&self, _symbol: &Symbol) -> Option<String> {
-        Some(self.identifier.to_string())
-    }
 }
 
 impl Statement for Variable<Identifier> {
@@ -132,9 +114,5 @@ impl Statement for Variable<Identifier> {
 
     fn keyword(&self) -> &'static str {
         "var"
-    }
-
-    fn symbol_type(&self, _symbol: &Symbol) -> Option<String> {
-        Some(self.type_.to_string())
     }
 }

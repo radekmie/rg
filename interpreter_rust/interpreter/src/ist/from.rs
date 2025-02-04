@@ -87,12 +87,7 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
 }
 
 fn build_node(node: ast::Node<Id>) -> Id {
-    // assert!(node.parts.len() == 1, "Only trivial EdgeName allowed.");
-    // let Some(ast::NodePart::Literal { identifier }) = node.parts.pop() else {
-    //     panic!("Only trivial EdgeName allowed.")
-    // };
-    // identifier
-    todo!()
+    node.identifier
 }
 
 fn build_edges(context: &mut Context, edges: Vec<Arc<ast::Edge<Id>>>) {

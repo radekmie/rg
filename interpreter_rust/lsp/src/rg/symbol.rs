@@ -1,8 +1,8 @@
 use crate::common;
 use crate::common::symbol::{defined, Flag, Symbol};
 use rg::ast::{Edge, Game, Type};
-use std::{collections::HashSet, sync::Arc};
-use utils::{position::Positioned, Identifier};
+use std::sync::Arc;
+use utils::Identifier;
 
 pub struct Symbols {
     symbols: Vec<Symbol>,
@@ -33,21 +33,6 @@ impl Symbols {
                 self.symbols.len() - 1
             })
         })
-    }
-
-    fn sym_from_param(
-        param: &Identifier,
-        owners: Vec<usize>,
-        type_: Arc<Type<Identifier>>,
-    ) -> Option<Symbol> {
-        if param.is_none() || param.is_numeric() {
-            None
-        } else {
-            let id = param.identifier.clone();
-            let pos = param.span();
-            let type_ = common::symbol::Type::Rg(type_);
-            Some(Symbol::new(id, pos, Flag::Param, Some(owners), type_))
-        }
     }
 
     fn add_from_edge(&mut self, edge: &Edge<Identifier>) {
