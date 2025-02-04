@@ -1,5 +1,5 @@
 use crate::ast::{
-    Constant, Edge, Expression, Game, Label, Node, NodePart, Pragma, PragmaAssignment, PragmaTag,
+    Constant, Edge, Expression, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag,
     Type, Typedef, Value, ValueEntry, Variable,
 };
 use nom::branch::alt;
@@ -158,31 +158,11 @@ fn expr_label(input: Input) -> Result<Label<Identifier>> {
 }
 
 fn node(input: Input) -> Result<Node<Identifier>> {
-    into(pair(identifier, node_bindings))(input)
+    map(identifier, Node::new)(input)
 }
 
 fn expect_node(input: Input) -> Result<Node<Identifier>> {
-    let (input, first) = expect(identifier, "edge name")(input)?;
-    if let Some(name) = first {
-        let (input, rest) = node_bindings(input)?;
-        Ok((input, (name, rest).into()))
-    } else {
-        let identifier = Identifier::none(Span::at(&input));
-        Ok((input, identifier.into()))
-    }
-}
-
-fn node_bindings(input: Input) -> Result<Vec<NodePart<Identifier>>> {
-    many0(node_binding)(input)
-}
-
-fn node_binding(input: Input) -> Result<NodePart<Identifier>> {
-    into(tuple((
-        tag("("),
-        cut(preceded_opt_id("node_part")),
-        preceded_type_,
-        preceded_tag(")"),
-    )))(input)
+    map(preceded_opt_id("node"), Node::new)(input)
 }
 
 fn expect_expression(input: Input) -> Result<Arc<Expression<Identifier>>> {

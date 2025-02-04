@@ -50,10 +50,6 @@ pub struct Edge<Id> {
 }
 
 impl<Id> Edge<Id> {
-    pub fn has_bindings(&self) -> bool {
-        self.lhs.has_bindings() || self.rhs.has_bindings()
-    }
-
     pub fn new(lhs: Node<Id>, rhs: Node<Id>, label: Label<Id>) -> Self {
         Self {
             span: Span::none(),
@@ -81,8 +77,8 @@ impl<Id: Clone + Ord> Edge<Id> {
         Self {
             span: self.span,
             label: self.label.rename_variables(mapping),
-            lhs: self.lhs.rename_variables(mapping),
-            rhs: self.rhs.rename_variables(mapping),
+            lhs: self.lhs.clone(),
+            rhs: self.rhs.clone(),
         }
     }
 }
@@ -97,39 +93,11 @@ impl<Id: Display> Edge<Id> {
 }
 
 impl<Id: Ord> Edge<Id> {
-    pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
-        self.lhs.bindings().chain(self.rhs.bindings()).collect()
-    }
-
     pub fn cmp_outgoing(&self, other: &Self) -> Ordering {
         self.lhs
             .cmp(&other.lhs)
             .then_with(|| self.rhs.cmp(&other.rhs))
             .then_with(|| self.label.cmp(&other.label))
-    }
-}
-
-impl<Id: PartialEq> Edge<Id> {
-    pub fn get_binding(&self, identifier: &Id) -> Option<Binding<Id>> {
-        self.lhs
-            .bindings()
-            .chain(self.rhs.bindings())
-            .find(|binding| binding.0 == identifier)
-    }
-
-    pub fn has_binding(&self, identifier: &Id) -> bool {
-        self.get_binding(identifier).is_some()
-    }
-}
-
-impl Edge<Arc<str>> {
-    pub fn substitute_bindings(&self, mapping: &Mapping<Arc<str>>) -> Self {
-        Self {
-            span: self.span,
-            label: self.label.rename_variables(mapping),
-            lhs: self.lhs.substitute_bindings(mapping),
-            rhs: self.rhs.substitute_bindings(mapping),
-        }
     }
 }
 
@@ -364,164 +332,24 @@ impl Label<Arc<str>> {
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename = "EdgeName", tag = "kind")]
 pub struct Node<Id> {
-    #[serde(skip)]
-    pub span: Span,
-    pub parts: Vec<NodePart<Id>>,
+    pub identifier: Id,
 }
 
 impl<Id> Node<Id> {
-    pub fn add_binding(&mut self, identifier: Id, type_: Arc<Type<Id>>) {
-        self.parts.push(NodePart::Binding {
-            span: Span::none(),
-            identifier,
-            type_,
-        });
-    }
-
-    /// Returns the only binding at given node, or `None` if there are multiple or no bindings.
-    pub fn binding(&self) -> Option<Binding<Id>> {
-        let mut iterator = self.bindings();
-        iterator.next().filter(|_| iterator.next().is_none())
-    }
-
-    pub fn bindings(&self) -> impl Iterator<Item = Binding<Id>> {
-        self.parts
-            .iter()
-            .filter_map(|node_part| node_part.binding())
-    }
-
-    pub fn has_bindings(&self) -> bool {
-        self.bindings().next().is_some()
-    }
-
-    pub fn literal(&self) -> &Id {
-        self.parts[0].identifier()
-    }
-
     pub fn new(identifier: Id) -> Self {
         Self {
-            span: Span::none(),
-            parts: vec![NodePart::new(identifier)],
-        }
-    }
-}
-
-impl<Id: PartialEq> Node<Id> {
-    pub fn get_binding(&self, identifier: &Id) -> Option<Binding<Id>> {
-        self.bindings().find(|binding| binding.0 == identifier)
-    }
-
-    pub fn has_binding(&self, identifier: &Id) -> bool {
-        self.get_binding(identifier).is_some()
-    }
-
-    pub fn has_equal_bindings(&self, other: &Self) -> bool {
-        self.bindings().eq(other.bindings())
-    }
-}
-
-impl<Id: Clone + Ord> Node<Id> {
-    pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
-        Self {
-            span: self.span,
-            parts: self
-                .parts
-                .iter()
-                .map(|node_part| node_part.rename_variables(mapping))
-                .collect(),
+            identifier,
         }
     }
 }
 
 impl Node<Arc<str>> {
     pub fn is_begin(&self) -> bool {
-        matches!(&self.parts[..], [NodePart::Literal { identifier }] if &**identifier == "begin")
+        self.identifier.as_ref() == "begin"
     }
 
     pub fn is_end(&self) -> bool {
-        matches!(&self.parts[..], [NodePart::Literal { identifier }] if &**identifier == "end")
-    }
-
-    pub fn substitute_bindings(&self, mapping: &Mapping<Arc<str>>) -> Self {
-        let identifier = self
-            .parts
-            .iter()
-            .map(|node_part| match node_part {
-                NodePart::Binding { identifier, .. } => {
-                    mapping.get(identifier).map(|(symbol, _)| symbol).unwrap()
-                }
-                NodePart::Literal { identifier } => identifier,
-            })
-            .cloned()
-            .collect::<Vec<_>>()
-            .join("__bind__");
-        Self {
-            span: self.span,
-            parts: vec![NodePart::new(Arc::from(identifier))],
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename = "EdgeNamePart", tag = "kind")]
-pub enum NodePart<Id> {
-    Binding {
-        #[serde(skip)]
-        span: Span,
-        identifier: Id,
-        #[serde(rename = "type")]
-        type_: Arc<Type<Id>>,
-    },
-    Literal {
-        identifier: Id,
-    },
-}
-
-impl<Id> NodePart<Id> {
-    pub fn binding(&self) -> Option<Binding<Id>> {
-        match self {
-            Self::Binding {
-                identifier, type_, ..
-            } => Some((identifier, type_)),
-            Self::Literal { .. } => None,
-        }
-    }
-
-    pub fn identifier(&self) -> &Id {
-        match self {
-            Self::Binding { identifier, .. } => identifier,
-            Self::Literal { identifier } => identifier,
-        }
-    }
-
-    pub fn new(identifier: Id) -> Self {
-        Self::Literal { identifier }
-    }
-
-    pub fn type_(&self) -> Option<Arc<Type<Id>>> {
-        match self {
-            Self::Binding { type_, .. } => Some(type_.clone()),
-            Self::Literal { .. } => None,
-        }
-    }
-}
-
-impl<Id: Clone + Ord> NodePart<Id> {
-    pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
-        if let Self::Binding {
-            identifier, type_, ..
-        } = self
-        {
-            if let Some((identifier, _)) = mapping.get(identifier) {
-                return Self::Binding {
-                    span: Span::none(),
-                    identifier: identifier.clone(),
-                    type_: type_.clone(),
-                };
-            }
-        }
-
-        self.clone()
+        self.identifier.as_ref() == "end"
     }
 }
 
@@ -686,11 +514,10 @@ impl<Id: Clone + PartialEq> Expression<Id> {
     pub fn infer(
         &self,
         game: &Game<Id>,
-        edge: Option<&Edge<Id>>,
     ) -> Result<Arc<Type<Id>>, Error<Id>> {
         match self {
             Self::Access { lhs, rhs, .. } => {
-                let accessed_type = lhs.infer(game, edge)?;
+                let accessed_type = lhs.infer(game)?;
                 let Type::Arrow {
                     lhs: key_type,
                     rhs: value_type,
@@ -699,7 +526,7 @@ impl<Id: Clone + PartialEq> Expression<Id> {
                     return game.make_error(ErrorReason::ArrowTypeExpected { got: accessed_type });
                 };
 
-                let accessor_type = rhs.infer(game, edge)?;
+                let accessor_type = rhs.infer(game)?;
                 if !accessor_type.resolve(game)?.is_set() {
                     return game.make_error(ErrorReason::SetTypeExpected { got: accessor_type });
                 }
@@ -714,7 +541,7 @@ impl<Id: Clone + PartialEq> Expression<Id> {
                 Ok(value_type.clone())
             }
             Self::Cast { lhs, rhs, .. } => {
-                let rhs = rhs.infer(game, edge)?;
+                let rhs = rhs.infer(game)?;
                 if !game.is_assignable_type(lhs, &rhs, false)? {
                     return game.make_error(ErrorReason::AssignmentTypeMismatch {
                         lhs: lhs.clone(),
@@ -724,7 +551,7 @@ impl<Id: Clone + PartialEq> Expression<Id> {
 
                 Ok(lhs.clone())
             }
-            Self::Reference { identifier } => Ok(game.infer(identifier, edge)),
+            Self::Reference { identifier } => Ok(game.infer(identifier)),
         }
     }
 
@@ -1022,8 +849,8 @@ impl<'a, Id: Clone + Ord + 'a> Game<Id> {
 }
 
 impl<Id: Clone + PartialEq> Game<Id> {
-    pub fn infer(&self, identifier: &Id, edge: Option<&Edge<Id>>) -> Arc<Type<Id>> {
-        self.infer_or_none(identifier, edge)
+    pub fn infer(&self, identifier: &Id) -> Arc<Type<Id>> {
+        self.infer_or_none(identifier)
             .cloned()
             .unwrap_or_else(|| {
                 Arc::new(Type::Set {
@@ -1036,11 +863,8 @@ impl<Id: Clone + PartialEq> Game<Id> {
     pub fn infer_or_none<'a>(
         &'a self,
         identifier: &Id,
-        edge: Option<&'a Edge<Id>>,
     ) -> Option<&'a Arc<Type<Id>>> {
-        edge.and_then(|edge| edge.get_binding(identifier))
-            .map(|(_, type_)| type_)
-            .or_else(|| self.resolve_constant(identifier).map(|x| &x.type_))
+        self.resolve_constant(identifier).map(|x| &x.type_)
             .or_else(|| self.resolve_variable(identifier).map(|x| &x.type_))
     }
 
@@ -1049,7 +873,7 @@ impl<Id: Clone + PartialEq> Game<Id> {
         lhs: &Arc<Type<Id>>,
         rhs: &Id,
     ) -> Result<bool, Error<Id>> {
-        if let Some(rhs) = self.infer_or_none(rhs, None) {
+        if let Some(rhs) = self.infer_or_none(rhs) {
             // If `rhs` resolves to some type, it has to be assignable.
             self.is_assignable_type(lhs, rhs, false)
         } else if let Type::Set { identifiers, .. } = lhs.resolve(self)? {
@@ -1110,10 +934,9 @@ impl<Id: Clone + PartialEq> Game<Id> {
             && self.is_assignable_type(rhs, lhs, is_strict)?)
     }
 
-    pub fn is_symbol(&self, id: &Id, edge: &Edge<Id>) -> bool {
-        !(edge.has_binding(id)
-            || self.resolve_constant(id).is_some()
-            || self.resolve_variable(id).is_some())
+    pub fn is_symbol(&self, id: &Id) -> bool {
+        self.resolve_constant(id).is_some()
+            || self.resolve_variable(id).is_some()
     }
 
     pub fn resolve_constant(&self, identifier: &Id) -> Option<&Constant<Id>> {
@@ -1561,10 +1384,6 @@ pub enum Pragma<Id> {
 }
 
 impl<Id> Pragma<Id> {
-    pub fn has_bindings(&self) -> bool {
-        self.nodes().any(Node::has_bindings)
-    }
-
     pub fn nodes(&self) -> Box<dyn Iterator<Item = &Node<Id>> + '_> {
         match self {
             Self::ArtificialTag { .. } => Box::new(None.into_iter()),
@@ -1580,12 +1399,6 @@ impl<Id> Pragma<Id> {
             }
             Self::TranslatedFromRbg { .. } => Box::new([].into_iter()),
         }
-    }
-}
-
-impl<Id: Ord> Pragma<Id> {
-    pub fn bindings(&self) -> BTreeSet<Binding<Id>> {
-        self.nodes().flat_map(Node::bindings).collect()
     }
 }
 
@@ -1622,107 +1435,6 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
                 }
             }
             Self::TranslatedFromRbg { .. } => {}
-        }
-    }
-}
-
-impl Pragma<Arc<str>> {
-    /// Substitute bindings in-place if possible and yield substituted `Self`s instead.
-    pub fn substitute_bindings_mut(&mut self, mappings: &[Mapping<Arc<str>>]) -> Option<Vec<Self>> {
-        if let Self::Disjoint { node, .. } | Self::DisjointExhaustive { node, .. } = self {
-            let mut node_variants = mappings
-                .iter()
-                .map(|mapping| node.substitute_bindings(mapping))
-                .collect::<BTreeSet<_>>();
-
-            if node_variants.len() != 1 {
-                // Cannot `substitute_bindings_mut` of a `Pragma` with bindings in `node`.
-                return Some(vec![]);
-            }
-
-            *node = node_variants.pop_first().unwrap();
-        };
-
-        if let Self::SimpleApply { lhs, .. } | Self::SimpleApplyExhaustive { lhs, .. } = self {
-            let mut lhs_variants = mappings
-                .iter()
-                .map(|mapping| lhs.substitute_bindings(mapping))
-                .collect::<BTreeSet<_>>();
-
-            if lhs_variants.len() != 1 {
-                // Cannot `substitute_bindings_mut` of a `Pragma` with bindings in `lhs`.
-                return Some(vec![]);
-            }
-
-            *lhs = lhs_variants.pop_first().unwrap();
-        };
-
-        match self {
-            Self::ArtificialTag { .. } => None,
-            Self::Disjoint { nodes, .. }
-            | Self::DisjointExhaustive { nodes, .. }
-            | Self::Repeat { nodes, .. }
-            | Self::TagIndex { nodes, .. }
-            | Self::TagMaxIndex { nodes, .. }
-            | Self::Unique { nodes, .. } => {
-                *nodes = mappings
-                    .iter()
-                    .flat_map(|mapping| nodes.iter().map(|node| node.substitute_bindings(mapping)))
-                    .collect::<BTreeSet<_>>()
-                    .into_iter()
-                    .collect();
-                None
-            }
-            // TODO: Can we deduplicate this code?
-            Self::SimpleApply {
-                span,
-                lhs,
-                rhs,
-                tags,
-                assignments,
-            } => Some(
-                mappings
-                    .iter()
-                    .map(|mapping| Self::SimpleApply {
-                        lhs: lhs.clone(),
-                        rhs: rhs.substitute_bindings(mapping),
-                        tags: tags
-                            .iter()
-                            .map(|tag| tag.rename_variables(mapping))
-                            .collect(),
-                        assignments: assignments
-                            .iter()
-                            .map(|assignment| assignment.rename_variables(mapping))
-                            .collect(),
-                        span: *span,
-                    })
-                    .collect(),
-            ),
-            Self::SimpleApplyExhaustive {
-                span,
-                lhs,
-                rhs,
-                tags,
-                assignments,
-            } => Some(
-                mappings
-                    .iter()
-                    .map(|mapping| Self::SimpleApplyExhaustive {
-                        lhs: lhs.clone(),
-                        rhs: rhs.substitute_bindings(mapping),
-                        tags: tags
-                            .iter()
-                            .map(|tag| tag.rename_variables(mapping))
-                            .collect(),
-                        assignments: assignments
-                            .iter()
-                            .map(|assignment| assignment.rename_variables(mapping))
-                            .collect(),
-                        span: *span,
-                    })
-                    .collect(),
-            ),
-            Self::TranslatedFromRbg { .. } => None,
         }
     }
 }

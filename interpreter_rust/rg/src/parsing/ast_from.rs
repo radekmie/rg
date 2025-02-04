@@ -1,5 +1,5 @@
 use crate::ast::{
-    Constant, Edge, Expression, Label, Node, NodePart, PragmaAssignment, PragmaTag, Type, Typedef,
+    Constant, Edge, Expression, Label, Node, PragmaAssignment, PragmaTag, Type, Typedef,
     Value, ValueEntry, Variable,
 };
 use std::sync::Arc;
@@ -87,39 +87,6 @@ impl<Id: Positioned> From<(Input<'_>, Node<Id>, Node<Id>)> for Label<Id> {
 impl<Id: Positioned> From<Id> for Expression<Id> {
     fn from(identifier: Id) -> Self {
         Self::Reference { identifier }
-    }
-}
-
-impl<Id: Positioned> From<(Id, Vec<NodePart<Id>>)> for Node<Id> {
-    fn from((identifier, bindings): (Id, Vec<NodePart<Id>>)) -> Self {
-        let first = NodePart::from(identifier);
-        let last = bindings.last().unwrap_or(&first);
-        let span = first.span().with_end(last.end());
-        let mut parts = vec![first];
-        parts.extend(bindings);
-        Self { span, parts }
-    }
-}
-
-impl<Id: Positioned> From<Id> for Node<Id> {
-    fn from(identifier: Id) -> Self {
-        Self::from((identifier, vec![]))
-    }
-}
-
-impl<Id: Positioned> From<(Input<'_>, Id, Arc<Type<Id>>, Input<'_>)> for NodePart<Id> {
-    fn from((start, identifier, type_, end): (Input, Id, Arc<Type<Id>>, Input)) -> Self {
-        Self::Binding {
-            span: Span::from((&start, &end)),
-            identifier,
-            type_,
-        }
-    }
-}
-
-impl<Id> From<Id> for NodePart<Id> {
-    fn from(identifier: Id) -> Self {
-        Self::Literal { identifier }
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::ast::{
-    Constant, Edge, Error, ErrorReason, Expression, Game, Label, Node, NodePart, Pragma,
+    Constant, Edge, Error, ErrorReason, Expression, Game, Label, Node, Pragma,
     PragmaAssignment, PragmaTag, Stats, Type, Typedef, Value, ValueEntry, Variable,
 };
 use std::fmt::{Display, Formatter, Result};
@@ -62,22 +62,8 @@ impl<Id: Display> Display for Label<Id> {
 
 impl<Id: Display> Display for Node<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        for part in &self.parts {
-            write!(f, "{part}")?;
-        }
-
+        write!(f, "{}", self.identifier)?;
         Ok(())
-    }
-}
-
-impl<Id: Display> Display for NodePart<Id> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match self {
-            Self::Binding {
-                identifier, type_, ..
-            } => write!(f, "({identifier}: {type_})"),
-            Self::Literal { identifier } => write!(f, "{identifier}"),
-        }
     }
 }
 
