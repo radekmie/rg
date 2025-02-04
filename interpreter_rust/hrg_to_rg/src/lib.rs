@@ -86,10 +86,7 @@ pub fn hrg_to_rg(hrg: hrg::Game<Id>) -> Result<rg::Game<Id>, hrg::Error<Id>> {
 }
 
 fn add_bindings(mut node: rg::Node<Id>, bindings: &[(&Id, &Arc<rg::Type<Id>>)]) -> rg::Node<Id> {
-    bindings
-        .iter()
-        .for_each(|(identifier, type_)| node.add_binding((*identifier).clone(), (*type_).clone()));
-    node
+    todo!()
 }
 
 fn check_arguments_length(

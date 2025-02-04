@@ -615,16 +615,7 @@ fn copy_path(
     original_to: rg::Node<Id>,
 ) -> (rg::Node<Id>, rg::Node<Id>) {
     fn prefix_node(prefix: &Id, mut node: rg::Node<Id>) -> rg::Node<Id> {
-        match node.parts.first_mut().unwrap() {
-            rg::NodePart::Binding { .. } => {
-                node.parts.insert(0, rg::NodePart::new(prefix.clone()));
-            }
-            rg::NodePart::Literal { identifier } => {
-                *identifier = Id::from(format!("{prefix}_{identifier}"));
-            }
-        }
-
-        node
+        todo!()
     }
 
     fn copy(
@@ -652,8 +643,8 @@ fn copy_path(
         //   - $ coordGenerator
         //   - $ index_N
         if distance <= 3 {
-            edge.lhs.parts.truncate(1);
-            edge.rhs.parts.truncate(1);
+            // edge.lhs.parts.truncate(1);
+            // edge.rhs.parts.truncate(1);
             edge.skip();
         }
 
@@ -703,14 +694,14 @@ fn copy_path(
         distances[node]
     }
 
-    assert!(
-        !original_from.has_bindings(),
-        "Only simple nodes can be copied."
-    );
-    assert!(
-        !original_to.has_bindings(),
-        "Only simple nodes can be copied."
-    );
+    // assert!(
+    //     !original_from.has_bindings(),
+    //     "Only simple nodes can be copied."
+    // );
+    // assert!(
+    //     !original_to.has_bindings(),
+    //     "Only simple nodes can be copied."
+    // );
 
     // Represent minimum distance to `original_to`. A `None` is an intermediate
     // state where we don't know if it's reachable or no. (It is used to copy
@@ -736,7 +727,7 @@ fn copy_path(
 fn expose_position(context: &mut Context, from: rg::Node<Id>, to: rg::Node<Id>) {
     let mut local_coord = context.random_node();
     let bind = Id::from("coordGenerator");
-    local_coord.add_binding(bind.clone(), Arc::from(rg::Type::new(Id::from("Coord"))));
+    // local_coord.add_binding(bind.clone(), Arc::from(rg::Type::new(Id::from("Coord"))));
     context.connect(
         from,
         local_coord.clone(),
@@ -1229,10 +1220,10 @@ fn translate_atom_content(
             // All coords are reachable -> (bind: Coord).
             if pairs.iter().all(|(_, coords)| coords.len() == pairs_len) {
                 let mut local = context.random_node();
-                local.add_binding(
-                    Id::from("coordGenerator"),
-                    Arc::from(rg::Type::new(Id::from("Coord"))),
-                );
+                // local.add_binding(
+                //     Id::from("coordGenerator"),
+                //     Arc::from(rg::Type::new(Id::from("Coord"))),
+                // );
 
                 context.connect(
                     from,
@@ -1306,7 +1297,7 @@ fn translate_atom_content(
                 let coords = pairs.pop().unwrap().1;
                 let type_ = context.create_type_from_set(coords);
                 let mut local = context.random_node();
-                local.add_binding(Id::from("coordPossibility"), type_.clone());
+                // local.add_binding(Id::from("coordPossibility"), type_.clone());
 
                 context.connect(
                     from,
@@ -1335,10 +1326,10 @@ fn translate_atom_content(
             let reachability_map = context.create_reachability_map(&BTreeMap::from_iter(pairs));
 
             let mut local = context.random_node();
-            local.add_binding(
-                Id::from("coordGenerator"),
-                Arc::from(rg::Type::new(Id::from("Coord"))),
-            );
+            // local.add_binding(
+            //     Id::from("coordGenerator"),
+            //     Arc::from(rg::Type::new(Id::from("Coord"))),
+            // );
 
             context.connect(
                 from,

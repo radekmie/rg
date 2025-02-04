@@ -82,16 +82,17 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
         },
         ast::Label::Skip { .. } => ist::EdgeLabel::Skip,
         ast::Label::Tag { symbol } => ist::EdgeLabel::Tag { symbol },
-        rg::ast::Label::AssignmentAny { .. } | rg::ast::Label::TagVariable { .. } => todo!(),
+        rg::ast::Label::AssignmentAny { .. } | rg::ast::Label::TagVariable { .. } => todo!()
     }
 }
 
 fn build_node(mut node: ast::Node<Id>) -> Id {
-    assert!(node.parts.len() == 1, "Only trivial EdgeName allowed.");
-    let Some(ast::NodePart::Literal { identifier }) = node.parts.pop() else {
-        panic!("Only trivial EdgeName allowed.")
-    };
-    identifier
+    // assert!(node.parts.len() == 1, "Only trivial EdgeName allowed.");
+    // let Some(ast::NodePart::Literal { identifier }) = node.parts.pop() else {
+    //     panic!("Only trivial EdgeName allowed.")
+    // };
+    // identifier
+    todo!()
 }
 
 fn build_edges(context: &mut Context, edges: Vec<Arc<ast::Edge<Id>>>) {
