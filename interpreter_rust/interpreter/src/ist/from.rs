@@ -82,6 +82,7 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
         },
         ast::Label::Skip { .. } => ist::EdgeLabel::Skip,
         ast::Label::Tag { symbol } => ist::EdgeLabel::Tag { symbol },
+        rg::ast::Label::AssignmentAny { .. } | rg::ast::Label::TagVariable { .. } => todo!(),
     }
 }
 

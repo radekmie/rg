@@ -30,6 +30,7 @@ impl<Id: Display> Display for Label<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Assignment { lhs, rhs } => write!(f, "{lhs} = {rhs}"),
+            Self::AssignmentAny { lhs, rhs } => write!(f, "{lhs} = {rhs}(*)"),
             Self::Comparison {
                 lhs,
                 rhs,
@@ -54,6 +55,7 @@ impl<Id: Display> Display for Label<Id> {
             } => write!(f, "! {lhs} -> {rhs}"),
             Self::Skip { .. } => write!(f, ""),
             Self::Tag { symbol } => write!(f, "$ {symbol}"),
+            Self::TagVariable { symbol } => write!(f, "$$ {symbol}"),
         }
     }
 }

@@ -50,13 +50,13 @@ impl Game<Id> {
                 .filter(|edge| edge.rhs == *target)?;
             match &edge.label {
                 // Do not inline negated assignments.
-                Label::Assignment { .. } => None,
+                Label::Assignment { .. } | Label::AssignmentAny { .. } => None,
                 // Copy (and negate) the comparison or reachability.
                 Label::Comparison { .. } | Label::Reachability { .. } => {
                     Some((BTreeSet::from([edge.clone()]), None))
                 }
                 // Do not inline tags into the main automaton.
-                Label::Tag { .. } => {
+                Label::Tag { .. } | Label::TagVariable { .. } => {
                     if is_main_automaton {
                         None
                     } else {

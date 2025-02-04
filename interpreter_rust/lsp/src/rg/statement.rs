@@ -46,10 +46,12 @@ impl Statement for Edge<Identifier> {
         } else if self.label.span().encloses_position(pos) || pos > &self.label.end() {
             match self.label {
                 Label::Assignment { .. } => CompletionKind::Variable,
+                Label::AssignmentAny { .. } => CompletionKind::Variable,
                 Label::Comparison { .. } => CompletionKind::Variable,
                 Label::Reachability { .. } => CompletionKind::Edge,
                 Label::Skip { .. } => CompletionKind::Variable,
                 Label::Tag { .. } => CompletionKind::Param,
+                Label::TagVariable { .. } => CompletionKind::Param,
             }
         } else {
             CompletionKind::Edge

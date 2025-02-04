@@ -61,12 +61,17 @@ fn add_from_edge_label(
             add_from_expression(table, lhs, owner);
             add_from_expression(table, rhs, owner);
         }
+        Label::AssignmentAny { lhs, rhs } => {
+            add_from_expression(table, lhs, owner);
+            add_from_type(table, rhs);
+        }
         Label::Comparison { lhs, rhs, .. } => {
             add_from_expression(table, lhs, owner);
             add_from_expression(table, rhs, owner);
         }
         Label::Skip { .. } => (),
         Label::Tag { symbol } => add_maybe_edge_param(table, symbol, owner, false),
+        Label::TagVariable { symbol } => add_maybe_edge_param(table, symbol, owner, false),
         Label::Reachability { lhs, rhs, .. } => {
             add_from_edge_name(table, lhs);
             add_from_edge_name(table, rhs);

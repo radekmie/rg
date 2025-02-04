@@ -41,6 +41,12 @@ impl<Id> From<Id> for Label<Id> {
     }
 }
 
+impl<Id> From<(Arc<Expression<Id>>, Arc<Type<Id>>)> for Label<Id> {
+    fn from((lhs, rhs): (Arc<Expression<Id>>, Arc<Type<Id>>)) -> Self {
+        Self::AssignmentAny { lhs, rhs }
+    }
+}
+
 impl<Id> From<(Arc<Expression<Id>>, Arc<Expression<Id>>)> for Label<Id> {
     fn from((lhs, rhs): (Arc<Expression<Id>>, Arc<Expression<Id>>)) -> Self {
         Self::Assignment { lhs, rhs }

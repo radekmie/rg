@@ -140,6 +140,10 @@ pub enum Label<Id> {
         lhs: Arc<Expression<Id>>,
         rhs: Arc<Expression<Id>>,
     },
+    AssignmentAny {
+        lhs: Arc<Expression<Id>>,
+        rhs: Arc<Type<Id>>,
+    },
     Comparison {
         lhs: Arc<Expression<Id>>,
         rhs: Arc<Expression<Id>>,
@@ -157,6 +161,9 @@ pub enum Label<Id> {
         span: Span,
     },
     Tag {
+        symbol: Id,
+    },
+    TagVariable {
         symbol: Id,
     },
 }
