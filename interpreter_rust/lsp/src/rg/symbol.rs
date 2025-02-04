@@ -1,6 +1,6 @@
 use crate::common;
 use crate::common::symbol::{defined, Flag, Symbol};
-use rg::ast::{Edge, Game, Type};
+use rg::ast::{Game, Type};
 use std::sync::Arc;
 use utils::Identifier;
 
@@ -26,18 +26,12 @@ impl Symbols {
         }
     }
 
-    fn add_if_not_defined(&mut self, symbol: Option<Symbol>) -> Option<usize> {
-        symbol.map(|symbol| {
-            defined(&self.symbols, &symbol.id, &symbol.flag).unwrap_or_else(|| {
+    fn add_if_not_defined(&mut self, symbol: Option<Symbol>) {
+        if let Some(symbol) = symbol {
+            if defined(&self.symbols, &symbol.id, &symbol.flag).is_none() {
                 self.symbols.push(symbol);
-                self.symbols.len() - 1
-            })
-        })
-    }
-
-    fn add_from_edge(&mut self, edge: &Edge<Identifier>) {
-        self.add_if_not_defined(untyped(&edge.lhs.identifier, Flag::Function));
-        self.add_if_not_defined(untyped(&edge.rhs.identifier, Flag::Function));
+            }
+        }
     }
 
     pub fn from_game(game: &Game<Identifier>) -> Vec<Symbol> {
@@ -63,9 +57,10 @@ impl Symbols {
             let sym_type = Arc::new(Type::new(id.clone()));
             symbols.add_from_type(&typedef.type_, sym_type);
         });
-        game.edges
-            .iter()
-            .for_each(|edge| symbols.add_from_edge(edge));
+        game.edges.iter().for_each(|edge| {
+            symbols.add_if_not_defined(untyped(&edge.lhs.identifier, Flag::Function));
+            symbols.add_if_not_defined(untyped(&edge.rhs.identifier, Flag::Function));
+        });
         symbols.symbols
     }
 }

@@ -23,14 +23,12 @@ fn add_from_type(table: &mut SymbolTableBuilder, type_: &Type<Identifier>) {
 }
 
 fn add_from_edge(table: &mut SymbolTableBuilder, edge: &Edge<Identifier>) {
+    add_from_edge_name(table, &edge.lhs);
+    add_from_edge_name(table, &edge.rhs);
     add_from_edge_label(table, &edge.label);
 }
 
-fn add(
-    table: &mut SymbolTableBuilder,
-    identifier: &Identifier,
-    create_error: bool,
-) {
+fn add(table: &mut SymbolTableBuilder, identifier: &Identifier, create_error: bool) {
     if !identifier.is_none() && !identifier.is_numeric() {
         let span = identifier.span();
         let sym_idx = table.find_symbol(identifier, &None, &None);
@@ -45,10 +43,7 @@ fn add(
     }
 }
 
-fn add_from_edge_label(
-    table: &mut SymbolTableBuilder,
-    label: &Label<Identifier>,
-) {
+fn add_from_edge_label(table: &mut SymbolTableBuilder, label: &Label<Identifier>) {
     match label {
         Label::Assignment { lhs, rhs } => {
             add_from_expression(table, lhs);
@@ -72,10 +67,7 @@ fn add_from_edge_label(
     }
 }
 
-fn add_from_expression(
-    table: &mut SymbolTableBuilder,
-    expr: &Expression<Identifier>,
-) {
+fn add_from_expression(table: &mut SymbolTableBuilder, expr: &Expression<Identifier>) {
     match expr {
         Expression::Reference { identifier } => {
             add(table, identifier, true);
@@ -91,13 +83,8 @@ fn add_from_expression(
     }
 }
 
-// Returns symbol idx for edge name if it has parameters
-fn add_from_edge_name(
-    table: &mut SymbolTableBuilder,
-    node: &Node<Identifier>,
-) -> Option<usize> {
-    table.add_occ_with_flag(&node.identifier, Flag::Function);
-    None
+fn add_from_edge_name(table: &mut SymbolTableBuilder, node: &Node<Identifier>) {
+    table.add_occ_with_flag(&node.identifier, Flag::Function)
 }
 
 fn add_from_value(table: &mut SymbolTableBuilder, value: &Value<Identifier>) {
