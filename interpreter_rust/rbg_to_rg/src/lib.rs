@@ -614,7 +614,7 @@ fn copy_path(
     original_from: rg::Node<Id>,
     original_to: rg::Node<Id>,
 ) -> (rg::Node<Id>, rg::Node<Id>) {
-    fn prefix_node(prefix: &Id, mut node: rg::Node<Id>) -> rg::Node<Id> {
+    fn prefix_node(prefix: &Id, node: rg::Node<Id>) -> rg::Node<Id> {
         todo!()
     }
 
@@ -725,7 +725,7 @@ fn copy_path(
 }
 
 fn expose_position(context: &mut Context, from: rg::Node<Id>, to: rg::Node<Id>) {
-    let mut local_coord = context.random_node();
+    let local_coord = context.random_node();
     let bind = Id::from("coordGenerator");
     // local_coord.add_binding(bind.clone(), Arc::from(rg::Type::new(Id::from("Coord"))));
     context.connect(
@@ -1219,7 +1219,7 @@ fn translate_atom_content(
 
             // All coords are reachable -> (bind: Coord).
             if pairs.iter().all(|(_, coords)| coords.len() == pairs_len) {
-                let mut local = context.random_node();
+                let local = context.random_node();
                 // local.add_binding(
                 //     Id::from("coordGenerator"),
                 //     Arc::from(rg::Type::new(Id::from("Coord"))),
@@ -1296,7 +1296,7 @@ fn translate_atom_content(
             if pairs.iter().all(|(_, coords)| *coords == pairs[0].1) {
                 let coords = pairs.pop().unwrap().1;
                 let type_ = context.create_type_from_set(coords);
-                let mut local = context.random_node();
+                let local = context.random_node();
                 // local.add_binding(Id::from("coordPossibility"), type_.clone());
 
                 context.connect(
@@ -1325,7 +1325,7 @@ fn translate_atom_content(
             // one generator.
             let reachability_map = context.create_reachability_map(&BTreeMap::from_iter(pairs));
 
-            let mut local = context.random_node();
+            let local = context.random_node();
             // local.add_binding(
             //     Id::from("coordGenerator"),
             //     Arc::from(rg::Type::new(Id::from("Coord"))),

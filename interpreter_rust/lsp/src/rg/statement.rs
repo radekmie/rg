@@ -39,7 +39,7 @@ impl Statement for Constant<Identifier> {
 
 impl Statement for Edge<Identifier> {
     fn completion_kind(&self, pos: &Position) -> CompletionKind {
-       if self.label.span().encloses_position(pos) || pos > &self.label.end() {
+        if self.label.span().encloses_position(pos) || pos > &self.label.end() {
             match self.label {
                 Label::Assignment { .. } => CompletionKind::Variable,
                 Label::AssignmentAny { .. } => CompletionKind::Variable,

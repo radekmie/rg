@@ -1,5 +1,5 @@
 use crate::ast::analyses::ConstantsAnalysis;
-use crate::ast::{Edge, Error, Expression, Game, Label, Type, Value};
+use crate::ast::{Error, Expression, Game, Label, Type, Value};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -30,7 +30,7 @@ impl Context<'_> {
         }
     }
 
-    fn get_identifier(&self, identifier: &Id, edge: &Edge<Id>) -> Option<Id> {
+    fn get_identifier(&self, identifier: &Id) -> Option<Id> {
         if self.variables.contains(identifier) {
             self.dereference_constant(self.constant_vars.get(identifier)?, false)
                 .to_identifier()
@@ -42,7 +42,7 @@ impl Context<'_> {
         }
     }
 
-    fn get_value(&self, identifier: &Id, edge: &Edge<Id>) -> Option<Value<Id>> {
+    fn get_value(&self, identifier: &Id) -> Option<Value<Id>> {
         if self.variables.contains(identifier) {
             Some(
                 self.dereference_constant(self.constant_vars.get(identifier)?, true)
@@ -75,7 +75,6 @@ impl Game<Id> {
                 continue;
             }
 
-            let edge_clone = edge.clone();
             let edge = Arc::make_mut(edge);
             match &mut edge.label {
                 Label::Assignment { lhs, rhs } => {
@@ -85,8 +84,8 @@ impl Game<Id> {
                         constant_vars: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
                     };
 
-                    let new_lhs = eval_expression(lhs, &context, &edge_clone, &game, false);
-                    let new_rhs = eval_expression(rhs, &context, &edge_clone, &game, false);
+                    let new_lhs = eval_expression(lhs, &context, &game, false);
+                    let new_rhs = eval_expression(rhs, &context, &game, false);
 
                     if new_lhs == new_rhs {
                         edge.skip();
@@ -101,17 +100,17 @@ impl Game<Id> {
                         variables,
                     };
 
-                    *lhs = Arc::new(eval_expression(lhs, &context, &edge_clone, &game, false));
-                    *rhs = Arc::new(eval_expression(rhs, &context, &edge_clone, &game, false));
+                    *lhs = Arc::new(eval_expression(lhs, &context, &game, false));
+                    *rhs = Arc::new(eval_expression(rhs, &context, &game, false));
 
                     let lhs_value = lhs
                         .uncast()
                         .as_reference()
-                        .and_then(|id| context.get_value(id, &edge_clone));
+                        .and_then(|id| context.get_value(id));
                     let rhs_value = rhs
                         .uncast()
                         .as_reference()
-                        .and_then(|id| context.get_value(id, &edge_clone));
+                        .and_then(|id| context.get_value(id));
 
                     // Skip comparisons between constants
                     if let (Some(lhs_value), Some(rhs_value)) = (lhs_value, rhs_value) {
@@ -131,7 +130,6 @@ impl Game<Id> {
         &self,
         id: Id,
         expression: &Expression<Id>,
-        edge: &Edge<Id>,
         in_cast: bool,
     ) -> Option<Expression<Id>> {
         if !in_cast && self.is_symbol(&id) {
@@ -150,23 +148,22 @@ impl Game<Id> {
 fn eval_expression(
     expression: &Expression<Id>,
     context: &Context,
-    edge: &Edge<Id>,
     game: &Game<Id>,
     in_cast: bool,
 ) -> Expression<Id> {
     match expression {
         Expression::Access { lhs, rhs, span } => {
             // First, try to evaluate lhs as Value::Map and rhs as Value::Identifier
-            eval_access(lhs, rhs, context, edge, false).map_or_else(
+            eval_access(lhs, rhs, context, false).map_or_else(
                 || Expression::Access {
                     span: *span,
-                    lhs: Arc::new(eval_expression(lhs, context, edge, game, false)),
-                    rhs: Arc::new(eval_expression(rhs, context, edge, game, false)),
+                    lhs: Arc::new(eval_expression(lhs, context, game, false)),
+                    rhs: Arc::new(eval_expression(rhs, context, game, false)),
                 },
                 |value| {
                     value
                         .as_identifier()
-                        .and_then(|id| game.new_casted_expression(id, expression, edge, in_cast))
+                        .and_then(|id| game.new_casted_expression(id, expression, in_cast))
                         .unwrap_or_else(|| expression.clone())
                 },
             )
@@ -174,11 +171,11 @@ fn eval_expression(
         Expression::Cast { span, lhs, rhs } => Expression::Cast {
             span: *span,
             lhs: lhs.clone(),
-            rhs: Arc::new(eval_expression(rhs, context, edge, game, true)),
+            rhs: Arc::new(eval_expression(rhs, context, game, true)),
         },
         Expression::Reference { identifier } => context
-            .get_identifier(identifier, edge)
-            .and_then(|id| game.new_casted_expression(id, expression, edge, in_cast))
+            .get_identifier(identifier)
+            .and_then(|id| game.new_casted_expression(id, expression, in_cast))
             .unwrap_or_else(|| expression.clone()),
     }
 }
@@ -187,37 +184,28 @@ fn eval_access(
     lhs: &Expression<Id>,
     rhs: &Expression<Id>,
     context: &Context,
-    edge: &Edge<Id>,
     dereference_map: bool,
 ) -> Option<Value<Id>> {
-    eval_as_map(lhs, context, edge)?
-        .get_entry(&eval_as_identifier(rhs, context, edge)?)
+    eval_as_map(lhs, context)?
+        .get_entry(&eval_as_identifier(rhs, context)?)
         .map(|value| context.dereference_constant(value, dereference_map).clone())
 }
 
-fn eval_as_map(
-    expression: &Expression<Id>,
-    context: &Context,
-    edge: &Edge<Id>,
-) -> Option<Value<Id>> {
+fn eval_as_map(expression: &Expression<Id>, context: &Context) -> Option<Value<Id>> {
     match expression {
-        Expression::Access { lhs, rhs, .. } => eval_access(lhs, rhs, context, edge, true),
-        Expression::Cast { rhs, .. } => eval_as_map(rhs, context, edge),
-        Expression::Reference { identifier } => context.get_value(identifier, edge),
+        Expression::Access { lhs, rhs, .. } => eval_access(lhs, rhs, context, true),
+        Expression::Cast { rhs, .. } => eval_as_map(rhs, context),
+        Expression::Reference { identifier } => context.get_value(identifier),
     }
 }
 
-fn eval_as_identifier(
-    expression: &Expression<Id>,
-    context: &Context,
-    edge: &Edge<Id>,
-) -> Option<Id> {
+fn eval_as_identifier(expression: &Expression<Id>, context: &Context) -> Option<Id> {
     match expression {
         Expression::Access { lhs, rhs, .. } => {
-            eval_access(lhs, rhs, context, edge, false).and_then(Value::as_identifier)
+            eval_access(lhs, rhs, context, false).and_then(Value::as_identifier)
         }
-        Expression::Cast { rhs, .. } => eval_as_identifier(rhs, context, edge),
-        Expression::Reference { identifier } => context.get_identifier(identifier, edge),
+        Expression::Cast { rhs, .. } => eval_as_identifier(rhs, context),
+        Expression::Reference { identifier } => context.get_identifier(identifier),
     }
 }
 

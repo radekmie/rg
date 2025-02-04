@@ -45,10 +45,7 @@ impl Game<Id> {
         for (edge, expr, type_, unused_members) in to_compat {
             let nodes: Vec<_> = unused_members
                 .iter()
-                .map(|_| {
-                    let node = gen_fresh_node(&mut max_id);
-                    node
-                })
+                .map(|_| gen_fresh_node(&mut max_id))
                 .collect();
             let lhss = iter::once(edge.lhs.clone()).chain(nodes.clone());
             let rhss = nodes.into_iter().chain(iter::once(edge.rhs.clone()));

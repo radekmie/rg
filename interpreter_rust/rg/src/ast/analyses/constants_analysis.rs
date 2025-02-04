@@ -89,7 +89,7 @@ fn as_constant_assignment(
         return None;
     }
     let (id, expr) = edge.label.as_var_assignment()?;
-    Some((id.clone(), evaluate_constant(expr, knowledge, ctx, edge)?))
+    Some((id.clone(), evaluate_constant(expr, knowledge, ctx)?))
 }
 
 fn as_constant_comparison(
@@ -108,12 +108,12 @@ fn as_constant_comparison(
 
         let can_be_replaced = |id: &Id| ctx.is_variable(id) && !knowledge.contains_key(id);
         if lhs.is_reference_and(can_be_replaced) {
-            let value = evaluate_constant(rhs, knowledge, ctx, edge)?;
+            let value = evaluate_constant(rhs, knowledge, ctx)?;
             return lhs.as_reference().map(|id| (id.clone(), value));
         }
 
         if rhs.is_reference_and(can_be_replaced) {
-            let value = evaluate_constant(lhs, knowledge, ctx, edge)?;
+            let value = evaluate_constant(lhs, knowledge, ctx)?;
             return rhs.as_reference().map(|id| (id.clone(), value));
         }
     }
@@ -125,12 +125,11 @@ fn evaluate_constant(
     expr: &Expression<Id>,
     knowledge: &BTreeMap<Id, Arc<Value<Id>>>,
     ctx: &Context,
-    edge: &Edge<Id>,
 ) -> Option<Arc<Value<Id>>> {
     match expr {
         Expression::Access { lhs, rhs, .. } => {
-            let lhs = evaluate_constant(lhs, knowledge, ctx, edge)?;
-            let rhs = evaluate_constant(rhs, knowledge, ctx, edge)?;
+            let lhs = evaluate_constant(lhs, knowledge, ctx)?;
+            let rhs = evaluate_constant(rhs, knowledge, ctx)?;
             dereference_constant(&rhs, ctx)
                 .to_identifier()
                 .and_then(|identifier| {
@@ -139,7 +138,7 @@ fn evaluate_constant(
                         .map(|entry| Arc::new(entry.clone()))
                 })
         }
-        Expression::Cast { rhs, .. } => evaluate_constant(rhs, knowledge, ctx, edge),
+        Expression::Cast { rhs, .. } => evaluate_constant(rhs, knowledge, ctx),
         Expression::Reference { identifier } if ctx.is_variable(identifier) => {
             knowledge.get(identifier).cloned()
         }

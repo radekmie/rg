@@ -1,17 +1,8 @@
-use super::{gen_fresh_node, max_node_id};
-use crate::ast::{
-    Constant, Edge, Error, Expression, Game, Label, Node, Type, Typedef, Value, ValueEntry,
-};
-use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
-use utils::position::Span;
+
+use crate::ast::{Error, Game};
 
 type Id = Arc<str>;
-type NodeEdges = (Node<Id>, Vec<Arc<Edge<Id>>>);
-type TypeValue = (Arc<Type<Id>>, Arc<Value<Id>>);
-const BOOL_FALSE: &str = "0";
-const BOOL_TRUE: &str = "1";
-const BOOL_TYPE: &str = "Bool";
 
 impl Game<Id> {
     pub fn join_generators(&mut self) -> Result<(), Error<Id>> {

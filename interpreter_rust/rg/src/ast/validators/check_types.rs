@@ -9,12 +9,12 @@ impl<Id: Clone + PartialEq> Constant<Id> {
 
 impl<Id: Clone + PartialEq> Edge<Id> {
     fn check_type(&self, game: &Game<Id>) -> Result<(), Error<Id>> {
-        self.label.check_type(game, Some(self))
+        self.label.check_type(game)
     }
 }
 
 impl<Id: Clone + PartialEq> Label<Id> {
-    fn check_type(&self, game: &Game<Id>, edge: Option<&Edge<Id>>) -> Result<(), Error<Id>> {
+    fn check_type(&self, game: &Game<Id>) -> Result<(), Error<Id>> {
         match self {
             Self::Assignment { lhs, rhs } => {
                 let lhs = lhs.infer(game)?;

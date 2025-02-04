@@ -4,12 +4,6 @@ use rg::ast::{Edge, Game, Type};
 use std::{collections::HashSet, sync::Arc};
 use utils::{position::Positioned, Identifier};
 
-struct EdgeParam {
-    param: Identifier,
-    type_: Arc<Type<Identifier>>,
-    owners: HashSet<usize>,
-}
-
 pub struct Symbols {
     symbols: Vec<Symbol>,
 }

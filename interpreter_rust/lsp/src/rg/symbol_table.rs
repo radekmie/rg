@@ -101,10 +101,7 @@ fn add_from_expression(
 }
 
 // Returns symbol idx for edge name if it has parameters
-fn add_from_edge_name(
-    table: &mut SymbolTableBuilder,
-    node: &Node<Identifier>,
-) -> Option<usize> {
+fn add_from_edge_name(table: &mut SymbolTableBuilder, node: &Node<Identifier>) -> Option<usize> {
     table.add_occ_with_flag(&node.identifier, Flag::Function);
     None
 }

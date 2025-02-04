@@ -96,7 +96,7 @@ impl Game<Id> {
             let tags_count = paths_to_tags.len();
             let mut simple_paths_to_tags = vec![];
             for (tag, mut paths) in paths_to_tags {
-                let (_, mut path, mut assignments) = paths.pop_first().unwrap();
+                let (_, mut path, assignments) = paths.pop_first().unwrap();
 
                 // If there's exactly one path to a tag, it's trivially simple.
                 if paths.is_empty() {

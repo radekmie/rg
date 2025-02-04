@@ -85,7 +85,7 @@ pub fn hrg_to_rg(hrg: hrg::Game<Id>) -> Result<rg::Game<Id>, hrg::Error<Id>> {
     Ok(context.rg)
 }
 
-fn add_bindings(mut node: rg::Node<Id>, bindings: &[(&Id, &Arc<rg::Type<Id>>)]) -> rg::Node<Id> {
+fn add_bindings(node: rg::Node<Id>, bindings: &[(&Id, &Arc<rg::Type<Id>>)]) -> rg::Node<Id> {
     todo!()
 }
 
