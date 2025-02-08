@@ -93,17 +93,23 @@ fn label(input: Input) -> Result<Label<Identifier>> {
 }
 
 fn tag_label(input: Input) -> Result<Label<Identifier>> {
-    into(preceded(
-        preceded_whitespace(char('$')),
-        cut(preceded_opt_id("label")),
-    ))(input)
+    map(
+        preceded(
+            preceded_whitespace(char('$')),
+            cut(preceded_opt_id("label")),
+        ),
+        |symbol| Label::Tag { symbol },
+    )(input)
 }
 
 fn tag_variable_label(input: Input) -> Result<Label<Identifier>> {
-    into(preceded(
-        preceded_whitespace(tag("$$")),
-        cut(preceded_opt_id("label")),
-    ))(input)
+    map(
+        preceded(
+            preceded_whitespace(tag("$$")),
+            cut(preceded_opt_id("label")),
+        ),
+        |symbol| Label::TagVariable { symbol },
+    )(input)
 }
 
 fn reachability_label(input: Input) -> Result<Label<Identifier>> {

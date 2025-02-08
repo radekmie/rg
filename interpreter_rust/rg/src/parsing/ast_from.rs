@@ -35,12 +35,6 @@ impl<Id: Positioned> From<(Node<Id>, (Node<Id>, Label<Id>), Span)> for Edge<Id> 
     }
 }
 
-impl<Id> From<Id> for Label<Id> {
-    fn from(symbol: Id) -> Self {
-        Self::Tag { symbol }
-    }
-}
-
 impl<Id> From<(Arc<Expression<Id>>, Arc<Type<Id>>)> for Label<Id> {
     fn from((lhs, rhs): (Arc<Expression<Id>>, Arc<Type<Id>>)) -> Self {
         Self::AssignmentAny { lhs, rhs }
