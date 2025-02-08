@@ -85,13 +85,12 @@ impl Game<Id> {
                 if let Some(y_in) = prev_edges.get(y) {
                     let to_move = y_in
                         .iter()
-                        .filter(|(x_y_idx, _)| {
-                            !to_remove.contains(x_y_idx) // For safety, this edge could have been removed
-                        })
+                        // For safety, this edge could have been removed
+                        .filter(|(x_y_idx, _)| !to_remove.contains(x_y_idx))
                         .map(|(x_y_idx, _)| *x_y_idx)
                         .collect::<Vec<_>>();
                     if to_move.len() == y_in.len() {
-                        // (6)
+                        // (5)
                         to_remove.push(*y_z_idx);
                     }
                     if !to_move.is_empty() {
@@ -145,13 +144,12 @@ impl Game<Id> {
                 if let Some(y_out) = next_edges.get(&y) {
                     let to_move = y_out
                         .iter()
-                        .filter(|(y_z_idx, _)| {
-                            !to_remove.contains(y_z_idx) // For safety, this edge could have been removed
-                        })
+                        // For safety, this edge could have been removed
+                        .filter(|(y_z_idx, _)| !to_remove.contains(y_z_idx))
                         .map(|(y_z_idx, _)| *y_z_idx)
                         .collect::<Vec<_>>();
                     if to_move.len() == y_out.len() {
-                        // (7)
+                        // (5)
                         to_remove.push(*x_y_idx);
                     }
                     if !to_move.is_empty() {
@@ -225,15 +223,15 @@ mod test {
     test_transform!(
         compact_skip_edges,
         player_assignment_prefix,
-        "begin, b: player = x; b, c(t:T): ; c(t:T), end: ;",
-        "begin, b: player = x; b, c(t:T): ; c(t:T), end: ;"
+        "begin, b: player = x; b, c: ; c, end: ;",
+        "begin, end: player = x;"
     );
 
     test_transform!(
         compact_skip_edges,
         player_assignment_suffix,
-        "begin, b(t:T): ; b(t:T), c: ; c, end: player = x;",
-        "begin, b(t:T): ; b(t:T), c: ; c, end: player = x;"
+        "begin, b: ; b, c: ; c, end: player = x;",
+        "begin, end: player = x;"
     );
 
     test_transform!(
@@ -257,68 +255,19 @@ mod test {
 
     test_transform!(
         compact_skip_edges,
-        simple_loop_with_binds_single,
-        "
-            type X = { x };
-            begin, loop(x: X): ;
-            loop(x: X), cond(x: X): ;
-            cond(x: X), true(x: X): 1 == 1;
-            cond(x: X), false(x: X): 1 != 1;
-            false(x: X), loop(x: X): ;
-            true(x: X), end: player = keeper;
-        ",
-        "
-            type X = { x };
-            begin, loop(x: X): ;
-            loop(x: X), cond(x: X): ;
-            cond(x: X), true(x: X): 1 == 1;
-            cond(x: X), cond(x: X): 1 != 1;
-            true(x: X), end: player = keeper;
-        "
-    );
-
-    test_transform!(
-        compact_skip_edges,
-        simple_loop_with_binds_multiple,
-        "
-            type X = { x };
-            type Y = { y };
-            type Z = { z };
-            begin, loop(x: X)(y: Y): ;
-            loop(x: X)(y: Y), cond(x: X)(z: Z): ;
-            cond(x: X)(z: Z), true(x: X)(y: Y): 1 == 1;
-            cond(x: X)(z: Z), false(x: X)(z: Z): 1 != 1;
-            false(x: X)(z: Z), loop(x: X)(y: Y): ;
-            true(x: X)(y: Y), end: player = keeper;
-        ",
-        "
-            type X = { x };
-            type Y = { y };
-            type Z = { z };
-            begin, loop(bind_X_1: X)(bind_Y_1: Y): ;
-            loop(bind_X_1: X)(bind_Y_1: Y), cond(bind_X_1: X)(bind_Z_1: Z): ;
-            cond(bind_X_1: X)(bind_Z_1: Z), true(bind_X_1: X)(bind_Y_2: Y): 1 == 1;
-            cond(bind_X_1: X)(bind_Z_1: Z), false(bind_X_1: X)(bind_Z_1: Z): 1 != 1;
-            false(bind_X_1: X)(bind_Z_1: Z), loop(bind_X_1: X)(bind_Y_1: Y): ;
-            true(bind_X_1: X)(bind_Y_2: Y), end: player = keeper;
-        "
-    );
-
-    test_transform!(
-        compact_skip_edges,
-        complex_loop_with_binds,
+        complex_loop,
         "
             type T = { a, b };
             var v: T = a;
             begin, a: ;
             a, b: ;
-            b, c(t: T): T(t) != T(a);
-            c(t: T), d: v = t;
+            b, c: T(t) != T(a);
+            c, d: v = t;
             d, e: ;
             d, f: ;
-            e, g(t: T): T(t) != T(a);
+            e, g: T(t) != T(a);
             f, end: ;
-            g(t: T), h: v = t;
+            g, h: v = t;
             h, a: ;
             h, end: ;
         ",
@@ -326,11 +275,11 @@ mod test {
             type T = { a, b };
             var v: T = a;
             begin, b: ;
-            b, c(bind_T_1: T): T(bind_T_1) != T(a);
-            c(bind_T_1: T), d: v = T(bind_T_1);
+            b, c: T(t) != T(a);
+            c, d: v = t;
             d, end: ;
-            d, g(bind_T_2: T): T(bind_T_2) != T(a);
-            g(bind_T_2: T), h: v = T(bind_T_2);
+            d, g: T(t) != T(a);
+            g, h: v = t;
             h, b: ;
             h, end: ;
         "
@@ -377,18 +326,18 @@ mod test {
         compact_skip_edges,
         linear_ordered,
         "
-            begin, x1(p: Position): 1 == 1;
-            x1(p: Position), x3(p: Position): p != null;
-            x3(p: Position), x4(p: Position): position = p;
-            x4(p: Position), x2(p: Position): 1 == 1;
-            x2(p: Position), end: 1 == 1;
+            begin, x1: 1 == 1;
+            x1, x3: p != null;
+            x3, x4: position = p;
+            x4, x2: 1 == 1;
+            x2, end: 1 == 1;
         ",
         "
-            begin, x1(p: Position): 1 == 1;
-            x1(p: Position), x3(p: Position): p != null;
-            x3(p: Position), x4(p: Position): position = p;
-            x4(p: Position), x2(p: Position): 1 == 1;
-            x2(p: Position), end: 1 == 1;
+            begin, x1: 1 == 1;
+            x1, x3: p != null;
+            x3, x4: position = p;
+            x4, x2: 1 == 1;
+            x2, end: 1 == 1;
         "
     );
 
@@ -396,43 +345,19 @@ mod test {
         compact_skip_edges,
         linear_unordered,
         "
-            begin, x1(p: Position): 1 == 1;
-            x2(p: Position), end: 1 == 1;
-            x1(p: Position), x4(p: Position): p != null;
-            x4(p: Position), x5(p: Position): position = p;
-            x5(p: Position), x2(p: Position): 1 == 1;
+            begin, x1: 1 == 1;
+            x2, end: 1 == 1;
+            x1, x4: p != null;
+            x4, x5: position = p;
+            x5, x2: 1 == 1;
         ",
         "
-            begin, x1(p: Position): 1 == 1;
-            x2(p: Position), end: 1 == 1;
-            x1(p: Position), x4(p: Position): p != null;
-            x4(p: Position), x5(p: Position): position = p;
-            x5(p: Position), x2(p: Position): 1 == 1;
+            begin, x1: 1 == 1;
+            x2, end: 1 == 1;
+            x1, x4: p != null;
+            x4, x5: position = p;
+            x5, x2: 1 == 1;
         "
-    );
-
-    test_transform!(
-        compact_skip_edges,
-        sequence_of_binds,
-        "
-            begin, x1(position: Position): ;
-            x1(position: Position), y: ;
-            y, x2(position: Position): ;
-            x2(position: Position), end: ;
-        ",
-        "
-            begin, x1(bind_Position_1: Position): ;
-            x1(bind_Position_1: Position), y: ;
-            y, x2(bind_Position_2: Position): ;
-            x2(bind_Position_2: Position), end: ;
-        "
-    );
-
-    test_transform!(
-        compact_skip_edges,
-        canonical_form,
-        "type T = { 0, 1 }; var t: T = 0; a, b(x: T): x == t; c, d(x: T): x == t;",
-        "type T = { 0, 1 }; var t: T = 0; a, b(bind_T_1: T): T(bind_T_1) == t; c, d(bind_T_2: T): T(bind_T_2) == t;"
     );
 
     test_transform!(
@@ -610,13 +535,13 @@ mod test {
             rules_2, rules_3: me = x;
             rules_3, turn_begin: ;
             turn_begin, turn_1: player = me;
-            turn_1, turn_2(p: Position): ;
-            turn_2(p: Position), turn_4(p: Position): board[p] == empty;
-            turn_4(p: Position), turn_5(p: Position): board[p] = me;
-            turn_5(p: Position), turn_6(p: Position): position = p;
-            turn_6(p: Position), turn_7(p: Position): $ p;
-            turn_7(p: Position), turn_3(p: Position): ;
-            turn_3(p: Position), turn_8: ;
+            turn_1, turn_2: ;
+            turn_2, turn_4: board[p] == empty;
+            turn_4, turn_5: board[p] = me;
+            turn_5, turn_6: position = p;
+            turn_6, turn_7: $ p;
+            turn_7, turn_3: ;
+            turn_3, turn_8: ;
             turn_8, turn_9: player = keeper;
             win_call_1, turn_12_1: position = position;
             turn_12_1, win_begin: ;
@@ -641,10 +566,10 @@ mod test {
             turn_13, turn_14: goals[op[me]] = 0;
             turn_14, end: player = keeper;
             findNonempty_call_1, findNonempty_begin: ;
-            findNonempty_begin, findNonempty_1(p: Position): ;
-            findNonempty_1(p: Position), findNonempty_3(p: Position): board[p] == empty;
-            findNonempty_3(p: Position), findNonempty_2(p: Position): ;
-            findNonempty_2(p: Position), findNonempty_4: ;
+            findNonempty_begin, findNonempty_1: ;
+            findNonempty_1, findNonempty_3: board[p] == empty;
+            findNonempty_3, findNonempty_2: ;
+            findNonempty_2, findNonempty_4: ;
             findNonempty_4, findNonempty_end: ;
             turn_11, turn_16: ? findNonempty_call_1 -> findNonempty_end;
             turn_11, turn_15: ! findNonempty_call_1 -> findNonempty_end;
@@ -687,14 +612,12 @@ mod test {
             begin, rules_begin: ;
             rules_begin, rules_2: turn_return = turn_call_1;
             rules_2, turn_begin: me = x;
-            turn_begin, turn_1: player = me;
-            turn_1, turn_2(bind_Position_1: Position): ;
-            turn_2(bind_Position_1: Position), turn_4(bind_Position_1: Position): board[Position(bind_Position_1)] == empty;
-            turn_4(bind_Position_1: Position), turn_5(bind_Position_1: Position): board[Position(bind_Position_1)] = me;
-            turn_5(bind_Position_1: Position), turn_6(bind_Position_1: Position): position = Position(bind_Position_1);
-            turn_6(bind_Position_1: Position), turn_3(bind_Position_1: Position): $ bind_Position_1;
-            turn_3(bind_Position_1: Position), turn_8: ;
-            turn_8, turn_9: player = keeper;
+            turn_begin, turn_2: player = me;
+            turn_2, turn_4: board[p] == empty;
+            turn_4, turn_5: board[p] = me;
+            turn_5, turn_6: position = p;
+            turn_6, turn_3: $ p;
+            turn_3, turn_9: player = keeper;
             win_call_1, win_begin: position = position;
             win_begin, win_2: position != next_d1[position];
             win_2, win_3: board[position] == board[next_d1[position]];
@@ -711,9 +634,7 @@ mod test {
             turn_10, turn_13: goals[me] = 100;
             turn_13, turn_14: goals[op[me]] = 0;
             turn_14, end: player = keeper;
-            findNonempty_call_1, findNonempty_1(bind_Position_2: Position): ;
-            findNonempty_1(bind_Position_2: Position), findNonempty_2(bind_Position_2: Position): board[Position(bind_Position_2)] == empty;
-            findNonempty_2(bind_Position_2: Position), findNonempty_end: ;
+            findNonempty_call_1, findNonempty_end: board[p] == empty;
             turn_11, turn_end: ? findNonempty_call_1 -> findNonempty_end;
             turn_11, turn_15: ! findNonempty_call_1 -> findNonempty_end;
             turn_15, end: player = keeper;

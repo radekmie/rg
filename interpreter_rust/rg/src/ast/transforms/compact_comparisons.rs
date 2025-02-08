@@ -287,17 +287,4 @@ mod test {
         1, 2: x != A(5);
         2, end: ;"
     );
-
-    test_transform!(
-        compact_comparisons,
-        chain_binding,
-        "type A = {1,2,3,4, 5};
-        begin(x: A), end: x == 1;
-        begin(x: A), end: x == 2;
-        begin(x: A), end: x == 3;",
-        "type A = { 1, 2, 3, 4, 5 };
-        begin(x: A), 1(x: A): x != A(4);
-        1(x: A), 2(x: A): x != A(5);
-        2(x: A), end: ;"
-    );
 }
