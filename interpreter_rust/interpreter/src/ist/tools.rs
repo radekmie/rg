@@ -256,7 +256,7 @@ impl Game<RuntimeId> {
     /// to orphan rules.
     #[expect(clippy::type_complexity)]
     pub fn try_from(
-        mut game: GameAst<Id>,
+        game: GameAst<Id>,
     ) -> Result<(Self, Interner<Id, RuntimeId>, BTreeMap<Id, usize>), Error<Id>> {
         let mut interner = Interner::default();
         interner.intern_as(&Arc::from("begin"), LABEL_BEGIN);
@@ -264,7 +264,6 @@ impl Game<RuntimeId> {
         interner.intern_as(&Arc::from("keeper"), LABEL_KEEPER);
         interner.intern_as(&Arc::from("random"), LABEL_RANDOM);
 
-        game.expand_generator_nodes()?;
         let context = Game::from_game(game);
         let game = context.game.map_id(&mut |id| interner.intern(id));
         Ok((game, interner, context.variables_indexes))

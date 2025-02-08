@@ -1,4 +1,4 @@
-use super::{EdgeLabel, Expression, Game, RuntimeId, Value, LABEL_END};
+use super::{EdgeLabel, Expression, Game, RuntimeId, Type, Value, LABEL_END};
 use std::collections::BTreeSet;
 use std::rc::Rc;
 
@@ -68,7 +68,7 @@ impl State {
         match expression {
             Expression::Access { lhs, rhs } => {
                 let Value::Element { value } = &**self.eval(game, rhs) else {
-                    panic!("Only Element can be key.")
+                    panic!("Only Element can be key.");
                 };
 
                 let mut map = self.eval(game, lhs).clone();
@@ -174,6 +174,23 @@ impl Iterator for StateNext<'_> {
                                     search_queue.push(state);
                                 }
                             }
+                            EdgeLabel::AssignmentAny { lhs, rhs } => {
+                                let Type::Set { values } = rhs.as_ref() else {
+                                    panic!("Only Set can used in AssignmentAny.")
+                                };
+
+                                for value in values {
+                                    let mut state = state.clone();
+                                    state.eval_set(game, lhs, value.clone());
+
+                                    // TODO: Is `player = T(*)` allowed?
+                                    if *break_on_player && *lhs == Expression::PlayerReference {
+                                        return_queue.push(state);
+                                    } else {
+                                        search_queue.push(state);
+                                    }
+                                }
+                            }
                             EdgeLabel::Comparison { lhs, rhs, negated } => {
                                 let lhs_value = state.eval(game, lhs);
                                 let rhs_value = state.eval(game, rhs);
@@ -213,6 +230,14 @@ impl Iterator for StateNext<'_> {
                             }
                             EdgeLabel::Tag { symbol } => {
                                 state.tags = Rc::new([&state.tags[..], &[*symbol]].concat());
+                                search_queue.push(state);
+                            }
+                            EdgeLabel::TagVariable { index } => {
+                                let Value::Element { value } = state.values[*index].as_ref() else {
+                                    panic!("Only Element can used as a Tag.")
+                                };
+
+                                state.tags = Rc::new([&state.tags[..], &[*value]].concat());
                                 search_queue.push(state);
                             }
                         }

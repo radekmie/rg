@@ -27,6 +27,10 @@ pub enum EdgeLabel<Id: Ord> {
         lhs: Expression<Id>,
         rhs: Expression<Id>,
     },
+    AssignmentAny {
+        lhs: Expression<Id>,
+        rhs: Rc<Type<Id>>,
+    },
     Comparison {
         lhs: Expression<Id>,
         rhs: Expression<Id>,
@@ -40,6 +44,9 @@ pub enum EdgeLabel<Id: Ord> {
     Skip,
     Tag {
         symbol: Id,
+    },
+    TagVariable {
+        index: usize,
     },
 }
 

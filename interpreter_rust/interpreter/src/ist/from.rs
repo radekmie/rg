@@ -68,7 +68,10 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
             lhs: build_expression(context, &lhs),
             rhs: build_expression(context, &rhs),
         },
-        ast::Label::AssignmentAny { .. } => todo!(),
+        ast::Label::AssignmentAny { lhs, rhs } => ist::EdgeLabel::AssignmentAny {
+            lhs: build_expression(context, &lhs),
+            rhs: build_type_or_fail(context, &rhs),
+        },
         ast::Label::Comparison { lhs, rhs, negated } => ist::EdgeLabel::Comparison {
             lhs: build_expression(context, &lhs),
             rhs: build_expression(context, &rhs),
@@ -83,7 +86,12 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
         },
         ast::Label::Skip { .. } => ist::EdgeLabel::Skip,
         ast::Label::Tag { symbol } => ist::EdgeLabel::Tag { symbol },
-        ast::Label::TagVariable { .. } => todo!(),
+        ast::Label::TagVariable { symbol } => ist::EdgeLabel::TagVariable {
+            index: *context
+                .variables_indexes
+                .get(&symbol)
+                .unwrap_or_else(|| panic!("Unknown variable {symbol}.")),
+        },
     }
 }
 
