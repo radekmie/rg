@@ -84,7 +84,7 @@ fn add_from_expression(table: &mut SymbolTableBuilder, expr: &Expression<Identif
 }
 
 fn add_from_edge_name(table: &mut SymbolTableBuilder, node: &Node<Identifier>) {
-    table.add_occ_with_flag(&node.identifier, Flag::Function)
+    table.add_occ_with_flag(&node.identifier, Flag::Function);
 }
 
 fn add_from_value(table: &mut SymbolTableBuilder, value: &Value<Identifier>) {

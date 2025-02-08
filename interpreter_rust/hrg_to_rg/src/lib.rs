@@ -85,6 +85,7 @@ pub fn hrg_to_rg(hrg: hrg::Game<Id>) -> Result<rg::Game<Id>, hrg::Error<Id>> {
     Ok(context.rg)
 }
 
+#[expect(clippy::needless_pass_by_value, unused_variables)]
 fn add_bindings(node: rg::Node<Id>, bindings: &[(&Id, &Arc<rg::Type<Id>>)]) -> rg::Node<Id> {
     todo!()
 }

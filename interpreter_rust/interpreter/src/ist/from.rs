@@ -68,6 +68,7 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
             lhs: build_expression(context, &lhs),
             rhs: build_expression(context, &rhs),
         },
+        ast::Label::AssignmentAny { .. } => todo!(),
         ast::Label::Comparison { lhs, rhs, negated } => ist::EdgeLabel::Comparison {
             lhs: build_expression(context, &lhs),
             rhs: build_expression(context, &rhs),
@@ -82,7 +83,7 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
         },
         ast::Label::Skip { .. } => ist::EdgeLabel::Skip,
         ast::Label::Tag { symbol } => ist::EdgeLabel::Tag { symbol },
-        rg::ast::Label::AssignmentAny { .. } | rg::ast::Label::TagVariable { .. } => todo!(),
+        ast::Label::TagVariable { .. } => todo!(),
     }
 }
 
