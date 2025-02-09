@@ -80,8 +80,8 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
         ast::Label::Reachability {
             lhs, rhs, negated, ..
         } => ist::EdgeLabel::Reachability {
-            lhs: build_node(lhs),
-            rhs: build_node(rhs),
+            lhs: lhs.identifier,
+            rhs: rhs.identifier,
             negated,
         },
         ast::Label::Skip { .. } => ist::EdgeLabel::Skip,
@@ -95,15 +95,11 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
     }
 }
 
-fn build_node(node: ast::Node<Id>) -> Id {
-    node.identifier
-}
-
 fn build_edges(context: &mut Context, edges: Vec<Arc<ast::Edge<Id>>>) {
     for edge in edges {
         let edge = Arc::unwrap_or_clone(edge);
-        let lhs = build_node(edge.lhs);
-        let rhs = build_node(edge.rhs);
+        let lhs = edge.lhs.identifier;
+        let rhs = edge.rhs.identifier;
         let label = build_label(context, edge.label);
 
         context
@@ -154,10 +150,9 @@ fn build_pragmas(context: &mut Context, pragmas: Vec<ast::Pragma<Id>>) {
         match pragma {
             ast::Pragma::Disjoint { node, nodes, .. }
             | ast::Pragma::DisjointExhaustive { node, nodes, .. } => {
-                let node = build_node(node);
-                if let Some(next) = context.game.edges.get(&node) {
+                if let Some(next) = context.game.edges.get(&node.identifier) {
                     if next.len() == nodes.len() {
-                        context.game.disjoints.insert(node);
+                        context.game.disjoints.insert(node.identifier);
                     }
                 }
             }
@@ -176,12 +171,12 @@ fn build_pragmas(context: &mut Context, pragmas: Vec<ast::Pragma<Id>>) {
                     context
                         .game
                         .repeats
-                        .insert(build_node(node), variables.clone());
+                        .insert(node.identifier, variables.clone());
                 }
             }
             ast::Pragma::Unique { nodes, .. } => {
                 for node in nodes {
-                    context.game.uniques.insert(build_node(node));
+                    context.game.uniques.insert(node.identifier);
                 }
             }
             _ => {}
