@@ -130,13 +130,11 @@ fn compare_or_assign_label(input: Input) -> Result<Label<Identifier>> {
         preceded_whitespace(alt((tag("=="), tag("!="), tag("=")))),
     )(input)?;
     let separator = *sep.fragment();
-    let lhs = if let Some(lhs) = lhs {
-        lhs
-    } else {
+    let lhs = lhs.unwrap_or_else(|| {
         let err = Error::parser_error(error_pos, "expected: expression".to_string());
         input.extra.report_error(err);
         arc_expression(Identifier::none(error_pos).into())
-    };
+    });
     let (input, rhs_type) = opt(terminated(type_, in_parens(char('*'))))(input)?;
     if let Some(rhs) = rhs_type {
         // For AssignmentAny we need "="

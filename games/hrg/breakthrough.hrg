@@ -67,19 +67,16 @@ me : Player = white
 pos : Position
 
 graph existsOppPawn() {
-  forall p:Position {
-    check(board[p] == piece(opponent(me)))
-  }
+  pos = Position(*)
+  check(board[pos] == piece(opponent(me)))
 }
 
 graph move() {
   player = me
-  forall p:Position {
-    check(board[p] == piece(me))
-    $ p
-    board[p] = empty
-    pos = p
-  }
+  pos = Position(*)
+  check(board[pos] == piece(me))
+  board[pos] = empty
+  $$ pos
   branch {
     $ F
     pos = directionF(me)(pos)

@@ -5,14 +5,31 @@ use crate::ast::{
 };
 use std::sync::Arc;
 
-impl<Id> From<(Id, Vec<Arc<Expression<Id>>>, Arc<Expression<Id>>)> for Statement<Id> {
+impl<Id>
+    From<(
+        Id,
+        Vec<Arc<Expression<Id>>>,
+        Result<Arc<Expression<Id>>, Arc<Type<Id>>>,
+    )> for Statement<Id>
+{
     fn from(
-        (identifier, accessors, expression): (Id, Vec<Arc<Expression<Id>>>, Arc<Expression<Id>>),
+        (identifier, accessors, expression_or_type): (
+            Id,
+            Vec<Arc<Expression<Id>>>,
+            Result<Arc<Expression<Id>>, Arc<Type<Id>>>,
+        ),
     ) -> Self {
-        Self::Assignment {
-            identifier,
-            accessors,
-            expression,
+        match expression_or_type {
+            Ok(expression) => Self::Assignment {
+                identifier,
+                accessors,
+                expression,
+            },
+            Err(type_) => Self::AssignmentAny {
+                identifier,
+                accessors,
+                type_,
+            },
         }
     }
 }
@@ -20,16 +37,6 @@ impl<Id> From<(Id, Vec<Arc<Expression<Id>>>, Arc<Expression<Id>>)> for Statement
 impl<Id> From<(Id, Vec<Arc<Expression<Id>>>)> for Statement<Id> {
     fn from((identifier, args): (Id, Vec<Arc<Expression<Id>>>)) -> Self {
         Self::Call { identifier, args }
-    }
-}
-
-impl<Id> From<((Id, Arc<Type<Id>>), Vec<Self>)> for Statement<Id> {
-    fn from(((identifier, type_), body): ((Id, Arc<Type<Id>>), Vec<Self>)) -> Self {
-        Self::Forall {
-            identifier,
-            type_,
-            body,
-        }
     }
 }
 

@@ -51,6 +51,17 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
             }
             add_from_expression(table, expression);
         }
+        Statement::AssignmentAny {
+            identifier,
+            accessors,
+            type_,
+        } => {
+            table.add_occ(identifier);
+            for accessor in accessors {
+                add_from_expression(table, accessor);
+            }
+            add_from_type(table, type_);
+        }
         Statement::Branch { arms } => {
             for arm in arms {
                 for statement in arm {
@@ -62,17 +73,6 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
             table.add_occ(identifier);
             for arg in args {
                 add_from_expression(table, arg);
-            }
-        }
-        Statement::Forall {
-            identifier,
-            type_,
-            body,
-        } => {
-            table.add_occ(identifier);
-            add_from_type(table, type_);
-            for statement in body {
-                add_from_statement(table, statement);
             }
         }
         Statement::If {
@@ -100,6 +100,9 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
                     table.occurrences.push(occ);
                 }
             }
+        }
+        Statement::TagVariable { symbol } => {
+            table.add_occ(symbol);
         }
         Statement::While { expression, body } => {
             add_from_expression(table, expression);

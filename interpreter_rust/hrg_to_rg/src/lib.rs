@@ -18,18 +18,10 @@ struct Context {
 }
 
 impl Context {
-    fn connect(
-        &mut self,
-        lhs: rg::Node<Id>,
-        rhs: rg::Node<Id>,
-        label: rg::Label<Id>,
-        bindings: &[rg::Binding<Id>],
-    ) {
-        self.rg.edges.push(Arc::from(rg::Edge::new(
-            add_bindings(lhs, bindings),
-            add_bindings(rhs, bindings),
-            label,
-        )));
+    fn connect(&mut self, lhs: rg::Node<Id>, rhs: rg::Node<Id>, label: rg::Label<Id>) {
+        self.rg
+            .edges
+            .push(Arc::from(rg::Edge::new(lhs, rhs, label)));
     }
 
     fn random(&mut self, prefix: &Id) -> Id {
@@ -83,11 +75,6 @@ pub fn hrg_to_rg(hrg: hrg::Game<Id>) -> Result<rg::Game<Id>, hrg::Error<Id>> {
     )?;
 
     Ok(context.rg)
-}
-
-#[expect(clippy::needless_pass_by_value, unused_variables)]
-fn add_bindings(node: rg::Node<Id>, bindings: &[(&Id, &Arc<rg::Type<Id>>)]) -> rg::Node<Id> {
-    todo!()
 }
 
 fn check_arguments_length(
@@ -578,7 +565,6 @@ fn translate_automaton_function(
     let returns = translate_automaton_statements(
         context,
         &automaton_function.body,
-        &[],
         None,
         None,
         end_node,
@@ -595,7 +581,7 @@ fn translate_automaton_function(
 
     if returns {
         if let Some(return_node) = return_node {
-            context.connect(next_node, return_node.clone(), rg::Label::new_skip(), &[]);
+            context.connect(next_node, return_node.clone(), rg::Label::new_skip());
         }
     }
 
@@ -606,7 +592,6 @@ fn translate_automaton_function(
 fn translate_automaton_statements(
     context: &mut Context,
     automaton_statements: &[hrg::Statement<Id>],
-    bindings: &[rg::Binding<Id>],
     break_node: Option<&rg::Node<Id>>,
     continue_node: Option<&rg::Node<Id>>,
     end_node: Option<&rg::Node<Id>>,
@@ -638,20 +623,42 @@ fn translate_automaton_statements(
                                     rhs: translate_expression(
                                         context,
                                         accessor,
-                                        bindings,
                                         automaton_function,
                                     )?,
                                 })
                             },
                         )?),
-                        rhs: translate_expression(
-                            context,
-                            expression,
-                            bindings,
-                            automaton_function,
-                        )?,
+                        rhs: translate_expression(context, expression, automaton_function)?,
                     },
-                    bindings,
+                );
+                current_node = local_node;
+            }
+            hrg::Statement::AssignmentAny {
+                identifier,
+                accessors,
+                type_,
+            } => {
+                let local_node = context.random_node(prefix);
+                context.connect(
+                    current_node,
+                    local_node.clone(),
+                    rg::Label::AssignmentAny {
+                        lhs: Arc::from(accessors.iter().try_fold(
+                            rg::Expression::new(identifier.clone()),
+                            |expression, accessor| {
+                                Ok(rg::Expression::Access {
+                                    span: Span::none(),
+                                    lhs: Arc::from(expression),
+                                    rhs: translate_expression(
+                                        context,
+                                        accessor,
+                                        automaton_function,
+                                    )?,
+                                })
+                            },
+                        )?),
+                        rhs: translate_type(type_),
+                    },
                 );
                 current_node = local_node;
             }
@@ -661,7 +668,6 @@ fn translate_automaton_statements(
                     translate_automaton_statements(
                         context,
                         arm,
-                        bindings,
                         break_node,
                         continue_node,
                         end_node,
@@ -686,12 +692,7 @@ fn translate_automaton_statements(
                         panic!("break() requires break_node.");
                     };
 
-                    context.connect(
-                        add_bindings(current_node, bindings),
-                        break_node.clone(),
-                        rg::Label::new_skip(),
-                        &[],
-                    );
+                    context.connect(current_node, break_node.clone(), rg::Label::new_skip());
                     return Ok(true);
                 }
                 "check" => {
@@ -704,7 +705,6 @@ fn translate_automaton_statements(
                         Some(&local_node),
                         None,
                         prefix,
-                        bindings,
                         automaton_function,
                     )?;
                     current_node = local_node;
@@ -720,12 +720,7 @@ fn translate_automaton_statements(
                         panic!("continue() requires continue_node.");
                     };
 
-                    context.connect(
-                        add_bindings(current_node, bindings),
-                        continue_node.clone(),
-                        rg::Label::new_skip(),
-                        &[],
-                    );
+                    context.connect(current_node, continue_node.clone(), rg::Label::new_skip());
                     return Ok(true);
                 }
                 "end" => {
@@ -740,13 +735,12 @@ fn translate_automaton_statements(
                     };
 
                     context.connect(
-                        add_bindings(current_node, bindings),
+                        current_node,
                         end_node.clone(),
                         rg::Label::Assignment {
                             lhs: Arc::from(rg::Expression::new(Id::from("player"))),
                             rhs: Arc::from(rg::Expression::new(Id::from("keeper"))),
                         },
-                        &[],
                     );
                     return Ok(true);
                 }
@@ -761,12 +755,7 @@ fn translate_automaton_statements(
                         panic!("return() requires return_node.");
                     };
 
-                    context.connect(
-                        add_bindings(current_node, bindings),
-                        return_node.clone(),
-                        rg::Label::new_skip(),
-                        &[],
-                    );
+                    context.connect(current_node, return_node.clone(), rg::Label::new_skip());
                     return Ok(true);
                 }
                 _ => {
@@ -833,12 +822,7 @@ fn translate_automaton_statements(
                         }
 
                         let call_node = rg::Node::new(call_id.clone());
-                        context.connect(
-                            current_node,
-                            call_node.clone(),
-                            rg::Label::new_skip(),
-                            bindings,
-                        );
+                        context.connect(current_node, call_node.clone(), rg::Label::new_skip());
 
                         let set_node = context.random_node(prefix);
                         context.connect(
@@ -848,7 +832,6 @@ fn translate_automaton_statements(
                                 lhs: Arc::from(rg::Expression::new(variable.clone())),
                                 rhs: Arc::from(rg::Expression::new(call_id.clone())),
                             },
-                            bindings,
                         );
 
                         current_node = set_node;
@@ -861,14 +844,8 @@ fn translate_automaton_statements(
                                     lhs: Arc::from(rg::Expression::new(
                                         called_automaton_function.nth_arg_variable(index),
                                     )),
-                                    rhs: translate_expression(
-                                        context,
-                                        arg,
-                                        bindings,
-                                        automaton_function,
-                                    )?,
+                                    rhs: translate_expression(context, arg, automaton_function)?,
                                 },
-                                bindings,
                             );
                             current_node = arg_node;
                         }
@@ -880,7 +857,6 @@ fn translate_automaton_statements(
                                 &called_automaton_function.name
                             ))),
                             rg::Label::new_skip(),
-                            bindings,
                         );
 
                         let local_node = rg::Node::new(Id::from(format!(
@@ -906,7 +882,6 @@ fn translate_automaton_statements(
                                 ))),
                                 local_node.clone(),
                                 rg::Label::new_skip(),
-                                bindings,
                             );
                         }
 
@@ -920,7 +895,6 @@ fn translate_automaton_statements(
                                 rhs: Arc::from(rg::Expression::new(call_id)),
                                 negated: false,
                             },
-                            bindings,
                         );
 
                         current_node = intermediate_node;
@@ -935,14 +909,8 @@ fn translate_automaton_statements(
                                     lhs: Arc::from(rg::Expression::new(
                                         called_automaton_function.nth_arg_variable(index),
                                     )),
-                                    rhs: translate_expression(
-                                        context,
-                                        arg,
-                                        bindings,
-                                        automaton_function,
-                                    )?,
+                                    rhs: translate_expression(context, arg, automaton_function)?,
                                 },
-                                bindings,
                             );
                             current_node = arg_node;
                         }
@@ -954,7 +922,6 @@ fn translate_automaton_statements(
                                 &called_automaton_function.name
                             ))),
                             rg::Label::new_skip(),
-                            bindings,
                         );
 
                         let local_node = context.random_node(prefix);
@@ -969,51 +936,6 @@ fn translate_automaton_statements(
                     }
                 }
             },
-            hrg::Statement::Forall {
-                identifier,
-                type_,
-                body,
-            } => {
-                let binding = (identifier, &translate_type(type_));
-
-                let local_node = context.random_node(prefix);
-                context.connect(
-                    add_bindings(current_node, bindings),
-                    add_bindings(add_bindings(local_node.clone(), bindings), &[binding]),
-                    rg::Label::new_skip(),
-                    &[],
-                );
-
-                let middle_node = context.random_node(prefix);
-                translate_automaton_statements(
-                    context,
-                    body,
-                    bindings
-                        .iter()
-                        .cloned()
-                        .chain(Some(binding))
-                        .collect::<Vec<_>>()
-                        .as_slice(),
-                    break_node,
-                    continue_node,
-                    end_node,
-                    local_node,
-                    Some(&middle_node),
-                    prefix,
-                    return_node,
-                    automaton_function,
-                )?;
-
-                let after_node = context.random_node(prefix);
-                context.connect(
-                    add_bindings(add_bindings(middle_node, bindings), &[binding]),
-                    add_bindings(after_node.clone(), bindings),
-                    rg::Label::new_skip(),
-                    &[],
-                );
-
-                current_node = after_node;
-            }
             hrg::Statement::If {
                 expression,
                 then,
@@ -1028,13 +950,11 @@ fn translate_automaton_statements(
                     Some(&then_node),
                     Some(&else_node),
                     prefix,
-                    bindings,
                     automaton_function,
                 )?;
                 translate_automaton_statements(
                     context,
                     then,
-                    bindings,
                     break_node,
                     continue_node,
                     end_node,
@@ -1061,13 +981,11 @@ fn translate_automaton_statements(
                     Some(&then_node),
                     Some(&else_node),
                     prefix,
-                    bindings,
                     automaton_function,
                 )?;
                 translate_automaton_statements(
                     context,
                     body,
-                    bindings,
                     break_node,
                     continue_node,
                     end_node,
@@ -1080,7 +998,6 @@ fn translate_automaton_statements(
                 translate_automaton_statements(
                     context,
                     else_,
-                    bindings,
                     break_node,
                     continue_node,
                     end_node,
@@ -1094,19 +1011,13 @@ fn translate_automaton_statements(
             }
             hrg::Statement::Loop { body } => {
                 let loop_init = context.random_node(prefix);
-                context.connect(
-                    current_node,
-                    loop_init.clone(),
-                    rg::Label::new_skip(),
-                    bindings,
-                );
+                context.connect(current_node, loop_init.clone(), rg::Label::new_skip());
 
                 let loop_end = context.random_node(prefix);
                 translate_automaton_statements(
                     context,
                     body,
-                    bindings,
-                    Some(&add_bindings(loop_end.clone(), bindings)),
+                    Some(&loop_end),
                     Some(&loop_init.clone()),
                     end_node,
                     loop_init.clone(),
@@ -1123,7 +1034,6 @@ fn translate_automaton_statements(
                     translate_automaton_statements(
                         context,
                         body,
-                        bindings,
                         break_node,
                         continue_node,
                         end_node,
@@ -1152,7 +1062,17 @@ fn translate_automaton_statements(
                     rg::Label::Tag {
                         symbol: symbol.clone(),
                     },
-                    bindings,
+                );
+                current_node = local_node;
+            }
+            hrg::Statement::TagVariable { symbol } => {
+                let local_node = context.random_node(prefix);
+                context.connect(
+                    current_node,
+                    local_node.clone(),
+                    rg::Label::TagVariable {
+                        symbol: symbol.clone(),
+                    },
                 );
                 current_node = local_node;
             }
@@ -1166,13 +1086,11 @@ fn translate_automaton_statements(
                     Some(&then_node),
                     Some(&else_node),
                     prefix,
-                    bindings,
                     automaton_function,
                 )?;
                 translate_automaton_statements(
                     context,
                     body,
-                    bindings,
                     Some(&else_node),
                     Some(&current_node),
                     end_node,
@@ -1188,18 +1106,12 @@ fn translate_automaton_statements(
     }
 
     if let Some(next_node) = next_node {
-        context.connect(
-            current_node,
-            next_node.clone(),
-            rg::Label::new_skip(),
-            bindings,
-        );
+        context.connect(current_node, next_node.clone(), rg::Label::new_skip());
     }
 
     Ok(true)
 }
 
-#[expect(clippy::too_many_arguments)]
 fn translate_condition(
     context: &mut Context,
     expression: &hrg::Expression<Id>,
@@ -1207,7 +1119,6 @@ fn translate_condition(
     then_node: Option<&rg::Node<Id>>,
     else_node: Option<&rg::Node<Id>>,
     prefix: &Id,
-    bindings: &[rg::Binding<Id>],
     automaton_function: Option<&hrg::Function<Id>>,
 ) -> Result<(), hrg::Error<Id>> {
     match expression {
@@ -1224,7 +1135,6 @@ fn translate_condition(
                 Some(&true_node),
                 else_node,
                 prefix,
-                bindings,
                 automaton_function,
             )?;
             translate_condition(
@@ -1234,7 +1144,6 @@ fn translate_condition(
                 then_node,
                 else_node,
                 prefix,
-                bindings,
                 automaton_function,
             )?;
         }
@@ -1248,11 +1157,10 @@ fn translate_condition(
                     entry_node.clone(),
                     then_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(context, lhs, bindings, automaton_function)?,
-                        rhs: translate_expression(context, rhs, bindings, automaton_function)?,
+                        lhs: translate_expression(context, lhs, automaton_function)?,
+                        rhs: translate_expression(context, rhs, automaton_function)?,
                         negated: false,
                     },
-                    bindings,
                 );
             }
             if let Some(else_node) = else_node {
@@ -1260,11 +1168,10 @@ fn translate_condition(
                     entry_node.clone(),
                     else_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(context, lhs, bindings, automaton_function)?,
-                        rhs: translate_expression(context, rhs, bindings, automaton_function)?,
+                        lhs: translate_expression(context, lhs, automaton_function)?,
+                        rhs: translate_expression(context, rhs, automaton_function)?,
                         negated: true,
                     },
-                    bindings,
                 );
             }
         }
@@ -1281,7 +1188,6 @@ fn translate_condition(
                 then_node,
                 Some(&false_node),
                 prefix,
-                bindings,
                 automaton_function,
             )?;
             translate_condition(
@@ -1291,7 +1197,6 @@ fn translate_condition(
                 then_node,
                 else_node,
                 prefix,
-                bindings,
                 automaton_function,
             )?;
         }
@@ -1305,11 +1210,10 @@ fn translate_condition(
                     entry_node.clone(),
                     then_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(context, lhs, bindings, automaton_function)?,
-                        rhs: translate_expression(context, rhs, bindings, automaton_function)?,
+                        lhs: translate_expression(context, lhs, automaton_function)?,
+                        rhs: translate_expression(context, rhs, automaton_function)?,
                         negated: true,
                     },
-                    bindings,
                 );
             }
             if let Some(else_node) = else_node {
@@ -1317,11 +1221,10 @@ fn translate_condition(
                     entry_node.clone(),
                     else_node.clone(),
                     rg::Label::Comparison {
-                        lhs: translate_expression(context, lhs, bindings, automaton_function)?,
-                        rhs: translate_expression(context, rhs, bindings, automaton_function)?,
+                        lhs: translate_expression(context, lhs, automaton_function)?,
+                        rhs: translate_expression(context, rhs, automaton_function)?,
                         negated: false,
                     },
-                    bindings,
                 );
             }
         }
@@ -1340,7 +1243,6 @@ fn translate_condition(
                         else_node,
                         then_node,
                         prefix,
-                        bindings,
                         automaton_function,
                     )?;
                 }
@@ -1388,14 +1290,8 @@ fn translate_condition(
                                 lhs: Arc::from(rg::Expression::new(
                                     called_automaton_function.nth_arg_variable(index),
                                 )),
-                                rhs: translate_expression(
-                                    context,
-                                    arg,
-                                    bindings,
-                                    automaton_function,
-                                )?,
+                                rhs: translate_expression(context, arg, automaton_function)?,
                             },
-                            bindings,
                         );
                         automaton_current_node = arg_node;
                     }
@@ -1408,7 +1304,6 @@ fn translate_condition(
                             format!("{prefix}_{identifier}_begin")
                         })),
                         rg::Label::new_skip(),
-                        bindings,
                     );
 
                     let automaton_end_node =
@@ -1451,7 +1346,6 @@ fn translate_condition(
                                 rhs: automaton_end_node.clone(),
                                 negated: false,
                             },
-                            bindings,
                         );
                     }
 
@@ -1465,7 +1359,6 @@ fn translate_condition(
                                 rhs: automaton_end_node,
                                 negated: true,
                             },
-                            bindings,
                         );
                     }
                 }
@@ -1571,22 +1464,21 @@ fn translate_domain_elements(
 fn translate_expression(
     context: &Context,
     expression: &hrg::Expression<Id>,
-    bindings: &[rg::Binding<Id>],
     automaton_function: Option<&hrg::Function<Id>>,
 ) -> Result<Arc<rg::Expression<Id>>, hrg::Error<Id>> {
     Ok(match expression {
         hrg::Expression::Access { lhs, rhs } => Arc::from(rg::Expression::Access {
             span: Span::none(),
-            lhs: translate_expression(context, lhs, bindings, automaton_function)?,
-            rhs: translate_expression(context, rhs, bindings, automaton_function)?,
+            lhs: translate_expression(context, lhs, automaton_function)?,
+            rhs: translate_expression(context, rhs, automaton_function)?,
         }),
         hrg::Expression::Call { expression, args } => args.iter().try_fold(
-            translate_expression(context, expression, bindings, automaton_function)?,
+            translate_expression(context, expression, automaton_function)?,
             |expression, arg| {
                 Ok(Arc::from(rg::Expression::Access {
                     span: Span::none(),
                     lhs: expression,
-                    rhs: translate_expression(context, arg, bindings, automaton_function)?,
+                    rhs: translate_expression(context, arg, automaton_function)?,
                 }))
             },
         )?,
@@ -1597,13 +1489,10 @@ fn translate_expression(
             // If it's function's argument...
             if let Some(automaton_function) = automaton_function {
                 if let Some(index) = automaton_function.arg_index(identifier) {
-                    // ...not shadowed by some binding...
-                    if bindings.iter().all(|binding| binding.0 != identifier) {
-                        // ...then rename it.
-                        return Ok(Arc::from(rg::Expression::new(
-                            automaton_function.nth_arg_variable(index),
-                        )));
-                    }
+                    // ...then rename it.
+                    return Ok(Arc::from(rg::Expression::new(
+                        automaton_function.nth_arg_variable(index),
+                    )));
                 }
             }
             Arc::from(rg::Expression::new(identifier.clone()))
@@ -1864,36 +1753,6 @@ mod test {
             rules_4, rules_2: ;
             rules_3, rules_1: ;
             rules_1, rules_end: ;
-            rules_end, end: ;
-        "
-    );
-
-    test_translation!(
-        forall_with_loop,
-        "
-            graph rules() {
-                forall bool:Bool {
-                    loop {
-                        branch {
-                            break()
-                        } or {
-                            check(0 == 0)
-                        }
-                    }
-                }
-            }
-        ",
-        "
-            begin, rules_begin: ;
-            rules_begin, rules_1(bool: Bool): ;
-            rules_1(bool: Bool), rules_3(bool: Bool): ;
-            rules_3(bool: Bool), rules_4(bool: Bool): ;
-            rules_3(bool: Bool), rules_6(bool: Bool): 0 == 0;
-            rules_6(bool: Bool), rules_5(bool: Bool): ;
-            rules_5(bool: Bool), rules_3(bool: Bool): ;
-            rules_4(bool: Bool), rules_2(bool: Bool): ;
-            rules_2(bool: Bool), rules_7: ;
-            rules_7, rules_end: ;
             rules_end, end: ;
         "
     );
