@@ -40,7 +40,7 @@ fn scenario(criterion: &mut Criterion, path: &str) {
     bench!(calculate_tag_indexes);
     bench!(compact_comparisons);
     bench!(compact_skip_edges);
-    bench!(expand_generator_nodes);
+    bench!(expand_assignment_any);
     bench!(inline_assignment);
     bench!(inline_reachability);
     bench!(join_exclusive_edges);

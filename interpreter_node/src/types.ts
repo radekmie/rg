@@ -17,7 +17,8 @@ export type Settings = {
     calculateTagIndexes: boolean;
     compactComparisons: boolean;
     compactSkipEdges: boolean;
-    expandGeneratorNodes: boolean;
+    expandAssignmentAny: boolean;
+    expandTagVariable: boolean;
     inlineReachability: boolean;
     inlineAssignment: boolean;
     joinExclusiveEdges: boolean;
@@ -51,7 +52,8 @@ export const noFlagsEnabled: Settings['flags'] = {
   calculateTagIndexes: false,
   compactComparisons: false,
   compactSkipEdges: false,
-  expandGeneratorNodes: false,
+  expandAssignmentAny: false,
+  expandTagVariable: false,
   inlineAssignment: false,
   inlineReachability: false,
   joinExclusiveEdges: false,
@@ -116,7 +118,8 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
     label: 'Other',
     flags: [
       'addExplicitCasts',
-      'expandGeneratorNodes',
+      'expandAssignmentAny',
+      'expandTagVariable',
       'mangleSymbols',
       'normalizeConstants',
       'normalizeTypes',

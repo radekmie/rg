@@ -252,7 +252,8 @@ fn analyze_rg_inner(
         pass!(add_explicit_casts);
 
         // Expand generator nodes before calculating pragmas.
-        pass!(expand_generator_nodes);
+        pass!(expand_assignment_any);
+        pass!(expand_tag_variable);
 
         // Point of no return -- these passes are forward-only.
         restart = false;

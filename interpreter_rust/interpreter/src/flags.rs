@@ -11,9 +11,13 @@ pub struct Flags {
     #[arg(long)]
     pub add_explicit_casts: bool,
 
-    /// expand generator nodes
+    /// expand assignments with `*` to all possible values
     #[arg(long)]
-    pub expand_generator_nodes: bool,
+    pub expand_assignment_any: bool,
+
+    /// expand tag variable
+    #[arg(long)]
+    pub expand_tag_variable: bool,
 
     /// mangle all user-defined symbols
     #[arg(long)]
@@ -279,7 +283,8 @@ impl Flags {
             calculate_tag_indexes: true,
             compact_comparisons: true,
             compact_skip_edges: true,
-            expand_generator_nodes: true,
+            expand_assignment_any: true,
+            expand_tag_variable: true,
             inline_assignment: true,
             inline_reachability: true,
             join_exclusive_edges: true,
