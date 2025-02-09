@@ -108,7 +108,7 @@ fn tag_variable_label(input: Input) -> Result<Label<Identifier>> {
             preceded_whitespace(tag("$$")),
             cut(preceded_opt_id("label")),
         ),
-        |symbol| Label::TagVariable { symbol },
+        |identifier| Label::TagVariable { identifier },
     )(input)
 }
 

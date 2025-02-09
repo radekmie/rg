@@ -23,7 +23,8 @@ impl<Id: Positioned> Positioned for Label<Id> {
             }
             Self::AssignmentAny { lhs, rhs } => lhs.span().with_end(rhs.span().end),
             Self::Reachability { span, .. } | Self::Skip { span } => *span,
-            Self::Tag { symbol } | Self::TagVariable { symbol } => symbol.span(),
+            Self::Tag { symbol } => symbol.span(),
+            Self::TagVariable { identifier } => identifier.span(),
         }
     }
 }

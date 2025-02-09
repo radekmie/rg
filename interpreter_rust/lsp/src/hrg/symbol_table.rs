@@ -101,8 +101,8 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
                 }
             }
         }
-        Statement::TagVariable { symbol } => {
-            table.add_occ(symbol);
+        Statement::TagVariable { identifier } => {
+            table.add_occ(identifier);
         }
         Statement::While { expression, body } => {
             add_from_expression(table, expression);

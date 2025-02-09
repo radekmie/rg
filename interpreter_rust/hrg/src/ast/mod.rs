@@ -40,7 +40,7 @@ pub enum Statement<Id> {
         symbol: Id,
     },
     TagVariable {
-        symbol: Id,
+        identifier: Id,
     },
     While {
         expression: Arc<Expression<Id>>,

@@ -132,7 +132,7 @@ pub enum Label<Id> {
         symbol: Id,
     },
     TagVariable {
-        symbol: Id,
+        identifier: Id,
     },
 }
 

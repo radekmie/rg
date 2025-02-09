@@ -86,11 +86,11 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
         },
         ast::Label::Skip { .. } => ist::EdgeLabel::Skip,
         ast::Label::Tag { symbol } => ist::EdgeLabel::Tag { symbol },
-        ast::Label::TagVariable { symbol } => ist::EdgeLabel::TagVariable {
+        ast::Label::TagVariable { identifier } => ist::EdgeLabel::TagVariable {
             index: *context
                 .variables_indexes
-                .get(&symbol)
-                .unwrap_or_else(|| panic!("Unknown variable {symbol}.")),
+                .get(&identifier)
+                .unwrap_or_else(|| panic!("Unknown variable {identifier}.")),
         },
     }
 }

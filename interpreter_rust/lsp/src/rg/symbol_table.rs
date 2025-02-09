@@ -59,7 +59,7 @@ fn add_from_edge_label(table: &mut SymbolTableBuilder, label: &Label<Identifier>
         }
         Label::Skip { .. } => (),
         Label::Tag { symbol } => add(table, symbol, false),
-        Label::TagVariable { symbol } => add(table, symbol, false),
+        Label::TagVariable { identifier } => add(table, identifier, false),
         Label::Reachability { lhs, rhs, .. } => {
             add_from_edge_name(table, lhs);
             add_from_edge_name(table, rhs);

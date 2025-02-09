@@ -55,7 +55,7 @@ impl<Id: Display> Display for Label<Id> {
             } => write!(f, "! {lhs} -> {rhs}"),
             Self::Skip { .. } => write!(f, ""),
             Self::Tag { symbol } => write!(f, "$ {symbol}"),
-            Self::TagVariable { symbol } => write!(f, "$$ {symbol}"),
+            Self::TagVariable { identifier } => write!(f, "$$ {identifier}"),
         }
     }
 }

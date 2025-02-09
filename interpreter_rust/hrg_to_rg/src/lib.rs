@@ -1065,13 +1065,13 @@ fn translate_automaton_statements(
                 );
                 current_node = local_node;
             }
-            hrg::Statement::TagVariable { symbol } => {
+            hrg::Statement::TagVariable { identifier } => {
                 let local_node = context.random_node(prefix);
                 context.connect(
                     current_node,
                     local_node.clone(),
                     rg::Label::TagVariable {
-                        symbol: symbol.clone(),
+                        identifier: identifier.clone(),
                     },
                 );
                 current_node = local_node;

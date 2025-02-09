@@ -726,7 +726,7 @@ fn expose_position(context: &mut Context, from: rg::Node<Id>, to: rg::Node<Id>) 
         from,
         local.clone(),
         rg::Label::TagVariable {
-            symbol: Id::from("coord"),
+            identifier: Id::from("coord"),
         },
     );
 

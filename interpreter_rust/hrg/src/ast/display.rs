@@ -416,7 +416,7 @@ fn write_statement<Id: Display>(
             write_rbrace(f, indent)
         }
         Statement::Tag { symbol } => write!(f, "$ {symbol}"),
-        Statement::TagVariable { symbol } => write!(f, "$$ {symbol}"),
+        Statement::TagVariable { identifier } => write!(f, "$$ {identifier}"),
         Statement::While { expression, body } => {
             writeln!(f, "while {expression} {{")?;
             write_statements(f, body, indent + 2)?;

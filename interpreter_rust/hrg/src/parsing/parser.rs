@@ -110,8 +110,8 @@ fn tag_statement(input: Input) -> Result<Statement<Identifier>> {
 }
 
 fn tag_variable_statement(input: Input) -> Result<Statement<Identifier>> {
-    map(preceded(tag("$$"), identifier), |symbol| {
-        Statement::TagVariable { symbol }
+    map(preceded(tag("$$"), identifier), |identifier| {
+        Statement::TagVariable { identifier }
     })(input)
 }
 
