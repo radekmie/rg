@@ -8,18 +8,18 @@ impl Game<Id> {
     pub fn expand_tag_variable(&mut self) -> Result<(), Error<Id>> {
         let mut max_id = max_node_id(&self.nodes());
         for index in (0..self.edges.len()).rev() {
-            if let Label::TagVariable { identifier } = &self.edges[index].label {
-                let edge = &self.edges[index];
-
+            let edge = &self.edges[index];
+            if let Label::TagVariable { identifier } = &edge.label {
                 let variable = self.resolve_variable_or_fail(identifier)?;
-                let values = variable.type_.values(self)?;
-                let new_edges: Vec<_> = values
+                let new_edges: Vec<_> = variable
+                    .type_
+                    .values(self)?
                     .into_iter()
                     .flat_map(|symbol| {
-                        let new_node = gen_fresh_node(&mut max_id);
-                        let first = Edge::new(
+                        let node = gen_fresh_node(&mut max_id);
+                        let edge_a = Edge::new(
                             edge.lhs.clone(),
-                            new_node.clone(),
+                            node.clone(),
                             Label::Comparison {
                                 lhs: Arc::from(Expression::new(variable.identifier.clone())),
                                 rhs: Arc::from(Expression::new_cast(
@@ -29,8 +29,8 @@ impl Game<Id> {
                                 negated: false,
                             },
                         );
-                        let second = Edge::new(new_node, edge.rhs.clone(), Label::Tag { symbol });
-                        vec![Arc::from(first), Arc::from(second)]
+                        let edge_b = Edge::new(node, edge.rhs.clone(), Label::Tag { symbol });
+                        [Arc::from(edge_a), Arc::from(edge_b)]
                     })
                     .collect();
                 self.edges.splice(index..index + 1, new_edges);

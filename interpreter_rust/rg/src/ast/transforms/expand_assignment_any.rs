@@ -6,11 +6,10 @@ type Id = Arc<str>;
 impl Game<Id> {
     pub fn expand_assignment_any(&mut self) -> Result<(), Error<Id>> {
         for index in (0..self.edges.len()).rev() {
-            if let Label::AssignmentAny { lhs, rhs } = &self.edges[index].label {
-                let edge = &self.edges[index];
-                let values = rhs.values(self)?;
-                // TODO: Maybe we need a new node for each value?
-                let new_edges: Vec<_> = values
+            let edge = &self.edges[index];
+            if let Label::AssignmentAny { lhs, rhs } = &edge.label {
+                let new_edges: Vec<_> = rhs
+                    .values(self)?
                     .into_iter()
                     .map(|value| {
                         let label = Label::Assignment {

@@ -72,17 +72,6 @@ impl<Id> Edge<Id> {
     }
 }
 
-impl<Id: Clone + Ord> Edge<Id> {
-    pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
-        Self {
-            span: self.span,
-            label: self.label.rename_variables(mapping),
-            lhs: self.lhs.clone(),
-            rhs: self.rhs.clone(),
-        }
-    }
-}
-
 impl<Id: Display> Edge<Id> {
     pub fn to_graphviz(&self) -> String {
         let Self {
@@ -182,29 +171,6 @@ impl<Id> Label<Id> {
 
     pub fn new_skip() -> Self {
         Self::Skip { span: Span::none() }
-    }
-}
-
-impl<Id: Clone + Ord> Label<Id> {
-    pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
-        match self {
-            Self::Assignment { lhs, rhs } => Self::Assignment {
-                lhs: Arc::new(lhs.rename_variables(mapping)),
-                rhs: Arc::new(rhs.rename_variables(mapping)),
-            },
-            Self::Comparison { lhs, rhs, negated } => Self::Comparison {
-                lhs: Arc::new(lhs.rename_variables(mapping)),
-                rhs: Arc::new(rhs.rename_variables(mapping)),
-                negated: *negated,
-            },
-            Self::Tag { symbol } => Self::Tag {
-                symbol: mapping
-                    .get(symbol)
-                    .map_or(symbol, |(symbol, _)| symbol)
-                    .clone(),
-            },
-            _ => self.clone(),
-        }
     }
 }
 
@@ -627,39 +593,6 @@ impl<Id: Ord> Expression<Id> {
         let mut vars = BTreeSet::new();
         self.collect_variables(&mut vars);
         vars
-    }
-}
-
-impl<Id: Clone + Ord> Expression<Id> {
-    pub fn rename_variables(&self, mapping: &Mapping<Id>) -> Self {
-        match self {
-            Self::Access { lhs, rhs, .. } => Self::Access {
-                span: Span::none(),
-                lhs: Arc::new(lhs.rename_variables(mapping)),
-                rhs: Arc::new(rhs.rename_variables(mapping)),
-            },
-            Self::Cast { lhs, rhs, .. } => {
-                let rhs = rhs.rename_variables(mapping);
-
-                // If the inner expression already has the same cast, skip the
-                // outer one.
-                if rhs.is_cast_and(|type_, _| type_ == lhs) {
-                    rhs
-                } else {
-                    Self::Cast {
-                        span: Span::none(),
-                        lhs: lhs.clone(),
-                        rhs: Arc::new(rhs),
-                    }
-                }
-            }
-            Self::Reference { identifier } => mapping.get(identifier).map_or_else(
-                || Self::new(identifier.clone()),
-                |(identifier, type_)| {
-                    Self::new_cast(type_.clone(), Arc::from(Self::new(identifier.clone())))
-                },
-            ),
-        }
     }
 }
 
@@ -1336,7 +1269,7 @@ pub enum Pragma<Id> {
         span: Span,
         lhs: Node<Id>,
         rhs: Node<Id>,
-        tags: Vec<PragmaTag<Id>>,
+        tags: Vec<Id>,
         assignments: Vec<PragmaAssignment<Id>>,
     },
     SimpleApplyExhaustive {
@@ -1344,7 +1277,7 @@ pub enum Pragma<Id> {
         span: Span,
         lhs: Node<Id>,
         rhs: Node<Id>,
-        tags: Vec<PragmaTag<Id>>,
+        tags: Vec<Id>,
         assignments: Vec<PragmaAssignment<Id>>,
     },
     TagIndex {
@@ -1433,34 +1366,6 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
 pub struct PragmaAssignment<Id> {
     pub lhs: Arc<Expression<Id>>,
     pub rhs: Arc<Expression<Id>>,
-}
-
-impl PragmaAssignment<Arc<str>> {
-    pub fn rename_variables(&self, mapping: &Mapping<Arc<str>>) -> Self {
-        Self {
-            lhs: Arc::from(self.lhs.rename_variables(mapping)),
-            rhs: Arc::from(self.rhs.rename_variables(mapping)),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct PragmaTag<Id> {
-    pub tag: Id,
-    #[serde(rename = "type")]
-    pub type_: Option<Arc<Type<Id>>>,
-}
-
-impl PragmaTag<Arc<str>> {
-    pub fn rename_variables(&self, mapping: &Mapping<Arc<str>>) -> Self {
-        match mapping.get(&self.tag) {
-            None => self.clone(),
-            Some((tag, _)) => Self {
-                tag: tag.clone(),
-                type_: None,
-            },
-        }
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

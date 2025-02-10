@@ -1,4 +1,4 @@
-use crate::ast::{Edge, Error, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag, Span};
+use crate::ast::{Edge, Error, Game, Label, Node, Pragma, PragmaAssignment, Span};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -106,7 +106,7 @@ impl Game<Id> {
                         is_exhaustive,
                         node: node.clone(),
                         path,
-                        tags: vec![PragmaTag { tag, type_: None }],
+                        tags: vec![tag],
                         to_player: false,
                     });
                     continue;
@@ -128,7 +128,7 @@ impl Game<Id> {
                     is_exhaustive: true,
                     node: node.clone(),
                     path: vec![path.remove(0), path.pop().unwrap()],
-                    tags: vec![PragmaTag { tag, type_: None }],
+                    tags: vec![tag],
                     to_player: false,
                 });
             }
@@ -186,7 +186,7 @@ struct SimplePath {
     is_exhaustive: bool,
     node: Node<Id>,
     path: Vec<Arc<Edge<Id>>>,
-    tags: Vec<PragmaTag<Id>>,
+    tags: Vec<Id>,
     to_player: bool,
 }
 
@@ -309,50 +309,6 @@ impl SimplePath {
                     .map(|(index, _)| index)
                     .collect();
                 if indexes.len() == 1 {
-                    continue;
-                }
-
-                let mut tagsets: Vec<_> = indexes
-                    .iter()
-                    .map(|index| &simple_paths[*index].tags)
-                    .collect();
-
-                let mut ambiguous = false;
-                while let Some(x) = tagsets.pop() {
-                    ambiguous |= tagsets.iter().any(|y| {
-                        let mut ambiguous_prefix = false;
-                        for index in 0..(x.len().min(y.len())) {
-                            if x[index].type_.is_some() && y[index].type_.is_some() {
-                                ambiguous_prefix = true;
-                                break;
-                            }
-
-                            if x[index].tag != y[index].tag {
-                                break;
-                            }
-                        }
-
-                        if !ambiguous_prefix {
-                            return false;
-                        }
-
-                        let mut ambiguous_suffix = false;
-                        for index in (0..(x.len().min(y.len()))).rev() {
-                            if x[index].type_.is_some() && y[index].type_.is_some() {
-                                ambiguous_suffix = true;
-                                break;
-                            }
-
-                            if x[index].tag != y[index].tag {
-                                break;
-                            }
-                        }
-
-                        ambiguous_suffix
-                    });
-                }
-
-                if !ambiguous {
                     continue;
                 }
 
