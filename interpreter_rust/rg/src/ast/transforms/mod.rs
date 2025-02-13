@@ -13,7 +13,6 @@ mod inline_reachability;
 mod join_exclusive_edges;
 mod join_fork_prefixes;
 mod join_fork_suffixes;
-mod join_generators;
 mod mangle_symbols;
 mod merge_accesses;
 mod normalize_constants;

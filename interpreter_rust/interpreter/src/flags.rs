@@ -102,15 +102,6 @@ pub struct Flags {
     )]
     pub join_fork_suffixes: bool,
 
-    /// join generator nodes
-    #[arg(
-        long,
-        help_heading = "Optimizations",
-        conflicts_with = "enable_all_optimizations",
-        default_value_if("enable_all_optimizations", "true", Some("true"))
-    )]
-    pub join_generators: bool,
-
     /// merge nested accesses to constant maps
     #[arg(
         long,
@@ -290,7 +281,6 @@ impl Flags {
             join_exclusive_edges: true,
             join_fork_prefixes: true,
             join_fork_suffixes: true,
-            join_generators: true,
             mangle_symbols: true,
             merge_accesses: true,
             merge_bindings: true,

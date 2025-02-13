@@ -235,7 +235,6 @@ fn analyze_rg_inner(
         pass!(join_exclusive_edges);
         pass!(join_fork_prefixes);
         pass!(join_fork_suffixes);
-        pass!(join_generators);
         pass!(skip_self_assignments);
         pass!(skip_self_comparisons);
         pass!(skip_unused_tags);

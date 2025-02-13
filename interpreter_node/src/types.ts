@@ -24,7 +24,6 @@ export type Settings = {
     joinExclusiveEdges: boolean;
     joinForkPrefixes: boolean;
     joinForkSuffixes: boolean;
-    joinGenerators: boolean;
     mangleSymbols: boolean;
     mergeAccesses: boolean;
     mergeBindings: boolean;
@@ -59,7 +58,6 @@ export const noFlagsEnabled: Settings['flags'] = {
   joinExclusiveEdges: false,
   joinForkPrefixes: false,
   joinForkSuffixes: false,
-  joinGenerators: false,
   mangleSymbols: false,
   mergeAccesses: false,
   mergeBindings: false,
@@ -89,7 +87,6 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
       'joinExclusiveEdges',
       'joinForkPrefixes',
       'joinForkSuffixes',
-      'joinGenerators',
       'mergeAccesses',
       'mergeBindings',
       'propagateConstants',
