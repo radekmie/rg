@@ -296,8 +296,8 @@ mod test {
     test_transform!(
         inline_assignment,
         generator,
-        "begin, t1: x = Foo(*);
-        t1(p: Pos), t1: ;
+        "begin, t: x = Foo(*);
+        t, t1: ;
         t1, end: z == x;"
     );
 

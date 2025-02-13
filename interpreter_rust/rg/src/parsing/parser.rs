@@ -539,10 +539,7 @@ mod test {
         check_parse("foo, bar: x == y;");
         check_parse("foo, bar: x = Position(*);");
         check_parse("foo, bar: ? move -> move;");
-        check_parse("foo(x: Y)(y: Z), bar: ;");
-        check_parse("foo(x: Y), bar(x: Y): ;");
-        check_parse("foo(x: Y)(z: Z), bar(y: Z)(v: Z): ;");
-        check_parse("type Z = { z };\nbegin, loop(x: X)(y: Y): ;");
+        check_parse("type Z = { z };\nbegin, loop: ;");
     }
 
     #[test]

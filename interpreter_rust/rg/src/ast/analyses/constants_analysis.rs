@@ -265,21 +265,6 @@ mod test {
         "type A = {a,b,c};
         var x: A = a;
         begin, a1: x = b;
-        a1, a1(bind: A): x = bind;
-        a1(bind: A), a1: ;
-        a1, end: ;",
-        "a1:
-        a1(bind: A):
-        begin:
-            x = a
-        end:"
-    );
-
-    test!(
-        simple_loop3,
-        "type A = {a,b,c};
-        var x: A = a;
-        begin, a1: x = b;
         a1, a2: x = c;
         a2, a1: ;
         a1, end: ;",
@@ -355,101 +340,6 @@ mod test {
     );
 
     test!(
-        binding_loop1,
-        "type Alpha = {a1,b1,c1,d1};
-        var alpha: Alpha = a1;
-
-        begin, 1: ;
-        1, 2(bind_2: Alpha): Alpha(d1) == alpha;
-        2(bind_2: Alpha), 3: alpha = bind_2;
-        3, 4: $ bind_2;
-        4, 1: ;
-        3, end: ;",
-        "1:
-        2(bind_2: Alpha):
-            alpha = d1
-        3:
-        4:
-        begin:
-            alpha = a1
-        end:"
-    );
-
-    test!(
-        binding_loop2,
-        "type Piece = { empty, red, yellow };
-        type Player = { red, yellow };
-        type Position = { null, v__1_1};
-        type Score = { 50, 0, 100 };
-        var board: Position -> Piece = { :empty };
-        var position: Position = null;
-        var piece: Piece = empty;
-
-        begin, turn_2(bind_1: Position): piece = red;
-        turn_2(bind_1: Position), turn_5(bind_1: Position): board[bind_1] == empty;
-        turn_5(bind_1: Position), turn_11: board[position] = piece;
-        turn_11, end: ;",
-        "begin:
-            board = { :empty }
-            piece = empty
-            position = null
-        end:
-            piece = red
-            position = null
-        turn_11:
-            piece = red
-            position = null
-        turn_2(bind_1: Position):
-            board = { :empty }
-            piece = red
-            position = null
-        turn_5(bind_1: Position):
-            board = { :empty }
-            piece = red
-            position = null"
-    );
-
-    test!(
-        binding_loop3,
-        "type Alpha = {a1,b1,c1,d1};
-        var alpha: Alpha = d1;
-        begin, 1: ;
-        1, 2(bind_1: Alpha): bind_1 = c1;
-        2(bind_1: Alpha), 3: alpha = bind_1;
-        3, 4: $ bind_2;
-        4, 1: ;
-        3, end: ;",
-        "1:
-        2(bind_1: Alpha):
-        3:
-        4:
-        begin:
-            alpha = d1
-        end:"
-    );
-
-    test!(
-        binding_loop4,
-        "type Alpha = {a1,b1,c1,d1};
-        var bind_1: Alpha = a1;
-        var alpha: Alpha = d1;
-        begin, 1: ;
-        1, 2(bind_1: Alpha): bind_1 = c1;
-        2(bind_1: Alpha), 3: alpha = bind_1;
-        3, 4: $ bind_2;
-        4, 1: ;
-        3, end: ;",
-        "1:
-        2(bind_1: Alpha):
-        3:
-        4:
-        begin:
-            alpha = d1
-            bind_1 = a1
-        end:"
-    );
-
-    test!(
         comparison1,
         "type A = {a,b,c};
         var x: A = a;
@@ -512,22 +402,6 @@ mod test {
 
     test!(
         comparison5,
-        "type A = {a,b,c};
-        var x: A = a;
-        var y: A = b;
-        begin, a(bind_1: A): x = bind_1;
-        a(bind_1: A), end: x == bind_1;",
-        "a(bind_1: A):
-            y = b
-        begin:
-            x = a
-            y = b
-        end:
-            y = b"
-    );
-
-    test!(
-        comparison6,
         "type A = {a,b,c};
         var x: A = a;
         begin, a1: x = c;
