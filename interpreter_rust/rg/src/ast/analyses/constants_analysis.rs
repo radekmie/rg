@@ -72,7 +72,7 @@ impl Analysis for ConstantsAnalysis {
             .or_else(|| as_constant_comparison(edge, &input, ctx))
         {
             input.insert(identifier, value);
-        } else if let Some((identifier, _)) = &edge.label.as_var_assignment() {
+        } else if let Some(identifier) = &edge.label.as_var_assignment() {
             input.remove(*identifier);
         }
 
@@ -88,7 +88,7 @@ fn as_constant_assignment(
     if edge.label.is_map_assignment() {
         return None;
     }
-    let (id, expr) = edge.label.as_var_assignment()?;
+    let (id, expr) = edge.label.as_assignment()?;
     Some((id.clone(), evaluate_constant(expr, knowledge, ctx)?))
 }
 

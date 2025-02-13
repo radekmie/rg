@@ -220,12 +220,16 @@ mod test {
         type AA = A -> A;
         const down: AA = {4:3, 3:2, :1};
         var x: A = 3;
-        begin, a(bind_1: A): bind_1 == down[x];",
+        var y: A = 1;
+        begin, a: y = A(*);
+        a, b: y == down[x];",
         "type A = { 1, 2, 3, 4 };
         type AA = A -> A;
         const down: AA = { 4: 3, 3: 2, :1 };
         var x: A = 3;
-        begin, a(bind_1: A): bind_1 == A(2);"
+        var y: A = 1;
+        begin, a: y = A(*);
+        a, b: y == A(2);"
     );
 
     test_transform!(
@@ -236,13 +240,17 @@ mod test {
         const down: AA = {4:3, 3:2, :1};
         var board: A -> A = {4:3, :2};
         var x: A = 3;
-        begin, a(bind_1: A): bind_1 == down[board[x]];",
+        var y: A = 1;
+        begin, a: y = A(*);
+        a, b: y == down[board[x]];",
         "type A = { 1, 2, 3, 4 };
         type AA = A -> A;
         const down: AA = { 4: 3, 3: 2, :1 };
         var board: A -> A = { 4: 3, :2 };
         var x: A = 3;
-        begin, a(bind_1: A): bind_1 == A(1);"
+        var y: A = 1;
+        begin, a: y = A(*);
+        a, b: y == A(1);"
     );
 
     test_transform!(
@@ -253,13 +261,17 @@ mod test {
         const down: AA = {4:3, 3:2, :1};
         var board: A -> A = {4:3, :2};
         var x: A = 3;
-        begin, a(bind_1: A): A(bind_1) == down[A(board[x])];",
+        var y: A = 1;
+        begin, a: y = A(*);
+        a, b: A(y) == down[A(board[x])];",
         "type A = { 1, 2, 3, 4 };
         type AA = A -> A;
         const down: AA = { 4: 3, 3: 2, :1 };
         var board: A -> A = { 4: 3, :2 };
         var x: A = 3;
-        begin, a(bind_1: A): A(bind_1) == A(1);"
+        var y: A = 1;
+        begin, a: y = A(*);
+        a, b: A(y) == A(1);"
     );
 
     test_transform!(
@@ -270,32 +282,11 @@ mod test {
         const down: AA = {4:3, 3:2, :1};
         var board: A -> A = {4:3, :2};
         var x: A = 3;
-        begin, a(bind_1: A): bind_1 == down[board[x]];
-        a(bind_1: A), a: x = bind_1;
-        a, begin: ; "
-    );
-
-    test_transform!(
-        propagate_constants,
-        small4,
-        "type A = {1,2,3,4};
-        type AA = A -> A;
-        const down: AA = {4:3, 3:2, :1};
-        var board: A -> A = {4:3, :2};
-        var x: A = 3;
-        begin, b: ;
-        b, a(x: A): x == down[board[2]];
-        a(x: A), a: $ x;
-        a, b: x == 4;",
-        "type A = { 1, 2, 3, 4 };
-        type AA = A -> A;
-        const down: AA = { 4: 3, 3: 2, :1 };
-        var board: A -> A = { 4: 3, :2 };
-        var x: A = 3;
-        begin, b: ;
-        b, a(x: A): x == down[board[2]];
-        a(x: A), a: $ x;
-        a, b: x == 4;"
+        var y: A = 1;
+        begin, a: y = A(*);
+        a, b: y == down[board[x]];
+        b, c: x = y;
+        c, a: ; "
     );
 
     test_transform!(
@@ -329,13 +320,17 @@ mod test {
         const down: AA = {4:3, 3:2, :1};
         var board: A -> A = {4:3, :2};
         var x: A = 3;
-        begin, a(bind_1: AA): x = bind_1[down[3]];",
+        var y: AA = {:1};
+        begin, a: y = AA(*);
+        a, b: x = y[down[3]];",
         "type A = { 1, 2, 3, 4 };
         type AA = A -> A;
         const down: AA = { 4: 3, 3: 2, :1 };
         var board: A -> A = { 4: 3, :2 };
         var x: A = 3;
-        begin, a(bind_1: AA): x = bind_1[A(2)];"
+        var y: AA = {:1};
+        begin, a: y = AA(*);
+        a, b: x = y[A(2)];"
     );
 
     test_transform!(
@@ -346,13 +341,17 @@ mod test {
         const down: AA = {4:3, 3:2, :1};
         var board: A -> A -> A = {4:{:3}, :{2:2, :3}};
         var x: A = 3;
-        begin, a(bind_1: A): x = board[1][down[x]];",
+        var y: A = 1;
+        begin, a: y = A(*);
+        a, b: x = board[1][down[x]];",
         "type A = { 1, 2, 3, 4 };
         type AA = A -> A;
         const down: AA = { 4: 3, 3: 2, :1 };
         var board: A -> A -> A = { 4: { :3 }, :{ 2: 2, :3 } };
         var x: A = 3;
-        begin, a(bind_1: A): x = A(2);"
+        var y: A = 1;
+        begin, a: y = A(*);
+        a, b: x = A(2);"
     );
 
     test_transform!(
@@ -363,13 +362,17 @@ mod test {
         const down: AA = {4:3, 3:2, :1};
         var board: A -> A -> A -> A = { :{2:{:2}, :{:3}}};
         var x: A = 3;
-        begin, a(bind_1: A): x = board[1][bind_1][down[x]];",
+        var y: A = 1;
+        begin, a: y = A(*);
+        a, b: x = board[1][y][down[x]];",
         "type A = { 1, 2, 3, 4 };
         type AA = A -> A;
         const down: AA = { 4: 3, 3: 2, :1 };
         var board: A -> A -> A -> A = { :{ 2: { :2 }, :{ :3 } } };
         var x: A = 3;
-        begin, a(bind_1: A): x = board[1][bind_1][A(2)];"
+        var y: A = 1;
+        begin, a: y = A(*);
+        a, b: x = board[1][y][A(2)];"
     );
 
     test_transform!(
@@ -379,16 +382,20 @@ mod test {
         type AA = A -> A;
         var board: A -> A = {4:3, :2};
         var x: A = 3;
-        begin, a(bind_1: A): board[1] = bind_1;
+        var y: A = 1;
+        begin, a1: y = A(*);
+        a1, a: board[1] = y;
         begin, b: x = board[2];
-        a(bind_1: A), a: x = board[2];",
+        a, c: x = board[2];",
         "type A = { 1, 2, 3, 4 };
         type AA = A -> A;
         var board: A -> A = { 4: 3, :2 };
         var x: A = 3;
-        begin, a(bind_1: A): board[1] = bind_1;
+        var y: A = 1;
+        begin, a1: y = A(*);
+        a1, a: board[1] = y;
         begin, b: x = A(2);
-        a(bind_1: A), a: x = board[2];"
+        a, c: x = board[2];"
     );
 
     test_transform!(
@@ -516,10 +523,12 @@ mod test {
         constant_comparisons2,
         "type A = {1,2,3,4};
         begin, end: ;
-        a(bind_1: A), b: bind_1 == 1;
-        a(bind_1: A), c: bind_1 != 1;
-        a(bind_1: A), d: bind_1 == 2;
-        a(bind_1: A), e: bind_1 != 2;"
+        var x: A = 1;
+        begin, a: x = A(*);
+        a, b: x == 1;
+        a, c: x != 1;
+        a, d: x == 2;
+        a, e: x != 2;"
     );
 
     test_transform!(
@@ -552,12 +561,22 @@ mod test {
         propagate_constants,
         inside_subst,
         "type A = {a,b,c};
+        type AA = A -> A;
         const up: A -> A = {a: b, :c};
         const up1: A -> A = up;
-        begin, a(board: A -> A)(x: A): c == board[up1[x]];",
-        "type A = { a, b, c };
-        const up: A -> A = { a: b, :c };
+        var board: AA = {:a};
+        var x: A = a;
+        begin, a: board = AA(*);
+        a, b: x = A(*);
+        b, c: c == board[up1[x]];",
+        "type A = {a,b,c};
+        type AA = A -> A;
+        const up: A -> A = {a: b, :c};
         const up1: A -> A = up;
-        begin, a(board: A -> A)(x: A): c == board[up[x]];"
+        var board: AA = {:a};
+        var x: A = a;
+        begin, a: board = AA(*);
+        a, b: x = A(*);
+        b, c: c == board[up[x]];"
     );
 }

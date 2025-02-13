@@ -15,7 +15,7 @@ impl Game<Arc<str>> {
 
         for edge in &self.edges {
             let mut used_variables = edge.label.used_variables();
-            if let Some((identifier, _)) = edge.label.as_var_assignment() {
+            if let Some(identifier) = edge.label.as_var_assignment() {
                 used_variables.retain(|var| *var != identifier);
             }
             if used_variables.is_empty() {
@@ -28,7 +28,7 @@ impl Game<Arc<str>> {
         }
 
         for edge in &mut self.edges {
-            if let Some((identifier, _)) = edge.label.as_var_assignment() {
+            if let Some(identifier) = edge.label.as_var_assignment() {
                 if unused_variables.contains(identifier) {
                     Arc::make_mut(edge).skip();
                 }

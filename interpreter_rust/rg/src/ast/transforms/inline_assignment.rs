@@ -48,7 +48,8 @@ impl Game<Id> {
         let mut modified_edges = BTreeSet::new();
 
         for edge in &self.edges {
-            if let Some((identifier, rhs)) = edge.label.as_var_assignment() {
+            // Don't inline AssignmentAny
+            if let Some((identifier, rhs)) = edge.label.as_assignment() {
                 if edge.label.is_player_assignment()
                     || modified_edges.contains(edge)
                     || (edge.label.is_goals_assignment()
@@ -189,7 +190,7 @@ fn can_replace_usage(
 }
 
 fn is_reassigned(label: &Label<Id>, id: &Id) -> bool {
-    matches!(label.as_var_assignment(), Some((identifier, _)) if identifier == id)
+    matches!(label.as_var_assignment(), Some(identifier) if identifier == id)
 }
 
 #[cfg(test)]
@@ -262,12 +263,11 @@ mod test {
         t3, end: z[y] == y;"
     );
 
+    // TODO: This assignment can be inlined
     test_transform!(
         inline_assignment,
-        binding_no_usages,
-        "begin, t1(z: Pos): x = y[z];
-        t1, end: y == z;",
-        "begin, t1(z: Pos): ;
+        assign_any_no_usages,
+        "begin, t1: x = Foo(*);
         t1, end: y == z;"
     );
 
@@ -295,8 +295,8 @@ mod test {
 
     test_transform!(
         inline_assignment,
-        binding,
-        "begin, t1(p: Pos): x = y[p];
+        generator,
+        "begin, t1: x = Foo(*);
         t1(p: Pos), t1: ;
         t1, end: z == x;"
     );

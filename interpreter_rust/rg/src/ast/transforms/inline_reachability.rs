@@ -101,7 +101,7 @@ impl Game<Id> {
             previous.insert(lhs);
             if let Some(edges) = next_edges.get(&lhs) {
                 for edge in edges {
-                    if let Some((id, _)) = edge.label.as_var_assignment() {
+                    if let Some(id) = edge.label.as_var_assignment() {
                         defined_vars.insert(id.clone());
                     }
                     if edge.label.is_tag() && is_main_automaton {
@@ -193,7 +193,7 @@ impl Game<Id> {
                         return false;
                     }
                     match edge.label.as_var_assignment() {
-                        Some((id, _)) if !edge.label.is_map_assignment() => {
+                        Some(id) if !edge.label.is_map_assignment() => {
                             defined_vars.remove(id);
                         }
                         _ => (),
@@ -413,14 +413,17 @@ mod test {
         reachability_with_generator,
         "type T = { null };
         begin, end: ? a -> c;
-        a, b(t: T): t == null;
-        b(t: T), c: t == null;",
+        a, a1: t = T(*);
+        a1, b: t == null;
+        b, c: t == null;",
         "type T = { null };
-        a, b(t: T): t == null;
-        b(t: T), c: t == null;
+        a, a1: t = T(*);
+        a1, b: t == null;
+        b, c: t == null;
         begin, 1: ;
-        1, 2(t: T): t == null;
-        2(t: T), end: t == null;"
+        1, 2: t = T(*);
+        2, 3: t == null;
+        3, end: t == null;"
     );
 
     test_transform!(

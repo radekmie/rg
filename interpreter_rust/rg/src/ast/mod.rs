@@ -126,7 +126,14 @@ pub enum Label<Id> {
 }
 
 impl<Id> Label<Id> {
-    pub fn as_var_assignment(&self) -> Option<(&Id, &Arc<Expression<Id>>)> {
+    pub fn as_var_assignment(&self) -> Option<&Id> {
+        if let Self::Assignment { lhs, .. } | Self::AssignmentAny { lhs, .. } = self {
+            return Some(lhs.access_identifier());
+        }
+        None
+    }
+
+    pub fn as_assignment(&self) -> Option<(&Id, &Arc<Expression<Id>>)> {
         if let Self::Assignment { lhs, rhs } = self {
             return Some((lhs.access_identifier(), rhs));
         }
@@ -134,7 +141,7 @@ impl<Id> Label<Id> {
     }
 
     pub fn is_assignment(&self) -> bool {
-        matches!(self, Self::Assignment { .. })
+        matches!(self, Self::Assignment { .. } | Self::AssignmentAny { .. })
     }
 
     pub fn is_comparison(&self) -> bool {
@@ -142,7 +149,7 @@ impl<Id> Label<Id> {
     }
 
     pub fn is_map_assignment(&self) -> bool {
-        matches!(self, Self::Assignment { lhs, .. } if lhs.uncast().is_access())
+        matches!(self, Self::Assignment { lhs, .. } | Self::AssignmentAny {lhs, .. } if lhs.uncast().is_access())
     }
 
     pub fn is_reachability(&self) -> bool {
@@ -859,7 +866,7 @@ impl<Id: Clone + PartialEq> Game<Id> {
     }
 
     pub fn is_symbol(&self, id: &Id) -> bool {
-        self.resolve_constant(id).is_some() || self.resolve_variable(id).is_some()
+        !(self.resolve_constant(id).is_some() || self.resolve_variable(id).is_some())
     }
 
     pub fn resolve_constant(&self, identifier: &Id) -> Option<&Constant<Id>> {
