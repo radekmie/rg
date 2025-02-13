@@ -197,39 +197,26 @@ mod test {
     #[test]
     fn label() {
         completion_kind("begin, e1: ^", CompletionKind::Variable);
-        completion_kind("begin, e1(param: Foo): ^", CompletionKind::Variable);
-        completion_kind("begin, e1(param: Foo): foo[^]", CompletionKind::Variable);
-        completion_kind(
-            "begin, e1(param: Foo): Cast(^) == a",
-            CompletionKind::Variable,
-        );
-        completion_kind(
-            "begin, e1(param: Foo): Cast(a) == ^",
-            CompletionKind::Variable,
-        );
-        completion_kind(
-            "begin, e1(param: Foo): Cast(a) == a^",
-            CompletionKind::Variable,
-        );
-        completion_kind("begin, e1(param: Foo): ^ == a", CompletionKind::Variable);
-        completion_kind("begin, e1(param: Foo): ^ != a", CompletionKind::Variable);
-        completion_kind("begin, e1(param: Foo): ^ != ;", CompletionKind::Variable);
-        completion_kind("begin, e1(param: Foo): ! ^ ;", CompletionKind::Edge);
-        completion_kind("begin, e1(param: Foo): ! foo -> ^ ;", CompletionKind::Edge);
-        completion_kind("begin, e1(param: Foo): ! ^ -> foo ;", CompletionKind::Edge);
-        completion_kind("begin, e1(param: Foo): a = ^ ;", CompletionKind::Variable);
-        completion_kind(
-            "begin, e1(param: Foo): a = foo^ ;",
-            CompletionKind::Variable,
-        );
+        completion_kind("begin, e1: ^", CompletionKind::Variable);
+        completion_kind("begin, e1: foo[^]", CompletionKind::Variable);
+        completion_kind("begin, e1: Cast(^) == a", CompletionKind::Variable);
+        completion_kind("begin, e1: Cast(a) == ^", CompletionKind::Variable);
+        completion_kind("begin, e1: Cast(a) == a^", CompletionKind::Variable);
+        completion_kind("begin, e1: ^ == a", CompletionKind::Variable);
+        completion_kind("begin, e1: ^ != a", CompletionKind::Variable);
+        completion_kind("begin, e1: ^ != ;", CompletionKind::Variable);
+        completion_kind("begin, e1: ! ^ ;", CompletionKind::Edge);
+        completion_kind("begin, e1: ! foo -> ^ ;", CompletionKind::Edge);
+        completion_kind("begin, e1: ! ^ -> foo ;", CompletionKind::Edge);
+        completion_kind("begin, e1: a = ^ ;", CompletionKind::Variable);
+        completion_kind("begin, e1: a = foo^ ;", CompletionKind::Variable);
     }
 
     #[test]
     fn node() {
-        completion_kind("begin, ^", CompletionKind::Toplevel);
+        completion_kind("^ begin, ", CompletionKind::Toplevel);
+        completion_kind("begin, ^", CompletionKind::Edge);
         completion_kind("begin ^, e1", CompletionKind::Edge);
-        completion_kind("begin(^), e1", CompletionKind::Param);
-        completion_kind("begin(param: ^), ", CompletionKind::Type);
     }
 
     #[test]
