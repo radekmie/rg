@@ -38,8 +38,8 @@ fn assignment(input: Input) -> Result<Statement<Identifier>> {
         preceded(
             ww_char('='),
             alt((
-                map(expression, Ok),
                 map(terminated(type_, in_parens(char('*'))), Err),
+                map(expression, Ok),
             )),
         ),
     )))(input)
