@@ -6,15 +6,15 @@ use std::sync::Arc;
 
 type Id = Arc<str>;
 
-struct Context {
+pub struct Context {
     constants_indexes: BTreeMap<Id, usize>,
-    game: ist::Game<Id>,
+    pub game: ist::Game<Id>,
     types: BTreeMap<Id, Rc<ist::Type<Id>>>,
-    variables_indexes: BTreeMap<Id, usize>,
+    pub variables_indexes: BTreeMap<Id, usize>,
 }
 
-impl From<ast::Game<Id>> for ist::Game<Id> {
-    fn from(ast: ast::Game<Id>) -> Self {
+impl ist::Game<Id> {
+    pub fn from_game(ast: ast::Game<Id>) -> Context {
         let placeholder_value = Rc::new(ist::Value::Element {
             value: Arc::from(""),
         });
@@ -47,7 +47,7 @@ impl From<ast::Game<Id>> for ist::Game<Id> {
         assert_ne!(context.game.initial_player, placeholder_value);
         assert_ne!(context.game.initial_visible, placeholder_value);
 
-        context.game
+        context
     }
 }
 

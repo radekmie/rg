@@ -21,7 +21,7 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
   args: Parameters<WASM[Name]> extends [...infer Args, Function]
     ? Args
     : Parameters<WASM[Name]>,
-  onProgress: (...args: Progress) => void,
+  onProgress?: (...args: Progress) => void,
 ) {
   return queue(
     () =>
@@ -44,7 +44,7 @@ function workerMethod<Name extends keyof WASM, Progress extends unknown[]>(
           } else if (data.done) {
             resolve(data.value);
           } else {
-            onProgress(...data.value);
+            onProgress?.(...data.value);
             return;
           }
 
@@ -74,6 +74,12 @@ export async function analyze(source: string, settings: Settings) {
   } catch (error) {
     return [steps, error] as const;
   }
+}
+
+export async function apply(gameDeclaration: RgGameDeclaration, path: string) {
+  const ast = JSON.stringify(gameDeclaration);
+  const result = await workerMethod('apply', [ast, path]);
+  return JSON.parse(result) as { moves: string[]; state: string };
 }
 
 export type Logger = { log: (message: string) => void };

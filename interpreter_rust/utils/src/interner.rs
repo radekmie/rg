@@ -39,6 +39,10 @@ impl<Key: Clone + Ord, Value: Clone + PartialEq + TryFrom<usize>> Interner<Key, 
         id
     }
 
+    pub fn interned(&self, string: &Key) -> Option<&Value> {
+        self.string_to_id.get(string)
+    }
+
     pub fn recall(&self, id: &Value) -> Option<&Key> {
         self.string_to_id
             .iter()

@@ -317,6 +317,51 @@ pub fn analyze(
     Ok(())
 }
 
+#[wasm_bindgen(js_name = apply)]
+pub fn apply(ast: &str, path: &str) -> Result<String, String> {
+    console_error_panic_hook::set_once();
+    let (game, interner, variables_indexes) =
+        Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?;
+    let state = game.apply(&interner, path)?;
+    let moves = state
+        .next_states(&game, true)
+        .map(|state| {
+            state
+                .tags
+                .iter()
+                .map(|tag| interner.recall(tag).unwrap().as_ref())
+                .collect::<Vec<_>>()
+                .join(" ")
+        })
+        .collect::<Vec<_>>();
+
+    let serialized_state = format!(
+        "goals: {}\nplayer: {}\nposition: {}\nvalues:\n  {}\nvisible: {}",
+        state.goals.map_id(&mut |id| interner.recall(id).unwrap()),
+        state.player.map_id(&mut |id| interner.recall(id).unwrap()),
+        interner.recall(&state.position).unwrap(),
+        state
+            .values
+            .iter()
+            .enumerate()
+            .map(|(index, value)| format!(
+                "{}: {}",
+                variables_indexes
+                    .iter()
+                    .find(|variable| *variable.1 == index)
+                    .unwrap()
+                    .0,
+                value.map_id(&mut |id| interner.recall(id).unwrap())
+            ))
+            .collect::<Vec<_>>()
+            .join("\n  "),
+        state.visible.map_id(&mut |id| interner.recall(id).unwrap())
+    );
+
+    let result = json!({ "moves": moves, "state": serialized_state });
+    to_string(&result).map_err(|error| error.to_string())
+}
+
 #[wasm_bindgen(js_name = perf)]
 pub fn perf(ast: &str, depth: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
@@ -331,7 +376,7 @@ pub fn perf(ast: &str, depth: usize, callback: &Function) -> Result<(), String> 
 #[wasm_bindgen(js_name = run)]
 pub fn run(ast: &str, plays: usize, callback: &Function) -> Result<(), String> {
     console_error_panic_hook::set_once();
-    let (game, interner) = Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?;
+    let (game, interner, _) = Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?;
     let this = JsValue::null();
     let mut rng = thread_rng();
     game.run(

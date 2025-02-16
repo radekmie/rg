@@ -16,6 +16,11 @@ export function assert(
   }
 }
 
+const collator = new Intl.Collator(undefined, { numeric: true });
+export function localeCompare(x: string, y: string) {
+  return collator.compare(x, y);
+}
+
 type Options = Partial<Parameters<typeof util.inspect>[1]>;
 export function pretty(object: unknown, options?: Options) {
   return util
@@ -27,4 +32,10 @@ export function pretty(object: unknown, options?: Options) {
       ...options,
     })
     .replace(/\[Object: null prototype\] /g, '');
+}
+
+export function prettyError(error: unknown) {
+  return error instanceof Error && error.name === 'WorkerError'
+    ? error.message
+    : pretty(error, { colors: false });
 }

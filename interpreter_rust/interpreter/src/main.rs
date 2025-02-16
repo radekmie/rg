@@ -127,7 +127,7 @@ fn main() -> Result<(), String> {
             game_with_flags,
             plays,
         } => {
-            let (game, interner) = Game::try_from(game_with_flags.load()?)?;
+            let (game, interner, _) = Game::try_from(game_with_flags.load()?)?;
             game.run(
                 &mut thread_rng(),
                 &interner,

@@ -14,6 +14,43 @@ use web_time::Instant;
 type Id = Arc<str>;
 
 impl Game<RuntimeId> {
+    pub fn apply(&self, interner: &Interner<Id, RuntimeId>, path: &str) -> Result<State, String> {
+        if !path.starts_with('/') || !path.ends_with('/') {
+            return Err("Incorrect path format.".to_string());
+        }
+
+        let mut state = self.initial_state();
+        if path.len() != 1 {
+            'next: for move_ in path[1..path.len() - 1].split('/') {
+                let tags = if move_.is_empty() {
+                    vec![]
+                } else {
+                    move_
+                        .split(' ')
+                        .map(|tag| {
+                            interner
+                                .interned(&Id::from(tag))
+                                .copied()
+                                .ok_or_else(|| format!("Unknown tag '{tag}'."))
+                        })
+                        .collect::<Result<Vec<_>, _>>()?
+                };
+
+                for next_state in state.next_states(self, true) {
+                    if tags == *next_state.tags.as_ref() {
+                        state = next_state;
+                        state.tags = Rc::default();
+                        continue 'next;
+                    }
+                }
+
+                return Err(format!("Path '{path}' failed at '{move_}'."));
+            }
+        }
+
+        Ok(state)
+    }
+
     pub fn initial_state(&self) -> State {
         State {
             goals: self.initial_goals.clone(),
@@ -217,7 +254,10 @@ impl Game<RuntimeId> {
 
     /// This should be provided via the `TryFrom` trait, but it's impossible due
     /// to orphan rules.
-    pub fn try_from(mut game: GameAst<Id>) -> Result<(Self, Interner<Id, RuntimeId>), Error<Id>> {
+    #[expect(clippy::type_complexity)]
+    pub fn try_from(
+        mut game: GameAst<Id>,
+    ) -> Result<(Self, Interner<Id, RuntimeId>, BTreeMap<Id, usize>), Error<Id>> {
         let mut interner = Interner::default();
         interner.intern_as(&Arc::from("begin"), LABEL_BEGIN);
         interner.intern_as(&Arc::from("end"), LABEL_END);
@@ -225,8 +265,8 @@ impl Game<RuntimeId> {
         interner.intern_as(&Arc::from("random"), LABEL_RANDOM);
 
         game.expand_generator_nodes()?;
-        let game = Game::from(game);
-        let game = game.map_id(&mut |id| interner.intern(id));
-        Ok((game, interner))
+        let context = Game::from_game(game);
+        let game = context.game.map_id(&mut |id| interner.intern(id));
+        Ok((game, interner, context.variables_indexes))
     }
 }

@@ -1,16 +1,20 @@
 import {
   Button,
   Card,
+  ControlGroup,
   Elevation,
   FormGroup,
+  HTMLSelect,
+  InputGroup,
   Intent,
   Label,
   NumericInput,
 } from '@blueprintjs/core';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePromise } from 'ui/hooks/usePromise';
 
 import { RgGameDeclaration } from '../../parse';
-import { pretty } from '../../utils';
+import { localeCompare, prettyError } from '../../utils';
 import * as wasm from '../../wasm';
 import { useNumericState } from '../hooks/useNumericState';
 import * as styles from '../index.module.css';
@@ -67,11 +71,7 @@ function BenchBlock({
         setResult(Intent.SUCCESS);
       } catch (error) {
         setResult(Intent.DANGER);
-        logger.log(
-          error instanceof Error && error.name === 'WorkerError'
-            ? error.message
-            : pretty(error, { colors: false }),
-        );
+        logger.log(prettyError(error));
       }
     }
 
@@ -80,27 +80,84 @@ function BenchBlock({
   }, [action, gameDeclaration, inputState.valueAsNumber, logger]);
 
   return (
-    <Card className={styles.block} elevation={Elevation.TWO}>
+    <Card className={styles.block} compact elevation={Elevation.TWO}>
       <FormGroup label={label} labelFor={id} labelInfo={labelInfo}>
-        <NumericInput
-          disabled={result === Intent.PRIMARY}
-          id={id}
-          max={max}
-          min={min}
-          onValueChange={inputState.onValueChange}
-          value={inputState.valueAsString}
-        />
+        <ControlGroup>
+          <Button
+            disabled={result === Intent.PRIMARY}
+            intent={result}
+            onClick={onAction}
+          >
+            {actionText}
+          </Button>
+          <NumericInput
+            disabled={result === Intent.PRIMARY}
+            fill
+            id={id}
+            max={max}
+            min={min}
+            onValueChange={inputState.onValueChange}
+            value={inputState.valueAsString}
+          />
+        </ControlGroup>
       </FormGroup>
 
-      <Button
-        disabled={result === Intent.PRIMARY}
-        intent={result}
-        onClick={onAction}
-      >
-        {actionText}
-      </Button>
-
       <pre>{logs.join('\n')}</pre>
+    </Card>
+  );
+}
+
+export type PlayBlockProps = {
+  gameDeclaration: RgGameDeclaration;
+};
+
+function PlayBlock({ gameDeclaration }: PlayBlockProps) {
+  const [path, setPath] = useState('/');
+  useEffect(() => setPath('/'), [gameDeclaration]);
+
+  const result = usePromise(
+    () => wasm.apply(gameDeclaration, path),
+    [gameDeclaration, path],
+  );
+
+  return (
+    <Card className={styles.block} compact elevation={Elevation.TWO}>
+      <FormGroup
+        label="Path"
+        labelFor="path"
+        labelInfo="(slash separates moves; space separates tags)"
+      >
+        <ControlGroup>
+          <Button
+            icon="double-chevron-left"
+            disabled={path === '/'}
+            onClick={() => setPath('/')}
+          />
+          <Button
+            icon="chevron-left"
+            disabled={path === '/'}
+            onClick={() =>
+              setPath(path => `${path.split('/').slice(0, -2).join('/')}/`)
+            }
+          />
+          <InputGroup fill id="path" onValueChange={setPath} value={path} />
+          <HTMLSelect
+            disabled={!result.value?.moves.length}
+            id="move"
+            onChange={({ currentTarget: { value } }) =>
+              setPath(path => `${path}${value}/`)
+            }
+            options={[
+              { disabled: true, label: 'Move', value: '(default)' },
+              ...(result.value?.moves.sort(localeCompare) ?? []),
+            ]}
+            value="(default)"
+          />
+        </ControlGroup>
+      </FormGroup>
+      <pre>
+        {result.error ? prettyError(result.error) : result.value?.state}
+      </pre>
     </Card>
   );
 }
@@ -113,7 +170,7 @@ export type BenchProps = {
 export function Bench({ gameDeclaration, stats }: BenchProps) {
   return (
     <section className={styles.wrapScroll}>
-      <Card className={styles.block} elevation={Elevation.TWO}>
+      <Card className={styles.block} compact elevation={Elevation.TWO}>
         <Label>Statistics</Label>
         <pre>{stats}</pre>
       </Card>
@@ -141,6 +198,7 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
         max={10}
         min={0}
       />
+      <PlayBlock gameDeclaration={gameDeclaration} />
     </section>
   );
 }

@@ -17,7 +17,7 @@ fn scenario(criterion: &mut Criterion, name: &str, paths: &[&str]) {
             group.bench_function(
                 BenchmarkId::new((*path).to_string(), flags_name),
                 |bencher| {
-                    let (ist, interner) = ist.get_or_insert_with(|| {
+                    let (ist, interner, _) = ist.get_or_insert_with(|| {
                         let source = read_to_string(format!("../../games/{path}")).unwrap();
                         let ast =
                             analyze_inner(source, "rg", &flags, false, &mut None::<fn(_)>).unwrap();
