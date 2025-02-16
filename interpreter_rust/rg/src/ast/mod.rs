@@ -381,6 +381,9 @@ pub enum ErrorReason<Id> {
         lhs: Node<Id>,
         rhs: Node<Id>,
     },
+    PlayerAnyAssignment {
+        label: Label<Id>,
+    },
     SetTypeExpected {
         got: Arc<Type<Id>>,
     },

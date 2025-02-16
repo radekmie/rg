@@ -182,13 +182,7 @@ impl Iterator for StateNext<'_> {
                                 for value in values {
                                     let mut state = state.clone();
                                     state.eval_set(game, lhs, value.clone());
-
-                                    // TODO: Is `player = T(*)` allowed?
-                                    if *break_on_player && *lhs == Expression::PlayerReference {
-                                        return_queue.push(state);
-                                    } else {
-                                        search_queue.push(state);
-                                    }
+                                    search_queue.push(state);
                                 }
                             }
                             EdgeLabel::Comparison { lhs, rhs, negated } => {

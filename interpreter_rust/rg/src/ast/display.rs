@@ -149,6 +149,10 @@ impl<Id: Display> Display for ErrorReason<Id> {
                 f,
                 "Multiple edges between two nodes are not allowed ({lhs} -> {rhs})."
             ),
+            Self::PlayerAnyAssignment { label } => write!(
+                f,
+                "AssignAny is not allowed for the player variable in {label}."
+            ),
             Self::SetTypeExpected { got } => write!(f, "Expected Set type, got {got}."),
             Self::TypeDeclarationMismatch {
                 expected,
