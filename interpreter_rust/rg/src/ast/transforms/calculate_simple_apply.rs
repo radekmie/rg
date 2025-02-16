@@ -1,4 +1,6 @@
-use crate::ast::{Edge, Error, Game, Label, Node, Pragma, PragmaAssignment, Span};
+use crate::ast::{
+    Edge, Error, Expression, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag, Span,
+};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -8,6 +10,7 @@ impl Game<Id> {
     pub fn calculate_simple_apply(&mut self) -> Result<(), Error<Id>> {
         let mut simple_paths = self.calculate_simple_paths();
         SimplePath::merge_all(&mut simple_paths);
+        SimplePath::remove_invalid(&mut simple_paths);
         SimplePath::remove_ambiguous(&mut simple_paths);
         SimplePath::propagate_exhaustiveness(&mut simple_paths);
 
@@ -64,11 +67,21 @@ impl Game<Id> {
                             }
                         }
                         Label::Tag { symbol } => {
-                            paths_to_tags.entry(symbol.clone()).or_default().insert((
-                                edge.rhs.clone(),
-                                path,
-                                assignments,
-                            ));
+                            paths_to_tags
+                                .entry(PragmaTag::Symbol {
+                                    symbol: symbol.clone(),
+                                })
+                                .or_default()
+                                .insert((edge.rhs.clone(), path, assignments));
+                        }
+                        Label::TagVariable { identifier } => {
+                            paths_to_tags
+                                .entry(PragmaTag::Variable {
+                                    identifier: identifier.clone(),
+                                    type_: self.infer(identifier),
+                                })
+                                .or_default()
+                                .insert((edge.rhs.clone(), path, assignments));
                         }
                         _ => {
                             queue.push((edge.rhs.clone(), path, assignments));
@@ -96,7 +109,21 @@ impl Game<Id> {
             let tags_count = paths_to_tags.len();
             let mut simple_paths_to_tags = vec![];
             for (tag, mut paths) in paths_to_tags {
-                let (_, mut path, assignments) = paths.pop_first().unwrap();
+                // // There can be no bindings used in assignments other than the
+                // // tag we've reached.
+                // if paths.iter().any(|(_, edges, _)| {
+                //     edges.iter().any(|edge| {
+                //         edge.label.as_var_assignment().is_some_and(|(_, rhs)| {
+                //             edge.bindings()
+                //                 .into_iter()
+                //                 .any(|(id, _)| *id != tag && rhs.has_variable(id))
+                //         })
+                //     })
+                // }) {
+                //     continue;
+                // }
+
+                let (_, mut path, mut assignments) = paths.pop_first().unwrap();
 
                 // If there's exactly one path to a tag, it's trivially simple.
                 if paths.is_empty() {
@@ -118,8 +145,94 @@ impl Game<Id> {
                     continue;
                 }
 
+                //   2. All paths have the assignments. There's one exception:
+                //      if the last two edges are "exposing a variable", i.e.,
+                //      there's a comparison of a variable and a bind + a tag of
+                //      from this bind, we can remove all trailing assignments
+                //      to this variable.
+                let exposed_variable: Option<Arc<Expression<Id>>> = None;
+                // let exposed_variable = (!tag.is_symbol() && path.len() > 2)
+                //     .then(|| {
+                //         let a = &path[path.len() - 3].rhs;
+                //         let b = &path[path.len() - 2].rhs;
+
+                //         // "a -> b -> c" is isolated.
+                //         if next_edges[a].len() != 1 || next_edges[b].len() != 1 {
+                //             return None;
+                //         }
+
+                //         // "a -> b" has our tag as a binding.
+                //         let a_first = next_edges[a].first().unwrap();
+                //         if !a_first.has_binding(&tag) {
+                //             return None;
+                //         }
+
+                //         // "a -> b" has our tag as a binding.
+                //         let b_first = next_edges[b].first().unwrap();
+                //         if !b_first.has_binding(&tag) {
+                //             return None;
+                //         }
+
+                //         // "a -> b" is a comparison.
+                //         let Label::Comparison { lhs, rhs, .. } = &a_first.label else {
+                //             return None;
+                //         };
+
+                //         // "a -> b" is a variable to tag comparison.
+                //         let variable =
+                //             match (lhs.uncast().as_reference(), rhs.uncast().as_reference()) {
+                //                 (Some(lhs_id), Some(_)) if *lhs_id == tag => rhs,
+                //                 (Some(_), Some(rhs_id)) if *rhs_id == tag => lhs,
+                //                 _ => return None,
+                //             };
+
+                //         // "b -> c" is our tag.
+                //         if !b_first.label.is_tag_and(|id| *id == tag) {
+                //             return None;
+                //         }
+
+                //         Some(variable.clone())
+                //     })
+                //     .flatten();
+
+                if let Some(exposed_variable) = &exposed_variable {
+                    macro_rules! expose_variable {
+                        ($assignments:expr) => {
+                            while $assignments
+                                .last()
+                                .is_some_and(|x| x.lhs.uncast() == exposed_variable.as_ref())
+                            {
+                                $assignments.pop();
+                            }
+                        };
+                    }
+
+                    expose_variable!(assignments);
+                    paths = paths
+                        .into_iter()
+                        .map(|(node, nodes, mut assignments)| {
+                            expose_variable!(assignments);
+                            (node, nodes, assignments)
+                        })
+                        .collect();
+                }
+
                 if paths.iter().any(|x| x.2 != assignments) {
                     continue;
+                }
+
+                // Exposed variable assignments are stripped, so we add it again
+                // but with bind instead.
+                if let Some(exposed_variable) = exposed_variable {
+                    if let PragmaTag::Variable { identifier, type_ } = &tag {
+                        assignments.push(PragmaAssignment {
+                            lhs: exposed_variable,
+                            rhs: Arc::from(Expression::new_cast(
+                                type_.clone(),
+                                Arc::from(Expression::new(identifier.clone())),
+                            )),
+                        });
+                    }
                 }
 
                 simple_paths_to_tags.push(SimplePath {
@@ -186,7 +299,7 @@ struct SimplePath {
     is_exhaustive: bool,
     node: Node<Id>,
     path: Vec<Arc<Edge<Id>>>,
-    tags: Vec<Id>,
+    tags: Vec<PragmaTag<Id>>,
     to_player: bool,
 }
 
@@ -312,6 +425,50 @@ impl SimplePath {
                     continue;
                 }
 
+                let mut tagsets: Vec<_> = indexes
+                    .iter()
+                    .map(|index| &simple_paths[*index].tags)
+                    .collect();
+
+                let mut ambiguous = false;
+                while let Some(x) = tagsets.pop() {
+                    ambiguous |= tagsets.iter().any(|y| {
+                        let mut ambiguous_prefix = false;
+                        for index in 0..(x.len().min(y.len())) {
+                            if !x[index].is_symbol() && !y[index].is_symbol() {
+                                ambiguous_prefix = true;
+                                break;
+                            }
+
+                            if x[index] != y[index] {
+                                break;
+                            }
+                        }
+
+                        if !ambiguous_prefix {
+                            return false;
+                        }
+
+                        let mut ambiguous_suffix = false;
+                        for index in (0..(x.len().min(y.len()))).rev() {
+                            if !x[index].is_symbol() && !y[index].is_symbol() {
+                                ambiguous_suffix = true;
+                                break;
+                            }
+
+                            if x[index] != y[index] {
+                                break;
+                            }
+                        }
+
+                        ambiguous_suffix
+                    });
+                }
+
+                if !ambiguous {
+                    continue;
+                }
+
                 // We have to remove these, as they're not
                 let all_continuations: Result<Vec<_>, _> = indexes
                     .iter()
@@ -366,6 +523,33 @@ impl SimplePath {
             if !any_continuations_merged {
                 break;
             }
+        }
+    }
+
+    fn remove_invalid(simple_paths: &mut Vec<Self>) {
+        // When an exhaustive simple path is removed, other simple paths from
+        // the same node are not exhaustive anymore.
+        let mut affected_exhaustive_nodes = BTreeSet::new();
+
+        // All binds have to be bound with any of the tags. First node _can_, as
+        // when applying it, we're in a bind already.
+        simple_paths.retain(|simple_path| {
+            let is_correct = true;
+            // let is_correct = simple_path.path[1..].iter().all(|edge| {
+            //     edge.rhs
+            //         .bindings()
+            //         .all(|bind| simple_path.tags.iter().any(|tag| tag.tag == *bind.0))
+            // });
+
+            if !is_correct && simple_path.is_exhaustive {
+                affected_exhaustive_nodes.insert(simple_path.node.clone());
+            }
+
+            is_correct
+        });
+
+        for simple_path in simple_paths {
+            simple_path.is_exhaustive &= !affected_exhaustive_nodes.contains(&simple_path.node);
         }
     }
 }

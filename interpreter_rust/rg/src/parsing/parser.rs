@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, Expression, Game, Label, Node, Pragma, PragmaAssignment, Type, Typedef, Value,
-    ValueEntry, Variable,
+    Constant, Edge, Expression, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag, Type,
+    Typedef, Value, ValueEntry, Variable,
 };
 use nom::branch::alt;
 use nom::bytes::complete::tag;
@@ -350,7 +350,7 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
                 tag("simpleApplyExhaustive"),
                 cut(preceded_whitespace(node)),
                 preceded_whitespace(node),
-                in_brackets(separated_list0(ww_char(','), identifier)),
+                in_brackets(separated_list0(ww_char(','), pragma_tag)),
                 separated_list0(ww_char(','), pragma_assignment),
                 preceded_whitespace(tag(";")),
             )),
@@ -367,7 +367,7 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
                 tag("simpleApply"),
                 cut(preceded_whitespace(node)),
                 preceded_whitespace(node),
-                in_brackets(separated_list0(ww_char(','), identifier)),
+                in_brackets(separated_list0(ww_char(','), pragma_tag)),
                 separated_list0(ww_char(','), pragma_assignment),
                 preceded_whitespace(tag(";")),
             )),
@@ -431,6 +431,16 @@ fn pragma_assignment(input: Input) -> Result<PragmaAssignment<Identifier>> {
         expression,
         cut(ww_char('=')),
         expect_expression,
+    ))(input)
+}
+
+fn pragma_tag(input: Input) -> Result<PragmaTag<Identifier>> {
+    alt((
+        map(
+            separated_pair(identifier, cut(char(':')), type_),
+            |(identifier, type_)| PragmaTag::Variable { identifier, type_ },
+        ),
+        map(identifier, |symbol| PragmaTag::Symbol { symbol }),
     ))(input)
 }
 

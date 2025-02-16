@@ -1283,7 +1283,7 @@ pub enum Pragma<Id> {
         span: Span,
         lhs: Node<Id>,
         rhs: Node<Id>,
-        tags: Vec<Id>,
+        tags: Vec<PragmaTag<Id>>,
         assignments: Vec<PragmaAssignment<Id>>,
     },
     SimpleApplyExhaustive {
@@ -1291,7 +1291,7 @@ pub enum Pragma<Id> {
         span: Span,
         lhs: Node<Id>,
         rhs: Node<Id>,
-        tags: Vec<Id>,
+        tags: Vec<PragmaTag<Id>>,
         assignments: Vec<PragmaAssignment<Id>>,
     },
     TagIndex {
@@ -1380,6 +1380,23 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
 pub struct PragmaAssignment<Id> {
     pub lhs: Arc<Expression<Id>>,
     pub rhs: Arc<Expression<Id>>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+pub enum PragmaTag<Id> {
+    Symbol {
+        symbol: Id,
+    },
+    Variable {
+        identifier: Id,
+        type_: Arc<Type<Id>>,
+    },
+}
+
+impl<Id> PragmaTag<Id> {
+    pub fn is_symbol(&self) -> bool {
+        matches!(self, Self::Symbol { .. })
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

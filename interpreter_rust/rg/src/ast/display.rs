@@ -1,6 +1,6 @@
 use crate::ast::{
     Constant, Edge, Error, ErrorReason, Expression, Game, Label, Node, Pragma, PragmaAssignment,
-    Stats, Type, Typedef, Value, ValueEntry, Variable,
+    PragmaTag, Stats, Type, Typedef, Value, ValueEntry, Variable,
 };
 use std::fmt::{Display, Formatter, Result};
 use utils::display::write_with_separator;
@@ -293,6 +293,15 @@ impl<Id: Display> Display for Pragma<Id> {
 impl<Id: Display> Display for PragmaAssignment<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "{} = {}", self.lhs, self.rhs)
+    }
+}
+
+impl<Id: Display> Display for PragmaTag<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Self::Symbol { symbol } => write!(f, "{symbol}"),
+            Self::Variable { identifier, type_ } => write!(f, "{identifier}: {type_}"),
+        }
     }
 }
 
