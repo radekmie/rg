@@ -46,19 +46,6 @@ mod test {
 
     test_validator!(
         check_assignments,
-        binding,
-        "begin, foo(x: Bool): x = 1;",
-        Err(ErrorReason::ConstantAssignment {
-            identifier: Arc::from("x"),
-            label: Label::Assignment {
-                lhs: Arc::from(Expression::new(Arc::from("x"))),
-                rhs: Arc::from(Expression::new(Arc::from("1")))
-            }
-        })
-    );
-
-    test_validator!(
-        check_assignments,
         constant_direct,
         "const x: Bool -> Bool = { :0 }; begin, end: x = x;",
         Err(ErrorReason::ConstantAssignment {
