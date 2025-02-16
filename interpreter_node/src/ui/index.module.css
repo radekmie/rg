@@ -97,6 +97,7 @@ body {
 }
 
 .settings {
+  color: unset !important;
   flex: 1 1 0px;
   overflow-y: auto;
 }

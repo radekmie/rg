@@ -1,4 +1,4 @@
-import { Graphviz as GraphvizWasm } from '@hpcc-js/wasm';
+import { Graphviz as GraphvizWasm } from '@hpcc-js/wasm-graphviz';
 import { TOOL_PAN, UncontrolledReactSVGPanZoom } from 'react-svg-pan-zoom';
 
 import { Autosize } from './Autosize';

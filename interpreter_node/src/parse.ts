@@ -3,7 +3,7 @@ import * as utils from './utils';
 import * as wasm from './wasm';
 
 declare const RgGameDeclarationBrand: unique symbol;
-export type RgGameDeclaration = unknown & { [RgGameDeclarationBrand]: '' };
+export type RgGameDeclaration = { [RgGameDeclarationBrand]: '' };
 
 export type AnalyzedGameStep = { title?: string } & (
   | { kind: 'ast'; language: Exclude<L, L.rg>; value: unknown }

@@ -104,13 +104,14 @@ export function Settings({
       </div>
       <Callout
         className={styles.settings}
+        compact
         icon={game.loading ? 'time' : undefined}
         intent={
           game.loading
             ? Intent.NONE
-            : game.error ?? game.value?.error
-            ? Intent.DANGER
-            : Intent.SUCCESS
+            : (game.error ?? game.value?.error)
+              ? Intent.DANGER
+              : Intent.SUCCESS
         }
       >
         {availableFlags.map(({ flags, label }) => {

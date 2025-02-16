@@ -36,6 +36,7 @@ function asRange(range: monaco.IRange) {
 }
 
 function hasLsp(language: string) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison -- Validation.
   return language === Language.rg || language === Language.hrg;
 }
 
