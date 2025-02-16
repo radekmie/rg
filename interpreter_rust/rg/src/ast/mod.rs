@@ -168,6 +168,10 @@ impl<Id> Label<Id> {
         matches!(self, Self::Tag { symbol } if fn_(symbol))
     }
 
+    pub fn is_tag_variable(&self) -> bool {
+        matches!(self, Self::TagVariable { .. })
+    }
+
     pub fn negate(&mut self) {
         match self {
             Self::Comparison { negated, .. } => *negated = !*negated,
