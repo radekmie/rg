@@ -105,11 +105,11 @@ turn, lose: ! findPawn -> pawnExists;
 
 move, selectPos: player = PlayerOrSystem(currentPlayer);
 
-findPawn, findPawnPos(position:Position): board[position] == pieceOfPlayer[currentPlayer];
-findPawnPos(position:Position), pawnExists: ;
+findPawn, findPawnPos: pos = Position(*);
+findPawnPos, pawnExists: board[pos] == pieceOfPlayer[currentPlayer];
 
-selectPos, setPos(position:Position): $ position;
-setPos(position:Position), checkOwn: pos = Position(position);
+selectPos, setPos: pos = Position(*);
+setPos, checkOwn: $$ pos;
 checkOwn, selectDir: board[pos] == pieceOfPlayer[currentPlayer];
 
 selectDir, forwardDirCheck: board[Position(FDirOfPlayer[currentPlayer][pos])] == Piece(e);
