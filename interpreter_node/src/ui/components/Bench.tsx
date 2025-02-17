@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePromise } from 'ui/hooks/usePromise';
 
 import { RgGameDeclaration } from '../../parse';
-import { localeCompare, prettyError } from '../../utils';
+import { localeCompare, prettyError, random } from '../../utils';
 import * as wasm from '../../wasm';
 import { useNumericState } from '../hooks/useNumericState';
 import * as styles from '../index.module.css';
@@ -152,6 +152,14 @@ function PlayBlock({ gameDeclaration }: PlayBlockProps) {
               ...(result.value?.moves.sort(localeCompare) ?? []),
             ]}
             value="(default)"
+          />
+          <Button
+            icon="random"
+            disabled={!result.value?.moves.length}
+            onClick={() =>
+              result.value &&
+              setPath(path => `${path}${random(result.value.moves)}/`)
+            }
           />
         </ControlGroup>
       </FormGroup>

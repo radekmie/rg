@@ -39,3 +39,7 @@ export function prettyError(error: unknown) {
     ? error.message
     : pretty(error, { colors: false });
 }
+
+export function random<T>(xs: T[]): T {
+  return xs[Math.floor(Math.random() * xs.length)];
+}
