@@ -437,7 +437,7 @@ fn pragma_assignment(input: Input) -> Result<PragmaAssignment<Identifier>> {
 fn pragma_tag(input: Input) -> Result<PragmaTag<Identifier>> {
     alt((
         map(
-            separated_pair(identifier, cut(char(':')), type_),
+            separated_pair(identifier, char(':'), cut(type_)),
             |(identifier, type_)| PragmaTag::Variable { identifier, type_ },
         ),
         map(identifier, |symbol| PragmaTag::Symbol { symbol }),
