@@ -335,7 +335,8 @@ pub fn apply(ast: &str, path: &str) -> Result<String, String> {
         })
         .collect::<Vec<_>>();
 
-    let serialized_state = format!(
+    let is_final = state.is_final();
+    let state = format!(
         "goals: {}\nplayer: {}\nposition: {}\nvalues:\n  {}\nvisible: {}",
         state.goals.map_id(&mut |id| interner.recall(id).unwrap()),
         state.player.map_id(&mut |id| interner.recall(id).unwrap()),
@@ -358,7 +359,7 @@ pub fn apply(ast: &str, path: &str) -> Result<String, String> {
         state.visible.map_id(&mut |id| interner.recall(id).unwrap())
     );
 
-    let result = json!({ "moves": moves, "state": serialized_state });
+    let result = json!({ "isFinal": is_final, "moves": moves, "state": state });
     to_string(&result).map_err(|error| error.to_string())
 }
 

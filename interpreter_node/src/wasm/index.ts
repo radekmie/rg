@@ -79,7 +79,11 @@ export async function analyze(source: string, settings: Settings) {
 export async function apply(gameDeclaration: RgGameDeclaration, path: string) {
   const ast = JSON.stringify(gameDeclaration);
   const result = await workerMethod('apply', [ast, path]);
-  return JSON.parse(result) as { moves: string[]; state: string };
+  return JSON.parse(result) as {
+    isFinal: boolean;
+    moves: string[];
+    state: string;
+  };
 }
 
 export type Logger = { log: (message: string) => void };

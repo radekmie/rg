@@ -1,6 +1,7 @@
 import {
   Button,
   Card,
+  Checkbox,
   ControlGroup,
   Elevation,
   FormGroup,
@@ -142,7 +143,8 @@ function PlayBlock({ gameDeclaration }: PlayBlockProps) {
           />
           <InputGroup fill id="path" onValueChange={setPath} value={path} />
           <HTMLSelect
-            disabled={!result.value?.moves.length}
+            disabled={result.loading || !result.value?.moves.length}
+            iconName="caret-down"
             id="move"
             onChange={({ currentTarget: { value } }) =>
               setPath(path => `${path}${value}/`)
@@ -155,7 +157,14 @@ function PlayBlock({ gameDeclaration }: PlayBlockProps) {
           />
           <Button
             icon="random"
-            disabled={!result.value?.moves.length}
+            intent={
+              result.error
+                ? Intent.DANGER
+                : result.value?.isFinal
+                  ? Intent.SUCCESS
+                  : undefined
+            }
+            disabled={result.loading || !result.value?.moves.length}
             onClick={() =>
               result.value &&
               setPath(path => `${path}${random(result.value.moves)}/`)
