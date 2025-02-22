@@ -14,6 +14,7 @@ use std::sync::Arc;
 use utils::position::Span;
 
 pub type Binding<'a, Id> = (&'a Id, &'a Arc<Type<Id>>);
+pub type ExprOrType<'a, Id> = Result<&'a Arc<Expression<Id>>, &'a Arc<Type<Id>>>;
 pub type Mapping<Id> = BTreeMap<Id, (Id, Arc<Type<Id>>)>;
 pub type SetWithIdx<'a, T> = BTreeSet<(usize, &'a T)>;
 
@@ -133,9 +134,11 @@ impl<Id> Label<Id> {
         None
     }
 
-    pub fn as_assignment(&self) -> Option<(&Id, &Arc<Expression<Id>>)> {
+    pub fn as_assignment(&self) -> Option<(&Id, ExprOrType<Id>)> {
         if let Self::Assignment { lhs, rhs } = self {
-            return Some((lhs.access_identifier(), rhs));
+            return Some((lhs.access_identifier(), Ok(rhs)));
+        } else if let Self::AssignmentAny { lhs, rhs } = self {
+            return Some((lhs.access_identifier(), Err(rhs)));
         }
         None
     }

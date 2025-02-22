@@ -62,7 +62,8 @@ impl Game<Id> {
                     continue;
                 };
 
-                let vars_in_rhs = rhs.used_variables();
+                let vars_in_rhs =
+                    rhs.map_or_else(|_| BTreeSet::new(), |expr| expr.used_variables());
                 let defs_on_assignment =
                     used_definitions(current_definitions, &vars_in_rhs, identifier);
                 let Some(usages) = maybe_inline_assignment(
@@ -80,14 +81,24 @@ impl Game<Id> {
                 if usage_already_modified {
                     continue;
                 }
-                if (edge.label.is_map_assignment()) && !usages.is_empty() {
-                    continue;
+                match rhs {
+                    _ if (edge.label.is_map_assignment()) && !usages.is_empty() => {}
+                    Err(_) if !usages.is_empty() => {}
+                    Err(_) => {
+                        modified_edges.insert(edge.clone());
+                        to_skip.insert((*edge).clone());
+                    }
+                    Ok(rhs) => {
+                        modified_edges.insert(edge.clone());
+                        modified_edges.extend(usages.iter().cloned());
+                        to_inline.insert((
+                            (*identifier).clone(),
+                            self.new_rhs(identifier, rhs),
+                            usages,
+                        ));
+                        to_skip.insert((*edge).clone());
+                    }
                 }
-
-                modified_edges.insert(edge.clone());
-                modified_edges.extend(usages.iter().cloned());
-                to_inline.insert(((*identifier).clone(), self.new_rhs(identifier, rhs), usages));
-                to_skip.insert((*edge).clone());
             }
         }
         (to_inline, to_skip)
@@ -263,12 +274,48 @@ mod test {
         t3, end: z[y] == y;"
     );
 
-    // TODO: This assignment can be inlined
     test_transform!(
         inline_assignment,
         assign_any_no_usages,
         "begin, t1: x = Foo(*);
+        t1, end: y == z;",
+        "begin, t1: ;
         t1, end: y == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_any_usages,
+        "begin, t1: x = Foo(*);
+        t1, end: x == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_map_no_usages,
+        "begin, t1: ;
+        t1, end: y == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_map_usages,
+        "begin, t1: x[y] = 1;
+        t1, end: x[1] == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_any_map_no_usages,
+        "begin, t1: ;
+        t1, end: y == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_any_map_usages,
+        "begin, t1: x[y] = Foo(*);
+        t1, end: x[1] == z;"
     );
 
     test_transform!(

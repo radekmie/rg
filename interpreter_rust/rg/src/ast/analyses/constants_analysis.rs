@@ -89,7 +89,7 @@ fn as_constant_assignment(
         return None;
     }
     let (id, expr) = edge.label.as_assignment()?;
-    Some((id.clone(), evaluate_constant(expr, knowledge, ctx)?))
+    Some((id.clone(), evaluate_constant(expr.ok()?, knowledge, ctx)?))
 }
 
 fn as_constant_comparison(
