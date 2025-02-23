@@ -26,17 +26,14 @@ export type Settings = {
     joinForkSuffixes: boolean;
     mangleSymbols: boolean;
     mergeAccesses: boolean;
-    mergeBindings: boolean;
     normalizeConstants: boolean;
     normalizeTypes: boolean;
     propagateConstants: boolean;
     pruneSingletonTypes: boolean;
     pruneUnreachableNodes: boolean;
-    pruneUnusedBindings: boolean;
     pruneUnusedConstants: boolean;
     pruneUnusedVariables: boolean;
     skipArtificialTags: boolean;
-    skipGeneratorComparisons: boolean;
     skipSelfAssignments: boolean;
     skipSelfComparisons: boolean;
     skipUnusedTags: boolean;
@@ -60,17 +57,14 @@ export const noFlagsEnabled: Settings['flags'] = {
   joinForkSuffixes: false,
   mangleSymbols: false,
   mergeAccesses: false,
-  mergeBindings: false,
   normalizeConstants: false,
   normalizeTypes: false,
   propagateConstants: false,
   pruneSingletonTypes: false,
   pruneUnreachableNodes: false,
-  pruneUnusedBindings: false,
   pruneUnusedConstants: false,
   pruneUnusedVariables: false,
   skipArtificialTags: false,
-  skipGeneratorComparisons: false,
   skipSelfAssignments: false,
   skipSelfComparisons: false,
   skipUnusedTags: false,
@@ -88,15 +82,12 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
       'joinForkPrefixes',
       'joinForkSuffixes',
       'mergeAccesses',
-      'mergeBindings',
       'propagateConstants',
       'pruneSingletonTypes',
       'pruneUnreachableNodes',
-      'pruneUnusedBindings',
       'pruneUnusedConstants',
       'pruneUnusedVariables',
       'skipArtificialTags',
-      'skipGeneratorComparisons',
       'skipSelfAssignments',
       'skipSelfComparisons',
       'skipUnusedTags',
