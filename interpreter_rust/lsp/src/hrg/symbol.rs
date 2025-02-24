@@ -13,25 +13,27 @@ pub struct Symbols {
 impl Symbols {
     fn add_from_statement(&mut self, stat: &Statement<Identifier>) {
         match stat {
+            Statement::Assignment {
+                accessors,
+                expression,
+                ..
+            } => {
+                accessors
+                    .iter()
+                    .for_each(|accessor| self.add_from_expression(accessor));
+                self.add_from_expression(expression);
+            }
+            Statement::AssignmentAny { accessors, .. } => {
+                accessors
+                    .iter()
+                    .for_each(|accessor| self.add_from_expression(accessor));
+            }
             Statement::Branch { arms } => arms.iter().for_each(|arm| {
                 arm.iter()
                     .for_each(|statement| self.add_from_statement(statement));
             }),
-            Statement::Forall {
-                identifier,
-                body,
-                type_,
-            } => {
-                if let Some(symbol) = typed(identifier, Flag::Param, (*type_).clone()) {
-                    self.symbols.push(symbol);
-                }
-                body.iter()
-                    .for_each(|statement| self.add_from_statement(statement));
-            }
-            Statement::While { body, expression } => {
-                body.iter()
-                    .for_each(|statement| self.add_from_statement(statement));
-                self.add_from_expression(expression);
+            Statement::Call { args, .. } => {
+                args.iter().for_each(|arg| self.add_from_expression(arg));
             }
             Statement::If {
                 expression,
@@ -49,20 +51,13 @@ impl Symbols {
             Statement::Loop { body } | Statement::Repeat { body, .. } => body
                 .iter()
                 .for_each(|statement| self.add_from_statement(statement)),
-            Statement::Assignment {
-                accessors,
-                expression,
-                ..
-            } => {
-                accessors
-                    .iter()
-                    .for_each(|accessor| self.add_from_expression(accessor));
+            Statement::Tag { .. } => {}
+            Statement::TagVariable { .. } => {}
+            Statement::While { body, expression } => {
+                body.iter()
+                    .for_each(|statement| self.add_from_statement(statement));
                 self.add_from_expression(expression);
             }
-            Statement::Call { args, .. } => {
-                args.iter().for_each(|arg| self.add_from_expression(arg));
-            }
-            Statement::Tag { .. } => {}
         }
     }
 

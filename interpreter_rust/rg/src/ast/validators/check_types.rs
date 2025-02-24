@@ -9,23 +9,23 @@ impl<Id: Clone + PartialEq> Constant<Id> {
 
 impl<Id: Clone + PartialEq> Edge<Id> {
     fn check_type(&self, game: &Game<Id>) -> Result<(), Error<Id>> {
-        self.label.check_type(game, Some(self))
+        self.label.check_type(game)
     }
 }
 
 impl<Id: Clone + PartialEq> Label<Id> {
-    fn check_type(&self, game: &Game<Id>, edge: Option<&Edge<Id>>) -> Result<(), Error<Id>> {
+    fn check_type(&self, game: &Game<Id>) -> Result<(), Error<Id>> {
         match self {
             Self::Assignment { lhs, rhs } => {
-                let lhs = lhs.infer(game, edge)?;
-                let rhs = rhs.infer(game, edge)?;
+                let lhs = lhs.infer(game)?;
+                let rhs = rhs.infer(game)?;
                 if !game.is_assignable_type(&lhs, &rhs, false)? {
                     return game.make_error(ErrorReason::AssignmentTypeMismatch { lhs, rhs });
                 }
             }
             Self::Comparison { lhs, rhs, .. } => {
-                let lhs = lhs.infer(game, edge)?;
-                let rhs = rhs.infer(game, edge)?;
+                let lhs = lhs.infer(game)?;
+                let rhs = rhs.infer(game)?;
                 if !game.is_assignable_type(&lhs, &rhs, false)?
                     && !game.is_assignable_type(&rhs, &lhs, false)?
                 {
@@ -72,7 +72,7 @@ impl<Id: Clone + PartialEq> Game<Id> {
 
         self.make_error(ErrorReason::AssignmentTypeMismatch {
             lhs: lhs.clone(),
-            rhs: self.infer(rhs, None),
+            rhs: self.infer(rhs),
         })
     }
 }

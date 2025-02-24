@@ -45,12 +45,7 @@ impl Game<Id> {
         for (edge, expr, type_, unused_members) in to_compat {
             let nodes: Vec<_> = unused_members
                 .iter()
-                .map(|_| {
-                    let mut node = gen_fresh_node(&mut max_id);
-                    let mut bindings: Vec<_> = edge.lhs.parts.iter().skip(1).cloned().collect();
-                    node.parts.append(&mut bindings);
-                    node
-                })
+                .map(|_| gen_fresh_node(&mut max_id))
                 .collect();
             let lhss = iter::once(edge.lhs.clone()).chain(nodes.clone());
             let rhss = nodes.into_iter().chain(iter::once(edge.rhs.clone()));
@@ -93,7 +88,7 @@ impl Game<Id> {
         next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     ) -> Option<ToCompact> {
         let (expr, ids) = self.lhs_or_rhs(edge, next_edges)?;
-        let type_ = expr.infer(self, Some(edge)).ok()?;
+        let type_ = expr.infer(self).ok()?;
         let type_members = self.get_type_members(&type_)?;
         if ids.iter().any(|id| !type_members.contains(id))
             || type_members.iter().filter(|id| !ids.contains(id)).count() >= ids.len()
@@ -291,18 +286,5 @@ mod test {
         begin, 1: x != A(4);
         1, 2: x != A(5);
         2, end: ;"
-    );
-
-    test_transform!(
-        compact_comparisons,
-        chain_binding,
-        "type A = {1,2,3,4, 5};
-        begin(x: A), end: x == 1;
-        begin(x: A), end: x == 2;
-        begin(x: A), end: x == 3;",
-        "type A = { 1, 2, 3, 4, 5 };
-        begin(x: A), 1(x: A): x != A(4);
-        1(x: A), 2(x: A): x != A(5);
-        2(x: A), end: ;"
     );
 }

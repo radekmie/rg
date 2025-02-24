@@ -12,17 +12,17 @@ pub enum Statement<Id> {
         accessors: Vec<Arc<Expression<Id>>>,
         expression: Arc<Expression<Id>>,
     },
+    AssignmentAny {
+        identifier: Id,
+        accessors: Vec<Arc<Expression<Id>>>,
+        type_: Arc<Type<Id>>,
+    },
     Branch {
         arms: Vec<Vec<Statement<Id>>>,
     },
     Call {
         identifier: Id,
         args: Vec<Arc<Expression<Id>>>,
-    },
-    Forall {
-        identifier: Id,
-        type_: Arc<Type<Id>>,
-        body: Vec<Statement<Id>>,
     },
     If {
         expression: Arc<Expression<Id>>,
@@ -38,6 +38,9 @@ pub enum Statement<Id> {
     },
     Tag {
         symbol: Id,
+    },
+    TagVariable {
+        identifier: Id,
     },
     While {
         expression: Arc<Expression<Id>>,

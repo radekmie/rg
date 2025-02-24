@@ -19,7 +19,7 @@ impl<Id: Clone + PartialEq> Label<Id> {
         edge: Option<&Edge<Id>>,
     ) -> Result<(), Error<Id>> {
         if let Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } = self {
-            let type_ = &lhs.infer(game, edge)?;
+            let type_ = &lhs.infer(game)?;
             if let Some(Typedef { identifier, .. }) = game.resolve_type_or_fail(type_)? {
                 Arc::make_mut(lhs).add_explicit_casts_typedef(game, edge, identifier, None)?;
                 Arc::make_mut(rhs).add_explicit_casts_typedef(game, edge, identifier, None)?;
@@ -53,7 +53,7 @@ impl<Id: Clone + PartialEq> Expression<Id> {
     ) -> Result<(), Error<Id>> {
         match self {
             Self::Access { lhs, rhs, .. } => {
-                let lhs_type = lhs.infer(game, edge)?;
+                let lhs_type = lhs.infer(game)?;
                 let Type::Arrow { lhs: key_type, .. } = lhs_type.resolve(game)? else {
                     return game.make_error(ErrorReason::ArrowTypeExpected { got: lhs_type });
                 };

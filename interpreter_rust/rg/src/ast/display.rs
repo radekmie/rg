@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, Error, ErrorReason, Expression, Game, Label, Node, NodePart, Pragma,
-    PragmaAssignment, PragmaTag, Stats, Type, Typedef, Value, ValueEntry, Variable,
+    Constant, Edge, Error, ErrorReason, Expression, Game, Label, Node, Pragma, PragmaAssignment,
+    PragmaTag, Stats, Type, Typedef, Value, ValueEntry, Variable,
 };
 use std::fmt::{Display, Formatter, Result};
 use utils::display::write_with_separator;
@@ -30,6 +30,7 @@ impl<Id: Display> Display for Label<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Assignment { lhs, rhs } => write!(f, "{lhs} = {rhs}"),
+            Self::AssignmentAny { lhs, rhs } => write!(f, "{lhs} = {rhs}(*)"),
             Self::Comparison {
                 lhs,
                 rhs,
@@ -54,28 +55,15 @@ impl<Id: Display> Display for Label<Id> {
             } => write!(f, "! {lhs} -> {rhs}"),
             Self::Skip { .. } => write!(f, ""),
             Self::Tag { symbol } => write!(f, "$ {symbol}"),
+            Self::TagVariable { identifier } => write!(f, "$$ {identifier}"),
         }
     }
 }
 
 impl<Id: Display> Display for Node<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        for part in &self.parts {
-            write!(f, "{part}")?;
-        }
-
+        write!(f, "{}", self.identifier)?;
         Ok(())
-    }
-}
-
-impl<Id: Display> Display for NodePart<Id> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match self {
-            Self::Binding {
-                identifier, type_, ..
-            } => write!(f, "({identifier}: {type_})"),
-            Self::Literal { identifier } => write!(f, "{identifier}"),
-        }
     }
 }
 
@@ -160,6 +148,10 @@ impl<Id: Display> Display for ErrorReason<Id> {
             Self::MultipleEdges { lhs, rhs } => write!(
                 f,
                 "Multiple edges between two nodes are not allowed ({lhs} -> {rhs})."
+            ),
+            Self::PlayerAnyAssignment { label } => write!(
+                f,
+                "AssignAny is not allowed for the player variable in {label}."
             ),
             Self::SetTypeExpected { got } => write!(f, "Expected Set type, got {got}."),
             Self::TypeDeclarationMismatch {
@@ -306,9 +298,9 @@ impl<Id: Display> Display for PragmaAssignment<Id> {
 
 impl<Id: Display> Display for PragmaTag<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match &self.type_ {
-            None => write!(f, "{}", self.tag),
-            Some(type_) => write!(f, "{}: {type_}", self.tag),
+        match self {
+            Self::Symbol { symbol } => write!(f, "{symbol}"),
+            Self::Variable { identifier, type_ } => write!(f, "{identifier}: {type_}"),
         }
     }
 }

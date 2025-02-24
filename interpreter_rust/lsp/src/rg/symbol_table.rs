@@ -1,7 +1,7 @@
 use super::symbol::Symbols;
 use crate::common::symbol::{make_builtin, Flag};
 use crate::common::symbol_table::{Occurrence, SymbolTable, SymbolTableBuilder};
-use rg::ast::{Edge, Expression, Game, Label, Node, NodePart, Type, Value, ValueEntry};
+use rg::ast::{Edge, Expression, Game, Label, Node, Type, Value, ValueEntry};
 use utils::position::Positioned;
 use utils::{Error, Identifier};
 
@@ -23,23 +23,15 @@ fn add_from_type(table: &mut SymbolTableBuilder, type_: &Type<Identifier>) {
 }
 
 fn add_from_edge(table: &mut SymbolTableBuilder, edge: &Edge<Identifier>) {
-    let left_owner = add_from_edge_name(table, &edge.lhs);
-    let right_owner = add_from_edge_name(table, &edge.rhs);
-    let owner = left_owner.or(right_owner);
-    add_from_edge_label(table, &edge.label, &owner);
+    add_from_edge_name(table, &edge.lhs);
+    add_from_edge_name(table, &edge.rhs);
+    add_from_edge_label(table, &edge.label);
 }
 
-fn add_maybe_edge_param(
-    table: &mut SymbolTableBuilder,
-    identifier: &Identifier,
-    owner: &Option<usize>,
-    create_error: bool,
-) {
+fn add(table: &mut SymbolTableBuilder, identifier: &Identifier, create_error: bool) {
     if !identifier.is_none() && !identifier.is_numeric() {
         let span = identifier.span();
-        let sym_idx = table
-            .find_symbol(identifier, &Some(Flag::Param), owner)
-            .or_else(|| table.find_symbol(identifier, &None, &None));
+        let sym_idx = table.find_symbol(identifier, &None, &None);
         if sym_idx.is_some() {
             table.occurrences.push(Occurrence::new(span, sym_idx));
         } else if create_error {
@@ -51,22 +43,23 @@ fn add_maybe_edge_param(
     }
 }
 
-fn add_from_edge_label(
-    table: &mut SymbolTableBuilder,
-    label: &Label<Identifier>,
-    owner: &Option<usize>,
-) {
+fn add_from_edge_label(table: &mut SymbolTableBuilder, label: &Label<Identifier>) {
     match label {
         Label::Assignment { lhs, rhs } => {
-            add_from_expression(table, lhs, owner);
-            add_from_expression(table, rhs, owner);
+            add_from_expression(table, lhs);
+            add_from_expression(table, rhs);
+        }
+        Label::AssignmentAny { lhs, rhs } => {
+            add_from_expression(table, lhs);
+            add_from_type(table, rhs);
         }
         Label::Comparison { lhs, rhs, .. } => {
-            add_from_expression(table, lhs, owner);
-            add_from_expression(table, rhs, owner);
+            add_from_expression(table, lhs);
+            add_from_expression(table, rhs);
         }
         Label::Skip { .. } => (),
-        Label::Tag { symbol } => add_maybe_edge_param(table, symbol, owner, false),
+        Label::Tag { symbol } => add(table, symbol, false),
+        Label::TagVariable { identifier } => add(table, identifier, false),
         Label::Reachability { lhs, rhs, .. } => {
             add_from_edge_name(table, lhs);
             add_from_edge_name(table, rhs);
@@ -74,65 +67,24 @@ fn add_from_edge_label(
     }
 }
 
-fn add_from_expression(
-    table: &mut SymbolTableBuilder,
-    expr: &Expression<Identifier>,
-    owner: &Option<usize>,
-) {
+fn add_from_expression(table: &mut SymbolTableBuilder, expr: &Expression<Identifier>) {
     match expr {
         Expression::Reference { identifier } => {
-            add_maybe_edge_param(table, identifier, owner, true);
+            add(table, identifier, true);
         }
         Expression::Access { lhs, rhs, .. } => {
-            add_from_expression(table, lhs, owner);
-            add_from_expression(table, rhs, owner);
+            add_from_expression(table, lhs);
+            add_from_expression(table, rhs);
         }
         Expression::Cast { lhs, rhs, .. } => {
             add_from_type(table, lhs);
-            add_from_expression(table, rhs, owner);
+            add_from_expression(table, rhs);
         }
     }
 }
 
-// Returns symbol idx for edge name if it has parameters
-fn add_from_edge_name(
-    table: &mut SymbolTableBuilder,
-    edge_name: &Node<Identifier>,
-) -> Option<usize> {
-    match edge_name.parts.as_slice() {
-        [NodePart::Literal { identifier }] => {
-            table.add_occ_with_flag(identifier, Flag::Function);
-            None
-        }
-        [NodePart::Literal { identifier }, bindings @ ..] => {
-            let occ = table.occ_with_flag(identifier, Flag::Function);
-            let sym_idx = occ.symbol;
-            table.occurrences.push(occ);
-            for binding in bindings {
-                add_from_name_part(table, binding, &sym_idx);
-            }
-            sym_idx
-        }
-        _ => None,
-    }
-}
-
-fn add_from_name_part(
-    table: &mut SymbolTableBuilder,
-    name_part: &NodePart<Identifier>,
-    owner: &Option<usize>,
-) {
-    match name_part {
-        NodePart::Binding {
-            identifier, type_, ..
-        } => {
-            table.add_occ_with_flag_and_owner(identifier, Flag::Param, owner);
-            add_from_type(table, type_);
-        }
-        NodePart::Literal { identifier } => {
-            table.add_occ_with_flag(identifier, Flag::Function);
-        }
-    }
+fn add_from_edge_name(table: &mut SymbolTableBuilder, node: &Node<Identifier>) {
+    table.add_occ_with_flag(&node.identifier, Flag::Function);
 }
 
 fn add_from_value(table: &mut SymbolTableBuilder, value: &Value<Identifier>) {

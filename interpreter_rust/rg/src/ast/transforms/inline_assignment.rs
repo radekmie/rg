@@ -48,7 +48,8 @@ impl Game<Id> {
         let mut modified_edges = BTreeSet::new();
 
         for edge in &self.edges {
-            if let Some((identifier, rhs)) = edge.label.as_var_assignment() {
+            // Don't inline AssignmentAny
+            if let Some((identifier, rhs)) = edge.label.as_assignment() {
                 if edge.label.is_player_assignment()
                     || modified_edges.contains(edge)
                     || (edge.label.is_goals_assignment()
@@ -61,7 +62,8 @@ impl Game<Id> {
                     continue;
                 };
 
-                let vars_in_rhs = rhs.used_variables();
+                let vars_in_rhs =
+                    rhs.map_or_else(|_| BTreeSet::new(), |expr| expr.used_variables());
                 let defs_on_assignment =
                     used_definitions(current_definitions, &vars_in_rhs, identifier);
                 let Some(usages) = maybe_inline_assignment(
@@ -74,42 +76,39 @@ impl Game<Id> {
                 ) else {
                     continue;
                 };
-                let uses_binding = edge
-                    .bindings()
-                    .iter()
-                    .any(|binding| vars_in_rhs.contains(binding.0));
                 let usage_already_modified =
                     usages.iter().any(|usage| modified_edges.contains(usage));
                 if usage_already_modified {
                     continue;
                 }
-                if (uses_binding || edge.label.is_map_assignment()) && !usages.is_empty() {
-                    continue;
+                match rhs {
+                    _ if (edge.label.is_map_assignment()) && !usages.is_empty() => {}
+                    Err(_) if !usages.is_empty() => {}
+                    Err(_) => {
+                        modified_edges.insert(edge.clone());
+                        to_skip.insert((*edge).clone());
+                    }
+                    Ok(rhs) => {
+                        modified_edges.insert(edge.clone());
+                        modified_edges.extend(usages.iter().cloned());
+                        to_inline.insert((
+                            (*identifier).clone(),
+                            self.new_rhs(identifier, rhs),
+                            usages,
+                        ));
+                        to_skip.insert((*edge).clone());
+                    }
                 }
-
-                modified_edges.insert(edge.clone());
-                modified_edges.extend(usages.iter().cloned());
-                to_inline.insert((
-                    (*identifier).clone(),
-                    self.new_rhs(identifier, rhs, edge),
-                    usages,
-                ));
-                to_skip.insert((*edge).clone());
             }
         }
         (to_inline, to_skip)
     }
 
-    fn new_rhs(
-        &self,
-        variable: &Id,
-        expr: &Arc<Expression<Id>>,
-        edge: &Edge<Id>,
-    ) -> Arc<Expression<Id>> {
+    fn new_rhs(&self, variable: &Id, expr: &Arc<Expression<Id>>) -> Arc<Expression<Id>> {
         if let Expression::Reference { identifier } = expr.as_ref() {
-            if self.is_symbol(identifier, edge) {
+            if self.is_symbol(identifier) {
                 return self
-                    .infer_or_none(variable, Some(edge))
+                    .infer_or_none(variable)
                     .filter(|t| t.is_reference())
                     .map_or_else(
                         || expr.clone(),
@@ -202,7 +201,7 @@ fn can_replace_usage(
 }
 
 fn is_reassigned(label: &Label<Id>, id: &Id) -> bool {
-    matches!(label.as_var_assignment(), Some((identifier, _)) if identifier == id)
+    matches!(label.as_var_assignment(), Some(identifier) if identifier == id)
 }
 
 #[cfg(test)]
@@ -277,11 +276,46 @@ mod test {
 
     test_transform!(
         inline_assignment,
-        binding_no_usages,
-        "begin, t1(z: Pos): x = y[z];
+        assign_any_no_usages,
+        "begin, t1: x = Foo(*);
         t1, end: y == z;",
-        "begin, t1(z: Pos): ;
+        "begin, t1: ;
         t1, end: y == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_any_usages,
+        "begin, t1: x = Foo(*);
+        t1, end: x == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_map_no_usages,
+        "begin, t1: ;
+        t1, end: y == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_map_usages,
+        "begin, t1: x[y] = 1;
+        t1, end: x[1] == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_any_map_no_usages,
+        "begin, t1: ;
+        t1, end: y == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_any_map_usages,
+        "begin, t1: x[y] = Foo(*);
+        t1, end: x[1] == z;"
     );
 
     test_transform!(
@@ -308,9 +342,9 @@ mod test {
 
     test_transform!(
         inline_assignment,
-        binding,
-        "begin, t1(p: Pos): x = y[p];
-        t1(p: Pos), t1: ;
+        generator,
+        "begin, t: x = Foo(*);
+        t, t1: ;
         t1, end: z == x;"
     );
 

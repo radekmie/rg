@@ -177,7 +177,7 @@ impl Analysis for ReachingAssignments {
 
     fn gen(mut input: Self::Domain, edge: &Arc<Edge<Id>>, ctx: &Self::Context) -> Self::Domain {
         if edge.label.is_assignment() {
-            let variable = edge.label.as_var_assignment().unwrap().0;
+            let variable = edge.label.as_var_assignment().unwrap();
             if !ctx.is_ignored_variable(variable) {
                 input
                     .entry(Some(variable.clone()))

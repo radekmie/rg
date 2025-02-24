@@ -229,15 +229,12 @@ fn analyze_rg_inner(
         pass!(inline_reachability);
         pass!(propagate_constants);
         pass!(merge_accesses);
-        pass!(merge_bindings);
 
         // Compact the automaton.
         pass!(compact_comparisons);
         pass!(join_exclusive_edges);
         pass!(join_fork_prefixes);
         pass!(join_fork_suffixes);
-        pass!(join_generators);
-        pass!(skip_generator_comparisons);
         pass!(skip_self_assignments);
         pass!(skip_self_comparisons);
         pass!(skip_unused_tags);
@@ -245,7 +242,6 @@ fn analyze_rg_inner(
         // Pruning.
         pass!(prune_singleton_types);
         pass!(prune_unreachable_nodes);
-        pass!(prune_unused_bindings);
         pass!(prune_unused_constants);
         pass!(prune_unused_variables);
 
@@ -255,7 +251,8 @@ fn analyze_rg_inner(
         pass!(add_explicit_casts);
 
         // Expand generator nodes before calculating pragmas.
-        pass!(expand_generator_nodes);
+        pass!(expand_assignment_any);
+        pass!(expand_tag_variable);
 
         // Point of no return -- these passes are forward-only.
         restart = false;

@@ -362,6 +362,17 @@ fn write_statement<Id: Display>(
             write!(f, " = ")?;
             write_expression(f, expression, indent)
         }
+        Statement::AssignmentAny {
+            identifier,
+            accessors,
+            type_,
+        } => {
+            write!(f, "{identifier}")?;
+            for accessor in accessors {
+                write!(f, "[{accessor}]")?;
+            }
+            write!(f, " = {type_}(*)")
+        }
         Statement::Branch { arms } => {
             writeln!(f, "branch {{")?;
             let mut iter = arms.iter();
@@ -379,15 +390,6 @@ fn write_statement<Id: Display>(
             write!(f, "{identifier}(")?;
             write_with_separator(f, args, ", ")?;
             write!(f, ")")
-        }
-        Statement::Forall {
-            identifier,
-            type_,
-            body,
-        } => {
-            writeln!(f, "forall {identifier}:{type_} {{")?;
-            write_statements(f, body, indent + 2)?;
-            write_rbrace(f, indent)
         }
         Statement::If {
             expression,
@@ -414,6 +416,7 @@ fn write_statement<Id: Display>(
             write_rbrace(f, indent)
         }
         Statement::Tag { symbol } => write!(f, "$ {symbol}"),
+        Statement::TagVariable { identifier } => write!(f, "$$ {identifier}"),
         Statement::While { expression, body } => {
             writeln!(f, "while {expression} {{")?;
             write_statements(f, body, indent + 2)?;

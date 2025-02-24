@@ -50,13 +50,13 @@ impl Game<Id> {
                 .filter(|edge| edge.rhs == *target)?;
             match &edge.label {
                 // Do not inline negated assignments.
-                Label::Assignment { .. } => None,
+                Label::Assignment { .. } | Label::AssignmentAny { .. } => None,
                 // Copy (and negate) the comparison or reachability.
                 Label::Comparison { .. } | Label::Reachability { .. } => {
                     Some((BTreeSet::from([edge.clone()]), None))
                 }
                 // Do not inline tags into the main automaton.
-                Label::Tag { .. } => {
+                Label::Tag { .. } | Label::TagVariable { .. } => {
                     if is_main_automaton {
                         None
                     } else {
@@ -101,7 +101,7 @@ impl Game<Id> {
             previous.insert(lhs);
             if let Some(edges) = next_edges.get(&lhs) {
                 for edge in edges {
-                    if let Some((id, _)) = edge.label.as_var_assignment() {
+                    if let Some(id) = edge.label.as_var_assignment() {
                         defined_vars.insert(id.clone());
                     }
                     if edge.label.is_tag() && is_main_automaton {
@@ -154,10 +154,7 @@ impl Game<Id> {
                     if let Some(lhs) = mapping.get(&edge.lhs) {
                         Arc::make_mut(&mut edge).lhs = lhs.clone();
                     } else {
-                        let mut lhs = gen_fresh_node(&mut max_id);
-                        for (id, type_) in edge.lhs.bindings() {
-                            lhs.add_binding(id.clone(), type_.clone());
-                        }
+                        let lhs = gen_fresh_node(&mut max_id);
                         mapping.insert(edge.lhs.clone(), lhs.clone());
                         Arc::make_mut(&mut edge).lhs = lhs;
                     }
@@ -165,10 +162,7 @@ impl Game<Id> {
                     if let Some(rhs) = mapping.get(&edge.rhs) {
                         Arc::make_mut(&mut edge).rhs = rhs.clone();
                     } else {
-                        let mut rhs = gen_fresh_node(&mut max_id);
-                        for (id, type_) in edge.rhs.bindings() {
-                            rhs.add_binding(id.clone(), type_.clone());
-                        }
+                        let rhs = gen_fresh_node(&mut max_id);
                         mapping.insert(edge.rhs.clone(), rhs.clone());
                         Arc::make_mut(&mut edge).rhs = rhs;
                     }
@@ -199,7 +193,7 @@ impl Game<Id> {
                         return false;
                     }
                     match edge.label.as_var_assignment() {
-                        Some((id, _)) if !edge.label.is_map_assignment() => {
+                        Some(id) if !edge.label.is_map_assignment() => {
                             defined_vars.remove(id);
                         }
                         _ => (),
@@ -419,14 +413,17 @@ mod test {
         reachability_with_generator,
         "type T = { null };
         begin, end: ? a -> c;
-        a, b(t: T): t == null;
-        b(t: T), c: t == null;",
+        a, a1: t = T(*);
+        a1, b: t == null;
+        b, c: t == null;",
         "type T = { null };
-        a, b(t: T): t == null;
-        b(t: T), c: t == null;
+        a, a1: t = T(*);
+        a1, b: t == null;
+        b, c: t == null;
         begin, 1: ;
-        1, 2(t: T): t == null;
-        2(t: T), end: t == null;"
+        1, 2: t = T(*);
+        2, 3: t == null;
+        3, end: t == null;"
     );
 
     test_transform!(

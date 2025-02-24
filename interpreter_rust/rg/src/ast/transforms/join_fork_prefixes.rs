@@ -42,12 +42,12 @@ impl Game<Id> {
         let mut edges_to_join = vec![];
         // Start of the fork prefix
         for node in self.nodes() {
-            // Get all outgoing edges that do not have bindings and are not end edges
+            // Get all outgoing edges that are not end edges
             let next_edges = next_edges
                 .get(&node)
                 .unwrap_or(&default_set)
                 .iter()
-                .filter(|e| !e.has_bindings() && next_edges.contains_key(&e.rhs));
+                .filter(|e| next_edges.contains_key(&e.rhs));
             // Group outgoing edges by label
             let mut group_by_label = BTreeMap::new();
             for edge in next_edges {
@@ -212,17 +212,10 @@ mod test {
         "begin, a: ;
         a, b: 1 == 1;
         a, c: 1 == 1;
-        g(a: A), c: ;
-        g(a: A), b: ;
+        g, c: 1 == 1;
+        g, b: ;
         b, end: 2 == 2;
-        c, d: ;",
-        "begin, a: ;
-        a, b: 1 == 1;
-        g(a: A), c: ;
-        g(a: A), b: ;
-        b, end: 2 == 2;
-        c, d: ;
-        b, c: ;"
+        c, d: ;"
     );
 
     test_transform!(
@@ -231,20 +224,8 @@ mod test {
         "begin, a: ;
         a, b: 1 == 1;
         a, c: 1 == 1;
-        g(a: A), c: 1 == 1;
-        g(a: A), b: ;
-        b, end: 2 == 2;
-        c, d: ;"
-    );
-
-    test_transform!(
-        join_fork_prefixes,
-        small10,
-        "begin, a: ;
-        a, b: 1 == 1;
-        a, c: 1 == 1;
         f, c: ;
-        g(a: A), b: ;
+        g, b: ;
         b, end: 2 == 2;
         c, d: ;"
     );

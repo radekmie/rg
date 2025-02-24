@@ -11,9 +11,13 @@ pub struct Flags {
     #[arg(long)]
     pub add_explicit_casts: bool,
 
-    /// expand generator nodes
+    /// expand assignments with `*` to all possible values
     #[arg(long)]
-    pub expand_generator_nodes: bool,
+    pub expand_assignment_any: bool,
+
+    /// expand tag variable
+    #[arg(long)]
+    pub expand_tag_variable: bool,
 
     /// mangle all user-defined symbols
     #[arg(long)]
@@ -98,15 +102,6 @@ pub struct Flags {
     )]
     pub join_fork_suffixes: bool,
 
-    /// join generator nodes
-    #[arg(
-        long,
-        help_heading = "Optimizations",
-        conflicts_with = "enable_all_optimizations",
-        default_value_if("enable_all_optimizations", "true", Some("true"))
-    )]
-    pub join_generators: bool,
-
     /// merge nested accesses to constant maps
     #[arg(
         long,
@@ -115,15 +110,6 @@ pub struct Flags {
         default_value_if("enable_all_optimizations", "true", Some("true"))
     )]
     pub merge_accesses: bool,
-
-    /// merge bindings with the same type and value
-    #[arg(
-        long,
-        help_heading = "Optimizations",
-        conflicts_with = "enable_all_optimizations",
-        default_value_if("enable_all_optimizations", "true", Some("true"))
-    )]
-    pub merge_bindings: bool,
 
     /// inline constants and skip obvious comparisons
     #[arg(
@@ -152,15 +138,6 @@ pub struct Flags {
     )]
     pub prune_unreachable_nodes: bool,
 
-    /// prune unused bindings from nodes
-    #[arg(
-        long,
-        help_heading = "Optimizations",
-        conflicts_with = "enable_all_optimizations",
-        default_value_if("enable_all_optimizations", "true", Some("true"))
-    )]
-    pub prune_unused_bindings: bool,
-
     /// prune unused constants
     #[arg(
         long,
@@ -187,15 +164,6 @@ pub struct Flags {
         default_value_if("enable_all_optimizations", "true", Some("true"))
     )]
     pub skip_artificial_tags: bool,
-
-    /// skips all comparisons to a generator (e.g., `x, y(t: T): t == null`)
-    #[arg(
-        long,
-        help_heading = "Optimizations",
-        conflicts_with = "enable_all_optimizations",
-        default_value_if("enable_all_optimizations", "true", Some("true"))
-    )]
-    pub skip_generator_comparisons: bool,
 
     /// replaces all self assignments (e.g., `x = x`) with skip edges
     #[arg(
@@ -279,25 +247,22 @@ impl Flags {
             calculate_tag_indexes: true,
             compact_comparisons: true,
             compact_skip_edges: true,
-            expand_generator_nodes: true,
+            expand_assignment_any: true,
+            expand_tag_variable: true,
             inline_assignment: true,
             inline_reachability: true,
             join_exclusive_edges: true,
             join_fork_prefixes: true,
             join_fork_suffixes: true,
-            join_generators: true,
             mangle_symbols: true,
             merge_accesses: true,
-            merge_bindings: true,
             normalize_constants: true,
             normalize_types: true,
             propagate_constants: true,
             prune_singleton_types: true,
             prune_unreachable_nodes: true,
-            prune_unused_bindings: true,
             prune_unused_constants: true,
             prune_unused_variables: true,
-            skip_generator_comparisons: true,
             skip_self_assignments: true,
             skip_self_comparisons: true,
             skip_unused_tags: true,

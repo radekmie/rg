@@ -177,25 +177,6 @@ mod test {
 
     test_transform!(
         calculate_repeats_and_uniques,
-        breakthrough_join,
-        "
-            begin, end: ? 4_30_4 -> 4_30_30;
-            4_30_4, 4_30_9(bind_Coord_17: Coord): Coord(bind_Coord_17) != Coord(null);
-            4_30_9(bind_Coord_17: Coord), 4_30_8: coord = Coord(bind_Coord_17);
-            4_30_8, 130: board[coord] == w;
-            130, 4_30_19: board[coord] = e;
-            4_30_19, 4_30_17: direction[up][coord] != null;
-            4_30_17, 4_30_30: board[direction[up][coord]] == e;
-            4_30_17, 4_30_25: coord = direction[left][direction[up][coord]];
-            4_30_17, 4_30_25: coord = direction[right][direction[up][coord]];
-            4_30_25, 4_30_22: coord != null;
-            4_30_22, 4_30_30: board[coord] != Piece(w);
-        ",
-        adds "@unique 130 4_30_17 4_30_19 4_30_22 4_30_25 4_30_30 4_30_4 4_30_8 4_30_9(bind_Coord_17: Coord) begin end;"
-    );
-
-    test_transform!(
-        calculate_repeats_and_uniques,
         hex_loop,
         "begin, end: ? 24 -> 25;
         24, 27: ;
@@ -350,13 +331,13 @@ mod test {
         calculate_repeats_and_uniques,
         tictactoe,
         include_str!("../../../../../games/rg/ticTacToe.rg"),
-        adds "@unique begin check checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseX(coordX: Coord) chooseY chooseY(coordY: Coord) end endcheckline endmove move nextturn preend set turn win win1 win2;"
+        adds "@unique begin check checkForEmpty checkForEmptyX checkForEmptyY checkline checklineH1 checklineH2 checklineLR1 checklineLR2 checklineRL1 checklineRL2 checklineV1 checklineV2 checkwin chooseX chooseY choosenX choosenY emptyExists end endcheckline endmove move nextturn preend set turn win win1 win2;"
     );
 
     test_transform!(
         calculate_repeats_and_uniques,
         breakthrough,
         include_str!("../../../../../games/rg/breakthrough.rg"),
-        adds "@unique begin checkOwn continue done end findPawn findPawnPos(position: Position) forwardDirCheck forwardDirSet forwardDirSetP forwardMove leftDirCheck leftDirSet leftDirSetP leftMove lose move moved pawnExists rightDirCheck rightDirSet rightDirSetP rightMove score selectDir selectPos setPos(position: Position) turn win wincheck;"
+        adds "@unique begin checkOwn continue done end findPawn findPawnPos forwardDirCheck forwardDirSet forwardDirSetP forwardMove leftDirCheck leftDirSet leftDirSetP leftMove lose move moved pawnExists rightDirCheck rightDirSet rightDirSetP rightMove score selectDir selectPos setPos turn win wincheck;"
     );
 }

@@ -25,15 +25,19 @@ const onRLDiagonal: Coord -> Coord -> Bool = {2:{0:1,:0}, 1:{1:1,:0}, 0:{2:1,:0}
 
 begin,turn: playerTurn = Player(X);
 
-turn,move: ? move -> set;
-turn,preend: ! move -> set;
+checkForEmpty,checkForEmptyX: posX = Coord(*);
+checkForEmptyX,checkForEmptyY: posY = Coord(*);
+checkForEmptyY,emptyExists: board[posX][posY] == Piece(e);
+
+turn,move: ? checkForEmpty -> emptyExists;
+turn,preend: ! checkForEmpty -> emptyExists;
 preend,end: player = PlayerOrSystem(keeper);
 
 move,chooseX: player = PlayerOrSystem(playerTurn);
-chooseX,chooseX(coordX:Coord): $ coordX;
-chooseX(coordX:Coord),chooseY: posX = Coord(coordX);
-chooseY,chooseY(coordY:Coord): $ coordY;
-chooseY(coordY:Coord),check: posY = Coord(coordY);
+chooseX,choosenX: posX = Coord(*);
+choosenX,chooseY: $$ posX;
+chooseY,choosenY: posY = Coord(*);
+choosenY,check: $$ posY;
 check,set: board[posX][posY] == Piece(e);
 set,endmove: board[posX][posY] = Piece(playerTurn);
 

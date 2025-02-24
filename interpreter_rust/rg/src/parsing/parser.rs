@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, Expression, Game, Label, Node, NodePart, Pragma, PragmaAssignment, PragmaTag,
-    Type, Typedef, Value, ValueEntry, Variable,
+    Constant, Edge, Expression, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag, Type,
+    Typedef, Value, ValueEntry, Variable,
 };
 use nom::branch::alt;
 use nom::bytes::complete::tag;
@@ -12,9 +12,9 @@ use nom::sequence::{pair, preceded, separated_pair, terminated, tuple};
 use std::cell::RefCell;
 use std::sync::Arc;
 use utils::parser::{
-    comments_and_whitespaces, expect, expect_preceded_tag, identifier_, in_brackets, integer,
-    into_arc, parse_error_line, preceded_tag, preceded_whitespace, with_semicolon, ww_char, Input,
-    Result, State,
+    comments_and_whitespaces, expect, expect_preceded_tag, identifier_, in_brackets, in_parens,
+    integer, into_arc, parse_error_line, preceded_tag, preceded_whitespace, with_semicolon,
+    ww_char, Input, Result, State,
 };
 use utils::position::{Position, Positioned, Span};
 use utils::{Error, Identifier};
@@ -81,6 +81,7 @@ fn edge(input: Input) -> Result<Option<Edge<Identifier>>> {
 
 fn label(input: Input) -> Result<Label<Identifier>> {
     alt((
+        tag_variable_label,
         tag_label,
         compare_or_assign_label,
         reachability_label,
@@ -92,10 +93,23 @@ fn label(input: Input) -> Result<Label<Identifier>> {
 }
 
 fn tag_label(input: Input) -> Result<Label<Identifier>> {
-    into(preceded(
-        preceded_whitespace(char('$')),
-        cut(preceded_opt_id("label")),
-    ))(input)
+    map(
+        preceded(
+            preceded_whitespace(char('$')),
+            cut(preceded_opt_id("label")),
+        ),
+        |symbol| Label::Tag { symbol },
+    )(input)
+}
+
+fn tag_variable_label(input: Input) -> Result<Label<Identifier>> {
+    map(
+        preceded(
+            preceded_whitespace(tag("$$")),
+            cut(preceded_opt_id("label")),
+        ),
+        |identifier| Label::TagVariable { identifier },
+    )(input)
 }
 
 fn reachability_label(input: Input) -> Result<Label<Identifier>> {
@@ -111,18 +125,27 @@ fn reachability_label(input: Input) -> Result<Label<Identifier>> {
 
 fn compare_or_assign_label(input: Input) -> Result<Label<Identifier>> {
     let error_pos = Span::at(&input);
-    let (input, (lhs, sep, rhs)) = tuple((
+    let (input, (lhs, sep)) = pair(
         opt(expression),
         preceded_whitespace(alt((tag("=="), tag("!="), tag("=")))),
-        expect_expression,
-    ))(input)?;
+    )(input)?;
     let separator = *sep.fragment();
-    if let Some(lhs) = lhs {
-        Ok((input, (lhs, separator, rhs).into()))
-    } else {
+    let lhs = lhs.unwrap_or_else(|| {
         let err = Error::parser_error(error_pos, "expected: expression".to_string());
         input.extra.report_error(err);
-        let lhs = arc_expression(Identifier::none(error_pos).into());
+        arc_expression(Identifier::none(error_pos).into())
+    });
+    let (input, rhs_type) = opt(terminated(type_, in_parens(char('*'))))(input)?;
+    if let Some(rhs) = rhs_type {
+        // For AssignmentAny we need "="
+        if separator != "=" {
+            let error_pos = Span::at(&input);
+            let err = Error::parser_error(error_pos, "expected: expression".to_string());
+            input.extra.report_error(err);
+        }
+        Ok((input, (lhs, rhs).into()))
+    } else {
+        let (input, rhs) = expect_expression(input)?;
         Ok((input, (lhs, separator, rhs).into()))
     }
 }
@@ -139,31 +162,11 @@ fn expr_label(input: Input) -> Result<Label<Identifier>> {
 }
 
 fn node(input: Input) -> Result<Node<Identifier>> {
-    into(pair(identifier, node_bindings))(input)
+    map(identifier, Node::new)(input)
 }
 
 fn expect_node(input: Input) -> Result<Node<Identifier>> {
-    let (input, first) = expect(identifier, "edge name")(input)?;
-    if let Some(name) = first {
-        let (input, rest) = node_bindings(input)?;
-        Ok((input, (name, rest).into()))
-    } else {
-        let identifier = Identifier::none(Span::at(&input));
-        Ok((input, identifier.into()))
-    }
-}
-
-fn node_bindings(input: Input) -> Result<Vec<NodePart<Identifier>>> {
-    many0(node_binding)(input)
-}
-
-fn node_binding(input: Input) -> Result<NodePart<Identifier>> {
-    into(tuple((
-        tag("("),
-        cut(preceded_opt_id("node_part")),
-        preceded_type_,
-        preceded_tag(")"),
-    )))(input)
+    map(preceded_opt_id("node"), Node::new)(input)
 }
 
 fn expect_expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
@@ -432,9 +435,12 @@ fn pragma_assignment(input: Input) -> Result<PragmaAssignment<Identifier>> {
 }
 
 fn pragma_tag(input: Input) -> Result<PragmaTag<Identifier>> {
-    into(pair(
-        identifier,
-        alt((map(preceded(ww_char(':'), cut(type_)), Some), success(None))),
+    alt((
+        map(
+            separated_pair(identifier, char(':'), cut(type_)),
+            |(identifier, type_)| PragmaTag::Variable { identifier, type_ },
+        ),
+        map(identifier, |symbol| PragmaTag::Symbol { symbol }),
     ))(input)
 }
 
@@ -541,11 +547,9 @@ mod test {
         check_parse("foo, bar: $ F;");
         check_parse("foo, bar: ;");
         check_parse("foo, bar: x == y;");
+        check_parse("foo, bar: x = Position(*);");
         check_parse("foo, bar: ? move -> move;");
-        check_parse("foo(x: Y)(y: Z), bar: ;");
-        check_parse("foo(x: Y), bar(x: Y): ;");
-        check_parse("foo(x: Y)(z: Z), bar(y: Z)(v: Z): ;");
-        check_parse("type Z = { z };\nbegin, loop(x: X)(y: Y): ;");
+        check_parse("type Z = { z };\nbegin, loop: ;");
     }
 
     #[test]

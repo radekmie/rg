@@ -24,7 +24,7 @@ impl Game<Arc<str>> {
                     let maybe_edges = next_edges.get(&lhs);
                     if seen.insert((lhs, index)) {
                         for edge in maybe_edges.into_iter().flatten() {
-                            if edge.label.is_tag() {
+                            if edge.label.is_tag() || edge.label.is_tag_variable() {
                                 queue.push((&edge.rhs, index + 1));
                                 tag_indexes.entry(lhs.clone()).or_default().insert(index);
                             } else if !edge.label.is_player_assignment() {
@@ -101,5 +101,12 @@ mod test {
             @tagIndex tagB0 : 1;
             @tagMaxIndex doneB : 2;
         "
+    );
+
+    test_transform!(
+        calculate_tag_indexes,
+        tag_variable,
+        "begin, x: player = keeper; x, y: $$ v; y, end:;",
+        adds "@tagIndex x : 0;"
     );
 }

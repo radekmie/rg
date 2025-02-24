@@ -564,6 +564,13 @@ fn add_builtin_variables(context: &mut Context) {
 
     context.rg.variables.push(rg::Variable {
         span: Span::none(),
+        identifier: Id::from("coord_temp"),
+        type_: Arc::from(rg::Type::new(Id::from("Coord"))),
+        default_value: Arc::from(rg::Value::new(context.rbg.board[0].node.clone())),
+    });
+
+    context.rg.variables.push(rg::Variable {
+        span: Span::none(),
         identifier: Id::from("counters"),
         type_: Arc::from(rg::Type::new(Id::from("Counters"))),
         default_value: Arc::from(rg::Value::from_pairs_iter(context.rbg.pieces.iter().map(
@@ -615,15 +622,7 @@ fn copy_path(
     original_to: rg::Node<Id>,
 ) -> (rg::Node<Id>, rg::Node<Id>) {
     fn prefix_node(prefix: &Id, mut node: rg::Node<Id>) -> rg::Node<Id> {
-        match node.parts.first_mut().unwrap() {
-            rg::NodePart::Binding { .. } => {
-                node.parts.insert(0, rg::NodePart::new(prefix.clone()));
-            }
-            rg::NodePart::Literal { identifier } => {
-                *identifier = Id::from(format!("{prefix}_{identifier}"));
-            }
-        }
-
+        node.identifier = Id::from(format!("{prefix}_{}", node.identifier));
         node
     }
 
@@ -648,12 +647,9 @@ fn copy_path(
         };
 
         // Skip switch-generated edges:
-        //   - coordGenerator == coord
-        //   - $ coordGenerator
+        //   - $$ coord
         //   - $ index_N
-        if distance <= 3 {
-            edge.lhs.parts.truncate(1);
-            edge.rhs.parts.truncate(1);
+        if distance <= 2 {
             edge.skip();
         }
 
@@ -703,15 +699,6 @@ fn copy_path(
         distances[node]
     }
 
-    assert!(
-        !original_from.has_bindings(),
-        "Only simple nodes can be copied."
-    );
-    assert!(
-        !original_to.has_bindings(),
-        "Only simple nodes can be copied."
-    );
-
     // Represent minimum distance to `original_to`. A `None` is an intermediate
     // state where we don't know if it's reachable or no. (It is used to copy
     // edges on cycles.) A `usize::MAX` means the `original_to` is not reachable.
@@ -734,29 +721,18 @@ fn copy_path(
 }
 
 fn expose_position(context: &mut Context, from: rg::Node<Id>, to: rg::Node<Id>) {
-    let mut local_coord = context.random_node();
-    let bind = Id::from("coordGenerator");
-    local_coord.add_binding(bind.clone(), Arc::from(rg::Type::new(Id::from("Coord"))));
+    let local = context.random_node();
     context.connect(
         from,
-        local_coord.clone(),
-        rg::Label::Comparison {
-            lhs: Arc::from(rg::Expression::new(bind.clone())),
-            rhs: Arc::from(rg::Expression::new(Id::from("coord"))),
-            negated: false,
+        local.clone(),
+        rg::Label::TagVariable {
+            identifier: Id::from("coord"),
         },
-    );
-
-    let local_index = context.random_node();
-    context.connect(
-        local_coord,
-        local_index.clone(),
-        rg::Label::Tag { symbol: bind },
     );
 
     context.expose_index += 1;
     let expose_tag = Id::from(format!("index_{}", context.expose_index));
-    context.connect(local_index, to, rg::Label::Tag { symbol: expose_tag });
+    context.connect(local, to, rg::Label::Tag { symbol: expose_tag });
 }
 
 fn group_shift_patterns(rule: rbg::Rule<Id>) -> rbg::Rule<Id> {
@@ -1228,36 +1204,27 @@ fn translate_atom_content(
 
             // All coords are reachable -> (bind: Coord).
             if pairs.iter().all(|(_, coords)| coords.len() == pairs_len) {
-                let mut local = context.random_node();
-                local.add_binding(
-                    Id::from("coordGenerator"),
-                    Arc::from(rg::Type::new(Id::from("Coord"))),
-                );
-
+                let local = context.random_node();
                 context.connect(
                     from,
                     local.clone(),
-                    rg::Label::Comparison {
-                        lhs: Arc::from(rg::Expression::Cast {
-                            span: Span::none(),
-                            lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
-                            rhs: Arc::from(rg::Expression::new(Id::from("coordGenerator"))),
-                        }),
-                        rhs: Arc::from(rg::Expression::Cast {
-                            span: Span::none(),
-                            lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
-                            rhs: Arc::from(rg::Expression::new(Id::from("null"))),
-                        }),
-                        negated: true,
+                    rg::Label::AssignmentAny {
+                        lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
+                        rhs: Arc::from(rg::Type::new(Id::from("Coord"))),
                     },
                 );
 
                 context.connect(
                     local,
                     to.clone(),
-                    rg::Label::Assignment {
+                    rg::Label::Comparison {
                         lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
-                        rhs: Arc::from(rg::Expression::new(Id::from("coordGenerator"))),
+                        rhs: Arc::from(rg::Expression::Cast {
+                            span: Span::none(),
+                            lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
+                            rhs: Arc::from(rg::Expression::new(Id::from("null"))),
+                        }),
+                        negated: true,
                     },
                 );
                 return;
@@ -1305,8 +1272,7 @@ fn translate_atom_content(
             if pairs.iter().all(|(_, coords)| *coords == pairs[0].1) {
                 let coords = pairs.pop().unwrap().1;
                 let type_ = context.create_type_from_set(coords);
-                let mut local = context.random_node();
-                local.add_binding(Id::from("coordPossibility"), type_.clone());
+                let local = context.random_node();
 
                 context.connect(
                     from,
@@ -1321,9 +1287,9 @@ fn translate_atom_content(
                 context.connect(
                     local,
                     to.clone(),
-                    rg::Label::Assignment {
+                    rg::Label::AssignmentAny {
                         lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
-                        rhs: Arc::from(rg::Expression::new(Id::from("coordPossibility"))),
+                        rhs: type_,
                     },
                 );
                 return;
@@ -1334,15 +1300,20 @@ fn translate_atom_content(
             // one generator.
             let reachability_map = context.create_reachability_map(&BTreeMap::from_iter(pairs));
 
-            let mut local = context.random_node();
-            local.add_binding(
-                Id::from("coordGenerator"),
-                Arc::from(rg::Type::new(Id::from("Coord"))),
-            );
-
+            let local_temp = context.random_node();
             context.connect(
                 from,
-                local.clone(),
+                local_temp.clone(),
+                rg::Label::AssignmentAny {
+                    lhs: Arc::from(rg::Expression::new(Id::from("coord_temp"))),
+                    rhs: Arc::from(rg::Type::new(Id::from("Coord"))),
+                },
+            );
+
+            let local_check = context.random_node();
+            context.connect(
+                local_temp,
+                local_check.clone(),
                 rg::Label::Comparison {
                     lhs: Arc::from(rg::Expression::Access {
                         span: Span::none(),
@@ -1351,7 +1322,7 @@ fn translate_atom_content(
                             lhs: Arc::from(rg::Expression::new(reachability_map)),
                             rhs: Arc::from(rg::Expression::new(Id::from("coord"))),
                         }),
-                        rhs: Arc::from(rg::Expression::new(Id::from("coordGenerator"))),
+                        rhs: Arc::from(rg::Expression::new(Id::from("coord_temp"))),
                     }),
                     rhs: Arc::from(rg::Expression::new(Id::from("1"))),
                     negated: false,
@@ -1359,11 +1330,11 @@ fn translate_atom_content(
             );
 
             context.connect(
-                local,
+                local_check,
                 to,
                 rg::Label::Assignment {
                     lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
-                    rhs: Arc::from(rg::Expression::new(Id::from("coordGenerator"))),
+                    rhs: Arc::from(rg::Expression::new(Id::from("coord_temp"))),
                 },
             );
         }

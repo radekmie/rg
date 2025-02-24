@@ -35,7 +35,13 @@ fn assignment(input: Input) -> Result<Statement<Identifier>> {
     into(tuple((
         identifier,
         many0(in_brackets(expression)),
-        preceded(ww_char('='), expression),
+        preceded(
+            ww_char('='),
+            alt((
+                map(terminated(type_, in_parens(char('*'))), Err),
+                map(expression, Ok),
+            )),
+        ),
     )))(input)
 }
 
@@ -54,13 +60,6 @@ fn branch(input: Input) -> Result<Statement<Identifier>> {
 
 fn call(input: Input) -> Result<Statement<Identifier>> {
     into(pair(identifier, in_parens(comma_separated0(expression))))(input)
-}
-
-fn forall(input: Input) -> Result<Statement<Identifier>> {
-    into(pair(
-        preceded(tag("forall"), separated_pair(identifier, char(':'), type_)),
-        in_braces(many0(statement)),
-    ))(input)
 }
 
 fn loop_(input: Input) -> Result<Statement<Identifier>> {
@@ -110,16 +109,22 @@ fn tag_statement(input: Input) -> Result<Statement<Identifier>> {
     })(input)
 }
 
+fn tag_variable_statement(input: Input) -> Result<Statement<Identifier>> {
+    map(preceded(tag("$$"), identifier), |identifier| {
+        Statement::TagVariable { identifier }
+    })(input)
+}
+
 fn statement(input: Input) -> Result<Statement<Identifier>> {
     ww(alt((
         assignment,
         branch,
         call,
-        forall,
         if_,
         loop_,
         repeat,
         while_,
+        tag_variable_statement,
         tag_statement,
     )))(input)
 }

@@ -20,11 +20,6 @@ impl Game<Id> {
                 continue;
             }
 
-            let node_bindings: BTreeSet<_> = node.bindings().collect();
-            if edges.iter().any(|edge| edge.bindings() != node_bindings) {
-                continue;
-            }
-
             let edges: Vec<_> = edges.into_iter().collect();
             if let Some((is_exhaustive, mut nodes)) = game.get_disjoint(&edges) {
                 nodes.sort_unstable();
@@ -125,7 +120,7 @@ impl Game<Id> {
             }
 
             let all_values = lhs1
-                .infer(self, None)
+                .infer(self)
                 .and_then(|type_| type_.values(self))
                 .is_ok_and(|values| values.len() == nodes.len());
 
@@ -226,19 +221,6 @@ mod test {
         calculate_disjoints,
         switch_negated_2,
         "begin, a: x != 0; begin, b: x != 1; a, end: ; b, end: ;"
-    );
-
-    test_transform!(
-        calculate_disjoints,
-        if_else_comparison_binding_nested,
-        "begin, entry: ; entry, a(b: Bool): b == 0; entry, b(b: Bool): b != 0; a(b: Bool), end: ; b(b: Bool), end: ;"
-    );
-
-    test_transform!(
-        calculate_disjoints,
-        if_else_comparison_binding_outer,
-        "begin, entry(b: Bool): ; entry(b: Bool), a(b: Bool): b == 0; entry(b: Bool), b(b: Bool): b != 0; a(b: Bool), end: ; b(b: Bool), end: ;",
-        adds "@disjointExhaustive entry(b: Bool) : a(b: Bool) b(b: Bool);"
     );
 
     test_transform!(

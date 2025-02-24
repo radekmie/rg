@@ -36,13 +36,11 @@ fn scenario(criterion: &mut Criterion, path: &str) {
 
     bench!(add_explicit_casts);
     bench!(calculate_disjoints);
-    bench!(calculate_repeats);
     bench!(calculate_simple_apply);
     bench!(calculate_tag_indexes);
-    bench!(calculate_uniques);
     bench!(compact_comparisons);
     bench!(compact_skip_edges);
-    bench!(expand_generator_nodes);
+    bench!(expand_assignment_any);
     bench!(inline_assignment);
     bench!(inline_reachability);
     bench!(join_exclusive_edges);
@@ -55,10 +53,8 @@ fn scenario(criterion: &mut Criterion, path: &str) {
     bench!(propagate_constants);
     bench!(prune_singleton_types);
     bench!(prune_unreachable_nodes);
-    bench!(prune_unused_bindings);
     bench!(prune_unused_constants);
     bench!(prune_unused_variables);
-    bench!(skip_generator_comparisons);
     bench!(skip_self_assignments);
     bench!(skip_self_comparisons);
     bench!(skip_unused_tags);

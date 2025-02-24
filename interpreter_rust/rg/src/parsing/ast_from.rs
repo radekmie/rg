@@ -1,6 +1,6 @@
 use crate::ast::{
-    Constant, Edge, Expression, Label, Node, NodePart, PragmaAssignment, PragmaTag, Type, Typedef,
-    Value, ValueEntry, Variable,
+    Constant, Edge, Expression, Label, Node, PragmaAssignment, Type, Typedef, Value, ValueEntry,
+    Variable,
 };
 use std::sync::Arc;
 use utils::parser::Input;
@@ -35,9 +35,9 @@ impl<Id: Positioned> From<(Node<Id>, (Node<Id>, Label<Id>), Span)> for Edge<Id> 
     }
 }
 
-impl<Id> From<Id> for Label<Id> {
-    fn from(symbol: Id) -> Self {
-        Self::Tag { symbol }
+impl<Id> From<(Arc<Expression<Id>>, Arc<Type<Id>>)> for Label<Id> {
+    fn from((lhs, rhs): (Arc<Expression<Id>>, Arc<Type<Id>>)) -> Self {
+        Self::AssignmentAny { lhs, rhs }
     }
 }
 
@@ -84,48 +84,9 @@ impl<Id: Positioned> From<Id> for Expression<Id> {
     }
 }
 
-impl<Id: Positioned> From<(Id, Vec<NodePart<Id>>)> for Node<Id> {
-    fn from((identifier, bindings): (Id, Vec<NodePart<Id>>)) -> Self {
-        let first = NodePart::from(identifier);
-        let last = bindings.last().unwrap_or(&first);
-        let span = first.span().with_end(last.end());
-        let mut parts = vec![first];
-        parts.extend(bindings);
-        Self { span, parts }
-    }
-}
-
-impl<Id: Positioned> From<Id> for Node<Id> {
-    fn from(identifier: Id) -> Self {
-        Self::from((identifier, vec![]))
-    }
-}
-
-impl<Id: Positioned> From<(Input<'_>, Id, Arc<Type<Id>>, Input<'_>)> for NodePart<Id> {
-    fn from((start, identifier, type_, end): (Input, Id, Arc<Type<Id>>, Input)) -> Self {
-        Self::Binding {
-            span: Span::from((&start, &end)),
-            identifier,
-            type_,
-        }
-    }
-}
-
-impl<Id> From<Id> for NodePart<Id> {
-    fn from(identifier: Id) -> Self {
-        Self::Literal { identifier }
-    }
-}
-
 impl<Id> From<(Arc<Expression<Id>>, Arc<Expression<Id>>)> for PragmaAssignment<Id> {
     fn from((lhs, rhs): (Arc<Expression<Id>>, Arc<Expression<Id>>)) -> Self {
         Self { lhs, rhs }
-    }
-}
-
-impl<Id> From<(Id, Option<Arc<Type<Id>>>)> for PragmaTag<Id> {
-    fn from((tag, type_): (Id, Option<Arc<Type<Id>>>)) -> Self {
-        Self { tag, type_ }
     }
 }
 

@@ -49,7 +49,7 @@ impl Game<Arc<str>> {
             }
 
             for (id, expression) in &variables {
-                if edge.label.has_variable(id) && !edge.has_binding(id) {
+                if edge.label.has_variable(id) {
                     // If we'd substitute the assigned variable, then the lhs
                     // would become constant (symbol), and the assignment would
                     // be illegal. To prevent that, we skip the whole assignment

@@ -68,6 +68,10 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
             lhs: build_expression(context, &lhs),
             rhs: build_expression(context, &rhs),
         },
+        ast::Label::AssignmentAny { lhs, rhs } => ist::EdgeLabel::AssignmentAny {
+            lhs: build_expression(context, &lhs),
+            rhs: build_type_or_fail(context, &rhs),
+        },
         ast::Label::Comparison { lhs, rhs, negated } => ist::EdgeLabel::Comparison {
             lhs: build_expression(context, &lhs),
             rhs: build_expression(context, &rhs),
@@ -76,28 +80,26 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
         ast::Label::Reachability {
             lhs, rhs, negated, ..
         } => ist::EdgeLabel::Reachability {
-            lhs: build_node(lhs),
-            rhs: build_node(rhs),
+            lhs: lhs.identifier,
+            rhs: rhs.identifier,
             negated,
         },
         ast::Label::Skip { .. } => ist::EdgeLabel::Skip,
         ast::Label::Tag { symbol } => ist::EdgeLabel::Tag { symbol },
+        ast::Label::TagVariable { identifier } => ist::EdgeLabel::TagVariable {
+            index: *context
+                .variables_indexes
+                .get(&identifier)
+                .unwrap_or_else(|| panic!("Unknown variable {identifier}.")),
+        },
     }
-}
-
-fn build_node(mut node: ast::Node<Id>) -> Id {
-    assert!(node.parts.len() == 1, "Only trivial EdgeName allowed.");
-    let Some(ast::NodePart::Literal { identifier }) = node.parts.pop() else {
-        panic!("Only trivial EdgeName allowed.")
-    };
-    identifier
 }
 
 fn build_edges(context: &mut Context, edges: Vec<Arc<ast::Edge<Id>>>) {
     for edge in edges {
         let edge = Arc::unwrap_or_clone(edge);
-        let lhs = build_node(edge.lhs);
-        let rhs = build_node(edge.rhs);
+        let lhs = edge.lhs.identifier;
+        let rhs = edge.rhs.identifier;
         let label = build_label(context, edge.label);
 
         context
@@ -148,10 +150,9 @@ fn build_pragmas(context: &mut Context, pragmas: Vec<ast::Pragma<Id>>) {
         match pragma {
             ast::Pragma::Disjoint { node, nodes, .. }
             | ast::Pragma::DisjointExhaustive { node, nodes, .. } => {
-                let node = build_node(node);
-                if let Some(next) = context.game.edges.get(&node) {
+                if let Some(next) = context.game.edges.get(&node.identifier) {
                     if next.len() == nodes.len() {
-                        context.game.disjoints.insert(node);
+                        context.game.disjoints.insert(node.identifier);
                     }
                 }
             }
@@ -170,12 +171,12 @@ fn build_pragmas(context: &mut Context, pragmas: Vec<ast::Pragma<Id>>) {
                     context
                         .game
                         .repeats
-                        .insert(build_node(node), variables.clone());
+                        .insert(node.identifier, variables.clone());
                 }
             }
             ast::Pragma::Unique { nodes, .. } => {
                 for node in nodes {
-                    context.game.uniques.insert(build_node(node));
+                    context.game.uniques.insert(node.identifier);
                 }
             }
             _ => {}

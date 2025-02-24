@@ -1,6 +1,5 @@
 use crate::ast::{
-    Constant, Edge, Expression, Label, Node, NodePart, Pragma, Type, Typedef, Value, ValueEntry,
-    Variable,
+    Constant, Edge, Expression, Label, Node, Pragma, Type, Typedef, Value, ValueEntry, Variable,
 };
 use utils::position::{Positioned, Span};
 
@@ -22,24 +21,17 @@ impl<Id: Positioned> Positioned for Label<Id> {
             Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } => {
                 lhs.span().with_end(rhs.span().end)
             }
+            Self::AssignmentAny { lhs, rhs } => lhs.span().with_end(rhs.span().end),
             Self::Reachability { span, .. } | Self::Skip { span } => *span,
             Self::Tag { symbol } => symbol.span(),
+            Self::TagVariable { identifier } => identifier.span(),
         }
     }
 }
 
-impl<Id> Positioned for Node<Id> {
+impl<Id: Positioned> Positioned for Node<Id> {
     fn span(&self) -> Span {
-        self.span
-    }
-}
-
-impl<Id: Positioned> Positioned for NodePart<Id> {
-    fn span(&self) -> Span {
-        match &self {
-            Self::Binding { span, .. } => *span,
-            Self::Literal { identifier } => identifier.span(),
-        }
+        self.identifier.span()
     }
 }
 

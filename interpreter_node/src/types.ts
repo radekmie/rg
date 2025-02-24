@@ -17,26 +17,23 @@ export type Settings = {
     calculateTagIndexes: boolean;
     compactComparisons: boolean;
     compactSkipEdges: boolean;
-    expandGeneratorNodes: boolean;
+    expandAssignmentAny: boolean;
+    expandTagVariable: boolean;
     inlineReachability: boolean;
     inlineAssignment: boolean;
     joinExclusiveEdges: boolean;
     joinForkPrefixes: boolean;
     joinForkSuffixes: boolean;
-    joinGenerators: boolean;
     mangleSymbols: boolean;
     mergeAccesses: boolean;
-    mergeBindings: boolean;
     normalizeConstants: boolean;
     normalizeTypes: boolean;
     propagateConstants: boolean;
     pruneSingletonTypes: boolean;
     pruneUnreachableNodes: boolean;
-    pruneUnusedBindings: boolean;
     pruneUnusedConstants: boolean;
     pruneUnusedVariables: boolean;
     skipArtificialTags: boolean;
-    skipGeneratorComparisons: boolean;
     skipSelfAssignments: boolean;
     skipSelfComparisons: boolean;
     skipUnusedTags: boolean;
@@ -51,26 +48,23 @@ export const noFlagsEnabled: Settings['flags'] = {
   calculateTagIndexes: false,
   compactComparisons: false,
   compactSkipEdges: false,
-  expandGeneratorNodes: false,
+  expandAssignmentAny: false,
+  expandTagVariable: false,
   inlineAssignment: false,
   inlineReachability: false,
   joinExclusiveEdges: false,
   joinForkPrefixes: false,
   joinForkSuffixes: false,
-  joinGenerators: false,
   mangleSymbols: false,
   mergeAccesses: false,
-  mergeBindings: false,
   normalizeConstants: false,
   normalizeTypes: false,
   propagateConstants: false,
   pruneSingletonTypes: false,
   pruneUnreachableNodes: false,
-  pruneUnusedBindings: false,
   pruneUnusedConstants: false,
   pruneUnusedVariables: false,
   skipArtificialTags: false,
-  skipGeneratorComparisons: false,
   skipSelfAssignments: false,
   skipSelfComparisons: false,
   skipUnusedTags: false,
@@ -87,17 +81,13 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
       'joinExclusiveEdges',
       'joinForkPrefixes',
       'joinForkSuffixes',
-      'joinGenerators',
       'mergeAccesses',
-      'mergeBindings',
       'propagateConstants',
       'pruneSingletonTypes',
       'pruneUnreachableNodes',
-      'pruneUnusedBindings',
       'pruneUnusedConstants',
       'pruneUnusedVariables',
       'skipArtificialTags',
-      'skipGeneratorComparisons',
       'skipSelfAssignments',
       'skipSelfComparisons',
       'skipUnusedTags',
@@ -116,7 +106,8 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
     label: 'Other',
     flags: [
       'addExplicitCasts',
-      'expandGeneratorNodes',
+      'expandAssignmentAny',
+      'expandTagVariable',
       'mangleSymbols',
       'normalizeConstants',
       'normalizeTypes',
