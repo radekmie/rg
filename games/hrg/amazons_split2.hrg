@@ -114,9 +114,7 @@ graph queenShift() {
 }
 
 graph existsMoveableQueen(me: Player) {
-  forall p:Position {
-    pos = p
-  }
+  pos = Position(*)
   check(board[pos] == piece(me))
   branch {
     check(board[upleft(pos)] == empty)
@@ -139,27 +137,19 @@ graph existsMoveableQueen(me: Player) {
 
 graph move(me: Player) {
   player = me
-  forall p:Position {
-    pos = p
-    $ p // Choose a queen
-  }
+  pos = Position(*)
+  $$ pos // Choose a queen
   check(board[pos] == piece(me))
   board[pos] = empty
   
   queenShift()
-  forall p:Position {
-    check(pos == p)
-    $ p // Move queen here
-  }
+  $$ pos // Move queen here
   player = keeper
   board[pos] = piece(me)
   
   player = me  
   queenShift()
-  forall p:Position {
-    check(pos == p)
-    $ p // Shoot arrow here
-  }
+  $$ pos // Shoot arrow here
   player = keeper
   board[pos] = arrow
 }
