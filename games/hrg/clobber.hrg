@@ -45,10 +45,8 @@ me : Player = white
 pos : Position
 
 graph moveExists(me: Player) {
-  forall p:Position {
-    check(board[p] == piece(me))
-    pos = p
-  }
+  pos = Position(*)
+  check(board[pos] == piece(me))
   branch {
     check(board[up(pos)] == piece(opponent(me)))
   } or {
@@ -61,12 +59,10 @@ graph moveExists(me: Player) {
 }
 
 graph move(me: Player) {
-  forall p:Position {
-    check(board[p] == piece(me))
-    board[p] = empty
-    pos = p
-    $ p
-  }
+  pos = Position(*)
+  check(board[pos] == piece(me))
+  board[pos] = empty
+  $$ pos
   branch {
     pos = up(pos)
     check(board[pos] == piece(opponent(me)))

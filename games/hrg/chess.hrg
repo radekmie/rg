@@ -217,16 +217,10 @@ board : Position -> Piece = {
 stagnation_counter: Counter = C(0)
 me : Player = white
 pos : Position
+dir : AllDir
 en_passant_position : Position
 castlingPermission : Player -> CastleRights = {:both}
 
-
-graph showPos() {
-  forall p:Position {
-    check(p == pos)
-    $ p
-  }
-}
 graph pawnMove() {
   check(board[pos] == myPawn(me))
   stagnation_counter = C(0)
@@ -247,7 +241,7 @@ graph pawnMove() {
        }
        check(owner(board[pos]) == opponent(me))
      }
-     showPos()
+     $$ pos
      
      if pawn_direction(up,me)(pos) == null {
         branch { // Promote to queen
@@ -275,7 +269,7 @@ graph pawnMove() {
      check(board[pos] == empty)
      pos = pawn_direction(nn, me)(pos)
      check(board[pos] == empty)
-     showPos()
+     $$ pos
      en_passant_position = pos
      board[pos] = myPawn(me)
    } or { // En passant
@@ -290,7 +284,7 @@ graph pawnMove() {
        pos = pawn_direction(upright, me)(pos)
        $_ER
      }
-     showPos()
+     $$ pos
      board[pos] = myPawn(me)
      board[en_passant_position] = empty
      en_passant_position = null
@@ -298,19 +292,18 @@ graph pawnMove() {
 }
 
 graph queenMoves() {
-  forall di: AllDir {
-    repeat 8 {
-      pos = all_direction(di)(pos)
-      $_Q
-      branch {
-        check(owner(board[pos]) == opponent(me))
-        stagnation_counter = C(0)
-        $_C
-        return()
-      } or {
-        check(board[pos] == empty)
-        branch {} or {return()}
-      }
+  dir = AllDir(*)
+  repeat 8 {
+    pos = all_direction(dir)(pos)
+    $_Q
+    branch {
+      check(owner(board[pos]) == opponent(me))
+      stagnation_counter = C(0)
+      $_C
+      return()
+    } or {
+      check(board[pos] == empty)
+      branch {} or {return()}
     }
   }
 }
@@ -321,25 +314,24 @@ graph queenMove() {
 
   queenMoves()
   
-  showPos()
+  $$ pos
   board[pos] = myQueen(me)
   en_passant_position = null
 }
 
 graph rookMoves() {
-  forall di: RookDir {
-    repeat 8 {
-      pos = all_direction(di)(pos)
-      $_R
-      branch {
-        check(owner(board[pos]) == opponent(me))
-        stagnation_counter = C(0)
-        $_C
-        return()
-      } or {
-        check(board[pos] == empty)
-        branch {} or {return()}
-      }
+  dir = RookDir(*)
+  repeat 8 {
+    pos = all_direction(dir)(pos)
+    $_R
+    branch {
+      check(owner(board[pos]) == opponent(me))
+      stagnation_counter = C(0)
+      $_C
+      return()
+    } or {
+      check(board[pos] == empty)
+      branch {} or {return()}
     }
   }
 }
@@ -368,26 +360,25 @@ graph rookMove() {
   $ R
 
   rookMoves()
-  showPos()
+  $$ pos
   board[pos] = myRook(me)
 
   en_passant_position = null
 }
 
-graph bishopMoves() {  
-  forall di: BishopDir {
-    repeat 8 {
-      pos = all_direction(di)(pos)
-      $_B
-      branch {
-        check(owner(board[pos]) == opponent(me))
-        stagnation_counter = C(0)
-        $_C
-        return()
-      } or {
-        check(board[pos] == empty)
-        branch {} or {return()}
-      }
+graph bishopMoves() {
+  dir = BishopDir(*)
+  repeat 8 {
+    pos = all_direction(dir)(pos)
+    $_B
+    branch {
+      check(owner(board[pos]) == opponent(me))
+      stagnation_counter = C(0)
+      $_C
+      return()
+    } or {
+      check(board[pos] == empty)
+      branch {} or {return()}
     }
   }
 }
@@ -396,7 +387,7 @@ graph bishopMove() {
   $ B
   board[pos] = empty
   bishopMoves()
-  showPos()
+  $$ pos
   board[pos] = myBishop(me)
   en_passant_position = null
 }
@@ -405,10 +396,25 @@ graph knightMove() {
   check(board[pos] == myKnight(me))
   board[pos] = empty
   $ N
-
-  forall di: KnightDir {
-    pos = knight_direction(di)(pos)
+  
+  branch {
+    pos = knight_direction(nne)(pos)
+  } or {
+    pos = knight_direction(nnw)(pos)
+  } or {
+    pos = knight_direction(sse)(pos)
+  } or {
+    pos = knight_direction(ssw)(pos)
+  } or {
+    pos = knight_direction(een)(pos)
+  } or {
+    pos = knight_direction(ees)(pos)
+  } or {
+    pos = knight_direction(wwn)(pos)
+  } or {
+    pos = knight_direction(wws)(pos)
   }
+  
   branch {
     check(board[pos] == empty)
   } or {
@@ -417,7 +423,7 @@ graph knightMove() {
     $_C
   }
   
-  showPos()
+  $$ pos
   board[pos] = myKnight(me)
   en_passant_position = null
 }
@@ -425,10 +431,9 @@ graph knightMove() {
 graph kingStandardMove() {
   board[pos] = empty
   $ K
-  forall di: AllDir {
-    pos = all_direction(di)(pos) 
-  }
-  showPos()
+  dir = AllDir(*)
+  pos = all_direction(dir)(pos) 
+  $$ pos
   branch {
     check(board[pos] == empty) 
   } or {
@@ -475,7 +480,7 @@ graph kingCastlingMove() {
     board[leftdir(leftdir(pos))] = empty
   }
             
-  showPos()
+  $$ pos
   board[pos] = myKing(me)
 }
 graph kingMove() {
@@ -490,10 +495,7 @@ graph kingMove() {
 }
 
 graph move() {
-  forall p:ProperPosition {
-    pos = p
-    $ p
-  }
+  pos = ProperPosition(*)
   branch {
     pawnMove()
   } or {
@@ -510,9 +512,7 @@ graph move() {
   check(not(reachable(isInCheck())))
 }
 graph moveExists() {
-  forall p:ProperPosition {
-    pos = p
-  }
+  pos = ProperPosition(*)
   branch {
     pawnMove()
   } or {
@@ -530,7 +530,6 @@ graph moveExists() {
   check(not(reachable(isInCheck())))
 }
 
-
 graph is_attacked(){
   branch{ // pawns
     branch{
@@ -540,60 +539,69 @@ graph is_attacked(){
     }
     check(board[pos] == myPawn(opponent(me)))
   } or { // diagonal moves
-    forall di: BishopDir {
-      pos = all_direction(di)(pos) 
+    dir = BishopDir(*)
+    pos = all_direction(dir)(pos) 
+    branch {
+      check(board[pos] == myBishop(opponent(me)) || board[pos] == myQueen(opponent(me)) || board[pos] == myKing(opponent(me)))
+      return()
+    } or {}
+    check(board[pos] == empty)
+    repeat 7 {
+      pos = all_direction(dir)(pos) 
       branch {
-        check(board[pos] == myBishop(opponent(me)) || board[pos] == myQueen(opponent(me)) || board[pos] == myKing(opponent(me)))
+        check(board[pos] == myBishop(opponent(me)) || board[pos] == myQueen(opponent(me)))
         return()
       } or {}
       check(board[pos] == empty)
-      repeat 7 {
-        pos = all_direction(di)(pos) 
-        branch {
-          check(board[pos] == myBishop(opponent(me)) || board[pos] == myQueen(opponent(me)))
-          return()
-        } or {}
-        check(board[pos] == empty)
-      }
     }
     check(0 != 0)
   } or { // straight moves
-    forall di: RookDir {
-      pos = all_direction(di)(pos) 
+    dir = RookDir(*)
+    pos = all_direction(dir)(pos) 
+    branch {
+      check(board[pos] == myRook(opponent(me)) ||  board[pos] == myQueen(opponent(me)) || board[pos] == myKing(opponent(me)))
+      return()
+    } or {}
+    check(board[pos] == empty)
+    repeat 7 {
+      pos = all_direction(dir)(pos) 
       branch {
-        check(board[pos] == myRook(opponent(me)) ||  board[pos] == myQueen(opponent(me)) || board[pos] == myKing(opponent(me)))
+        check(board[pos] == myRook(opponent(me)) || board[pos] == myQueen(opponent(me)))
         return()
       } or {}
       check(board[pos] == empty)
-      repeat 7 {
-        pos = all_direction(di)(pos) 
-        branch {
-          check(board[pos] == myRook(opponent(me)) || board[pos] == myQueen(opponent(me)))
-          return()
-        } or {}
-        check(board[pos] == empty)
-      }
     }
     check(0 != 0)
   } or {
-    forall di: KnightDir {
-      pos = knight_direction(di)(pos)
+    branch {
+      pos = knight_direction(nne)(pos)
+    } or {
+      pos = knight_direction(nnw)(pos)
+    } or {
+      pos = knight_direction(sse)(pos)
+    } or {
+      pos = knight_direction(ssw)(pos)
+    } or {
+      pos = knight_direction(een)(pos)
+    } or {
+      pos = knight_direction(ees)(pos)
+    } or {
+      pos = knight_direction(wwn)(pos)
+    } or {
+      pos = knight_direction(wws)(pos)
     }
     check(board[pos] == myKnight(opponent(me)))
   }
 }
 graph isInCheck() {
-  forall p:Position {
-    check(board[p] == myKing(me))
-    pos = p
-  }
+  pos = ProperPosition(*)
+  check(board[pos] == myKing(me))
   check(reachable(is_attacked()))
 }
 
 graph kingExists() {
-  forall p: Position {
-    check(board[p] == myKing(me))
-  }
+  pos = ProperPosition(*)
+  check(board[pos] == myKing(me))
 }
 
 graph turn() {

@@ -89,11 +89,10 @@ turn, move: ? move -> moved;
 turn, lose: ! move -> moved;
 
 move, selectPos: player = PlayerOrSystem(turnPlayer);
-selectPos, selectedPos(position:Position): $ position;
-selectedPos(position:Position), setPos(position:Position): position != Position(null);
-setPos(position:Position), setFinished: pos = Position(position);
-setFinished, checkOwn: board[pos] == pieceOfPlayer[turnPlayer];
-checkOwn, forward: board[pos] = Piece(e);
+selectPos, setPos: pos = Position(*);
+setPos, checkOwn: $$ pos;
+checkOwn, put: board[pos] == pieceOfPlayer[turnPlayer];
+put, forward: board[pos] = Piece(e);
 forward, selectDirection: pos = Position(directionOfPlayer[turnPlayer][pos]);
 
 selectDirection, directionForward: $ F;

@@ -24,6 +24,5 @@ loop, win: pos==Position(v2);
 win, setscore: goals[tester]=100;
 setscore, exit: $ WIN;
 loop, lose: $ LOSE;
-lose, show(p:Position): p==pos;
-show(p:Position), exit: $ p;
+lose, exit: $$ pos;
 exit, end: player = PlayerOrSystem(keeper);

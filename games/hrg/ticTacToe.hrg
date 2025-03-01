@@ -23,10 +23,9 @@ op(o) = x
 
 position : Position
 
-reusable graph findNonempty() {
-  forall p:Position {
-    check(board[p] == empty)
-  }
+reusable graph existsNonempty() {
+  position = Position(*)
+  check(board[position] == empty)
 }
 
 reusable graph win() {
@@ -49,12 +48,10 @@ reusable graph win() {
 
 graph turn(me: Player) {
   player = me
-  forall p:Position {
-    check(board[p] == empty)
-    board[p] = me
-    position = p
-    $ p
-  }
+  position = Position(*)
+  check(board[position] == empty)
+  board[position] = me
+  $$ position
 
   player = keeper
   if reachable(win()) {
@@ -63,7 +60,7 @@ graph turn(me: Player) {
     end()
   }
 
-  if not(reachable(findNonempty())) {
+  if not(reachable(existsNonempty())) {
     end()
   }
 }

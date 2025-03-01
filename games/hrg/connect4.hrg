@@ -88,10 +88,9 @@ graph win() {
   }
 }
 
-graph findNonempty() {
-  forall p:TopPosition {
-    check(board[p] == empty)
-  }
+graph existsNonempty() {
+  pos = TopPosition(*)
+  check(board[pos] == empty)
 }
 
 graph goDown() {
@@ -99,17 +98,14 @@ graph goDown() {
     if board[down[pos]] != empty {
       return()
     }
-
     pos = down[pos]
   }
 }
 
 graph turn() {
   player = me
-  forall p:TopPosition {
-    pos = p
-    $ p
-  }
+  pos = TopPosition(*)
+  $$ pos
   player = keeper
   goDown()
   if reachable(win()) {
@@ -118,7 +114,7 @@ graph turn() {
     end()
   }
   board[pos] = me
-  if not(reachable(findNonempty())) {// Draw
+  if not(reachable(existsNonempty())) {// Draw
     end()
   }
   me = opponent(me)
