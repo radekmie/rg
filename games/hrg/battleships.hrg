@@ -53,28 +53,25 @@ graph place_ships(me : Player) {
     branch {
         // put it vertically...
         $ V
-        forall p:Position {
-            check(down[down[down[down[p]]]] != null)
-            boards[me][own][p] = carrier
-            boards[me][own][down[p]] = carrier
-            boards[me][own][down[down[p]]] = carrier
-            boards[me][own][down[down[down[p]]]] = carrier
-            boards[me][own][down[down[down[down[p]]]]] = carrier
-            $ p
-        }
+        position = Position(*)
+        check(down[down[down[down[position]]]] != null)
+        boards[me][own][position] = carrier
+        boards[me][own][down[position]] = carrier
+        boards[me][own][down[down[position]]] = carrier
+        boards[me][own][down[down[down[position]]]] = carrier
+        boards[me][own][down[down[down[down[position]]]]] = carrier
+        $$ position
     } or {
         // ...or horizontally
         $ H
-        forall p:Position {
-            check(right[right[right[right[p]]]] != null)
-            position = p
-            boards[me][own][position] = carrier
-            boards[me][own][right[position]] = carrier
-            boards[me][own][right[right[position]]] = carrier
-            boards[me][own][right[right[right[position]]]] = carrier
-            boards[me][own][right[right[right[right[position]]]]] = carrier
-            $ p
-        }
+        position = Position(*)
+        check(right[right[right[right[position]]]] != null)
+        boards[me][own][position] = carrier
+        boards[me][own][right[position]] = carrier
+        boards[me][own][right[right[position]]] = carrier
+        boards[me][own][right[right[right[position]]]] = carrier
+        boards[me][own][right[right[right[right[position]]]]] = carrier
+        $$ position
     }
     // keeper takes control after placing each ship to reduce branching factor - choosing position for each ship is a separate move
     player = keeper
@@ -83,33 +80,31 @@ graph place_ships(me : Player) {
     player = me
     branch {
         $ V
-        forall p:Position {
-            // when player chooses position for next ships, each square must be checked (because ships cannot overlap)
-            check(down[down[down[p]]] != null)
-            check(boards[me][own][p] == empty)
-            check(boards[me][own][down[p]] == empty)
-            check(boards[me][own][down[down[p]]] == empty)
-            check(boards[me][own][down[down[down[p]]]] == empty)
-            boards[me][own][p] = battleship
-            boards[me][own][down[p]] = battleship
-            boards[me][own][down[down[p]]] = battleship
-            boards[me][own][down[down[down[p]]]] = battleship
-            $ p
-        }
+        position = Position(*)
+        // when player chooses position for next ships, each square must be checked (because ships cannot overlap)
+        check(down[down[down[position]]] != null)
+        check(boards[me][own][position] == empty)
+        check(boards[me][own][down[position]] == empty)
+        check(boards[me][own][down[down[position]]] == empty)
+        check(boards[me][own][down[down[down[position]]]] == empty)
+        boards[me][own][position] = battleship
+        boards[me][own][down[position]] = battleship
+        boards[me][own][down[down[position]]] = battleship
+        boards[me][own][down[down[down[position]]]] = battleship
+        $$ position
     } or {
         $ H
-        forall p:Position {
-            check(right[right[right[p]]] != null)
-            check(boards[me][own][p] == empty)
-            check(boards[me][own][right[p]] == empty)
-            check(boards[me][own][right[right[p]]] == empty)
-            check(boards[me][own][right[right[right[p]]]] == empty)
-            boards[me][own][p] = battleship
-            boards[me][own][right[p]] = battleship
-            boards[me][own][right[right[p]]] = battleship
-            boards[me][own][right[right[right[p]]]] = battleship
-            $ p
-        }
+        position = Position(*)
+        check(right[right[right[position]]] != null)
+        check(boards[me][own][position] == empty)
+        check(boards[me][own][right[position]] == empty)
+        check(boards[me][own][right[right[position]]] == empty)
+        check(boards[me][own][right[right[right[position]]]] == empty)
+        boards[me][own][position] = battleship
+        boards[me][own][right[position]] = battleship
+        boards[me][own][right[right[position]]] = battleship
+        boards[me][own][right[right[right[position]]]] = battleship
+        $$ position
     }
     player = keeper
 
@@ -117,28 +112,26 @@ graph place_ships(me : Player) {
     player = me
     branch {
         $ V
-        forall p:Position {
-            check(down[down[p]] != null)
-            check(boards[me][own][p] == empty)
-            check(boards[me][own][down[p]] == empty)
-            check(boards[me][own][down[down[p]]] == empty)
-            boards[me][own][p] = cruiser
-            boards[me][own][down[p]] = cruiser
-            boards[me][own][down[down[p]]] = cruiser
-            $ p
-        }
+        position = Position(*)
+        check(down[down[position]] != null)
+        check(boards[me][own][position] == empty)
+        check(boards[me][own][down[position]] == empty)
+        check(boards[me][own][down[down[position]]] == empty)
+        boards[me][own][position] = cruiser
+        boards[me][own][down[position]] = cruiser
+        boards[me][own][down[down[position]]] = cruiser
+        $$ position
     } or {
         $ H
-        forall p:Position {
-            check(right[right[p]] != null)
-            check(boards[me][own][p] == empty)
-            check(boards[me][own][right[p]] == empty)
-            check(boards[me][own][right[right[p]]] == empty)
-            boards[me][own][p] = cruiser
-            boards[me][own][right[p]] = cruiser
-            boards[me][own][right[right[p]]] = cruiser
-            $ p
-        }
+        position = Position(*)
+        check(right[right[position]] != null)
+        check(boards[me][own][position] == empty)
+        check(boards[me][own][right[position]] == empty)
+        check(boards[me][own][right[right[position]]] == empty)
+        boards[me][own][position] = cruiser
+        boards[me][own][right[position]] = cruiser
+        boards[me][own][right[right[position]]] = cruiser
+        $$ position
     }
     player = keeper
 
@@ -146,28 +139,26 @@ graph place_ships(me : Player) {
     player = me
     branch {
         $ V
-        forall p:Position {
-            check(down[down[p]] != null)
-            check(boards[me][own][p] == empty)
-            check(boards[me][own][down[p]] == empty)
-            check(boards[me][own][down[down[p]]] == empty)
-            boards[me][own][p] = submarine
-            boards[me][own][down[p]] = submarine
-            boards[me][own][down[down[p]]] = submarine
-            $ p
-        }
+        position = Position(*)
+        check(down[down[position]] != null)
+        check(boards[me][own][position] == empty)
+        check(boards[me][own][down[position]] == empty)
+        check(boards[me][own][down[down[position]]] == empty)
+        boards[me][own][position] = submarine
+        boards[me][own][down[position]] = submarine
+        boards[me][own][down[down[position]]] = submarine
+        $$ position
     } or {
         $ H
-        forall p:Position {
-            check(right[right[p]] != null)
-            check(boards[me][own][p] == empty)
-            check(boards[me][own][right[p]] == empty)
-            check(boards[me][own][right[right[p]]] == empty)
-            boards[me][own][p] = submarine
-            boards[me][own][right[p]] = submarine
-            boards[me][own][right[right[p]]] = submarine
-            $ p
-        }
+        position = Position(*)
+        check(right[right[position]] != null)
+        check(boards[me][own][position] == empty)
+        check(boards[me][own][right[position]] == empty)
+        check(boards[me][own][right[right[position]]] == empty)
+        boards[me][own][position] = submarine
+        boards[me][own][right[position]] = submarine
+        boards[me][own][right[right[position]]] = submarine
+        $$ position
     }
     player = keeper
 
@@ -175,24 +166,22 @@ graph place_ships(me : Player) {
     player = me
     branch {
         $ V
-        forall p:Position {
-            check(down[p] != null)
-            check(boards[me][own][p] == empty)
-            check(boards[me][own][down[p]] == empty)
-            boards[me][own][p] = destroyer
-            boards[me][own][down[p]] = destroyer
-            $ p
-        }
+        position = Position(*)
+        check(down[position] != null)
+        check(boards[me][own][position] == empty)
+        check(boards[me][own][down[position]] == empty)
+        boards[me][own][position] = destroyer
+        boards[me][own][down[position]] = destroyer
+        $$ position
     } or {
         $ H
-        forall p:Position {
-            check(right[p] != null)
-            check(boards[me][own][p] == empty)
-            check(boards[me][own][right[p]] == empty)
-            boards[me][own][p] = destroyer
-            boards[me][own][right[p]] = destroyer
-            $ p
-        }
+        position = Position(*)
+        check(right[position] != null)
+        check(boards[me][own][position] == empty)
+        check(boards[me][own][right[position]] == empty)
+        boards[me][own][position] = destroyer
+        boards[me][own][right[position]] = destroyer
+        $$ position
     }
     player = keeper
 }
@@ -201,12 +190,10 @@ graph turn(me: Player) {
     player = me
 
     // choose position to shoot
-    forall p:Position {
-        check(p != null)
-        check(boards[me][opp][p] == empty)
-        position = p
-        $ p
-    }
+    position = Position(*)
+    check(position != null)
+    check(boards[me][opp][position] == empty)
+    $$ position
 
     player = keeper
     // keeper discovers part of opponent's board

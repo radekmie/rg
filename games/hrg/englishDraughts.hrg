@@ -105,9 +105,7 @@ graph king_capture_available_at_position() {
   }
 }
 graph capture_available() {
-  forall p : Position {
-    pos = p
-  }
+  pos = Position(*)
   branch {
     check(board[pos] == my_pawn(me))
     pawn_capture_available_at_position()
@@ -118,10 +116,8 @@ graph capture_available() {
 }
 
 graph pawn_normal_move_available() {
-  forall p : Position {
-    check(board[p] == my_pawn(me))
-    pos = p
-  }
+  pos = Position(*)
+  check(board[pos] == my_pawn(me))
   branch {
     pos = fwdLeft(me)(pos)
   } or {
@@ -131,10 +127,8 @@ graph pawn_normal_move_available() {
 }
 
 graph king_normal_move_available() {
-  forall p : Position {
-    check(board[p] == my_king(me))
-    pos = p
-  }
+  pos = Position(*)
+  check(board[pos] == my_king(me))
   branch {
     pos = upLeft(pos)
   } or {
@@ -148,9 +142,7 @@ graph king_normal_move_available() {
 }
 
 graph move_available() {
-  forall p : Position {
-    pos = p
-  }
+  pos = Position(*)
   branch {
     check(board[pos] == my_pawn(me))
     branch {
@@ -184,12 +176,10 @@ graph move_available() {
 
 graph move_pawn_normal() {
   $ PN
-  forall p : Position {
-    check(board[p] == my_pawn(me))
-    board[p] = empty
-    pos = p
-    $ p
-  }
+  pos = Position(*)
+  check(board[pos] == my_pawn(me))
+  board[pos] = empty
+  $$ pos
   branch {
     pos = fwdLeft(me)(pos)
     $ L_EMPTY
@@ -202,12 +192,10 @@ graph move_pawn_normal() {
 
 graph move_pawn_capture() {
   $ PC
-  forall p : Position {
-    check(board[p] == my_pawn(me))
-    board[p] = empty
-    pos = p
-    $ p
-  }
+  pos = Position(*)
+  check(board[pos] == my_pawn(me))
+  board[pos] = empty
+  $$ pos
   loop {
     branch {
       $ L_TAKES    
@@ -242,12 +230,10 @@ graph move_pawn_capture() {
 
 graph move_king_normal() {
   $ KN
-  forall p : Position {
-    check(board[p] == my_king(me))
-    board[p] = empty
-    pos = p
-    $ p
-  }
+  pos = Position(*)
+  check(board[pos] == my_king(me))
+  board[pos] = empty
+  $$ pos
   branch {
     $ UL_EMPTY
     pos = upLeft(pos)
@@ -266,12 +252,10 @@ graph move_king_normal() {
 
 graph move_king_capture() {
   $ KC
-  forall p : Position {
-    check(board[p] == my_king(me))
-    board[p] = empty
-    pos = p
-    $ p
-  }
+  pos = Position(*)
+  check(board[pos] == my_king(me))
+  board[pos] = empty
+  $ pos
   loop {
     branch {
       // position is now on enemy piece

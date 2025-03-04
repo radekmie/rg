@@ -145,21 +145,17 @@ board : PositionOrNull -> Piece = {
 
 me : Player = fox
 pos : PositionOrNull
-temp : PositionOrNull
 
 graph existsGeese(){
-  forall p:Position {
-    check(board[p] == geesepawn)
-  }
+  pos = Position(*)
+  check(board[pos] == geesepawn)
 }
 
 graph moveGeese(){
-  forall p:Position {
-    check(board[p] == geesepawn)
-    board[p] = empty
-    pos = p 
-    $ p
-  }
+  pos = Position(*)
+  check(board[pos] == geesepawn)
+  board[pos] = empty
+  $$ pos
   branch{
     check(board[up(pos)] == empty)
     pos = up(pos)
@@ -210,13 +206,10 @@ graph turnGeese(){
 }
 
 graph moveFox(){
-  forall p:Position {
-    check(board[p] == foxpawn)
-    board[p] = empty
-    pos = p 
-    temp = p
-    $ p
-  }
+  pos = Position(*)
+  check(board[pos] == foxpawn)
+  board[pos] = empty
+  $$ pos
   branch{
     check(board[up(pos)] == empty)
     pos = up(pos)
@@ -309,11 +302,10 @@ countTurn : Count = C(0)
 
 graph rules() {
   player = fox
-  forall p:Position {
-    check(board[p] == empty)
-    $ p
-    board[p] = foxpawn
-  }
+  pos = Position(*)
+  check(board[pos] == empty)
+  board[pos] = foxpawn
+  $$ pos
   player = keeper
   loop {
     turnGeese()

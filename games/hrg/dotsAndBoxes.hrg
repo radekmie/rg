@@ -95,22 +95,18 @@ box2(H(I, J)) = if I-1 > 0 && I-1 < 9 && J > 0 && J < 9 then B(I-1, J) else none
 //------------------------MAIN LOGIC------------------------
 
 graph existsEmpty() {
-  forall line:Line {
-    check(lines[line] == empty)
-  }
+  chosenLine = Line(*)
+  check(lines[chosenLine] == empty)
 }
 
 graph turn() {
 
   player = me
 
-  forall line:Line
-  {
-    check(lines[line] == empty)
-    lines[line] = taken 
-    chosenLine = line
-    $ line
-  }
+  chosenLine = Line(*)
+  check(lines[chosenLine] == empty)
+  lines[chosenLine] = taken 
+  $$ chosenLine
   
   player = keeper
 
