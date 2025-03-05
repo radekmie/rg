@@ -1397,8 +1397,8 @@ pub enum PragmaTag<Id> {
 }
 
 impl<Id> PragmaTag<Id> {
-    pub fn is_symbol(&self) -> bool {
-        matches!(self, Self::Symbol { .. })
+    pub fn is_variable(&self) -> bool {
+        matches!(self, Self::Variable { .. })
     }
 }
 
