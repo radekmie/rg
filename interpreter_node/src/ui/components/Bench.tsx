@@ -1,7 +1,6 @@
 import {
   Button,
   Card,
-  Checkbox,
   ControlGroup,
   Elevation,
   FormGroup,
@@ -121,6 +120,19 @@ function PlayBlock({ gameDeclaration }: PlayBlockProps) {
     [gameDeclaration, path],
   );
 
+  const [isAuto, setIsAuto] = useState(false);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isAuto && result.value?.moves.length) {
+        setPath(path => `${path}${random(result.value.moves)}/`);
+      } else {
+        setIsAuto(false);
+      }
+    });
+
+    return () => clearTimeout(timeout);
+  }, [isAuto, result.value]);
+
   return (
     <Card className={styles.block} compact elevation={Elevation.TWO}>
       <FormGroup
@@ -131,19 +143,25 @@ function PlayBlock({ gameDeclaration }: PlayBlockProps) {
         <ControlGroup>
           <Button
             icon="double-chevron-left"
-            disabled={path === '/'}
+            disabled={isAuto || path === '/'}
             onClick={() => setPath('/')}
           />
           <Button
             icon="chevron-left"
-            disabled={path === '/'}
+            disabled={isAuto || path === '/'}
             onClick={() =>
               setPath(path => `${path.split('/').slice(0, -2).join('/')}/`)
             }
           />
-          <InputGroup fill id="path" onValueChange={setPath} value={path} />
+          <InputGroup
+            disabled={isAuto}
+            fill
+            id="path"
+            onValueChange={setPath}
+            value={path}
+          />
           <HTMLSelect
-            disabled={result.loading || !result.value?.moves.length}
+            disabled={isAuto || result.loading || !result.value?.moves.length}
             iconName="caret-down"
             id="move"
             onChange={({ currentTarget: { value } }) =>
@@ -158,17 +176,33 @@ function PlayBlock({ gameDeclaration }: PlayBlockProps) {
           <Button
             icon="random"
             intent={
-              result.error
-                ? Intent.DANGER
-                : result.value?.isFinal
-                  ? Intent.SUCCESS
-                  : undefined
+              isAuto
+                ? Intent.PRIMARY
+                : result.error
+                  ? Intent.DANGER
+                  : result.value?.isFinal
+                    ? Intent.SUCCESS
+                    : undefined
             }
-            disabled={result.loading || !result.value?.moves.length}
+            disabled={isAuto || result.loading || !result.value?.moves.length}
             onClick={() =>
-              result.value &&
+              result.value?.moves.length &&
               setPath(path => `${path}${random(result.value.moves)}/`)
             }
+          />
+          <Button
+            icon="double-chevron-right"
+            intent={
+              isAuto
+                ? Intent.PRIMARY
+                : result.error
+                  ? Intent.DANGER
+                  : result.value?.isFinal
+                    ? Intent.SUCCESS
+                    : undefined
+            }
+            disabled={isAuto || result.loading || !result.value?.moves.length}
+            onClick={() => setIsAuto(true)}
           />
         </ControlGroup>
       </FormGroup>

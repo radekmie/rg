@@ -70,6 +70,7 @@ body {
 
 .resizer[data-resizer="horizontal"] {
   cursor: col-resize;
+  margin-left: -1px;
   width: 1px;
 }
 
@@ -83,6 +84,7 @@ body {
 .resizer[data-resizer="vertical"] {
   cursor: row-resize;
   height: 1px;
+  margin-bottom: -1px;
 }
 
 .resizer[data-resizer="vertical"]::before {
