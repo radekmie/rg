@@ -4,12 +4,19 @@ use crate::ast::{
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
+macro_rules! assign_any_stub {
+    () => {
+        Arc::from(Expression::new(Id::from("")))
+    };
+}
+
 type Id = Arc<str>;
 
 impl Game<Id> {
     pub fn calculate_simple_apply(&mut self) -> Result<(), Error<Id>> {
         let mut simple_paths = self.calculate_simple_paths();
         SimplePath::merge_all(&mut simple_paths);
+        SimplePath::remove_any_stubs(&mut simple_paths);
         SimplePath::remove_ambiguous(&mut simple_paths);
         SimplePath::propagate_exhaustiveness(&mut simple_paths);
 
@@ -66,6 +73,14 @@ impl Game<Id> {
                                 queue.push((edge.rhs.clone(), path, assignments));
                             }
                         }
+                        Label::AssignmentAny { lhs, .. } => {
+                            assignments.push(PragmaAssignment {
+                                lhs: lhs.clone(),
+                                rhs: assign_any_stub!(),
+                            });
+
+                            queue.push((edge.rhs.clone(), path, assignments));
+                        }
                         Label::Tag { symbol } => {
                             paths_to_tags
                                 .entry(PragmaTag::Symbol {
@@ -108,11 +123,24 @@ impl Game<Id> {
 
             let tags_count = paths_to_tags.len();
             let mut simple_paths_to_tags = vec![];
-            for (tag, mut paths) in paths_to_tags {
+            for (mut tag, mut paths) in paths_to_tags {
                 let (_, mut path, mut assignments) = paths.pop_first().unwrap();
 
                 // If there's exactly one path to a tag, it's trivially simple.
                 if paths.is_empty() {
+                    if let PragmaTag::Variable { identifier, type_ } = &mut tag {
+                        expose_index += 1;
+                        *identifier = Id::from(format!("{identifier}_{expose_index}"));
+                        for assignment in &mut assignments {
+                            if assignment.rhs == assign_any_stub!() {
+                                assignment.rhs = Arc::from(Expression::new_cast(
+                                    type_.clone(),
+                                    Arc::from(Expression::new(identifier.clone())),
+                                ));
+                            }
+                        }
+                    };
+
                     simple_paths_to_tags.push(SimplePath {
                         assignments,
                         is_direct_from_player,
@@ -173,7 +201,7 @@ impl Game<Id> {
                 }
 
                 expose_index += 1;
-                identifier = Arc::from(format!("{identifier}_{expose_index}"));
+                identifier = Id::from(format!("{identifier}_{expose_index}"));
                 assignments.push(PragmaAssignment {
                     lhs: exposed_variable,
                     rhs: Arc::from(Expression::new_cast(
@@ -347,6 +375,15 @@ impl SimplePath {
         }
     }
 
+    fn remove_any_stubs(simple_paths: &mut Vec<Self>) {
+        simple_paths.retain(|simple_path| {
+            simple_path
+                .assignments
+                .iter()
+                .all(|assignment| assignment.rhs != assign_any_stub!())
+        });
+    }
+
     /// Remove multiple simple paths that start in one node and are ambiguous,
     /// i.e., have tag bindings at the same tag position following the same tag
     /// prefix and having the same suffix.
@@ -487,6 +524,61 @@ mod test {
             x, end: player = keeper;
             y, end: player = keeper;
         "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        assign_any,
+        "
+            type Position = {0, 1, 2};
+            var position: Position = 0;
+            const next: Position -> Position = {:0};
+            begin, x: position = Position(*);
+            x, end: player = keeper;
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        assign_any_assignment_chain,
+        "
+            type Position = {0, 1, 2};
+            var position: Position = 0;
+            const next: Position -> Position = {:0};
+            begin, x: position = Position(*);
+            x, y: position = next[position];
+            y, end: player = keeper;
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        assign_any_assignment_expose_chain_1,
+        "
+            type Position = {0, 1, 2};
+            var position: Position = 0;
+            const next: Position -> Position = {:0};
+            begin, x: position = Position(*);
+            x, y: position = next[position];
+            y, z: $$ position;
+            z, end: player = keeper;
+        ",
+        adds "@simpleApplyExhaustive begin end [position_1: Position] position = Position(position_1), position = next[position], player = keeper;"
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        assign_any_assignment_expose_chain_2,
+        "
+            type Position = {0, 1, 2};
+            var position: Position = 0;
+            const next: Position -> Position = {:0};
+            begin, x: position = next[position];
+            x, y: position = Position(*);
+            y, z: $$ position;
+            z, end: player = keeper;
+        ",
+        adds "@simpleApplyExhaustive begin end [position_1: Position] position = next[position], position = Position(position_1), player = keeper;"
     );
 
     test_transform!(
