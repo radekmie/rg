@@ -153,6 +153,10 @@ impl<Id: Display> Display for ErrorReason<Id> {
                 f,
                 "AssignAny is not allowed for the player variable in {label}."
             ),
+            Self::ReachabilityLoop { lhs, rhs } => write!(
+                f,
+                "Calculating reachability of {rhs} from {lhs} can cause a loop."
+            ),
             Self::SetTypeExpected { got } => write!(f, "Expected Set type, got {got}."),
             Self::TypeDeclarationMismatch {
                 expected,

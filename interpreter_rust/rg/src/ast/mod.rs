@@ -387,6 +387,10 @@ pub enum ErrorReason<Id> {
     PlayerAnyAssignment {
         label: Label<Id>,
     },
+    ReachabilityLoop {
+        lhs: Node<Id>,
+        rhs: Node<Id>,
+    },
     SetTypeExpected {
         got: Arc<Type<Id>>,
     },
@@ -964,6 +968,19 @@ impl<Id: Clone + PartialEq> Game<Id> {
     }
 }
 
+#[derive(Eq, PartialEq)]
+pub enum ReachabilityCheckResult {
+    Loop,
+    Reachable,
+    Unreachable,
+}
+
+impl ReachabilityCheckResult {
+    pub fn is_reachable(&self) -> bool {
+        *self == Self::Reachable
+    }
+}
+
 impl<Id: Ord> Game<Id> {
     /// It works only if `self.edges` are sorted by `cmp_outgoing`.
     pub fn add_edge_sorted(&mut self, edge: Arc<Edge<Id>>) {
@@ -979,26 +996,47 @@ impl<Id: Ord> Game<Id> {
         }
     }
 
-    pub fn make_is_reachable(&self) -> impl Fn(&Node<Id>, &Node<Id>) -> bool + '_ {
-        let next_nodes = self.next_nodes();
-        move |a: &Node<_>, b: &Node<_>| -> bool {
+    pub fn make_check_reachability(
+        &self,
+        detect_loops: bool,
+    ) -> impl Fn(&Node<Id>, &Node<Id>) -> ReachabilityCheckResult + '_ {
+        let next_edges = self.next_edges();
+        move |a: &Node<_>, b: &Node<_>| -> ReachabilityCheckResult {
             let mut seen = BTreeSet::new();
             let mut queue = vec![a];
+            let mut result = ReachabilityCheckResult::Unreachable;
+
+            if detect_loops {
+                seen.insert(a);
+            }
+
             while let Some(lhs) = queue.pop() {
-                if let Some(rhss) = next_nodes.get(lhs) {
-                    for rhs in rhss {
-                        if !seen.contains(rhs) {
-                            if rhs == &b {
-                                return true;
+                if let Some(edges) = next_edges.get(lhs) {
+                    for edge in edges {
+                        if detect_loops {
+                            if let Label::Reachability { lhs, .. } = &edge.label {
+                                if seen.contains(lhs) {
+                                    return ReachabilityCheckResult::Loop;
+                                }
+                            }
+                        }
+
+                        if !seen.contains(&edge.rhs) {
+                            if edge.rhs == *b {
+                                result = ReachabilityCheckResult::Reachable;
+                                if !detect_loops {
+                                    return result;
+                                }
                             }
 
-                            seen.insert(rhs);
-                            queue.push(rhs);
+                            seen.insert(&edge.rhs);
+                            queue.push(&edge.rhs);
                         }
                     }
                 }
             }
-            false
+
+            result
         }
     }
 

@@ -42,7 +42,7 @@ impl Game<Id> {
     fn collect_to_inline(&self) -> (BTreeSet<ToInline>, BTreeSet<Arc<Edge<Id>>>) {
         let reaching_definitions = self.analyse::<ReachingDefinitions>(true);
         let next_edges = self.next_edges();
-        let is_reachable = self.make_is_reachable();
+        let check_reachability = self.make_check_reachability(false);
         let mut to_inline = BTreeSet::new();
         let mut to_skip = BTreeSet::new();
         let mut modified_edges = BTreeSet::new();
@@ -53,7 +53,8 @@ impl Game<Id> {
                 if edge.label.is_player_assignment()
                     || modified_edges.contains(edge)
                     || (edge.label.is_goals_assignment()
-                        && is_reachable(&edge.rhs, &Node::new(Id::from("end"))))
+                        && check_reachability(&edge.rhs, &Node::new(Id::from("end")))
+                            .is_reachable())
                 {
                     continue;
                 }

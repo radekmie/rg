@@ -6,8 +6,8 @@ impl Game<Arc<str>> {
         let lhs = Node::new(Arc::from("begin"));
         let rhs = Node::new(Arc::from("end"));
 
-        let is_reachable = self.make_is_reachable();
-        if !is_reachable(&lhs, &rhs) {
+        let check_reachability = self.make_check_reachability(false);
+        if !check_reachability(&lhs, &rhs).is_reachable() {
             return self.make_error(ErrorReason::Unreachable { lhs, rhs });
         }
 

@@ -13,10 +13,10 @@ impl Game<Id> {
         let reachable_nodes = self.analyse::<ReachableNodes>(false);
         let reaching_assignments = self.analyse::<ReachingAssignments>(false);
 
-        // Temporary clone for `is_reachable`.
+        // Temporary clone for `check_reachability`.
         let mut clone = Self::default();
         swap(&mut self.edges, &mut clone.edges);
-        let is_reachable = clone.make_is_reachable();
+        let check_reachability = clone.make_check_reachability(false);
 
         // Sort existing `@repeat`s.
         for pragma in &mut self.pragmas {
@@ -73,7 +73,7 @@ impl Game<Id> {
             if reachable_nodes
                 .get(&node)
                 .is_none_or(|reachable| !*reachable)
-                && !is_reachable(&node, &node)
+                && !check_reachability(&node, &node).is_reachable()
             {
                 unique_nodes.insert(node);
                 continue;
@@ -91,7 +91,7 @@ impl Game<Id> {
             });
         }
 
-        drop(is_reachable);
+        drop(check_reachability);
         swap(&mut self.edges, &mut clone.edges);
         Ok(())
     }
