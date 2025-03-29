@@ -148,14 +148,12 @@ impl Game<RuntimeId> {
 
                 for states in states.windows(2) {
                     if let [x, y] = states {
-                        if x.position == y.position && x.tags == y.tags {
-                            assert_eq!(
-                                x.values,
-                                y.values,
+                        if x.position == y.position && x.tags == y.tags && x.values != y.values {
+                            return Err(format!(
                                 "Encountered two moves with different variables from {} to {}.",
                                 interner.recall(&state.position).unwrap(),
                                 interner.recall(&x.position).unwrap()
-                            );
+                            ));
                         }
                     }
                 }
