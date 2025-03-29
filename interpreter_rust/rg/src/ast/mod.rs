@@ -127,6 +127,13 @@ pub enum Label<Id> {
 }
 
 impl<Id> Label<Id> {
+    pub fn as_tag_variable(&self) -> Option<&Id> {
+        if let Self::TagVariable { identifier } = self {
+            return Some(identifier);
+        }
+        None
+    }
+
     pub fn as_var_assignment(&self) -> Option<&Id> {
         if let Self::Assignment { lhs, .. } | Self::AssignmentAny { lhs, .. } = self {
             return Some(lhs.access_identifier());

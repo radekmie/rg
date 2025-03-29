@@ -473,5 +473,14 @@ mod test {
         32, 100: coord = direction[right][coord];"
     );
 
+    test_transform!(
+        inline_assignment,
+        tag_variable,
+        "type A = { y };
+        begin, t1: x = y;
+        t1, t2: $$ x;
+        t2, end: x == y;"
+    );
+
     // TODO: Add tests with forks
 }

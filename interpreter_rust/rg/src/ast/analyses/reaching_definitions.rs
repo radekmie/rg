@@ -27,11 +27,14 @@ impl Analysis for ReachingDefinitions {
     }
 
     fn kill(mut input: Self::Domain, edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
-        if let Some(identifier) = edge.label.as_var_assignment() {
+        if let Some(identifier) = edge.label.as_tag_variable() {
+            input.remove(identifier);
+        } else if let Some(identifier) = edge.label.as_var_assignment() {
             if !edge.label.is_map_assignment() {
                 input.remove(identifier);
             }
         }
+
         input
     }
 
