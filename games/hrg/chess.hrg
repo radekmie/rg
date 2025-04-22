@@ -496,6 +496,7 @@ graph kingMove() {
 
 graph move() {
   pos = ProperPosition(*)
+  $$ pos
   branch {
     pawnMove()
   } or {
