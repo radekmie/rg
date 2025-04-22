@@ -1,0 +1,311 @@
+// Test based on chess, knights with no pawns
+
+// Domains
+domain Score = 50 | 0 | 100 | 1000000
+domain Piece = empty | border |
+    whitepawn | whiterook | whiteknight | whitebishop | whitequeen | whiteking |
+    blackpawn | blackrook | blackknight | blackbishop | blackqueen | blackking
+domain Player = white | black
+domain Position = null | V(X, Y) where X in 0..7, Y in 0..7
+domain ProperPosition = V(X, Y) where X in 0..7, Y in 0..7
+domain Counter = C(N) where N in 0..501
+
+domain RookDir = up | down | left | right
+domain BishopDir = upleft | upright | downleft | downright
+domain AllDir = up | down | left | right | upleft | upright | downleft | downright
+domain KnightDir = nne | nnw | sse | ssw | een | ees | wwn | wws
+domain PawnDir = up | upright | upleft | nn
+domain CastleDir = queenside | kingside
+
+domain CastleRights = both | queenside | kingside | none
+domain Boolean = false | true
+
+// Possible moves
+leftdir : Position -> Position
+leftdir(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
+leftdir(_) = null
+
+rightdir : Position -> Position
+rightdir(V(X, Y)) = if X == 7 then null else V(X + 1, Y)
+rightdir(_) = null
+
+updir : Position -> Position
+updir(V(X, Y)) = if Y == 0 then null else V(X, Y - 1)
+updir(_) = null
+
+downdir : Position -> Position
+downdir(V(X, Y)) = if Y == 7 then null else V(X, Y + 1)
+downdir(_) = null
+
+upleftdir : Position -> Position
+upleftdir(V(X, Y)) = updir(leftdir(V(X,Y)))
+upleftdir(_) = null
+
+uprightdir : Position -> Position
+uprightdir(V(X, Y)) = updir(rightdir(V(X,Y)))
+uprightdir(_) = null
+
+downleftdir : Position -> Position
+downleftdir(V(X, Y)) = downdir(leftdir(V(X,Y)))
+downleftdir(_) = null
+
+downrightdir : Position -> Position
+downrightdir(V(X, Y)) = downdir(rightdir(V(X,Y)))
+downrightdir(_) = null
+// END Possible moves
+
+//Knight helpers
+nnedir : Position -> Position
+nnedir(V(X, Y)) = updir(updir(leftdir(V(X,Y))))
+nnedir(_) = null
+
+nnwdir : Position -> Position
+nnwdir(V(X, Y)) = updir(updir(rightdir(V(X,Y))))
+nnwdir(_) = null
+
+ssedir : Position -> Position
+ssedir(V(X, Y)) = downdir(downdir(leftdir(V(X,Y))))
+ssedir(_) = null
+
+sswdir : Position -> Position
+sswdir(V(X, Y)) = downdir(downdir(rightdir(V(X,Y))))
+sswdir(_) = null
+
+eendir : Position -> Position
+eendir(V(X, Y)) = leftdir(leftdir(updir(V(X,Y))))
+eendir(_) = null
+
+eesdir : Position -> Position
+eesdir(V(X, Y)) = leftdir(leftdir(downdir(V(X,Y))))
+eesdir(_) = null
+
+wwndir : Position -> Position
+wwndir(V(X, Y)) = rightdir(rightdir(updir(V(X,Y))))
+wwndir(_) = null
+
+wwsdir : Position -> Position
+wwsdir(V(X, Y)) = rightdir(rightdir(downdir(V(X,Y))))
+wwsdir(_) = null
+// END Knight helpers
+
+// Domain -> move
+all_direction: AllDir -> Position -> Position
+all_direction(up) = updir
+all_direction(left) = leftdir
+all_direction(right) = rightdir
+all_direction(down) = downdir
+all_direction(upright) = uprightdir
+all_direction(upleft) = upleftdir
+all_direction(downright) = downrightdir
+all_direction(downleft) = downleftdir
+
+knight_direction: KnightDir -> Position -> Position
+knight_direction(nne) = nnedir 
+knight_direction(nnw) = nnwdir
+knight_direction(sse) = ssedir
+knight_direction(ssw) = sswdir
+knight_direction(een) = eendir
+knight_direction(ees) = eesdir
+knight_direction(wwn) = wwndir
+knight_direction(wws) = wwsdir
+
+pawn_direction: PawnDir -> Player -> Position -> Position
+pawn_direction(up, white) = updir
+pawn_direction(upleft, white) = upleftdir
+pawn_direction(upright, white) = uprightdir
+pawn_direction(nn, white) = updir
+pawn_direction(up, black) = downdir
+pawn_direction(upleft, black) = downleftdir
+pawn_direction(upright, black) = downrightdir
+pawn_direction(nn, black) = downdir
+
+
+// Helper functions
+compare_y : Position -> Position
+compare_y(V(X,Y)) = V(1, Y)
+compare_y(_) = V(2,2)
+
+white_pawn_starting_pos : Position -> Boolean
+white_pawn_starting_pos(V(X,Y)) = if Y == 6 then true else false
+white_pawn_starting_pos(null) = false
+black_pawn_starting_pos : Position -> Boolean
+black_pawn_starting_pos(V(X,Y)) = if Y == 1 then true else false
+black_pawn_starting_pos(null) = false
+pawn_starting_pos : Player -> Position -> Boolean
+pawn_starting_pos(white) = white_pawn_starting_pos
+pawn_starting_pos(black) = black_pawn_starting_pos
+
+kingSideRookPosition : Player -> Position
+kingSideRookPosition(white) = V(7,7)
+kingSideRookPosition(black) = V(7,0)
+queenSideRookPosition : Player -> Position
+queenSideRookPosition(white) = V(0,7)
+queenSideRookPosition(black) = V(0,0)
+
+owner : Piece -> PlayerOrSystem
+owner(whitebishop) = white
+owner(whiteking) = white
+owner(whiteknight) = white
+owner(whitequeen) = white
+owner(whitepawn) = white
+owner(whiterook) = white
+owner(blackbishop) = black
+owner(blackking) = black
+owner(blackknight) = black
+owner(blackpawn) = black
+owner(blackqueen) = black
+owner(blackrook) = black
+owner(empty) = keeper
+owner(border) = keeper
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(black) = white
+
+myRook : Player -> Piece
+myRook(white) = whiterook
+myRook(_) = blackrook
+
+myBishop : Player -> Piece
+myBishop(white) = whitebishop
+myBishop(_) = blackbishop
+
+myQueen : Player -> Piece
+myQueen(white) = whitequeen
+myQueen(_) = blackqueen
+
+myKnight : Player -> Piece
+myKnight(white) = whiteknight
+myKnight(_) = blackknight
+
+myKing : Player -> Piece
+myKing(white) = whiteking
+myKing(_) = blackking
+
+myPawn : Player -> Piece
+myPawn(white) = whitepawn
+myPawn(_) = blackpawn
+
+counterIncrease: Counter -> Counter
+counterIncrease(C(N)) = if N == 501 then C(501) else C(N + 1)
+
+counterDecrease: Counter -> Counter
+counterDecrease(C(N)) = if N == 0 then C(0) else C(N - 1)
+
+// Board Setup
+board : Position -> Piece = {
+  V(X, Y) =
+    if Y == 0
+      then if X == 0 || X == 7 then empty
+      else if X == 1 then empty
+      else if X == 2 || X == 5 then empty
+      else if X == 3 then blackknight
+      else if X == 4 then empty
+      else empty
+    else if Y == 1 && X != 4 then empty
+    else if Y == 6 && X != 4 then empty
+    else if Y == 7
+      then if X == 0 || X == 7 then empty
+      else if X == 1 then whiteknight
+      else if X == 2 || X == 5 then empty
+      else if X == 3 then whiteknight
+      else if X == 4 then empty
+      else empty
+    else empty
+  where X in 0..7, Y in 0..7;
+  null = border
+}
+
+stagnation_counter: Counter = C(0)
+me : Player = white
+pos : Position
+dir : AllDir
+
+graph pawnMove() {
+  check(board[pos] == myPawn(me))
+  stagnation_counter = C(0)
+  board[pos] = empty
+  
+     branch {// Forward move by 1 square
+       pos = pawn_direction(up,me)(pos)
+       check(board[pos] == empty)
+       $ PF
+     } or {// Captures diagonal
+       branch {
+         pos = pawn_direction(upleft,me)(pos)
+         $ PCL
+       } or {
+         pos = pawn_direction(upright,me)(pos)
+         $ PCR
+       }
+       check(owner(board[pos]) == opponent(me))
+     }
+     $$ pos
+}
+
+graph knightMove() {
+  check(board[pos] == myKnight(me))
+  $$ pos
+  board[pos] = empty
+  $ N
+
+  branch {
+    pos = knight_direction(nne)(pos)
+  } or {
+    pos = knight_direction(nnw)(pos)
+  } or {
+    pos = knight_direction(sse)(pos)
+  } or {
+    pos = knight_direction(ssw)(pos)
+  } or {
+    pos = knight_direction(een)(pos)
+  } or {
+    pos = knight_direction(ees)(pos)
+  } or {
+    pos = knight_direction(wwn)(pos)
+  } or {
+    pos = knight_direction(wws)(pos)
+  }
+  
+  branch {
+    check(board[pos] == empty)
+  } or {
+    check(owner(board[pos]) == opponent(me))
+    stagnation_counter = C(0)
+    $_C
+  }
+  
+  $$ pos
+  board[pos] = myKnight(me)
+}
+
+
+graph move() {
+  pos = ProperPosition(*)
+  //$$ pos
+  branch {
+    pawnMove()
+    //check(0 != 0)
+  } or {
+    knightMove()
+  }
+}
+
+graph turn() {
+  stagnation_counter = counterIncrease(stagnation_counter)
+  player = me
+  move()
+  player = keeper
+  
+  me = opponent(me)
+
+  if stagnation_counter == C(4) {
+    end()
+  }
+}
+
+graph rules() {
+  loop {
+    turn()
+  }
+}
