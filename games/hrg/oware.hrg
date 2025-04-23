@@ -167,53 +167,51 @@ graph move() {
         }
       }
     } else { // Normal move
-      forall h: Hole {
-        check(belongsTo(white, h) == 1 && board[h] != I(0))
-        // Sowing
-        currHole = h
-        startSowing = currHole
-        toSow = board[currHole]
-        board[currHole] = I(0)
-        while toSow != I(0) {
+      currHole = Hole(*)
+      check(belongsTo(white, currHole) == 1 && board[currHole] != I(0))
+      $$ currHole
+      // Sowing
+      startSowing = currHole
+      toSow = board[currHole]
+      board[currHole] = I(0)
+      while toSow != I(0) {
+        $_i
+        currHole = nextHole(currHole)
+        if startSowing != currHole {
           $_i
-          currHole = nextHole(currHole)
-          if startSowing != currHole {
-            $_i
-            board[currHole] = incr(board[currHole])
-            toSow = decr(toSow)
-          }
+          board[currHole] = incr(board[currHole])
+          toSow = decr(toSow)
         }
-        endedSowing = currHole
-        // Capturing
-        capFields = I(0)
-        maxCaptured = I(0)
-        currHole = H(6)
-        while currHole != H(0) {
-          $_i
-          if board[currHole] != I(0) {
-            $_i
-            maxCaptured = incr(maxCaptured)
-          }
-          currHole = nextHole(currHole)
-        }
-        currHole = endedSowing
-        while belongsTo(black, currHole) == 1 && (board[currHole] == I(2) || board[currHole] == I(3)) {
-          $_i
-          toAdd = board[currHole]
-          board[currHole] = I(0)
-          while toAdd != I(0) {
-            $_i
-            toAdd = decr(toAdd)
-            captured[white] = incr(captured[white])
-            allCaptured = incr(allCaptured)
-          }
-          capFields = incr(capFields)
-          currHole = prevHole(currHole)
-          sinceCapture = I(0)
-        }
-        check(capFields != maxCaptured) // Cannot capture all the fields
-        $ h
       }
+      endedSowing = currHole
+      // Capturing
+      capFields = I(0)
+      maxCaptured = I(0)
+      currHole = H(6)
+      while currHole != H(0) {
+        $_i
+        if board[currHole] != I(0) {
+          $_i
+          maxCaptured = incr(maxCaptured)
+        }
+        currHole = nextHole(currHole)
+      }
+      currHole = endedSowing
+      while belongsTo(black, currHole) == 1 && (board[currHole] == I(2) || board[currHole] == I(3)) {
+        $_i
+        toAdd = board[currHole]
+        board[currHole] = I(0)
+        while toAdd != I(0) {
+          $_i
+          toAdd = decr(toAdd)
+          captured[white] = incr(captured[white])
+          allCaptured = incr(allCaptured)
+        }
+        capFields = incr(capFields)
+        currHole = prevHole(currHole)
+        sinceCapture = I(0)
+      }
+      check(capFields != maxCaptured) // Cannot capture all the fields
     }
   }
   else {
@@ -277,54 +275,52 @@ graph move() {
       }
     }
     else { // Normal move
-      forall h: Hole {
-        check(belongsTo(black, h) == 1 && board[h] != I(0))
-        // Sowing
-        currHole = h
-        startSowing = currHole
-        toSow = board[currHole]
-        board[currHole] = I(0)
-        while toSow != I(0) {
+      currHole = Hole(*)
+      check(belongsTo(black, currHole) == 1 && board[currHole] != I(0))
+      $$ currHole
+      // Sowing
+      startSowing = currHole
+      toSow = board[currHole]
+      board[currHole] = I(0)
+      while toSow != I(0) {
+        $_i
+        currHole = nextHole(currHole)
+        if startSowing != currHole {
           $_i
-          currHole = nextHole(currHole)
-          if startSowing != currHole {
-            $_i
-            board[currHole] = incr(board[currHole])
-            toSow = decr(toSow)
-          }
+          board[currHole] = incr(board[currHole])
+          toSow = decr(toSow)
         }
-        endedSowing = currHole
-        // Capturing
-        capFields = I(0)
-        maxCaptured = I(0)
-        currHole = H(0)
-        while currHole != H(6) {
-          $_i
-          if board[currHole] != I(0) {
-            $_i
-            maxCaptured = incr(maxCaptured)
-          }
-          currHole = nextHole(currHole)
-        }
-        currHole = endedSowing
-        while belongsTo(white, currHole) == 1 && (board[currHole] == I(2) || board[currHole] == I(3)) {
-          $_i
-          toAdd = board[currHole]
-          board[currHole] = I(0)
-          while toAdd != I(0) {
-            $_i
-            toAdd = decr(toAdd)
-            captured[black] = incr(captured[black])
-            allCaptured = incr(allCaptured)
-          }
-          capFields = incr(capFields)
-          sinceCapture = I(0)
-          currHole = prevHole(currHole)
-        }
-        check(capFields != maxCaptured) // Cannot capture all the fields
-        $ h
       }
-    }  
+      endedSowing = currHole
+      // Capturing
+      capFields = I(0)
+      maxCaptured = I(0)
+      currHole = H(0)
+      while currHole != H(6) {
+        $_i
+        if board[currHole] != I(0) {
+          $_i
+          maxCaptured = incr(maxCaptured)
+        }
+        currHole = nextHole(currHole)
+      }
+      currHole = endedSowing
+      while belongsTo(white, currHole) == 1 && (board[currHole] == I(2) || board[currHole] == I(3)) {
+        $_i
+        toAdd = board[currHole]
+        board[currHole] = I(0)
+        while toAdd != I(0) {
+          $_i
+          toAdd = decr(toAdd)
+          captured[black] = incr(captured[black])
+          allCaptured = incr(allCaptured)
+        }
+        capFields = incr(capFields)
+        sinceCapture = I(0)
+        currHole = prevHole(currHole)
+      }
+      check(capFields != maxCaptured) // Cannot capture all the fields
+    }
   }
 }
 

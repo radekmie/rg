@@ -40,29 +40,28 @@ op : Player -> Player
 op(x) = o
 op(o) = x
 
-position : Position
+pos : Position
 
 graph findNonempty() {
-  forall p:Position {
-    check(board[p] == empty)
-  }
+  pos = Position(*)
+  check(board[pos] == empty)
 }
 
 graph win() {
   branch {
-    check(position != next_d1(position))
-    check(board[position] == board[next_d1(position)])
-    check(board[position] == board[next_d1(next_d1(position))])
+    check(pos != next_d1(pos))
+    check(board[pos] == board[next_d1(pos)])
+    check(board[pos] == board[next_d1(next_d1(pos))])
   } or {
-    check(position != next_d2(position))
-    check(board[position] == board[next_d2(position)])
-    check(board[position] == board[next_d2(next_d2(position))])
+    check(pos != next_d2(pos))
+    check(board[pos] == board[next_d2(pos)])
+    check(board[pos] == board[next_d2(next_d2(pos))])
   } or {
-    check(board[position] == board[next_h(position)])
-    check(board[position] == board[next_h(next_h(position))])
+    check(board[pos] == board[next_h(pos)])
+    check(board[pos] == board[next_h(next_h(pos))])
   } or {
-    check(board[position] == board[next_v(position)])
-    check(board[position] == board[next_v(next_v(position))])
+    check(board[pos] == board[next_v(pos)])
+    check(board[pos] == board[next_v(next_v(pos))])
   }
 }
 
@@ -70,15 +69,13 @@ graph turn(me: Player) {
   player = me // Empty move
   
   player = random
-  forall dice:Dice {
-    throw = dice
-    check(board[map_dice(throw)] == empty)
-    position = map_dice(throw)
-    $ dice
-  }
+  throw = Dice(*)
+  check(board[map_dice(throw)] == empty)
+  pos = map_dice(throw)
+  $$ throw
   
   player = keeper
-  board[position] = me
+  board[pos] = me
 
   if reachable(win()) {
     goals[me] = 100
