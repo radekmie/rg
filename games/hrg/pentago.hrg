@@ -17,6 +17,7 @@ board : Position -> Piece = { P(I, J) = empty where I in 0..5, J in 0..5 }
 
 // just a variable, comes in handy later
 helper : Piece = empty
+pos : Position
 
 // player negation
 op : Player -> Player
@@ -25,9 +26,8 @@ op(o) = x
 
 // check if there are any empty board tiles
 graph findNonempty() {
-  forall p:Position {
-    check(board[p] == empty)
-  }
+  pos = Position(*)
+  check(board[pos] == empty)
 }
 
 // check if given player has 5 in a row (hardcoded all possible 5-in-a-rows)
@@ -231,16 +231,17 @@ graph win(piece: Player) {
 graph primary_turn(me: Player) {
   // generate all possible places to put a piece
   player = me
-  forall p:Position {
-    check(board[p] == empty)
-    board[p] = me
-    $ p
-  }
+  pos = Position(*)
+  check(board[pos] == empty)
+  board[pos] = me
+  $$ pos
+
   // player = keeper // uncomment this for faster computations (~8x), but the
   // keeper breaks turns so every statistic (except winratio) is less desirable
 
-  // check for a win (in this case anly player adding a piece can win)
+  // check for a win (in this case only the player adding a piece can win)
   if reachable(win(me)) {
+    player = keeper
     goals[me] = 100
     goals[op(me)] = 0
     end()
@@ -250,104 +251,102 @@ graph primary_turn(me: Player) {
 // second part of the turn (performing rotation)
 graph secondary_turn(me: Player) {
   // generate all possible rotations
-  forall r:Rotation {
-    if r == 0 {
-      helper = board[P(0, 0)]
-      board[P(0, 0)] = board[P(0, 2)]
-      board[P(0, 2)] = board[P(2, 2)]
-      board[P(2, 2)] = board[P(2, 0)]
-      board[P(2, 0)] = helper
-      helper = board[P(1, 0)]
-      board[P(1, 0)] = board[P(0, 1)]
-      board[P(0, 1)] = board[P(1, 2)]
-      board[P(1, 2)] = board[P(2, 1)]
-      board[P(2, 1)] = helper
-    }
-    if r == 1 {
-      helper = board[P(0, 0)]
-      board[P(0, 0)] = board[P(2, 0)]
-      board[P(2, 0)] = board[P(2, 2)]
-      board[P(2, 2)] = board[P(0, 2)]
-      board[P(0, 2)] = helper
-      helper = board[P(1, 0)]
-      board[P(1, 0)] = board[P(2, 1)]
-      board[P(2, 1)] = board[P(1, 2)]
-      board[P(1, 2)] = board[P(0, 1)]
-      board[P(0, 1)] = helper
-    }
-    if r == 2 {
-      helper = board[P(3, 0)]
-      board[P(3, 0)] = board[P(3, 2)]
-      board[P(3, 2)] = board[P(5, 2)]
-      board[P(5, 2)] = board[P(5, 0)]
-      board[P(5, 0)] = helper
-      helper = board[P(4, 0)]
-      board[P(4, 0)] = board[P(3, 1)]
-      board[P(3, 1)] = board[P(4, 2)]
-      board[P(4, 2)] = board[P(5, 1)]
-      board[P(5, 1)] = helper
-    }
-    if r == 3 {
-      helper = board[P(3, 0)]
-      board[P(3, 0)] = board[P(5, 0)]
-      board[P(5, 0)] = board[P(5, 2)]
-      board[P(5, 2)] = board[P(3, 2)]
-      board[P(3, 2)] = helper
-      helper = board[P(4, 0)]
-      board[P(4, 0)] = board[P(5, 1)]
-      board[P(5, 1)] = board[P(4, 2)]
-      board[P(4, 2)] = board[P(3, 1)]
-      board[P(3, 1)] = helper
-    }
-    if r == 4 {
-      helper = board[P(0, 3)]
-      board[P(0, 3)] = board[P(0, 5)]
-      board[P(0, 5)] = board[P(2, 5)]
-      board[P(2, 5)] = board[P(2, 3)]
-      board[P(2, 3)] = helper
-      helper = board[P(1, 3)]
-      board[P(1, 3)] = board[P(0, 4)]
-      board[P(0, 4)] = board[P(1, 5)]
-      board[P(1, 5)] = board[P(2, 4)]
-      board[P(2, 4)] = helper  
-    }
-    if r == 5 {
-      helper = board[P(0, 3)]
-      board[P(0, 3)] = board[P(2, 3)]
-      board[P(2, 3)] = board[P(2, 5)]
-      board[P(2, 5)] = board[P(0, 5)]
-      board[P(0, 5)] = helper
-      helper = board[P(1, 3)]
-      board[P(1, 3)] = board[P(2, 4)]
-      board[P(2, 4)] = board[P(1, 5)]
-      board[P(1, 5)] = board[P(0, 4)]
-      board[P(0, 4)] = helper
-    }
-    if r == 6 {
-      helper = board[P(3, 3)]
-      board[P(3, 3)] = board[P(3, 5)]
-      board[P(3, 5)] = board[P(5, 5)]
-      board[P(5, 5)] = board[P(5, 3)]
-      board[P(5, 3)] = helper
-      helper = board[P(4, 3)]
-      board[P(4, 3)] = board[P(3, 4)]
-      board[P(3, 4)] = board[P(4, 5)]
-      board[P(4, 5)] = board[P(5, 4)]
-      board[P(5, 4)] = helper  
-    }
-    if r == 7 {
-      helper = board[P(3, 3)]
-      board[P(3, 3)] = board[P(5, 3)]
-      board[P(5, 3)] = board[P(5, 5)]
-      board[P(5, 5)] = board[P(3, 5)]
-      board[P(3, 5)] = helper
-      helper = board[P(4, 3)]
-      board[P(4, 3)] = board[P(5, 4)]
-      board[P(5, 4)] = board[P(4, 5)]
-      board[P(4, 5)] = board[P(3, 4)]
-      board[P(3, 4)] = helper
-    }
-    $ r
+  branch {
+    helper = board[P(0, 0)]
+    board[P(0, 0)] = board[P(0, 2)]
+    board[P(0, 2)] = board[P(2, 2)]
+    board[P(2, 2)] = board[P(2, 0)]
+    board[P(2, 0)] = helper
+    helper = board[P(1, 0)]
+    board[P(1, 0)] = board[P(0, 1)]
+    board[P(0, 1)] = board[P(1, 2)]
+    board[P(1, 2)] = board[P(2, 1)]
+    board[P(2, 1)] = helper
+    $ R0
+  } or {
+    helper = board[P(0, 0)]
+    board[P(0, 0)] = board[P(2, 0)]
+    board[P(2, 0)] = board[P(2, 2)]
+    board[P(2, 2)] = board[P(0, 2)]
+    board[P(0, 2)] = helper
+    helper = board[P(1, 0)]
+    board[P(1, 0)] = board[P(2, 1)]
+    board[P(2, 1)] = board[P(1, 2)]
+    board[P(1, 2)] = board[P(0, 1)]
+    board[P(0, 1)] = helper
+    $ R1
+  } or {
+    helper = board[P(3, 0)]
+    board[P(3, 0)] = board[P(3, 2)]
+    board[P(3, 2)] = board[P(5, 2)]
+    board[P(5, 2)] = board[P(5, 0)]
+    board[P(5, 0)] = helper
+    helper = board[P(4, 0)]
+    board[P(4, 0)] = board[P(3, 1)]
+    board[P(3, 1)] = board[P(4, 2)]
+    board[P(4, 2)] = board[P(5, 1)]
+    board[P(5, 1)] = helper
+    $ R2
+  } or {
+    helper = board[P(3, 0)]
+    board[P(3, 0)] = board[P(5, 0)]
+    board[P(5, 0)] = board[P(5, 2)]
+    board[P(5, 2)] = board[P(3, 2)]
+    board[P(3, 2)] = helper
+    helper = board[P(4, 0)]
+    board[P(4, 0)] = board[P(5, 1)]
+    board[P(5, 1)] = board[P(4, 2)]
+    board[P(4, 2)] = board[P(3, 1)]
+    board[P(3, 1)] = helper
+    $ R3
+  } or {
+    helper = board[P(0, 3)]
+    board[P(0, 3)] = board[P(0, 5)]
+    board[P(0, 5)] = board[P(2, 5)]
+    board[P(2, 5)] = board[P(2, 3)]
+    board[P(2, 3)] = helper
+    helper = board[P(1, 3)]
+    board[P(1, 3)] = board[P(0, 4)]
+    board[P(0, 4)] = board[P(1, 5)]
+    board[P(1, 5)] = board[P(2, 4)]
+    board[P(2, 4)] = helper  
+    $ R4
+  } or {
+    helper = board[P(0, 3)]
+    board[P(0, 3)] = board[P(2, 3)]
+    board[P(2, 3)] = board[P(2, 5)]
+    board[P(2, 5)] = board[P(0, 5)]
+    board[P(0, 5)] = helper
+    helper = board[P(1, 3)]
+    board[P(1, 3)] = board[P(2, 4)]
+    board[P(2, 4)] = board[P(1, 5)]
+    board[P(1, 5)] = board[P(0, 4)]
+    board[P(0, 4)] = helper
+    $ R5
+  } or {
+    helper = board[P(3, 3)]
+    board[P(3, 3)] = board[P(3, 5)]
+    board[P(3, 5)] = board[P(5, 5)]
+    board[P(5, 5)] = board[P(5, 3)]
+    board[P(5, 3)] = helper
+    helper = board[P(4, 3)]
+    board[P(4, 3)] = board[P(3, 4)]
+    board[P(3, 4)] = board[P(4, 5)]
+    board[P(4, 5)] = board[P(5, 4)]
+    board[P(5, 4)] = helper  
+    $ R6
+  } or {
+    helper = board[P(3, 3)]
+    board[P(3, 3)] = board[P(5, 3)]
+    board[P(5, 3)] = board[P(5, 5)]
+    board[P(5, 5)] = board[P(3, 5)]
+    board[P(3, 5)] = helper
+    helper = board[P(4, 3)]
+    board[P(4, 3)] = board[P(5, 4)]
+    board[P(5, 4)] = board[P(4, 5)]
+    board[P(4, 5)] = board[P(3, 4)]
+    board[P(3, 4)] = helper
+    $ R7
   }
 
   player = keeper
