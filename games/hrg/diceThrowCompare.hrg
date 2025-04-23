@@ -20,17 +20,15 @@ compare(D(A), D(B)) = if A < B then 0 else if A == B then 50 else 100
 graph rules() {
   player = a // Empty move.
   player = random
-  forall dice:Dice {
-    throw_a = dice
-    $ dice
-  }
 
-  player = b // Empty move.
+  throw_a = Dice(*)
+  $$ throw_a
+
+  player = b // Empty move
   player = random
-  forall dice:Dice {
-    throw_b = dice
-    $ dice
-  }
+  
+  throw_b = Dice(*)
+  $$ throw_b
 
   player = keeper
   goals[a] = compare(throw_a, throw_b)

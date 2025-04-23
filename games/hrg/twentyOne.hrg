@@ -61,11 +61,9 @@ graph rules() {
     }
 
     player = random
-    forall c:Card {
-      $ c
-      check(remainingDeck[c] == 1)
-      card = c
-    }
+    card = Card(*)
+    check(remainingDeck[card] == 1)
+    $$ card
 
     player = keeper
     remainingDeck[card] = 0

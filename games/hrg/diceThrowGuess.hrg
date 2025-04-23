@@ -18,16 +18,13 @@ compare(D(A), D(B)) = if A == B then 100 else 0
 
 graph rules() {
   player = a
-  forall dice:Dice {
-    guess = dice
-    $ dice
-  }
+  
+  guess = Dice(*)
+  $$ guess
 
   player = random
-  forall dice:Dice {
-    throw = dice
-    $ dice
-  }
+  throw = Dice(*)
+  $$ throw
 
   goals[a] = compare(guess, throw)
   end()

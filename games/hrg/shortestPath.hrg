@@ -23,10 +23,11 @@ position : Node = V(0)
 
 visited : Node -> Boolean = { V(X) = false where X in 0..3 }
 
+node : Node
+
 graph missing() {
-  forall node:Node {
-    check(visited[node] == false)
-  }
+  node = Node(*)
+  check(visited[node] == false)
 }
 
 graph rules() {
@@ -34,14 +35,13 @@ graph rules() {
 
   player = x
   while visited[V(3)] != true {
-    forall node:Node {
-      check(visited[node] == false)
-      check(distance(position, node) != null)
-      $ node
-      goals[x] = sum(goals[x], distance(position, node))
-      visited[node] = true
-      position = node
-    }
+    node = Node(*)
+    check(visited[node] == false)
+    check(distance(position, node) != null)
+    $$ node
+    goals[x] = sum(goals[x], distance(position, node))
+    visited[node] = true
+    position = node
   }
 
   player = keeper

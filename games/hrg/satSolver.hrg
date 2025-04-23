@@ -5,6 +5,7 @@ domain Score = 0 | 1
 domain Variable = x | y | z
 
 values : Variable -> BooleanOrNull = { _ = null }
+v : Variable
 
 graph verify() {
   // (X v Y v Z) ^ (X) ^ (!Y) ^ (!Z)
@@ -15,22 +16,20 @@ graph verify() {
 }
 
 graph missing() {
-  forall variable:Variable {
-    check(values[variable] == null)
-  }
+  v = Variable(*)
+  check(values[v] == null)
 }
 
 graph rules() {
   player = x
   while reachable(missing()) {
-    forall variable:Variable {
-      check(values[variable] == null)
-      $ variable
-      branch {
-        values[variable] = true  $ T
-      } or {
-        values[variable] = false $ F
-      }
+    v = Variable(*)
+    check(values[v] == null)
+    $$ v
+    branch {
+      values[v] = true  $ T
+    } or {
+      values[v] = false $ F
     }
   }
 
