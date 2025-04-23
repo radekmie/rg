@@ -281,7 +281,7 @@ fn add_from_variable_declaration(
     }
 }
 
-const BUILDIN_SYMBOLS: [(&str, Flag); 12] = [
+const BUILDIN_SYMBOLS: [(&str, Flag); 13] = [
     ("break", Flag::Function),
     ("check", Flag::Function),
     ("continue", Flag::Function),
@@ -294,6 +294,7 @@ const BUILDIN_SYMBOLS: [(&str, Flag); 12] = [
     ("reachable", Flag::Function),
     ("return", Flag::Function),
     ("visible", Flag::Variable),
+    ("PlayerOrSystem", Flag::Type),
 ];
 
 fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
