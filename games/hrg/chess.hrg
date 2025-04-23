@@ -3,8 +3,8 @@
 // Domains
 domain Score = 50 | 0 | 100 | 1000000
 domain Piece = empty | border |
-    whitepawn | whiterook | whiteknight | whitebishop | whitequeen | whiteking |
-    blackpawn | blackrook | blackknight | blackbishop | blackqueen | blackking
+    whitepawn | whiteRook | whiteRookUnmoved | whiteknight | whitebishop | whitequeen | whiteking |
+    blackpawn | blackRook | blackRookUnmoved | blackknight | blackbishop | blackqueen | blackking
 domain Player = white | black
 domain Position = null | V(X, Y) where X in 0..7, Y in 0..7
 domain ProperPosition = V(X, Y) where X in 0..7, Y in 0..7
@@ -15,9 +15,7 @@ domain BishopDir = upleft | upright | downleft | downright
 domain AllDir = up | down | left | right | upleft | upright | downleft | downright
 domain KnightDir = nne | nnw | sse | ssw | een | ees | wwn | wws
 domain PawnDir = up | upright | upleft | nn
-domain CastleDir = queenside | kingside
 
-domain CastleRights = both | queenside | kingside | none
 domain Boolean = false | true
 
 // Possible moves
@@ -148,13 +146,15 @@ owner(whiteking) = white
 owner(whiteknight) = white
 owner(whitequeen) = white
 owner(whitepawn) = white
-owner(whiterook) = white
+owner(whiteRook) = white
+owner(whiteRookUnmoved) = white
 owner(blackbishop) = black
 owner(blackking) = black
 owner(blackknight) = black
 owner(blackpawn) = black
 owner(blackqueen) = black
-owner(blackrook) = black
+owner(blackRook) = black
+owner(blackRookUnmoved) = black
 owner(empty) = keeper
 owner(border) = keeper
 
@@ -163,8 +163,11 @@ opponent(white) = black
 opponent(black) = white
 
 myRook : Player -> Piece
-myRook(white) = whiterook
-myRook(_) = blackrook
+myRook(white) = whiteRook
+myRook(_) = blackRook
+myRookUnmoved : Player -> Piece
+myRookUnmoved(white) = whiteRookUnmoved
+myRookUnmoved(_) = blackRookUnmoved
 
 myBishop : Player -> Piece
 myBishop(white) = whitebishop
@@ -196,7 +199,7 @@ counterDecrease(C(N)) = if N == 0 then C(0) else C(N - 1)
 board : Position -> Piece = {
   V(X, Y) =
     if Y == 0
-      then if X == 0 || X == 7 then blackrook
+      then if X == 0 || X == 7 then blackRookUnmoved
       else if X == 1 || X == 6 then blackknight
       else if X == 2 || X == 5 then blackbishop
       else if X == 3 then blackqueen
@@ -204,7 +207,7 @@ board : Position -> Piece = {
     else if Y == 1 then blackpawn
     else if Y == 6 then whitepawn
     else if Y == 7
-      then if X == 0 || X == 7 then whiterook
+      then if X == 0 || X == 7 then whiteRookUnmoved
       else if X == 1 || X == 6 then whiteknight
       else if X == 2 || X == 5 then whitebishop
       else if X == 3 then whitequeen
@@ -219,7 +222,7 @@ me : Player = white
 pos : Position
 dir : AllDir
 en_passant_position : Position
-castlingPermission : Player -> CastleRights = {:both}
+castlingPermission : Player -> Boolean
 
 graph pawnMove() {
   check(board[pos] == myPawn(me))
@@ -336,26 +339,8 @@ graph rookMoves() {
   }
 }
 graph rookMove() {
-  check(board[pos] == myRook(me))
+  check(board[pos] == myRook(me) || board[pos] == myRookUnmoved(me))
   
-  if castlingPermission[me] != none {
-    if pos == kingSideRookPosition[me] {
-      if castlingPermission[me] == kingside {
-        castlingPermission[me] = none
-      } else {
-        castlingPermission[me] = queenside
-      }
-    } else {
-      if pos == queenSideRookPosition[me] {
-        if castlingPermission[me] == queenside {
-          castlingPermission[me] = none
-        } else {
-          castlingPermission[me] = kingside
-        }
-      }
-    }
-  }
-
   board[pos] = empty
   $ R
 
@@ -444,12 +429,11 @@ graph kingStandardMove() {
   board[pos] = myKing(me)
 }
 graph kingCastlingMove() {
-  check(castlingPermission(me) != none)
+  check(castlingPermission(me) == true)
   check(not(reachable(is_attacked())))
   board[pos] = empty
   branch {// Kingside castle
     $ OO
-    check(castlingPermission(me) == both || castlingPermission(me) == kingside)
     // If file +1 is empty
     check(board[rightdir(pos)] == empty)
     // If file +2 is empty
@@ -459,13 +443,13 @@ graph kingCastlingMove() {
     check(not(reachable(is_attacked())))
     pos = rightdir(pos)
     //check(not(reachable(is_attacked()))) Not necessary because of final test
+    check(board[rightdir(pos)] == myRookUnmoved(me))
     // Apply
     board[leftdir(pos)] = board[rightdir(pos)]// Rook
     board[rightdir(pos)] = empty
   } 
   or {// Queenside castle
     $ OOO
-    check(castlingPermission(me) == both || castlingPermission(me) == queenside)
     // If file -1 is empty
     check(board[leftdir(pos)] == empty)
     // If file -2 is empty
@@ -475,6 +459,7 @@ graph kingCastlingMove() {
     check(not(reachable(is_attacked())))
     pos = leftdir(pos)
     //check(not(reachable(is_attacked()))) Not necessary because of final test
+    check(board[leftdir(leftdir(pos))] == myRookUnmoved(me))
     // Apply
     board[rightdir(pos)] = board[leftdir(leftdir(pos))]// Rook
     board[leftdir(leftdir(pos))] = empty
@@ -490,7 +475,7 @@ graph kingMove() {
   } or { // Castling moves
     kingCastlingMove()
   }
-  castlingPermission[me] = none
+  castlingPermission[me] = false
   en_passant_position = null
 }
 
