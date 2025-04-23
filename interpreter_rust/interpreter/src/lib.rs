@@ -238,6 +238,7 @@ fn analyze_rg_inner(
         pass!(skip_self_assignments);
         pass!(skip_self_comparisons);
         pass!(skip_unused_tags);
+        pass!(skip_redundant_tags);
 
         // Pruning.
         pass!(prune_singleton_types);

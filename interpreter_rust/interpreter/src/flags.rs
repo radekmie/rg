@@ -165,6 +165,15 @@ pub struct Flags {
     )]
     pub skip_artificial_tags: bool,
 
+    /// replaces all redundant tags with skip edges
+    #[arg(
+        long,
+        help_heading = "Optimizations",
+        conflicts_with = "enable_all_optimizations",
+        default_value_if("enable_all_optimizations", "true", Some("true"))
+    )]
+    pub skip_redundant_tags: bool,
+
     /// replaces all self assignments (e.g., `x = x`) with skip edges
     #[arg(
         long,
