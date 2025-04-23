@@ -15,7 +15,7 @@ impl Game<Id> {
             .iter()
             .all(|edge| !edge.label.has_variable(&visible))
         {
-            while let Some(indexes) = self.find_redundant_tag() {
+            while let Some(indexes) = self.find_redundant_tags() {
                 for index in indexes {
                     Arc::make_mut(&mut self.edges[index]).skip();
                 }
@@ -25,7 +25,7 @@ impl Game<Id> {
         Ok(())
     }
 
-    fn find_redundant_tag(&self) -> Option<Vec<usize>> {
+    fn find_redundant_tags(&self) -> Option<Vec<usize>> {
         let next_edges = self.next_edges();
         let prev_edges = self.prev_edges();
         let mut indexes: Option<Vec<_>> = None;
