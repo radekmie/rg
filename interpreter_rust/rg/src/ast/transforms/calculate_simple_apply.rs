@@ -14,7 +14,7 @@ type Id = Arc<str>;
 
 impl Game<Id> {
     pub fn calculate_simple_apply(&mut self) -> Result<(), Error<Id>> {
-        let mut simple_paths = self.calculate_simple_paths();
+        let mut simple_paths = self.calculate_simple_paths()?;
         SimplePath::merge_all(&mut simple_paths);
         SimplePath::remove_any_stubs(&mut simple_paths);
         SimplePath::remove_ambiguous(&mut simple_paths);
@@ -31,7 +31,7 @@ impl Game<Id> {
     }
 
     /// A list of "short" simple paths, i.e., with at most one tag.
-    fn calculate_simple_paths(&self) -> Vec<SimplePath> {
+    fn calculate_simple_paths(&self) -> Result<Vec<SimplePath>, Error<Id>> {
         let next_edges = self.next_edges();
         let mut expose_index = 0;
         let mut simple_paths = vec![];
@@ -131,13 +131,19 @@ impl Game<Id> {
                     if let PragmaTag::Variable { identifier, type_ } = &mut tag {
                         expose_index += 1;
                         *identifier = Id::from(format!("{identifier}_{expose_index}"));
+                        let mut unrelated_assign_any_found = false;
                         for assignment in &mut assignments {
                             if assignment.rhs == assign_any_stub!() {
+                                unrelated_assign_any_found |= assignment.lhs.infer(self)? != *type_;
                                 assignment.rhs = Arc::from(Expression::new_cast(
                                     type_.clone(),
                                     Arc::from(Expression::new(identifier.clone())),
                                 ));
                             }
+                        }
+
+                        if unrelated_assign_any_found {
+                            continue;
                         }
                     };
 
@@ -231,7 +237,7 @@ impl Game<Id> {
             simple_paths.extend(simple_paths_to_tags);
         }
 
-        simple_paths
+        Ok(simple_paths)
     }
 
     /// A set of `Node`s that can start a simple path.
@@ -634,6 +640,30 @@ mod test {
             @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrSystem(B);
             @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrSystem(B);
             @simpleApplyExhaustive preend end [] player = PlayerOrSystem(keeper);
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        chess_hrg_king_standard_move,
+        "
+            type AllDir = { up, down, left, right, upleft, upright, downleft, downright };
+            type Position = { null, V__0_0, V__0_1, V__0_2, V__0_3, V__0_4, V__0_5, V__0_6, V__0_7, V__1_0, V__1_1, V__1_2, V__1_3, V__1_4, V__1_5, V__1_6, V__1_7, V__2_0, V__2_1, V__2_2, V__2_3, V__2_4, V__2_5, V__2_6, V__2_7, V__3_0, V__3_1, V__3_2, V__3_3, V__3_4, V__3_5, V__3_6, V__3_7, V__4_0, V__4_1, V__4_2, V__4_3, V__4_4, V__4_5, V__4_6, V__4_7, V__5_0, V__5_1, V__5_2, V__5_3, V__5_4, V__5_5, V__5_6, V__5_7, V__6_0, V__6_1, V__6_2, V__6_3, V__6_4, V__6_5, V__6_6, V__6_7, V__7_0, V__7_1, V__7_2, V__7_3, V__7_4, V__7_5, V__7_6, V__7_7 };
+            const leftdir: Position -> Position = { :null, V__1_0: V__0_0, V__1_1: V__0_1, V__1_2: V__0_2, V__1_3: V__0_3, V__1_4: V__0_4, V__1_5: V__0_5, V__1_6: V__0_6, V__1_7: V__0_7, V__2_0: V__1_0, V__2_1: V__1_1, V__2_2: V__1_2, V__2_3: V__1_3, V__2_4: V__1_4, V__2_5: V__1_5, V__2_6: V__1_6, V__2_7: V__1_7, V__3_0: V__2_0, V__3_1: V__2_1, V__3_2: V__2_2, V__3_3: V__2_3, V__3_4: V__2_4, V__3_5: V__2_5, V__3_6: V__2_6, V__3_7: V__2_7, V__4_0: V__3_0, V__4_1: V__3_1, V__4_2: V__3_2, V__4_3: V__3_3, V__4_4: V__3_4, V__4_5: V__3_5, V__4_6: V__3_6, V__4_7: V__3_7, V__5_0: V__4_0, V__5_1: V__4_1, V__5_2: V__4_2, V__5_3: V__4_3, V__5_4: V__4_4, V__5_5: V__4_5, V__5_6: V__4_6, V__5_7: V__4_7, V__6_0: V__5_0, V__6_1: V__5_1, V__6_2: V__5_2, V__6_3: V__5_3, V__6_4: V__5_4, V__6_5: V__5_5, V__6_6: V__5_6, V__6_7: V__5_7, V__7_0: V__6_0, V__7_1: V__6_1, V__7_2: V__6_2, V__7_3: V__6_3, V__7_4: V__6_4, V__7_5: V__6_5, V__7_6: V__6_6, V__7_7: V__6_7 };
+            const rightdir: Position -> Position = { :null, V__0_0: V__1_0, V__0_1: V__1_1, V__0_2: V__1_2, V__0_3: V__1_3, V__0_4: V__1_4, V__0_5: V__1_5, V__0_6: V__1_6, V__0_7: V__1_7, V__1_0: V__2_0, V__1_1: V__2_1, V__1_2: V__2_2, V__1_3: V__2_3, V__1_4: V__2_4, V__1_5: V__2_5, V__1_6: V__2_6, V__1_7: V__2_7, V__2_0: V__3_0, V__2_1: V__3_1, V__2_2: V__3_2, V__2_3: V__3_3, V__2_4: V__3_4, V__2_5: V__3_5, V__2_6: V__3_6, V__2_7: V__3_7, V__3_0: V__4_0, V__3_1: V__4_1, V__3_2: V__4_2, V__3_3: V__4_3, V__3_4: V__4_4, V__3_5: V__4_5, V__3_6: V__4_6, V__3_7: V__4_7, V__4_0: V__5_0, V__4_1: V__5_1, V__4_2: V__5_2, V__4_3: V__5_3, V__4_4: V__5_4, V__4_5: V__5_5, V__4_6: V__5_6, V__4_7: V__5_7, V__5_0: V__6_0, V__5_1: V__6_1, V__5_2: V__6_2, V__5_3: V__6_3, V__5_4: V__6_4, V__5_5: V__6_5, V__5_6: V__6_6, V__5_7: V__6_7, V__6_0: V__7_0, V__6_1: V__7_1, V__6_2: V__7_2, V__6_3: V__7_3, V__6_4: V__7_4, V__6_5: V__7_5, V__6_6: V__7_6, V__6_7: V__7_7 };
+            const updir: Position -> Position = { :null, V__0_1: V__0_0, V__0_2: V__0_1, V__0_3: V__0_2, V__0_4: V__0_3, V__0_5: V__0_4, V__0_6: V__0_5, V__0_7: V__0_6, V__1_1: V__1_0, V__1_2: V__1_1, V__1_3: V__1_2, V__1_4: V__1_3, V__1_5: V__1_4, V__1_6: V__1_5, V__1_7: V__1_6, V__2_1: V__2_0, V__2_2: V__2_1, V__2_3: V__2_2, V__2_4: V__2_3, V__2_5: V__2_4, V__2_6: V__2_5, V__2_7: V__2_6, V__3_1: V__3_0, V__3_2: V__3_1, V__3_3: V__3_2, V__3_4: V__3_3, V__3_5: V__3_4, V__3_6: V__3_5, V__3_7: V__3_6, V__4_1: V__4_0, V__4_2: V__4_1, V__4_3: V__4_2, V__4_4: V__4_3, V__4_5: V__4_4, V__4_6: V__4_5, V__4_7: V__4_6, V__5_1: V__5_0, V__5_2: V__5_1, V__5_3: V__5_2, V__5_4: V__5_3, V__5_5: V__5_4, V__5_6: V__5_5, V__5_7: V__5_6, V__6_1: V__6_0, V__6_2: V__6_1, V__6_3: V__6_2, V__6_4: V__6_3, V__6_5: V__6_4, V__6_6: V__6_5, V__6_7: V__6_6, V__7_1: V__7_0, V__7_2: V__7_1, V__7_3: V__7_2, V__7_4: V__7_3, V__7_5: V__7_4, V__7_6: V__7_5, V__7_7: V__7_6 };
+            const downdir: Position -> Position = { :null, V__0_0: V__0_1, V__0_1: V__0_2, V__0_2: V__0_3, V__0_3: V__0_4, V__0_4: V__0_5, V__0_5: V__0_6, V__0_6: V__0_7, V__1_0: V__1_1, V__1_1: V__1_2, V__1_2: V__1_3, V__1_3: V__1_4, V__1_4: V__1_5, V__1_5: V__1_6, V__1_6: V__1_7, V__2_0: V__2_1, V__2_1: V__2_2, V__2_2: V__2_3, V__2_3: V__2_4, V__2_4: V__2_5, V__2_5: V__2_6, V__2_6: V__2_7, V__3_0: V__3_1, V__3_1: V__3_2, V__3_2: V__3_3, V__3_3: V__3_4, V__3_4: V__3_5, V__3_5: V__3_6, V__3_6: V__3_7, V__4_0: V__4_1, V__4_1: V__4_2, V__4_2: V__4_3, V__4_3: V__4_4, V__4_4: V__4_5, V__4_5: V__4_6, V__4_6: V__4_7, V__5_0: V__5_1, V__5_1: V__5_2, V__5_2: V__5_3, V__5_3: V__5_4, V__5_4: V__5_5, V__5_5: V__5_6, V__5_6: V__5_7, V__6_0: V__6_1, V__6_1: V__6_2, V__6_2: V__6_3, V__6_3: V__6_4, V__6_4: V__6_5, V__6_5: V__6_6, V__6_6: V__6_7, V__7_0: V__7_1, V__7_1: V__7_2, V__7_2: V__7_3, V__7_3: V__7_4, V__7_4: V__7_5, V__7_5: V__7_6, V__7_6: V__7_7 };
+            const upleftdir: Position -> Position = { :null, V__1_1: V__0_0, V__1_2: V__0_1, V__1_3: V__0_2, V__1_4: V__0_3, V__1_5: V__0_4, V__1_6: V__0_5, V__1_7: V__0_6, V__2_1: V__1_0, V__2_2: V__1_1, V__2_3: V__1_2, V__2_4: V__1_3, V__2_5: V__1_4, V__2_6: V__1_5, V__2_7: V__1_6, V__3_1: V__2_0, V__3_2: V__2_1, V__3_3: V__2_2, V__3_4: V__2_3, V__3_5: V__2_4, V__3_6: V__2_5, V__3_7: V__2_6, V__4_1: V__3_0, V__4_2: V__3_1, V__4_3: V__3_2, V__4_4: V__3_3, V__4_5: V__3_4, V__4_6: V__3_5, V__4_7: V__3_6, V__5_1: V__4_0, V__5_2: V__4_1, V__5_3: V__4_2, V__5_4: V__4_3, V__5_5: V__4_4, V__5_6: V__4_5, V__5_7: V__4_6, V__6_1: V__5_0, V__6_2: V__5_1, V__6_3: V__5_2, V__6_4: V__5_3, V__6_5: V__5_4, V__6_6: V__5_5, V__6_7: V__5_6, V__7_1: V__6_0, V__7_2: V__6_1, V__7_3: V__6_2, V__7_4: V__6_3, V__7_5: V__6_4, V__7_6: V__6_5, V__7_7: V__6_6 };
+            const uprightdir: Position -> Position = { :null, V__0_1: V__1_0, V__0_2: V__1_1, V__0_3: V__1_2, V__0_4: V__1_3, V__0_5: V__1_4, V__0_6: V__1_5, V__0_7: V__1_6, V__1_1: V__2_0, V__1_2: V__2_1, V__1_3: V__2_2, V__1_4: V__2_3, V__1_5: V__2_4, V__1_6: V__2_5, V__1_7: V__2_6, V__2_1: V__3_0, V__2_2: V__3_1, V__2_3: V__3_2, V__2_4: V__3_3, V__2_5: V__3_4, V__2_6: V__3_5, V__2_7: V__3_6, V__3_1: V__4_0, V__3_2: V__4_1, V__3_3: V__4_2, V__3_4: V__4_3, V__3_5: V__4_4, V__3_6: V__4_5, V__3_7: V__4_6, V__4_1: V__5_0, V__4_2: V__5_1, V__4_3: V__5_2, V__4_4: V__5_3, V__4_5: V__5_4, V__4_6: V__5_5, V__4_7: V__5_6, V__5_1: V__6_0, V__5_2: V__6_1, V__5_3: V__6_2, V__5_4: V__6_3, V__5_5: V__6_4, V__5_6: V__6_5, V__5_7: V__6_6, V__6_1: V__7_0, V__6_2: V__7_1, V__6_3: V__7_2, V__6_4: V__7_3, V__6_5: V__7_4, V__6_6: V__7_5, V__6_7: V__7_6 };
+            const downleftdir: Position -> Position = { :null, V__1_0: V__0_1, V__1_1: V__0_2, V__1_2: V__0_3, V__1_3: V__0_4, V__1_4: V__0_5, V__1_5: V__0_6, V__1_6: V__0_7, V__2_0: V__1_1, V__2_1: V__1_2, V__2_2: V__1_3, V__2_3: V__1_4, V__2_4: V__1_5, V__2_5: V__1_6, V__2_6: V__1_7, V__3_0: V__2_1, V__3_1: V__2_2, V__3_2: V__2_3, V__3_3: V__2_4, V__3_4: V__2_5, V__3_5: V__2_6, V__3_6: V__2_7, V__4_0: V__3_1, V__4_1: V__3_2, V__4_2: V__3_3, V__4_3: V__3_4, V__4_4: V__3_5, V__4_5: V__3_6, V__4_6: V__3_7, V__5_0: V__4_1, V__5_1: V__4_2, V__5_2: V__4_3, V__5_3: V__4_4, V__5_4: V__4_5, V__5_5: V__4_6, V__5_6: V__4_7, V__6_0: V__5_1, V__6_1: V__5_2, V__6_2: V__5_3, V__6_3: V__5_4, V__6_4: V__5_5, V__6_5: V__5_6, V__6_6: V__5_7, V__7_0: V__6_1, V__7_1: V__6_2, V__7_2: V__6_3, V__7_3: V__6_4, V__7_4: V__6_5, V__7_5: V__6_6, V__7_6: V__6_7 };
+            const downrightdir: Position -> Position = { :null, V__0_0: V__1_1, V__0_1: V__1_2, V__0_2: V__1_3, V__0_3: V__1_4, V__0_4: V__1_5, V__0_5: V__1_6, V__0_6: V__1_7, V__1_0: V__2_1, V__1_1: V__2_2, V__1_2: V__2_3, V__1_3: V__2_4, V__1_4: V__2_5, V__1_5: V__2_6, V__1_6: V__2_7, V__2_0: V__3_1, V__2_1: V__3_2, V__2_2: V__3_3, V__2_3: V__3_4, V__2_4: V__3_5, V__2_5: V__3_6, V__2_6: V__3_7, V__3_0: V__4_1, V__3_1: V__4_2, V__3_2: V__4_3, V__3_3: V__4_4, V__3_4: V__4_5, V__3_5: V__4_6, V__3_6: V__4_7, V__4_0: V__5_1, V__4_1: V__5_2, V__4_2: V__5_3, V__4_3: V__5_4, V__4_4: V__5_5, V__4_5: V__5_6, V__4_6: V__5_7, V__5_0: V__6_1, V__5_1: V__6_2, V__5_2: V__6_3, V__5_3: V__6_4, V__5_4: V__6_5, V__5_5: V__6_6, V__5_6: V__6_7, V__6_0: V__7_1, V__6_1: V__7_2, V__6_2: V__7_3, V__6_3: V__7_4, V__6_4: V__7_5, V__6_5: V__7_6, V__6_6: V__7_7 };
+            const all_direction: AllDir -> Position -> Position = { :uprightdir, up: updir, down: downdir, left: leftdir, right: rightdir, upleft: upleftdir, downleft: downleftdir, downright: downrightdir };
+            var dir: AllDir = up;
+            var pos: Position = null;
+            1, 2: $ K;
+            2, 3: dir = AllDir(*);
+            3, 4: pos = all_direction[dir][pos];
+            4, 5: $$ pos;
         "
     );
 }
