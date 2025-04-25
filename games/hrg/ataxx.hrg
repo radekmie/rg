@@ -174,9 +174,7 @@ countBlue : Count = C(0)
 
 
 graph existsMove(me: Player) {
-  forall p:Position {
-    position = p
-  }
+  position = Position(*)
   check(board[position] == playerpiece(me))
   // possible directions - one cell away
   branch {
@@ -258,10 +256,8 @@ graph existsMove(me: Player) {
 
 
 graph move(me: Player) {
-  forall p:Position {
-    $ p
-    position = p
-  }
+  position = Position(*)
+  $$ position
   check(board[position] == playerpiece(me))
   // possible directions - one cell away
   branch {
@@ -377,9 +373,8 @@ graph move(me: Player) {
 }
 
 graph existsEmptyCell() {
-  forall p:Position {
-    check(board[p] == empty)
-  }
+  position = Position(*)
+  check(board[position] == empty)
 }
 
 graph turn() {
