@@ -35,7 +35,7 @@ domain CheckerCount = CC(N) where N in 0..15
 
 roll1 : Dice
 roll2 : Dice
-diceIte : Dice
+diceTmp : Dice
 
 position : Position
 currPosition : Position
@@ -153,22 +153,19 @@ graph calculateHighest(playerCalculate: Player, moveCalculate: Dice) {
   initPosition = position
   currPosition = position
 
-  // This is assuming in forall loop dice values are traversed increasingly
-  forall dice:Dice {
+  diceTmp = Dice(*)
    
-    check(dicesmallerorequal(dice, moveCalculate) == true)
+  check(dicesmallerorequal(diceTmp, moveCalculate) == true)
 
-    currPosition = calculatemoveposition(playerCalculate, initPosition, dice)
-    check(currPosition != null)
-    check(fieldchecker(board[currPosition]) == playerCalculate)
-    check(ischeckerpresent(board[currPosition]) == true)
-   
-   // We only calculate the position if there was no higher position with the player's checkers
-    check(fieldchecker(board[position]) != playerCalculate || ischeckerpresent(board[position]) == false)
-    
-    // We would break after the assignment if possible
-    position = currPosition
-  }
+  currPosition = calculatemoveposition(playerCalculate, initPosition, diceTmp)
+  check(currPosition != null)
+  check(fieldchecker(board[currPosition]) == playerCalculate)
+  check(ischeckerpresent(board[currPosition]) == true)
+  
+  // We only calculate the position if there was no higher position with the player's checkers
+  check(fieldchecker(board[position]) != playerCalculate || ischeckerpresent(board[position]) == false)
+  
+  position = currPosition
 }
 
 // Simply sums all of players checkers present on their home board
@@ -177,13 +174,13 @@ graph calculateHomeBoardCheckersCount(playerToCount: Player) {
   homeBoardCheckersCount[playerToCount] = 
     sumcheckercount(CC(0), playercheckercount(playerToCount, board[calculatehomeboardposition(playerToCount, D(1))]))
   
-  diceIte = D(1)
+  diceTmp = D(1)
   
-  while comparedice(diceIte, D(6)) == false {
+  while comparedice(diceTmp, D(6)) == false {
     $_i
-    diceIte = diceincr(diceIte)
+    diceTmp = diceincr(diceTmp)
     homeBoardCheckersCount[playerToCount] = 
-      sumcheckercount(homeBoardCheckersCount[playerToCount], playercheckercount(playerToCount, board[calculatehomeboardposition(playerToCount, diceIte)]))  
+      sumcheckercount(homeBoardCheckersCount[playerToCount], playercheckercount(playerToCount, board[calculatehomeboardposition(playerToCount, diceTmp)]))  
   }  
 }
 
@@ -218,10 +215,7 @@ graph bearOff(playerToBearOff: Player, moveToBearOff: Dice) {
 
   calculateHighest(playerToBearOff, moveToBearOff)
 
-  forall p:Position {
-    check(p == position)
-    $ p
-  }
+  $$ position
 
   // Bearing off a checker at a position position
   board[position] = takechecker(board[position])
@@ -236,16 +230,14 @@ graph moveChecker(playerToMove: Player, moveToExecute: Dice) {
     $ S
   }
 
-  forall p:Position {
-    if ischeckerpresent(board[playerbarposition(playerToMove)]) == true {
-      check(p == playerbarposition(playerToMove))
-    }
-    check(fieldchecker(board[p]) == playerToMove)
-    check(ischeckerpresent(board[p]) == true)
-    
-    positionBeforeMove = p
-    $ p
+  
+  positionBeforeMove = Position(*)
+  if ischeckerpresent(board[playerbarposition(playerToMove)]) == true {
+    check(positionBeforeMove == playerbarposition(playerToMove))
   }
+  check(fieldchecker(board[positionBeforeMove]) == playerToMove)
+  check(ischeckerpresent(board[positionBeforeMove]) == true)
+  $$ positionBeforeMove
 
   positionAfterMove = calculatemoveposition(playerToMove, positionBeforeMove, moveToExecute)
   check(positionAfterMove != null)
@@ -376,14 +368,10 @@ graph performMove(playerToPerform: Player) {
 graph turn(me: Player) {
    
   player = random
-  forall dice:Dice {
-    roll1 = dice
-    $ dice
-  }
-  forall dice:Dice {
-    roll2 = dice
-    $ dice
-  }
+  roll1 = Dice(*)
+  $$ roll1
+  roll2 = Dice(*)
+  $$ roll2
 
   performMove(me)
   checkWin(me)
