@@ -384,20 +384,28 @@ graph knightMove() {
   
   branch {
     pos = knight_direction(nne)(pos)
+    $_NNE
   } or {
     pos = knight_direction(nnw)(pos)
+    $_NNW
   } or {
     pos = knight_direction(sse)(pos)
+    $_SSE
   } or {
     pos = knight_direction(ssw)(pos)
+    $_SSW
   } or {
     pos = knight_direction(een)(pos)
+    $_EEN
   } or {
     pos = knight_direction(ees)(pos)
+    $_EES
   } or {
     pos = knight_direction(wwn)(pos)
+    $_WWN
   } or {
     pos = knight_direction(wws)(pos)
+    $_WWS
   }
   
   branch {
