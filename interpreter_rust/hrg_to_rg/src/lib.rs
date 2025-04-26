@@ -1180,20 +1180,19 @@ fn translate_condition(
             op: hrg::Binop::Or,
             rhs,
         } => {
-            let false_node = context.random_node(prefix);
             translate_condition(
                 context,
                 lhs,
                 entry_node,
                 then_node,
-                Some(&false_node),
+                else_node,
                 prefix,
                 automaton_function,
             )?;
             translate_condition(
                 context,
                 rhs,
-                &false_node,
+                entry_node,
                 then_node,
                 else_node,
                 prefix,
@@ -1733,6 +1732,72 @@ mod test {
             }
         };
     }
+
+    test_translation!(
+        condition_and,
+        "
+            graph rules() {
+                check(x == 1 && y == 2)
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_2: x == 1;
+            rules_2, rules_1: y == 2;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        condition_or,
+        "
+            graph rules() {
+                check(x == 1 || y == 2)
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_1: x == 1;
+            rules_begin, rules_1: y == 2;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        condition_and_or,
+        "
+            graph rules() {
+                check(x == 1 && (y == 2 || z == 3))
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_2: x == 1;
+            rules_2, rules_1: y == 2;
+            rules_2, rules_1: z == 3;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        condition_or_and,
+        "
+            graph rules() {
+                check((x == 1 && y == 2) || z == 3)
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_2: x == 1;
+            rules_2, rules_1: y == 2;
+            rules_begin, rules_1: z == 3;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
 
     test_translation!(
         empty_branch_or_loop,
