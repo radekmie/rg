@@ -157,7 +157,7 @@ impl Expression<Id> {
 impl Type<Id> {
     fn possible_identifiers(&self, game: &Game<Id>) -> Option<Vec<Id>> {
         match self.resolve(game).ok()? {
-            Self::Arrow { .. } => todo!(),
+            Self::Arrow { .. } => None,
             Self::Set { identifiers, .. } => Some(identifiers.clone()),
             Self::TypeReference { .. } => unreachable!(),
         }
@@ -263,6 +263,20 @@ mod test {
         calculate_disjoints,
         switch_negated_2,
         "begin, a: x != 0; begin, b: x != 1; a, end: ; b, end: ;"
+    );
+
+    test_transform!(
+        calculate_disjoints,
+        switch_lookup_map,
+        "
+            type T = { 1, 2 };
+            var x: T = 1;
+            var y: T -> T = { :2 };
+            begin, a: x == y[1];
+            begin, b: x == y[2];
+            a, end: ;
+            b, end: ;
+        "
     );
 
     test_transform!(
