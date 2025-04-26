@@ -247,6 +247,24 @@ pub enum Expression<Id> {
     },
 }
 
+impl Expression<Arc<str>> {
+    pub fn and(&self, rhs: &Self) -> Self {
+        Self::BinExpr {
+            lhs: Arc::from(self.clone()),
+            op: Binop::And,
+            rhs: Arc::from(rhs.clone()),
+        }
+    }
+
+    pub fn not(&self) -> Self {
+        let identifier = Arc::from("not");
+        Self::Call {
+            expression: Arc::from(Self::Literal { identifier }),
+            args: vec![Arc::from(self.clone())],
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct ExpressionMapPart<Id> {
     pub pattern: Arc<Pattern<Id>>,

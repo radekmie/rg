@@ -1180,24 +1180,38 @@ fn translate_condition(
             op: hrg::Binop::Or,
             rhs,
         } => {
-            translate_condition(
-                context,
-                lhs,
-                entry_node,
-                then_node,
-                else_node,
-                prefix,
-                automaton_function,
-            )?;
-            translate_condition(
-                context,
-                rhs,
-                entry_node,
-                then_node,
-                else_node,
-                prefix,
-                automaton_function,
-            )?;
+            if then_node.is_some() {
+                translate_condition(
+                    context,
+                    lhs,
+                    entry_node,
+                    then_node,
+                    None,
+                    prefix,
+                    automaton_function,
+                )?;
+                translate_condition(
+                    context,
+                    rhs,
+                    entry_node,
+                    then_node,
+                    None,
+                    prefix,
+                    automaton_function,
+                )?;
+            }
+
+            if else_node.is_some() {
+                translate_condition(
+                    context,
+                    &lhs.not().and(&rhs.not()),
+                    entry_node,
+                    else_node,
+                    None,
+                    prefix,
+                    automaton_function,
+                )?;
+            }
         }
         hrg::Expression::BinExpr {
             lhs,
@@ -1750,6 +1764,27 @@ mod test {
     );
 
     test_translation!(
+        condition_and_else,
+        "
+            graph rules() {
+                if x == 1 && y == 2 { end() }
+                x = y
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_3: x == 1;
+            rules_begin, rules_2: x != 1;
+            rules_3, rules_1: y == 2;
+            rules_3, rules_2: y != 2;
+            rules_1, end: player = keeper;
+            rules_2, rules_4: x = y;
+            rules_4, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
         condition_or,
         "
             graph rules() {
@@ -1761,6 +1796,27 @@ mod test {
             rules_begin, rules_1: x == 1;
             rules_begin, rules_1: y == 2;
             rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        condition_or_else,
+        "
+            graph rules() {
+                if x == 1 || y == 2 { end() }
+                x = y
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_1: x == 1;
+            rules_begin, rules_1: y == 2;
+            rules_begin, rules_3: x != 1;
+            rules_3, rules_2: y != 2;
+            rules_1, end: player = keeper;
+            rules_2, rules_4: x = y;
+            rules_4, rules_end: ;
             rules_end, end: ;
         "
     );
@@ -1794,6 +1850,39 @@ mod test {
             rules_begin, rules_2: x == 1;
             rules_2, rules_1: y == 2;
             rules_begin, rules_1: z == 3;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        condition_not_and,
+        "
+            graph rules() {
+                check(not(x == 1 && y == 2))
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_2: x == 1;
+            rules_begin, rules_1: x != 1;
+            rules_2, rules_1: y != 2;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        condition_not_or,
+        "
+            graph rules() {
+                check(not(x == 1 || y == 2))
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_2: x != 1;
+            rules_2, rules_1: y != 2;
             rules_1, rules_end: ;
             rules_end, end: ;
         "
