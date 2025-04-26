@@ -101,11 +101,12 @@ impl Game<Id> {
             previous.insert(lhs);
             if let Some(edges) = next_edges.get(&lhs) {
                 for edge in edges {
+                    if is_main_automaton && (edge.label.is_assignment_any() || edge.label.is_tag())
+                    {
+                        return None;
+                    }
                     if let Some(id) = edge.label.as_var_assignment() {
                         defined_vars.insert(id.clone());
-                    }
-                    if edge.label.is_tag() && is_main_automaton {
-                        return None;
                     }
                     result.insert((*edge).clone());
                     if edge.rhs != *target && !previous.contains(&edge.rhs) {
@@ -410,20 +411,25 @@ mod test {
 
     test_transform!(
         inline_reachability,
-        reachability_with_generator,
+        reachability_with_assign_any_main,
         "type T = { null };
-        begin, end: ? a -> c;
-        a, a1: t = T(*);
-        a1, b: t == null;
-        b, c: t == null;",
+        begin, end: ? a -> b;
+        a, b: t = T(*);"
+    );
+
+    test_transform!(
+        inline_reachability,
+        reachability_with_assign_any_nested,
         "type T = { null };
-        a, a1: t = T(*);
-        a1, b: t == null;
-        b, c: t == null;
+        begin, end: ? x -> y;
+        x, y: ? a -> b;
+        a, b: t = T(*);",
+        "type T = { null };
+        a, b: t = T(*);
         begin, 1: ;
-        1, 2: t = T(*);
-        2, 3: t == null;
-        3, end: t == null;"
+        1, end: ? a -> b;
+        x, 2: ;
+        2, y: t = T(*);"
     );
 
     test_transform!(

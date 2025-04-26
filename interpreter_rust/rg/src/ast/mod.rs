@@ -154,6 +154,10 @@ impl<Id> Label<Id> {
         matches!(self, Self::Assignment { .. } | Self::AssignmentAny { .. })
     }
 
+    pub fn is_assignment_any(&self) -> bool {
+        matches!(self, Self::AssignmentAny { .. })
+    }
+
     pub fn is_comparison(&self) -> bool {
         matches!(self, Self::Comparison { .. })
     }
