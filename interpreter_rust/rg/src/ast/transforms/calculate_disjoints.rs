@@ -1,4 +1,4 @@
-use crate::ast::{Edge, Error, Game, Label, Node, Pragma};
+use crate::ast::{Edge, Error, Expression, Game, Label, Node, Pragma, Type, Value};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use utils::position::Span;
@@ -86,14 +86,14 @@ impl Game<Id> {
                 continue;
             };
 
-            let Some(identifier) = rhs.uncast().as_reference() else {
+            let Some(identifiers) = rhs.possible_identifiers(self) else {
                 continue;
             };
 
             let lhs1 = lhs.uncast();
             let mut nodes = vec![edges[index1].rhs.clone()];
-            let mut symbols = BTreeSet::from([identifier]);
-            for index2 in (0..edges.len()).rev() {
+            let mut symbols = BTreeSet::from_iter(identifiers);
+            'outer: for index2 in (0..edges.len()).rev() {
                 if index1 == index2 {
                     continue;
                 }
@@ -105,10 +105,12 @@ impl Game<Id> {
                 } = &edges[index2].label
                 {
                     if lhs1 == lhs2.uncast() {
-                        if let Some(identifier) = rhs.uncast().as_reference() {
-                            if symbols.insert(identifier) {
-                                nodes.push(edges[index2].rhs.clone());
-                                continue;
+                        if let Some(identifiers) = rhs.possible_identifiers(self) {
+                            for identifier in identifiers {
+                                if symbols.insert(identifier) {
+                                    nodes.push(edges[index2].rhs.clone());
+                                    continue 'outer;
+                                }
                             }
                         }
                     }
@@ -131,6 +133,46 @@ impl Game<Id> {
         disjoints
             .into_iter()
             .max_by_key(|(is_exhaustive, nodes)| (nodes.len(), *is_exhaustive))
+    }
+}
+
+impl Expression<Id> {
+    fn possible_identifiers(&self, game: &Game<Id>) -> Option<Vec<Id>> {
+        match self.uncast() {
+            Self::Access { lhs, .. } => lhs.possible_identifiers(game),
+            Self::Cast { .. } => unreachable!(),
+            Self::Reference { identifier } => game.resolve_constant(identifier).map_or_else(
+                || {
+                    game.resolve_variable(identifier).map_or_else(
+                        || Some(vec![identifier.clone()]),
+                        |_| game.infer(identifier).possible_identifiers(game),
+                    )
+                },
+                |constant| constant.value.possible_identifiers(),
+            ),
+        }
+    }
+}
+
+impl Type<Id> {
+    fn possible_identifiers(&self, game: &Game<Id>) -> Option<Vec<Id>> {
+        match self.resolve(game).ok()? {
+            Self::Arrow { .. } => todo!(),
+            Self::Set { identifiers, .. } => Some(identifiers.clone()),
+            Self::TypeReference { .. } => unreachable!(),
+        }
+    }
+}
+
+impl Value<Id> {
+    fn possible_identifiers(&self) -> Option<Vec<Id>> {
+        match self {
+            Self::Element { identifier } => Some(vec![identifier.clone()]),
+            Self::Map { entries, .. } => entries
+                .iter()
+                .map(|entry| entry.value.to_identifier().cloned())
+                .collect(),
+        }
     }
 }
 
@@ -221,6 +263,59 @@ mod test {
         calculate_disjoints,
         switch_negated_2,
         "begin, a: x != 0; begin, b: x != 1; a, end: ; b, end: ;"
+    );
+
+    test_transform!(
+        calculate_disjoints,
+        switch_lookup_2,
+        "
+            type T = { 1, 2 };
+            const t1: T -> T = { :1 };
+            const t2: T -> T = { :2 };
+            var x: T = 2;
+            var y: T = 2;
+            begin, a: x == t1[y];
+            begin, b: x == t2[y];
+            a, end: ;
+            b, end: ;
+        ",
+        adds "@disjointExhaustive begin : a b;"
+    );
+
+    test_transform!(
+        calculate_disjoints,
+        switch_lookup_2_overlap,
+        "
+            type T = { 1, 2 };
+            const t1: T -> T = { 1: 2, :1 };
+            const t2: T -> T = { 2: 1, :2 };
+            var x: T = 2;
+            var y: T = 2;
+            begin, a: x == t1[y];
+            begin, b: x == t2[y];
+            a, end: ;
+            b, end: ;
+        "
+    );
+
+    test_transform!(
+        calculate_disjoints,
+        switch_lookup_3,
+        "
+            type T = { 1, 2, 3 };
+            const t1: T -> T = { :1 };
+            const t2: T -> T = { :2 };
+            const t3: T -> T = { :3 };
+            var x: T = 3;
+            var y: T = 3;
+            begin, a: x == t1[y];
+            begin, b: x == t2[y];
+            begin, c: x == t3[y];
+            a, end: ;
+            b, end: ;
+            c, end: ;
+        ",
+        adds "@disjointExhaustive begin : a b c;"
     );
 
     test_transform!(
