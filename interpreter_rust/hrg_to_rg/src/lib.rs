@@ -1179,39 +1179,50 @@ fn translate_condition(
             lhs,
             op: hrg::Binop::Or,
             rhs,
+        } if else_node.is_none() => {
+            translate_condition(
+                context,
+                lhs,
+                entry_node,
+                then_node,
+                else_node,
+                prefix,
+                automaton_function,
+            )?;
+            translate_condition(
+                context,
+                rhs,
+                entry_node,
+                then_node,
+                else_node,
+                prefix,
+                automaton_function,
+            )?;
+        }
+        hrg::Expression::BinExpr {
+            lhs,
+            op: hrg::Binop::Or,
+            rhs,
         } => {
-            if then_node.is_some() {
-                translate_condition(
-                    context,
-                    lhs,
-                    entry_node,
-                    then_node,
-                    None,
-                    prefix,
-                    automaton_function,
-                )?;
-                translate_condition(
-                    context,
-                    rhs,
-                    entry_node,
-                    then_node,
-                    None,
-                    prefix,
-                    automaton_function,
-                )?;
-            }
-
-            if else_node.is_some() {
-                translate_condition(
-                    context,
-                    &lhs.not().and(&rhs.not()),
-                    entry_node,
-                    else_node,
-                    None,
-                    prefix,
-                    automaton_function,
-                )?;
-            }
+            let false_node = context.random_node(prefix);
+            translate_condition(
+                context,
+                lhs,
+                entry_node,
+                then_node,
+                Some(&false_node),
+                prefix,
+                automaton_function,
+            )?;
+            translate_condition(
+                context,
+                rhs,
+                &false_node,
+                then_node,
+                else_node,
+                prefix,
+                automaton_function,
+            )?;
         }
         hrg::Expression::BinExpr {
             lhs,
@@ -1811,8 +1822,8 @@ mod test {
         "
             begin, rules_begin: ;
             rules_begin, rules_1: x == 1;
-            rules_begin, rules_1: y == 2;
             rules_begin, rules_3: x != 1;
+            rules_3, rules_1: y == 2;
             rules_3, rules_2: y != 2;
             rules_1, end: player = keeper;
             rules_2, rules_4: x = y;
