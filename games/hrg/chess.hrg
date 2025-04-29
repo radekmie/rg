@@ -223,6 +223,7 @@ pos : Position
 dir : AllDir
 en_passant_position : Position
 castlingPermission : Player -> Boolean
+kingPos : Player -> Position = {:V(4,7); black=V(4,0)}
 
 graph pawnMove() {
   check(board[pos] == myPawn(me))
@@ -435,9 +436,9 @@ graph kingStandardMove() {
     $_C
   }
   board[pos] = myKing(me)
+  kingPos[me] = pos
 }
 graph kingCastlingMove() {
-  check(castlingPermission(me) == true)
   check(not(reachable(is_attacked())))
   board[pos] = empty
   branch {// Kingside castle
@@ -475,51 +476,55 @@ graph kingCastlingMove() {
             
   $$ pos
   board[pos] = myKing(me)
-}
-graph kingMove() {
-  check(board[pos] == myKing(me))
-  branch {// 1 tile move
-    kingStandardMove()
-  } or { // Castling moves
-    kingCastlingMove()
-  }
-  castlingPermission[me] = false
-  en_passant_position = null
+  kingPos[me] = pos
 }
 
 graph move() {
-  pos = ProperPosition(*)
-  $$ pos
   branch {
-    pawnMove()
+    pos = kingPos[me]
+    $$ pos
+    branch {// 1 tile move
+      kingStandardMove()
+    } or { // Castling moves
+      check(castlingPermission(me) == true)
+      kingCastlingMove()
+    }
+    castlingPermission[me] = false
+    en_passant_position = null
   } or {
-    queenMove()
-  } or {
-    rookMove()
-  } or {
-    knightMove()
-  } or {
-    bishopMove()
-  } or {
-    kingMove()
+    pos = ProperPosition(*)
+    $$ pos
+    branch {
+      pawnMove()
+    } or {
+      queenMove()
+    } or {
+      rookMove()
+    } or {
+      knightMove()
+    } or {
+      bishopMove()
+    }
   }
   check(not(reachable(isInCheck())))
 }
 graph moveExists() {
-  pos = ProperPosition(*)
   branch {
-    pawnMove()
-  } or {
-    queenMove()
-  } or {
-    rookMove()
-  } or {
-    knightMove()
-  } or {
-    bishopMove()
-  } or {
-    check(board[pos] == myKing(me))
+    pos = kingPos[me]
     kingStandardMove()
+  } or {
+    pos = ProperPosition(*)    
+    branch {
+      pawnMove()
+    } or {
+      queenMove()
+    } or {
+      rookMove()
+    } or {
+      knightMove()
+    } or {
+      bishopMove()
+    }
   }
   check(not(reachable(isInCheck())))
 }
@@ -588,15 +593,14 @@ graph is_attacked(){
   }
 }
 graph isInCheck() {
-  pos = ProperPosition(*)
-  check(board[pos] == myKing(me))
+  pos = kingPos[me]
   check(reachable(is_attacked()))
 }
 
-graph kingExists() {
-  pos = ProperPosition(*)
-  check(board[pos] == myKing(me))
-}
+// graph kingExists() {
+//   pos = ProperPosition(*)
+//   check(board[pos] == myKing(me))
+// }
 
 graph turn() {
   stagnation_counter = counterIncrease(stagnation_counter)
