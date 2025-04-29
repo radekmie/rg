@@ -101,7 +101,10 @@ impl Game<Id> {
             previous.insert(lhs);
             if let Some(edges) = next_edges.get(&lhs) {
                 for edge in edges {
-                    if is_main_automaton && (edge.label.is_assignment_any() || edge.label.is_tag())
+                    if is_main_automaton
+                        && (edge.label.is_assignment_any()
+                            || edge.label.is_tag()
+                            || edge.label.is_tag_variable())
                     {
                         return None;
                     }
@@ -468,6 +471,14 @@ mod test {
 
     test_transform!(
         inline_reachability,
+        tag_var_in_main,
+        "begin, a: ;
+        a, b: ? x -> y;
+        x, y: $$ a;"
+    );
+
+    test_transform!(
+        inline_reachability,
         tag_in_sub,
         "a1, a: ;
         a, b: ? x -> y;
@@ -476,6 +487,18 @@ mod test {
         x, y: $ a;
         a, 1: ;
         1, b: $ a;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        tag_var_in_sub,
+        "a1, a: ;
+        a, b: ? x -> y;
+        x, y: $$ a;",
+        "a1, a: ;
+        x, y: $$ a;
+        a, 1: ;
+        1, b: $$ a;"
     );
 
     test_transform!(
