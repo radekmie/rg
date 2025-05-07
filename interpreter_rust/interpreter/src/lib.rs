@@ -320,7 +320,7 @@ pub fn apply(ast: &str, path: &str) -> Result<String, String> {
     console_error_panic_hook::set_once();
     let (game, interner, variables_indexes) =
         Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?;
-    let state = game.apply(&interner, path)?;
+    let state = game.initial_state_after(&interner, path)?;
     let moves = state
         .next_states(&game, true)
         .map(|state| {
@@ -362,10 +362,16 @@ pub fn apply(ast: &str, path: &str) -> Result<String, String> {
 }
 
 #[wasm_bindgen(js_name = perf)]
-pub fn perf(ast: &str, depth: usize, callback: &Function) -> Result<(), String> {
+pub fn perf(
+    ast: &str,
+    initial_state_path: &str,
+    depth: usize,
+    callback: &Function,
+) -> Result<(), String> {
     console_error_panic_hook::set_once();
-    let game = Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?.0;
-    let (count, time) = game.perf(depth);
+    let (game, interner, _) = Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?;
+    let initial_state = game.initial_state_after(&interner, initial_state_path)?;
+    let (count, time) = game.perf(&initial_state, depth);
     callback
         .call2(&JsValue::null(), &count.into(), &time.into())
         .unwrap();
@@ -373,14 +379,21 @@ pub fn perf(ast: &str, depth: usize, callback: &Function) -> Result<(), String> 
 }
 
 #[wasm_bindgen(js_name = run)]
-pub fn run(ast: &str, plays: usize, callback: &Function) -> Result<(), String> {
+pub fn run(
+    ast: &str,
+    initial_state_path: &str,
+    plays: usize,
+    callback: &Function,
+) -> Result<(), String> {
     console_error_panic_hook::set_once();
     let (game, interner, _) = Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?;
+    let initial_state = game.initial_state_after(&interner, initial_state_path)?;
     let this = JsValue::null();
     let mut rng = thread_rng();
     game.run(
         &mut rng,
         &interner,
+        &initial_state,
         plays,
         &Some(|lines: Vec<_>| {
             let lines = Array::from_iter(lines.into_iter().map(JsValue::from));

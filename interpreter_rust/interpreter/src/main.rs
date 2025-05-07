@@ -25,12 +25,16 @@ enum CliArgs {
         #[command(flatten)]
         game_with_flags: GameWithFlags,
         depth: usize,
+        #[arg(long, default_value_t = String::from("/"))]
+        initial_state_path: String,
     },
     /// Benchmark random playouts
     Run {
         #[command(flatten)]
         game_with_flags: GameWithFlags,
         plays: usize,
+        #[arg(long, default_value_t = String::from("/"))]
+        initial_state_path: String,
     },
     /// Print RG source
     Source {
@@ -116,21 +120,26 @@ fn main() -> Result<(), String> {
         CliArgs::Perf {
             depth,
             game_with_flags,
+            initial_state_path,
         } => {
-            let game = Game::try_from(game_with_flags.load()?)?.0;
+            let (game, interner, _) = Game::try_from(game_with_flags.load()?)?;
+            let initial_state = game.initial_state_after(&interner, &initial_state_path)?;
             for depth in 0..=depth {
-                let (count, time) = game.perf(depth);
+                let (count, time) = game.perf(&initial_state, depth);
                 println!("perf(depth: {depth}) = {count} in {time:.3}ms",);
             }
         }
         CliArgs::Run {
             game_with_flags,
             plays,
+            initial_state_path,
         } => {
             let (game, interner, _) = Game::try_from(game_with_flags.load()?)?;
+            let initial_state = game.initial_state_after(&interner, &initial_state_path)?;
             game.run(
                 &mut thread_rng(),
                 &interner,
+                &initial_state,
                 plays,
                 &Some(|lines: Vec<_>| {
                     println!("{esc}c{}", lines.join("\n"), esc = 27 as char);

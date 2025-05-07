@@ -14,7 +14,22 @@ use web_time::Instant;
 type Id = Arc<str>;
 
 impl Game<RuntimeId> {
-    pub fn apply(&self, interner: &Interner<Id, RuntimeId>, path: &str) -> Result<State, String> {
+    pub fn initial_state(&self) -> State {
+        State {
+            goals: self.initial_goals.clone(),
+            player: self.initial_player.clone(),
+            position: LABEL_BEGIN,
+            tags: Rc::default(),
+            values: self.initial_values.clone(),
+            visible: self.initial_visible.clone(),
+        }
+    }
+
+    pub fn initial_state_after(
+        &self,
+        interner: &Interner<Id, RuntimeId>,
+        path: &str,
+    ) -> Result<State, String> {
         if !path.starts_with('/') || !path.ends_with('/') {
             return Err("Incorrect path format.".to_string());
         }
@@ -51,20 +66,9 @@ impl Game<RuntimeId> {
         Ok(state)
     }
 
-    pub fn initial_state(&self) -> State {
-        State {
-            goals: self.initial_goals.clone(),
-            player: self.initial_player.clone(),
-            position: LABEL_BEGIN,
-            tags: Rc::default(),
-            values: self.initial_values.clone(),
-            visible: self.initial_visible.clone(),
-        }
-    }
-
-    pub fn perf(&self, depth: usize) -> (usize, f32) {
+    pub fn perf(&self, initial_state: &State, depth: usize) -> (usize, f32) {
         let now = Instant::now();
-        let count = self.initial_state().next_states_depth(self, depth).count();
+        let count = initial_state.next_states_depth(self, depth).count();
         (count, now.elapsed().as_micros() as f32 / 1e3)
     }
 
@@ -72,6 +76,7 @@ impl Game<RuntimeId> {
         &self,
         rng: &mut R,
         interner: &Interner<Id, RuntimeId>,
+        initial_state: &State,
         plays: usize,
         callback: &Option<impl Fn(Vec<String>)>,
     ) -> Result<(), String> {
@@ -108,7 +113,7 @@ impl Game<RuntimeId> {
         let mut turns: BTreeMap<usize, usize> = BTreeMap::default();
 
         for play in 1..=plays {
-            let mut state = self.initial_state();
+            let mut state = initial_state.clone();
             let mut turn = 0;
             let now = Instant::now();
             loop {

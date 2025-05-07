@@ -90,24 +90,34 @@ export type Logger = { log: (message: string) => void };
 
 export async function perf(
   gameDeclaration: RgGameDeclaration,
+  initialStatePath: string,
   maxDepth: number,
   logger: Logger,
 ) {
   for (let depth = 0; depth <= maxDepth; ++depth) {
     const ast = JSON.stringify(gameDeclaration);
-    await workerMethod('perf', [ast, depth], (count: number, time: number) => {
-      logger.log(`perf(depth: ${depth}) = ${count} in ${time}ms`);
-    });
+    await workerMethod(
+      'perf',
+      [ast, initialStatePath, depth],
+      (count: number, time: number) => {
+        logger.log(`perf(depth: ${depth}) = ${count} in ${time}ms`);
+      },
+    );
   }
 }
 
 export async function run(
   gameDeclaration: RgGameDeclaration,
+  initialStatePath: string,
   plays: number,
   logger: Logger,
 ) {
   const ast = JSON.stringify(gameDeclaration);
-  await workerMethod('run', [ast, plays], (lines: string[]) => {
-    lines.forEach(logger.log);
-  });
+  await workerMethod(
+    'run',
+    [ast, initialStatePath, plays],
+    (lines: string[]) => {
+      lines.forEach(logger.log);
+    },
+  );
 }

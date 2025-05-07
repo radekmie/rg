@@ -10,8 +10,15 @@ import {
   Label,
   NumericInput,
 } from '@blueprintjs/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { usePromise } from 'ui/hooks/usePromise';
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { AsyncState, usePromise } from 'ui/hooks/usePromise';
 
 import { RgGameDeclaration } from '../../parse';
 import { localeCompare, prettyError, random } from '../../utils';
@@ -19,15 +26,20 @@ import * as wasm from '../../wasm';
 import { useNumericState } from '../hooks/useNumericState';
 import * as styles from '../index.module.css';
 
+type InitialState = AsyncState<Awaited<ReturnType<typeof wasm.apply>>, unknown>;
+
 type BenchBlockProps = {
   action: (
     gameDeclaration: RgGameDeclaration,
+    initialStatePath: string,
     value: number,
     logger: wasm.Logger,
   ) => Promise<void>;
   actionText: string;
   gameDeclaration: RgGameDeclaration;
   id?: string;
+  initialState: InitialState;
+  initialStatePath: string;
   initialValue: number;
   label: string;
   labelInfo?: string;
@@ -41,6 +53,8 @@ function BenchBlock({
   actionText,
   gameDeclaration,
   id,
+  initialState,
+  initialStatePath,
   initialValue,
   label,
   labelInfo,
@@ -62,12 +76,26 @@ function BenchBlock({
   );
 
   const [result, setResult] = useState<Intent>(Intent.NONE);
+  const disabled =
+    result === Intent.PRIMARY ||
+    initialState.loading ||
+    !initialState.value?.moves.length;
+
   const onAction = useCallback(() => {
+    if (disabled) {
+      return;
+    }
+
     async function run() {
       setLogs([]);
       setResult(Intent.PRIMARY);
       try {
-        await action(gameDeclaration, inputState.valueAsNumber, logger);
+        await action(
+          gameDeclaration,
+          initialStatePath,
+          inputState.valueAsNumber,
+          logger,
+        );
         setResult(Intent.SUCCESS);
       } catch (error) {
         setResult(Intent.DANGER);
@@ -77,21 +105,24 @@ function BenchBlock({
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises -- Run it in background.
     run();
-  }, [action, gameDeclaration, inputState.valueAsNumber, logger]);
+  }, [
+    action,
+    disabled,
+    gameDeclaration,
+    initialStatePath,
+    inputState.valueAsNumber,
+    logger,
+  ]);
 
   return (
     <Card className={styles.block} compact elevation={Elevation.TWO}>
       <FormGroup label={label} labelFor={id} labelInfo={labelInfo}>
         <ControlGroup>
-          <Button
-            disabled={result === Intent.PRIMARY}
-            intent={result}
-            onClick={onAction}
-          >
+          <Button disabled={disabled} intent={result} onClick={onAction}>
             {actionText}
           </Button>
           <NumericInput
-            disabled={result === Intent.PRIMARY}
+            disabled={disabled}
             fill
             id={id}
             max={max}
@@ -108,30 +139,30 @@ function BenchBlock({
 }
 
 export type PlayBlockProps = {
-  gameDeclaration: RgGameDeclaration;
+  initialState: InitialState;
+  initialStatePath: string;
+  setInitialStatePath: Dispatch<SetStateAction<string>>;
 };
 
-function PlayBlock({ gameDeclaration }: PlayBlockProps) {
-  const [path, setPath] = useState('/');
-  useEffect(() => setPath('/'), [gameDeclaration]);
-
-  const result = usePromise(
-    () => wasm.apply(gameDeclaration, path),
-    [gameDeclaration, path],
-  );
-
+function PlayBlock({
+  initialState,
+  initialStatePath,
+  setInitialStatePath,
+}: PlayBlockProps) {
   const [isAuto, setIsAuto] = useState(false);
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (isAuto && result.value?.moves.length) {
-        setPath(path => `${path}${random(result.value.moves)}/`);
+      if (isAuto && initialState.value?.moves.length) {
+        setInitialStatePath(
+          path => `${path}${random(initialState.value.moves)}/`,
+        );
       } else {
         setIsAuto(false);
       }
     });
 
     return () => clearTimeout(timeout);
-  }, [isAuto, result.value]);
+  }, [isAuto, initialState.value, setInitialStatePath]);
 
   return (
     <Card className={styles.block} compact elevation={Elevation.TWO}>
@@ -143,33 +174,39 @@ function PlayBlock({ gameDeclaration }: PlayBlockProps) {
         <ControlGroup>
           <Button
             icon="double-chevron-left"
-            disabled={isAuto || path === '/'}
-            onClick={() => setPath('/')}
+            disabled={isAuto || initialStatePath === '/'}
+            onClick={() => setInitialStatePath('/')}
           />
           <Button
             icon="chevron-left"
-            disabled={isAuto || path === '/'}
+            disabled={isAuto || initialStatePath === '/'}
             onClick={() =>
-              setPath(path => `${path.split('/').slice(0, -2).join('/')}/`)
+              setInitialStatePath(
+                path => `${path.split('/').slice(0, -2).join('/')}/`,
+              )
             }
           />
           <InputGroup
             disabled={isAuto}
             fill
             id="path"
-            onValueChange={setPath}
-            value={path}
+            onValueChange={setInitialStatePath}
+            value={initialStatePath}
           />
           <HTMLSelect
-            disabled={isAuto || result.loading || !result.value?.moves.length}
+            disabled={
+              isAuto ||
+              initialState.loading ||
+              !initialState.value?.moves.length
+            }
             iconName="caret-down"
             id="move"
             onChange={({ currentTarget: { value } }) =>
-              setPath(path => `${path}${value}/`)
+              setInitialStatePath(path => `${path}${value}/`)
             }
             options={[
               { disabled: true, label: 'Move', value: '(default)' },
-              ...(result.value?.moves.sort(localeCompare) ?? []),
+              ...(initialState.value?.moves.sort(localeCompare) ?? []),
             ]}
             value="(default)"
           />
@@ -178,16 +215,22 @@ function PlayBlock({ gameDeclaration }: PlayBlockProps) {
             intent={
               isAuto
                 ? Intent.PRIMARY
-                : result.error
+                : initialState.error
                   ? Intent.DANGER
-                  : result.value?.isFinal
+                  : initialState.value?.isFinal
                     ? Intent.SUCCESS
                     : undefined
             }
-            disabled={isAuto || result.loading || !result.value?.moves.length}
+            disabled={
+              isAuto ||
+              initialState.loading ||
+              !initialState.value?.moves.length
+            }
             onClick={() =>
-              result.value?.moves.length &&
-              setPath(path => `${path}${random(result.value.moves)}/`)
+              initialState.value?.moves.length &&
+              setInitialStatePath(
+                path => `${path}${random(initialState.value.moves)}/`,
+              )
             }
           />
           <Button
@@ -195,41 +238,58 @@ function PlayBlock({ gameDeclaration }: PlayBlockProps) {
             intent={
               isAuto
                 ? Intent.PRIMARY
-                : result.error
+                : initialState.error
                   ? Intent.DANGER
-                  : result.value?.isFinal
+                  : initialState.value?.isFinal
                     ? Intent.SUCCESS
                     : undefined
             }
-            disabled={isAuto || result.loading || !result.value?.moves.length}
+            disabled={
+              isAuto ||
+              initialState.loading ||
+              !initialState.value?.moves.length
+            }
             onClick={() => setIsAuto(true)}
           />
         </ControlGroup>
       </FormGroup>
       <pre>
-        {result.error ? prettyError(result.error) : result.value?.state}
+        {initialState.error
+          ? prettyError(initialState.error)
+          : initialState.value?.state}
       </pre>
     </Card>
   );
 }
 
-export type BenchProps = {
-  gameDeclaration: RgGameDeclaration;
-  stats: string;
-};
-
+export type BenchProps = { gameDeclaration: RgGameDeclaration; stats: string };
 export function Bench({ gameDeclaration, stats }: BenchProps) {
+  const [path, setPath] = useState('/');
+  const initialState = usePromise(
+    () => wasm.apply(gameDeclaration, path),
+    [gameDeclaration, path],
+  );
+
+  useEffect(() => setPath('/'), [gameDeclaration]);
+
   return (
     <section className={styles.wrapScroll}>
       <Card className={styles.block} compact elevation={Elevation.TWO}>
         <Label>Statistics</Label>
         <pre>{stats}</pre>
       </Card>
+      <PlayBlock
+        initialState={initialState}
+        initialStatePath={path}
+        setInitialStatePath={setPath}
+      />
       <BenchBlock
         action={wasm.run}
         actionText="Run"
         gameDeclaration={gameDeclaration}
         id="iterations"
+        initialState={initialState}
+        initialStatePath={path}
         initialValue={100}
         label="Iterations"
         labelInfo="(number of random games to play)"
@@ -242,6 +302,8 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
         actionText="Bench"
         gameDeclaration={gameDeclaration}
         id="depth"
+        initialState={initialState}
+        initialStatePath={path}
         initialValue={3}
         label="Maximum depth"
         labelInfo="(game tree depth to calculate)"
@@ -249,7 +311,6 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
         max={10}
         min={0}
       />
-      <PlayBlock gameDeclaration={gameDeclaration} />
     </section>
   );
 }
