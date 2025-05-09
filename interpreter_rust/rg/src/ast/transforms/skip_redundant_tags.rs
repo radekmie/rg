@@ -15,7 +15,8 @@ impl Game<Id> {
             .iter()
             .all(|edge| !edge.label.has_variable(&visible))
         {
-            while let Some(indexes) = self.find_redundant_tags() {
+            let artificial_tags = self.artificial_tags();
+            while let Some(indexes) = self.find_redundant_tags(&artificial_tags) {
                 for index in indexes {
                     Arc::make_mut(&mut self.edges[index]).skip();
                 }
@@ -25,17 +26,20 @@ impl Game<Id> {
         Ok(())
     }
 
-    fn find_redundant_tags(&self) -> Option<Vec<usize>> {
+    fn find_redundant_tags(&self, artificial_tags: &BTreeSet<Id>) -> Option<Vec<usize>> {
         let next_edges = self.next_edges();
         let prev_edges = self.prev_edges();
         let mut indexes: Option<Vec<_>> = None;
         for (index, edge) in self.edges.iter().enumerate() {
             let is_tag = edge.label.is_tag();
             if is_tag || edge.label.is_tag_variable() {
-                let prevs_nexts: Vec<_> = find_prevs(&edge.lhs, &prev_edges, is_tag)
-                    .into_iter()
-                    .flat_map(|(prev, _)| find_nexts(&prev.rhs, &next_edges, is_tag))
-                    .collect();
+                let prevs_nexts: Vec<_> =
+                    find_prevs(artificial_tags, is_tag, &prev_edges, &edge.lhs)
+                        .into_iter()
+                        .flat_map(|(prev, _)| {
+                            find_nexts(artificial_tags, is_tag, &next_edges, &prev.rhs)
+                        })
+                        .collect();
 
                 // If all successors of all predecessors match this tag...
                 if prevs_nexts.iter().all(|x| is_tag_matching(edge, x)) {
@@ -65,9 +69,10 @@ impl Game<Id> {
 }
 
 fn find_prevs(
-    node: &Node<Id>,
-    prev_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
+    artificial_tags: &BTreeSet<Id>,
     ignore_tag_variables: bool,
+    prev_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
+    node: &Node<Id>,
 ) -> Vec<EdgeAndPath<Id>> {
     let mut seen = BTreeSet::new();
     let mut queue = vec![(node, vec![])];
@@ -75,10 +80,7 @@ fn find_prevs(
     while let Some((rhs, path)) = queue.pop() {
         if let Some(edges) = prev_edges.get(&rhs) {
             for edge in edges {
-                if edge.label.is_player_assignment()
-                    || edge.label.is_tag()
-                    || !ignore_tag_variables && edge.label.is_tag_variable()
-                {
+                if is_break(artificial_tags, ignore_tag_variables, edge) {
                     prevs.push(((*edge).clone(), path.clone()));
                 } else if seen.insert(&edge.lhs) {
                     let mut path = path.clone();
@@ -93,9 +95,10 @@ fn find_prevs(
 }
 
 fn find_nexts(
-    node: &Node<Id>,
-    next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
+    artificial_tags: &BTreeSet<Id>,
     ignore_tag_variables: bool,
+    next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
+    node: &Node<Id>,
 ) -> Vec<EdgeAndPath<Id>> {
     let mut seen = BTreeSet::new();
     let mut queue = vec![(node, vec![])];
@@ -103,10 +106,7 @@ fn find_nexts(
     while let Some((lhs, path)) = queue.pop() {
         if let Some(edges) = next_edges.get(&lhs) {
             for edge in edges {
-                if edge.label.is_player_assignment()
-                    || edge.label.is_tag()
-                    || !ignore_tag_variables && edge.label.is_tag_variable()
-                {
+                if is_break(artificial_tags, ignore_tag_variables, edge) {
                     nexts.push(((*edge).clone(), path.clone()));
                 } else if seen.insert(&edge.rhs) {
                     let mut path = path.clone();
@@ -118,6 +118,19 @@ fn find_nexts(
     }
 
     nexts
+}
+
+fn is_break(
+    artificial_tags: &BTreeSet<Id>,
+    ignore_tag_variables: bool,
+    edge: &Arc<Edge<Id>>,
+) -> bool {
+    edge.label.is_player_assignment()
+        || edge.label.is_tag_and(|tag| !artificial_tags.contains(tag))
+        || !ignore_tag_variables
+            && edge
+                .label
+                .is_tag_variable_and(|tag| !artificial_tags.contains(tag))
 }
 
 fn is_disjoint(xs: &[Arc<Edge<Id>>], ys: &[Arc<Edge<Id>>]) -> bool {
@@ -414,6 +427,30 @@ mod test {
                     92, 90: ;
                     90, 95: ;
                     95, 181: ;
+        "
+    );
+
+    test_transform!(
+        skip_redundant_tags,
+        breakthrough_hrg_with_artificial_tags,
+        "
+            @artificialTag _F _L _R;
+            rules_1, move_1: player = me;
+            move_1, move_2: pos = Position(*);
+            move_2, move_3: board[pos] == piece[me];
+            move_3, move_4: board[pos] = empty;
+            move_4, move_5: $$ pos;
+            move_5, move_7: pos = directionF[me][pos];
+            move_7, move_8: $ _F;
+            move_8, move_6: board[pos] == empty;
+            move_5, move_11: pos = directionFL[me][pos];
+            move_11, move_10: $ _L;
+            move_5, move_13: pos = directionFR[me][pos];
+            move_13, move_10: $ _R;
+            move_10, move_6: board[pos] == empty;
+            move_10, move_6: board[pos] == __gen_piece_opponent[me];
+            move_6, move_16: $$ pos;
+            move_16, move_17: player = keeper;
         "
     );
 }

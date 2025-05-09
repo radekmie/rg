@@ -1,23 +1,10 @@
 use crate::ast::analyses::ReachableNodes;
-use crate::ast::{Error, Game, Pragma};
-use std::collections::BTreeSet;
+use crate::ast::{Error, Game};
 use std::sync::Arc;
 
 impl Game<Arc<str>> {
     pub fn skip_unused_tags(&mut self) -> Result<(), Error<Arc<str>>> {
-        let artificial_tags: BTreeSet<_> = self
-            .pragmas
-            .iter()
-            .filter_map(|pragma| {
-                if let Pragma::ArtificialTag { tags, .. } = pragma {
-                    Some(tags)
-                } else {
-                    None
-                }
-            })
-            .flatten()
-            .collect();
-
+        let artificial_tags = self.artificial_tags();
         let reachable_nodes = self.analyse::<ReachableNodes>(false);
         for edge in &mut self.edges {
             if (edge.label.is_tag_and(|tag| !artificial_tags.contains(tag))

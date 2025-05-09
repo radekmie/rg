@@ -186,6 +186,10 @@ impl<Id> Label<Id> {
         matches!(self, Self::TagVariable { .. })
     }
 
+    pub fn is_tag_variable_and(&self, fn_: impl FnOnce(&Id) -> bool) -> bool {
+        matches!(self, Self::TagVariable { identifier } if fn_(identifier))
+    }
+
     pub fn negate(&mut self) {
         match self {
             Self::Comparison { negated, .. } => *negated = !*negated,
@@ -778,6 +782,21 @@ impl<Id: Display> Game<Id> {
 }
 
 impl<'a, Id: Clone + Ord + 'a> Game<Id> {
+    pub fn artificial_tags(&self) -> BTreeSet<Id> {
+        self.pragmas
+            .iter()
+            .filter_map(|pragma| {
+                if let Pragma::ArtificialTag { tags, .. } = pragma {
+                    Some(tags)
+                } else {
+                    None
+                }
+            })
+            .flatten()
+            .cloned()
+            .collect()
+    }
+
     pub fn create_mappings(
         &self,
         bindings: impl Iterator<Item = Binding<'a, Id>>,
