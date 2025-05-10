@@ -1029,13 +1029,14 @@ fn translate_automaton_statements(
                 current_node = loop_end;
             }
             hrg::Statement::Repeat { count, body } => {
+                let repeat_end = context.random_node(prefix);
                 for _ in 0..*count {
                     let local_node = context.random_node(prefix);
                     translate_automaton_statements(
                         context,
                         body,
-                        break_node,
-                        continue_node,
+                        Some(&repeat_end),
+                        Some(&local_node),
                         end_node,
                         current_node.clone(),
                         Some(&local_node),
@@ -1045,6 +1046,8 @@ fn translate_automaton_statements(
                     )?;
                     current_node = local_node;
                 }
+                context.connect(current_node, repeat_end.clone(), rg::Label::new_skip());
+                current_node = repeat_end;
             }
             hrg::Statement::Tag { symbol } => {
                 // By convention, all tags starting with `_` are artificial.
@@ -1943,6 +1946,76 @@ mod test {
             rules_4, rules_3: ;
             rules_3, rules_1: ;
             rules_2, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        repeat_break,
+        "
+            graph rules() {
+              repeat 3 {
+                check(0 == 0)
+                if 1 == 1 {
+                  break()
+                }
+              }
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_3: 0 == 0;
+            rules_3, rules_4: 1 == 1;
+            rules_3, rules_5: 1 != 1;
+            rules_4, rules_1: ;
+            rules_5, rules_2: ;
+            rules_2, rules_7: 0 == 0;
+            rules_7, rules_8: 1 == 1;
+            rules_7, rules_9: 1 != 1;
+            rules_8, rules_1: ;
+            rules_9, rules_6: ;
+            rules_6, rules_11: 0 == 0;
+            rules_11, rules_12: 1 == 1;
+            rules_11, rules_13: 1 != 1;
+            rules_12, rules_1: ;
+            rules_13, rules_10: ;
+            rules_10, rules_1: ;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        repeat_continue,
+        "
+            graph rules() {
+              repeat 3 {
+                if 1 == 1 {
+                  continue()
+                }
+                check(0 == 0)
+              }
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_3: 1 == 1;
+            rules_begin, rules_4: 1 != 1;
+            rules_3, rules_2: ;
+            rules_4, rules_5: 0 == 0;
+            rules_5, rules_2: ;
+            rules_2, rules_7: 1 == 1;
+            rules_2, rules_8: 1 != 1;
+            rules_7, rules_6: ;
+            rules_8, rules_9: 0 == 0;
+            rules_9, rules_6: ;
+            rules_6, rules_11: 1 == 1;
+            rules_6, rules_12: 1 != 1;
+            rules_11, rules_10: ;
+            rules_12, rules_13: 0 == 0;
+            rules_13, rules_10: ;
+            rules_10, rules_1: ;
+            rules_1, rules_end: ;
             rules_end, end: ;
         "
     );
