@@ -1261,6 +1261,15 @@ fn translate_condition(
             };
 
             match identifier.as_ref() {
+                "false" => {
+                    if let Some(else_node) = else_node {
+                        context.connect(
+                            entry_node.clone(),
+                            else_node.clone(),
+                            rg::Label::new_skip(),
+                        );
+                    }
+                }
                 "not" => {
                     check_arguments_length(identifier.clone(), 1, args.len())?;
                     translate_condition(
@@ -1386,6 +1395,15 @@ fn translate_condition(
                                 rhs: automaton_end_node,
                                 negated: true,
                             },
+                        );
+                    }
+                }
+                "true" => {
+                    if let Some(then_node) = then_node {
+                        context.connect(
+                            entry_node.clone(),
+                            then_node.clone(),
+                            rg::Label::new_skip(),
                         );
                     }
                 }
@@ -1760,6 +1778,35 @@ mod test {
             }
         };
     }
+
+    test_translation!(
+        condition_false,
+        "
+            graph rules() {
+                check(false())
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        condition_true,
+        "
+            graph rules() {
+                check(true())
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_1: ;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
 
     test_translation!(
         condition_and,
