@@ -680,6 +680,33 @@ fn translate_automaton_statements(
                 }
                 current_node = local_node;
             }
+            hrg::Statement::BranchVar {
+                identifier,
+                type_,
+                body,
+            } => {
+                let local_node = context.random_node(prefix);
+                for value in translate_type(type_).values(&context.rg).unwrap() {
+                    let mut body = body.clone();
+                    for statement in &mut body {
+                        statement.substitute_var(identifier, &value)?;
+                    }
+
+                    translate_automaton_statements(
+                        context,
+                        &body,
+                        break_node,
+                        continue_node,
+                        end_node,
+                        current_node.clone(),
+                        Some(&local_node),
+                        prefix,
+                        return_node,
+                        automaton_function,
+                    )?;
+                }
+                current_node = local_node;
+            }
             hrg::Statement::Call { identifier, args } => match identifier.as_ref() {
                 "break" => {
                     check_arguments_length(identifier.clone(), 0, args.len())?;
@@ -2062,6 +2089,62 @@ mod test {
             rules_12, rules_13: 0 == 0;
             rules_13, rules_10: ;
             rules_10, rules_1: ;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        branch_var,
+        "
+            domain T = a | b | c
+            graph rules() {
+              branch x in T {
+                check(x != c)
+                if x == a {
+                    branch y in T {
+                        check(x == y)
+                    }
+                }
+              }
+            }
+        ",
+        "
+            type T = { a, b, c };
+            begin, rules_begin: ;
+            rules_begin, rules_2: a != c;
+            rules_2, rules_3: a == a;
+            rules_2, rules_4: a != a;
+            rules_3, rules_6: a == a;
+            rules_6, rules_5: ;
+            rules_3, rules_7: a == b;
+            rules_7, rules_5: ;
+            rules_3, rules_8: a == c;
+            rules_8, rules_5: ;
+            rules_5, rules_4: ;
+            rules_4, rules_1: ;
+            rules_begin, rules_9: b != c;
+            rules_9, rules_10: b == a;
+            rules_9, rules_11: b != a;
+            rules_10, rules_13: b == a;
+            rules_13, rules_12: ;
+            rules_10, rules_14: b == b;
+            rules_14, rules_12: ;
+            rules_10, rules_15: b == c;
+            rules_15, rules_12: ;
+            rules_12, rules_11: ;
+            rules_11, rules_1: ;
+            rules_begin, rules_16: c != c;
+            rules_16, rules_17: c == a;
+            rules_16, rules_18: c != a;
+            rules_17, rules_20: c == a;
+            rules_20, rules_19: ;
+            rules_17, rules_21: c == b;
+            rules_21, rules_19: ;
+            rules_17, rules_22: c == c;
+            rules_22, rules_19: ;
+            rules_19, rules_18: ;
+            rules_18, rules_1: ;
             rules_1, rules_end: ;
             rules_end, end: ;
         "

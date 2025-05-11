@@ -69,6 +69,17 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
                 }
             }
         }
+        Statement::BranchVar {
+            identifier,
+            type_,
+            body,
+        } => {
+            table.add_occ(identifier);
+            add_from_type(table, type_);
+            for statement in body {
+                add_from_statement(table, statement);
+            }
+        }
         Statement::Call { identifier, args } => {
             table.add_occ(identifier);
             for arg in args {

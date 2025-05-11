@@ -66,6 +66,12 @@ impl<Id: Display> Display for DomainValue<Id> {
 impl<Id: Display> Display for Error<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
+            Self::CannotSubstitute {
+                identifier,
+                context,
+            } => {
+                write!(f, "Cannot substitute \"{identifier}\" in {context}.")
+            }
             Self::DuplicatedDomainValue { identifier } => {
                 write!(f, "Duplicated domain value \"{identifier}\".")
             }
@@ -384,6 +390,15 @@ fn write_statement<Id: Display>(
                     write_statements(f, arm, indent + 2)?;
                 }
             }
+            write_rbrace(f, indent)
+        }
+        Statement::BranchVar {
+            identifier,
+            type_,
+            body,
+        } => {
+            writeln!(f, "branch {identifier} in {type_} {{")?;
+            write_statements(f, body, indent + 2)?;
             write_rbrace(f, indent)
         }
         Statement::Call { identifier, args } => {

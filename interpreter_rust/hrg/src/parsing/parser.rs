@@ -58,6 +58,24 @@ fn branch(input: Input) -> Result<Statement<Identifier>> {
     )(input)
 }
 
+fn branch_var(input: Input) -> Result<Statement<Identifier>> {
+    preceded(
+        ww_tag("branch"),
+        map(
+            tuple((
+                ww(identifier),
+                preceded(ww_tag("in"), type_),
+                in_braces(many0(statement)),
+            )),
+            |(identifier, type_, body)| Statement::BranchVar {
+                identifier,
+                type_,
+                body,
+            },
+        ),
+    )(input)
+}
+
 fn call(input: Input) -> Result<Statement<Identifier>> {
     into(pair(identifier, in_parens(comma_separated0(expression))))(input)
 }
@@ -118,6 +136,7 @@ fn tag_variable_statement(input: Input) -> Result<Statement<Identifier>> {
 fn statement(input: Input) -> Result<Statement<Identifier>> {
     ww(alt((
         assignment,
+        branch_var,
         branch,
         call,
         if_,

@@ -32,6 +32,15 @@ impl Symbols {
                 arm.iter()
                     .for_each(|statement| self.add_from_statement(statement));
             }),
+            Statement::BranchVar {
+                identifier, body, ..
+            } => {
+                if let Some(symbol) = untyped(identifier, Flag::Type) {
+                    self.symbols.push(symbol);
+                }
+                body.iter()
+                    .for_each(|statement| self.add_from_statement(statement));
+            }
             Statement::Call { args, .. } => {
                 args.iter().for_each(|arg| self.add_from_expression(arg));
             }

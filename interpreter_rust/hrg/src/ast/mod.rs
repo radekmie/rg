@@ -20,6 +20,11 @@ pub enum Statement<Id> {
     Branch {
         arms: Vec<Vec<Statement<Id>>>,
     },
+    BranchVar {
+        identifier: Id,
+        type_: Arc<Type<Id>>,
+        body: Vec<Statement<Id>>,
+    },
     Call {
         identifier: Id,
         args: Vec<Arc<Expression<Id>>>,
@@ -46,6 +51,108 @@ pub enum Statement<Id> {
         expression: Arc<Expression<Id>>,
         body: Vec<Statement<Id>>,
     },
+}
+
+impl<Id: Clone + PartialEq> Statement<Id> {
+    pub fn substitute_var(&mut self, var: &Id, value: &Id) -> Result<(), Error<Id>> {
+        match self {
+            Self::Assignment { identifier, .. } if identifier == var => {
+                return Err(Error::CannotSubstitute {
+                    identifier: var.clone(),
+                    context: "assigned variable",
+                })
+            }
+            Self::Assignment {
+                accessors,
+                expression,
+                ..
+            } => {
+                for accessor in accessors {
+                    Arc::make_mut(accessor).substitute_var(var, value)?;
+                }
+                Arc::make_mut(expression).substitute_var(var, value)?;
+            }
+            Self::AssignmentAny { identifier, .. } if identifier == var => {
+                return Err(Error::CannotSubstitute {
+                    identifier: var.clone(),
+                    context: "assigned variable",
+                })
+            }
+            Self::AssignmentAny { accessors, .. } => {
+                for accessor in accessors {
+                    Arc::make_mut(accessor).substitute_var(var, value)?;
+                }
+            }
+            Self::Branch { arms } => {
+                for arm in arms {
+                    for statement in arm {
+                        statement.substitute_var(var, value)?;
+                    }
+                }
+            }
+            Self::BranchVar {
+                identifier, body, ..
+            } if identifier != var => {
+                for statement in body {
+                    statement.substitute_var(var, value)?;
+                }
+            }
+            Self::Call { identifier, .. } if identifier == var => {
+                return Err(Error::CannotSubstitute {
+                    identifier: var.clone(),
+                    context: "function name",
+                })
+            }
+            Self::Call { args, .. } => {
+                for arg in args {
+                    Arc::make_mut(arg).substitute_var(var, value)?;
+                }
+            }
+            Self::If {
+                expression,
+                then,
+                else_,
+            } => {
+                Arc::make_mut(expression).substitute_var(var, value)?;
+                for statement in then {
+                    statement.substitute_var(var, value)?;
+                }
+                if let Some(else_) = else_ {
+                    for statement in else_ {
+                        statement.substitute_var(var, value)?;
+                    }
+                }
+            }
+            Self::Loop { body } => {
+                for statement in body {
+                    statement.substitute_var(var, value)?;
+                }
+            }
+            Self::Repeat { body, .. } => {
+                for statement in body {
+                    statement.substitute_var(var, value)?;
+                }
+            }
+            Self::Tag { symbol } if symbol == var => {
+                *symbol = value.clone();
+            }
+            Self::TagVariable { identifier } if identifier == var => {
+                return Err(Error::CannotSubstitute {
+                    identifier: var.clone(),
+                    context: "tag variable",
+                })
+            }
+            Self::While { expression, body } => {
+                Arc::make_mut(expression).substitute_var(var, value)?;
+                for statement in body {
+                    statement.substitute_var(var, value)?;
+                }
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
@@ -141,6 +248,10 @@ impl<Id> DomainValue<Id> {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum Error<Id> {
+    CannotSubstitute {
+        identifier: Id,
+        context: &'static str,
+    },
     DuplicatedDomainValue {
         identifier: Id,
     },
@@ -245,6 +356,45 @@ pub enum Expression<Id> {
         default_value: Option<Arc<Expression<Id>>>,
         parts: Vec<ExpressionMapPart<Id>>,
     },
+}
+
+impl<Id: Clone + PartialEq> Expression<Id> {
+    pub fn substitute_var(&mut self, var: &Id, value: &Id) -> Result<(), Error<Id>> {
+        match self {
+            Self::Access { lhs, rhs } => {
+                Arc::make_mut(lhs).substitute_var(var, value)?;
+                Arc::make_mut(rhs).substitute_var(var, value)?;
+            }
+            Self::BinExpr { lhs, rhs, .. } => {
+                Arc::make_mut(lhs).substitute_var(var, value)?;
+                Arc::make_mut(rhs).substitute_var(var, value)?;
+            }
+            Self::Constructor { identifier, .. } if identifier == var => {
+                panic!("Cannot substitute constructor")
+            }
+            Self::Constructor { args, .. } => {
+                for arg in args {
+                    Arc::make_mut(arg).substitute_var(var, value)?;
+                }
+            }
+            Self::If { cond, then, else_ } => {
+                Arc::make_mut(cond).substitute_var(var, value)?;
+                Arc::make_mut(then).substitute_var(var, value)?;
+                Arc::make_mut(else_).substitute_var(var, value)?;
+            }
+            Self::Literal { identifier } if identifier == var => {
+                *identifier = value.clone();
+            }
+            Self::Map { .. } => {
+                return Err(Error::NotImplemented {
+                    message: "Expression::substitute_var",
+                })
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
