@@ -50,6 +50,7 @@ impl<Id> Positioned for Pragma<Id> {
             Self::ArtificialTag { span, .. }
             | Self::Disjoint { span, .. }
             | Self::DisjointExhaustive { span, .. }
+            | Self::Integer { span, .. }
             | Self::Repeat { span, .. }
             | Self::SimpleApply { span, .. }
             | Self::SimpleApplyExhaustive { span, .. }

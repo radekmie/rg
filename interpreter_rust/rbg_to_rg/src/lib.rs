@@ -242,12 +242,13 @@ impl Context {
     }
 
     fn create_math_type(&mut self, limit: usize) -> Arc<rg::Type<Id>> {
-        self.create_type_from_set(
-            Some(Id::from("nan"))
-                .into_iter()
-                .chain((0..limit).map(|index| Id::from(index.to_string())))
-                .collect(),
-        )
+        let numbers = (0..limit).map(|index| Id::from(index.to_string()));
+        self.rg.add_pragma(rg::Pragma::Integer {
+            span: Span::none(),
+            offset: 0,
+            nodes: numbers.clone().map(rg::Node::new).collect(),
+        });
+        self.create_type_from_set([Id::from("nan")].into_iter().chain(numbers).collect())
     }
 
     fn create_type_from_set(&mut self, identifiers: Vec<Id>) -> Arc<rg::Type<Id>> {

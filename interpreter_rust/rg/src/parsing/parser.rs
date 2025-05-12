@@ -333,6 +333,20 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
         ),
         map(
             tuple((
+                tag("integer"),
+                preceded_whitespace(integer),
+                preceded_whitespace(tag(":")),
+                cut(many1(preceded_whitespace(node))),
+                preceded_whitespace(tag(";")),
+            )),
+            |(tag, offset, _, nodes, semicolon)| Pragma::Integer {
+                span: Span::from((&tag, &semicolon)),
+                offset,
+                nodes,
+            },
+        ),
+        map(
+            tuple((
                 tag("repeat"),
                 cut(many1(preceded_whitespace(node))),
                 preceded_whitespace(tag(":")),

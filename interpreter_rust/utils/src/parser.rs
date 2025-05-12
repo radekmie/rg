@@ -11,6 +11,7 @@ use nom::IResult;
 use nom_locate::LocatedSpan;
 use std::cell::RefCell;
 use std::fmt::{Debug, Display};
+use std::str::FromStr;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
@@ -113,7 +114,7 @@ pub fn identifier_(input: Input) -> Result<Input> {
     )(input)
 }
 
-pub fn integer(input: Input) -> Result<usize> {
+pub fn integer<T: FromStr>(input: Input) -> Result<T> {
     map_res(digit1, |digits: Input| digits.parse())(input)
 }
 

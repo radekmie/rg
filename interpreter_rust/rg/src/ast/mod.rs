@@ -1377,6 +1377,13 @@ pub enum Pragma<Id> {
         #[serde(rename = "edgeNames")]
         nodes: Vec<Node<Id>>,
     },
+    Integer {
+        #[serde(skip)]
+        span: Span,
+        offset: isize,
+        #[serde(rename = "edgeNames")]
+        nodes: Vec<Node<Id>>,
+    },
     Repeat {
         #[serde(skip)]
         span: Span,
@@ -1434,7 +1441,8 @@ impl<Id> Pragma<Id> {
             Self::Disjoint { node, nodes, .. } | Self::DisjointExhaustive { node, nodes, .. } => {
                 Box::new(Some(node).into_iter().chain(nodes))
             }
-            Self::Repeat { nodes, .. }
+            Self::Integer { nodes, .. }
+            | Self::Repeat { nodes, .. }
             | Self::TagIndex { nodes, .. }
             | Self::TagMaxIndex { nodes, .. }
             | Self::Unique { nodes, .. } => Box::new(nodes.iter()),
@@ -1460,7 +1468,8 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
                     }
                 }
             }
-            Self::Repeat { nodes, .. }
+            Self::Integer { nodes, .. }
+            | Self::Repeat { nodes, .. }
             | Self::TagIndex { nodes, .. }
             | Self::TagMaxIndex { nodes, .. }
             | Self::Unique { nodes, .. } => {

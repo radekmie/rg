@@ -237,6 +237,11 @@ impl<Id: Display> Display for Pragma<Id> {
                 nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, ";")
             }
+            Self::Integer { offset, nodes, .. } => {
+                write!(f, "@integer {offset} : ")?;
+                write_with_separator(f, nodes, " ")?;
+                write!(f, ";")
+            }
             Self::Repeat {
                 nodes, identifiers, ..
             } => {

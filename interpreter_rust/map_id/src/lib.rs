@@ -12,6 +12,12 @@ impl<OldId, NewId> MapId<Self, OldId, NewId> for bool {
     }
 }
 
+impl<OldId, NewId> MapId<Self, OldId, NewId> for isize {
+    fn map_id(&self, _map: &mut impl FnMut(&OldId) -> NewId) -> Self {
+        *self
+    }
+}
+
 impl<OldId, NewId> MapId<Self, OldId, NewId> for usize {
     fn map_id(&self, _map: &mut impl FnMut(&OldId) -> NewId) -> Self {
         *self
