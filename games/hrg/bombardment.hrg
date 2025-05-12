@@ -1,5 +1,5 @@
 // Bombardment
-// Move form: pos (F + L + R + E)
+// Move form: Position (Position + E)
 
 //  Bombardment Jakub Iliński
 //  MOVE: On each turn, each player must do one of the following actions:
@@ -138,16 +138,17 @@ graph move(me: Player) {
     branch {
       pos = direction(me)(pos)
       check(board[pos] == empty)
-      $ F 
+      $_F 
     } or {
       pos = forwardLeft(me)(pos)
       check(board[pos] == empty)
-      $ L
+      $_L
     } or {
       pos = forwardRight(me)(pos)
       check(board[pos] == empty)
-      $ R
+      $_R
     }
+    $$ pos
     player = keeper
     board[pos] = piece(me)
   } or {

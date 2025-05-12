@@ -1,7 +1,7 @@
 // Fox and geese; turn limit 50 (1+100 half moves)
 // Move form:
-// foxPos, at start
-// pos (U + UU + L + LL + D + DD + UL + ULUL + UR + URUR + DL + DLDL + DR + DRDR)
+// Position (fox position at start),
+// Position Position
 
 
 // Domains
@@ -159,44 +159,45 @@ graph moveGeese(){
   branch{
     check(board[up(pos)] == empty)
     pos = up(pos)
-    $U
+    $_U
   } or {
     check(board[left(pos)] == empty)
     pos = left(pos)
-    $L
+    $_L
   } or {
     check(board[right(pos)] == empty)
     pos = right(pos)
-    $R
+    $_R
   } or {
     check(board[down(pos)] == empty)
     pos = down(pos)
-    $D
+    $_D
   } or {
     check(board[upleft(pos)] == empty)
     pos = upleft(pos)
-    $UL
+    $_UL
   } or {
     check(board[upright(pos)] == empty)
     pos = upright(pos)
-    $UR
+    $_UR
   } or {
     check(board[downleft(pos)] == empty)
     pos = downleft(pos)
-    $DL
+    $_DL
   } or {
     check(board[downright(pos)] == empty)
     pos = downright(pos)
-    $DR
+    $_DR
   }
+  $$ pos
 }
   
 
 graph turnGeese(){
   player = geese
   moveGeese()
-  board[pos] = geesepawn
   player = keeper
+  board[pos] = geesepawn
   
   if not(reachable(moveFox())) {
     goals[geese] = 100
@@ -213,76 +214,77 @@ graph moveFox(){
   branch{
     check(board[up(pos)] == empty)
     pos = up(pos)
-    $U
+    $_U
   } or {
     check(board[up(pos)] == geesepawn && board[up(up(pos))] == empty)
     pos = up(up(pos))
     board[down(pos)] = empty
-    $UU
+    $_UU
   } or{
     check(board[left(pos)] == empty)
     pos = left(pos)
-    $L
+    $_L
   } or {
     check(board[left(pos)] == geesepawn && board[left(left(pos))] == empty)
     pos = left(left(pos))
     board[right(pos)] = empty
-    $LL
+    $_LL
   } or {
     check(board[right(pos)] == empty)
     pos = right(pos)
-    $R
+    $_R
   } or {
     check(board[right(pos)] == geesepawn && board[right(right(pos))] == empty)
     pos = right(right(pos))
     board[left(pos)] = empty
-    $RR
+    $_RR
   } or {
     check(board[down(pos)] == empty)
     pos = down(pos)
-    $D
+    $_D
   } or {
     check(board[down(pos)] == geesepawn && board[down(down(pos))] == empty)
     pos = down(down(pos))
     board[up(pos)] = empty
-    $DD
+    $_DD
   } or {
     check(board[upleft(pos)] == empty)
     pos = upleft(pos)
-    $UL
+    $_UL
   } or {
     check(board[upleft(pos)] == geesepawn && board[upleft(upleft(pos))] == empty)
     pos = upleft(upleft(pos))
     board[downright(pos)] = empty
-    $ ULUL
+    $_ULUL
   } or {
     check(board[upright(pos)] == empty)
     pos = upright(pos)
-    $UR
+    $_UR
   } or {
     check(board[upright(pos)] == geesepawn && board[upright(upright(pos))] == empty)
     pos = upright(upright(pos))
     board[downleft(pos)] = empty
-    $URUR
+    $_URUR
   } or{
     check(board[downleft(pos)] == empty)
     pos = downleft(pos)
-    $DL
+    $_DL
   } or{
     check(board[downleft(pos)] == geesepawn && board[downleft(downleft(pos))] == empty)
     pos = downleft(downleft(pos))
     board[upright(pos)] = empty
-    $DLDL
+    $_DLDL
   } or {
     check(board[downright(pos)] == empty)
     pos = downright(pos)
-    $DR
+    $_DR
   } or {
     check(board[downright(pos)] == geesepawn && board[downright(downright(pos))] == empty)
     pos = downright(downright(pos))
     board[upleft(pos)] = empty
-    $DRDR
+    $_DRDR
   }
+  $$ pos
 }
 
 graph turnFox(){

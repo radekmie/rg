@@ -1,5 +1,5 @@
 // Breakthrough 8x8
-// Moves form: Position (F + L + R)
+// Moves form: Position Position
 
 // Domains
 domain Piece = blackpawn | empty | whitepawn | border
@@ -78,19 +78,20 @@ graph move() {
   board[pos] = empty
   $$ pos
   branch {
-    $ F
     pos = directionF(me)(pos)
+    $_F
     check(board[pos] == empty)
   } or {
     branch {
-      $ L
       pos = directionFL(me)(pos)
+      $_L
     } or {
-      $ R
       pos = directionFR(me)(pos)
+      $_R
     }
     check(board[pos] == empty || board[pos] == piece[opponent(me)])
   }
+  $$ pos
   player = keeper
   board[pos] = piece(me)
 }

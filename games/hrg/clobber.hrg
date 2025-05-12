@@ -1,5 +1,5 @@
 // Clobber
-// Move form: Position (U + D + L + R)
+// Move form: Position Position
 
 domain Player = black | white
 domain Piece = empty | blackPawn | whitePawn
@@ -66,20 +66,21 @@ graph move(me: Player) {
   branch {
     pos = up(pos)
     check(board[pos] == piece(opponent(me)))
-    $ U
+    $_U
   } or {
     pos = left(pos)
     check(board[pos] == piece(opponent(me)))
-    $ L
+    $_L
   } or {
     pos = right(pos)
     check(board[pos] == piece(opponent(me)))
-    $ R
+    $_R
   } or {
     pos = down(pos)
     check(board[pos] == piece(opponent(me)))
-    $ D
+    $_D
   }
+  $$ pos
 }
 
 graph turn() {
