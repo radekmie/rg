@@ -78,7 +78,7 @@ impl<Id: Display> Edge<Id> {
         let Self {
             label, lhs, rhs, ..
         } = self;
-        format!("  \"{lhs}\" -> \"{rhs}\" [label=\"{label}\"];")
+        format!("  \"{lhs}\" -> \"{rhs}\"{};", label.to_graphviz())
     }
 }
 
@@ -243,6 +243,15 @@ impl<Id: Clone + PartialEq> Label<Id> {
                 Self::Assignment { lhs, rhs }
             }
             _ => self.substitute_variable(id, expression),
+        }
+    }
+}
+
+impl<Id: Display> Label<Id> {
+    pub fn to_graphviz(&self) -> String {
+        match self {
+            Self::Skip { .. } => String::new(),
+            _ => format!(" [label=\"{self}\"]"),
         }
     }
 }
@@ -754,6 +763,7 @@ impl<Id: Display> Game<Id> {
             graphviz.push('\n');
         }
 
+        // `@repeat`, `@tagIndex`, and `@unique` nodes.
         for pragma in &self.pragmas {
             if let Pragma::Repeat { nodes, .. }
             | Pragma::TagIndex { nodes, .. }
@@ -774,6 +784,32 @@ impl<Id: Display> Game<Id> {
                     _ => {}
                 }
             }
+        }
+
+        // `@simpleApply` and `@simpleApplyExhaustive` edges.
+        let simple_applies = self
+            .pragmas
+            .iter()
+            .filter_map(|pragma| match pragma {
+                Pragma::SimpleApply { lhs, rhs, .. }
+                | Pragma::SimpleApplyExhaustive { lhs, rhs, .. } => {
+                    Some(format!("    \"{lhs}\" -> \"{rhs}\";"))
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        if !simple_applies.is_empty() {
+            graphviz.push_str(&format!("  {{\n    edge [color=\"#faa\", style=\"dashed\", weight=0];\n{simple_applies}\n  }}\n"));
+        }
+
+        // Position `begin` and `end` properly.
+        if graphviz.contains("\"begin\" ->") {
+            graphviz.push_str("  { rank=min; begin }\n");
+        }
+
+        if graphviz.contains("-> \"end\"") {
+            graphviz.push_str("  { rank=max; end }\n");
         }
 
         graphviz.push('}');
