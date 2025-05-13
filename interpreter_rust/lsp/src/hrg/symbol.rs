@@ -33,9 +33,11 @@ impl Symbols {
                     .for_each(|statement| self.add_from_statement(statement));
             }),
             Statement::BranchVar {
-                identifier, body, ..
+                identifier,
+                type_,
+                body,
             } => {
-                if let Some(symbol) = untyped(identifier, Flag::Type) {
+                if let Some(symbol) = typed(identifier, Flag::Param, type_.clone()) {
                     self.symbols.push(symbol);
                 }
                 body.iter()
@@ -122,7 +124,7 @@ impl Symbols {
                 args,
                 values,
             } => {
-                if let Some(symbol) = typed(identifier, Flag::Type, type_.clone()) {
+                if let Some(symbol) = typed(identifier, Flag::Variable, type_.clone()) {
                     self.symbols.push(symbol);
                 }
                 for arg in args {
