@@ -77,6 +77,18 @@ pub fn hrg_to_rg(hrg: hrg::Game<Id>) -> Result<rg::Game<Id>, hrg::Error<Id>> {
     Ok(context.rg)
 }
 
+fn as_integer_domain(domain_elements: &[hrg::DomainElement<Id>]) -> Option<usize> {
+    if let [hrg::DomainElement::Generator { args, values, .. }] = domain_elements {
+        if let [hrg::DomainElementPattern::Variable { .. }] = &args[..] {
+            if let [hrg::DomainValue::Range { min, .. }] = &values[..] {
+                return Some(*min);
+            }
+        }
+    }
+
+    None
+}
+
 fn check_arguments_length(
     identifier: Id,
     expected: usize,
@@ -1451,12 +1463,21 @@ fn translate_domains(context: &mut Context) {
         }
 
         let domain_elements = translate_domain_elements(context, &domain.elements);
+        let identifiers = domain_elements.iter().map(serialize_value);
+        if let Some(offset) = as_integer_domain(&domain.elements) {
+            context.rg.add_pragma(rg::Pragma::Integer {
+                span: Span::none(),
+                offset,
+                nodes: identifiers.clone().map(rg::Node::new).collect(),
+            });
+        }
+
         context.rg.typedefs.push(rg::Typedef {
             span: Span::none(),
             identifier: domain.identifier.clone(),
             type_: Arc::from(rg::Type::Set {
                 span: Span::none(),
-                identifiers: domain_elements.iter().map(serialize_value).collect(),
+                identifiers: identifiers.collect(),
             }),
         });
         context

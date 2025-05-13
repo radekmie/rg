@@ -1380,7 +1380,7 @@ pub enum Pragma<Id> {
     Integer {
         #[serde(skip)]
         span: Span,
-        offset: isize,
+        offset: usize,
         #[serde(rename = "edgeNames")]
         nodes: Vec<Node<Id>>,
     },
