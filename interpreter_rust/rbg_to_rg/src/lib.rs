@@ -302,9 +302,9 @@ impl Context {
                 span: Span::none(),
                 identifier: identifier.clone(),
                 type_: Arc::from(rg::Type::Arrow {
-                    lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
+                    lhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
                     rhs: Arc::from(rg::Type::Arrow {
-                        lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
+                        lhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
                         rhs: Arc::from(rg::Type::new(Id::from("Bool"))),
                     }),
                 }),
@@ -458,8 +458,8 @@ fn add_builtin_constants(context: &mut Context) {
                 span: Span::none(),
                 identifier: Id::from(format!("direction_{label}")),
                 type_: Arc::from(rg::Type::Arrow {
-                    lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
-                    rhs: Arc::from(rg::Type::new(Id::from("Coord"))),
+                    lhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
+                    rhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
                 }),
                 value: Arc::from(rg::Value::Map {
                     span: Span::none(),
@@ -521,6 +521,20 @@ fn add_builtin_types(context: &mut Context) {
         identifier: Id::from("Coord"),
         type_: Arc::from(rg::Type::Set {
             span: Span::none(),
+            identifiers: context
+                .coords
+                .iter()
+                .filter(|x| x.as_ref() != "null")
+                .cloned()
+                .collect(),
+        }),
+    });
+
+    context.rg.typedefs.push(rg::Typedef {
+        span: Span::none(),
+        identifier: Id::from("CoordOrNull"),
+        type_: Arc::from(rg::Type::Set {
+            span: Span::none(),
             identifiers: context.coords.clone(),
         }),
     });
@@ -529,7 +543,7 @@ fn add_builtin_types(context: &mut Context) {
         span: Span::none(),
         identifier: Id::from("Board"),
         type_: Arc::from(rg::Type::Arrow {
-            lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
+            lhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
             rhs: Arc::from(rg::Type::new(Id::from("Piece"))),
         }),
     });
@@ -559,14 +573,14 @@ fn add_builtin_variables(context: &mut Context) {
     context.rg.variables.push(rg::Variable {
         span: Span::none(),
         identifier: Id::from("coord"),
-        type_: Arc::from(rg::Type::new(Id::from("Coord"))),
+        type_: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
         default_value: Arc::from(rg::Value::new(context.rbg.board[0].node.clone())),
     });
 
     context.rg.variables.push(rg::Variable {
         span: Span::none(),
         identifier: Id::from("coord_temp"),
-        type_: Arc::from(rg::Type::new(Id::from("Coord"))),
+        type_: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
         default_value: Arc::from(rg::Value::new(context.rbg.board[0].node.clone())),
     });
 
@@ -1205,27 +1219,12 @@ fn translate_atom_content(
 
             // All coords are reachable -> (bind: Coord).
             if pairs.iter().all(|(_, coords)| coords.len() == pairs_len) {
-                let local = context.random_node();
                 context.connect(
                     from,
-                    local.clone(),
+                    to,
                     rg::Label::AssignmentAny {
                         lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
                         rhs: Arc::from(rg::Type::new(Id::from("Coord"))),
-                    },
-                );
-
-                context.connect(
-                    local,
-                    to.clone(),
-                    rg::Label::Comparison {
-                        lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
-                        rhs: Arc::from(rg::Expression::Cast {
-                            span: Span::none(),
-                            lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
-                            rhs: Arc::from(rg::Expression::new(Id::from("null"))),
-                        }),
-                        negated: true,
                     },
                 );
                 return;
@@ -1307,7 +1306,7 @@ fn translate_atom_content(
                 local_temp.clone(),
                 rg::Label::AssignmentAny {
                     lhs: Arc::from(rg::Expression::new(Id::from("coord_temp"))),
-                    rhs: Arc::from(rg::Type::new(Id::from("Coord"))),
+                    rhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
                 },
             );
 
