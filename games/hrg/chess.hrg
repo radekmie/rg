@@ -3,8 +3,8 @@
 // Domains
 domain Score = 50 | 0 | 100 | 1000000
 domain Piece = empty | border |
-    whitepawn | whiteRook | whiteRookUnmoved | whiteknight | whitebishop | whitequeen | whiteking |
-    blackpawn | blackRook | blackRookUnmoved | blackknight | blackbishop | blackqueen | blackking
+    whitePawn | whiteRook | whiteRookUnmoved | whiteKnight | whiteBishop | whiteQueen | whiteKing |
+    blackPawn | blackRook | blackRookUnmoved | blackKnight | blackBishop | blackQueen | blackKing
 domain Player = white | black
 domain Position = null | V(X, Y) where X in 0..7, Y in 0..7
 domain ProperPosition = V(X, Y) where X in 0..7, Y in 0..7
@@ -141,18 +141,18 @@ queenSideRookPosition(white) = V(0,7)
 queenSideRookPosition(black) = V(0,0)
 
 owner : Piece -> PlayerOrSystem
-owner(whitebishop) = white
-owner(whiteking) = white
-owner(whiteknight) = white
-owner(whitequeen) = white
-owner(whitepawn) = white
+owner(whiteBishop) = white
+owner(whiteKing) = white
+owner(whiteKnight) = white
+owner(whiteQueen) = white
+owner(whitePawn) = white
 owner(whiteRook) = white
 owner(whiteRookUnmoved) = white
-owner(blackbishop) = black
-owner(blackking) = black
-owner(blackknight) = black
-owner(blackpawn) = black
-owner(blackqueen) = black
+owner(blackBishop) = black
+owner(blackKing) = black
+owner(blackKnight) = black
+owner(blackPawn) = black
+owner(blackQueen) = black
 owner(blackRook) = black
 owner(blackRookUnmoved) = black
 owner(empty) = keeper
@@ -170,24 +170,24 @@ myRookUnmoved(white) = whiteRookUnmoved
 myRookUnmoved(_) = blackRookUnmoved
 
 myBishop : Player -> Piece
-myBishop(white) = whitebishop
-myBishop(_) = blackbishop
+myBishop(white) = whiteBishop
+myBishop(_) = blackBishop
 
 myQueen : Player -> Piece
-myQueen(white) = whitequeen
-myQueen(_) = blackqueen
+myQueen(white) = whiteQueen
+myQueen(_) = blackQueen
 
 myKnight : Player -> Piece
-myKnight(white) = whiteknight
-myKnight(_) = blackknight
+myKnight(white) = whiteKnight
+myKnight(_) = blackKnight
 
 myKing : Player -> Piece
-myKing(white) = whiteking
-myKing(_) = blackking
+myKing(white) = whiteKing
+myKing(_) = blackKing
 
 myPawn : Player -> Piece
-myPawn(white) = whitepawn
-myPawn(_) = blackpawn
+myPawn(white) = whitePawn
+myPawn(_) = blackPawn
 
 counterIncrease: Counter -> Counter
 counterIncrease(C(N)) = if N == 501 then C(501) else C(N + 1)
@@ -197,24 +197,20 @@ counterDecrease(C(N)) = if N == 0 then C(0) else C(N - 1)
 
 // Board Setup
 board : Position -> Piece = {
-  V(X, Y) =
-    if Y == 0
-      then if X == 0 || X == 7 then blackRookUnmoved
-      else if X == 1 || X == 6 then blackknight
-      else if X == 2 || X == 5 then blackbishop
-      else if X == 3 then blackqueen
-      else blackking
-    else if Y == 1 then blackpawn
-    else if Y == 6 then whitepawn
-    else if Y == 7
-      then if X == 0 || X == 7 then whiteRookUnmoved
-      else if X == 1 || X == 6 then whiteknight
-      else if X == 2 || X == 5 then whitebishop
-      else if X == 3 then whitequeen
-      else whiteking
-    else empty
-  where X in 0..7, Y in 0..7;
-  null = border
+  :empty;
+  null = border;
+  V(X, 0) = blackRookUnmoved where X in {0, 7};
+  V(X, 0) = blackKnight where X in {1, 6};
+  V(X, 0) = blackBishop where X in {2, 5};
+  V(3, 0) = blackQueen;
+  V(4, 0) = blackKing;
+  V(X, 1) = blackPawn where X in 0..7;
+  V(X, 6) = whitePawn where X in 0..7;
+  V(X, 7) = whiteRookUnmoved where X in {0, 7};
+  V(X, 7) = whiteKnight where X in {1, 6};
+  V(X, 7) = whiteBishop where X in {2, 5};
+  V(3, 7) = whiteQueen;
+  V(4, 7) = whiteKing
 }
 
 stagnation_counter: Counter = C(0)
@@ -297,7 +293,7 @@ graph pawnMove() {
 
 graph queenMoves() {
   dir = AllDir(*)
-  repeat 8 {
+  repeat 7 {
     pos = all_direction(dir)(pos)
     $_Q
     branch {
@@ -325,7 +321,7 @@ graph queenMove() {
 
 graph rookMoves() {
   dir = RookDir(*)
-  repeat 8 {
+  repeat 7 {
     pos = all_direction(dir)(pos)
     $_R
     branch {
@@ -354,7 +350,7 @@ graph rookMove() {
 
 graph bishopMoves() {
   dir = BishopDir(*)
-  repeat 8 {
+  repeat 7 {
     pos = all_direction(dir)(pos)
     $_B
     branch {
@@ -553,7 +549,7 @@ graph is_attacked(){
       } or {}
       check(board[pos] == empty)
     }
-    check(0 != 0)
+    check(false())
   } or { // straight moves
     dir = RookDir(*)
     pos = all_direction(dir)(pos) 
@@ -570,7 +566,7 @@ graph is_attacked(){
       } or {}
       check(board[pos] == empty)
     }
-    check(0 != 0)
+    check(false())
   } or {
     branch {
       pos = knight_direction(nne)(pos)
