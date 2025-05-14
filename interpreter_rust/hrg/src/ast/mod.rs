@@ -369,6 +369,12 @@ impl<Id: Clone + PartialEq> Expression<Id> {
                 Arc::make_mut(lhs).substitute_var(var, value)?;
                 Arc::make_mut(rhs).substitute_var(var, value)?;
             }
+            Self::Call { expression, args } => {
+                Arc::make_mut(expression).substitute_var(var, value)?;
+                for arg in args {
+                    Arc::make_mut(arg).substitute_var(var, value)?;
+                }
+            }
             Self::Constructor { identifier, .. } if identifier == var => {
                 panic!("Cannot substitute constructor")
             }
