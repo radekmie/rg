@@ -1,0 +1,139 @@
+// Patryk Flama
+// game: Ultimate Tic Tac Toe
+
+// set domains
+domain Player = x | o
+domain Score = 50 | 0 | 100
+domain Boolean = false | true
+
+domain Position = P(X, Y) where X in 0..2, Y in 0..2
+// big board that contains smaller local boards in its cells
+domain GlobalPiece = empty | x | o | tie
+domain LocalPiece = empty | x | o
+
+// ---- game variables -----
+// set all local boards to empty
+game_board : Position -> Position -> LocalPiece = {
+  P(GX, GY) = {
+    P(X, Y) = empty
+    where X in 0..2, Y in 0..2
+  }
+  where GX in 0..2, GY in 0..2
+}
+
+global_board : Position -> GlobalPiece = { 
+  P(GX, GY) = empty 
+  where GX in 0..2, GY in 0..2
+}
+
+// if player has to play in position_global 
+position_global_active : Boolean = false
+// board in which player has to play / is playing
+position_global : Position
+// cell in which player is playing
+position_local : Position
+
+
+// ---- helper 'functions' ----
+next_d1 : Position -> Position
+next_d1(P(X, Y)) = if X == Y then P((X + 1) % 3, (Y + 1) % 3) else P(X, Y)
+
+next_d2 : Position -> Position
+next_d2(P(X, Y)) = if X + Y == 2 then P((X + 1) % 3, (Y - 1) % 3) else P(X, Y)
+
+next_h : Position -> Position
+next_h(P(X, Y)) = P(X, (Y + 1) % 3)
+
+next_v : Position -> Position
+next_v(P(X, Y)) = P((X + 1) % 3, Y)
+
+// calculate opponent of player
+op : Player -> Player
+op(x) = o
+op(o) = x
+
+// ---- game logic ----
+// check if there is non-empty cell in board
+graph existsNonempty(board: Position -> GlobalPiece) {
+  position_local = Position(*)
+  check(board[position_local] == empty)
+}
+
+// check if current board is winning, given changed position
+graph win(board: Position -> GlobalPiece, position: Position) {
+  branch {
+    check(position != next_d1(position))
+    check(board[position] == board[next_d1(position)])
+    check(board[position] == board[next_d1(next_d1(position))])
+  } or {
+    check(position != next_d2(position))
+    check(board[position] == board[next_d2(position)])
+    check(board[position] == board[next_d2(next_d2(position))])
+  } or {
+    check(board[position] == board[next_h(position)])
+    check(board[position] == board[next_h(next_h(position))])
+  } or {
+    check(board[position] == board[next_v(position)])
+    check(board[position] == board[next_v(next_v(position))])
+  }
+}
+
+graph turn(me: Player) {
+  player = me
+  
+  if position_global_active == true {// if player has to play in specific board
+    $ S
+    position_local = Position(*)
+    $$ position_local
+    check(game_board[position_global][position_local] == empty)
+    game_board[position_global][position_local] = me
+  } else {// if player can play in any board
+    //$ G
+    position_global = Position(*)
+    $$ position_global
+    check(global_board[position_global] == empty)
+    position_local = Position(*)
+    $$ position_local
+    check(game_board[position_global][position_local] == empty)
+    position_global_active = true
+    game_board[position_global][position_local] = me
+  }
+
+  player = keeper
+
+  // check if player won in this local board
+  if reachable(win(game_board[position_global], position_local)) {
+    global_board[position_global] = me
+
+    // if he did, then check if he did win in global board
+    if reachable(win(global_board, position_global)) {
+      goals[me] = 100
+      goals[op[me]] = 0
+      end()
+    }
+  } else {
+    // check if there is any cell to play in
+    if not(reachable(existsNonempty(game_board[position_global]))) {
+      global_board[position_global] = tie
+    }
+  }
+  
+  // if there are no other boards to play in, then game over with tie
+  if not(reachable(existsNonempty(global_board))) {
+    end()
+  }
+  
+  // next player has to play in adequete board
+  position_global = position_local
+  // unless it impossible - then he can play in any
+  if global_board[position_global] != empty {
+    position_global_active = false
+  }
+}
+
+graph rules() {
+  loop {
+    turn(x) // x always starts the game
+    turn(o)
+  }
+}
