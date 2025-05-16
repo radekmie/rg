@@ -8,7 +8,8 @@ domain Piece = empty | border |
 domain Player = white | black
 domain Position = null | V(X, Y) where X in 0..7, Y in 0..7
 domain ProperPosition = V(X, Y) where X in 0..7, Y in 0..7
-domain Counter = C(N) where N in 0..501
+domain Counter = C(N) where N in 0..100
+domain CounterOrNan = nan | Counter
 
 domain RookDir = up | down | left | right
 domain BishopDir = upleft | upright | downleft | downright
@@ -189,11 +190,8 @@ myPawn : Player -> Piece
 myPawn(white) = whitePawn
 myPawn(_) = blackPawn
 
-counterIncrease: Counter -> Counter
-counterIncrease(C(N)) = if N == 501 then C(501) else C(N + 1)
-
-counterDecrease: Counter -> Counter
-counterDecrease(C(N)) = if N == 0 then C(0) else C(N - 1)
+counterIncrease: Counter -> CounterOrNan
+counterIncrease(C(N)) = if N == 100 then nan else C(N + 1)
 
 // Board Setup
 board : Position -> Piece = {
