@@ -4,7 +4,8 @@
 domain Piece = redpiece | empty | bluepiece | border
 domain Player = red | blue
 domain Position = null | V(X, Y) where X in 0..6, Y in 0..6
-domain Count = C(X) where X in 0..49
+domain Counter = C(X) where X in 0..49
+domain CounterOrNan = nan | Counter
 domain Score = 0 | 50 | 100
 
 // Helpers
@@ -142,10 +143,10 @@ opponent : Player -> Player
 opponent(red) = blue
 opponent(_) = red
 
-increase_count : Count -> Count
-increase_count(C(X)) = if X < 49 then C(X+1) else C(X)
+increase_count : Counter -> CounterOrNan
+increase_count(C(X)) = if X < 49 then C(X+1) else nan
 
-compare : Count -> Count -> Score
+compare : Counter -> Counter -> Score
 compare(C(A), C(B)) = if A < B then 0 else if A == B then 50 else 100
 
 // --------------- BOARD ---------------
@@ -169,8 +170,8 @@ board : Position -> Piece = {
 me : Player = red
 position : Position
 t : Position
-countRed : Count = C(0)
-countBlue : Count = C(0)
+countRed : Counter = C(0)
+countBlue : Counter = C(0)
 
 
 graph existsMove(me: Player) {
