@@ -4,22 +4,23 @@
 domain Player = black | white
 domain Piece = empty | blackPawn | whitePawn
 domain Score = 0 | 100
-domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
+domain Position = V(X, Y) where X in 0..9, Y in 0..9
+domain PositionOrNull = null | Position
 
-left : Position -> Position
+left : PositionOrNull -> PositionOrNull
 left(null) = null
 left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
 
-right : Position -> Position
+right : PositionOrNull -> PositionOrNull
 right(null) = null
 right(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
 
-up : Position -> Position
+up : PositionOrNull -> PositionOrNull
 up(null) = null
 up(V(_, 0)) = null
 up(V(X, Y)) = V(X, Y - 1)
 
-down : Position -> Position
+down : PositionOrNull -> PositionOrNull
 down(null) = null
 down(V(_, 9)) = null
 down(V(X, Y)) = V(X, Y + 1)
@@ -32,7 +33,7 @@ opponent : Player -> Player
 opponent(white) = black
 opponent(_) = white
 
-board : Position -> Piece = {
+board : PositionOrNull -> Piece = {
   V(X, Y) = if (X + Y) % 2 == 0
     then blackPawn
     else whitePawn
@@ -42,7 +43,7 @@ board : Position -> Piece = {
 
 me : Player = white
 
-pos : Position
+pos : PositionOrNull
 
 graph moveExists(me: Player) {
   pos = Position(*)
