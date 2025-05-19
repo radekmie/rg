@@ -79,27 +79,27 @@ graph win(board: Position -> GlobalPiece, position: Position) {
 }
 
 graph turn(me: Player) {
-  player = me
   
   if position_global_active == true {// if player has to play in specific board
-    $ S
+    player = me
     position_local = Position(*)
     $$ position_local
     check(game_board[position_global][position_local] == empty)
-    game_board[position_global][position_local] = me
+    
   } else {// if player can play in any board
-    //$ G
+    player = me
     position_global = Position(*)
     $$ position_global
     check(global_board[position_global] == empty)
     position_local = Position(*)
     $$ position_local
     check(game_board[position_global][position_local] == empty)
+
     position_global_active = true
-    game_board[position_global][position_local] = me
   }
 
   player = keeper
+  game_board[position_global][position_local] = me
 
   // check if player won in this local board
   if reachable(win(game_board[position_global], position_local)) {
