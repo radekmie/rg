@@ -67,20 +67,21 @@ graph rules() {
       check(tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] == 0)
       state = I(1)
       tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] = 1
-      goRight()
+      goLeft()
       $ R2
     } or {// Keep 0 and go left any number of times
       check(state == I(1))
       check(tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] == 0)
       state = I(1)
       tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] = 0
-      goRight()
+      goLeft()
       $ R3
     } or {// Write 1, go right, and accept
       check(state == I(1))
       check(tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] == 0)
       state = I(3)
       tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] = 1
+      goRight()
       $ R4
       player = keeper
       end()
