@@ -1,6 +1,7 @@
 // Implementation of a simple Turing machine from the proof.
-// It writes any pattern of 0s and 1s ended with two 0s, then accepts.
-// The tape has length 2^4, so the number of such moves is 2^15-1.
+// It goes right any nonzero distance, writes 1, goes left any nonzero distance, writes 1, and accepts
+// The number of such moves equals the number of combinations of putting two 1s on the tape.
+// The tape has length 2^4, so the number of legal is 120.
 
 domain Player = machine
 domain Score = 0 // Irrelevant
@@ -54,32 +55,32 @@ graph goLeft() {
 
 graph rules() {
   loop {
-    branch {// Write 0 and go right any number of times
+    branch {// Keep 0 and go right any number of times
       check(state == I(0))
       check(tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] == 0)
       state = I(0)
       tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] = 0
       goRight()
       $ R1
-    } or {// Write 1 and go right any number of times
-      check(state == I(0))
-      check(tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] == 0)
-      state = I(0)
-      tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] = 1
-      goRight()
-      $ R2
-    } or {// Go right and switch to state 1
+    } or {// Write 1, go left, and switch to state 1
       check(state == I(0))
       check(tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] == 0)
       state = I(1)
+      tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] = 1
+      goRight()
+      $ R2
+    } or {// Keep 0 and go left any number of times
+      check(state == I(1))
+      check(tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] == 0)
+      state = I(1)
       tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] = 0
-      goLeft()
+      goRight()
       $ R3
-    } or {// Go right and accept
+    } or {// Write 1, go right, and accept
       check(state == I(1))
       check(tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] == 0)
       state = I(3)
-      tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] = 0
+      tape[position[I(3)]][position[I(2)]][position[I(1)]][position[I(0)]] = 1
       $ R4
       player = keeper
       end()
