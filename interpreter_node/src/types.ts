@@ -16,6 +16,7 @@ export type Settings = {
     calculateSimpleApply: boolean;
     calculateTagIndexes: boolean;
     compactComparisons: boolean;
+    compactReachability: boolean;
     compactSkipEdges: boolean;
     expandAssignmentAny: boolean;
     expandTagVariable: boolean;
@@ -48,6 +49,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   calculateSimpleApply: false,
   calculateTagIndexes: false,
   compactComparisons: false,
+  compactReachability: false,
   compactSkipEdges: false,
   expandAssignmentAny: false,
   expandTagVariable: false,
@@ -77,6 +79,7 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
     label: 'Optimizations',
     flags: [
       'compactComparisons',
+      'compactReachability',
       'compactSkipEdges',
       'inlineAssignment',
       'inlineReachability',

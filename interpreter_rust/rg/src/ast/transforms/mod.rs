@@ -5,6 +5,7 @@ mod calculate_repeats_and_uniques;
 mod calculate_simple_apply;
 mod calculate_tag_indexes;
 mod compact_comparisons;
+mod compact_reachability;
 mod compact_skip_edges;
 mod expand_assignment_any;
 mod expand_tag_variable;

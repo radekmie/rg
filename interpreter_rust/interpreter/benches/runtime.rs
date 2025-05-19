@@ -8,6 +8,7 @@ use std::time::Duration;
 fn scenario(criterion: &mut Criterion, name: &str, paths: &[&str]) {
     let mut rng = SmallRng::seed_from_u64(0);
     let mut group = criterion.benchmark_group(format!("runtime/{name}"));
+
     group.measurement_time(Duration::from_millis(400));
     group.warm_up_time(Duration::from_millis(100));
 
@@ -23,7 +24,11 @@ fn scenario(criterion: &mut Criterion, name: &str, paths: &[&str]) {
                             analyze_inner(source, "rg", &flags, false, &mut None::<fn(_)>).unwrap();
                         Game::try_from(ast).unwrap()
                     });
-                    bencher.iter(|| ist.run(&mut rng, interner, 1, &None::<fn(_)>).unwrap());
+                    let initial_state = ist.initial_state_after(&interner, "").unwrap();
+                    bencher.iter(|| {
+                        ist.run(&mut rng, interner, &initial_state, 1, &None::<fn(_)>)
+                            .unwrap()
+                    });
                 },
             );
         }
