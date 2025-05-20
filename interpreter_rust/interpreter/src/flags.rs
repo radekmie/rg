@@ -48,6 +48,15 @@ pub struct Flags {
     )]
     pub compact_comparisons: bool,
 
+    /// optimize automaton by compacting reachability checks
+    #[arg(
+        long,
+        help_heading = "Optimizations",
+        conflicts_with = "enable_all_optimizations",
+        default_value_if("enable_all_optimizations", "true", Some("true"))
+    )]
+    pub compact_reachability: bool,
+
     /// optimize automaton by compacting skip edges
     #[arg(
         long,

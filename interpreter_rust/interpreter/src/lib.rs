@@ -226,6 +226,7 @@ fn analyze_rg_inner(
 
         // Inlining.
         pass!(inline_assignment);
+        pass!(compact_reachability);
         pass!(inline_reachability);
         pass!(propagate_constants);
         pass!(merge_accesses);
