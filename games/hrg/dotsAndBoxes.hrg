@@ -34,14 +34,16 @@ domain Player = red | blue
 domain Line = H(I, J) where I in 1..9, J in 1..8 | V(I, J) where I in 1..8, J in 1..9 // all possible unit lines (horizontal and vertical)
 domain LineState = empty | taken // line can be free or already taken
 domain Box = B(I, J) where I in 1..8, J in 1..8 // all possible unit squares
-domain BoxState = 0 | 1 | 2 | 3 | 4 // number of lines surrounding given square
+domain BoxState = P(I) where I in 0..4 // number of lines surrounding given square
+domain BoxStateOrNone = none | BoxState
 domain BoxOrNone = none | Box 
 domain Points = P(I) where I in 0..64 // number of filled squares (for one player)
+domain PointsOrNan = nan | Points
 domain Score = 0 | 100 // there can't be a draw because of (*)
-domain Boolean = true | false
+domain Bool = 0 | 1
 
 lines : Line -> LineState = { _ = empty} // mark all lines as empty
-boxes : Box -> BoxState = { _ = 0 } // keep number of surrounding lines for all squares
+boxes : Box -> BoxState = { _ = P(0) } // keep number of surrounding lines for all squares
 points : Player -> Points = { _ = P(0) } // keep points for each player, so u can compare them later and get final score
 me : Player = red // starting player
 
@@ -53,14 +55,14 @@ op : Player -> Player // switch players
 op(red) = blue
 op(blue) = red
 
-incrPoints : Points -> Points // increment (and stay in domain)
-incrPoints(P(A)) = if A + 1 > 64 then P(64) else P(A + 1)
+incrPoints : Points -> PointsOrNan
+incrPoints(P(I)) = if I == 64 then nan else P(I + 1)
 
-incrState : BoxState -> BoxState // same
-incrState(X) = if X + 1 > 4 then 4 else X + 1
+incrState : BoxState -> BoxStateOrNone
+incrState(P(I)) = if I == 4 then none else P(I + 1)
 
-greater : Points -> Points -> Boolean // obv
-greater(P(A), P(B)) = if A > B then true else false
+greater : Points -> Points -> Bool
+greater(P(A), P(B)) = if A > B then 1 else 0
 
 
 //-------------------------MAPPING-------------------------
@@ -116,7 +118,7 @@ graph turn() {
     boxes[box1(chosenLine)] = incrState(boxes[box1(chosenLine)])
     
     // get 1 point if square has just been filled
-    if boxes[box1(chosenLine)] == 4 
+    if boxes[box1(chosenLine)] == P(4) 
     {
       points[me] = incrPoints(points[me])
     }
@@ -125,7 +127,7 @@ graph turn() {
   // same with the second box
   if box2(chosenLine) != none {
     boxes[box2(chosenLine)] = incrState(boxes[box2(chosenLine)])
-    if boxes[box2(chosenLine)] == 4
+    if boxes[box2(chosenLine)] == P(4)
     {
       points[me] = incrPoints(points[me])
     }
@@ -133,13 +135,13 @@ graph turn() {
 
  
   // player who first fills > 32 (more than half) boxes wins
-  if greater(points[me], P(32)) == true || not(reachable(existsEmpty())) {
+  if greater(points[me], P(32)) == 1 || not(reachable(existsEmpty())) {
     goals[me] = 100
     end()
   }
 
   // switch players only when the current one didnt get an extra move
-  if not(boxes[box1(chosenLine)] == 4 || boxes[box2(chosenLine)] == 4) {
+  if not(boxes[box1(chosenLine)] == P(4) || boxes[box2(chosenLine)] == P(4)) {
     me = op(me)
   }
 }
