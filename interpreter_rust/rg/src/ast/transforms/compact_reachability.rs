@@ -11,14 +11,16 @@ impl Game<Id> {
         let prev_edges = self.prev_edges();
 
         let starts_moved = reachability_to_move(
-            reachability_starts,
+            &reachability_starts,
+            &reachability_ends,
             &next_edges,
             |edge| edge.label.is_skip(),
             |edge| &edge.rhs,
         );
 
         let ends_moved = reachability_to_move(
-            reachability_ends,
+            &reachability_ends,
+            &reachability_starts,
             &prev_edges,
             |edge| edge.label.is_skip() || edge.label.is_assignment(),
             |edge| &edge.lhs,
@@ -68,7 +70,8 @@ impl Game<Id> {
 }
 
 fn reachability_to_move(
-    reachability_targets: BTreeSet<&Node<Id>>,
+    reachability_targets: &BTreeSet<&Node<Id>>,
+    do_not_move: &BTreeSet<&Node<Id>>,
     next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     condition: impl Fn(&Arc<Edge<Id>>) -> bool,
     step: impl Fn(&Arc<Edge<Id>>) -> &Node<Id>,
@@ -76,7 +79,7 @@ fn reachability_to_move(
     let mut to_move: BTreeMap<_, _> = BTreeMap::new();
 
     for node in reachability_targets {
-        let mut curr = node;
+        let mut curr = *node;
         while let Some(nexts) = next_edges.get(curr) {
             let next = if nexts.len() == 1 {
                 nexts.iter().next().unwrap()
@@ -89,7 +92,7 @@ fn reachability_to_move(
                 break;
             }
         }
-        if curr != node {
+        if !do_not_move.contains(curr) {
             to_move.insert((*node).clone(), (*curr).clone());
         }
     }
@@ -99,6 +102,13 @@ fn reachability_to_move(
 #[cfg(test)]
 mod test {
     use crate::test_transform;
+
+    test_transform!(
+        compact_reachability,
+        single_edge,
+        "a, b: ? x -> y;
+        x, y: ;"
+    );
 
     test_transform!(
         compact_reachability,
