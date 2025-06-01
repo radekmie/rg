@@ -232,6 +232,7 @@ fn analyze_rg_inner(
         pass!(merge_accesses);
 
         // Compact the automaton.
+        pass!(reorder_conditions);
         pass!(compact_comparisons);
         pass!(join_exclusive_edges);
         pass!(join_fork_prefixes);

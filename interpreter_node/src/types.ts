@@ -34,6 +34,7 @@ export type Settings = {
     pruneUnreachableNodes: boolean;
     pruneUnusedConstants: boolean;
     pruneUnusedVariables: boolean;
+    reorderConditions: boolean;
     skipArtificialTags: boolean;
     skipRedundantTags: boolean;
     skipSelfAssignments: boolean;
@@ -67,6 +68,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   pruneUnreachableNodes: false,
   pruneUnusedConstants: false,
   pruneUnusedVariables: false,
+  reorderConditions: false,
   skipArtificialTags: false,
   skipRedundantTags: false,
   skipSelfAssignments: false,
@@ -92,6 +94,7 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
       'pruneUnreachableNodes',
       'pruneUnusedConstants',
       'pruneUnusedVariables',
+      'reorderConditions',
       'skipArtificialTags',
       'skipRedundantTags',
       'skipSelfAssignments',

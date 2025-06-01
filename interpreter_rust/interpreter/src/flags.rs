@@ -165,6 +165,15 @@ pub struct Flags {
     )]
     pub prune_unused_variables: bool,
 
+    /// reorders conditions in the automaton to optimize the execution
+    #[arg(
+        long,
+        help_heading = "Optimizations",
+        conflicts_with = "enable_all_optimizations",
+        default_value_if("enable_all_optimizations", "true", Some("true"))
+    )]
+    pub reorder_conditions: bool,
+
     /// skip tag edges marked with `@artificialTag`
     #[arg(
         long,
@@ -281,6 +290,7 @@ impl Flags {
             prune_unreachable_nodes: true,
             prune_unused_constants: true,
             prune_unused_variables: true,
+            reorder_conditions: true,
             skip_self_assignments: true,
             skip_self_comparisons: true,
             skip_unused_tags: true,

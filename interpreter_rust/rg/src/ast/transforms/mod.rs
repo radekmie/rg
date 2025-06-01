@@ -23,6 +23,7 @@ mod prune_singleton_types;
 mod prune_unreachable_nodes;
 mod prune_unused_constants;
 mod prune_unused_variables;
+mod reorder_conditions;
 mod skip_artificial_tags;
 mod skip_redundant_tags;
 mod skip_self_assignments;
