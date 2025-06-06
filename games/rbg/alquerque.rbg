@@ -51,15 +51,15 @@ left *
 up *
 + down *
 ){whitePawn}[empty](
-up {empty}
-+ down {empty}
-+ left {empty}
-+ right {empty}
-+ upLeft {empty}
-+ upRight {empty}
-+ downLeft {empty}
-+ downRight {empty}
-)->>
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+){empty}->>
 + {?(
 left *
 + right *
@@ -148,15 +148,15 @@ left *
 up *
 + down *
 ){blackPawn}[empty](
-up {empty}
-+ down {empty}
-+ left {empty}
-+ right {empty}
-+ upLeft {empty}
-+ upRight {empty}
-+ downLeft {empty}
-+ downRight {empty}
-)->>
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+){empty}->>
 + {?(
 left *
 + right *
