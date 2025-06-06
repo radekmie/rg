@@ -26,31 +26,16 @@
     rx4y4[whitePawn]{left:rx3y4,up:rx4y3,upLeft:rx3y3}
 #players = black(100),white(100)
 #pieces = blackPawn,empty,whitePawn
-#variables = stagnation(20)
+#variables = stagnation(100)
 #rules = 
-([$ stagnation=stagnation+1](
-{!(
+([$ stagnation=stagnation+1]->white (
 left *
 + right *
 )(
 up *
 + down *
-){whitePawn}(
-up {blackPawn}up {empty}
-+ down {blackPawn}down {empty}
-+ left {blackPawn}left {empty}
-+ right {blackPawn}right {empty}
-+ upLeft {blackPawn}upLeft {empty}
-+ upRight {blackPawn}upRight {empty}
-+ downLeft {blackPawn}downLeft {empty}
-+ downRight {blackPawn}downRight {empty}
-)}->white (
-left *
-+ right *
 )(
-up *
-+ down *
-){whitePawn}[empty](
+{whitePawn}[empty](
 up {empty}
 + down {empty}
 + left {empty}
@@ -60,28 +45,7 @@ up {empty}
 + downLeft {empty}
 + downRight {empty}
 )->>
-+ {?(
-left *
-+ right *
-)(
-up *
-+ down *
-){whitePawn}(
-up {blackPawn}up {empty}
-+ down {blackPawn}down {empty}
-+ left {blackPawn}left {empty}
-+ right {blackPawn}right {empty}
-+ upLeft {blackPawn}upLeft {empty}
-+ upRight {blackPawn}upRight {empty}
-+ downLeft {blackPawn}downLeft {empty}
-+ downRight {blackPawn}downRight {empty}
-)}->white (
-left *
-+ right *
-)(
-up *
-+ down *
-){whitePawn}[empty](
++ {whitePawn}[empty](
 up {blackPawn}[empty]up {empty}
 + down {blackPawn}[empty]down {empty}
 + left {blackPawn}[empty]left {empty}
@@ -90,34 +54,7 @@ up {blackPawn}[empty]up {empty}
 + upRight {blackPawn}[empty]upRight {empty}
 + downLeft {blackPawn}[empty]downLeft {empty}
 + downRight {blackPawn}[empty]downRight {empty}
-)({?
-up {blackPawn}up {empty}
-+ down {blackPawn}down {empty}
-+ left {blackPawn}left {empty}
-+ right {blackPawn}right {empty}
-+ upLeft {blackPawn}upLeft {empty}
-+ upRight {blackPawn}upRight {empty}
-+ downLeft {blackPawn}downLeft {empty}
-+ downRight {blackPawn}downRight {empty}
-}(
-up {blackPawn}[empty]up {empty}
-+ down {blackPawn}[empty]down {empty}
-+ left {blackPawn}[empty]left {empty}
-+ right {blackPawn}[empty]right {empty}
-+ upLeft {blackPawn}[empty]upLeft {empty}
-+ upRight {blackPawn}[empty]upRight {empty}
-+ downLeft {blackPawn}[empty]downLeft {empty}
-+ downRight {blackPawn}[empty]downRight {empty}
-))*{!
-up {blackPawn}up {empty}
-+ down {blackPawn}down {empty}
-+ left {blackPawn}left {empty}
-+ right {blackPawn}right {empty}
-+ upLeft {blackPawn}upLeft {empty}
-+ upRight {blackPawn}upRight {empty}
-+ downLeft {blackPawn}downLeft {empty}
-+ downRight {blackPawn}downRight {empty}
-}->>[$ stagnation=0]
+)->>[$ stagnation=0]
 )[whitePawn](
 {$ stagnation==100}(
 {$ whitePawn>blackPawn}[$ white=100][$ black=0]->>{}
@@ -125,29 +62,14 @@ up {blackPawn}up {empty}
 + {$ whitePawn==blackPawn}[$ white=50][$ black=50]->>{}
 )
 + [$ white=100][$ black=0]
-)[$ stagnation=stagnation+1](
-{!(
+)[$ stagnation=stagnation+1]->black (
 left *
 + right *
 )(
 up *
 + down *
-){blackPawn}(
-up {whitePawn}up {empty}
-+ down {whitePawn}down {empty}
-+ left {whitePawn}left {empty}
-+ right {whitePawn}right {empty}
-+ upLeft {whitePawn}upLeft {empty}
-+ upRight {whitePawn}upRight {empty}
-+ downLeft {whitePawn}downLeft {empty}
-+ downRight {whitePawn}downRight {empty}
-)}->black (
-left *
-+ right *
 )(
-up *
-+ down *
-){blackPawn}[empty](
+{blackPawn}[empty](
 up {empty}
 + down {empty}
 + left {empty}
@@ -157,28 +79,7 @@ up {empty}
 + downLeft {empty}
 + downRight {empty}
 )->>
-+ {?(
-left *
-+ right *
-)(
-up *
-+ down *
-){blackPawn}(
-up {whitePawn}up {empty}
-+ down {whitePawn}down {empty}
-+ left {whitePawn}left {empty}
-+ right {whitePawn}right {empty}
-+ upLeft {whitePawn}upLeft {empty}
-+ upRight {whitePawn}upRight {empty}
-+ downLeft {whitePawn}downLeft {empty}
-+ downRight {whitePawn}downRight {empty}
-)}->black (
-left *
-+ right *
-)(
-up *
-+ down *
-){blackPawn}[empty](
++ {blackPawn}[empty](
 up {whitePawn}[empty]up {empty}
 + down {whitePawn}[empty]down {empty}
 + left {whitePawn}[empty]left {empty}
@@ -187,34 +88,7 @@ up {whitePawn}[empty]up {empty}
 + upRight {whitePawn}[empty]upRight {empty}
 + downLeft {whitePawn}[empty]downLeft {empty}
 + downRight {whitePawn}[empty]downRight {empty}
-)({?
-up {whitePawn}up {empty}
-+ down {whitePawn}down {empty}
-+ left {whitePawn}left {empty}
-+ right {whitePawn}right {empty}
-+ upLeft {whitePawn}upLeft {empty}
-+ upRight {whitePawn}upRight {empty}
-+ downLeft {whitePawn}downLeft {empty}
-+ downRight {whitePawn}downRight {empty}
-}(
-up {whitePawn}[empty]up {empty}
-+ down {whitePawn}[empty]down {empty}
-+ left {whitePawn}[empty]left {empty}
-+ right {whitePawn}[empty]right {empty}
-+ upLeft {whitePawn}[empty]upLeft {empty}
-+ upRight {whitePawn}[empty]upRight {empty}
-+ downLeft {whitePawn}[empty]downLeft {empty}
-+ downRight {whitePawn}[empty]downRight {empty}
-))*{!
-up {whitePawn}up {empty}
-+ down {whitePawn}down {empty}
-+ left {whitePawn}left {empty}
-+ right {whitePawn}right {empty}
-+ upLeft {whitePawn}upLeft {empty}
-+ upRight {whitePawn}upRight {empty}
-+ downLeft {whitePawn}downLeft {empty}
-+ downRight {whitePawn}downRight {empty}
-}->>[$ stagnation=0]
+)->>[$ stagnation=0]
 )[blackPawn](
 {$ stagnation==100}(
 {$ blackPawn>whitePawn}[$ black=100][$ white=0]->>{}
