@@ -26,7 +26,7 @@
     rx4y4[whitePawn]{left:rx3y4,up:rx4y3,upLeft:rx3y3}
 #players = black(100),white(100)
 #pieces = blackPawn,empty,whitePawn
-#variables = stagnation(20)
+#variables = stagnation(100)
 #rules = 
 ([$ stagnation=stagnation+1](
 {!(
