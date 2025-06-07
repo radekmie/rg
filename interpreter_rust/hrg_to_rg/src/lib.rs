@@ -1088,9 +1088,8 @@ fn translate_automaton_statements(
                 context.connect(current_node, repeat_end.clone(), rg::Label::new_skip());
                 current_node = repeat_end;
             }
-            hrg::Statement::Tag { symbol } => {
-                // By convention, all tags starting with `_` are artificial.
-                if symbol.starts_with("_") {
+            hrg::Statement::Tag { artificial, symbol } => {
+                if *artificial {
                     context.rg.add_pragma(rg::Pragma::ArtificialTag {
                         span: Span::none(),
                         tags: vec![symbol.clone()],
@@ -2167,6 +2166,26 @@ mod test {
             rules_19, rules_18: ;
             rules_18, rules_1: ;
             rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        tags,
+        "
+            graph rules() {
+                $a
+                $_b
+                $$c
+            }
+        ",
+        "
+            @artificialTag b;
+            begin, rules_begin: ;
+            rules_begin, rules_1: $ a;
+            rules_1, rules_2: $ b;
+            rules_2, rules_3: $$ c;
+            rules_3, rules_end: ;
             rules_end, end: ;
         "
     );

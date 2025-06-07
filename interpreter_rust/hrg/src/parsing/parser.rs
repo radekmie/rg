@@ -122,9 +122,13 @@ fn while_(input: Input) -> Result<Statement<Identifier>> {
 }
 
 fn tag_statement(input: Input) -> Result<Statement<Identifier>> {
-    map(preceded(char('$'), identifier), |symbol| Statement::Tag {
-        symbol,
-    })(input)
+    map(
+        preceded(char('$'), pair(opt(char('_')), identifier)),
+        |(artificial, symbol)| Statement::Tag {
+            artificial: artificial.is_some(),
+            symbol,
+        },
+    )(input)
 }
 
 fn tag_variable_statement(input: Input) -> Result<Statement<Identifier>> {
