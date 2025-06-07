@@ -352,7 +352,9 @@ impl Context {
                                         node.edges.iter().find(|edge| edge.label == *label)
                                     });
                                     if let Some(edge) = edge {
-                                        reachable_coords.insert(edge.node.clone());
+                                        if !reachable_coords.insert(edge.node.clone()) {
+                                            break;
+                                        }
                                         coord = edge.node.clone();
                                     } else {
                                         break;
