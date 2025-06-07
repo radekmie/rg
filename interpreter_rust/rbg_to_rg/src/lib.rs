@@ -331,51 +331,51 @@ impl Context {
                 concatenation.iter().fold(
                     vec![coord.clone()],
                     |coords, rbg::Atom { content, power }| {
-                        let mut reachable_coords = if *power {
-                            coords.iter().cloned().collect()
-                        } else {
-                            BTreeSet::new()
-                        };
+                        if *power {
+                            // Fast path for saturated iterations.
+                            if coords.len() == self.coords.len() {
+                                return coords;
+                            }
 
-                        for mut coord in coords {
-                            match content {
-                                rbg::ActionOrRule::Action(rbg::Action::Check { negated, rule }) => {
-                                    if *negated == self.make_shift_pattern(&coord, rule).is_empty()
-                                    {
-                                        reachable_coords.insert(coord);
+                            let mut reachable_coords: BTreeSet<_> =
+                                coords.iter().cloned().collect();
+                            let mut reachable_coords_to_review = reachable_coords.clone();
+                            loop {
+                                let mut reachable_coords_to_add = BTreeSet::new();
+                                for coord in &reachable_coords_to_review {
+                                    self.make_shift_pattern_step(
+                                        coord,
+                                        content,
+                                        &mut reachable_coords_to_add,
+                                    );
+                                }
+
+                                if reachable_coords_to_add.is_empty() {
+                                    break;
+                                }
+
+                                reachable_coords_to_review.clear();
+                                for coord in reachable_coords_to_add {
+                                    if reachable_coords.insert(coord.clone()) {
+                                        reachable_coords_to_review.insert(coord);
                                     }
                                 }
-                                rbg::ActionOrRule::Action(rbg::Action::Shift { label }) => loop {
-                                    let node =
-                                        self.rbg.board.iter().find(|node| node.node == coord);
-                                    let edge = node.and_then(|node| {
-                                        node.edges.iter().find(|edge| edge.label == *label)
-                                    });
-                                    if let Some(edge) = edge {
-                                        if !reachable_coords.insert(edge.node.clone()) {
-                                            break;
-                                        }
-                                        coord = edge.node.clone();
-                                    } else {
-                                        break;
-                                    }
 
-                                    if !power {
-                                        break;
-                                    }
-                                },
-                                rbg::ActionOrRule::Action(_) => {
-                                    panic!("Incorrect shift pattern: {content:?}")
-                                }
-                                rbg::ActionOrRule::Rule(rule) => {
-                                    for node in self.make_shift_pattern(&coord, rule) {
-                                        reachable_coords.insert(node.clone());
-                                    }
+                                // Fast path for saturated iterations.
+                                if reachable_coords.len() == self.coords.len() {
+                                    return coords;
                                 }
                             }
-                        }
 
-                        reachable_coords.into_iter().collect()
+                            reachable_coords.into_iter().collect()
+                        } else {
+                            let mut reachable_coords = BTreeSet::new();
+                            for coord in &coords {
+                                self.make_shift_pattern_step(coord, content, &mut reachable_coords);
+                            }
+
+                            reachable_coords.into_iter().collect()
+                        }
                     },
                 )
             })
@@ -385,6 +385,37 @@ impl Context {
 
         self.shift_patterns.insert(key, coords.clone());
         coords
+    }
+
+    fn make_shift_pattern_step(
+        &mut self,
+        coord: &Id,
+        content: &rbg::ActionOrRule<Id>,
+        reachable_coords: &mut BTreeSet<Id>,
+    ) {
+        match content {
+            rbg::ActionOrRule::Action(rbg::Action::Check { negated, rule }) => {
+                if *negated == self.make_shift_pattern(coord, rule).is_empty() {
+                    reachable_coords.insert(coord.clone());
+                }
+            }
+            rbg::ActionOrRule::Action(rbg::Action::Shift { label }) => {
+                let node = self.rbg.board.iter().find(|node| node.node == *coord);
+                let edge =
+                    node.and_then(|node| node.edges.iter().find(|edge| edge.label == *label));
+                if let Some(edge) = edge {
+                    reachable_coords.insert(edge.node.clone());
+                }
+            }
+            rbg::ActionOrRule::Action(_) => {
+                panic!("Incorrect shift pattern: {content:?}")
+            }
+            rbg::ActionOrRule::Rule(rule) => {
+                for node in self.make_shift_pattern(coord, rule) {
+                    reachable_coords.insert(node.clone());
+                }
+            }
+        }
     }
 
     fn random_node(&mut self) -> rg::Node<Id> {
@@ -815,10 +846,39 @@ fn group_shift_patterns(rule: rbg::Rule<Id>) -> rbg::Rule<Id> {
 }
 
 fn is_expandable_shift_pattern(rule: &rbg::Rule<Id>) -> bool {
-    rule.elements
+    // It has to be a shift pattern...
+    if !is_shift_pattern_rule(rule) {
+        return false;
+    }
+
+    // ...that is either non-trivial...
+    if rule
+        .elements
         .iter()
         .any(|concatenation| concatenation.len() > 1)
-        && is_shift_pattern_rule(rule)
+    {
+        return true;
+    }
+
+    // ...or a repeated sum of shifts.
+    match &rule.elements[..] {
+        [concatenation] => match &concatenation[..] {
+            [rbg::Atom {
+                power: true,
+                content: rbg::ActionOrRule::Rule(rbg::Rule { elements }),
+            }] => elements.iter().all(|concatenation| {
+                matches!(
+                    &concatenation[..],
+                    [rbg::Atom {
+                        power: false,
+                        content: rbg::ActionOrRule::Action(rbg::Action::Shift { .. }),
+                    }]
+                )
+            }),
+            _ => false,
+        },
+        _ => false,
+    }
 }
 
 fn is_shift_pattern(content: &rbg::ActionOrRule<Id>) -> bool {
