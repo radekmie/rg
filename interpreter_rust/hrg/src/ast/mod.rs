@@ -392,12 +392,12 @@ impl<Id: Clone + PartialEq> Expression<Id> {
             Self::Literal { identifier } if identifier == var => {
                 *identifier = value.clone();
             }
+            Self::Literal { .. } => {}
             Self::Map { .. } => {
                 return Err(Error::NotImplemented {
                     message: "Expression::substitute_var",
                 })
             }
-            _ => {}
         }
 
         Ok(())
