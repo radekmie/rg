@@ -133,25 +133,36 @@ impl Context {
             .iter()
             .any(|constant| constant.identifier == math_operator)
         {
-            let type_ = self.create_math_type(limit);
-            let value = self.create_math_operator_value(limit, operator);
-            let binary = Arc::from(rg::Type::Arrow {
-                lhs: type_.clone(),
-                rhs: type_.clone(),
-            });
+            let type_lhs = self.create_math_type(limit, false);
+            let type_ = match operator {
+                InternalOperator::Add | InternalOperator::Sub => Arc::from(rg::Type::Arrow {
+                    lhs: type_lhs.clone(),
+                    rhs: Arc::from(rg::Type::Arrow {
+                        lhs: type_lhs,
+                        rhs: self.create_math_type(limit, true),
+                    }),
+                }),
+                InternalOperator::Decr | InternalOperator::Incr => Arc::from(rg::Type::Arrow {
+                    lhs: type_lhs,
+                    rhs: self.create_math_type(limit, true),
+                }),
+                InternalOperator::Gt
+                | InternalOperator::Gte
+                | InternalOperator::Lt
+                | InternalOperator::Lte => Arc::from(rg::Type::Arrow {
+                    lhs: type_lhs.clone(),
+                    rhs: Arc::from(rg::Type::Arrow {
+                        lhs: type_lhs,
+                        rhs: Arc::from(rg::Type::new(Id::from("Bool"))),
+                    }),
+                }),
+            };
 
             self.rg.constants.push(rg::Constant {
                 span: Span::none(),
                 identifier: math_operator.clone(),
-                type_: if is_binary {
-                    binary
-                } else {
-                    Arc::from(rg::Type::Arrow {
-                        lhs: type_,
-                        rhs: binary,
-                    })
-                },
-                value,
+                type_,
+                value: self.create_math_operator_value(limit, operator),
             });
         }
 
@@ -194,61 +205,53 @@ impl Context {
         }
 
         if operator == Decr || operator == Incr {
-            return Arc::from(rg::Value::from_pairs_iter(
-                (0..limit)
-                    .map(|lhs| {
-                        let value = match operator {
-                            Decr if lhs < 1 => nan_value.clone(),
-                            Decr => number!(lhs - 1),
-                            Incr if lhs + 1 >= limit => nan_value.clone(),
-                            Incr => number!(lhs + 1),
-                            _ => unreachable!(),
-                        };
+            return Arc::from(rg::Value::from_pairs_iter((0..limit).map(|lhs| {
+                let value = match operator {
+                    Decr if lhs < 1 => nan_value.clone(),
+                    Decr => number!(lhs - 1),
+                    Incr if lhs + 1 >= limit => nan_value.clone(),
+                    Incr => number!(lhs + 1),
+                    _ => unreachable!(),
+                };
 
-                        (Id::from(lhs.to_string()), value)
-                    })
-                    .chain([(nan.clone(), nan_value.clone())]),
-            ));
+                (Id::from(lhs.to_string()), value)
+            })));
         }
 
-        let nan_map = Arc::from(rg::Value::new_empty(nan_value.clone()));
-        Arc::from(rg::Value::from_pairs_iter(
-            (0..limit)
-                .map(|lhs| {
-                    let value = Arc::from(rg::Value::from_pairs_iter(
-                        (0..limit)
-                            .map(|rhs| {
-                                let value = match operator {
-                                    Add if lhs + rhs >= limit => nan_value.clone(),
-                                    Add => number!(lhs + rhs),
-                                    Gt => number!(lhs > rhs),
-                                    Gte => number!(lhs >= rhs),
-                                    Lt => number!(lhs < rhs),
-                                    Lte => number!(lhs <= rhs),
-                                    Sub if lhs < rhs => nan_value.clone(),
-                                    Sub => number!(lhs - rhs),
-                                    _ => unreachable!(),
-                                };
+        Arc::from(rg::Value::from_pairs_iter((0..limit).map(|lhs| {
+            let value = Arc::from(rg::Value::from_pairs_iter((0..limit).map(|rhs| {
+                let value = match operator {
+                    Add if lhs + rhs >= limit => nan_value.clone(),
+                    Add => number!(lhs + rhs),
+                    Gt => number!(lhs > rhs),
+                    Gte => number!(lhs >= rhs),
+                    Lt => number!(lhs < rhs),
+                    Lte => number!(lhs <= rhs),
+                    Sub if lhs < rhs => nan_value.clone(),
+                    Sub => number!(lhs - rhs),
+                    _ => unreachable!(),
+                };
 
-                                (Id::from(rhs.to_string()), value)
-                            })
-                            .chain([(nan.clone(), nan_value.clone())]),
-                    ));
+                (Id::from(rhs.to_string()), value)
+            })));
 
-                    (Id::from(lhs.to_string()), value)
-                })
-                .chain([(nan.clone(), nan_map.clone())]),
-        ))
+            (Id::from(lhs.to_string()), value)
+        })))
     }
 
-    fn create_math_type(&mut self, limit: usize) -> Arc<rg::Type<Id>> {
+    fn create_math_type(&mut self, limit: usize, with_nan: bool) -> Arc<rg::Type<Id>> {
         let numbers = (0..limit).map(|index| Id::from(index.to_string()));
         self.rg.add_pragma(rg::Pragma::Integer {
             span: Span::none(),
             offset: 0,
             nodes: numbers.clone().map(rg::Node::new).collect(),
         });
-        self.create_type_from_set([Id::from("nan")].into_iter().chain(numbers).collect())
+
+        if with_nan {
+            self.create_type_from_set([Id::from("nan")].into_iter().chain(numbers).collect())
+        } else {
+            self.create_type_from_set(numbers.into_iter().collect())
+        }
     }
 
     fn create_type_from_set(&mut self, identifiers: Vec<Id>) -> Arc<rg::Type<Id>> {
