@@ -1057,8 +1057,26 @@ impl<Id: Ord> Game<Id> {
 
     pub fn add_pragma(&mut self, pragma: Pragma<Id>) {
         self.pragmas.sort_unstable();
-        if let Err(index) = self.pragmas.binary_search(&pragma) {
-            self.pragmas.insert(index, pragma);
+
+        // Some pragmas can be merged.
+        match pragma {
+            Pragma::ArtificialTag { span, tags: new_tags } => {
+                for pragma in &mut self.pragmas {
+                    if let Pragma::ArtificialTag { tags, .. } = pragma {
+                        tags.extend(new_tags);
+                        tags.sort_unstable();
+                        tags.dedup();
+                        return;
+                    }
+                }
+
+                self.pragmas.push(Pragma::ArtificialTag { span, tags: new_tags });
+            },
+            pragma => {
+                if let Err(index) = self.pragmas.binary_search(&pragma) {
+                    self.pragmas.insert(index, pragma);
+                }
+            }
         }
     }
 

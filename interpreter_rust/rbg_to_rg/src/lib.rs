@@ -697,6 +697,14 @@ fn copy_path(
             rhs: prefix_node(prefix, edge.rhs.clone()),
         };
 
+        if let rg::Label::Tag { symbol } = &mut edge.label {
+            *symbol = Id::from(format!("{symbol}_copy"));
+            context.rg.add_pragma(rg::Pragma::ArtificialTag {
+                span: Span::none(),
+                tags: vec![symbol.clone()],
+            });
+        }
+
         // Skip switch-generated edges:
         //   - $$ coord
         //   - $ index_N

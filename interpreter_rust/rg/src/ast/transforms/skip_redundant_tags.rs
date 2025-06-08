@@ -31,7 +31,7 @@ impl Game<Id> {
         let prev_edges = self.prev_edges();
         let mut indexes: Option<Vec<_>> = None;
         for (index, edge) in self.edges.iter().enumerate() {
-            let is_tag = edge.label.is_tag();
+            let is_tag = edge.label.is_tag_and(|tag| !artificial_tags.contains(tag));
             if is_tag || edge.label.is_tag_variable() {
                 let prevs_nexts: Vec<_> =
                     find_prevs(artificial_tags, is_tag, &prev_edges, &edge.lhs)
