@@ -3,7 +3,7 @@
 
 set -e
 
-timeout=${1:-2s}
+timeout=${1:-10s}
 
 cd ../interpreter_rust
 cargo build --release

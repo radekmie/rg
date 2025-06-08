@@ -1060,7 +1060,10 @@ impl<Id: Ord> Game<Id> {
 
         // Some pragmas can be merged.
         match pragma {
-            Pragma::ArtificialTag { span, tags: new_tags } => {
+            Pragma::ArtificialTag {
+                span,
+                tags: new_tags,
+            } => {
                 for pragma in &mut self.pragmas {
                     if let Pragma::ArtificialTag { tags, .. } = pragma {
                         tags.extend(new_tags);
@@ -1070,8 +1073,11 @@ impl<Id: Ord> Game<Id> {
                     }
                 }
 
-                self.pragmas.push(Pragma::ArtificialTag { span, tags: new_tags });
-            },
+                self.pragmas.push(Pragma::ArtificialTag {
+                    span,
+                    tags: new_tags,
+                });
+            }
             pragma => {
                 if let Err(index) = self.pragmas.binary_search(&pragma) {
                     self.pragmas.insert(index, pragma);

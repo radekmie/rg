@@ -13,8 +13,9 @@ struct Context {
     rbg: rbg::Game<Id>,
     reachable_map_index: usize,
     rg: rg::Game<Id>,
+    reachability_map_cache: BTreeMap<BTreeMap<Id, BTreeSet<Id>>, Id>,
     rule_automatons: BTreeMap<rbg::Rule<Id>, (rg::Node<Id>, rg::Node<Id>)>,
-    shift_patterns: BTreeMap<(Id, rbg::Rule<Id>), Vec<Id>>,
+    shift_pattern_cache: BTreeMap<(rbg::Rule<Id>, Id), BTreeSet<Id>>,
 }
 
 impl Context {
@@ -278,7 +279,11 @@ impl Context {
         Arc::from(rg::Type::new(identifier))
     }
 
-    fn create_reachability_map(&mut self, map: &BTreeMap<Id, Vec<Id>>) -> Id {
+    fn create_reachability_map(&mut self, map: &BTreeMap<Id, BTreeSet<Id>>) -> Id {
+        if let Some(identifier) = self.reachability_map_cache.get(map) {
+            return identifier.clone();
+        }
+
         let one = Arc::from(rg::Value::new(Id::from("1")));
         let zero = Arc::from(rg::Value::new(Id::from("0")));
 
@@ -295,7 +300,8 @@ impl Context {
             (lhs.clone(), value)
         })));
 
-        if let Some(constant) = self.rg.constants.iter().find(|x| x.value == value) {
+        let identifier = if let Some(constant) = self.rg.constants.iter().find(|x| x.value == value)
+        {
             constant.identifier.clone()
         } else {
             self.reachable_map_index += 1;
@@ -315,105 +321,89 @@ impl Context {
             });
 
             identifier
-        }
+        };
+
+        self.reachability_map_cache
+            .insert(map.clone(), identifier.clone());
+        identifier
     }
 
-    fn make_shift_pattern(&mut self, coord: &Id, rule: &rbg::Rule<Id>) -> Vec<Id> {
-        let key = (coord.clone(), rule.clone());
-        if let Some(coords) = self.shift_patterns.get(&key).cloned() {
-            return coords;
+    fn make_shift_pattern(&mut self, rule: &rbg::Rule<Id>, coord: &Id) -> BTreeSet<Id> {
+        let key = (rule.clone(), coord.clone());
+        if let Some(coords) = self.shift_pattern_cache.get(&key) {
+            return coords.clone();
         }
 
-        let coords = rule
-            .elements
-            .iter()
-            .flat_map(|concatenation| {
-                concatenation.iter().fold(
-                    vec![coord.clone()],
-                    |coords, rbg::Atom { content, power }| {
-                        if *power {
-                            // Fast path for saturated iterations.
-                            if coords.len() == self.coords.len() {
-                                return coords;
+        let mut coords_reachable = BTreeSet::from([coord.clone()]);
+        loop {
+            let coords_reachable_before = coords_reachable.len();
+            for concatenation in &rule.elements {
+                let mut coords = BTreeSet::from([coord.clone()]);
+                for rbg::Atom { content, power } in concatenation {
+                    let mut coords_to_review = coords.clone();
+                    if *power {
+                        loop {
+                            let mut coords_to_add = BTreeSet::new();
+                            for coord in &coords_to_review {
+                                self.make_shift_pattern_step(coord, content, &mut coords_to_add);
                             }
 
-                            let mut reachable_coords: BTreeSet<_> =
-                                coords.iter().cloned().collect();
-                            let mut reachable_coords_to_review = reachable_coords.clone();
-                            loop {
-                                let mut reachable_coords_to_add = BTreeSet::new();
-                                for coord in &reachable_coords_to_review {
-                                    self.make_shift_pattern_step(
-                                        coord,
-                                        content,
-                                        &mut reachable_coords_to_add,
-                                    );
-                                }
-
-                                if reachable_coords_to_add.is_empty() {
-                                    break;
-                                }
-
-                                reachable_coords_to_review.clear();
-                                for coord in reachable_coords_to_add {
-                                    if reachable_coords.insert(coord.clone()) {
-                                        reachable_coords_to_review.insert(coord);
-                                    }
-                                }
-
-                                // Fast path for saturated iterations.
-                                if reachable_coords.len() == self.coords.len() {
-                                    return coords;
-                                }
+                            if coords_to_add.is_empty() {
+                                break;
                             }
 
-                            reachable_coords.into_iter().collect()
-                        } else {
-                            let mut reachable_coords = BTreeSet::new();
-                            for coord in &coords {
-                                self.make_shift_pattern_step(coord, content, &mut reachable_coords);
+                            coords_to_review.clear();
+                            for coord in coords_to_add {
+                                if coords.insert(coord.clone()) {
+                                    coords_to_review.insert(coord);
+                                }
                             }
-
-                            reachable_coords.into_iter().collect()
                         }
-                    },
-                )
-            })
-            .collect::<BTreeSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
+                    } else {
+                        coords.clear();
+                        for coord in coords_to_review {
+                            self.make_shift_pattern_step(&coord, content, &mut coords);
+                        }
+                    }
+                }
 
-        self.shift_patterns.insert(key, coords.clone());
-        coords
+                coords_reachable.extend(coords);
+            }
+
+            if coords_reachable_before == coords_reachable.len() {
+                break;
+            }
+        }
+
+        self.shift_pattern_cache
+            .insert(key, coords_reachable.clone());
+        coords_reachable
     }
 
     fn make_shift_pattern_step(
         &mut self,
         coord: &Id,
         content: &rbg::ActionOrRule<Id>,
-        reachable_coords: &mut BTreeSet<Id>,
+        coords: &mut BTreeSet<Id>,
     ) {
         match content {
             rbg::ActionOrRule::Action(rbg::Action::Check { negated, rule }) => {
-                if *negated == self.make_shift_pattern(coord, rule).is_empty() {
-                    reachable_coords.insert(coord.clone());
+                if *negated == self.make_shift_pattern(rule, coord).is_empty() {
+                    coords.insert(coord.clone());
                 }
             }
             rbg::ActionOrRule::Action(rbg::Action::Shift { label }) => {
-                let node = self.rbg.board.iter().find(|node| node.node == *coord);
-                let edge =
-                    node.and_then(|node| node.edges.iter().find(|edge| edge.label == *label));
-                if let Some(edge) = edge {
-                    reachable_coords.insert(edge.node.clone());
+                if let Some(node) = self.rbg.board.iter().find(|node| node.node == *coord) {
+                    if let Some(edge) = node.edges.iter().find(|edge| edge.label == *label) {
+                        coords.insert(edge.node.clone());
+                    }
                 }
             }
             rbg::ActionOrRule::Action(_) => {
                 panic!("Incorrect shift pattern: {content:?}")
             }
             rbg::ActionOrRule::Rule(rule) => {
-                for node in self.make_shift_pattern(coord, rule) {
-                    reachable_coords.insert(node.clone());
-                }
+                coords.extend(self.make_shift_pattern(rule, coord));
             }
         }
     }
@@ -447,8 +437,9 @@ pub fn rbg_to_rg(rbg: rbg::Game<Id>) -> Result<rg::Game<Id>, rbg::Error<Id>> {
         rbg,
         reachable_map_index: 0,
         rg: rg::Game::default(),
+        reachability_map_cache: BTreeMap::new(),
         rule_automatons: BTreeMap::new(),
-        shift_patterns: BTreeMap::new(),
+        shift_pattern_cache: BTreeMap::new(),
     };
 
     context
@@ -1276,16 +1267,13 @@ fn translate_atom_content(
             );
         }
         rbg::ActionOrRule::Rule(rule) if is_expandable_shift_pattern(&rule) => {
-            let mut pairs: Vec<_> = context
-                .rbg
-                .board
+            let mut pairs: BTreeMap<_, _> = context
+                .coords
                 .clone()
                 .into_iter()
-                .map(|node| {
-                    (
-                        node.node.clone(),
-                        context.make_shift_pattern(&node.node, &rule),
-                    )
+                .map(|coord| {
+                    let coords = context.make_shift_pattern(&rule, &coord);
+                    (coord, coords)
                 })
                 .collect();
             let pairs_len = pairs.len();
@@ -1308,7 +1296,10 @@ fn translate_atom_content(
                 let map: Vec<_> = pairs
                     .into_iter()
                     .map(|(coord, mut coords)| {
-                        (coord, coords.pop().unwrap_or_else(|| Id::from("null")))
+                        (
+                            coord,
+                            coords.pop_first().unwrap_or_else(|| Id::from("null")),
+                        )
                     })
                     .chain(Some((Id::from("null"), Id::from("null"))))
                     .collect();
@@ -1342,9 +1333,10 @@ fn translate_atom_content(
             }
 
             // Always the same coords are reachable -> (bind: RbgType).
-            if pairs.iter().all(|(_, coords)| *coords == pairs[0].1) {
-                let coords = pairs.pop().unwrap().1;
-                let type_ = context.create_type_from_set(coords);
+            let first_coords = pairs.first_key_value().unwrap().1;
+            if pairs.iter().all(|(_, coords)| *coords == *first_coords) {
+                let coords = pairs.pop_first().unwrap().1;
+                let type_ = context.create_type_from_set(coords.into_iter().collect());
                 let local = context.random_node();
 
                 context.connect(
@@ -1371,8 +1363,7 @@ fn translate_atom_content(
             // Similarly to `join_generators`, we create a mapping representing
             // all correct pairs (coord, reachable_coord) to check it using only
             // one generator.
-            let reachability_map = context.create_reachability_map(&BTreeMap::from_iter(pairs));
-
+            let reachability_map = context.create_reachability_map(&pairs);
             let local_temp = context.random_node();
             context.connect(
                 from,
