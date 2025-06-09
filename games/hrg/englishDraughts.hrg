@@ -3,7 +3,7 @@
 domain Piece = empty | white_pawn | white_king | black_pawn | black_king | border
 domain Player = white | black
 domain Score = 50 | 0 | 100
-domain Stagnation = S(X) where X in 0..50
+domain Stagnation = S(X) where X in 0..20
 domain Bool = 0 | 1
 
 domain Position =
