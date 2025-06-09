@@ -8,6 +8,7 @@ type Id = Arc<str>;
 
 struct Context {
     coords: Vec<Id>,
+    coords_without_null: Vec<Id>,
     expose_index: usize,
     node_index: usize,
     rbg: rbg::Game<Id>,
@@ -287,8 +288,9 @@ impl Context {
         let one = Arc::from(rg::Value::new(Id::from("1")));
         let zero = Arc::from(rg::Value::new(Id::from("0")));
 
-        let value = Arc::from(rg::Value::from_pairs_iter(self.coords.iter().map(|lhs| {
-            let value = Arc::from(rg::Value::from_pairs_iter(self.coords.iter().map(|rhs| {
+        let coords = &self.coords_without_null;
+        let value = Arc::from(rg::Value::from_pairs_iter(coords.iter().map(|lhs| {
+            let value = Arc::from(rg::Value::from_pairs_iter(coords.iter().map(|rhs| {
                 let value = match map.get(lhs) {
                     Some(rhss) if rhss.contains(rhs) => one.clone(),
                     _ => zero.clone(),
@@ -311,9 +313,9 @@ impl Context {
                 span: Span::none(),
                 identifier: identifier.clone(),
                 type_: Arc::from(rg::Type::Arrow {
-                    lhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
+                    lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
                     rhs: Arc::from(rg::Type::Arrow {
-                        lhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
+                        lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
                         rhs: Arc::from(rg::Type::new(Id::from("Bool"))),
                     }),
                 }),
@@ -427,11 +429,13 @@ enum InternalOperator {
 }
 
 pub fn rbg_to_rg(rbg: rbg::Game<Id>) -> Result<rg::Game<Id>, rbg::Error<Id>> {
+    let coords_without_null: Vec<_> = rbg.board.iter().map(|node| node.node.clone()).collect();
+    let mut coords = coords_without_null.clone();
+    coords.insert(0, Id::from("null"));
+
     let mut context = Context {
-        coords: (Some(Id::from("null")))
-            .into_iter()
-            .chain(rbg.board.iter().map(|node| node.node.clone()))
-            .collect(),
+        coords,
+        coords_without_null,
         expose_index: 0,
         node_index: 0,
         rbg,
@@ -548,12 +552,7 @@ fn add_builtin_types(context: &mut Context) {
         identifier: Id::from("Coord"),
         type_: Arc::from(rg::Type::Set {
             span: Span::none(),
-            identifiers: context
-                .coords
-                .iter()
-                .filter(|x| x.as_ref() != "null")
-                .cloned()
-                .collect(),
+            identifiers: context.coords_without_null.clone(),
         }),
     });
 
@@ -1268,7 +1267,7 @@ fn translate_atom_content(
         }
         rbg::ActionOrRule::Rule(rule) if is_expandable_shift_pattern(&rule) => {
             let mut pairs: BTreeMap<_, _> = context
-                .coords
+                .coords_without_null
                 .clone()
                 .into_iter()
                 .map(|coord| {
@@ -1370,7 +1369,7 @@ fn translate_atom_content(
                 local_temp.clone(),
                 rg::Label::AssignmentAny {
                     lhs: Arc::from(rg::Expression::new(Id::from("coord_temp"))),
-                    rhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
+                    rhs: Arc::from(rg::Type::new(Id::from("Coord"))),
                 },
             );
 
