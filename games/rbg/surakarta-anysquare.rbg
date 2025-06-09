@@ -88,12 +88,14 @@
 #variables = stagnation(100)
 #rules = 
 ([$ stagnation=stagnation+1]->white (
-left *
-+ right *
-)(
-up *
-+ down *
-)(
+left 
++ right 
++ up 
++ down 
++ slideH 
++ slideV 
++ out 
+)*(
 {whitePawn}[empty](
 up 
 + down 
@@ -125,12 +127,14 @@ slideCW
 )
 + [$ white=100][$ black=0]
 )[$ stagnation=stagnation+1]->black (
-left *
-+ right *
-)(
-up *
-+ down *
-)(
+left 
++ right 
++ up 
++ down 
++ slideH 
++ slideV 
++ out 
+)*(
 {blackPawn}[empty](
 up 
 + down 
