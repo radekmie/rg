@@ -336,7 +336,7 @@ impl Context {
             return coords.clone();
         }
 
-        let mut coords_reachable = BTreeSet::from([coord.clone()]);
+        let mut coords_reachable = BTreeSet::new();
         loop {
             let coords_reachable_before = coords_reachable.len();
             for concatenation in &rule.elements {
