@@ -4,6 +4,7 @@ domain Piece = empty | white_pawn | white_king | black_pawn | black_king | borde
 domain Player = white | black
 domain Score = 50 | 0 | 100
 domain Stagnation = S(X) where X in 0..20
+domain StagnationOrNan = Stagnation | nan
 domain Bool = 0 | 1
 
 domain Position =
@@ -60,8 +61,8 @@ opponent : Player -> Player
 opponent(white) = black
 opponent(black) = white
 
-increment : Stagnation -> Stagnation
-increment(S(X)) = if X < 20 then S(X + 1) else S(X)
+increment : Stagnation -> StagnationOrNan
+increment(S(X)) = if X < 20 then S(X + 1) else nan
 
 compare : Stagnation -> Stagnation -> Bool
 compare(S(X), S(Y)) = if X < Y then 0 else 1
@@ -255,7 +256,7 @@ graph move_king_capture() {
   pos = Position(*)
   check(board[pos] == my_king(me))
   board[pos] = empty
-  $ pos
+  $$ pos
   loop {
     branch {
       // position is now on enemy piece
@@ -310,6 +311,7 @@ graph move_king_capture() {
 
 graph move() {
   if not(reachable(capture_available())) {
+    player = me
     branch {
       move_pawn_normal()
       if promotionLine(me)(pos) == 1 {
@@ -324,6 +326,7 @@ graph move() {
       stagnation = increment(stagnation)
     }
   } else {
+    player = me
     branch {
       move_pawn_capture()
       if promotionLine(me)(pos) == 1 {
@@ -340,7 +343,6 @@ graph move() {
 }
 
 graph turn() {
-  player = me
   move()
   player = keeper
   me = opponent(me)
