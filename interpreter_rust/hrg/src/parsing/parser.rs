@@ -238,10 +238,10 @@ fn comp_binop(input: Input) -> Result<Binop> {
     ww(alt((
         value(Binop::Eq, tag("==")),
         value(Binop::Ne, tag("!=")),
-        value(Binop::Lt, tag("<")),
         value(Binop::Lte, tag("<=")),
-        value(Binop::Gt, tag(">")),
+        value(Binop::Lt, tag("<")),
         value(Binop::Gte, tag(">=")),
+        value(Binop::Gt, tag(">")),
     )))(input)
 }
 
