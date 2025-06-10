@@ -489,7 +489,7 @@ fn add_builtin_constants(context: &mut Context) {
                 span: Span::none(),
                 identifier: Id::from(format!("direction_{label}")),
                 type_: Arc::from(rg::Type::Arrow {
-                    lhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
+                    lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
                     rhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
                 }),
                 value: Arc::from(rg::Value::Map {
@@ -606,7 +606,7 @@ fn add_builtin_variables(context: &mut Context) {
     context.rg.variables.push(rg::Variable {
         span: Span::none(),
         identifier: Id::from("coord_temp"),
-        type_: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
+        type_: Arc::from(rg::Type::new(Id::from("Coord"))),
         default_value: Arc::from(rg::Value::new(context.rbg.board[0].node.clone())),
     });
 
