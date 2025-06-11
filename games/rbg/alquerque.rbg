@@ -30,12 +30,15 @@
 #rules = 
 ([$ stagnation=stagnation+1](
 {!(
-left *
-+ right *
-)(
-up *
-+ down *
-){whitePawn}(
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{whitePawn}(
 up {blackPawn}up {empty}
 + down {blackPawn}down {empty}
 + left {blackPawn}left {empty}
@@ -45,12 +48,15 @@ up {blackPawn}up {empty}
 + downLeft {blackPawn}downLeft {empty}
 + downRight {blackPawn}downRight {empty}
 )}->white (
-left *
-+ right *
-)(
-up *
-+ down *
-){whitePawn}[empty](
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{whitePawn}[empty](
 up 
 + down 
 + left 
@@ -61,12 +67,15 @@ up
 + downRight 
 ){empty}->>
 + {?(
-left *
-+ right *
-)(
-up *
-+ down *
-){whitePawn}(
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{whitePawn}(
 up {blackPawn}up {empty}
 + down {blackPawn}down {empty}
 + left {blackPawn}left {empty}
@@ -76,12 +85,15 @@ up {blackPawn}up {empty}
 + downLeft {blackPawn}downLeft {empty}
 + downRight {blackPawn}downRight {empty}
 )}->white (
-left *
-+ right *
-)(
-up *
-+ down *
-){whitePawn}[empty](
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{whitePawn}[empty](
 up {blackPawn}[empty]up {empty}
 + down {blackPawn}[empty]down {empty}
 + left {blackPawn}[empty]left {empty}
@@ -119,20 +131,51 @@ up {blackPawn}up {empty}
 + downRight {blackPawn}downRight {empty}
 }->>[$ stagnation=0]
 )[whitePawn](
-{$ stagnation==100}(
-{$ whitePawn>blackPawn}[$ white=100][$ black=0]->>{}
+{$ stagnation==100}[$ white=100][$ black=0]->>(
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{blackPawn}(
+(
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+){empty}
++ up {whitePawn}up {empty}
++ down {whitePawn}down {empty}
++ left {whitePawn}left {empty}
++ right {whitePawn}right {empty}
++ upLeft {whitePawn}upLeft {empty}
++ upRight {whitePawn}upRight {empty}
++ downLeft {whitePawn}downLeft {empty}
++ downRight {whitePawn}downRight {empty}
+)(
+{$ whitePawn>blackPawn}->>{}
 + {$ whitePawn<blackPawn}[$ white=0][$ black=100]->>{}
 + {$ whitePawn==blackPawn}[$ white=50][$ black=50]->>{}
 )
 + [$ white=100][$ black=0]
 )[$ stagnation=stagnation+1](
 {!(
-left *
-+ right *
-)(
-up *
-+ down *
-){blackPawn}(
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{blackPawn}(
 up {whitePawn}up {empty}
 + down {whitePawn}down {empty}
 + left {whitePawn}left {empty}
@@ -142,12 +185,15 @@ up {whitePawn}up {empty}
 + downLeft {whitePawn}downLeft {empty}
 + downRight {whitePawn}downRight {empty}
 )}->black (
-left *
-+ right *
-)(
-up *
-+ down *
-){blackPawn}[empty](
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{blackPawn}[empty](
 up 
 + down 
 + left 
@@ -158,12 +204,15 @@ up
 + downRight 
 ){empty}->>
 + {?(
-left *
-+ right *
-)(
-up *
-+ down *
-){blackPawn}(
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{blackPawn}(
 up {whitePawn}up {empty}
 + down {whitePawn}down {empty}
 + left {whitePawn}left {empty}
@@ -173,12 +222,15 @@ up {whitePawn}up {empty}
 + downLeft {whitePawn}downLeft {empty}
 + downRight {whitePawn}downRight {empty}
 )}->black (
-left *
-+ right *
-)(
-up *
-+ down *
-){blackPawn}[empty](
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{blackPawn}[empty](
 up {whitePawn}[empty]up {empty}
 + down {whitePawn}[empty]down {empty}
 + left {whitePawn}[empty]left {empty}
@@ -216,8 +268,36 @@ up {whitePawn}up {empty}
 + downRight {whitePawn}downRight {empty}
 }->>[$ stagnation=0]
 )[blackPawn](
-{$ stagnation==100}(
-{$ blackPawn>whitePawn}[$ black=100][$ white=0]->>{}
+{$ stagnation==100}[$ black=100][$ white=0]->>(
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{whitePawn}(
+(
+up 
++ down 
++ left 
++ right 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+){empty}
++ up {blackPawn}up {empty}
++ down {blackPawn}down {empty}
++ left {blackPawn}left {empty}
++ right {blackPawn}right {empty}
++ upLeft {blackPawn}upLeft {empty}
++ upRight {blackPawn}upRight {empty}
++ downLeft {blackPawn}downLeft {empty}
++ downRight {blackPawn}downRight {empty}
+)(
+{$ blackPawn>whitePawn}->>{}
 + {$ blackPawn<whitePawn}[$ black=0][$ white=100]->>{}
 + {$ blackPawn==whitePawn}[$ black=50][$ white=50]->>{}
 )

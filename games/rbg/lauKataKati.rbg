@@ -51,10 +51,10 @@ left
 + downLeft 
 + downRight 
 )*{whitePawn}[empty](
-up 
-+ down 
-+ left 
+left 
 + right 
++ up 
++ down 
 + upLeft 
 + upRight 
 + downLeft 
@@ -125,8 +125,36 @@ up {blackPawn}up {empty}
 + downRight {blackPawn}downRight {empty}
 }->>[$ stagnation=0]
 )[whitePawn](
-{$ stagnation==100}(
-{$ whitePawn>blackPawn}[$ white=100][$ black=0]->>{}
+{$ stagnation==100}[$ white=100][$ black=0]->>(
+left 
++ right 
++ up 
++ down 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{blackPawn}(
+(
+left 
++ right 
++ up 
++ down 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+){empty}
++ up {whitePawn}up {empty}
++ down {whitePawn}down {empty}
++ left {whitePawn}left {empty}
++ right {whitePawn}right {empty}
++ upLeft {whitePawn}upLeft {empty}
++ upRight {whitePawn}upRight {empty}
++ downLeft {whitePawn}downLeft {empty}
++ downRight {whitePawn}downRight {empty}
+)(
+{$ whitePawn>blackPawn}->>{}
 + {$ whitePawn<blackPawn}[$ white=0][$ black=100]->>{}
 + {$ whitePawn==blackPawn}[$ white=50][$ black=50]->>{}
 )
@@ -160,10 +188,10 @@ left
 + downLeft 
 + downRight 
 )*{blackPawn}[empty](
-up 
-+ down 
-+ left 
+left 
 + right 
++ up 
++ down 
 + upLeft 
 + upRight 
 + downLeft 
@@ -234,8 +262,36 @@ up {whitePawn}up {empty}
 + downRight {whitePawn}downRight {empty}
 }->>[$ stagnation=0]
 )[blackPawn](
-{$ stagnation==100}(
-{$ blackPawn>whitePawn}[$ black=100][$ white=0]->>{}
+{$ stagnation==100}[$ black=100][$ white=0]->>(
+left 
++ right 
++ up 
++ down 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+)*{whitePawn}(
+(
+left 
++ right 
++ up 
++ down 
++ upLeft 
++ upRight 
++ downLeft 
++ downRight 
+){empty}
++ up {blackPawn}up {empty}
++ down {blackPawn}down {empty}
++ left {blackPawn}left {empty}
++ right {blackPawn}right {empty}
++ upLeft {blackPawn}upLeft {empty}
++ upRight {blackPawn}upRight {empty}
++ downLeft {blackPawn}downLeft {empty}
++ downRight {blackPawn}downRight {empty}
+)(
+{$ blackPawn>whitePawn}->>{}
 + {$ blackPawn<whitePawn}[$ black=0][$ white=100]->>{}
 + {$ blackPawn==whitePawn}[$ black=50][$ white=50]->>{}
 )

@@ -59,12 +59,12 @@ cw
 )*{whitePawn}(
 cw {blackPawn}cw {empty}
 + ccw {blackPawn}ccw {empty}
-+ upRight {blackPawn}upRight {empty}
-+ right {blackPawn}right {empty}
-+ downRight {blackPawn}downRight {empty}
-+ downLeft {blackPawn}downLeft {empty}
 + left {blackPawn}left {empty}
++ right {blackPawn}right {empty}
 + upLeft {blackPawn}upLeft {empty}
++ upRight {blackPawn}upRight {empty}
++ downLeft {blackPawn}downLeft {empty}
++ downRight {blackPawn}downRight {empty}
 )}->white (
 cw 
 + ccw 
@@ -96,12 +96,12 @@ cw
 )*{whitePawn}(
 cw {blackPawn}cw {empty}
 + ccw {blackPawn}ccw {empty}
-+ upRight {blackPawn}upRight {empty}
-+ right {blackPawn}right {empty}
-+ downRight {blackPawn}downRight {empty}
-+ downLeft {blackPawn}downLeft {empty}
 + left {blackPawn}left {empty}
++ right {blackPawn}right {empty}
 + upLeft {blackPawn}upLeft {empty}
++ upRight {blackPawn}upRight {empty}
++ downLeft {blackPawn}downLeft {empty}
++ downRight {blackPawn}downRight {empty}
 )}->white (
 cw 
 + ccw 
@@ -114,43 +114,71 @@ cw
 )*{whitePawn}[empty](
 cw {blackPawn}[empty]cw {empty}
 + ccw {blackPawn}[empty]ccw {empty}
-+ upRight {blackPawn}[empty]upRight {empty}
-+ right {blackPawn}[empty]right {empty}
-+ downRight {blackPawn}[empty]downRight {empty}
-+ downLeft {blackPawn}[empty]downLeft {empty}
 + left {blackPawn}[empty]left {empty}
++ right {blackPawn}[empty]right {empty}
 + upLeft {blackPawn}[empty]upLeft {empty}
++ upRight {blackPawn}[empty]upRight {empty}
++ downLeft {blackPawn}[empty]downLeft {empty}
++ downRight {blackPawn}[empty]downRight {empty}
 )({?
 cw {blackPawn}cw {empty}
 + ccw {blackPawn}ccw {empty}
-+ upRight {blackPawn}upRight {empty}
-+ right {blackPawn}right {empty}
-+ downRight {blackPawn}downRight {empty}
-+ downLeft {blackPawn}downLeft {empty}
 + left {blackPawn}left {empty}
++ right {blackPawn}right {empty}
 + upLeft {blackPawn}upLeft {empty}
++ upRight {blackPawn}upRight {empty}
++ downLeft {blackPawn}downLeft {empty}
++ downRight {blackPawn}downRight {empty}
 }(
 cw {blackPawn}[empty]cw {empty}
 + ccw {blackPawn}[empty]ccw {empty}
-+ upRight {blackPawn}[empty]upRight {empty}
-+ right {blackPawn}[empty]right {empty}
-+ downRight {blackPawn}[empty]downRight {empty}
-+ downLeft {blackPawn}[empty]downLeft {empty}
 + left {blackPawn}[empty]left {empty}
++ right {blackPawn}[empty]right {empty}
 + upLeft {blackPawn}[empty]upLeft {empty}
++ upRight {blackPawn}[empty]upRight {empty}
++ downLeft {blackPawn}[empty]downLeft {empty}
++ downRight {blackPawn}[empty]downRight {empty}
 ))*{!
 cw {blackPawn}cw {empty}
 + ccw {blackPawn}ccw {empty}
-+ upRight {blackPawn}upRight {empty}
-+ right {blackPawn}right {empty}
-+ downRight {blackPawn}downRight {empty}
-+ downLeft {blackPawn}downLeft {empty}
 + left {blackPawn}left {empty}
++ right {blackPawn}right {empty}
 + upLeft {blackPawn}upLeft {empty}
++ upRight {blackPawn}upRight {empty}
++ downLeft {blackPawn}downLeft {empty}
++ downRight {blackPawn}downRight {empty}
 }->>[$ stagnation=0]
 )[whitePawn](
-{$ stagnation==100}(
-{$ whitePawn>blackPawn}[$ white=100][$ black=0]->>{}
+{$ stagnation==100}[$ white=100][$ black=0]->>(
+cw 
++ ccw 
++ upRight 
++ right 
++ downRight 
++ downLeft 
++ left 
++ upLeft 
+)*{blackPawn}(
+(
+cw 
++ ccw 
++ upRight 
++ right 
++ downRight 
++ downLeft 
++ left 
++ upLeft 
+){empty}
++ cw {whitePawn}cw {empty}
++ ccw {whitePawn}ccw {empty}
++ left {whitePawn}left {empty}
++ right {whitePawn}right {empty}
++ upLeft {whitePawn}upLeft {empty}
++ upRight {whitePawn}upRight {empty}
++ downLeft {whitePawn}downLeft {empty}
++ downRight {whitePawn}downRight {empty}
+)(
+{$ whitePawn>blackPawn}->>{}
 + {$ whitePawn<blackPawn}[$ white=0][$ black=100]->>{}
 + {$ whitePawn==blackPawn}[$ white=50][$ black=50]->>{}
 )
@@ -168,12 +196,12 @@ cw
 )*{blackPawn}(
 cw {whitePawn}cw {empty}
 + ccw {whitePawn}ccw {empty}
-+ upRight {whitePawn}upRight {empty}
-+ right {whitePawn}right {empty}
-+ downRight {whitePawn}downRight {empty}
-+ downLeft {whitePawn}downLeft {empty}
 + left {whitePawn}left {empty}
++ right {whitePawn}right {empty}
 + upLeft {whitePawn}upLeft {empty}
++ upRight {whitePawn}upRight {empty}
++ downLeft {whitePawn}downLeft {empty}
++ downRight {whitePawn}downRight {empty}
 )}->black (
 cw 
 + ccw 
@@ -205,12 +233,12 @@ cw
 )*{blackPawn}(
 cw {whitePawn}cw {empty}
 + ccw {whitePawn}ccw {empty}
-+ upRight {whitePawn}upRight {empty}
-+ right {whitePawn}right {empty}
-+ downRight {whitePawn}downRight {empty}
-+ downLeft {whitePawn}downLeft {empty}
 + left {whitePawn}left {empty}
++ right {whitePawn}right {empty}
 + upLeft {whitePawn}upLeft {empty}
++ upRight {whitePawn}upRight {empty}
++ downLeft {whitePawn}downLeft {empty}
++ downRight {whitePawn}downRight {empty}
 )}->black (
 cw 
 + ccw 
@@ -223,43 +251,71 @@ cw
 )*{blackPawn}[empty](
 cw {whitePawn}[empty]cw {empty}
 + ccw {whitePawn}[empty]ccw {empty}
-+ upRight {whitePawn}[empty]upRight {empty}
-+ right {whitePawn}[empty]right {empty}
-+ downRight {whitePawn}[empty]downRight {empty}
-+ downLeft {whitePawn}[empty]downLeft {empty}
 + left {whitePawn}[empty]left {empty}
++ right {whitePawn}[empty]right {empty}
 + upLeft {whitePawn}[empty]upLeft {empty}
++ upRight {whitePawn}[empty]upRight {empty}
++ downLeft {whitePawn}[empty]downLeft {empty}
++ downRight {whitePawn}[empty]downRight {empty}
 )({?
 cw {whitePawn}cw {empty}
 + ccw {whitePawn}ccw {empty}
-+ upRight {whitePawn}upRight {empty}
-+ right {whitePawn}right {empty}
-+ downRight {whitePawn}downRight {empty}
-+ downLeft {whitePawn}downLeft {empty}
 + left {whitePawn}left {empty}
++ right {whitePawn}right {empty}
 + upLeft {whitePawn}upLeft {empty}
++ upRight {whitePawn}upRight {empty}
++ downLeft {whitePawn}downLeft {empty}
++ downRight {whitePawn}downRight {empty}
 }(
 cw {whitePawn}[empty]cw {empty}
 + ccw {whitePawn}[empty]ccw {empty}
-+ upRight {whitePawn}[empty]upRight {empty}
-+ right {whitePawn}[empty]right {empty}
-+ downRight {whitePawn}[empty]downRight {empty}
-+ downLeft {whitePawn}[empty]downLeft {empty}
 + left {whitePawn}[empty]left {empty}
++ right {whitePawn}[empty]right {empty}
 + upLeft {whitePawn}[empty]upLeft {empty}
++ upRight {whitePawn}[empty]upRight {empty}
++ downLeft {whitePawn}[empty]downLeft {empty}
++ downRight {whitePawn}[empty]downRight {empty}
 ))*{!
 cw {whitePawn}cw {empty}
 + ccw {whitePawn}ccw {empty}
-+ upRight {whitePawn}upRight {empty}
-+ right {whitePawn}right {empty}
-+ downRight {whitePawn}downRight {empty}
-+ downLeft {whitePawn}downLeft {empty}
 + left {whitePawn}left {empty}
++ right {whitePawn}right {empty}
 + upLeft {whitePawn}upLeft {empty}
++ upRight {whitePawn}upRight {empty}
++ downLeft {whitePawn}downLeft {empty}
++ downRight {whitePawn}downRight {empty}
 }->>[$ stagnation=0]
 )[blackPawn](
-{$ stagnation==100}(
-{$ blackPawn>whitePawn}[$ black=100][$ white=0]->>{}
+{$ stagnation==100}[$ black=100][$ white=0]->>(
+cw 
++ ccw 
++ upRight 
++ right 
++ downRight 
++ downLeft 
++ left 
++ upLeft 
+)*{whitePawn}(
+(
+cw 
++ ccw 
++ upRight 
++ right 
++ downRight 
++ downLeft 
++ left 
++ upLeft 
+){empty}
++ cw {blackPawn}cw {empty}
++ ccw {blackPawn}ccw {empty}
++ left {blackPawn}left {empty}
++ right {blackPawn}right {empty}
++ upLeft {blackPawn}upLeft {empty}
++ upRight {blackPawn}upRight {empty}
++ downLeft {blackPawn}downLeft {empty}
++ downRight {blackPawn}downRight {empty}
+)(
+{$ blackPawn>whitePawn}->>{}
 + {$ blackPawn<whitePawn}[$ black=0][$ white=100]->>{}
 + {$ blackPawn==whitePawn}[$ black=50][$ white=50]->>{}
 )
