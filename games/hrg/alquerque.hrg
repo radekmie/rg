@@ -1,0 +1,191 @@
+// Alquerque
+// There are capturing sequences. Capturing and continuing a sequence is mandatory.
+// The game ends after 100 turns without a capture, or when a player does not have a legal move.
+
+domain Piece = empty | whitePawn | blackPawn | border
+domain Player = black | white
+domain Score = 50 | 0 | 100
+domain Bool = 0 | 1
+
+domain Count = I(X) where X in 0..100
+domain CountOrNan = nan | Count
+
+domain Position = V(X,Y) where X in 0..4, Y in 0..4
+domain PositionOrNull = null | Position
+
+up : PositionOrNull -> PositionOrNull
+up(null) = null
+up(V(X,Y)) = if Y == 0 then null else V(X,Y-1)
+down : PositionOrNull -> PositionOrNull
+down(null) = null
+down(V(X,Y)) = if Y == 4 then null else V(X,Y+1)
+left : PositionOrNull -> PositionOrNull
+left(null) = null
+left(V(X,Y)) = if X == 0 then null else V(X-1,Y)
+right : PositionOrNull -> PositionOrNull
+right(null) = null
+right(V(X,Y)) = if X == 4 then null else V(X+1,Y)
+upLeft : PositionOrNull -> PositionOrNull
+upLeft(null) = null
+upLeft(V(X,Y)) = if (X == 1 && Y == 1) || (X == 3 && Y == 1) ||
+                    (X == 2 && Y == 2) || (X == 4 && Y == 2) ||
+                    (X == 1 && Y == 3) || (X == 3 && Y == 3) ||
+                    (X == 2 && Y == 4) || (X == 4 && Y == 4) then V(X-1,Y-1) else null
+upRight : PositionOrNull -> PositionOrNull
+upRight(null) = null
+upRight(V(X,Y)) = if (X == 1 && Y == 1) || (X == 3 && Y == 1) ||
+                     (X == 0 && Y == 2) || (X == 2 && Y == 2) ||
+                     (X == 1 && Y == 3) || (X == 3 && Y == 3) ||
+                     (X == 0 && Y == 4) || (X == 2 && Y == 4) then V(X+1,Y-1) else null
+downLeft : PositionOrNull -> PositionOrNull
+downLeft(null) = null
+downLeft(V(X,Y)) = if (X == 2 && Y == 0) || (X == 4 && Y == 0) ||
+                      (X == 1 && Y == 1) || (X == 3 && Y == 1) ||
+                      (X == 2 && Y == 2) || (X == 4 && Y == 2) ||
+                      (X == 1 && Y == 3) || (X == 3 && Y == 3) then V(X-1,Y+1) else null
+downRight : PositionOrNull -> PositionOrNull
+downRight(null) = null
+downRight(V(X,Y)) = if (X == 0 && Y == 0) || (X == 2 && Y == 0) ||
+                       (X == 1 && Y == 1) || (X == 3 && Y == 1) ||
+                       (X == 0 && Y == 2) || (X == 2 && Y == 2) ||
+                       (X == 1 && Y == 3) || (X == 3 && Y == 3) then V(X+1,Y+1) else null
+domain DirIndex = S(X) where X in 0..7
+allDirs : DirIndex -> PositionOrNull -> PositionOrNull
+allDirs(S(0)) = up
+allDirs(S(1)) = down
+allDirs(S(2)) = left
+allDirs(S(3)) = right
+allDirs(S(4)) = upLeft
+allDirs(S(5)) = upRight
+allDirs(S(6)) = downLeft
+allDirs(S(7)) = downRight
+
+myPawn : Player -> Piece
+myPawn(white) = whitePawn
+myPawn(black) = blackPawn
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(black) = white
+
+increment : Count -> CountOrNan
+increment(I(X)) = if X < 100 then I(X+1) else nan
+
+less : Count -> Count -> Bool
+less(I(X), I(Y)) = if X < Y then 1 else 0
+
+board : PositionOrNull -> Piece = {
+  V(X, Y) = 
+    if Y < 2 || (Y == 2 && X < 2) then blackPawn
+    else if Y > 2 || (Y == 2 && X > 2) then whitePawn
+    else empty
+    where X in 0..4, Y in 0..4;
+    null = border
+}
+
+me : Player = white
+pos : PositionOrNull
+stagnation : Count = I(0)
+captureCount: Player -> Count = {:I(0)}
+
+graph captureFromPosPossible() {
+  branch dir in DirIndex {
+    pos = allDirs[dir][pos]
+    check(board[pos] == myPawn[opponent[me]])
+    check(board[allDirs[dir][pos]] == empty)
+  }
+}
+graph capturingMovePossible() {
+  pos = Position(*)
+  check(board[pos] == myPawn[me])
+  captureFromPosPossible()
+}
+graph normalMovePossible() {
+  pos = Position(*)
+  check(board[pos] == myPawn[me])
+  branch dir in DirIndex {
+    check(board[allDirs[dir][pos]] == empty)
+  }
+}
+graph movePossible() {
+  pos = Position(*)
+  check(board[pos] == myPawn[me])
+  branch dir in DirIndex {
+    branch {
+      check(board[allDirs[dir][pos]] == empty)
+    } or {
+      pos = allDirs[dir][pos]
+      check(board[pos] == myPawn[opponent[me]])
+      check(board[allDirs[dir][pos]] == empty)
+    }
+  }
+}
+
+graph nonCapturingMove() {
+  $ NC
+  pos = Position(*)
+  check(board[pos] == myPawn[me])
+  board[pos] = empty
+  $$ pos
+  branch dir in DirIndex {
+    pos = allDirs[dir][pos]
+    check(board[pos] == empty)
+    $ dir
+  }
+  board[pos] = myPawn[me]
+}
+
+graph capturingMove() {
+  $ PC
+  pos = Position(*)
+  check(board[pos] == myPawn[me])
+  board[pos] = empty
+  $$ pos
+  loop {
+    branch dir in DirIndex {
+      $ dir
+      pos = allDirs[dir][pos]
+      check(board[pos] == myPawn[opponent[me]])
+      captureCount[me] = increment[captureCount[me]]
+      board[pos] = empty
+      pos = allDirs[dir][pos]
+      check(board[pos] == empty)
+    }
+    if not(reachable(captureFromPosPossible())) {
+      break()
+    }
+  }
+  board[pos] = myPawn[me]
+}
+
+graph turn() {
+  if not(reachable(capturingMovePossible())) {
+    player = me
+    nonCapturingMove()
+    player = keeper
+    stagnation = increment[stagnation]
+  } else {
+    player = me
+    capturingMove()
+    player = keeper
+    stagnation = I(0)
+  }
+  me = opponent[me]
+  if not(reachable(movePossible())) {
+    goals[me] = 0
+    goals[opponent[me]] = 100
+    end()
+  }
+  if less(stagnation, I(100)) == 0 {
+    if less(captureCount[black], captureCount[white]) == 1 {goals[white] = 100 goals[black] = 0} else {
+      if less(captureCount[white], captureCount[black]) == 1 {goals[white] = 0 goals[black] = 100}
+    }
+    end()
+  }
+}
+
+graph rules() {
+  loop {
+    turn()
+  }
+}
