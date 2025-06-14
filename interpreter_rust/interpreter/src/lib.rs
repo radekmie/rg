@@ -243,6 +243,7 @@ fn analyze_rg_inner(
         pass!(skip_redundant_tags);
 
         // Pruning.
+        pass!(prune_self_loops);
         pass!(prune_singleton_types);
         pass!(prune_unreachable_nodes);
         pass!(prune_unused_constants);

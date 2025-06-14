@@ -129,6 +129,15 @@ pub struct Flags {
     )]
     pub propagate_constants: bool,
 
+    /// prune self loops (i.e., non-modifying edges with the same lhs and rhs)
+    #[arg(
+        long,
+        help_heading = "Optimizations",
+        conflicts_with = "enable_all_optimizations",
+        default_value_if("enable_all_optimizations", "true", Some("true"))
+    )]
+    pub prune_self_loops: bool,
+
     /// prune singleton types (i.e., Set types with one element)
     #[arg(
         long,
