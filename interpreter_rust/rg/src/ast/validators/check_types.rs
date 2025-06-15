@@ -23,6 +23,15 @@ impl<Id: Clone + PartialEq> Label<Id> {
                     return game.make_error(ErrorReason::AssignmentTypeMismatch { lhs, rhs });
                 }
             }
+            Self::AssignmentAny { lhs, rhs } => {
+                let lhs = lhs.infer(game)?;
+                if !game.is_assignable_type(&lhs, rhs, true)? {
+                    return game.make_error(ErrorReason::AssignmentTypeMismatch {
+                        lhs,
+                        rhs: rhs.clone(),
+                    });
+                }
+            }
             Self::Comparison { lhs, rhs, .. } => {
                 let lhs = lhs.infer(game)?;
                 let rhs = rhs.infer(game)?;
@@ -246,5 +255,47 @@ mod test {
         self_reference_variable_identifier,
         "type T = { t }; var t: T = t;",
         Ok(())
+    );
+
+    test_validator!(
+        check_types,
+        assign_any_correct,
+        "type T = { 0 }; var t: T = 0; a, b: t = T(*);",
+        Ok(())
+    );
+
+    test_validator!(
+        check_types,
+        assign_any_smaller,
+        "type T0 = { 0 }; type T1 = { 0, 1 }; var t: T1 = 0; a, b: t = T0(*);",
+        Ok(())
+    );
+
+    test_validator!(
+        check_types,
+        assign_any_bigger,
+        "type T0 = { 0 }; type T1 = { 0, 1 }; var t: T0 = 0; a, b: t = T1(*);",
+        Err(ErrorReason::AssignmentTypeMismatch {
+            lhs: Arc::from(Type::TypeReference {
+                identifier: Arc::from("T0")
+            }),
+            rhs: Arc::from(Type::TypeReference {
+                identifier: Arc::from("T1")
+            })
+        })
+    );
+
+    test_validator!(
+        check_types,
+        assign_any_mismtach,
+        "type T0 = { 0 }; type T1 = { 1 }; var t: T0 = 0; a, b: t = T1(*);",
+        Err(ErrorReason::AssignmentTypeMismatch {
+            lhs: Arc::from(Type::TypeReference {
+                identifier: Arc::from("T0")
+            }),
+            rhs: Arc::from(Type::TypeReference {
+                identifier: Arc::from("T1")
+            })
+        })
     );
 }
