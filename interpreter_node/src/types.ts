@@ -94,7 +94,6 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
       'pruneUnreachableNodes',
       'pruneUnusedConstants',
       'pruneUnusedVariables',
-
       'skipArtificialTags',
       'skipRedundantTags',
       'skipSelfAssignments',
@@ -104,9 +103,7 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
   },
   {
     label: 'Experimental optimizations',
-    flags: [
-      'reorderConditions',
-    ],
+    flags: ['reorderConditions'],
   },
   {
     label: 'Pragmas',
