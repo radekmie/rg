@@ -1,10 +1,7 @@
 use crate::ast::{Error, Game, Label};
-use std::sync::Arc;
 
-type Id = Arc<str>;
-
-impl Game<Id> {
-    pub fn prune_self_loops(&mut self) -> Result<(), Error<Arc<str>>> {
+impl<Id: PartialEq> Game<Id> {
+    pub fn prune_self_loops(&mut self) -> Result<(), Error<Id>> {
         self.edges.retain(|edge| {
             edge.lhs != edge.rhs
                 || !matches!(

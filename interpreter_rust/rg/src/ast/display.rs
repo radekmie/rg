@@ -158,6 +158,7 @@ impl<Id: Display> Display for ErrorReason<Id> {
                 "Calculating reachability of {rhs} from {lhs} can cause a loop."
             ),
             Self::SetTypeExpected { got } => write!(f, "Expected Set type, got {got}."),
+            Self::TagLoop { edge } => write!(f, "Edge {edge} causes a tag generating loop."),
             Self::TypeDeclarationMismatch {
                 expected,
                 identifier,

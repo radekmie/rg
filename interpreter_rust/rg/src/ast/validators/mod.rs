@@ -3,6 +3,7 @@ mod check_duplicated_names;
 mod check_maps;
 mod check_multiple_edges;
 mod check_reachabilities;
+mod check_tag_loops;
 mod check_tag_variables;
 mod check_types;
 mod lint_reachabilities;

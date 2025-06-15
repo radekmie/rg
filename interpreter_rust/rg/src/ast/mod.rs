@@ -418,6 +418,9 @@ pub enum ErrorReason<Id> {
     SetTypeExpected {
         got: Arc<Type<Id>>,
     },
+    TagLoop {
+        edge: Arc<Edge<Id>>,
+    },
     TypeDeclarationMismatch {
         expected: Arc<Type<Id>>,
         identifier: Id,
