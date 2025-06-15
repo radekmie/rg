@@ -202,6 +202,8 @@ fn analyze_rg_inner(
         game_call!(game, check_maps);
         // game_call!(game, check_multiple_edges);
         game_call!(game, check_reachabilities);
+        game_call!(game, check_tag_loops);
+        game_call!(game, check_tag_variables);
         game_call!(game, check_types);
 
         let copy = game.clone();
@@ -243,6 +245,7 @@ fn analyze_rg_inner(
         pass!(skip_redundant_tags);
 
         // Pruning.
+        pass!(prune_self_loops);
         pass!(prune_singleton_types);
         pass!(prune_unreachable_nodes);
         pass!(prune_unused_constants);

@@ -8,13 +8,15 @@ type Id = Arc<str>;
 
 struct Context {
     coords: Vec<Id>,
+    coords_without_null: Vec<Id>,
     expose_index: usize,
     node_index: usize,
     rbg: rbg::Game<Id>,
     reachable_map_index: usize,
     rg: rg::Game<Id>,
+    reachability_map_cache: BTreeMap<BTreeMap<Id, BTreeSet<Id>>, Id>,
     rule_automatons: BTreeMap<rbg::Rule<Id>, (rg::Node<Id>, rg::Node<Id>)>,
-    shift_patterns: BTreeMap<(Id, rbg::Rule<Id>), Vec<Id>>,
+    shift_pattern_cache: BTreeMap<(rbg::Rule<Id>, Id), BTreeSet<Id>>,
 }
 
 impl Context {
@@ -133,25 +135,36 @@ impl Context {
             .iter()
             .any(|constant| constant.identifier == math_operator)
         {
-            let type_ = self.create_math_type(limit);
-            let value = self.create_math_operator_value(limit, operator);
-            let binary = Arc::from(rg::Type::Arrow {
-                lhs: type_.clone(),
-                rhs: type_.clone(),
-            });
+            let type_lhs = self.create_math_type(limit, false);
+            let type_ = match operator {
+                InternalOperator::Add | InternalOperator::Sub => Arc::from(rg::Type::Arrow {
+                    lhs: type_lhs.clone(),
+                    rhs: Arc::from(rg::Type::Arrow {
+                        lhs: type_lhs,
+                        rhs: self.create_math_type(limit, true),
+                    }),
+                }),
+                InternalOperator::Decr | InternalOperator::Incr => Arc::from(rg::Type::Arrow {
+                    lhs: type_lhs,
+                    rhs: self.create_math_type(limit, true),
+                }),
+                InternalOperator::Gt
+                | InternalOperator::Gte
+                | InternalOperator::Lt
+                | InternalOperator::Lte => Arc::from(rg::Type::Arrow {
+                    lhs: type_lhs.clone(),
+                    rhs: Arc::from(rg::Type::Arrow {
+                        lhs: type_lhs,
+                        rhs: Arc::from(rg::Type::new(Id::from("Bool"))),
+                    }),
+                }),
+            };
 
             self.rg.constants.push(rg::Constant {
                 span: Span::none(),
                 identifier: math_operator.clone(),
-                type_: if is_binary {
-                    binary
-                } else {
-                    Arc::from(rg::Type::Arrow {
-                        lhs: type_,
-                        rhs: binary,
-                    })
-                },
-                value,
+                type_,
+                value: self.create_math_operator_value(limit, operator),
             });
         }
 
@@ -194,61 +207,53 @@ impl Context {
         }
 
         if operator == Decr || operator == Incr {
-            return Arc::from(rg::Value::from_pairs_iter(
-                (0..limit)
-                    .map(|lhs| {
-                        let value = match operator {
-                            Decr if lhs < 1 => nan_value.clone(),
-                            Decr => number!(lhs - 1),
-                            Incr if lhs + 1 >= limit => nan_value.clone(),
-                            Incr => number!(lhs + 1),
-                            _ => unreachable!(),
-                        };
+            return Arc::from(rg::Value::from_pairs_iter((0..limit).map(|lhs| {
+                let value = match operator {
+                    Decr if lhs < 1 => nan_value.clone(),
+                    Decr => number!(lhs - 1),
+                    Incr if lhs + 1 >= limit => nan_value.clone(),
+                    Incr => number!(lhs + 1),
+                    _ => unreachable!(),
+                };
 
-                        (Id::from(lhs.to_string()), value)
-                    })
-                    .chain([(nan.clone(), nan_value.clone())]),
-            ));
+                (Id::from(lhs.to_string()), value)
+            })));
         }
 
-        let nan_map = Arc::from(rg::Value::new_empty(nan_value.clone()));
-        Arc::from(rg::Value::from_pairs_iter(
-            (0..limit)
-                .map(|lhs| {
-                    let value = Arc::from(rg::Value::from_pairs_iter(
-                        (0..limit)
-                            .map(|rhs| {
-                                let value = match operator {
-                                    Add if lhs + rhs >= limit => nan_value.clone(),
-                                    Add => number!(lhs + rhs),
-                                    Gt => number!(lhs > rhs),
-                                    Gte => number!(lhs >= rhs),
-                                    Lt => number!(lhs < rhs),
-                                    Lte => number!(lhs <= rhs),
-                                    Sub if lhs < rhs => nan_value.clone(),
-                                    Sub => number!(lhs - rhs),
-                                    _ => unreachable!(),
-                                };
+        Arc::from(rg::Value::from_pairs_iter((0..limit).map(|lhs| {
+            let value = Arc::from(rg::Value::from_pairs_iter((0..limit).map(|rhs| {
+                let value = match operator {
+                    Add if lhs + rhs >= limit => nan_value.clone(),
+                    Add => number!(lhs + rhs),
+                    Gt => number!(lhs > rhs),
+                    Gte => number!(lhs >= rhs),
+                    Lt => number!(lhs < rhs),
+                    Lte => number!(lhs <= rhs),
+                    Sub if lhs < rhs => nan_value.clone(),
+                    Sub => number!(lhs - rhs),
+                    _ => unreachable!(),
+                };
 
-                                (Id::from(rhs.to_string()), value)
-                            })
-                            .chain([(nan.clone(), nan_value.clone())]),
-                    ));
+                (Id::from(rhs.to_string()), value)
+            })));
 
-                    (Id::from(lhs.to_string()), value)
-                })
-                .chain([(nan.clone(), nan_map.clone())]),
-        ))
+            (Id::from(lhs.to_string()), value)
+        })))
     }
 
-    fn create_math_type(&mut self, limit: usize) -> Arc<rg::Type<Id>> {
+    fn create_math_type(&mut self, limit: usize, with_nan: bool) -> Arc<rg::Type<Id>> {
         let numbers = (0..limit).map(|index| Id::from(index.to_string()));
         self.rg.add_pragma(rg::Pragma::Integer {
             span: Span::none(),
             offset: 0,
             nodes: numbers.clone().map(rg::Node::new).collect(),
         });
-        self.create_type_from_set([Id::from("nan")].into_iter().chain(numbers).collect())
+
+        if with_nan {
+            self.create_type_from_set([Id::from("nan")].into_iter().chain(numbers).collect())
+        } else {
+            self.create_type_from_set(numbers.into_iter().collect())
+        }
     }
 
     fn create_type_from_set(&mut self, identifiers: Vec<Id>) -> Arc<rg::Type<Id>> {
@@ -275,12 +280,17 @@ impl Context {
         Arc::from(rg::Type::new(identifier))
     }
 
-    fn create_reachability_map(&mut self, map: &BTreeMap<Id, Vec<Id>>) -> Id {
+    fn create_reachability_map(&mut self, map: &BTreeMap<Id, BTreeSet<Id>>) -> Id {
+        if let Some(identifier) = self.reachability_map_cache.get(map) {
+            return identifier.clone();
+        }
+
         let one = Arc::from(rg::Value::new(Id::from("1")));
         let zero = Arc::from(rg::Value::new(Id::from("0")));
 
-        let value = Arc::from(rg::Value::from_pairs_iter(self.coords.iter().map(|lhs| {
-            let value = Arc::from(rg::Value::from_pairs_iter(self.coords.iter().map(|rhs| {
+        let coords = &self.coords_without_null;
+        let value = Arc::from(rg::Value::from_pairs_iter(coords.iter().map(|lhs| {
+            let value = Arc::from(rg::Value::from_pairs_iter(coords.iter().map(|rhs| {
                 let value = match map.get(lhs) {
                     Some(rhss) if rhss.contains(rhs) => one.clone(),
                     _ => zero.clone(),
@@ -292,7 +302,8 @@ impl Context {
             (lhs.clone(), value)
         })));
 
-        if let Some(constant) = self.rg.constants.iter().find(|x| x.value == value) {
+        let identifier = if let Some(constant) = self.rg.constants.iter().find(|x| x.value == value)
+        {
             constant.identifier.clone()
         } else {
             self.reachable_map_index += 1;
@@ -302,9 +313,9 @@ impl Context {
                 span: Span::none(),
                 identifier: identifier.clone(),
                 type_: Arc::from(rg::Type::Arrow {
-                    lhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
+                    lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
                     rhs: Arc::from(rg::Type::Arrow {
-                        lhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
+                        lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
                         rhs: Arc::from(rg::Type::new(Id::from("Bool"))),
                     }),
                 }),
@@ -312,74 +323,91 @@ impl Context {
             });
 
             identifier
-        }
+        };
+
+        self.reachability_map_cache
+            .insert(map.clone(), identifier.clone());
+        identifier
     }
 
-    fn make_shift_pattern(&mut self, coord: &Id, rule: &rbg::Rule<Id>) -> Vec<Id> {
-        let key = (coord.clone(), rule.clone());
-        if let Some(coords) = self.shift_patterns.get(&key).cloned() {
-            return coords;
+    fn make_shift_pattern(&mut self, rule: &rbg::Rule<Id>, coord: &Id) -> BTreeSet<Id> {
+        let key = (rule.clone(), coord.clone());
+        if let Some(coords) = self.shift_pattern_cache.get(&key) {
+            return coords.clone();
         }
 
-        let coords = rule
-            .elements
-            .iter()
-            .flat_map(|concatenation| {
-                concatenation.iter().fold(
-                    vec![coord.clone()],
-                    |coords, rbg::Atom { content, power }| {
-                        let mut reachable_coords = if *power {
-                            coords.iter().cloned().collect()
-                        } else {
-                            BTreeSet::new()
-                        };
+        let mut coords_reachable = BTreeSet::new();
+        loop {
+            let coords_reachable_before = coords_reachable.len();
+            for concatenation in &rule.elements {
+                let mut coords = BTreeSet::from([coord.clone()]);
+                for rbg::Atom { content, power } in concatenation {
+                    let mut coords_to_review = coords.clone();
+                    if *power {
+                        loop {
+                            let mut coords_to_add = BTreeSet::new();
+                            for coord in &coords_to_review {
+                                self.make_shift_pattern_step(coord, content, &mut coords_to_add);
+                            }
 
-                        for mut coord in coords {
-                            match content {
-                                rbg::ActionOrRule::Action(rbg::Action::Check { negated, rule }) => {
-                                    if *negated == self.make_shift_pattern(&coord, rule).is_empty()
-                                    {
-                                        reachable_coords.insert(coord);
-                                    }
-                                }
-                                rbg::ActionOrRule::Action(rbg::Action::Shift { label }) => loop {
-                                    let node =
-                                        self.rbg.board.iter().find(|node| node.node == coord);
-                                    let edge = node.and_then(|node| {
-                                        node.edges.iter().find(|edge| edge.label == *label)
-                                    });
-                                    if let Some(edge) = edge {
-                                        reachable_coords.insert(edge.node.clone());
-                                        coord = edge.node.clone();
-                                    } else {
-                                        break;
-                                    }
+                            if coords_to_add.is_empty() {
+                                break;
+                            }
 
-                                    if !power {
-                                        break;
-                                    }
-                                },
-                                rbg::ActionOrRule::Action(_) => {
-                                    panic!("Incorrect shift pattern: {content:?}")
-                                }
-                                rbg::ActionOrRule::Rule(rule) => {
-                                    for node in self.make_shift_pattern(&coord, rule) {
-                                        reachable_coords.insert(node.clone());
-                                    }
+                            coords_to_review.clear();
+                            for coord in coords_to_add {
+                                if coords.insert(coord.clone()) {
+                                    coords_to_review.insert(coord);
                                 }
                             }
                         }
+                    } else {
+                        coords.clear();
+                        for coord in coords_to_review {
+                            self.make_shift_pattern_step(&coord, content, &mut coords);
+                        }
+                    }
+                }
 
-                        reachable_coords.into_iter().collect()
-                    },
-                )
-            })
-            .collect::<BTreeSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
+                coords_reachable.extend(coords);
+            }
 
-        self.shift_patterns.insert(key, coords.clone());
-        coords
+            if coords_reachable_before == coords_reachable.len() {
+                break;
+            }
+        }
+
+        self.shift_pattern_cache
+            .insert(key, coords_reachable.clone());
+        coords_reachable
+    }
+
+    fn make_shift_pattern_step(
+        &mut self,
+        coord: &Id,
+        content: &rbg::ActionOrRule<Id>,
+        coords: &mut BTreeSet<Id>,
+    ) {
+        match content {
+            rbg::ActionOrRule::Action(rbg::Action::Check { negated, rule }) => {
+                if *negated == self.make_shift_pattern(rule, coord).is_empty() {
+                    coords.insert(coord.clone());
+                }
+            }
+            rbg::ActionOrRule::Action(rbg::Action::Shift { label }) => {
+                if let Some(node) = self.rbg.board.iter().find(|node| node.node == *coord) {
+                    if let Some(edge) = node.edges.iter().find(|edge| edge.label == *label) {
+                        coords.insert(edge.node.clone());
+                    }
+                }
+            }
+            rbg::ActionOrRule::Action(_) => {
+                panic!("Incorrect shift pattern: {content:?}")
+            }
+            rbg::ActionOrRule::Rule(rule) => {
+                coords.extend(self.make_shift_pattern(rule, coord));
+            }
+        }
     }
 
     fn random_node(&mut self) -> rg::Node<Id> {
@@ -401,18 +429,21 @@ enum InternalOperator {
 }
 
 pub fn rbg_to_rg(rbg: rbg::Game<Id>) -> Result<rg::Game<Id>, rbg::Error<Id>> {
+    let coords_without_null: Vec<_> = rbg.board.iter().map(|node| node.node.clone()).collect();
+    let mut coords = coords_without_null.clone();
+    coords.insert(0, Id::from("null"));
+
     let mut context = Context {
-        coords: (Some(Id::from("null")))
-            .into_iter()
-            .chain(rbg.board.iter().map(|node| node.node.clone()))
-            .collect(),
+        coords,
+        coords_without_null,
         expose_index: 0,
         node_index: 0,
         rbg,
         reachable_map_index: 0,
         rg: rg::Game::default(),
+        reachability_map_cache: BTreeMap::new(),
         rule_automatons: BTreeMap::new(),
-        shift_patterns: BTreeMap::new(),
+        shift_pattern_cache: BTreeMap::new(),
     };
 
     context
@@ -458,7 +489,7 @@ fn add_builtin_constants(context: &mut Context) {
                 span: Span::none(),
                 identifier: Id::from(format!("direction_{label}")),
                 type_: Arc::from(rg::Type::Arrow {
-                    lhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
+                    lhs: Arc::from(rg::Type::new(Id::from("Coord"))),
                     rhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
                 }),
                 value: Arc::from(rg::Value::Map {
@@ -521,12 +552,7 @@ fn add_builtin_types(context: &mut Context) {
         identifier: Id::from("Coord"),
         type_: Arc::from(rg::Type::Set {
             span: Span::none(),
-            identifiers: context
-                .coords
-                .iter()
-                .filter(|x| x.as_ref() != "null")
-                .cloned()
-                .collect(),
+            identifiers: context.coords_without_null.clone(),
         }),
     });
 
@@ -580,7 +606,7 @@ fn add_builtin_variables(context: &mut Context) {
     context.rg.variables.push(rg::Variable {
         span: Span::none(),
         identifier: Id::from("coord_temp"),
-        type_: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
+        type_: Arc::from(rg::Type::new(Id::from("Coord"))),
         default_value: Arc::from(rg::Value::new(context.rbg.board[0].node.clone())),
     });
 
@@ -660,6 +686,14 @@ fn copy_path(
             lhs: prefix_node(prefix, edge.lhs.clone()),
             rhs: prefix_node(prefix, edge.rhs.clone()),
         };
+
+        if let rg::Label::Tag { symbol } = &mut edge.label {
+            *symbol = Id::from(format!("{symbol}_copy"));
+            context.rg.add_pragma(rg::Pragma::ArtificialTag {
+                span: Span::none(),
+                tags: vec![symbol.clone()],
+            });
+        }
 
         // Skip switch-generated edges:
         //   - $$ coord
@@ -810,10 +844,39 @@ fn group_shift_patterns(rule: rbg::Rule<Id>) -> rbg::Rule<Id> {
 }
 
 fn is_expandable_shift_pattern(rule: &rbg::Rule<Id>) -> bool {
-    rule.elements
+    // It has to be a shift pattern...
+    if !is_shift_pattern_rule(rule) {
+        return false;
+    }
+
+    // ...that is either non-trivial...
+    if rule
+        .elements
         .iter()
         .any(|concatenation| concatenation.len() > 1)
-        && is_shift_pattern_rule(rule)
+    {
+        return true;
+    }
+
+    // ...or a repeated sum of shifts.
+    match &rule.elements[..] {
+        [concatenation] => match &concatenation[..] {
+            [rbg::Atom {
+                power: true,
+                content: rbg::ActionOrRule::Rule(rbg::Rule { elements }),
+            }] => elements.iter().all(|concatenation| {
+                matches!(
+                    &concatenation[..],
+                    [rbg::Atom {
+                        power: false,
+                        content: rbg::ActionOrRule::Action(rbg::Action::Shift { .. }),
+                    }]
+                )
+            }),
+            _ => false,
+        },
+        _ => false,
+    }
 }
 
 fn is_shift_pattern(content: &rbg::ActionOrRule<Id>) -> bool {
@@ -1203,16 +1266,13 @@ fn translate_atom_content(
             );
         }
         rbg::ActionOrRule::Rule(rule) if is_expandable_shift_pattern(&rule) => {
-            let mut pairs: Vec<_> = context
-                .rbg
-                .board
+            let mut pairs: BTreeMap<_, _> = context
+                .coords_without_null
                 .clone()
                 .into_iter()
-                .map(|node| {
-                    (
-                        node.node.clone(),
-                        context.make_shift_pattern(&node.node, &rule),
-                    )
+                .map(|coord| {
+                    let coords = context.make_shift_pattern(&rule, &coord);
+                    (coord, coords)
                 })
                 .collect();
             let pairs_len = pairs.len();
@@ -1235,7 +1295,10 @@ fn translate_atom_content(
                 let map: Vec<_> = pairs
                     .into_iter()
                     .map(|(coord, mut coords)| {
-                        (coord, coords.pop().unwrap_or_else(|| Id::from("null")))
+                        (
+                            coord,
+                            coords.pop_first().unwrap_or_else(|| Id::from("null")),
+                        )
                     })
                     .chain(Some((Id::from("null"), Id::from("null"))))
                     .collect();
@@ -1269,9 +1332,10 @@ fn translate_atom_content(
             }
 
             // Always the same coords are reachable -> (bind: RbgType).
-            if pairs.iter().all(|(_, coords)| *coords == pairs[0].1) {
-                let coords = pairs.pop().unwrap().1;
-                let type_ = context.create_type_from_set(coords);
+            let first_coords = pairs.first_key_value().unwrap().1;
+            if pairs.iter().all(|(_, coords)| *coords == *first_coords) {
+                let coords = pairs.pop_first().unwrap().1;
+                let type_ = context.create_type_from_set(coords.into_iter().collect());
                 let local = context.random_node();
 
                 context.connect(
@@ -1298,15 +1362,14 @@ fn translate_atom_content(
             // Similarly to `join_generators`, we create a mapping representing
             // all correct pairs (coord, reachable_coord) to check it using only
             // one generator.
-            let reachability_map = context.create_reachability_map(&BTreeMap::from_iter(pairs));
-
+            let reachability_map = context.create_reachability_map(&pairs);
             let local_temp = context.random_node();
             context.connect(
                 from,
                 local_temp.clone(),
                 rg::Label::AssignmentAny {
                     lhs: Arc::from(rg::Expression::new(Id::from("coord_temp"))),
-                    rhs: Arc::from(rg::Type::new(Id::from("CoordOrNull"))),
+                    rhs: Arc::from(rg::Type::new(Id::from("Coord"))),
                 },
             );
 

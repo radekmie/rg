@@ -19,6 +19,7 @@ mod merge_accesses;
 mod normalize_constants;
 mod normalize_types;
 mod propagate_constants;
+mod prune_self_loops;
 mod prune_singleton_types;
 mod prune_unreachable_nodes;
 mod prune_unused_constants;

@@ -42,6 +42,7 @@ pub enum Statement<Id> {
         body: Vec<Statement<Id>>,
     },
     Tag {
+        artificial: bool,
         symbol: Id,
     },
     TagVariable {
@@ -133,7 +134,7 @@ impl<Id: Clone + PartialEq> Statement<Id> {
                     statement.substitute_var(var, value)?;
                 }
             }
-            Self::Tag { symbol } if symbol == var => {
+            Self::Tag { symbol, .. } if symbol == var => {
                 *symbol = value.clone();
             }
             Self::TagVariable { identifier } if identifier == var => {
@@ -391,12 +392,12 @@ impl<Id: Clone + PartialEq> Expression<Id> {
             Self::Literal { identifier } if identifier == var => {
                 *identifier = value.clone();
             }
+            Self::Literal { .. } => {}
             Self::Map { .. } => {
                 return Err(Error::NotImplemented {
                     message: "Expression::substitute_var",
                 })
             }
-            _ => {}
         }
 
         Ok(())

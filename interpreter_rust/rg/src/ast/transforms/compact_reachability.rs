@@ -41,8 +41,8 @@ impl Game<Id> {
                 let new_lhs = starts_moved.get(lhs);
                 let new_rhs = ends_moved.get(rhs);
                 if new_lhs.is_some() || new_rhs.is_some() {
-                    let new_lhs = new_lhs.unwrap_or(&lhs);
-                    let new_rhs = new_rhs.unwrap_or(&rhs);
+                    let new_lhs = new_lhs.unwrap_or(lhs);
+                    let new_rhs = new_rhs.unwrap_or(rhs);
                     Arc::make_mut(edge).label = Label::Reachability {
                         lhs: (*new_lhs).clone(),
                         rhs: (*new_rhs).clone(),
@@ -59,7 +59,7 @@ impl Game<Id> {
     fn reachability_starts_ends(&self) -> (BTreeSet<&Node<Id>>, BTreeSet<&Node<Id>>) {
         let mut lhss = BTreeSet::new();
         let mut rhss = BTreeSet::new();
-        for edge in self.edges.iter() {
+        for edge in &self.edges {
             if let Label::Reachability { lhs, rhs, .. } = &edge.label {
                 lhss.insert(lhs);
                 rhss.insert(rhs);
