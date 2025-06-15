@@ -6,7 +6,7 @@ use std::{
 
 use utils::position::Span;
 
-use crate::ast::{Edge, Error, Game, Label, Node};
+use crate::ast::{Edge, Error, Expression, Game, Label, Node};
 
 type Id = Arc<str>;
 
@@ -64,14 +64,8 @@ impl Game<Id> {
                 .iter()
                 .flat_map(|path| {
                     let nodes: Vec<_> = path.iter().map(|e| &e.rhs).collect();
-                    let mut sorted_labels: Vec<_> = path.iter().map(|e| &e.label).collect();
-                    sorted_labels.sort_by(|a, b| {
-                        label_frequencies
-                            .get(b)
-                            .unwrap_or(&0)
-                            .cmp(label_frequencies.get(a).unwrap_or(&0))
-                            .then_with(|| a.cmp(b))
-                    });
+                    let unsorted_labels = path.iter().map(|e| &e.label).collect();
+                    let sorted_labels: Vec<_> = sort_labels(unsorted_labels, &label_frequencies);
 
                     let skip_label = &Label::new_skip();
                     let labels = sorted_labels.into_iter().chain(iter::repeat(skip_label));
@@ -144,6 +138,66 @@ fn singleton<T>(set: &BTreeSet<T>) -> Option<&T> {
     }
 }
 
+// Insertion sort for labels based on frequency and then lexicographically
+fn sort_labels<'a>(
+    labels: Vec<&'a Label<Id>>,
+    label_frequencies: &BTreeMap<&Label<Id>, usize>,
+) -> Vec<&'a Label<Id>> {
+    let compare = |a: &&Label<Id>, b: &&Label<Id>| {
+        label_frequencies
+            .get(b)
+            .unwrap_or(&0)
+            .cmp(label_frequencies.get(a).unwrap_or(&0))
+            .then_with(|| a.cmp(b))
+    };
+
+    let mut arr = labels;
+    for i in 1..arr.len() {
+        let mut j = i;
+        let cur = arr[i];
+
+        if label_frequencies.get(&cur).is_none_or(|c| *c < 2) {
+            continue; // Skip labels that do not appear more than once
+        }
+
+        while j > 0 && compare(&cur, &arr[j - 1]).is_lt() && can_reorder(&cur, &arr[j - 1]) {
+            arr[j] = arr[j - 1];
+            j -= 1;
+        }
+
+        arr[j] = cur;
+    }
+    arr
+}
+
+// If latter_label e1 and first_label e2 are comparisons (assignments are not allowed here),
+// we cannot reorder them if e1 uses any of the expressions in e2 for indexing.
+// Reordering here could lead to incorrect indexing behavior.
+fn can_reorder(latter_label: &Label<Id>, first_label: &Label<Id>) -> bool {
+    let expressions_in_first = first_label.collect_subexpressions();
+    if let Label::Comparison { lhs, rhs, .. } = latter_label {
+        let used_for_indexing = uses_for_indexing(&expressions_in_first, lhs)
+            || uses_for_indexing(&expressions_in_first, rhs);
+        return !used_for_indexing;
+    }
+    true
+}
+
+fn uses_for_indexing(
+    expressions_in_first: &BTreeSet<&Expression<Id>>,
+    dangerous_expression: &Expression<Id>,
+) -> bool {
+    match dangerous_expression {
+        Expression::Access { lhs, rhs, .. } => {
+            expressions_in_first.contains(rhs.as_ref())
+                || uses_for_indexing(expressions_in_first, lhs)
+                || uses_for_indexing(expressions_in_first, rhs)
+        }
+        Expression::Cast { rhs, .. } => uses_for_indexing(expressions_in_first, rhs),
+        Expression::Reference { .. } => false,
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::test_transform;
@@ -165,5 +219,31 @@ mod test {
         b1, b2: ;
         begin, c: 2 == 2;
         c, c1: 3 == 3;"
+    );
+
+    test_transform!(
+        reorder_conditions,
+        used_in_indexing,
+        "begin, a: 1 == y[x];
+        a, a1: z[x] == 4;
+        begin, b: x == 2;
+        b, b1: z[x] == 4;"
+    );
+
+    test_transform!(
+        reorder_conditions,
+        partial,
+        "begin, a: 1 == y[x];
+        a, a1: 3 == 3;
+        a1, a2: z[x] == 4;
+        begin, b: x == 2;
+        b, b1: 4 == 4;
+        b1, b2: z[x] == 4;",
+        "begin, a: 1 == y[x];
+        a, a1: z[x] == 4;
+        a1, a2: 3 == 3;
+        begin, b: x == 2;
+        b, b1: z[x] == 4;
+        b1, b2: 4 == 4;"
     );
 }
