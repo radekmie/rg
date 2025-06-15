@@ -1,12 +1,8 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    iter,
-    sync::Arc,
-};
-
-use utils::position::Span;
-
 use crate::ast::{Edge, Error, Expression, Game, Label, Node};
+use std::collections::{BTreeMap, BTreeSet};
+use std::iter;
+use std::sync::Arc;
+use utils::position::Span;
 
 type Id = Arc<str>;
 
@@ -48,8 +44,8 @@ impl Game<Id> {
 
             // Count frequency of each label across all paths
             let mut label_frequencies: BTreeMap<&Label<Id>, usize> = BTreeMap::new();
-            for path in paths.iter() {
-                for edge in path.iter() {
+            for path in &paths {
+                for edge in path {
                     *label_frequencies.entry(&edge.label).or_insert(0) += 1;
                 }
             }
@@ -86,10 +82,10 @@ impl Game<Id> {
 
             let to_remove = paths
                 .iter()
-                .flat_map(|path| path.iter().map(|e| e))
+                .flat_map(|path| path.iter())
                 .collect::<BTreeSet<_>>();
 
-            self.edges.retain(|e| !to_remove.contains(e));
+            self.edges.retain(|edge| !to_remove.contains(edge));
             self.edges.extend(new_paths);
             *last_node_idx = idx as i32;
             return true;
@@ -160,7 +156,7 @@ fn sort_labels<'a>(
             continue; // Skip labels that do not appear more than once
         }
 
-        while j > 0 && compare(&cur, &arr[j - 1]).is_lt() && can_reorder(&cur, &arr[j - 1]) {
+        while j > 0 && compare(&cur, &arr[j - 1]).is_lt() && can_reorder(cur, arr[j - 1]) {
             arr[j] = arr[j - 1];
             j -= 1;
         }
