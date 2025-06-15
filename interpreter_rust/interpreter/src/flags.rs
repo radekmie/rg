@@ -174,6 +174,11 @@ pub struct Flags {
     )]
     pub prune_unused_variables: bool,
 
+    /// reorders conditions in the automaton to optimize the execution.
+    /// Can change the semantics of the game.
+    #[arg(long, help_heading = "Experimental optimizations")]
+    pub reorder_conditions: bool,
+
     /// skip tag edges marked with `@artificialTag`
     #[arg(
         long,
@@ -290,6 +295,7 @@ impl Flags {
             prune_unreachable_nodes: true,
             prune_unused_constants: true,
             prune_unused_variables: true,
+            reorder_conditions: true,
             skip_self_assignments: true,
             skip_self_comparisons: true,
             skip_unused_tags: true,

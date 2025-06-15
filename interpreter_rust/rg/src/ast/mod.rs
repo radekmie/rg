@@ -257,6 +257,22 @@ impl<Id: Display> Label<Id> {
 }
 
 impl<Id: Ord> Label<Id> {
+    pub fn collect_subexpressions(&self) -> BTreeSet<&Expression<Id>> {
+        let mut expressions = BTreeSet::new();
+        match self {
+            Self::Assignment { lhs, rhs } => {
+                lhs.collect_subexpressions(&mut expressions);
+                rhs.collect_subexpressions(&mut expressions);
+            }
+            Self::Comparison { lhs, rhs, .. } => {
+                lhs.collect_subexpressions(&mut expressions);
+                rhs.collect_subexpressions(&mut expressions);
+            }
+            _ => {}
+        }
+        expressions
+    }
+
     pub fn used_variables(&self) -> BTreeSet<&Id> {
         let mut vars = BTreeSet::new();
         match self {
@@ -633,6 +649,23 @@ impl<Id: Ord> Expression<Id> {
             Self::Cast { rhs, .. } => rhs.collect_variables(vars),
             Self::Reference { identifier } => {
                 vars.insert(identifier);
+            }
+        }
+    }
+
+    pub fn collect_subexpressions<'a>(&'a self, expressions: &mut BTreeSet<&'a Self>) {
+        match self {
+            Self::Access { lhs, rhs, .. } => {
+                expressions.insert(self);
+                lhs.collect_subexpressions(expressions);
+                rhs.collect_subexpressions(expressions);
+            }
+            Self::Cast { rhs, .. } => {
+                // No need to collect the cast itself.
+                rhs.collect_subexpressions(expressions);
+            }
+            Self::Reference { .. } => {
+                expressions.insert(self);
             }
         }
     }
