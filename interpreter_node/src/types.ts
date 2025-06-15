@@ -30,6 +30,7 @@ export type Settings = {
     normalizeConstants: boolean;
     normalizeTypes: boolean;
     propagateConstants: boolean;
+    pruneSelfLoops: boolean;
     pruneSingletonTypes: boolean;
     pruneUnreachableNodes: boolean;
     pruneUnusedConstants: boolean;
@@ -64,6 +65,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   normalizeConstants: false,
   normalizeTypes: false,
   propagateConstants: false,
+  pruneSelfLoops: false,
   pruneSingletonTypes: false,
   pruneUnreachableNodes: false,
   pruneUnusedConstants: false,
@@ -90,6 +92,7 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
       'joinForkSuffixes',
       'mergeAccesses',
       'propagateConstants',
+      'pruneSelfLoops',
       'pruneSingletonTypes',
       'pruneUnreachableNodes',
       'pruneUnusedConstants',
