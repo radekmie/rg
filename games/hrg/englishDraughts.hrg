@@ -64,8 +64,8 @@ opponent(black) = white
 increment : Stagnation -> StagnationOrNan
 increment(S(X)) = if X < 20 then S(X + 1) else nan
 
-compare : Stagnation -> Stagnation -> Bool
-compare(S(X), S(Y)) = if X < Y then 0 else 1
+equal : Stagnation -> Stagnation -> Bool
+equal(S(X), S(Y)) = if X < Y then 0 else 1
 
 board : PositionOrNull -> Piece = {
   V(X, Y) = 
@@ -151,33 +151,35 @@ graph movePossible() {
 
 graph movePawnNormal() {
   check(board[pos] == myPawn[me])
+  //$$ pos
   board[pos] = empty
   branch {
-    $ L_EMPTY
     pos = fwdLeft[me][pos]
+    $ FL_NORMAL
   } or {
-    $ R_EMPTY
     pos = fwdRight[me][pos]
+    $ FR_NORMAL
   }
   check(board[pos] == empty)
 }
 
 graph movePawnCapture() {
   check(board[pos] == myPawn[me])
+  //$$ pos
   board[pos] = empty
   loop {
     branch {
-      $ PUL_TAKES
       pos = fwdLeft[me][pos]
       check(playerOf[board[pos]] == opponent[me])
       board[pos] = empty
       pos = fwdLeft[me][pos]
+      $ FL_CAPTURE
     } or {
-      $ PUR_TAKES
       pos = fwdRight[me][pos]
       check(playerOf[board[pos]] == opponent[me])
       board[pos] = empty
       pos = fwdRight[me][pos]
+      $ FR_CAPTURE
     }
 
     check(board[pos] == empty)
@@ -190,51 +192,53 @@ graph movePawnCapture() {
 
 graph moveKingNormal() {
   check(board[pos] == myKing[me])
+  //$$ pos
   board[pos] = empty
   branch {
-    $ UL_EMPTY
     pos = upLeft[pos]
+    $ UL_NORMAL
   } or {
-    $ UR_EMPTY
     pos = upRight[pos]
+    $ UR_NORMAL
   } or {
-    $ DL_EMPTY
     pos = downLeft[pos]
+    $ DL_NORMAL
   } or {
-    $ DR_EMPTY
     pos = downRight[pos]
+    $ DR_NORMAL
   }
   check(board[pos] == empty)
 }
 
 graph moveKingCapture() {
   check(board[pos] == myKing(me))
+  //$$ pos
   board[pos] = empty
   loop {
     branch {
-      $ UL_TAKES
       pos = upLeft[pos]
       check(playerOf[board[pos]] == opponent[me])
       board[pos] = empty
       pos = upLeft[pos]
+      $ UL_CAPTURE
     } or {
-      $ UR_TAKES
       pos = upRight[pos]
       check(playerOf[board[pos]] == opponent[me])
       board[pos] = empty
       pos = upRight[pos]
+      $ UR_CAPTURE
     } or {
-      $ DL_TAKES
       pos = downLeft[pos]
       check(playerOf[board[pos]] == opponent[me])
       board[pos] = empty
       pos = downLeft[pos]
+      $ DL_CAPTURE
     } or {
-      $ DR_TAKES
       pos = downRight[pos]
       check(playerOf[board[pos]] == opponent[me])
       board[pos] = empty
       pos = downRight[pos]
+      $ DR_CAPTURE
     }
 
     check(board[pos] == empty)
@@ -249,6 +253,7 @@ graph move() {
   if not(reachable(anyCapturePossible())) {
     player = me
     pos = Position(*)
+    check(playerOf[board[pos]] == me)// Temp
     $$ pos
     branch {
       movePawnNormal()
@@ -268,6 +273,7 @@ graph move() {
   } else {
     player = me
     pos = Position(*)
+    check(playerOf[board[pos]] == me)// Temp
     $$ pos
     branch {
       movePawnCapture()
@@ -294,7 +300,7 @@ graph turn() {
     goals[me] = 0
     end()
   }
-  if compare[stagnation][S(20)] == 1 {
+  if equal[stagnation][S(20)] == 1 {
     end()
   }
 }
