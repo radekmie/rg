@@ -122,7 +122,7 @@ graph movePossible() {
 }
 
 graph nonCapturingMove() {
-  $ NC
+  player = me
   pos = Position(*)
   check(board[pos] == myPawn[me])
   board[pos] = empty
@@ -132,11 +132,13 @@ graph nonCapturingMove() {
     check(board[pos] == empty)
     $ dir
   }
+  player = keeper
   board[pos] = myPawn[me]
+  stagnation = increment[stagnation]
 }
 
 graph capturingMove() {
-  $ PC
+  player = me
   pos = Position(*)
   check(board[pos] == myPawn[me])
   board[pos] = empty
@@ -155,20 +157,18 @@ graph capturingMove() {
       break()
     }
   }
+  player = keeper
   board[pos] = myPawn[me]
+  stagnation = I(0)
 }
 
 graph turn() {
   if not(reachable(capturingMovePossible())) {
     player = me
     nonCapturingMove()
-    player = keeper
-    stagnation = increment[stagnation]
   } else {
     player = me
     capturingMove()
-    player = keeper
-    stagnation = I(0)
   }
   me = opponent[me]
   if not(reachable(movePossible())) {
