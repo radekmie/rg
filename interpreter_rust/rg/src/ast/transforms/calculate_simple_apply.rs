@@ -39,7 +39,7 @@ impl Game<Id> {
             let mut path_to_player = None;
             let mut paths_to_edges: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
             let mut paths_to_tags: BTreeMap<_, BTreeSet<(_, _, _)>> = BTreeMap::new();
-            let mut queue = vec![(node.clone(), vec![], vec![])];
+            let mut queue: Vec<(_, Vec<Arc<Edge<_>>>, _)> = vec![(node.clone(), vec![], vec![])];
             while let Some((lhs, path, assignments)) = queue.pop() {
                 let path_to_edge = paths_to_edges.entry(lhs.clone()).or_default();
 
@@ -48,9 +48,16 @@ impl Game<Id> {
                     path_to_edge.insert(assignments.clone());
                 }
 
-                for edge in next_edges.get(&lhs).into_iter().flatten() {
-                    if path.iter().any(|x: &Arc<Edge<_>>| x.rhs == edge.rhs) {
-                        continue;
+                'inner: for edge in next_edges.get(&lhs).into_iter().flatten() {
+                    // Two visits are required to account for loops.
+                    let mut visits_on_path = 0;
+                    for x in &path {
+                        if x.rhs == edge.rhs {
+                            visits_on_path += 1;
+                            if visits_on_path == 2 {
+                                continue 'inner;
+                            }
+                        }
                     }
 
                     let mut path = path.clone();
@@ -601,6 +608,19 @@ mod test {
             shown, end: player = keeper;
         ",
         adds "@simpleApplyExhaustive begin end [position_1: Position] position = Position(position_1), player = keeper;"
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        repeat_test_hard,
+        include_str!("../../../../../games/rg/repeatTestHard.rg"),
+        adds "
+            @simpleApply choosenLeft end [pos_1: Position, LOSE] pos = Position(pos_1), player = PlayerOrSystem(keeper);
+            @simpleApply choosenRight end [pos_2: Position, LOSE] pos = Position(pos_2), player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive begin chooseTag [] player = PlayerOrSystem(tester);
+            @simpleApplyExhaustive chooseTag choosenLeft [A];
+            @simpleApplyExhaustive chooseTag choosenRight [B];
+        "
     );
 
     test_transform!(
