@@ -1,5 +1,5 @@
 use crate::ast::{
-    Edge, Error, Expression, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag, Span,
+    Edge, Error, Expression, Game, Label, Node, Pragma, PragmaAssignment, PragmaTag, Span, Type,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -88,20 +88,26 @@ impl Game<Id> {
 
                             queue.push((edge.rhs.clone(), path, assignments));
                         }
-                        Label::Tag { symbol } => {
+                        Label::Tag { .. } | Label::TagVariable { .. } => {
+                            let tag1 = edge.label.as_pragma_tag(self).unwrap();
+                            if let Some(edges) = &next_edges.get(&edge.rhs) {
+                                if let Some(edge) = edges.first().filter(|_| edges.len() == 1) {
+                                    if let Some(tag2) = edge.label.as_pragma_tag(self) {
+                                        // Don't merge two `Symbol`s or two `Variable`s.
+                                        if tag1.is_variable() != tag2.is_variable() {
+                                            path.push((*edge).clone());
+                                            paths_to_tags
+                                                .entry(PragmaTags::Two(tag1, tag2))
+                                                .or_default()
+                                                .insert((edge.rhs.clone(), path, assignments));
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+
                             paths_to_tags
-                                .entry(PragmaTag::Symbol {
-                                    symbol: symbol.clone(),
-                                })
-                                .or_default()
-                                .insert((edge.rhs.clone(), path, assignments));
-                        }
-                        Label::TagVariable { identifier } => {
-                            paths_to_tags
-                                .entry(PragmaTag::Variable {
-                                    identifier: identifier.clone(),
-                                    type_: self.infer(identifier),
-                                })
+                                .entry(PragmaTags::One(tag1))
                                 .or_default()
                                 .insert((edge.rhs.clone(), path, assignments));
                         }
@@ -130,12 +136,12 @@ impl Game<Id> {
 
             let tags_count = paths_to_tags.len();
             let mut simple_paths_to_tags = vec![];
-            for (mut tag, mut paths) in paths_to_tags {
+            for (mut tags, mut paths) in paths_to_tags {
                 let (_, mut path, mut assignments) = paths.pop_first().unwrap();
 
                 // If there's exactly one path to a tag, it's trivially simple.
                 if paths.is_empty() {
-                    if let PragmaTag::Variable { identifier, type_ } = &mut tag {
+                    if let Some((identifier, type_)) = tags.as_variable_mut() {
                         expose_index += 1;
                         *identifier = Id::from(format!("{identifier}_{expose_index}"));
                         let mut unrelated_assign_any_found = false;
@@ -160,7 +166,7 @@ impl Game<Id> {
                         is_exhaustive,
                         node: node.clone(),
                         path,
-                        tags: vec![tag],
+                        tags: tags.into_tags(),
                         to_player: false,
                     });
                     continue;
@@ -178,11 +184,7 @@ impl Game<Id> {
                     continue;
                 }
 
-                let PragmaTag::Variable {
-                    mut identifier,
-                    type_,
-                } = tag
-                else {
+                let Some((identifier, type_)) = tags.as_variable_mut() else {
                     continue;
                 };
 
@@ -214,7 +216,7 @@ impl Game<Id> {
                 }
 
                 expose_index += 1;
-                identifier = Id::from(format!("{identifier}_{expose_index}"));
+                *identifier = Id::from(format!("{identifier}_{expose_index}"));
                 assignments.push(PragmaAssignment {
                     lhs: exposed_variable,
                     rhs: Arc::from(Expression::new_cast(
@@ -229,7 +231,7 @@ impl Game<Id> {
                     is_exhaustive: true,
                     node: node.clone(),
                     path: vec![path.remove(0), path.pop().unwrap()],
-                    tags: vec![PragmaTag::Variable { identifier, type_ }],
+                    tags: tags.into_tags(),
                     to_player: false,
                 });
             }
@@ -277,6 +279,35 @@ impl Game<Id> {
         }
 
         candidates
+    }
+}
+
+#[derive(Clone, Eq, Ord, PartialEq, PartialOrd)]
+enum PragmaTags<Id> {
+    One(PragmaTag<Id>),
+    Two(PragmaTag<Id>, PragmaTag<Id>),
+}
+
+impl<Id> PragmaTags<Id> {
+    fn as_variable_mut(&mut self) -> Option<(&mut Id, &Arc<Type<Id>>)> {
+        match self {
+            Self::Two(PragmaTag::Variable { .. }, PragmaTag::Variable { .. }) => {
+                panic!("Ambiguous cast.")
+            }
+            Self::One(PragmaTag::Variable { identifier, type_ })
+            | Self::Two(PragmaTag::Variable { identifier, type_ }, PragmaTag::Symbol { .. })
+            | Self::Two(PragmaTag::Symbol { .. }, PragmaTag::Variable { identifier, type_ }) => {
+                Some((identifier, type_))
+            }
+            _ => None,
+        }
+    }
+
+    fn into_tags(self) -> Vec<PragmaTag<Id>> {
+        match self {
+            Self::One(x) => vec![x],
+            Self::Two(x, y) => vec![x, y],
+        }
     }
 }
 
@@ -615,8 +646,9 @@ mod test {
         repeat_test_hard,
         include_str!("../../../../../games/rg/repeatTestHard.rg"),
         adds "
-            @simpleApply choosenLeft end [pos_1: Position, LOSE] pos = Position(pos_1), player = PlayerOrSystem(keeper);
-            @simpleApply choosenRight end [pos_2: Position, LOSE] pos = Position(pos_2), player = PlayerOrSystem(keeper);
+            @simpleApply choosenLeft end [LOSE, pos_1: Position] pos = Position(pos_1), player = PlayerOrSystem(keeper);
+            @simpleApply choosenRight end [LOSE, pos_2: Position] pos = Position(pos_2), player = PlayerOrSystem(keeper);
+            @simpleApply lose end [pos_3: Position] player = PlayerOrSystem(keeper);
             @simpleApplyExhaustive begin chooseTag [] player = PlayerOrSystem(tester);
             @simpleApplyExhaustive chooseTag choosenLeft [A];
             @simpleApplyExhaustive chooseTag choosenRight [B];
@@ -660,6 +692,43 @@ mod test {
             @simpleApplyExhaustive moveA moveB [0] key = 0, player = PlayerOrSystem(B);
             @simpleApplyExhaustive moveA moveB [1] key = 1, player = PlayerOrSystem(B);
             @simpleApplyExhaustive preend end [] player = PlayerOrSystem(keeper);
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        double,
+        include_str!("../../../../../games/rg/simpleApplyDoubleTest.rg"),
+        adds "
+            @simpleApply showLose end [LOSE] player = PlayerOrSystem(keeper);
+            @simpleApply showWin end [WIN] goals[tester] = 100, player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive begin loop [] player = PlayerOrSystem(tester);
+            @simpleApplyExhaustive loop end [pos_1: Position, LOSE] pos = Position(pos_1), player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive loop end [pos_2: Position, WIN] pos = Position(pos_2), goals[tester] = 100, player = PlayerOrSystem(keeper);
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        double_rev,
+        include_str!("../../../../../games/rg/simpleApplyDoubleTestRev.rg"),
+        adds "
+            @simpleApply showLose end [pos_1: Position] player = PlayerOrSystem(keeper);
+            @simpleApply showWin end [pos_2: Position] goals[tester] = 100, player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive begin loop [] player = PlayerOrSystem(tester);
+            @simpleApplyExhaustive loop end [LOSE, pos_3: Position] pos = Position(pos_3), player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive loop end [WIN, pos_4: Position] pos = Position(pos_4), goals[tester] = 100, player = PlayerOrSystem(keeper);
+        "
+    );
+
+    test_transform!(
+        calculate_simple_apply,
+        double_same,
+        include_str!("../../../../../games/rg/simpleApplyDoubleSameTest.rg"),
+        adds "
+            @simpleApply showLose end [UNKNOWN] player = PlayerOrSystem(keeper);
+            @simpleApply showWin end [UNKNOWN] goals[tester] = 100, player = PlayerOrSystem(keeper);
+            @simpleApplyExhaustive begin loop [] player = PlayerOrSystem(tester);
         "
     );
 

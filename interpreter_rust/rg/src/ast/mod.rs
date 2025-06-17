@@ -204,6 +204,19 @@ impl<Id> Label<Id> {
 }
 
 impl<Id: Clone + PartialEq> Label<Id> {
+    pub fn as_pragma_tag(&self, game: &Game<Id>) -> Option<PragmaTag<Id>> {
+        match self {
+            Self::Tag { symbol } => Some(PragmaTag::Symbol {
+                symbol: symbol.clone(),
+            }),
+            Self::TagVariable { identifier } => Some(PragmaTag::Variable {
+                identifier: identifier.clone(),
+                type_: game.infer(identifier),
+            }),
+            _ => None,
+        }
+    }
+
     pub fn remove_casts(&self, identifier: &Id) -> Self {
         match self {
             Self::Assignment { lhs, rhs } => Self::Assignment {
