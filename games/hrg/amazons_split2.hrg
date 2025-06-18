@@ -5,7 +5,7 @@ domain Piece = arrow | blackQueen | empty | whiteQueen
 domain Player = black | white
 domain Score = 0 | 100
 domain Position = V(X, Y) where X in 0..9, Y in 0..9
-domain PositionOrNull = V(X, Y) where X in 0..9, Y in 0..9 | null
+domain PositionOrNull = Position | null
 
 left : PositionOrNull -> PositionOrNull
 left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
