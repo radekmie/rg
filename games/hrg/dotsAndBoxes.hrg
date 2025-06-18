@@ -11,22 +11,12 @@
 
 // Details:
 // - Board size: 9x9 dots 
-// - (*) In my version the first player who capture half of the cells
-// wins, wchich means we dont have to always lead the game to the very end
-// (the same is mentioned in Ludii Player).
-// - Also, a player who fills a square gets one extra move (even if
-// two squares were filled at once).
-
-
-// Idea: 
 // Each line has either one or two adjacent squares. Let's map a
 // line with two boxes (where one can be none, if line is an edge).
 // Next, every time a line is being set by some player, let's add 1
 // to adjacent boxes' states. In this way, when a box is being 
 // promoted to state 4 it becomes filled and the current player
 // gets 1 point. 
-// There are 8x8=64 boxes to fill. A player who first fills 32 boxes wins.
-
 
 //---------------------DOMAINS AND VARS---------------------
 
@@ -116,13 +106,11 @@ graph turn() {
   }
   
   player = me
-
   chosenLine = Line(*)
   check(lines[chosenLine] == empty)
-  lines[chosenLine] = taken
   $$ chosenLine
-  
   player = keeper
+  lines[chosenLine] = taken
 
   // update box and give points
   if box1[chosenLine] != none {
