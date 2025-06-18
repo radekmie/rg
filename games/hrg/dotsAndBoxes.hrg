@@ -7,7 +7,7 @@
 // Players alternate turns drawing a (unit) line between two of the dots.
 // If a player completes a (unit) square, they receive one point and 
 // play again. The player with the most points when there are 
-// no more moves wins (*)."
+// no more moves wins."
 
 // Details:
 // - Board size: 9x9 dots 
@@ -39,7 +39,7 @@ domain BoxStateOrNone = none | BoxState
 domain BoxOrNone = none | Box 
 domain Points = P(I) where I in 0..64 // number of filled squares (for one player)
 domain PointsOrNan = nan | Points
-domain Score = 0 | 100 // there can't be a draw because of (*)
+domain Score = 50 | 0 | 100
 domain Bool = 0 | 1
 
 lines : Line -> LineState = { _ = empty} // mark all lines as empty
@@ -102,46 +102,56 @@ graph existsEmpty() {
 }
 
 graph turn() {
-
+  if not(reachable(existsEmpty())) {
+    if greater(points[red], points[blue]) == 1 {
+      goals[red] = 100
+      goals[blue] = 0
+    } else {
+      if greater(points[blue], points[red]) == 1{
+        goals[red] = 0
+        goals[blue] = 100
+      }
+    }
+    end()
+  }
+  
   player = me
 
   chosenLine = Line(*)
   check(lines[chosenLine] == empty)
-  lines[chosenLine] = taken 
+  lines[chosenLine] = taken
   $$ chosenLine
   
   player = keeper
 
   // update box and give points
-  if box1(chosenLine) != none {
+  if box1[chosenLine] != none {
     // increment box state
-    boxes[box1(chosenLine)] = incrState(boxes[box1(chosenLine)])
+    boxes[box1[chosenLine]] = incrState(boxes[box1[chosenLine]])
     
     // get 1 point if square has just been filled
-    if boxes[box1(chosenLine)] == P(4) 
-    {
+    if boxes[box1(chosenLine)] == P(4) {
       points[me] = incrPoints(points[me])
     }
   }
 
   // same with the second box
   if box2(chosenLine) != none {
-    boxes[box2(chosenLine)] = incrState(boxes[box2(chosenLine)])
-    if boxes[box2(chosenLine)] == P(4)
-    {
+    boxes[box2[chosenLine]] = incrState(boxes[box2[chosenLine]])
+    if boxes[box2[chosenLine]] == P(4) {
       points[me] = incrPoints(points[me])
     }
   }
 
- 
   // player who first fills > 32 (more than half) boxes wins
-  if greater(points[me], P(32)) == 1 || not(reachable(existsEmpty())) {
+  if greater(points[me], P(32)) == 1 {
     goals[me] = 100
+    goals[op[me]] = 0
     end()
   }
 
-  // switch players only when the current one didnt get an extra move
-  if not(boxes[box1(chosenLine)] == P(4) || boxes[box2(chosenLine)] == P(4)) {
+  // switch players only when the current one didn't get an extra move
+  if not(boxes[box1[chosenLine]] == P(4) || boxes[box2[chosenLine]] == P(4)) {
     me = op(me)
   }
 }
