@@ -15,60 +15,61 @@
 domain Piece = blackBomb | empty | whiteBomb | border
 domain Player = black | white
 domain Score = 0 | 100
-domain Position = null | V(X, Y) where X in 0..7, Y in 0..7
+domain Position = V(X, Y) where X in 0..7, Y in 0..7
+domain PositionOrNull = Position | null
 domain Int = I(X) where X in 0..7
 
-left : Position -> Position
+left : PositionOrNull -> PositionOrNull
 left(null) = null
 left(V(0, _)) = null 
 left(V(X, Y)) = V(X - 1, Y)
 
-right : Position -> Position
+right : PositionOrNull -> PositionOrNull
 right(null) = null
 right(V(7, _)) = null 
 right(V(X, Y)) = V(X + 1, Y)
 
-up : Position -> Position
+up : PositionOrNull -> PositionOrNull
 up(null) = null
 up(V(_, 0)) = null 
 up(V(X, Y)) = V(X, Y - 1)
 
-down : Position -> Position
+down : PositionOrNull -> PositionOrNull
 down(null) = null
 down(V(_, 7)) = null
 down(V(X, Y)) = V(X, Y + 1)
 
 // helps to determin in which direction should we head to 
-direction: Player -> Position -> Position
+direction: Player -> PositionOrNull -> PositionOrNull
 direction(white) = up
 direction(_) = down
 
 // diagonal moves
-upLeft: Position -> Position 
+upLeft: PositionOrNull -> PositionOrNull 
 upLeft(V(X, Y)) = up(left(V(X, Y)))
 upLeft(_) = null
 
-upRight: Position -> Position
+upRight: PositionOrNull -> PositionOrNull
 upRight(V(X, Y)) = up(right(V(X, Y)))
 upRight(_) = null 
 
-downLeft: Position -> Position
+downLeft: PositionOrNull -> PositionOrNull
 downLeft(V(X, Y)) = down(left(V(X, Y)))
 downLeft(_) = null 
 
-downRight: Position -> Position
+downRight: PositionOrNull -> PositionOrNull
 downRight(V(X, Y)) = down(right(V(X, Y)))
 downRight(_) = null
 
-forwardLeft: Player -> Position -> Position
+forwardLeft: Player -> PositionOrNull -> PositionOrNull
 forwardLeft(white) = upLeft
 forwardLeft(_) = downLeft
 
-forwardRight: Player -> Position -> Position
+forwardRight: Player -> PositionOrNull -> PositionOrNull
 forwardRight(white) = upRight 
 forwardRight(_) = downRight
 
-// if possible returns target pos, else curent possition
+// if possible returns target pos, else curent position
 tryUp: Position -> Position
 tryUp(null) = null
 tryUp(V(X, 0)) = V(X, 0)
@@ -114,7 +115,7 @@ opponent : Player -> Player
 opponent(white) = black
 opponent(_) = white
 
-board : Position -> Piece = {
+board : PositionOrNull -> Piece = {
   V(X, Y) = if (Y < 2)
     then blackBomb
     else if (5 < Y)
@@ -125,32 +126,32 @@ board : Position -> Piece = {
 }
 
 me : Player = white
-pos : Position
+pos : PositionOrNull
 
-graph move(me: Player) {
+graph move() {
   player = me
   pos = Position(*)
-  check(board[pos] == piece(me))
+  check(board[pos] == piece[me])
   $$ pos
 
   board[pos] = empty 
   branch {
     branch {
-      pos = direction(me)(pos)
+      pos = direction[me][pos]
       check(board[pos] == empty)
-      $_F 
+      $_F
     } or {
-      pos = forwardLeft(me)(pos)
+      pos = forwardLeft[me][pos]
       check(board[pos] == empty)
       $_L
     } or {
-      pos = forwardRight(me)(pos)
+      pos = forwardRight[me][pos]
       check(board[pos] == empty)
       $_R
     }
     $$ pos
     player = keeper
-    board[pos] = piece(me)
+    board[pos] = piece[me]
   } or {
     $ E
     player = keeper
@@ -168,20 +169,20 @@ graph move(me: Player) {
 
 graph existsOpponentPiece(me: Player) {
   pos = Position(*)
-  check(board[pos] == piece(opponent(me)))
+  check(board[pos] == piece[opponent[me]])
 }
 
 graph turn() {
-  move(me)
-  if direction(me)(pos) == null || not(reachable(existsOpponentPiece(me))) {
+  move()
+  if direction[me][pos] == null || not(reachable(existsOpponentPiece(me))) {
     goals[me] = 100
     end()
   }
-  me = opponent(me)
+  me = opponent[me]
 }
 
 graph rules() {
-  loop {
-    turn()
-  }
+   loop {
+     turn()
+   }
 }

@@ -1,62 +1,62 @@
 // Breakthrough 8x8
-// Moves form: Position Position
+// Moves form: pos pos
 
-// Domains
-domain Piece = blackpawn | empty | whitepawn | border
+domain Piece = blackPawn | empty | whitePawn | border
 domain Player = black | white
 domain Score = 0 | 100
-domain Position = null | V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
+domain Position = V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
+domain PositionOrNull = Position | null
 
-left : Position -> Position
+left : PositionOrNull -> PositionOrNull
 left(null) = null
 left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
-right : Position -> Position
+right : PositionOrNull -> PositionOrNull
 right(null) = null
 right(V(X, Y)) = if X == 7 then null else V(X + 1, Y)
-up : Position -> Position
+up : PositionOrNull -> PositionOrNull
 up(null) = null
 up(V(X, 0)) = V(X, 0)
 up(V(X, Y)) = V(X, Y - 1)
-down : Position -> Position
+down : PositionOrNull -> PositionOrNull
 down(null) = null
 down(V(X, 7)) = V(X, 7)
 down(V(X, Y)) = V(X, Y + 1)
-upLeft : Position -> Position
+upLeft : PositionOrNull -> PositionOrNull
 upLeft(null) = null
 upLeft(V(X,Y)) = up(left(V(X,Y)))
-upRight : Position -> Position
+upRight : PositionOrNull -> PositionOrNull
 upRight(null) = null
 upRight(V(X,Y)) = up(right(V(X,Y)))
-downLeft : Position -> Position
+downLeft : PositionOrNull -> PositionOrNull
 downLeft(null) = null
 downLeft(V(X,Y)) = down(left(V(X,Y)))
-downRight : Position -> Position
+downRight : PositionOrNull -> PositionOrNull
 downRight(null) = null
 downRight(V(X,Y)) = down(right(V(X,Y)))
 
-directionF : Player -> Position -> Position
+directionF : Player -> PositionOrNull -> PositionOrNull
 directionF(white) = up
 directionF(_) = down
-directionFL : Player -> Position -> Position
+directionFL : Player -> PositionOrNull -> PositionOrNull
 directionFL(white) = upLeft
 directionFL(_) = downLeft
-directionFR : Player -> Position -> Position
+directionFR : Player -> PositionOrNull -> PositionOrNull
 directionFR(white) = upRight
 directionFR(_) = downRight
 
 piece : Player -> Piece
-piece(white) = whitepawn
-piece(_) = blackpawn
+piece(white) = whitePawn
+piece(_) = blackPawn
 
 opponent : Player -> Player
 opponent(white) = black
 opponent(_) = white
 
-board : Position -> Piece = {
+board : PositionOrNull -> Piece = {
   V(X, Y) = if Y < 2
-    then blackpawn
+    then blackPawn
     else if Y > 5
-      then whitepawn
+      then whitePawn
       else empty
   where X in 0..7, Y in 0..7;
   null = border
@@ -64,32 +64,32 @@ board : Position -> Piece = {
 
 me : Player = white
 
-pos : Position
+pos : PositionOrNull
 
 graph existsOppPawn() {
   pos = Position(*)
-  check(board[pos] == piece(opponent(me)))
+  check(board[pos] == piece[opponent[me]])
 }
 
 graph move() {
   player = me
   pos = Position(*)
-  check(board[pos] == piece(me))
+  check(board[pos] == piece[me])
   board[pos] = empty
   $$ pos
   branch {
-    pos = directionF(me)(pos)
+    pos = directionF[me][pos]
     $_F
     check(board[pos] == empty)
   } or {
     branch {
-      pos = directionFL(me)(pos)
+      pos = directionFL[me][pos]
       $_L
     } or {
-      pos = directionFR(me)(pos)
+      pos = directionFR[me][pos]
       $_R
     }
-    check(board[pos] == empty || board[pos] == piece[opponent(me)])
+    check(board[pos] == empty || board[pos] == piece[opponent[me]])
   }
   $$ pos
   player = keeper
@@ -98,7 +98,7 @@ graph move() {
 
 graph turn() {
   move()
-  if directionF(me)(pos) == pos || not(reachable(existsOppPawn())) {
+  if directionF[me][pos] == pos || not(reachable(existsOppPawn())) {
     goals[me] = 100
     end()
   }
