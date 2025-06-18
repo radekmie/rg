@@ -1,164 +1,111 @@
-// Amazons
-// Move form: pos pos pos
+// Amazons with moves split into move queen and shoot
+// Move form: pos pos | pos
 
-domain Piece = arrow | blackqueen | empty | whitequeen
+domain Piece = arrow | blackQueen | empty | whiteQueen
 domain Player = black | white
 domain Score = 0 | 100
-domain Position = null | V(X, Y) where X in 0..9, Y in 0..9
+domain Position = V(X, Y) where X in 0..9, Y in 0..9
+domain PositionOrNull = V(X, Y) where X in 0..9, Y in 0..9 | null
 
-left : Position -> Position
+left : PositionOrNull -> PositionOrNull
 left(V(X, Y)) = if X == 0 then null else V(X - 1, Y)
 left(_) = null
-
-right : Position -> Position
+right : PositionOrNull -> PositionOrNull
 right(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
 right(_) = null
-
-up : Position -> Position
+up : PositionOrNull -> PositionOrNull
 up(V(X, Y)) = if Y == 0 then null else V(X, Y - 1)
 up(_) = null
-
-down : Position -> Position
+down : PositionOrNull -> PositionOrNull
 down(V(X, Y)) = if Y == 9 then null else V(X, Y + 1)
 down(_) = null
+upLeft : PositionOrNull -> PositionOrNull
+upLeft(V(X, Y)) = up(left(V(X, Y)))
+upLeft(_) = null
+upRight : PositionOrNull -> PositionOrNull
+upRight(V(X, Y)) = up(right(V(X, Y)))
+upRight(_) = null
+downLeft : PositionOrNull -> PositionOrNull
+downLeft(V(X, Y)) = down(left(V(X, Y)))
+downLeft(_) = null
+downRight : PositionOrNull -> PositionOrNull
+downRight(V(X, Y)) = down(right(V(X, Y)))
+downRight(_) = null
 
-upleft : Position -> Position
-upleft(V(X, Y)) = up(left(V(X, Y)))
-upleft(_) = null
-
-upright : Position -> Position
-upright(V(X, Y)) = up(right(V(X, Y)))
-upright(_) = null
-
-downleft : Position -> Position
-downleft(V(X, Y)) = down(left(V(X, Y)))
-downleft(_) = null
-
-downright : Position -> Position
-downright(V(X, Y)) = down(right(V(X, Y)))
-downright(_) = null
+domain DirIndex = D(X) where X in 0..7
+dirs : DirIndex -> PositionOrNull -> PositionOrNull
+dirs(D(0)) = up
+dirs(D(1)) = down
+dirs(D(2)) = left
+dirs(D(3)) = right
+dirs(D(4)) = upLeft
+dirs(D(5)) = upRight
+dirs(D(6)) = downLeft
+dirs(D(7)) = downRight
 
 piece : Player -> Piece
-piece(white) = whitequeen
-piece(_) = blackqueen
+piece(white) = whiteQueen
+piece(_) = blackQueen
 
 opponent : Player -> Player
 opponent(white) = black
 opponent(_) = white
 
 
-// Variables
-board : Position -> Piece = {
+board : PositionOrNull -> Piece = {
   V(X, Y) =
-    if Y == 0 && (X == 3 || X == 6) || Y == 3 && (X == 0 || X == 9) then blackqueen else
-    if Y == 6 && (X == 0 || X == 9) || Y == 9 && (X == 3 || X == 6) then whitequeen else
+    if Y == 0 && (X == 3 || X == 6) || Y == 3 && (X == 0 || X == 9) then blackQueen else
+    if Y == 6 && (X == 0 || X == 9) || Y == 9 && (X == 3 || X == 6) then whiteQueen else
     empty
     where X in 0..9, Y in 0..9;
   null = arrow
 }
-
 me : Player = white
-
-pos : Position
+pos : PositionOrNull
 
 graph queenShift() {
-  branch {
+  branch dir in DirIndex {
     repeat 9 {
-      pos = upleft(pos) check(board[pos] == empty)
-      $ _UL
-      branch {return()} or {}
-    }
-  } or {
-    repeat 9 {
-      pos = up(pos) check(board[pos] == empty)
-      $ _U
-      branch {return()} or {}
-    }
-  } or {
-    repeat 9 {
-      pos = upright(pos) check(board[pos] == empty)
-      $ _UR
-      branch {return()} or {}
-    }
-  } or {
-    repeat 9 {
-      pos = left(pos) check(board[pos] == empty)
-      $ _L
-      branch {return()} or {}
-    }
-  } or {
-    repeat 9 {
-      pos = right(pos) check(board[pos] == empty)
-      $ _R
-      branch {return()} or {}
-    }
-  } or {
-    repeat 9 {
-      pos = downleft(pos) check(board[pos] == empty)
-      $ _DL
-      branch {return()} or {}
-    }
-  } or {
-    repeat 9 {
-      pos = down(pos) check(board[pos] == empty)
-      $ _D
-      branch {return()} or {}
-    }
-  } or {
-    repeat 9 {
-      pos = downright(pos) check(board[pos] == empty)
-      $ _DR
+      pos = dirs[dir][pos]
+      check(board[pos] == empty)
+      $_ dir
       branch {return()} or {}
     }
   }
 }
 
-graph existsMoveableQueen(me: Player) {
+graph existsMoveableQueen() {
   pos = Position(*)
   check(board[pos] == piece(me))
-  branch {
-    check(board[upleft(pos)] == empty)
-  } or {
-    check(board[up(pos)] == empty)
-  } or {
-    check(board[upright(pos)] == empty)
-  } or {
-    check(board[left(pos)] == empty)
-  } or {
-    check(board[right(pos)] == empty)
-  } or {
-    check(board[downleft(pos)] == empty)
-  } or {
-    check(board[down(pos)] == empty)
-  } or {
-    check(board[downright(pos)] == empty)
+  branch dir in DirIndex {
+    check(board[dirs[dir][pos]] == empty)
   }
 }
 
-graph move(me: Player) {
+graph move() {
   player = me
   pos = Position(*)
-  $$ pos // Choose a queen
+  $$ pos // Choose a Queen
   check(board[pos] == piece(me))
   board[pos] = empty
   
   queenShift()
-  $$ pos // Move queen here
-  player = keeper
+  $$ pos // Move Queen here
+  player = keeper // End queen move
   board[pos] = piece(me)
   
-  player = me  
+  player = me
   queenShift()
   $$ pos // Shoot arrow here
-  player = keeper
+  player = keeper // End shoot move
   board[pos] = arrow
 }
 
 graph turn() {
-  move(me)
-  me = opponent(me)
-  if not(reachable(existsMoveableQueen(me))) {
-    goals[opponent(me)] = 100
+  move()
+  me = opponent[me]
+  if not(reachable(existsMoveableQueen())) {
+    goals[opponent[me]] = 100
     end()
   }
 }
