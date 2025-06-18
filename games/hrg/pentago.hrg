@@ -1,8 +1,7 @@
 // Pentago
-// Move form: pos rotation
-
-
 // Dominik Biernacki
+
+// Move form: pos rotation
 
 // domain statement
 domain Piece = empty | x | o

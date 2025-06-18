@@ -1,7 +1,7 @@
 // Twenty-one card game
 // The player chooses whether to continue to draw a card or stop. It can also decide whether an ace scores 1 or 11.
-// The score is 0, if the sum of the card values exceeds 21
-// Otherwise, it is equal to the sum of the card values
+// The score is 0, if the sum of the card values exceeds 21.
+// Otherwise, it is equal to the sum of the card values.
 
 domain Player = thePlayer
 domain Score = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21

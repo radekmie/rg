@@ -1,51 +1,52 @@
-// Gomoku (free style)
+// Gomoku (standard)
 // Move form: pos
 
 // Domains
 domain Piece = empty | white | black | border
 domain Player = white | black
-domain Position = null | V(X, Y) where X in 1..15, Y in 1..15
+domain Position = V(X, Y) where X in 1..15, Y in 1..15
+domain PositionOrNull = null | Position
 domain Score = 50 | 0 | 100
 
 // Helpers
-up : Position -> Position
+up : PositionOrNull -> PositionOrNull
 up(V(X, Y)) = if Y == 15 then null else V(X, Y + 1)
 up(_) = null
 
-right : Position -> Position
+right : PositionOrNull -> PositionOrNull
 right(V(X, Y)) = if X == 15 then null else V(X + 1, Y)
 right(_) = null
 
-down : Position -> Position
+down : PositionOrNull -> PositionOrNull
 down(V(X, Y)) = if Y == 1 then null else V(X, Y - 1)
 down(_) = null
 
-left : Position -> Position
+left : PositionOrNull -> PositionOrNull
 left(V(X, Y)) = if X == 1 then null else V(X - 1, Y)
 left(_) = null
 
-upLeft: Position -> Position
+upLeft: PositionOrNull -> PositionOrNull
 upLeft(V(X, Y)) = up(left(V(X, Y)))
 upLeft(_) = null
 
-upRight: Position -> Position
+upRight: PositionOrNull -> PositionOrNull
 upRight(V(X, Y)) = up(right(V(X, Y)))
 upRight(_) = null
 
-downLeft: Position -> Position
+downLeft: PositionOrNull -> PositionOrNull
 downLeft(V(X, Y)) = down(left(V(X, Y)))
 downLeft(_) = null
 
-downRight: Position -> Position
+downRight: PositionOrNull -> PositionOrNull
 downRight(V(X, Y)) = down(right(V(X, Y)))
 downRight(_) = null
 
 
-board : Position -> Piece = { V(X, Y) = empty where X in 1..15, Y in 1..15; null = border }
-pos : Position
+board : PositionOrNull -> Piece = { V(X, Y) = empty where X in 1..15, Y in 1..15; null = border }
+pos : PositionOrNull
 
 
-graph winInDir(piece: Piece, dir1: Position->Position, dir2: Position->Position) {
+graph winInDir(piece: Piece, dir1: PositionOrNull->PositionOrNull, dir2: PositionOrNull->PositionOrNull) {
   if board[dir1[pos]] == piece {
     if board[dir1[dir1[pos]]] == piece {
       if board[dir1[dir1[dir1[pos]]]] == piece {

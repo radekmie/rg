@@ -12,7 +12,7 @@
 domain Player = black | white
 domain Piece = empty | miss | carrier | battleship | cruiser | submarine | destroyer
 domain Position = V(I, J) where I in 0..9, J in 0..9
-domain PositionOrNull = Position | null
+domain PositionOrNull = null | Position
 domain Score = 0 | 100
 domain Nat = N(I) where I in 0..17
 domain Board = own | opp

@@ -1,4 +1,4 @@
-// Clobber
+// Clobber 10x10
 // Move form: Position Position
 
 domain Player = black | white
@@ -47,54 +47,50 @@ pos : PositionOrNull
 
 graph moveExists(me: Player) {
   pos = Position(*)
-  check(board[pos] == piece(me))
+  check(board[pos] == piece[me])
   branch {
-    check(board[up(pos)] == piece(opponent(me)))
+    check(board[up(pos)] == piece[opponent[me]])
   } or {
-    check(board[left(pos)] == piece(opponent(me)))
+    check(board[left(pos)] == piece[opponent[me]])
   } or {
-    check(board[right(pos)] == piece(opponent(me)))
+    check(board[right(pos)] == piece[opponent[me]])
   } or {
-    check(board[down(pos)] == piece(opponent(me)))
+    check(board[down(pos)] == piece[opponent[me]])
   }
-}
-
-graph move(me: Player) {
-  pos = Position(*)
-  check(board[pos] == piece(me))
-  board[pos] = empty
-  $$ pos
-  branch {
-    pos = up(pos)
-    check(board[pos] == piece(opponent(me)))
-    $_U
-  } or {
-    pos = left(pos)
-    check(board[pos] == piece(opponent(me)))
-    $_L
-  } or {
-    pos = right(pos)
-    check(board[pos] == piece(opponent(me)))
-    $_R
-  } or {
-    pos = down(pos)
-    check(board[pos] == piece(opponent(me)))
-    $_D
-  }
-  $$ pos
 }
 
 graph turn() {
   player = me
-  move(me)
+  pos = Position(*)
+  check(board[pos] == piece[me])
+  board[pos] = empty
+  $$ pos
+  branch {
+    pos = up[pos]
+    check(board[pos] == piece[opponent[me]])
+    $_U
+  } or {
+    pos = left[pos]
+    check(board[pos] == piece[opponent[me]])
+    $_L
+  } or {
+    pos = right[pos]
+    check(board[pos] == piece[opponent[me]])
+    $_R
+  } or {
+    pos = down[pos]
+    check(board[pos] == piece[opponent[me]])
+    $_D
+  }
+  $$ pos
   player = keeper
-  board[pos] = piece(me)
-  if not(reachable(moveExists(opponent(me)))) {
+  board[pos] = piece[me]
+  if not(reachable(moveExists(opponent[me]))) {
     goals[me] = 100
     goals[opponent(me)] = 0
     end()
   }
-  me = opponent(me)
+  me = opponent[me]
 }
 
 graph rules() {

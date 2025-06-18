@@ -1,13 +1,12 @@
 // Connect4
-// Moves form: Position
+// Moves form: pos
 
 domain Piece = empty | red | yellow | border
 domain Player = red | yellow
-domain Position = null | V(X, Y) where X in 1..7, Y in 1..6
+domain Position = V(X, Y) where X in 1..7, Y in 1..6 | null
 domain TopPosition = V(X, 6) where X in 1..7
 domain Score = 50 | 0 | 100
 
-// Helpers
 up : Position -> Position
 up(V(X, Y)) = if Y == 6 then null else V(X, Y + 1)
 up(_) = null
@@ -117,7 +116,7 @@ graph turn() {
   if not(reachable(existsNonempty())) {// Draw
     end()
   }
-  me = opponent(me)
+  me = opponent[me]
 }
 
 graph rules() {

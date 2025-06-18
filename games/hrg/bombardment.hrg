@@ -16,7 +16,7 @@ domain Piece = blackBomb | empty | whiteBomb | border
 domain Player = black | white
 domain Score = 0 | 100
 domain Position = V(X, Y) where X in 0..7, Y in 0..7
-domain PositionOrNull = Position | null
+domain PositionOrNull = null | Position
 domain Int = I(X) where X in 0..7
 
 left : PositionOrNull -> PositionOrNull

@@ -5,7 +5,7 @@ domain Piece = blackPawn | empty | whitePawn | border
 domain Player = black | white
 domain Score = 0 | 100
 domain Position = V(X, Y) where X in 0..7, Y in { 0, 1, 2, 3, 4, 5, 6, 7 }
-domain PositionOrNull = Position | null
+domain PositionOrNull = null | Position
 
 left : PositionOrNull -> PositionOrNull
 left(null) = null

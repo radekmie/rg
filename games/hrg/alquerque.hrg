@@ -11,7 +11,7 @@ domain Count = I(X) where X in 0..100
 domain CountOrNan = nan | Count
 
 domain Position = V(X,Y) where X in 0..4, Y in 0..4
-domain PositionOrNull = Position | null
+domain PositionOrNull = null | Position
 
 up : PositionOrNull -> PositionOrNull
 up(null) = null
