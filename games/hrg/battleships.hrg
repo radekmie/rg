@@ -11,17 +11,18 @@
 
 domain Player = black | white
 domain Piece = empty | miss | carrier | battleship | cruiser | submarine | destroyer
-domain Position = null | V(I, J) where I in 0..9, J in 0..9
+domain Position = V(I, J) where I in 0..9, J in 0..9
+domain PositionOrNull = Position | null
 domain Score = 0 | 100
 domain Nat = N(I) where I in 0..17
 domain Board = own | opp
 
 // helpers
-down : Position -> Position
+down : PositionOrNull -> PositionOrNull
 down(null) = null
 down(V(X, Y)) = if Y == 9 then null else V(X, Y + 1)
 
-right : Position -> Position
+right : PositionOrNull -> PositionOrNull
 right(null) = null
 right(V(X, Y)) = if X == 9 then null else V(X + 1, Y)
 
