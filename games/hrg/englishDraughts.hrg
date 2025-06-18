@@ -116,36 +116,28 @@ graph anyCapturePossible() {
   }
 }
 
-graph movePossible() {
+graph anyNormalMovePossible() {
   pos = Position(*)
   branch {
     check(board[pos] == myPawn[me])
     branch {
-      branch {
-        pos = fwdLeft[me][pos]
-      } or {
-        pos = fwdRight[me][pos]
-      }
-      check(board[pos] == empty)
+      pos = fwdLeft[me][pos]
     } or {
-      pawnCapturePossibleFrom()
+      pos = fwdRight[me][pos]
     }
+    check(board[pos] == empty)
   } or {
     check(board[pos] == myKing(me))
     branch {
-      branch {
-        pos = upLeft[pos]
-      } or {
-        pos = upRight[pos]
-      } or {
-        pos = downLeft[pos]
-      } or {
-        pos = downRight[pos]
-      }
-      check(board[pos] == empty)
+      pos = upLeft[pos]
     } or {
-      kingCapturePossibleFrom()
+      pos = upRight[pos]
+    } or {
+      pos = downLeft[pos]
+    } or {
+      pos = downRight[pos]
     }
+    check(board[pos] == empty)
   }
 }
 
@@ -250,27 +242,10 @@ graph moveKingCapture() {
 }
 
 graph move() {
-  if not(reachable(anyCapturePossible())) {
-    player = me
-    pos = Position(*)
-    check(playerOf[board[pos]] == me)// Temp
-    $$ pos
-    branch {
-      movePawnNormal()
-      player = keeper
-      if promotionLine(me)(pos) == 1 {
-        board[pos] = myKing[me]
-      } else {
-        board[pos] = myPawn[me]
-      }
-      stagnation = S(0)
-    } or {
-      moveKingNormal()
-      player = keeper
-      board[pos] = myKing[me]
-      stagnation = increment[stagnation]
+  if reachable(anyCapturePossible()) {
+    if equal[stagnation][S(20)] == 1 {
+      end()
     }
-  } else {
     player = me
     pos = Position(*)
     check(playerOf[board[pos]] == me)// Temp
@@ -289,24 +264,41 @@ graph move() {
       board[pos] = myKing[me]
     } 
     stagnation = S(0)
-  }
-}
-
-graph turn() {
-  move()
-  me = opponent[me]
-  if not(reachable(movePossible())) {
-    goals[opponent[me]] = 100
-    goals[me] = 0
-    end()
-  }
-  if equal[stagnation][S(20)] == 1 {
-    end()
+  } else {
+    if reachable(anyNormalMovePossible()) {
+      if equal[stagnation][S(20)] == 1 {
+        end()
+      }
+      player = me
+      pos = Position(*)
+      check(playerOf[board[pos]] == me)// Temp
+      $$ pos
+      branch {
+        movePawnNormal()
+        player = keeper
+        if promotionLine(me)(pos) == 1 {
+          board[pos] = myKing[me]
+        } else {
+          board[pos] = myPawn[me]
+        }
+        stagnation = S(0)
+      } or {
+        moveKingNormal()
+        player = keeper
+        board[pos] = myKing[me]
+        stagnation = increment[stagnation]
+      }
+    } else {
+      goals[me] = 0
+      goals[opponent[me]] = 100
+      end()
+    }
   }
 }
 
 graph rules() {
   loop {
-    turn()
+    move()
+    me = opponent[me]
   }
 }
