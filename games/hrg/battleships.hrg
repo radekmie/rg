@@ -192,7 +192,6 @@ graph turn(me: Player) {
 
     // choose position to shoot
     position = Position(*)
-    check(position != null)
     check(boards[me][opp][position] == empty)
     $$ position
 
