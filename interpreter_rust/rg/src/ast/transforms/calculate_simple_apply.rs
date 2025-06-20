@@ -711,7 +711,7 @@ mod test {
     test_transform!(
         calculate_simple_apply,
         double_rev,
-        include_str!("../../../../../games/rg/simpleApplyDoubleTestRev.rg"),
+        include_str!("../../../../../games/rg/simpleApplyDoubleRevTest.rg"),
         adds "
             @simpleApply showLose end [pos_1: Position] player = PlayerOrSystem(keeper);
             @simpleApply showWin end [pos_2: Position] goals[tester] = 100, player = PlayerOrSystem(keeper);

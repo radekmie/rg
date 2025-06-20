@@ -16,7 +16,8 @@ impl Game<Id> {
             .all(|edge| !edge.label.has_variable(&visible))
         {
             let artificial_tags = self.artificial_tags();
-            while let Some(indexes) = self.find_redundant_tags(&artificial_tags) {
+            let is_not_artificial = |tag: &Id| !artificial_tags.contains(tag);
+            while let Some(indexes) = self.find_redundant_tags(&is_not_artificial) {
                 for index in indexes {
                     Arc::make_mut(&mut self.edges[index]).skip();
                 }
@@ -26,18 +27,18 @@ impl Game<Id> {
         Ok(())
     }
 
-    fn find_redundant_tags(&self, artificial_tags: &BTreeSet<Id>) -> Option<Vec<usize>> {
+    fn find_redundant_tags(&self, is_not_artificial: &impl Fn(&Id) -> bool) -> Option<Vec<usize>> {
         let next_edges = self.next_edges();
         let prev_edges = self.prev_edges();
         let mut indexes: Option<Vec<_>> = None;
         for (index, edge) in self.edges.iter().enumerate() {
-            let is_tag = edge.label.is_tag_and(|tag| !artificial_tags.contains(tag));
-            if is_tag || edge.label.is_tag_variable() {
+            let is_tag = edge.label.is_tag_and(is_not_artificial);
+            if is_tag || edge.label.is_tag_variable_and(is_not_artificial) {
                 let prevs_nexts: Vec<_> =
-                    find_prevs(artificial_tags, is_tag, &prev_edges, &edge.lhs)
+                    find_nexts(is_not_artificial, is_tag, edge, &prev_edges, &|x| &x.lhs)
                         .into_iter()
                         .flat_map(|(prev, _)| {
-                            find_nexts(artificial_tags, is_tag, &next_edges, &prev.rhs)
+                            find_nexts(is_not_artificial, is_tag, &prev, &next_edges, &|x| &x.rhs)
                         })
                         .collect();
 
@@ -68,51 +69,37 @@ impl Game<Id> {
     }
 }
 
-fn find_prevs(
-    artificial_tags: &BTreeSet<Id>,
-    is_tag: bool,
-    prev_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
-    node: &Node<Id>,
-) -> Vec<EdgeAndPath<Id>> {
-    let mut seen = BTreeSet::new();
-    let mut queue = vec![(node, vec![])];
-    let mut prevs = vec![];
-    while let Some((rhs, path)) = queue.pop() {
-        if let Some(edges) = prev_edges.get(&rhs) {
-            for edge in edges {
-                if is_break(artificial_tags, is_tag, edge) {
-                    prevs.push(((*edge).clone(), path.clone()));
-                } else if seen.insert(&edge.lhs) {
-                    let mut path = path.clone();
-                    path.push((*edge).clone());
-                    queue.push((&edge.lhs, path));
-                }
-            }
-        }
-    }
-
-    prevs
-}
-
 fn find_nexts(
-    artificial_tags: &BTreeSet<Id>,
+    is_not_artificial: &impl Fn(&Id) -> bool,
     is_tag: bool,
+    edge: &Arc<Edge<Id>>,
     next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
-    node: &Node<Id>,
+    next_node: &impl Fn(&Arc<Edge<Id>>) -> &Node<Id>,
 ) -> Vec<EdgeAndPath<Id>> {
-    let mut seen = BTreeSet::new();
-    let mut queue = vec![(node, vec![])];
+    let mut queue: Vec<(_, Vec<Arc<Edge<_>>>)> = vec![(next_node(edge), vec![])];
     let mut nexts = vec![];
-    while let Some((lhs, path)) = queue.pop() {
-        if let Some(edges) = next_edges.get(&lhs) {
-            for edge in edges {
-                if is_break(artificial_tags, is_tag, edge) {
+    while let Some((node, path)) = queue.pop() {
+        if let Some(edges) = next_edges.get(&node) {
+            'outer: for edge in edges {
+                if is_break(is_not_artificial, is_tag, edge) {
                     nexts.push(((*edge).clone(), path.clone()));
-                } else if seen.insert(&edge.rhs) {
-                    let mut path = path.clone();
-                    path.push((*edge).clone());
-                    queue.push((&edge.rhs, path));
+                    continue;
                 }
+
+                // Two visits are required to account for loops.
+                let mut visits_on_path = 0;
+                for x in &path {
+                    if x.rhs == *next_node(edge) {
+                        visits_on_path += 1;
+                        if visits_on_path == 2 {
+                            continue 'outer;
+                        }
+                    }
+                }
+
+                let mut path = path.clone();
+                path.push((*edge).clone());
+                queue.push((next_node(edge), path));
             }
         }
     }
@@ -120,13 +107,13 @@ fn find_nexts(
     nexts
 }
 
-fn is_break(artificial_tags: &BTreeSet<Id>, is_tag: bool, edge: &Arc<Edge<Id>>) -> bool {
+fn is_break(is_not_artificial: &impl Fn(&Id) -> bool, is_tag: bool, edge: &Arc<Edge<Id>>) -> bool {
     edge.label.is_player_assignment()
         || if is_tag {
-            edge.label.is_tag_and(|tag| !artificial_tags.contains(tag))
+            edge.label.is_tag_and(is_not_artificial)
         } else {
-            edge.label
-                .is_tag_variable_and(|tag| !artificial_tags.contains(tag))
+            // TODO: It should check if it's the same tag.
+            edge.label.is_tag_variable_and(is_not_artificial)
         }
 }
 
@@ -468,5 +455,17 @@ mod test {
         double_tag_variable,
         "begin, x: player = x; x, y: v = V(*); y, z: $$v; z, end: $$v;",
         "begin, x: player = x; x, y: v = V(*); y, z: $$v; z, end:;"
+    );
+
+    test_transform!(
+        skip_redundant_tags,
+        simple_apply_double,
+        include_str!("../../../../../games/rg/simpleApplyDoubleTest.rg")
+    );
+
+    test_transform!(
+        skip_redundant_tags,
+        simple_apply_double_rev,
+        include_str!("../../../../../games/rg/simpleApplyDoubleRevTest.rg")
     );
 }
