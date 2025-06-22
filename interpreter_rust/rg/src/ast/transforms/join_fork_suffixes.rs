@@ -36,9 +36,9 @@ use std::sync::Arc;
 // Conditions:
 //   1. y1 has no other outgoing edges
 //   2. y2 has no other outgoing edges
-//   4. y2 is not a reachability target -- it's deleted
-//   5. e1 and e2 have the same label
-//   6. y1 is not a reachability target -- it gains reachability paths
+//   3. y2 is not a reachability target -- it's deleted
+//   4. e1 and e2 have the same label
+//   5. y1 is not a reachability target -- it gains reachability paths
 
 impl<Id: Clone + Ord> Game<Id> {
     pub fn join_fork_suffixes(&mut self) -> Result<(), Error<Id>> {
@@ -73,7 +73,7 @@ impl<Id: Clone + Ord> Game<Id> {
                 if to_remove.contains(&&e1.lhs)
                     // (1)
                     || self.outgoing_edge(&e1.lhs).is_none()
-                    // (6)
+                    // (5)
                     || self.is_reachability_target(&e1.lhs)
                 {
                     continue;
@@ -82,11 +82,11 @@ impl<Id: Clone + Ord> Game<Id> {
                 for e2 in prev_edges.get(x).into_iter().flat_map(|x| x.iter()) {
                     if e1 == e2
                         || as_target.contains(&e2.lhs)
-                        // (5)
+                        // (4)
                         || e1.label != e2.label
                         // (2)
                         || self.outgoing_edge(&e2.lhs).is_none()
-                        // (4)
+                        // (3)
                         || self.is_reachability_target(&e2.lhs)
                     {
                         continue;
