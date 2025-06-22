@@ -36,7 +36,6 @@ use std::sync::Arc;
 // Conditions:
 //   1. y1 has no other outgoing edges
 //   2. y2 has no other outgoing edges
-//   3. y2 has no other incoming edges
 //   4. y2 is not a reachability target -- it's deleted
 //   5. e1 and e2 have the same label
 //   6. y1 is not a reachability target -- it gains reachability paths
@@ -49,18 +48,20 @@ impl<Id: Clone + Ord> Game<Id> {
 
     fn join_fork_suffixes_step(&mut self) -> bool {
         let mut changed = false;
-        for (mut e4, y1, e2) in self.to_join() {
+        for (e4s, y1, e2) in self.to_join() {
             changed = true;
-            self.remove_edge(&e4);
             self.remove_edge(&e2);
-            Arc::make_mut(&mut e4).rhs = y1;
-            self.add_edge(e4);
+            for mut e4 in e4s {
+                self.remove_edge(&e4);
+                Arc::make_mut(&mut e4).rhs = y1.clone();
+                self.add_edge(e4);
+            }
         }
         changed
     }
 
     #[expect(clippy::type_complexity)]
-    fn to_join(&self) -> Vec<(Arc<Edge<Id>>, Node<Id>, Arc<Edge<Id>>)> {
+    fn to_join(&self) -> Vec<(Vec<Arc<Edge<Id>>>, Node<Id>, Arc<Edge<Id>>)> {
         let prev_edges = self.prev_edges();
 
         let mut to_join = vec![];
@@ -92,23 +93,27 @@ impl<Id: Clone + Ord> Game<Id> {
                     }
 
                     // (3)
-                    let mut iterator = prev_edges.get(&e2.lhs).into_iter().flat_map(|x| x.iter());
-                    let Some(e4) = iterator.next().filter(|_| iterator.next().is_none()) else {
-                        continue;
-                    };
+                    let e4s: Vec<_> = prev_edges
+                        .get(&e2.lhs)
+                        .into_iter()
+                        .flat_map(|x| x.iter().map(|e| *e))
+                        .collect();
 
-                    if to_change.contains(&e4.lhs) {
+                    if e4s.iter().any(|e4| to_change.contains(&e4.lhs)) {
                         continue;
                     }
 
-                    let Some(e3) = prev_edges.get(&e1.lhs).and_then(|x| x.iter().next()) else {
-                        continue;
-                    };
-
                     as_target.insert(&e1.lhs);
-                    to_change.insert(&e4.lhs);
+
+                    e4s.iter().for_each(|e4| {
+                        to_change.insert(&e4.lhs);
+                    });
                     to_remove.insert(&e2.lhs);
-                    to_join.push(((*e4).clone(), e3.rhs.clone(), (*e2).clone()));
+                    to_join.push((
+                        e4s.into_iter().cloned().collect(),
+                        e1.lhs.clone(),
+                        (*e2).clone(),
+                    ));
                 }
             }
         }
@@ -243,17 +248,16 @@ mod test {
         r2, 2: 0 == 0;
         2, 3: 7 == 7;
         4, l2: 0 == 0;
-        4, r2: 0 == 0;",
+        4, r2: 1 == 1;",
         "begin, end: ;
         1, l1: 1 == 1;
         1, r1: 2 == 2;
         l1, l2: 4 == 4;
         l2, 2: 0 == 0;
-        r1, r2: 5 == 5;
-        r2, 2: 0 == 0;
         2, 3: 7 == 7;
         4, l2: 0 == 0;
-        4, r2: 0 == 0;"
+        4, l2: 1 == 1;
+        r1, l2: 5 == 5;"
     );
 
     test_transform!(
