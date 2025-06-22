@@ -1,4 +1,5 @@
-use crate::ast::{Edge, Error, Game, Node};
+use crate::ast::analyses::ReachableNodes;
+use crate::ast::{Edge, Error, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -15,9 +16,7 @@ impl Game<Id> {
             .iter()
             .all(|edge| !edge.label.has_variable(&visible))
         {
-            let artificial_tags = self.artificial_tags();
-            let is_not_artificial = |tag: &Id| !artificial_tags.contains(tag);
-            while let Some(indexes) = self.find_redundant_tags(&is_not_artificial) {
+            while let Some(indexes) = self.find_redundant_tags() {
                 for index in indexes {
                     Arc::make_mut(&mut self.edges[index]).skip();
                 }
@@ -27,39 +26,76 @@ impl Game<Id> {
         Ok(())
     }
 
-    fn find_redundant_tags(&self, is_not_artificial: &impl Fn(&Id) -> bool) -> Option<Vec<usize>> {
+    fn find_redundant_tags(&self) -> Option<Vec<usize>> {
         let next_edges = self.next_edges();
         let prev_edges = self.prev_edges();
-        let mut indexes: Option<Vec<_>> = None;
-        for (index, edge) in self.edges.iter().enumerate() {
-            let is_tag = edge.label.is_tag_and(is_not_artificial);
-            if is_tag || edge.label.is_tag_variable_and(is_not_artificial) {
-                let prevs_nexts: Vec<_> =
-                    find_nexts(is_not_artificial, is_tag, edge, &prev_edges, &|x| &x.lhs)
-                        .into_iter()
-                        .flat_map(|(prev, _)| {
-                            find_nexts(is_not_artificial, is_tag, &prev, &next_edges, &|x| &x.rhs)
-                        })
-                        .collect();
+        let artificial_tags = self.artificial_tags();
+        let reachable_nodes = self.analyse::<ReachableNodes>(false);
+        let tag_lookup = |edge: &Arc<Edge<Id>>| {
+            let (tag, is_variable) = match &edge.label {
+                Label::Tag { symbol } => (symbol, false),
+                Label::TagVariable { identifier } => (identifier, true),
+                _ => return None,
+            };
 
-                // If all successors of all predecessors match this tag...
-                if prevs_nexts.iter().all(|x| is_tag_matching(edge, x)) {
-                    // ...it's redundant.
-                    indexes.get_or_insert_default().push(index);
-                    continue;
+            // Artificial tags can be redundant only when...
+            if artificial_tags.contains(tag) {
+                // ...they're not in the main automaton...
+                if reachable_nodes
+                    .get(&edge.lhs)
+                    .is_some_and(|reachable| *reachable)
+                {
+                    return None;
                 }
 
-                // If it's a normal tag...
-                if is_tag {
-                    let (xs, ys): (Vec<_>, _) =
-                        prevs_nexts.into_iter().partition(|(next, _)| edge == next);
-                    // ...and there's exactly one path to it...
-                    if let [(_, path_x)] = &xs[..] {
-                        // ...and all other paths are disjoint...
-                        if ys.iter().all(|(_, path_y)| is_disjoint(path_x, path_y)) {
-                            // ...it's redundant.
-                            indexes.get_or_insert_default().push(index);
-                        }
+                // ...and there are no assignments in the subautomaton they're
+                // in (otherwise they may be needed to distinguish branches).
+                let mut subautomaton = Subautomaton {
+                    next_edges: &next_edges,
+                    prev_edges: &prev_edges,
+                    queue: vec![edge],
+                    seen: BTreeSet::new(),
+                };
+
+                if subautomaton.any(|edge| edge.label.as_assignment().is_some()) {
+                    return None;
+                }
+            }
+
+            Some(is_variable)
+        };
+
+        let mut indexes: Option<Vec<_>> = None;
+        for (index, edge) in self.edges.iter().enumerate() {
+            let Some(is_variable) = tag_lookup(edge) else {
+                continue;
+            };
+
+            let prevs_nexts: Vec<_> =
+                find_nexts(&tag_lookup, is_variable, edge, &prev_edges, &|x| &x.lhs)
+                    .into_iter()
+                    .flat_map(|(prev, _)| {
+                        find_nexts(&tag_lookup, is_variable, &prev, &next_edges, &|x| &x.rhs)
+                    })
+                    .collect();
+
+            // If all successors of all predecessors match this tag...
+            if prevs_nexts.iter().all(|x| is_tag_matching(edge, x)) {
+                // ...it's redundant.
+                indexes.get_or_insert_default().push(index);
+                continue;
+            }
+
+            // If it's a normal tag...
+            if !is_variable {
+                let (xs, ys): (Vec<_>, _) =
+                    prevs_nexts.into_iter().partition(|(next, _)| edge == next);
+                // ...and there's exactly one path to it...
+                if let [(_, path_x)] = &xs[..] {
+                    // ...and all other paths are disjoint...
+                    if ys.iter().all(|(_, path_y)| is_disjoint(path_x, path_y)) {
+                        // ...it's redundant.
+                        indexes.get_or_insert_default().push(index);
                     }
                 }
             }
@@ -69,9 +105,43 @@ impl Game<Id> {
     }
 }
 
+struct Subautomaton<'a> {
+    next_edges: &'a BTreeMap<&'a Node<Id>, BTreeSet<&'a Arc<Edge<Id>>>>,
+    prev_edges: &'a BTreeMap<&'a Node<Id>, BTreeSet<&'a Arc<Edge<Id>>>>,
+    queue: Vec<&'a Arc<Edge<Id>>>,
+    seen: BTreeSet<&'a Arc<Edge<Id>>>,
+}
+
+impl<'a> Iterator for Subautomaton<'a> {
+    type Item = &'a Arc<Edge<Id>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let Self {
+            next_edges,
+            prev_edges,
+            queue,
+            seen,
+        } = self;
+
+        let edge = queue.pop()?;
+        let edges = None
+            .into_iter()
+            .chain(next_edges.get(&edge.rhs).into_iter().flatten())
+            .chain(prev_edges.get(&edge.lhs).into_iter().flatten());
+
+        for y in edges {
+            if seen.insert(y) {
+                queue.push(y);
+            }
+        }
+
+        Some(edge)
+    }
+}
+
 fn find_nexts(
-    is_not_artificial: &impl Fn(&Id) -> bool,
-    is_tag: bool,
+    tag_lookup: &impl Fn(&Arc<Edge<Id>>) -> Option<bool>,
+    is_variable_tag: bool,
     edge: &Arc<Edge<Id>>,
     next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     next_node: &impl Fn(&Arc<Edge<Id>>) -> &Node<Id>,
@@ -81,7 +151,7 @@ fn find_nexts(
     while let Some((node, path)) = queue.pop() {
         if let Some(edges) = next_edges.get(&node) {
             'outer: for edge in edges {
-                if is_break(is_not_artificial, is_tag, edge) {
+                if is_break(tag_lookup, is_variable_tag, edge) {
                     nexts.push(((*edge).clone(), path.clone()));
                     continue;
                 }
@@ -107,14 +177,14 @@ fn find_nexts(
     nexts
 }
 
-fn is_break(is_not_artificial: &impl Fn(&Id) -> bool, is_tag: bool, edge: &Arc<Edge<Id>>) -> bool {
+fn is_break(
+    tag_lookup: &impl Fn(&Arc<Edge<Id>>) -> Option<bool>,
+    is_variable_tag: bool,
+    edge: &Arc<Edge<Id>>,
+) -> bool {
     edge.label.is_player_assignment()
-        || if is_tag {
-            edge.label.is_tag_and(is_not_artificial)
-        } else {
-            // TODO: It should check if it's the same tag.
-            edge.label.is_tag_variable_and(is_not_artificial)
-        }
+        || // TODO: It should check if it's the same variable tag.
+        tag_lookup(edge).is_some_and(|x| x == is_variable_tag)
 }
 
 fn is_disjoint(xs: &[Arc<Edge<Id>>], ys: &[Arc<Edge<Id>>]) -> bool {
@@ -448,6 +518,33 @@ mod test {
             y, b: $b; b, z:;
             z, end: $$v;
         "
+    );
+
+    test_transform!(
+        skip_redundant_tags,
+        reachability_with_artificial_tag,
+        "@artificialTag t; begin, end: ? x -> y; x, y: $ t;",
+        "@artificialTag t; begin, end: ? x -> y; x, y:;"
+    );
+
+    test_transform!(
+        skip_redundant_tags,
+        reachability_with_artificial_tag_assignment,
+        "@artificialTag t; begin, end: ? x -> z; x, y: $ t; y, z: v = 1;"
+    );
+
+    test_transform!(
+        skip_redundant_tags,
+        reachability_with_artificial_tag_comparison,
+        "@artificialTag t; begin, end: ? x -> z; x, y: $ t; y, z: 1 == 1;",
+        "@artificialTag t; begin, end: ? x -> z; x, y:; y, z: 1 == 1;"
+    );
+
+    test_transform!(
+        skip_redundant_tags,
+        reachability_with_artificial_tag_reachability,
+        "@artificialTag t; begin, end: ? x -> z; x, y: $ t; y, z: ? a -> b;",
+        "@artificialTag t; begin, end: ? x -> z; x, y:; y, z: ? a -> b;"
     );
 
     test_transform!(
