@@ -170,22 +170,34 @@ fn sort_labels<'a>(
 // we cannot reorder them if e1 uses any of the expressions in e2 for indexing.
 // Reordering here could lead to incorrect indexing behavior.
 fn can_reorder(latter_label: &Label<Id>, first_label: &Label<Id>) -> bool {
-    let expressions_in_first = first_label.collect_subexpressions();
-    if let Label::Comparison { lhs, rhs, .. } = latter_label {
-        let used_for_indexing = uses_for_indexing(&expressions_in_first, lhs)
-            || uses_for_indexing(&expressions_in_first, rhs);
+    if let (
+        Label::Comparison {
+            lhs: lhs_first,
+            rhs: rhs_first,
+            ..
+        },
+        Label::Comparison {
+            lhs: lhs_latter,
+            rhs: rhs_latter,
+            ..
+        },
+    ) = (first_label, latter_label)
+    {
+        let expressions_in_first = [lhs_first.as_ref(), rhs_first.as_ref()];
+        let used_for_indexing = uses_for_indexing(&expressions_in_first, lhs_latter)
+            || uses_for_indexing(&expressions_in_first, rhs_latter);
         return !used_for_indexing;
     }
     true
 }
 
 fn uses_for_indexing(
-    expressions_in_first: &BTreeSet<&Expression<Id>>,
+    expressions_in_first: &[&Expression<Arc<str>>; 2],
     dangerous_expression: &Expression<Id>,
 ) -> bool {
     match dangerous_expression {
         Expression::Access { lhs, rhs, .. } => {
-            expressions_in_first.contains(rhs.as_ref())
+            expressions_in_first.contains(&rhs.as_ref())
                 || uses_for_indexing(expressions_in_first, lhs)
                 || uses_for_indexing(expressions_in_first, rhs)
         }
@@ -220,7 +232,7 @@ mod test {
     test_transform!(
         reorder_conditions,
         used_in_indexing,
-        "begin, a: 1 == y[x];
+        "begin, a: 1 == x;
         a, a1: z[x] == 4;
         begin, b: x == 2;
         b, b1: z[x] == 4;"
@@ -228,14 +240,27 @@ mod test {
 
     test_transform!(
         reorder_conditions,
+        subexpr_used_in_indexing,
+        "begin, b: y[x] == 2;
+        b, b1: z[x] == 4;
+        begin, a: 1 == y[x];
+        a, a1: z[x] == 4;",
+        "begin, b: z[x] == 4;
+        b, b1: y[x] == 2;
+        begin, a: z[x] == 4;
+        a, a1: 1 == y[x];"
+    );
+
+    test_transform!(
+        reorder_conditions,
         partial,
-        "begin, a: 1 == y[x];
+        "begin, a: 1 == x;
         a, a1: 3 == 3;
         a1, a2: z[x] == 4;
         begin, b: x == 2;
         b, b1: 4 == 4;
         b1, b2: z[x] == 4;",
-        "begin, a: 1 == y[x];
+        "begin, a: 1 == x;
         a, a1: z[x] == 4;
         a1, a2: 3 == 3;
         begin, b: x == 2;
