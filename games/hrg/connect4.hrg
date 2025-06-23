@@ -104,6 +104,7 @@ graph goDown() {
 graph turn() {
   player = me
   pos = TopPosition(*)
+  check(board[pos] == empty)
   $$ pos
   player = keeper
   goDown()
