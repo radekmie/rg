@@ -418,7 +418,6 @@ graph kingStandardMove() {
   kingPos[me] = pos
 }
 graph kingCastlingMove() {
-  check(not(reachable(isAttacked())))
   board[pos] = empty
   branch {// Kingside castle
     $ OO
@@ -428,7 +427,6 @@ graph kingCastlingMove() {
     check(board[rightdir(rightdir(pos))] == empty)
     // If not attacked
     pos = rightdir(pos)
-    check(not(reachable(isAttacked())))
     pos = rightdir(pos)
     //check(not(reachable(isAttacked()))) Not necessary because of final test
     check(board[rightdir(pos)] == myRookUnmoved(me))
@@ -444,7 +442,6 @@ graph kingCastlingMove() {
     check(board[leftdir(leftdir(pos))] == empty)
     // If not attacked
     pos = leftdir(pos)
-    check(not(reachable(isAttacked())))
     pos = leftdir(pos)
     //check(not(reachable(isAttacked()))) Not necessary because of final test
     check(board[leftdir(leftdir(pos))] == myRookUnmoved(me))
@@ -485,87 +482,12 @@ graph move() {
       bishopMove()
     }
   }
-  check(not(reachable(isInCheck())))
-}
-graph moveExists() {
-  branch {
-    pos = kingPos[me]
-    kingStandardMove()
-  } or {
-    pos = Position(*)    
-    branch {
-      pawnMove()
-    } or {
-      queenMove()
-    } or {
-      rookMove()
-    } or {
-      knightMove()
-    } or {
-      bishopMove()
-    }
-  }
-  check(not(reachable(isInCheck())))
 }
 
-graph isAttacked() {
-  branch{ // pawns
-    branch{
-      pos = pawn_direction(upleft, me)(pos)
-    } or {
-      pos = pawn_direction(upright, me)(pos)
-    }
-    check(board[pos] == myPawn(opponent[me]))
-  } or { // diagonal moves
-    dir = BishopDir(*)
-    pos = all_direction(dir)(pos) 
-    branch {
-      check(board[pos] == myBishop(opponent[me]) || board[pos] == myQueen(opponent[me]) || board[pos] == myKing(opponent[me]))
-      return()
-    } or {}
-    check(board[pos] == empty)
-    repeat 7 {
-      pos = all_direction(dir)(pos) 
-      branch {
-        check(board[pos] == myBishop(opponent[me]) || board[pos] == myQueen(opponent[me]))
-        return()
-      } or {}
-      check(board[pos] == empty)
-    }
-    check(false())
-  } or { // straight moves
-    dir = RookDir(*)
-    pos = all_direction(dir)(pos) 
-    branch {
-      check(board[pos] == myRook(opponent[me]) ||  board[pos] == myQueen(opponent[me]) || board[pos] == myKing(opponent[me]))
-      return()
-    } or {}
-    check(board[pos] == empty)
-    repeat 7 {
-      pos = all_direction(dir)(pos) 
-      branch {
-        check(board[pos] == myRook(opponent[me]) || board[pos] == myQueen(opponent[me]))
-        return()
-      } or {}
-      check(board[pos] == empty)
-    }
-    check(false())
-  } or {
-    branch dir in KnightDir {
-      pos = knight_direction(dir)(pos)
-    }
-    check(board[pos] == myKnight(opponent[me]))
-  }
+graph kingExists() {
+  pos = Position(*)
+  check(board[pos] == myKing(me))
 }
-graph isInCheck() {
-  pos = kingPos[me]
-  check(reachable(isAttacked()))
-}
-
-// graph kingExists() {
-//   pos = Position(*)
-//   check(board[pos] == myKing(me))
-// }
 
 graph turn() {
   stagnation = counterIncrease(stagnation)
@@ -575,18 +497,9 @@ graph turn() {
   
   me = opponent[me]
 
-  // if not(reachable(kingExists())) {
-  //   goals[me] = 0
-  //   goals[opponent[me]] = 100
-  //   end()
-  // }
-  
-  // If opponent does not have a move and is not in check then it is a stalemate
-  if not(reachable(moveExists())) {
-    if reachable(isInCheck()){
-      goals[me] = 0
-      goals[opponent[me]] = 100
-    }
+  if not(reachable(kingExists())) {
+    goals[me] = 0
+    goals[opponent[me]] = 100
     end()
   }
 
