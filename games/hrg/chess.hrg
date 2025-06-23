@@ -2,7 +2,7 @@
 // -- Fifty-move rule
 
 // Domains
-domain Score = 50 | 0 | 100 | 1000000
+domain Score = 50 | 0 | 100
 domain Piece = empty | border |
     whitePawn | whiteRook | whiteRookUnmoved | whiteKnight | whiteBishop | whiteQueen | whiteKing |
     blackPawn | blackRook | blackRookUnmoved | blackKnight | blackBishop | blackQueen | blackKing
@@ -238,7 +238,7 @@ graph pawnMove() {
          pos = pawn_direction(upright,me)(pos)
          $ PCR
        }
-       check(owner(board[pos]) == opponent(me))
+       check(owner(board[pos]) == opponent[me])
      }
      $$ pos
      
@@ -296,7 +296,7 @@ graph queenMoves() {
       pos = all_direction(dir)(pos)
       $_Q
       branch {
-        check(owner(board[pos]) == opponent(me))
+        check(owner(board[pos]) == opponent[me])
         stagnation = C(0)
         $_C
         return()
@@ -325,7 +325,7 @@ graph rookMoves() {
       pos = all_direction(dir)(pos)
       $_R
       branch {
-        check(owner(board[pos]) == opponent(me))
+        check(owner(board[pos]) == opponent[me])
         stagnation = C(0)
         $_C
         return()
@@ -355,7 +355,7 @@ graph bishopMoves() {
       pos = all_direction(dir)(pos)
       $_B
       branch {
-        check(owner(board[pos]) == opponent(me))
+        check(owner(board[pos]) == opponent[me])
         stagnation = C(0)
         $_C
         return()
@@ -389,7 +389,7 @@ graph knightMove() {
   branch {
     check(board[pos] == empty)
   } or {
-    check(owner(board[pos]) == opponent(me))
+    check(owner(board[pos]) == opponent[me])
     stagnation = C(0)
     $_C
   }
@@ -404,11 +404,11 @@ graph kingStandardMove() {
   $ K
   branch dir in AllDir {
     pos = all_direction[dir][pos]
-    $$ pos
+    $_dir
     branch {
       check(board[pos] == empty) 
     } or {
-      check(owner(board[pos]) == opponent(me))
+      check(owner(board[pos]) == opponent[me])
       stagnation = C(0)
       $_C
     }
@@ -514,19 +514,19 @@ graph isAttacked() {
     } or {
       pos = pawn_direction(upright, me)(pos)
     }
-    check(board[pos] == myPawn(opponent(me)))
+    check(board[pos] == myPawn(opponent[me]))
   } or { // diagonal moves
     dir = BishopDir(*)
     pos = all_direction(dir)(pos) 
     branch {
-      check(board[pos] == myBishop(opponent(me)) || board[pos] == myQueen(opponent(me)) || board[pos] == myKing(opponent(me)))
+      check(board[pos] == myBishop(opponent[me]) || board[pos] == myQueen(opponent[me]) || board[pos] == myKing(opponent[me]))
       return()
     } or {}
     check(board[pos] == empty)
     repeat 7 {
       pos = all_direction(dir)(pos) 
       branch {
-        check(board[pos] == myBishop(opponent(me)) || board[pos] == myQueen(opponent(me)))
+        check(board[pos] == myBishop(opponent[me]) || board[pos] == myQueen(opponent[me]))
         return()
       } or {}
       check(board[pos] == empty)
@@ -536,14 +536,14 @@ graph isAttacked() {
     dir = RookDir(*)
     pos = all_direction(dir)(pos) 
     branch {
-      check(board[pos] == myRook(opponent(me)) ||  board[pos] == myQueen(opponent(me)) || board[pos] == myKing(opponent(me)))
+      check(board[pos] == myRook(opponent[me]) ||  board[pos] == myQueen(opponent[me]) || board[pos] == myKing(opponent[me]))
       return()
     } or {}
     check(board[pos] == empty)
     repeat 7 {
       pos = all_direction(dir)(pos) 
       branch {
-        check(board[pos] == myRook(opponent(me)) || board[pos] == myQueen(opponent(me)))
+        check(board[pos] == myRook(opponent[me]) || board[pos] == myQueen(opponent[me]))
         return()
       } or {}
       check(board[pos] == empty)
@@ -553,7 +553,7 @@ graph isAttacked() {
     branch dir in KnightDir {
       pos = knight_direction(dir)(pos)
     }
-    check(board[pos] == myKnight(opponent(me)))
+    check(board[pos] == myKnight(opponent[me]))
   }
 }
 graph isInCheck() {
@@ -572,11 +572,11 @@ graph turn() {
   move()
   player = keeper
   
-  me = opponent(me)
+  me = opponent[me]
 
   // if not(reachable(kingExists())) {
   //   goals[me] = 0
-  //   goals[opponent(me)] = 100
+  //   goals[opponent[me]] = 100
   //   end()
   // }
   
@@ -584,7 +584,7 @@ graph turn() {
   if not(reachable(moveExists())) {
     if reachable(isInCheck()){
       goals[me] = 0
-      goals[opponent(me)] = 100
+      goals[opponent[me]] = 100
     }
     end()
   }
