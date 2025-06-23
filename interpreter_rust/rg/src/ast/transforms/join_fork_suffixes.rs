@@ -36,11 +36,13 @@ use std::sync::Arc;
 // Conditions:
 //   1. y1 has no other outgoing edges
 //   2. y2 has no other outgoing edges
-//   3. y2 is not a reachability target -- it's deleted
+//   3. y2 is not a reachability target or begin -- it's deleted
 //   4. e1 and e2 have the same label
 //   5. y1 is not a reachability target -- it gains reachability paths
 
-impl<Id: Clone + Ord> Game<Id> {
+type Id = Arc<str>;
+
+impl Game<Id> {
     pub fn join_fork_suffixes(&mut self) -> Result<(), Error<Id>> {
         while self.join_fork_suffixes_step() {}
         Ok(())
@@ -88,6 +90,7 @@ impl<Id: Clone + Ord> Game<Id> {
                         || self.outgoing_edge(&e2.lhs).is_none()
                         // (3)
                         || self.is_reachability_target(&e2.lhs)
+                        || e2.lhs.is_begin()
                     {
                         continue;
                     }
