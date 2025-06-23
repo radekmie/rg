@@ -25,15 +25,15 @@ downRight : PositionOrNull -> PositionOrNull
 downRight(null) = null
 downRight(V(X, Y)) = if X == 7 || Y == 7 then null else V(X + 1, Y + 1)
 
-topLine : PositionOrNull -> Bool
-topLine(V(X,Y)) = if Y == 0 then 1 else 0
-topLine(null) = 0
-bottomLine : PositionOrNull -> Bool
-bottomLine(V(X,Y)) = if Y == 7 then 1 else 0
-bottomLine(null) = 0
-promotionLine : Player -> PositionOrNull -> Bool
-promotionLine(white) = bottomLine
-promotionLine(black) = topLine
+topLine : PositionOrNull -> Piece
+topLine(V(X,Y)) = if Y == 0 then blackKing else blackPawn
+topLine(null) = blackPawn
+bottomLine : PositionOrNull -> Piece
+bottomLine(V(X,Y)) = if Y == 7 then whiteKing else whitePawn
+bottomLine(null) = whitePawn
+promotedOrNot : Player -> PositionOrNull -> Piece
+promotedOrNot(white) = bottomLine
+promotedOrNot(black) = topLine
 
 fwdLeft : Player -> PositionOrNull -> PositionOrNull
 fwdLeft(white) = downLeft
@@ -143,7 +143,6 @@ graph anyNormalMovePossible() {
 
 graph movePawnNormal() {
   check(board[pos] == myPawn[me])
-  //$$ pos
   board[pos] = empty
   branch {
     pos = fwdLeft[me][pos]
@@ -157,7 +156,6 @@ graph movePawnNormal() {
 
 graph movePawnCapture() {
   check(board[pos] == myPawn[me])
-  //$$ pos
   board[pos] = empty
   loop {
     branch {
@@ -184,7 +182,6 @@ graph movePawnCapture() {
 
 graph moveKingNormal() {
   check(board[pos] == myKing[me])
-  //$$ pos
   board[pos] = empty
   branch {
     pos = upLeft[pos]
@@ -204,7 +201,6 @@ graph moveKingNormal() {
 
 graph moveKingCapture() {
   check(board[pos] == myKing(me))
-  //$$ pos
   board[pos] = empty
   loop {
     branch {
@@ -248,16 +244,12 @@ graph move() {
     }
     player = me
     pos = Position(*)
-    check(playerOf[board[pos]] == me)// Temp
+    check(playerOf[board[pos]] == me)
     $$ pos
     branch {
       movePawnCapture()
       player = keeper
-      if promotionLine[me][pos] == 1 {
-        board[pos] = myKing[me]
-      } else {
-        board[pos] = myPawn[me]
-      }
+      board[pos] = promotedOrNot[me][pos]
     } or {
       moveKingCapture()
       player = keeper
@@ -271,16 +263,12 @@ graph move() {
       }
       player = me
       pos = Position(*)
-      check(playerOf[board[pos]] == me)// Temp
+      check(playerOf[board[pos]] == me)
       $$ pos
       branch {
         movePawnNormal()
         player = keeper
-        if promotionLine(me)(pos) == 1 {
-          board[pos] = myKing[me]
-        } else {
-          board[pos] = myPawn[me]
-        }
+        board[pos] = promotedOrNot[me][pos]
         stagnation = S(0)
       } or {
         moveKingNormal()
