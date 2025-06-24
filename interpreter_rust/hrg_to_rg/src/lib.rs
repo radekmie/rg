@@ -2189,4 +2189,81 @@ mod test {
             rules_end, end: ;
         "
     );
+
+    test_translation!(
+        ifs,
+        "
+            graph one() {
+                if 1 == 1 {
+                    check(2 == 2)
+                } else {
+                    check(3 == 3)
+                }
+            }
+
+            graph two() {
+                if 4 == 4 {
+                    check(5 == 5)
+                } else if 6 == 6 {
+                    check(7 == 7)
+                }
+            }
+
+            graph three() {
+                if 8 == 8 {
+                    check(9 == 9)
+                } else if 10 == 10 {
+                    check(11 == 11)
+                } else {
+                    check(12 == 12)
+                }
+            }
+
+            graph rules() {
+                one()
+                two()
+                three()
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_1_one_begin: ;
+            rules_1_one_begin, rules_1_one_1: 1 == 1;
+            rules_1_one_begin, rules_1_one_2: 1 != 1;
+            rules_1_one_1, rules_1_one_4: 2 == 2;
+            rules_1_one_4, rules_1_one_3: ;
+            rules_1_one_2, rules_1_one_5: 3 == 3;
+            rules_1_one_5, rules_1_one_3: ;
+            rules_1_one_3, rules_1_one_end: ;
+            rules_1_one_end, rules_2: ;
+            rules_2, rules_3_two_begin: ;
+            rules_3_two_begin, rules_3_two_1: 4 == 4;
+            rules_3_two_begin, rules_3_two_2: 4 != 4;
+            rules_3_two_1, rules_3_two_4: 5 == 5;
+            rules_3_two_4, rules_3_two_3: ;
+            rules_3_two_2, rules_3_two_5: 6 == 6;
+            rules_3_two_2, rules_3_two_6: 6 != 6;
+            rules_3_two_5, rules_3_two_7: 7 == 7;
+            rules_3_two_7, rules_3_two_6: ;
+            rules_3_two_6, rules_3_two_3: ;
+            rules_3_two_3, rules_3_two_end: ;
+            rules_3_two_end, rules_4: ;
+            rules_4, rules_5_three_begin: ;
+            rules_5_three_begin, rules_5_three_1: 8 == 8;
+            rules_5_three_begin, rules_5_three_2: 8 != 8;
+            rules_5_three_1, rules_5_three_4: 9 == 9;
+            rules_5_three_4, rules_5_three_3: ;
+            rules_5_three_2, rules_5_three_5: 10 == 10;
+            rules_5_three_2, rules_5_three_6: 10 != 10;
+            rules_5_three_5, rules_5_three_8: 11 == 11;
+            rules_5_three_8, rules_5_three_7: ;
+            rules_5_three_6, rules_5_three_9: 12 == 12;
+            rules_5_three_9, rules_5_three_7: ;
+            rules_5_three_7, rules_5_three_3: ;
+            rules_5_three_3, rules_5_three_end: ;
+            rules_5_three_end, rules_6: ;
+            rules_6, rules_end: ;
+            rules_end, end: ;
+        "
+    );
 }

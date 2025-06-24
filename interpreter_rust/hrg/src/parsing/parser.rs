@@ -101,7 +101,13 @@ fn if_(input: Input) -> Result<Statement<Identifier>> {
         tuple((
             preceded(tag("if"), expression),
             in_braces(many0(statement)),
-            opt(preceded(ww_tag("else"), in_braces(many0(statement)))),
+            opt(preceded(
+                ww_tag("else"),
+                alt((
+                    in_braces(many0(statement)),
+                    map(if_, |statement| vec![statement]),
+                )),
+            )),
         )),
         |(expression, then, else_)| Statement::If {
             expression,
