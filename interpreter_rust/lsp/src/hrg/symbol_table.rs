@@ -3,7 +3,7 @@ use crate::common::symbol_table::{SymbolTable, SymbolTableBuilder};
 use hrg::ast::{
     DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression, Function,
     FunctionArg, FunctionCase, FunctionDeclaration, Game, Pattern, Statement, Type,
-    TypeDeclaration, VariableDeclaration,
+    VariableDeclaration,
 };
 use utils::position::Positioned;
 use utils::{Error, Identifier};
@@ -32,9 +32,6 @@ fn table_builder_from_game(game: &Game<Identifier>) -> SymbolTableBuilder {
     game.variables
         .iter()
         .for_each(|variable| add_from_variable_declaration(&mut table, variable));
-    game.types
-        .iter()
-        .for_each(|type_| add_from_type_declaration(&mut table, type_));
     table
 }
 
@@ -262,11 +259,6 @@ fn add_from_pattern(table: &mut SymbolTableBuilder, pattern: &Pattern<Identifier
         }
         Pattern::Wildcard => {}
     }
-}
-
-fn add_from_type_declaration(table: &mut SymbolTableBuilder, type_: &TypeDeclaration<Identifier>) {
-    table.add_occ(&type_.identifier);
-    add_from_type(table, &type_.type_);
 }
 
 fn add_from_type(table: &mut SymbolTableBuilder, type_: &Type<Identifier>) {

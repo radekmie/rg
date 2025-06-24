@@ -1,7 +1,7 @@
 use crate::common::symbol::{Flag, Symbol, Type as SymbolType};
 use hrg::ast::{
     DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression, Function,
-    FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration, VariableDeclaration,
+    FunctionDeclaration, Game, Pattern, Statement, Type, VariableDeclaration,
 };
 use std::sync::Arc;
 use utils::Identifier;
@@ -107,12 +107,6 @@ impl Symbols {
         }
     }
 
-    fn add_from_type_decl(&mut self, type_: &TypeDeclaration<Identifier>) {
-        if let Some(symbol) = untyped(&type_.identifier, Flag::Type) {
-            self.symbols.push(symbol);
-        }
-    }
-
     fn add_from_domain_decl(&mut self, domain: &DomainDeclaration<Identifier>) {
         if let Some(symbol) = untyped(&domain.identifier, Flag::Type) {
             self.symbols.push(symbol);
@@ -204,9 +198,6 @@ impl Symbols {
 
     pub fn from_game(game: &Game<Identifier>) -> Vec<Symbol> {
         let mut symbols = Self { symbols: vec![] };
-        game.types
-            .iter()
-            .for_each(|type_| symbols.add_from_type_decl(type_));
         game.domains
             .iter()
             .for_each(|domain| symbols.add_from_domain_decl(domain));

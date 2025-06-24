@@ -1,7 +1,7 @@
 use crate::ast::{
     Binop, DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression,
     ExpressionMapPart, Function, FunctionArg, FunctionDeclaration, Game, Pattern, Statement, Type,
-    TypeDeclaration, VariableDeclaration,
+    VariableDeclaration,
 };
 use nom::branch::alt;
 use nom::bytes::complete::tag;
@@ -378,10 +378,6 @@ fn function_arg(input: Input) -> Result<FunctionArg<Identifier>> {
     into(separated_pair(identifier, char(':'), type_))(input)
 }
 
-fn type_declaration(input: Input) -> Result<TypeDeclaration<Identifier>> {
-    into(separated_pair(identifier, char(':'), type_))(input)
-}
-
 fn domain_declaration(input: Input) -> Result<DomainDeclaration<Identifier>> {
     into(pair(
         delimited(ww_tag("domain"), identifier, ww_char('=')),
@@ -419,22 +415,20 @@ fn game(input: Input) -> Result<Game<Identifier>> {
                 preceded(
                     comments_and_whitespaces,
                     alt((
-                        map(domain_declaration, |x| (Some(x), None, None, None, None)),
-                        map(function_declaration, |x| (None, Some(x), None, None, None)),
-                        map(variable_declaration, |x| (None, None, Some(x), None, None)),
-                        map(function, |x| (None, None, None, Some(x), None)),
-                        map(type_declaration, |x| (None, None, None, None, Some(x))),
-                        map(parse_error_line, |()| (None, None, None, None, None)),
+                        map(domain_declaration, |x| (Some(x), None, None, None)),
+                        map(function_declaration, |x| (None, Some(x), None, None)),
+                        map(variable_declaration, |x| (None, None, Some(x), None)),
+                        map(function, |x| (None, None, None, Some(x))),
+                        map(parse_error_line, |()| (None, None, None, None)),
                     )),
                 ),
                 Game::default,
                 |mut game, declaration| {
                     match declaration {
-                        (Some(domain), _, _, _, _) => game.domains.push(domain),
-                        (_, Some(function), _, _, _) => game.functions.push(function),
-                        (_, _, Some(variable), _, _) => game.variables.push(variable),
-                        (_, _, _, Some(func), _) => game.automaton.push(func),
-                        (_, _, _, _, Some(type_)) => game.types.push(type_),
+                        (Some(domain), _, _, _) => game.domains.push(domain),
+                        (_, Some(function), _, _) => game.functions.push(function),
+                        (_, _, Some(variable), _) => game.variables.push(variable),
+                        (_, _, _, Some(func)) => game.automaton.push(func),
                         _ => (),
                     }
                     game

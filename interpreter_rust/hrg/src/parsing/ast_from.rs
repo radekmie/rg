@@ -1,7 +1,7 @@
 use crate::ast::{
     DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression,
     ExpressionMapPart, Function, FunctionArg, FunctionCase, FunctionDeclaration, Pattern,
-    Statement, Type, TypeDeclaration, VariableDeclaration,
+    Statement, Type, VariableDeclaration,
 };
 use std::sync::Arc;
 
@@ -152,12 +152,6 @@ impl<Id> From<(bool, Id, Vec<FunctionArg<Id>>, Vec<Statement<Id>>)> for Function
 }
 
 impl<Id> From<(Id, Arc<Type<Id>>)> for FunctionArg<Id> {
-    fn from((identifier, type_): (Id, Arc<Type<Id>>)) -> Self {
-        Self { identifier, type_ }
-    }
-}
-
-impl<Id> From<(Id, Arc<Type<Id>>)> for TypeDeclaration<Id> {
     fn from((identifier, type_): (Id, Arc<Type<Id>>)) -> Self {
         Self { identifier, type_ }
     }

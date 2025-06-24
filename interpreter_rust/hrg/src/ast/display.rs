@@ -1,7 +1,7 @@
 use super::{
     Binop, DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Error, Expression,
-    Function, FunctionArg, FunctionDeclaration, Game, Pattern, Statement, Type, TypeDeclaration,
-    Value, ValueMapEntry, VariableDeclaration,
+    Function, FunctionArg, FunctionDeclaration, Game, Pattern, Statement, Type, Value,
+    ValueMapEntry, VariableDeclaration,
 };
 use std::fmt::{Display, Formatter, Result};
 use utils::display::write_with_separator;
@@ -177,12 +177,6 @@ impl<Id: Display> Display for FunctionArg<Id> {
     }
 }
 
-impl<Id: Display> Display for TypeDeclaration<Id> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{} : {}", self.identifier, self.type_)
-    }
-}
-
 impl<Id: Display> Display for DomainDeclaration<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "domain {} = ", self.identifier)?;
@@ -244,7 +238,6 @@ impl<Id: Display> Display for Game<Id> {
         write_toplevel(f, &self.functions)?;
         write_toplevel(f, &self.variables)?;
         write_toplevel(f, &self.automaton)?;
-        write_toplevel(f, &self.types)?;
         Ok(())
     }
 }

@@ -437,12 +437,6 @@ impl<Id: std::fmt::Display> Pattern<Id> {
 }
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct TypeDeclaration<Id> {
-    pub identifier: Id,
-    pub type_: Arc<Type<Id>>,
-}
-
-#[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Type<Id> {
     Function {
         lhs: Arc<Type<Id>>,
@@ -493,5 +487,4 @@ pub struct Game<Id> {
     pub domains: Vec<DomainDeclaration<Id>>,
     pub functions: Vec<FunctionDeclaration<Id>>,
     pub variables: Vec<VariableDeclaration<Id>>,
-    pub types: Vec<TypeDeclaration<Id>>,
 }
