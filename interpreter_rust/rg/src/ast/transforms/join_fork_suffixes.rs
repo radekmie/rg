@@ -99,7 +99,8 @@ impl Game<Id> {
                     let e4s: Vec<_> = prev_edges
                         .get(&e2.lhs)
                         .into_iter()
-                        .flat_map(|x| x.iter().map(|e| *e))
+                        .flatten()
+                        .copied()
                         .collect();
 
                     if e4s.iter().any(|e4| to_change.contains(&e4.lhs)) {
@@ -107,10 +108,7 @@ impl Game<Id> {
                     }
 
                     as_target.insert(&e1.lhs);
-
-                    e4s.iter().for_each(|e4| {
-                        to_change.insert(&e4.lhs);
-                    });
+                    to_change.extend(e4s.iter().map(|edge| &edge.lhs));
                     to_remove.insert(&e2.lhs);
                     to_join.push((
                         e4s.into_iter().cloned().collect(),
