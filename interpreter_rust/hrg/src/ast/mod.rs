@@ -156,6 +156,52 @@ impl<Id: Clone + PartialEq> Statement<Id> {
     }
 }
 
+impl<Id: PartialEq> Statement<Id> {
+    pub fn count_calls(&self, identifier: &Id) -> usize {
+        match self {
+            Self::Assignment { .. }
+            | Self::AssignmentAny { .. }
+            | Self::Tag { .. }
+            | Self::TagVariable { .. } => 0,
+            Self::Branch { arms } => arms
+                .iter()
+                .flatten()
+                .map(|statement| statement.count_calls(identifier))
+                .sum(),
+            Self::Call { identifier: x, .. } => {
+                if x == identifier {
+                    1
+                } else {
+                    0
+                }
+            }
+            Self::If {
+                expression,
+                then,
+                else_,
+            } => {
+                expression.count_calls(identifier)
+                    + then
+                        .iter()
+                        .chain(else_.iter().flatten())
+                        .map(|statement| statement.count_calls(identifier))
+                        .sum::<usize>()
+            }
+            Self::BranchVar { body, .. } | Self::Loop { body } | Self::Repeat { body, .. } => body
+                .iter()
+                .map(|statement| statement.count_calls(identifier))
+                .sum(),
+            Self::While { expression, body } => {
+                expression.count_calls(identifier)
+                    + body
+                        .iter()
+                        .map(|statement| statement.count_calls(identifier))
+                        .sum::<usize>()
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Function<Id> {
     pub reusable: bool,
@@ -169,6 +215,13 @@ impl<Id: PartialEq> Function<Id> {
         self.args
             .iter()
             .position(|arg| arg.identifier == *identifier)
+    }
+
+    pub fn count_calls(&self, identifier: &Id) -> usize {
+        self.body
+            .iter()
+            .map(|statement| statement.count_calls(identifier))
+            .sum()
     }
 }
 
@@ -404,6 +457,46 @@ impl<Id: Clone + PartialEq> Expression<Id> {
     }
 }
 
+impl<Id: PartialEq> Expression<Id> {
+    pub fn count_calls(&self, identifier: &Id) -> usize {
+        match self {
+            Self::Access { lhs, rhs } => lhs.count_calls(identifier) + rhs.count_calls(identifier),
+            Self::BinExpr { lhs, rhs, .. } => {
+                lhs.count_calls(identifier) + rhs.count_calls(identifier)
+            }
+            Self::Call { expression, args } => args
+                .iter()
+                .chain([expression])
+                .map(|expression| expression.count_calls(identifier))
+                .sum(),
+            Self::Constructor { args, .. } => args
+                .iter()
+                .map(|expression| expression.count_calls(identifier))
+                .sum(),
+            Self::If { cond, then, else_ } => [cond, then, else_]
+                .into_iter()
+                .map(|expression| expression.count_calls(identifier))
+                .sum(),
+            Self::Literal { identifier: x } => {
+                if x == identifier {
+                    1
+                } else {
+                    0
+                }
+            }
+            Self::Map {
+                default_value,
+                parts,
+            } => parts
+                .iter()
+                .map(|part| &part.expression)
+                .chain(default_value.iter())
+                .map(|expression| expression.count_calls(identifier))
+                .sum(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct ExpressionMapPart<Id> {
     pub pattern: Arc<Pattern<Id>>,
@@ -487,4 +580,13 @@ pub struct Game<Id> {
     pub domains: Vec<DomainDeclaration<Id>>,
     pub functions: Vec<FunctionDeclaration<Id>>,
     pub variables: Vec<VariableDeclaration<Id>>,
+}
+
+impl<Id: PartialEq> Game<Id> {
+    pub fn count_calls(&self, identifier: &Id) -> usize {
+        self.automaton
+            .iter()
+            .map(|function| function.count_calls(identifier))
+            .sum()
+    }
 }

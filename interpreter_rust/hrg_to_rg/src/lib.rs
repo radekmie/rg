@@ -13,6 +13,7 @@ struct Context {
     counters: BTreeMap<Id, usize>,
     hrg: hrg::Game<Id>,
     rg: rg::Game<Id>,
+    short_name_functions_cache: BTreeMap<Id, bool>,
     translated_functions: BTreeSet<Id>,
     type_values: BTreeMap<Id, Vec<hrg::Value<Id>>>,
 }
@@ -22,6 +23,14 @@ impl Context {
         self.rg
             .edges
             .push(Arc::from(rg::Edge::new(lhs, rhs, label)));
+    }
+
+    fn can_use_short_name(&mut self, function: &hrg::Function<Id>) -> bool {
+        function.reusable
+            || *self
+                .short_name_functions_cache
+                .entry(function.name.clone())
+                .or_insert_with_key(|identifier| self.hrg.count_calls(identifier) <= 1)
     }
 
     fn random(&mut self, prefix: &Id) -> Id {
@@ -41,6 +50,7 @@ pub fn hrg_to_rg(hrg: hrg::Game<Id>) -> Result<rg::Game<Id>, hrg::Error<Id>> {
         counters: BTreeMap::new(),
         hrg,
         rg: rg::Game::default(),
+        short_name_functions_cache: BTreeMap::new(),
         translated_functions: BTreeSet::new(),
         type_values: BTreeMap::new(),
     };
@@ -568,11 +578,21 @@ fn translate_automaton_function(
         }
     }
 
-    let next_node = rg::Node::new(Id::from(if automaton_function.reusable {
-        format!("{}_end", automaton_function.name)
-    } else {
-        format!("{prefix}{}_end", automaton_function.name)
-    }));
+    let entry_node = rg::Node::new(Id::from(
+        if context.can_use_short_name(automaton_function) {
+            format!("{}_begin", automaton_function.name)
+        } else {
+            format!("{prefix}{}_begin", automaton_function.name)
+        },
+    ));
+
+    let next_node = rg::Node::new(Id::from(
+        if context.can_use_short_name(automaton_function) {
+            format!("{}_end", automaton_function.name)
+        } else {
+            format!("{prefix}{}_end", automaton_function.name)
+        },
+    ));
 
     let returns = translate_automaton_statements(
         context,
@@ -580,11 +600,7 @@ fn translate_automaton_function(
         None,
         None,
         end_node,
-        rg::Node::new(Id::from(if automaton_function.reusable {
-            format!("{}_begin", automaton_function.name)
-        } else {
-            format!("{prefix}{}_begin", automaton_function.name)
-        })),
+        entry_node,
         Some(&next_node),
         &Id::from(format!("{prefix}{}", automaton_function.name)),
         Some(&next_node),
@@ -938,7 +954,12 @@ fn translate_automaton_statements(
 
                         current_node = intermediate_node;
                     } else {
-                        let call_id = Id::from(format!("{}_", context.random(prefix)));
+                        let call_id = if context.can_use_short_name(&called_automaton_function) {
+                            Id::from("")
+                        } else {
+                            Id::from(format!("{}_", context.random(prefix)))
+                        };
+
                         for (index, arg) in args.iter().enumerate() {
                             let arg_node = context.random_node(&call_id);
                             context.connect(
@@ -1348,11 +1369,12 @@ fn translate_condition(
                         "{}_call",
                         called_automaton_function.name
                     )));
-                    let automaton_start_node = if called_automaton_function.reusable {
-                        rg::Node::new(call_id)
-                    } else {
-                        context.random_node(&prefix)
-                    };
+                    let automaton_start_node =
+                        if context.can_use_short_name(&called_automaton_function) {
+                            rg::Node::new(call_id)
+                        } else {
+                            context.random_node(&prefix)
+                        };
 
                     let mut automaton_current_node = automaton_start_node.clone();
                     for (index, arg) in args.iter().enumerate() {
@@ -1370,22 +1392,27 @@ fn translate_condition(
                         automaton_current_node = arg_node;
                     }
 
-                    context.connect(
-                        automaton_current_node,
-                        rg::Node::new(Id::from(if called_automaton_function.reusable {
+                    let automaton_begin_node = rg::Node::new(Id::from(
+                        if context.can_use_short_name(&called_automaton_function) {
                             format!("{identifier}_begin")
                         } else {
                             format!("{prefix}_{identifier}_begin")
-                        })),
+                        },
+                    ));
+
+                    context.connect(
+                        automaton_current_node,
+                        automaton_begin_node,
                         rg::Label::new_skip(),
                     );
 
-                    let automaton_end_node =
-                        rg::Node::new(Id::from(if called_automaton_function.reusable {
+                    let automaton_end_node = rg::Node::new(Id::from(
+                        if context.can_use_short_name(&called_automaton_function) {
                             format!("{identifier}_end")
                         } else {
                             format!("{prefix}_{identifier}_end")
-                        }));
+                        },
+                    ));
 
                     if called_automaton_function.reusable {
                         if context
@@ -2227,42 +2254,95 @@ mod test {
         ",
         "
             begin, rules_begin: ;
-            rules_begin, rules_1_one_begin: ;
-            rules_1_one_begin, rules_1_one_1: 1 == 1;
-            rules_1_one_begin, rules_1_one_2: 1 != 1;
-            rules_1_one_1, rules_1_one_4: 2 == 2;
-            rules_1_one_4, rules_1_one_3: ;
-            rules_1_one_2, rules_1_one_5: 3 == 3;
-            rules_1_one_5, rules_1_one_3: ;
-            rules_1_one_3, rules_1_one_end: ;
-            rules_1_one_end, rules_2: ;
-            rules_2, rules_3_two_begin: ;
-            rules_3_two_begin, rules_3_two_1: 4 == 4;
-            rules_3_two_begin, rules_3_two_2: 4 != 4;
-            rules_3_two_1, rules_3_two_4: 5 == 5;
-            rules_3_two_4, rules_3_two_3: ;
-            rules_3_two_2, rules_3_two_5: 6 == 6;
-            rules_3_two_2, rules_3_two_6: 6 != 6;
-            rules_3_two_5, rules_3_two_7: 7 == 7;
-            rules_3_two_7, rules_3_two_6: ;
-            rules_3_two_6, rules_3_two_3: ;
-            rules_3_two_3, rules_3_two_end: ;
-            rules_3_two_end, rules_4: ;
-            rules_4, rules_5_three_begin: ;
-            rules_5_three_begin, rules_5_three_1: 8 == 8;
-            rules_5_three_begin, rules_5_three_2: 8 != 8;
-            rules_5_three_1, rules_5_three_4: 9 == 9;
-            rules_5_three_4, rules_5_three_3: ;
-            rules_5_three_2, rules_5_three_5: 10 == 10;
-            rules_5_three_2, rules_5_three_6: 10 != 10;
-            rules_5_three_5, rules_5_three_8: 11 == 11;
-            rules_5_three_8, rules_5_three_7: ;
-            rules_5_three_6, rules_5_three_9: 12 == 12;
-            rules_5_three_9, rules_5_three_7: ;
-            rules_5_three_7, rules_5_three_3: ;
-            rules_5_three_3, rules_5_three_end: ;
-            rules_5_three_end, rules_6: ;
-            rules_6, rules_end: ;
+            rules_begin, one_begin: ;
+            one_begin, one_1: 1 == 1;
+            one_begin, one_2: 1 != 1;
+            one_1, one_4: 2 == 2;
+            one_4, one_3: ;
+            one_2, one_5: 3 == 3;
+            one_5, one_3: ;
+            one_3, one_end: ;
+            one_end, rules_1: ;
+            rules_1, two_begin: ;
+            two_begin, two_1: 4 == 4;
+            two_begin, two_2: 4 != 4;
+            two_1, two_4: 5 == 5;
+            two_4, two_3: ;
+            two_2, two_5: 6 == 6;
+            two_2, two_6: 6 != 6;
+            two_5, two_7: 7 == 7;
+            two_7, two_6: ;
+            two_6, two_3: ;
+            two_3, two_end: ;
+            two_end, rules_2: ;
+            rules_2, three_begin: ;
+            three_begin, three_1: 8 == 8;
+            three_begin, three_2: 8 != 8;
+            three_1, three_4: 9 == 9;
+            three_4, three_3: ;
+            three_2, three_5: 10 == 10;
+            three_2, three_6: 10 != 10;
+            three_5, three_8: 11 == 11;
+            three_8, three_7: ;
+            three_6, three_9: 12 == 12;
+            three_9, three_7: ;
+            three_7, three_3: ;
+            three_3, three_end: ;
+            three_end, rules_3: ;
+            rules_3, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        reusable,
+        "
+            graph a() {}
+            graph b() {}
+            reusable graph c() {}
+            reusable graph d() {}
+            graph rules() {
+                a()
+                b()
+                b()
+                c()
+                d()
+                d()
+            }
+        ",
+        "
+            type c_return_type = { c_call_1 };
+            type d_return_type = { d_call_1, d_call_2 };
+            var c_return: c_return_type = c_call_1;
+            var d_return: d_return_type = d_call_1;
+            begin, rules_begin: ;
+            rules_begin, a_begin: ;
+            a_begin, a_end: ;
+            a_end, rules_1: ;
+            rules_1, rules_2_b_begin: ;
+            rules_2_b_begin, rules_2_b_end: ;
+            rules_2_b_end, rules_3: ;
+            rules_3, rules_4_b_begin: ;
+            rules_4_b_begin, rules_4_b_end: ;
+            rules_4_b_end, rules_5: ;
+            rules_5, c_call_1: ;
+            c_call_1, rules_6: c_return = c_call_1;
+            rules_6, c_begin: ;
+            c_begin, c_end: ;
+            c_end, c_return: ;
+            c_return, rules_7: c_return == c_call_1;
+            rules_7, d_call_1: ;
+            d_call_1, rules_8: d_return = d_call_1;
+            rules_8, d_begin: ;
+            d_begin, d_end: ;
+            d_end, d_return: ;
+            d_return, rules_9: d_return == d_call_1;
+            rules_9, d_call_2: ;
+            d_call_2, rules_10: d_return = d_call_2;
+            rules_10, d_begin: ;
+            d_end, d_return: ;
+            d_return, rules_11: d_return == d_call_2;
+            rules_11, rules_end: ;
             rules_end, end: ;
         "
     );
