@@ -155,13 +155,16 @@ fn analyze_rg_inner(
 
     macro_rules! game_call {
         ($game:expr, $fn:ident) => {
-            #[cfg(not(target_arch = "wasm32"))]
-            let now = std::time::Instant::now();
-            let result = $game.$fn();
-            #[cfg(not(target_arch = "wasm32"))]
-            if verbose {
-                eprintln!("{} {:?}", stringify!($fn), now.elapsed());
-            }
+            let result = if cfg!(target_arch = "wasm32") || !verbose {
+                $game.$fn()
+            } else {
+                let now = std::time::Instant::now();
+                eprint!("{}", stringify!($fn));
+                let result = $game.$fn();
+                eprintln!(" {:?}", now.elapsed());
+                result
+            };
+
             check!(result, add_game_stats!($game))
         };
     }
