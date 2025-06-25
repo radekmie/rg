@@ -150,21 +150,14 @@ fn find_nexts(
     let mut nexts = vec![];
     while let Some((node, path)) = queue.pop() {
         if let Some(edges) = next_edges.get(&node) {
-            'outer: for edge in edges {
+            for edge in edges {
                 if is_break(tag_lookup, is_variable_tag, edge) {
                     nexts.push(((*edge).clone(), path.clone()));
                     continue;
                 }
 
-                // Two visits are required to account for loops.
-                let mut visits_on_path = 0;
-                for x in &path {
-                    if x.rhs == *next_node(edge) {
-                        visits_on_path += 1;
-                        if visits_on_path == 2 {
-                            continue 'outer;
-                        }
-                    }
+                if path.contains(edge) {
+                    continue;
                 }
 
                 let mut path = path.clone();

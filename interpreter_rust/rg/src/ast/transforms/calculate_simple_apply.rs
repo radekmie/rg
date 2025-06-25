@@ -48,16 +48,9 @@ impl Game<Id> {
                     path_to_edge.insert(assignments.clone());
                 }
 
-                'inner: for edge in next_edges.get(&lhs).into_iter().flatten() {
-                    // Two visits are required to account for loops.
-                    let mut visits_on_path = 0;
-                    for x in &path {
-                        if x.rhs == edge.rhs {
-                            visits_on_path += 1;
-                            if visits_on_path == 2 {
-                                continue 'inner;
-                            }
-                        }
+                for edge in next_edges.get(&lhs).into_iter().flatten() {
+                    if path.contains(edge) {
+                        continue;
                     }
 
                     let mut path = path.clone();
