@@ -3,7 +3,11 @@ mod display;
 use map_id::MapId;
 use map_id_macro::MapId;
 use serde::Serialize;
+use std::collections::BTreeMap;
 use std::sync::Arc;
+
+/// `(caller, callee) -> count`.
+pub type CallsCount<Id> = BTreeMap<(Id, Id), usize>;
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Statement<Id> {
@@ -52,6 +56,48 @@ pub enum Statement<Id> {
         expression: Arc<Expression<Id>>,
         body: Vec<Statement<Id>>,
     },
+}
+
+impl<Id: Clone + Ord> Statement<Id> {
+    pub fn count_calls(&self, call_counts: &mut CallsCount<Id>, caller: &Id) {
+        match self {
+            Self::Assignment { .. }
+            | Self::AssignmentAny { .. }
+            | Self::Tag { .. }
+            | Self::TagVariable { .. } => {}
+            Self::Branch { arms } => {
+                for statement in arms.iter().flatten() {
+                    statement.count_calls(call_counts, caller);
+                }
+            }
+            Self::Call { identifier, .. } => {
+                *call_counts
+                    .entry((caller.clone(), identifier.clone()))
+                    .or_default() += 1;
+            }
+            Self::If {
+                expression,
+                then,
+                else_,
+            } => {
+                expression.count_calls(call_counts, caller);
+                for statement in then.iter().chain(else_.iter().flatten()) {
+                    statement.count_calls(call_counts, caller);
+                }
+            }
+            Self::BranchVar { body, .. } | Self::Loop { body } | Self::Repeat { body, .. } => {
+                for statement in body {
+                    statement.count_calls(call_counts, caller);
+                }
+            }
+            Self::While { expression, body } => {
+                expression.count_calls(call_counts, caller);
+                for statement in body {
+                    statement.count_calls(call_counts, caller);
+                }
+            }
+        }
+    }
 }
 
 impl<Id: Clone + PartialEq> Statement<Id> {
@@ -156,52 +202,6 @@ impl<Id: Clone + PartialEq> Statement<Id> {
     }
 }
 
-impl<Id: PartialEq> Statement<Id> {
-    pub fn count_calls(&self, identifier: &Id) -> usize {
-        match self {
-            Self::Assignment { .. }
-            | Self::AssignmentAny { .. }
-            | Self::Tag { .. }
-            | Self::TagVariable { .. } => 0,
-            Self::Branch { arms } => arms
-                .iter()
-                .flatten()
-                .map(|statement| statement.count_calls(identifier))
-                .sum(),
-            Self::Call { identifier: x, .. } => {
-                if x == identifier {
-                    1
-                } else {
-                    0
-                }
-            }
-            Self::If {
-                expression,
-                then,
-                else_,
-            } => {
-                expression.count_calls(identifier)
-                    + then
-                        .iter()
-                        .chain(else_.iter().flatten())
-                        .map(|statement| statement.count_calls(identifier))
-                        .sum::<usize>()
-            }
-            Self::BranchVar { body, .. } | Self::Loop { body } | Self::Repeat { body, .. } => body
-                .iter()
-                .map(|statement| statement.count_calls(identifier))
-                .sum(),
-            Self::While { expression, body } => {
-                expression.count_calls(identifier)
-                    + body
-                        .iter()
-                        .map(|statement| statement.count_calls(identifier))
-                        .sum::<usize>()
-            }
-        }
-    }
-}
-
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Function<Id> {
     pub reusable: bool,
@@ -210,18 +210,19 @@ pub struct Function<Id> {
     pub body: Vec<Statement<Id>>,
 }
 
+impl<Id: Clone + Ord> Function<Id> {
+    pub fn count_calls(&self, call_counts: &mut CallsCount<Id>) {
+        for statement in &self.body {
+            statement.count_calls(call_counts, &self.name);
+        }
+    }
+}
+
 impl<Id: PartialEq> Function<Id> {
     pub fn arg_index(&self, identifier: &Id) -> Option<usize> {
         self.args
             .iter()
             .position(|arg| arg.identifier == *identifier)
-    }
-
-    pub fn count_calls(&self, identifier: &Id) -> usize {
-        self.body
-            .iter()
-            .map(|statement| statement.count_calls(identifier))
-            .sum()
     }
 }
 
@@ -412,6 +413,49 @@ pub enum Expression<Id> {
     },
 }
 
+impl<Id: Clone + Ord> Expression<Id> {
+    pub fn count_calls(&self, call_counts: &mut CallsCount<Id>, caller: &Id) {
+        match self {
+            Self::Access { lhs, rhs } | Self::BinExpr { lhs, rhs, .. } => {
+                lhs.count_calls(call_counts, caller);
+                rhs.count_calls(call_counts, caller);
+            }
+            Self::Call { expression, args } => {
+                for expression in args.iter().chain([expression]) {
+                    expression.count_calls(call_counts, caller);
+                }
+            }
+            Self::Constructor { args, .. } => {
+                for expression in args {
+                    expression.count_calls(call_counts, caller);
+                }
+            }
+            Self::If { cond, then, else_ } => {
+                for expression in [cond, then, else_] {
+                    expression.count_calls(call_counts, caller);
+                }
+            }
+            Self::Literal { identifier } => {
+                *call_counts
+                    .entry((caller.clone(), identifier.clone()))
+                    .or_default() += 1;
+            }
+            Self::Map {
+                default_value,
+                parts,
+            } => {
+                for expression in parts
+                    .iter()
+                    .map(|part| &part.expression)
+                    .chain(default_value)
+                {
+                    expression.count_calls(call_counts, caller);
+                }
+            }
+        }
+    }
+}
+
 impl<Id: Clone + PartialEq> Expression<Id> {
     pub fn substitute_var(&mut self, var: &Id, value: &Id) -> Result<(), Error<Id>> {
         match self {
@@ -454,46 +498,6 @@ impl<Id: Clone + PartialEq> Expression<Id> {
         }
 
         Ok(())
-    }
-}
-
-impl<Id: PartialEq> Expression<Id> {
-    pub fn count_calls(&self, identifier: &Id) -> usize {
-        match self {
-            Self::Access { lhs, rhs } => lhs.count_calls(identifier) + rhs.count_calls(identifier),
-            Self::BinExpr { lhs, rhs, .. } => {
-                lhs.count_calls(identifier) + rhs.count_calls(identifier)
-            }
-            Self::Call { expression, args } => args
-                .iter()
-                .chain([expression])
-                .map(|expression| expression.count_calls(identifier))
-                .sum(),
-            Self::Constructor { args, .. } => args
-                .iter()
-                .map(|expression| expression.count_calls(identifier))
-                .sum(),
-            Self::If { cond, then, else_ } => [cond, then, else_]
-                .into_iter()
-                .map(|expression| expression.count_calls(identifier))
-                .sum(),
-            Self::Literal { identifier: x } => {
-                if x == identifier {
-                    1
-                } else {
-                    0
-                }
-            }
-            Self::Map {
-                default_value,
-                parts,
-            } => parts
-                .iter()
-                .map(|part| &part.expression)
-                .chain(default_value.iter())
-                .map(|expression| expression.count_calls(identifier))
-                .sum(),
-        }
     }
 }
 
@@ -582,11 +586,13 @@ pub struct Game<Id> {
     pub variables: Vec<VariableDeclaration<Id>>,
 }
 
-impl<Id: PartialEq> Game<Id> {
-    pub fn count_calls(&self, identifier: &Id) -> usize {
-        self.automaton
-            .iter()
-            .map(|function| function.count_calls(identifier))
-            .sum()
+impl<Id: Clone + Ord> Game<Id> {
+    pub fn count_calls(&self) -> CallsCount<Id> {
+        let mut call_counts = BTreeMap::new();
+        for function in &self.automaton {
+            function.count_calls(&mut call_counts);
+        }
+
+        call_counts
     }
 }

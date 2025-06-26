@@ -12,8 +12,8 @@ type Id = Arc<str>;
 struct Context {
     counters: BTreeMap<Id, usize>,
     hrg: hrg::Game<Id>,
+    hrg_calls_count: hrg::CallsCount<Id>,
     rg: rg::Game<Id>,
-    short_name_functions_cache: BTreeMap<Id, bool>,
     translated_functions: BTreeSet<Id>,
     type_values: BTreeMap<Id, Vec<hrg::Value<Id>>>,
 }
@@ -26,11 +26,19 @@ impl Context {
     }
 
     fn can_use_short_name(&mut self, function: &hrg::Function<Id>) -> bool {
-        function.reusable
-            || *self
-                .short_name_functions_cache
-                .entry(function.name.clone())
-                .or_insert_with_key(|identifier| self.hrg.count_calls(identifier) <= 1)
+        fn count_calls(calls_count: &hrg::CallsCount<Id>, name: &Id) -> usize {
+            if name.as_ref() == "rules" {
+                return 1;
+            }
+
+            calls_count
+                .iter()
+                .filter(|((_, callee), _)| callee == name)
+                .map(|((caller, _), count)| count_calls(calls_count, caller) * count)
+                .sum()
+        }
+
+        function.reusable || count_calls(&self.hrg_calls_count, &function.name) <= 1
     }
 
     fn random(&mut self, prefix: &Id) -> Id {
@@ -46,11 +54,12 @@ impl Context {
 }
 
 pub fn hrg_to_rg(hrg: hrg::Game<Id>) -> Result<rg::Game<Id>, hrg::Error<Id>> {
+    let hrg_calls_count = hrg.count_calls();
     let mut context = Context {
         counters: BTreeMap::new(),
         hrg,
+        hrg_calls_count,
         rg: rg::Game::default(),
-        short_name_functions_cache: BTreeMap::new(),
         translated_functions: BTreeSet::new(),
         type_values: BTreeMap::new(),
     };
@@ -2343,6 +2352,35 @@ mod test {
             d_end, d_return: ;
             d_return, rules_11: d_return == d_call_2;
             rules_11, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        reusable_nested,
+        "
+            graph a() {}
+            graph b() {a()}
+            graph rules() {
+                b()
+                b()
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_1_b_begin: ;
+            rules_1_b_begin, rules_1_b_1_a_begin: ;
+            rules_1_b_1_a_begin, rules_1_b_1_a_end: ;
+            rules_1_b_1_a_end, rules_1_b_2: ;
+            rules_1_b_2, rules_1_b_end: ;
+            rules_1_b_end, rules_2: ;
+            rules_2, rules_3_b_begin: ;
+            rules_3_b_begin, rules_3_b_1_a_begin: ;
+            rules_3_b_1_a_begin, rules_3_b_1_a_end: ;
+            rules_3_b_1_a_end, rules_3_b_2: ;
+            rules_3_b_2, rules_3_b_end: ;
+            rules_3_b_end, rules_4: ;
+            rules_4, rules_end: ;
             rules_end, end: ;
         "
     );
