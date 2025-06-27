@@ -16,7 +16,7 @@ domain RookDir = up | down | left | right
 domain BishopDir = upleft | upright | downleft | downright
 domain AllDir = up | down | left | right | upleft | upright | downleft | downright
 domain KnightDir = nne | nnw | sse | ssw | een | ees | wwn | wws
-domain PawnDir = up | upright | upleft | nn
+domain PawnDir = forward | forwardLeft | forwardRight
 
 domain Bool = 0 | 1
 
@@ -110,15 +110,12 @@ knight_direction(wwn) = wwndir
 knight_direction(wws) = wwsdir
 
 pawn_direction: PawnDir -> Player -> PositionOrNull -> PositionOrNull
-pawn_direction(up, white) = updir
-pawn_direction(upleft, white) = upleftdir
-pawn_direction(upright, white) = uprightdir
-pawn_direction(nn, white) = updir
-pawn_direction(up, black) = downdir
-pawn_direction(upleft, black) = downleftdir
-pawn_direction(upright, black) = downrightdir
-pawn_direction(nn, black) = downdir
-
+pawn_direction(forward, white) = updir
+pawn_direction(forwardLeft, white) = upleftdir
+pawn_direction(forwardRight, white) = uprightdir
+pawn_direction(forward, black) = downdir
+pawn_direction(forwardLeft, black) = downleftdir
+pawn_direction(forwardRight, black) = downrightdir
 
 // Helper functions
 compare_y : PositionOrNull -> PositionOrNull
@@ -134,13 +131,6 @@ black_pawn_starting_pos(null) = 0
 pawn_starting_pos : Player -> PositionOrNull -> Bool
 pawn_starting_pos(white) = white_pawn_starting_pos
 pawn_starting_pos(black) = black_pawn_starting_pos
-
-kingSideRookPositionOrNull : Player -> PositionOrNull
-kingSideRookPositionOrNull(white) = V(7,7)
-kingSideRookPositionOrNull(black) = V(7,0)
-queenSideRookPositionOrNull : Player -> PositionOrNull
-queenSideRookPositionOrNull(white) = V(0,7)
-queenSideRookPositionOrNull(black) = V(0,0)
 
 owner : Piece -> PlayerOrSystem
 owner(whiteBishop) = white
@@ -227,22 +217,22 @@ graph pawnMove() {
   
   branch {// Normal move
      branch {// Forward move by 1 square
-       pos = pawn_direction(up,me)(pos)
+       pos = pawn_direction[forward][me][pos]
        check(board[pos] == empty)
        $ PF
      } or {// Captures diagonal
        branch {
-         pos = pawn_direction(upleft,me)(pos)
+         pos = pawn_direction[forwardLeft][me][pos]
          $ PCL
        } or {
-         pos = pawn_direction(upright,me)(pos)
+         pos = pawn_direction[forwardRight][me][pos]
          $ PCR
        }
        check(owner(board[pos]) == opponent[me])
      }
      $$ pos
      
-     if pawn_direction(up,me)(pos) == null {
+     if pawn_direction[forward][me][pos] == null {
         branch { // Promote to queen
           board[pos] = myQueen(me)
           $ P_Q
@@ -263,10 +253,10 @@ graph pawnMove() {
 
    } or { // Forward move by 2 squares
      $ PFF
-     check(pawn_starting_pos(me)(pos) == 1)
-     pos = pawn_direction(nn, me)(pos)
+     check(pawn_starting_pos[me][pos] == 1)
+     pos = pawn_direction[forward][me][pos]
      check(board[pos] == empty)
-     pos = pawn_direction(nn, me)(pos)
+     pos = pawn_direction[forward][me][pos]
      check(board[pos] == empty)
      $$ pos
      en_passant_position = pos
@@ -276,11 +266,11 @@ graph pawnMove() {
      $ PEN
      branch {
        check(leftdir(pos) == en_passant_position)
-       pos = pawn_direction(upleft, me)(pos)
+       pos = pawn_direction[forwardLeft][me][pos]
        $_EL
      } or {
        check(rightdir(pos) == en_passant_position)
-       pos = pawn_direction(upright, me)(pos)
+       pos = pawn_direction[forwardRight][me][pos]
        $_ER
      }
      $$ pos
@@ -401,7 +391,6 @@ graph knightMove() {
 
 graph kingStandardMove() {
   board[pos] = empty
-  $ K
   branch dir in AllDir {
     pos = all_direction[dir][pos]
     $_dir
@@ -462,6 +451,7 @@ graph move() {
   branch {
     pos = kingPos[me]
     $$ pos
+    $ K
     branch {// 1 tile move
       kingStandardMove()
     } or { // Castling moves
@@ -508,12 +498,12 @@ graph moveExists() {
   check(not(reachable(isInCheck())))
 }
 
-graph isAttacked() {
+reusable graph isAttacked() {
   branch{ // pawns
     branch{
-      pos = pawn_direction(upleft, me)(pos)
+      pos = pawn_direction[forwardLeft][me][pos]
     } or {
-      pos = pawn_direction(upright, me)(pos)
+      pos = pawn_direction[forwardRight][me][pos]
     }
     check(board[pos] == myPawn(opponent[me]))
   } or { // diagonal moves
@@ -575,7 +565,7 @@ graph turn() {
   
   me = opponent[me]
 
-  // if not(reachable(kingExists())) {
+  // if not(reachable(kingExists())) {// kingCapture variant
   //   goals[me] = 0
   //   goals[opponent[me]] = 100
   //   end()
