@@ -70,10 +70,13 @@ impl<Id: Clone + Ord> Statement<Id> {
                     statement.count_calls(call_counts, caller);
                 }
             }
-            Self::Call { identifier, .. } => {
+            Self::Call { identifier, args } => {
                 *call_counts
                     .entry((caller.clone(), identifier.clone()))
                     .or_default() += 1;
+                for expression in args {
+                    expression.count_calls(call_counts, caller);
+                }
             }
             Self::If {
                 expression,
