@@ -27,11 +27,11 @@ impl Analysis for ConstantsAnalysis {
     type Context = Context;
     type Domain = BTreeMap<Id, Arc<Value<Id>>>;
 
-    fn bot() -> Self::Domain {
+    fn bot(&self) -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn extreme(program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn extreme(&self, program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
         program
             .variables
             .iter()
@@ -39,13 +39,13 @@ impl Analysis for ConstantsAnalysis {
             .collect()
     }
 
-    fn join(mut a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
+    fn join(&self, mut a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
         // Keep only keys present in both maps with the same value.
         a.retain(|key, value| b.get(key) == Some(value));
         a
     }
 
-    fn get_context(program: &Game<Id>) -> Self::Context {
+    fn get_context(&self, program: &Game<Id>) -> Self::Context {
         let mut ctx = Self::Context::default();
         for constant in &program.constants {
             let value = constant.value.clone();
@@ -64,6 +64,7 @@ impl Analysis for ConstantsAnalysis {
     // x = 1;
     // x = y[x]; <- here `kill` removes `x` from `input` before `gen`, so `x` in lhs is not recognised as a constant
     fn transfer(
+        &self,
         mut input: Self::Domain,
         edge: &Arc<Edge<Id>>,
         ctx: &Self::Context,
@@ -77,6 +78,10 @@ impl Analysis for ConstantsAnalysis {
         }
 
         input
+    }
+
+    fn with_reachability(&self) -> bool {
+        true
     }
 }
 
@@ -191,7 +196,7 @@ mod test {
             #[test]
             fn $name() {
                 let game = parse($source);
-                let analysis = game.analyse::<super::ConstantsAnalysis>(true);
+                let analysis = game.analyse(super::ConstantsAnalysis);
                 let actual = format_analysis(analysis);
                 let actual = actual.trim();
                 let expect = $expect.trim();

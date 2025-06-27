@@ -11,22 +11,27 @@ impl Analysis for ReachingDefinitions {
     type Context = ();
     type Domain = BTreeMap<Id, Arc<Edge<Id>>>;
 
-    fn bot() -> Self::Domain {
+    fn bot(&self) -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn extreme(_program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn extreme(&self, _program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn get_context(_program: &Game<Id>) -> Self::Context {}
+    fn get_context(&self, _program: &Game<Id>) -> Self::Context {}
 
-    fn join(mut a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
+    fn join(&self, mut a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
         a.retain(|key, value| b.get(key) == Some(value));
         a
     }
 
-    fn kill(mut input: Self::Domain, edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
+    fn kill(
+        &self,
+        mut input: Self::Domain,
+        edge: &Arc<Edge<Id>>,
+        _ctx: &Self::Context,
+    ) -> Self::Domain {
         if let Some(identifier) = edge.label.as_tag_variable() {
             input.remove(identifier);
         } else if let Some(identifier) = edge.label.as_var_assignment() {
@@ -38,10 +43,19 @@ impl Analysis for ReachingDefinitions {
         input
     }
 
-    fn gen(mut input: Self::Domain, edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
+    fn gen(
+        &self,
+        mut input: Self::Domain,
+        edge: &Arc<Edge<Id>>,
+        _ctx: &Self::Context,
+    ) -> Self::Domain {
         if let Some(identifier) = edge.label.as_var_assignment() {
             input.insert(identifier.clone(), edge.clone());
         }
         input
+    }
+
+    fn with_reachability(&self) -> bool {
+        true
     }
 }

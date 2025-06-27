@@ -4,31 +4,61 @@ use std::sync::Arc;
 
 type Id = Arc<str>;
 
-pub struct ReachableNodes;
+pub struct ReachableNodes {
+    with_reachability: bool,
+}
+
+impl ReachableNodes {
+    pub fn new() -> Self {
+        Self {
+            with_reachability: false,
+        }
+    }
+
+    pub fn new_with_reachability() -> Self {
+        Self {
+            with_reachability: true,
+        }
+    }
+}
 
 impl Analysis for ReachableNodes {
     type Context = ();
     type Domain = bool;
 
-    fn bot() -> Self::Domain {
+    fn bot(&self) -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn extreme(_program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn extreme(&self, _program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
         true
     }
 
-    fn get_context(_program: &Game<Id>) -> Self::Context {}
+    fn get_context(&self, _program: &Game<Id>) -> Self::Context {}
 
-    fn join(a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
+    fn join(&self, a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
         a || b
     }
 
-    fn kill(input: Self::Domain, _edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
+    fn kill(
+        &self,
+        input: Self::Domain,
+        _edge: &Arc<Edge<Id>>,
+        _ctx: &Self::Context,
+    ) -> Self::Domain {
         input
     }
 
-    fn gen(input: Self::Domain, _edge: &Arc<Edge<Id>>, _ctx: &Self::Context) -> Self::Domain {
+    fn gen(
+        &self,
+        input: Self::Domain,
+        _edge: &Arc<Edge<Id>>,
+        _ctx: &Self::Context,
+    ) -> Self::Domain {
         input
+    }
+
+    fn with_reachability(&self) -> bool {
+        self.with_reachability
     }
 }
