@@ -504,6 +504,19 @@ impl<Id> Expression<Id> {
         }
     }
 
+    pub fn access_identifier_with_indexes(&self) -> (&Id, Vec<&Arc<Self>>) {
+        match self {
+            Self::Access { lhs, rhs, .. } => {
+                let (identifier, indexes) = lhs.access_identifier_with_indexes();
+                let mut indexes = indexes;
+                indexes.push(rhs);
+                (identifier, indexes)
+            }
+            Self::Cast { rhs, .. } => rhs.access_identifier_with_indexes(),
+            Self::Reference { identifier } => (identifier, Vec::new()),
+        }
+    }
+
     pub fn as_reference(&self) -> Option<&Id> {
         match self {
             Self::Reference { identifier } => Some(identifier),
@@ -1663,6 +1676,26 @@ impl<Id> Type<Id> {
 }
 
 impl<Id: Clone + PartialEq> Type<Id> {
+    fn dealias(&self, game: &Game<Id>) -> Self {
+        match self {
+            Type::Arrow { lhs, rhs } => Type::Arrow {
+                lhs: Arc::new(lhs.dealias(game)),
+                rhs: Arc::new(rhs.dealias(game)),
+            },
+            Type::Set { .. } => self.clone(),
+            Type::TypeReference { identifier } => game.resolve_typedef(identifier).map_or_else(
+                || self.clone(),
+                |typedef| {
+                    if typedef.type_.is_set() {
+                        self.clone()
+                    } else {
+                        typedef.type_.dealias(game)
+                    }
+                },
+            ),
+        }
+    }
+
     /// Used to determine how much memory a variable of this type could take.
     fn memory_size(&self, game: &Game<Id>) -> Result<usize, Error<Id>> {
         match self {
@@ -1803,6 +1836,30 @@ impl<Id: Clone> Value<Id> {
         match self {
             Self::Element { identifier } => Some(identifier),
             Self::Map { .. } => None,
+        }
+    }
+}
+
+impl<Id: Ord + Clone> Value<Id> {
+    pub fn dealias(&self, game: &Game<Id>) -> Self {
+        match self {
+            Self::Element { identifier } => game.resolve_constant(identifier).map_or_else(
+                || self.clone(),
+                |constant| constant.value.as_ref().dealias(game),
+            ),
+            Self::Map { span, entries } => Self::Map {
+                span: span.clone(),
+                entries: entries
+                    .iter()
+                    .map(|entry| {
+                        ValueEntry::new(
+                            entry.span.clone(),
+                            entry.identifier.clone(),
+                            Arc::new(entry.value.dealias(game)),
+                        )
+                    })
+                    .collect(),
+            },
         }
     }
 }
