@@ -178,7 +178,7 @@ fn used_definitions<'a>(
     variables
         .iter()
         .chain(iter::once(&identifier))
-        .map(|var| (*var, defs.get(*var).and_then(Option::as_ref)))
+        .map(|var| (*var, defs.get(*var).and_then(|def| def.as_all())))
         .collect()
 }
 
@@ -478,6 +478,47 @@ mod test {
         begin, t1: x = y;
         t1, t2: $$ x;
         t2, end: x == y;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_before_loop,
+        "begin, a: x = 2;
+        a, b: ;
+        b, c: ;
+        c, b: ;
+        c, d: ;
+        a, d: ;
+        d, end: x == 1;",
+        "begin, a: ;
+        a, b: ;
+        b, c: ;
+        c, b: ;
+        c, d: ;
+        a, d: ;
+        d, end: 2 == 1;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_in_fork,
+        "begin, a: ;
+        a, b: x = 2;
+        b, c: ;
+        a, c: ;
+        c, end: x == 1;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assign_in_fork_2,
+        "begin, a: ;
+        a, b1: x = 2;
+        b1, c: ;
+        a, b2: x = 2;
+        b2, c: ;
+        a, c: ;
+        c, end: x == 1;"
     );
 
     // TODO: Add tests with forks

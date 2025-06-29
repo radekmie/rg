@@ -915,8 +915,8 @@ fn remove_keeper_move_tags(context: &mut Context) {
         if (edge.label.is_tag() || edge.label.is_tag_variable())
             && reaching_definitions
                 .get(&edge.lhs)
-                .and_then(|definitions| definitions.get(&player))
-                .and_then(Option::as_ref)
+                .and_then(|defs| defs.get(&player))
+                .and_then(|def| def.as_all())
                 .is_some_and(|edge| edge.label.is_player_assignment_to_keeper())
         {
             Arc::make_mut(edge).skip();
