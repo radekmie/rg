@@ -9,6 +9,7 @@ pub struct ReachableNodes {
 }
 
 impl ReachableNodes {
+    #[allow(clippy::new_without_default, reason = "It should be explicit.")]
     pub fn new() -> Self {
         Self {
             with_reachability: false,

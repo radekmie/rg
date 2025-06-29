@@ -175,13 +175,11 @@ fn used_definitions<'a>(
     variables: &'a BTreeSet<&Id>,
     identifier: &'a Id,
 ) -> BTreeMap<&'a Id, Option<&'a Arc<Edge<Id>>>> {
-    let used: BTreeMap<_, _> = variables
+    variables
         .iter()
         .chain(iter::once(&identifier))
-        .map(|var| (*var, defs.get(*var)))
-        .collect();
-
-    used
+        .map(|var| (*var, defs.get(*var).and_then(Option::as_ref)))
+        .collect()
 }
 
 fn can_replace_usage(

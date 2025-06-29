@@ -9,7 +9,13 @@ pub struct ReachingDefinitions;
 
 impl Analysis for ReachingDefinitions {
     type Context = ();
-    type Domain = BTreeMap<Id, Arc<Edge<Id>>>;
+    // Mapping of variable name to an optional edge it was set in last.
+    //   * Missing key means it was never reached.
+    //   * `Some(edge)` means it was set once or more, and the set values were
+    //     the same on all edges.
+    //   * `None` means it was set twice or more, and the set values were
+    //     different at least once.
+    type Domain = BTreeMap<Id, Option<Arc<Edge<Id>>>>;
 
     fn bot(&self) -> Self::Domain {
         Self::Domain::default()
@@ -22,7 +28,15 @@ impl Analysis for ReachingDefinitions {
     fn get_context(&self, _program: &Game<Id>) -> Self::Context {}
 
     fn join(&self, mut a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
-        a.retain(|key, value| b.get(key) == Some(value));
+        for (key, value_b) in b {
+            a.entry(key)
+                .and_modify(|value_a| {
+                    if *value_a != value_b {
+                        *value_a = None;
+                    }
+                })
+                .or_insert(value_b);
+        }
         a
     }
 
@@ -50,7 +64,7 @@ impl Analysis for ReachingDefinitions {
         _ctx: &Self::Context,
     ) -> Self::Domain {
         if let Some(identifier) = edge.label.as_var_assignment() {
-            input.insert(identifier.clone(), edge.clone());
+            input.insert(identifier.clone(), Some(edge.clone()));
         }
         input
     }
