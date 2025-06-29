@@ -1,5 +1,5 @@
 use super::Analysis;
-use crate::ast::{Edge, Game};
+use crate::ast::{Edge, Game, Node};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -56,8 +56,16 @@ impl Analysis for ReachingDefinitions {
         Self::Domain::default()
     }
 
-    fn extreme(&self, _program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
-        Self::Domain::default()
+    fn extreme(&self, game: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
+        // Fake initial value assignments.
+        let fake_definition = Definition::All(Arc::from(Edge::new_skip(
+            Node::new(Id::from("")),
+            Node::new(Id::from("")),
+        )));
+        game.variables
+            .iter()
+            .map(|variable| (variable.identifier.clone(), fake_definition.clone()))
+            .collect()
     }
 
     fn get_context(&self, _program: &Game<Id>) -> Self::Context {}

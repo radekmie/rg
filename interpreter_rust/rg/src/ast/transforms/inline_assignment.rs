@@ -521,5 +521,64 @@ mod test {
         c, end: x == 1;"
     );
 
+    test_transform!(
+        inline_assignment,
+        connect_four_loop,
+        "var me: Player = red;
+        var player: PlayerOrSystem = keeper;
+        begin, rules_begin: ;
+        rules_begin, rules_1: ;
+        rules_1, turn_begin: ;
+        turn_begin, turn_1: player = me;
+        turn_1, turn_2: pos = TopPosition(*);
+        turn_2, turn_3: board[pos] == empty;
+        turn_3, turn_4: $$ pos;
+        turn_4, turn_5: player = keeper;
+        turn_5, goDown_begin: ;
+        goDown_begin, goDown_3: board[down[pos]] != empty;
+        goDown_begin, goDown_4: board[down[pos]] == empty;
+        goDown_3, goDown_end: ;
+        goDown_4, goDown_5: pos = down[pos];
+        goDown_5, goDown_2: ;
+        goDown_2, goDown_7: board[down[pos]] != empty;
+        goDown_2, goDown_8: board[down[pos]] == empty;
+        goDown_7, goDown_end: ;
+        goDown_8, goDown_9: pos = down[pos];
+        goDown_9, goDown_6: ;
+        goDown_6, goDown_11: board[down[pos]] != empty;
+        goDown_6, goDown_12: board[down[pos]] == empty;
+        goDown_11, goDown_end: ;
+        goDown_12, goDown_13: pos = down[pos];
+        goDown_13, goDown_10: ;
+        goDown_10, goDown_15: board[down[pos]] != empty;
+        goDown_10, goDown_16: board[down[pos]] == empty;
+        goDown_15, goDown_end: ;
+        goDown_16, goDown_17: pos = down[pos];
+        goDown_17, goDown_14: ;
+        goDown_14, goDown_19: board[down[pos]] != empty;
+        goDown_14, goDown_20: board[down[pos]] == empty;
+        goDown_19, goDown_end: ;
+        goDown_20, goDown_21: pos = down[pos];
+        goDown_21, goDown_18: ;
+        goDown_18, goDown_1: ;
+        goDown_1, goDown_end: ;
+        goDown_end, turn_6: ;
+        turn_6, turn_7: ? win_call_1 -> win_end;
+        turn_6, turn_8: ! win_call_1 -> win_end;
+        turn_7, turn_10: goals[me] = 100;
+        turn_10, turn_11: goals[opponent[me]] = 0;
+        turn_11, end: player = keeper;
+        turn_8, turn_12: board[pos] = me;
+        turn_12, turn_14: ? existsNonempty_call_1 -> existsNonempty_end;
+        turn_12, turn_13: ! existsNonempty_call_1 -> existsNonempty_end;
+        turn_13, end: player = keeper;
+        turn_14, turn_16: me = opponent[me];
+        turn_16, turn_end: ;
+        turn_end, rules_3: ;
+        rules_3, rules_1: ;
+        rules_2, rules_end: ;
+        rules_end, end: ;"
+    );
+
     // TODO: Add tests with forks
 }
