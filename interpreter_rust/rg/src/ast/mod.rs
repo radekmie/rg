@@ -1,4 +1,4 @@
-mod analyses;
+pub mod analyses;
 mod display;
 mod transforms;
 mod validators;
@@ -359,6 +359,10 @@ impl Label<Arc<str>> {
 
     pub fn is_player_assignment(&self) -> bool {
         matches!(self, Self::Assignment { lhs, .. } if lhs.uncast().is_player_reference())
+    }
+
+    pub fn is_player_assignment_to_keeper(&self) -> bool {
+        matches!(self, Self::Assignment { lhs, rhs } if lhs.uncast().is_player_reference() && rhs.uncast().is_keeper_reference())
     }
 }
 
@@ -722,6 +726,10 @@ impl<Id: PartialEq> Expression<Id> {
 }
 
 impl Expression<Arc<str>> {
+    pub fn is_keeper_reference(&self) -> bool {
+        matches!(self, Self::Reference { identifier } if &**identifier == "keeper")
+    }
+
     pub fn is_player_reference(&self) -> bool {
         matches!(self, Self::Reference { identifier } if &**identifier == "player")
     }

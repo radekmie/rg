@@ -908,6 +908,22 @@ fn has_math_expression(expression: &rg::Expression<Id>) -> bool {
     }
 }
 
+fn remove_keeper_move_tags(context: &mut Context) {
+    let player = Id::from("player");
+    let reaching_definitions = context.rg.analyse(rg::analyses::ReachingDefinitions);
+    for edge in &mut context.rg.edges {
+        if (edge.label.is_tag() || edge.label.is_tag_variable())
+            && reaching_definitions
+                .get(&edge.lhs)
+                .and_then(|definitions| definitions.get(&player))
+                .and_then(Option::as_ref)
+                .is_some_and(|edge| edge.label.is_player_assignment_to_keeper())
+        {
+            Arc::make_mut(edge).skip();
+        }
+    }
+}
+
 fn remove_power_skip_edges(context: &mut Context) {
     let mut edges_count = usize::MAX;
     while edges_count != context.rg.edges.len() {
@@ -1452,6 +1468,7 @@ fn translate_game(context: &mut Context) {
     );
 
     remove_power_skip_edges(context);
+    remove_keeper_move_tags(context);
     terminate_on_zero_moves(context);
 }
 
