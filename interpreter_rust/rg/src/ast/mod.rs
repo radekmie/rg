@@ -504,15 +504,15 @@ impl<Id> Expression<Id> {
         }
     }
 
-    pub fn access_identifier_with_indexes(&self) -> (&Id, Vec<&Arc<Self>>) {
+    /// Returns the most left identifier in the access chain and a vector of accessors.
+    pub fn access_identifier_with_accessors(&self) -> (&Id, Vec<&Arc<Self>>) {
         match self {
             Self::Access { lhs, rhs, .. } => {
-                let (identifier, indexes) = lhs.access_identifier_with_indexes();
-                let mut indexes = indexes;
+                let (identifier, mut indexes) = lhs.access_identifier_with_accessors();
                 indexes.push(rhs);
                 (identifier, indexes)
             }
-            Self::Cast { rhs, .. } => rhs.access_identifier_with_indexes(),
+            Self::Cast { rhs, .. } => rhs.access_identifier_with_accessors(),
             Self::Reference { identifier } => (identifier, Vec::new()),
         }
     }

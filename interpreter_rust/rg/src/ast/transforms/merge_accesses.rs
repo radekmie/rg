@@ -41,9 +41,9 @@ impl Game<Id> {
             return None;
         }
 
-        let (outer_id, outer_indexes) = outer.access_identifier_with_indexes();
+        let (outer_id, outer_indexes) = outer.access_identifier_with_accessors();
         let is_first_arg = outer_indexes.is_empty();
-        let (inner_id, mut inner_indexes) = inner.access_identifier_with_indexes();
+        let (inner_id, mut inner_indexes) = inner.access_identifier_with_accessors();
         let mut indexes = outer_indexes;
         indexes.append(&mut inner_indexes);
 
@@ -221,9 +221,9 @@ fn create_new_type(
     }
 }
 
-// For case mapA[mapB[Y][Z]]
-// where mapA is a map from C -> D and mapB is a map from A to (B -> C),
-// we need to merge the maps such mapAB[Y][Z] becomes A -> (B -> D)
+/// For case mapA[mapB[Y][Z]]
+/// where mapA is a map from C -> D and mapB is a map from A to (B -> C),
+/// we need to merge the maps such mapAB[Y][Z] becomes A -> (B -> D)
 fn merge_maps_a_b_y_z(outer_map: &Value<Id>, inner_map: &Value<Id>) -> Option<Value<Id>> {
     let (
         Value::Map { .. },
@@ -255,10 +255,9 @@ fn merge_maps_a_b_y_z(outer_map: &Value<Id>, inner_map: &Value<Id>) -> Option<Va
     })
 }
 
-// For case mapA[X][mapB[Y]]
-// where mapA is a map from C -> (B -> D) and mapB is a map from A to B,
-// we need to merge the maps such mapAB[X][Y]
-// becomes C -> (A -> D)
+/// For case mapA[X][mapB[Y]]
+/// where mapA is a map from C -> (B -> D) and mapB is a map from A to B,
+/// we need to merge the maps such mapAB[X][Y] becomes C -> (A -> D)
 fn merge_maps_a_x_b_y(outer_map: &Value<Id>, inner_map: &Value<Id>) -> Option<Value<Id>> {
     let Value::Map { entries, .. } = outer_map else {
         return None;
@@ -283,7 +282,7 @@ fn merge_maps_a_x_b_y(outer_map: &Value<Id>, inner_map: &Value<Id>) -> Option<Va
     })
 }
 
-// Create a new map: keys are from inner_map, values are from outer_map
+/// Create a new map: keys are from inner_map, values are from outer_map
 fn merge_values(outer_map: &Value<Id>, inner_map: &Value<Id>) -> Option<Value<Id>> {
     let Value::Map { entries, .. } = inner_map else {
         return None;
