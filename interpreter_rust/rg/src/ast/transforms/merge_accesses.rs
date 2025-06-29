@@ -42,6 +42,7 @@ impl Game<Id> {
         }
 
         let (outer_id, outer_indexes) = outer.access_identifier_with_indexes();
+        let is_first_arg = outer_indexes.is_empty();
         let (inner_id, mut inner_indexes) = inner.access_identifier_with_indexes();
         let mut indexes = outer_indexes;
         indexes.append(&mut inner_indexes);
@@ -62,7 +63,7 @@ impl Game<Id> {
 
         let outer_value = outer_const.value.dealias(self);
         let inner_value = inner_const.value.dealias(self);
-        let new_type = create_new_type(outer_type_, inner_type_)?;
+        let new_type = create_new_type(outer_type_, inner_type_, is_first_arg)?;
 
         let value = {
             match (outer.uncast(), inner.uncast()) {
@@ -157,7 +158,11 @@ fn create_access(identifier: Id, indexes: Vec<Arc<Expression<Id>>>) -> Expressio
 }
 
 // both types are dealiased
-fn create_new_type(outer_type: Type<Id>, inner_type: Type<Id>) -> Option<Type<Id>> {
+fn create_new_type(
+    outer_type: Type<Id>,
+    inner_type: Type<Id>,
+    is_first_arg: bool,
+) -> Option<Type<Id>> {
     let (
         Type::Arrow {
             lhs: outer_lhs,
@@ -178,7 +183,9 @@ fn create_new_type(outer_type: Type<Id>, inner_type: Type<Id>) -> Option<Type<Id
         // mapB: A -> B
         // mapAB[X][Y]
         // mapAB: C -> (A -> D)
-        (Type::Arrow { rhs, .. }, _) if !rhs.is_arrow() && !inner_rhs.is_arrow() => {
+        (Type::Arrow { rhs, .. }, _)
+            if !rhs.is_arrow() && !inner_rhs.is_arrow() && !is_first_arg =>
+        {
             Some(Type::Arrow {
                 lhs: outer_lhs,
                 rhs: Arc::new(Type::Arrow {
@@ -312,30 +319,6 @@ mod test {
 
     test_transform!(
         merge_accesses,
-        testtt,
-        "type AA = A -> A;
-        type Dir = {u, d};
-        const up: A -> A = {1:2, 2:3, :4};
-        const down: A -> A = {:1, 3:2, 4:3};
-        const inDir: Dir -> AA = {u: up, :down};
-        a, b: up[inDir[u][1]] == 1;
-        b, c: inDir[u][up[1]] == 1;
-        c, d: up[up[1]] == A(1);",
-        "type AA = A -> A;
-        type Dir = { u, d };
-        const up: A -> A = { 1: 2, 2: 3, :4 };
-        const down: A -> A = { :1, 3: 2, 4: 3 };
-        const inDir: Dir -> AA = { u: up, :down };
-        const __gen_up_inDir: Dir -> A -> A = { u: { 1: 3, :4 }, :{ :2, 3: 3, 4: 4 } };
-        const __gen_inDir_up: Dir -> A -> A = { u: { 1: 3, :4 }, :{ 1: 1, 2: 2, :3 } };
-        const __gen_up_up: A -> A = { 1: 3, :4 };
-        a, b: __gen_up_inDir[u][1] == 1;
-        b, c: __gen_inDir_up[u][1] == 1;
-        c, d: __gen_up_up[1] == A(1);"
-    );
-
-    test_transform!(
-        merge_accesses,
         small,
         "type A = {1,2,3,4};
         type B = {1,2};
@@ -384,5 +367,66 @@ mod test {
         begin, h: x = __gen_MapCC___gen_MapBC___gen_MapAB_MapAA[1];
         begin, i: x = MapCC[VarMap[__gen_MapAB_MapAA[1]]];
         begin, j: x = __gen_MapCC_MapBC[1][VarMap[1]];"
+    );
+
+    test_transform!(
+        merge_accesses,
+        complex,
+        "type AA = A -> A;
+        type Dir = {u, d};
+        type DirAA = Dir -> AA;
+        const up: A -> A = {1:2, 2:3, :4};
+        const down: A -> A = {:1, 3:2, 4:3};
+        const uup: AA = up;
+        const inDir: Dir -> AA = {u: uup, :down};
+        const inDirr: DirAA = inDir;
+        a, b: up[inDir[u][1]] == 1;
+        b, c: inDir[u][uup[1]] == 1;
+        c, d: uup[up[A(1)]] == A(1);
+        a, b: up[A(inDir[u][1])] == 1;
+        b, c: inDirr[u][A(up[1])] == 1;
+        c, d: up[uup[1]] == A(1);
+        a, b: inDir[u][inDir[u][up[1]]] == 1;",
+        "type AA = A -> A;
+        type Dir = { u, d };
+        type DirAA = Dir -> AA;
+        const up: A -> A = { 1: 2, 2: 3, :4 };
+        const down: A -> A = { :1, 3: 2, 4: 3 };
+        const uup: AA = up;
+        const inDir: Dir -> AA = { u: uup, :down };
+        const inDirr: DirAA = inDir;
+        const __gen_up_inDir: Dir -> A -> A = { u: { 1: 3, :4 }, :{ :2, 3: 3, 4: 4 } };
+        const __gen_inDir_uup: Dir -> A -> A = { u: { 1: 3, :4 }, :{ 1: 1, 2: 2, :3 } };
+        const __gen_uup_up: A -> A = { 1: 3, :4 };
+        const __gen_inDirr_up: Dir -> A -> A = { u: { 1: 3, :4 }, :{ 1: 1, 2: 2, :3 } };
+        const __gen_up_uup: A -> A = { 1: 3, :4 };
+        const __gen_inDir_up: Dir -> A -> A = { u: { 1: 3, :4 }, :{ 1: 1, 2: 2, :3 } };
+        a, b: __gen_up_inDir[u][1] == 1;
+        b, c: __gen_inDir_uup[u][1] == 1;
+        c, d: __gen_uup_up[A(1)] == A(1);
+        a, b: __gen_up_inDir[u][1] == 1;
+        b, c: __gen_inDirr_up[u][1] == 1;
+        c, d: __gen_up_uup[1] == A(1);
+        a, b: inDir[u][__gen_inDir_up[u][1]] == 1;"
+    );
+
+    test_transform!(
+        merge_accesses,
+        too_complex,
+        "type AA = A -> A;
+        type AAA = A -> AA;
+        type Dir = {u, d};
+        const up: A -> A = {1:2, 2:3, :4};
+        const down: A -> A = {:1, 3:2, 4:3};
+        const double: A -> AA = { :{:0}};
+        const triple: A -> A -> AA = {:{:{:0}}};
+        const tripled: A -> AAA = triple;
+        const inDir: Dir -> AA = {u: up, :down};
+        // a, b: triple[1][1][up[1]] == 1;
+        b, c: double[up[1]][1] == 1;
+        // c, d: tripled[1][1][up[1]] == 1;
+        // a, b: inDir[u][triple[1][1][up[1]]] == 1;
+        // a, b: inDir[u][triple[1][1][1]] == 1;
+        "
     );
 }
