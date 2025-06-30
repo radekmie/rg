@@ -144,6 +144,8 @@ graph anyNormalMovePossible() {
 graph movePawnNormal() {
   check(board[pos] == myPawn[me])
   board[pos] = empty
+  $$ pos
+  $ PN
   branch {
     pos = fwdLeft[me][pos]
     $ FL_NORMAL
@@ -157,6 +159,8 @@ graph movePawnNormal() {
 graph movePawnCapture() {
   check(board[pos] == myPawn[me])
   board[pos] = empty
+  $$ pos
+  $ PC
   loop {
     branch {
       pos = fwdLeft[me][pos]
@@ -183,6 +187,8 @@ graph movePawnCapture() {
 graph moveKingNormal() {
   check(board[pos] == myKing[me])
   board[pos] = empty
+  $$ pos
+  $ KN
   branch {
     pos = upLeft[pos]
     $ UL_NORMAL
@@ -202,6 +208,8 @@ graph moveKingNormal() {
 graph moveKingCapture() {
   check(board[pos] == myKing(me))
   board[pos] = empty
+  $$ pos
+  $ KC
   loop {
     branch {
       pos = upLeft[pos]
@@ -244,8 +252,8 @@ graph move() {
     }
     player = me
     pos = Position(*)
-    check(playerOf[board[pos]] == me)
-    $$ pos
+    //check(playerOf[board[pos]] == me)
+    //$$ pos
     branch {
       movePawnCapture()
       player = keeper
@@ -263,8 +271,8 @@ graph move() {
       }
       player = me
       pos = Position(*)
-      check(playerOf[board[pos]] == me)
-      $$ pos
+      //check(playerOf[board[pos]] == me)
+      //$$ pos
       branch {
         movePawnNormal()
         player = keeper
