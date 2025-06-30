@@ -58,12 +58,14 @@ impl Game<Id> {
         }
         let outer_const = self.resolve_new_constant(outer_id, new_constants)?;
         let inner_const = self.resolve_new_constant(inner_id, new_constants)?;
-        let outer_type_ = self.resolve_dealiased_type(&outer_const.type_)?;
-        let inner_type_ = self.resolve_dealiased_type(&inner_const.type_)?;
+        let mut outer_type_ = outer_const.type_.clone();
+        Arc::make_mut(&mut outer_type_).resolve_recursive(self);
+        let mut inner_type_ = inner_const.type_.clone();
+        Arc::make_mut(&mut inner_type_).resolve_recursive(self);
 
         let outer_value = outer_const.value.dealias(self);
         let inner_value = inner_const.value.dealias(self);
-        let new_type = create_new_type(outer_type_, inner_type_, is_first_arg)?;
+        let new_type = create_new_type(&outer_type_, &inner_type_, is_first_arg)?;
 
         let value = {
             match (outer.uncast(), inner.uncast()) {
@@ -127,10 +129,6 @@ impl Game<Id> {
         }
     }
 
-    fn resolve_dealiased_type(&self, type_: &Type<Id>) -> Option<Type<Id>> {
-        type_.resolve(self).map(|t| t.dealias(self)).ok()
-    }
-
     fn resolve_new_constant<'a>(
         &'a self,
         id: &Id,
@@ -159,8 +157,8 @@ fn create_access(identifier: Id, indexes: Vec<Arc<Expression<Id>>>) -> Expressio
 
 // both types are dealiased
 fn create_new_type(
-    outer_type: Type<Id>,
-    inner_type: Type<Id>,
+    outer_type: &Type<Id>,
+    inner_type: &Type<Id>,
     is_first_arg: bool,
 ) -> Option<Type<Id>> {
     let (
@@ -187,9 +185,9 @@ fn create_new_type(
             if !rhs.is_arrow() && !inner_rhs.is_arrow() && !is_first_arg =>
         {
             Some(Type::Arrow {
-                lhs: outer_lhs,
+                lhs: outer_lhs.clone(),
                 rhs: Arc::new(Type::Arrow {
-                    lhs: inner_lhs,
+                    lhs: inner_lhs.clone(),
                     rhs: rhs.clone(),
                 }),
             })
@@ -201,10 +199,10 @@ fn create_new_type(
         // mapAB: A -> (B -> D)
         (_, Type::Arrow { lhs, rhs }) if !outer_rhs.is_arrow() && !rhs.is_arrow() => {
             Some(Type::Arrow {
-                lhs: inner_lhs,
+                lhs: inner_lhs.clone(),
                 rhs: Arc::new(Type::Arrow {
                     lhs: lhs.clone(),
-                    rhs: outer_rhs,
+                    rhs: outer_rhs.clone(),
                 }),
             })
         }
@@ -214,8 +212,8 @@ fn create_new_type(
         // mapAB[X]
         // mapAB : A -> C
         (_, _) if !outer_rhs.is_arrow() && !inner_rhs.is_arrow() => Some(Type::Arrow {
-            lhs: inner_lhs,
-            rhs: outer_rhs,
+            lhs: inner_lhs.clone(),
+            rhs: outer_rhs.clone(),
         }),
         _ => None,
     }

@@ -1676,26 +1676,6 @@ impl<Id> Type<Id> {
 }
 
 impl<Id: Clone + PartialEq> Type<Id> {
-    fn dealias(&self, game: &Game<Id>) -> Self {
-        match self {
-            Type::Arrow { lhs, rhs } => Type::Arrow {
-                lhs: Arc::new(lhs.dealias(game)),
-                rhs: Arc::new(rhs.dealias(game)),
-            },
-            Type::Set { .. } => self.clone(),
-            Type::TypeReference { identifier } => game.resolve_typedef(identifier).map_or_else(
-                || self.clone(),
-                |typedef| {
-                    if typedef.type_.is_set() {
-                        self.clone()
-                    } else {
-                        typedef.type_.dealias(game)
-                    }
-                },
-            ),
-        }
-    }
-
     /// Used to determine how much memory a variable of this type could take.
     fn memory_size(&self, game: &Game<Id>) -> Result<usize, Error<Id>> {
         match self {
@@ -1718,6 +1698,24 @@ impl<Id: Clone + PartialEq> Type<Id> {
                 .resolve(game)
         } else {
             Ok(self)
+        }
+    }
+
+    fn resolve_recursive(&mut self, game: &Game<Id>) {
+        match self {
+            Type::Arrow { lhs, rhs } => {
+                Arc::make_mut(lhs).resolve_recursive(game);
+                Arc::make_mut(rhs).resolve_recursive(game);
+            }
+            Type::Set { .. } => {}
+            Type::TypeReference { identifier } => {
+                if let Some(typedef) = game.resolve_typedef(identifier) {
+                    if !typedef.type_.is_set() {
+                        *self = typedef.type_.as_ref().clone();
+                        self.resolve_recursive(game);
+                    }
+                }
+            }
         }
     }
 
