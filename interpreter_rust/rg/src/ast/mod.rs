@@ -1839,25 +1839,19 @@ impl<Id: Clone> Value<Id> {
 }
 
 impl<Id: Ord + Clone> Value<Id> {
-    pub fn dealias(&self, game: &Game<Id>) -> Self {
+    pub fn resolve_recursive(&mut self, game: &Game<Id>) {
         match self {
-            Self::Element { identifier } => game.resolve_constant(identifier).map_or_else(
-                || self.clone(),
-                |constant| constant.value.as_ref().dealias(game),
-            ),
-            Self::Map { span, entries } => Self::Map {
-                span: span.clone(),
-                entries: entries
-                    .iter()
-                    .map(|entry| {
-                        ValueEntry::new(
-                            entry.span.clone(),
-                            entry.identifier.clone(),
-                            Arc::new(entry.value.dealias(game)),
-                        )
-                    })
-                    .collect(),
-            },
+            Self::Element { identifier } => {
+                if let Some(constant) = game.resolve_constant(identifier) {
+                    *self = constant.value.as_ref().clone();
+                    self.resolve_recursive(game);
+                }
+            }
+            Self::Map { entries, .. } => {
+                for entry in entries {
+                    Arc::make_mut(&mut entry.value).resolve_recursive(game);
+                }
+            }
         }
     }
 }

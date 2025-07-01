@@ -41,10 +41,9 @@ impl Game<Id> {
             return None;
         }
 
-        let (outer_id, outer_indexes) = outer.access_identifier_with_accessors();
-        let is_first_arg = outer_indexes.is_empty();
+        let (outer_id, mut indexes) = outer.access_identifier_with_accessors();
+        let is_first_arg = indexes.is_empty();
         let (inner_id, mut inner_indexes) = inner.access_identifier_with_accessors();
-        let mut indexes = outer_indexes;
         indexes.append(&mut inner_indexes);
 
         if let Some((constant, _, _)) = new_constants
@@ -58,14 +57,16 @@ impl Game<Id> {
         }
         let outer_const = self.resolve_new_constant(outer_id, new_constants)?;
         let inner_const = self.resolve_new_constant(inner_id, new_constants)?;
-        let mut outer_type_ = outer_const.type_.clone();
-        Arc::make_mut(&mut outer_type_).resolve_recursive(self);
-        let mut inner_type_ = inner_const.type_.clone();
-        Arc::make_mut(&mut inner_type_).resolve_recursive(self);
+        let mut outer_type = outer_const.type_.clone();
+        Arc::make_mut(&mut outer_type).resolve_recursive(self);
+        let mut inner_type = inner_const.type_.clone();
+        Arc::make_mut(&mut inner_type).resolve_recursive(self);
 
-        let outer_value = outer_const.value.dealias(self);
-        let inner_value = inner_const.value.dealias(self);
-        let new_type = create_new_type(&outer_type_, &inner_type_, is_first_arg)?;
+        let mut outer_value = outer_const.value.clone();
+        Arc::make_mut(&mut outer_value).resolve_recursive(self);
+        let mut inner_value = inner_const.value.clone();
+        Arc::make_mut(&mut inner_value).resolve_recursive(self);
+        let new_type = create_new_type(&outer_type, &inner_type, is_first_arg)?;
 
         let value = {
             match (outer.uncast(), inner.uncast()) {
