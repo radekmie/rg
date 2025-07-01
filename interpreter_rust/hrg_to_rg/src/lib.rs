@@ -1118,6 +1118,36 @@ fn translate_automaton_statements(
                 context.connect(current_node, repeat_end.clone(), rg::Label::new_skip());
                 current_node = repeat_end;
             }
+            hrg::Statement::RepeatVar {
+                identifier,
+                type_,
+                body,
+            } => {
+                let repeat_end = context.random_node(prefix);
+                for value in translate_type(type_).values(&context.rg).unwrap() {
+                    let mut body = body.clone();
+                    for statement in &mut body {
+                        statement.substitute_var(identifier, &value)?;
+                    }
+
+                    let local_node = context.random_node(prefix);
+                    translate_automaton_statements(
+                        context,
+                        &body,
+                        Some(&repeat_end),
+                        Some(&local_node),
+                        end_node,
+                        current_node.clone(),
+                        Some(&local_node),
+                        prefix,
+                        return_node,
+                        automaton_function,
+                    )?;
+                    current_node = local_node;
+                }
+                context.connect(current_node, repeat_end.clone(), rg::Label::new_skip());
+                current_node = repeat_end;
+            }
             hrg::Statement::Tag { artificial, symbol } => {
                 if *artificial {
                     context.rg.add_pragma(rg::Pragma::ArtificialTag {
@@ -1728,6 +1758,10 @@ fn translate_type(type_: &hrg::Type<Id>) -> Arc<rg::Type<Id>> {
         hrg::Type::Name { identifier } => rg::Type::TypeReference {
             identifier: identifier.clone(),
         },
+        hrg::Type::Set { identifiers } => rg::Type::Set {
+            span: Span::none(),
+            identifiers: identifiers.clone(),
+        },
     })
 }
 
@@ -1837,27 +1871,31 @@ mod test {
     use rg::parsing::parser::parse_with_errors as parse_rg;
     use std::sync::Arc;
 
+    fn test_translation(hrg: &str, rg: &str) {
+        let actual = hrg_to_rg({
+            let (game, errors) = parse_hrg(hrg);
+            assert!(errors.is_empty(), "Parse errors: {errors:?}");
+            game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
+        })
+        .unwrap();
+        let expect = {
+            let (game, errors) = parse_rg(rg);
+            assert!(errors.is_empty(), "Parse errors: {errors:?}");
+            game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
+        };
+
+        // `assert_eq` prints the entire structs and it's not helpful.
+        assert!(
+            actual == expect,
+            "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
+        );
+    }
+
     macro_rules! test_translation {
-        ($name:ident, $actual:expr, $expect:expr) => {
+        ($name:ident, $hrg:expr, $rg:expr) => {
             #[test]
             fn $name() {
-                let actual = hrg_to_rg({
-                    let (game, errors) = parse_hrg($actual);
-                    assert!(errors.is_empty(), "Parse errors: {errors:?}");
-                    game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
-                })
-                .unwrap();
-                let expect = {
-                    let (game, errors) = parse_rg($expect);
-                    assert!(errors.is_empty(), "Parse errors: {errors:?}");
-                    game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
-                };
-
-                // `assert_eq` prints the entire structs and it's not helpful.
-                assert!(
-                    actual == expect,
-                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
-                );
+                test_translation($hrg, $rg);
             }
         };
     }
@@ -2145,6 +2183,57 @@ mod test {
             rules_12, rules_13: 0 == 0;
             rules_13, rules_10: ;
             rules_10, rules_1: ;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        repeat_inline,
+        "
+            domain Player = x
+            graph rules() {
+              repeat dir in {fwdLeft, fwdRight} {
+                check(playerOf(board[dir[me][pos]]) == opponent[me])
+                check(board[dir[me][dir[me][pos]]] == empty)
+              }
+            }
+        ",
+        "
+            type Player = { x };
+            begin, rules_begin: ;
+            rules_begin, rules_3: playerOf[board[fwdLeft[me][pos]]] == opponent[me];
+            rules_3, rules_4: board[fwdLeft[me][fwdLeft[me][pos]]] == empty;
+            rules_4, rules_2: ;
+            rules_2, rules_6: playerOf[board[fwdRight[me][pos]]] == opponent[me];
+            rules_6, rules_7: board[fwdRight[me][fwdRight[me][pos]]] == empty;
+            rules_7, rules_5: ;
+            rules_5, rules_1: ;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        branch_inline,
+        "
+            domain Player = x
+            graph rules() {
+              branch dir in {fwdLeft, fwdRight} {
+                check(playerOf(board[dir[me][pos]]) == opponent[me])
+                check(board[dir[me][dir[me][pos]]] == empty)
+              }
+            }
+        ",
+        "
+            type Player = { x };
+            begin, rules_begin: ;
+            rules_begin, rules_2: playerOf[board[fwdLeft[me][pos]]] == opponent[me];
+            rules_2, rules_3: board[fwdLeft[me][fwdLeft[me][pos]]] == empty;
+            rules_3, rules_1: ;
+            rules_begin, rules_4: playerOf[board[fwdRight[me][pos]]] == opponent[me];
+            rules_4, rules_5: board[fwdRight[me][fwdRight[me][pos]]] == empty;
+            rules_5, rules_1: ;
             rules_1, rules_end: ;
             rules_end, end: ;
         "

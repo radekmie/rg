@@ -22,12 +22,12 @@ pub enum Statement<Id> {
         type_: Arc<Type<Id>>,
     },
     Branch {
-        arms: Vec<Vec<Statement<Id>>>,
+        arms: Vec<Vec<Self>>,
     },
     BranchVar {
         identifier: Id,
         type_: Arc<Type<Id>>,
-        body: Vec<Statement<Id>>,
+        body: Vec<Self>,
     },
     Call {
         identifier: Id,
@@ -35,15 +35,20 @@ pub enum Statement<Id> {
     },
     If {
         expression: Arc<Expression<Id>>,
-        then: Vec<Statement<Id>>,
-        else_: Option<Vec<Statement<Id>>>,
+        then: Vec<Self>,
+        else_: Option<Vec<Self>>,
     },
     Loop {
-        body: Vec<Statement<Id>>,
+        body: Vec<Self>,
     },
     Repeat {
         count: usize,
-        body: Vec<Statement<Id>>,
+        body: Vec<Self>,
+    },
+    RepeatVar {
+        identifier: Id,
+        type_: Arc<Type<Id>>,
+        body: Vec<Self>,
     },
     Tag {
         artificial: bool,
@@ -54,7 +59,7 @@ pub enum Statement<Id> {
     },
     While {
         expression: Arc<Expression<Id>>,
-        body: Vec<Statement<Id>>,
+        body: Vec<Self>,
     },
 }
 
@@ -88,7 +93,10 @@ impl<Id: Clone + Ord> Statement<Id> {
                     statement.count_calls(call_counts, caller);
                 }
             }
-            Self::BranchVar { body, .. } | Self::Loop { body } | Self::Repeat { body, .. } => {
+            Self::BranchVar { body, .. }
+            | Self::Loop { body }
+            | Self::Repeat { body, .. }
+            | Self::RepeatVar { body, .. } => {
                 for statement in body {
                     statement.count_calls(call_counts, caller);
                 }
@@ -386,32 +394,32 @@ impl<OldId, NewId> MapId<Self, OldId, NewId> for Binop {
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Expression<Id> {
     Access {
-        lhs: Arc<Expression<Id>>,
-        rhs: Arc<Expression<Id>>,
+        lhs: Arc<Self>,
+        rhs: Arc<Self>,
     },
     BinExpr {
-        lhs: Arc<Expression<Id>>,
+        lhs: Arc<Self>,
         op: Binop,
-        rhs: Arc<Expression<Id>>,
+        rhs: Arc<Self>,
     },
     Call {
-        expression: Arc<Expression<Id>>,
-        args: Vec<Arc<Expression<Id>>>,
+        expression: Arc<Self>,
+        args: Vec<Arc<Self>>,
     },
     Constructor {
         identifier: Id,
-        args: Vec<Arc<Expression<Id>>>,
+        args: Vec<Arc<Self>>,
     },
     If {
-        cond: Arc<Expression<Id>>,
-        then: Arc<Expression<Id>>,
-        else_: Arc<Expression<Id>>,
+        cond: Arc<Self>,
+        then: Arc<Self>,
+        else_: Arc<Self>,
     },
     Literal {
         identifier: Id,
     },
     Map {
-        default_value: Option<Arc<Expression<Id>>>,
+        default_value: Option<Arc<Self>>,
         parts: Vec<ExpressionMapPart<Id>>,
     },
 }
@@ -515,7 +523,7 @@ pub struct ExpressionMapPart<Id> {
 pub enum Pattern<Id> {
     Constructor {
         identifier: Id,
-        args: Vec<Arc<Pattern<Id>>>,
+        args: Vec<Arc<Self>>,
     },
     Literal {
         identifier: Id,
@@ -538,13 +546,9 @@ impl<Id: std::fmt::Display> Pattern<Id> {
 
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Type<Id> {
-    Function {
-        lhs: Arc<Type<Id>>,
-        rhs: Arc<Type<Id>>,
-    },
-    Name {
-        identifier: Id,
-    },
+    Function { lhs: Arc<Self>, rhs: Arc<Self> },
+    Name { identifier: Id },
+    Set { identifiers: Vec<Id> },
 }
 
 impl<Id> Type<Id> {

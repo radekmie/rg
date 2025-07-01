@@ -13,8 +13,9 @@ use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple
 use std::cell::RefCell;
 use std::sync::Arc;
 use utils::parser::{
-    comma_separated0, comments_and_whitespaces, identifier_, in_braces, in_brackets, in_parens,
-    integer, into_arc, parse_error_line, ww, ww_char, ww_tag, Input, Result, State,
+    comma_separated0, comma_separated1, comments_and_whitespaces, identifier_, in_braces,
+    in_brackets, in_parens, integer, into_arc, parse_error_line, ww, ww_char, ww_tag, Input,
+    Result, State,
 };
 use utils::position::Span;
 use utils::Error;
@@ -96,6 +97,24 @@ fn repeat(input: Input) -> Result<Statement<Identifier>> {
     )(input)
 }
 
+fn repeat_var(input: Input) -> Result<Statement<Identifier>> {
+    preceded(
+        ww_tag("repeat"),
+        map(
+            tuple((
+                ww(identifier),
+                preceded(ww_tag("in"), type_),
+                in_braces(many0(statement)),
+            )),
+            |(identifier, type_, body)| Statement::RepeatVar {
+                identifier,
+                type_,
+                body,
+            },
+        ),
+    )(input)
+}
+
 fn if_(input: Input) -> Result<Statement<Identifier>> {
     map(
         tuple((
@@ -151,6 +170,7 @@ fn statement(input: Input) -> Result<Statement<Identifier>> {
         call,
         if_,
         loop_,
+        repeat_var,
         repeat,
         while_,
         tag_variable_statement,
@@ -358,11 +378,16 @@ fn pattern(input: Input) -> Result<Arc<Pattern<Identifier>>> {
 }
 
 fn type_(input: Input) -> Result<Arc<Type<Identifier>>> {
-    let (input, lhs): (Input, Arc<Type<Identifier>>) = into_arc(identifier)(input)?;
-    match opt(preceded(tag("->"), type_))(input)? {
-        (input, Some(rhs)) => Ok((input, Arc::new(Type::Function { lhs, rhs }))),
-        (input, None) => Ok((input, lhs)),
-    }
+    alt((
+        into_arc(in_braces(cut(comma_separated1(identifier)))),
+        |input| {
+            let (input, lhs) = into_arc(identifier)(input)?;
+            match opt(preceded(tag("->"), type_))(input)? {
+                (input, Some(rhs)) => Ok((input, Arc::from(Type::Function { lhs, rhs }))),
+                (input, None) => Ok((input, lhs)),
+            }
+        },
+    ))(input)
 }
 
 fn function(input: Input) -> Result<Function<Identifier>> {

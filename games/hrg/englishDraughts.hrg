@@ -80,29 +80,16 @@ pos : PositionOrNull
 stagnation : Stagnation = S(0)
 
 graph pawnCapturePossibleFrom() {
-  branch {
-    pos = fwdLeft[me][pos]
+  branch dir in {fwdLeft, fwdRight} {
+    pos = dir[me][pos]
     check(playerOf(board[pos]) == opponent[me])
-    check(board[fwdLeft(me)(pos)] == empty)
-  } or {
-    pos = fwdRight[me][pos]
-    check(playerOf(board[pos]) == opponent[me])
-    check(board[fwdRight[me][pos]] == empty)
+    check(board[dir(me)(pos)] == empty)
   }
 }
 graph kingCapturePossibleFrom() {
-  branch {
-    check(playerOf(board[upLeft[pos]]) == opponent[me])
-    check(board[upLeft[upLeft[pos]]] == empty)
-  } or {
-    check(playerOf(board[upRight[pos]]) == opponent[me])
-    check(board[upRight[upRight[pos]]] == empty)
-  } or {
-    check(playerOf(board[downLeft[pos]]) == opponent[me])
-    check(board[downLeft[downLeft[pos]]] == empty)
-  } or {
-    check(playerOf(board[downRight[pos]]) == opponent[me])
-    check(board[downRight[downRight[pos]]] == empty)
+  branch dir in {upLeft, upRight, downLeft, downRight} {
+    check(playerOf(board[dir[pos]]) == opponent[me])
+    check(board[dir[dir[pos]]] == empty)
   }
 }
 graph anyCapturePossible() {
@@ -120,22 +107,14 @@ graph anyNormalMovePossible() {
   pos = Position(*)
   branch {
     check(board[pos] == myPawn[me])
-    branch {
-      pos = fwdLeft[me][pos]
-    } or {
-      pos = fwdRight[me][pos]
+    branch dir in {fwdLeft, fwdRight} {
+      pos = dir[me][pos]
     }
     check(board[pos] == empty)
   } or {
     check(board[pos] == myKing(me))
-    branch {
-      pos = upLeft[pos]
-    } or {
-      pos = upRight[pos]
-    } or {
-      pos = downLeft[pos]
-    } or {
-      pos = downRight[pos]
+    branch dir in {upLeft, upRight, downLeft, downRight} {
+      pos = dir[pos]
     }
     check(board[pos] == empty)
   }

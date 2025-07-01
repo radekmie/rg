@@ -70,6 +70,11 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
             identifier,
             type_,
             body,
+        }
+        | Statement::RepeatVar {
+            identifier,
+            type_,
+            body,
         } => {
             table.add_occ(identifier);
             add_from_type(table, type_);
@@ -270,6 +275,7 @@ fn add_from_type(table: &mut SymbolTableBuilder, type_: &Type<Identifier>) {
         Type::Name { identifier } => {
             table.add_occ_with_flag(identifier, Flag::Type);
         }
+        Type::Set { .. } => {}
     }
 }
 

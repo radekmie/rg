@@ -161,6 +161,11 @@ impl<Id: Display> Display for Type<Id> {
         match self {
             Self::Function { lhs, rhs } => write!(f, "{lhs} -> {rhs}"),
             Self::Name { identifier } => write!(f, "{identifier}"),
+            Self::Set { identifiers } => {
+                write!(f, "{{")?;
+                write_with_separator(f, identifiers, ", ")?;
+                write!(f, "}}")
+            }
         }
     }
 }
@@ -420,6 +425,15 @@ fn write_statement<Id: Display>(
         }
         Statement::Repeat { count, body } => {
             writeln!(f, "repeat {count} {{")?;
+            write_statements(f, body, indent + 2)?;
+            write_rbrace(f, indent)
+        }
+        Statement::RepeatVar {
+            identifier,
+            type_,
+            body,
+        } => {
+            writeln!(f, "repeat {identifier} in {type_} {{")?;
             write_statements(f, body, indent + 2)?;
             write_rbrace(f, indent)
         }

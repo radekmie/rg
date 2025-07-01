@@ -36,6 +36,11 @@ impl Symbols {
                 identifier,
                 type_,
                 body,
+            }
+            | Statement::RepeatVar {
+                identifier,
+                type_,
+                body,
             } => {
                 if let Some(symbol) = typed(identifier, Flag::Param, type_.clone()) {
                     self.symbols.push(symbol);
