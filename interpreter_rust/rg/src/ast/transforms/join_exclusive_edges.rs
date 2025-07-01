@@ -1,4 +1,4 @@
-use crate::ast::{Edge, Error, Game, Node};
+use crate::ast::{Edge, Error, Game, Node, Pragma};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
@@ -39,13 +39,23 @@ impl<Id: Clone + Ord> Game<Id> {
     fn join_complex(&mut self) {
         let next_edges = self.next_edges();
         let prev_edges = self.prev_edges();
+        let artificial_tags: BTreeSet<&Id> = self
+            .pragmas
+            .iter()
+            .filter_map(|p| match p {
+                Pragma::ArtificialTag { tags, .. } => Some(tags),
+                _ => None,
+            })
+            .flatten()
+            .collect();
         let empty_set: BTreeSet<_> = BTreeSet::new();
         let mut to_remove = vec![];
         let mut to_add = vec![];
         for node in self.nodes() {
-            let Some((complex_start, simple_path)) =
-                split_edges(next_edges.get(&node).unwrap_or(&empty_set))
-            else {
+            let Some((complex_start, simple_path)) = split_edges(
+                next_edges.get(&node).unwrap_or(&empty_set),
+                &artificial_tags,
+            ) else {
                 continue;
             };
             let target = &simple_path.first().unwrap().rhs;
@@ -55,7 +65,7 @@ impl<Id: Clone + Ord> Game<Id> {
                 continue;
             };
 
-            if paths_match(&complex_path, &simple_path) {
+            if paths_match(&complex_path, &simple_path, &artificial_tags) {
                 to_remove.extend(complex_path);
                 to_remove.extend(simple_path.into_iter().cloned());
                 to_add.push(Arc::from(Edge::new_skip(node.clone(), target.clone())));
@@ -98,28 +108,36 @@ fn singleton<T>(set: &BTreeSet<T>) -> Option<&T> {
     }
 }
 
-fn paths_match<Id: PartialEq>(
+fn paths_match<Id: Ord>(
     complex_path: &[Arc<Edge<Id>>],
     simple_path: &[&Arc<Edge<Id>>],
+    artificial_tags: &BTreeSet<&Id>,
 ) -> bool {
     // For each condition on simple path "p" complex path contains "!p"
     // For each condition on complex path "p" simple path contains "!p"
     simple_path.iter().all(|simple| {
-        complex_path
-            .iter()
-            .any(|complex| complex.label.is_negated(&simple.label))
+        simple.label.is_tag_and(|t| artificial_tags.contains(t))
+            || complex_path
+                .iter()
+                .any(|complex| complex.label.is_negated(&simple.label))
     }) && complex_path.iter().all(|complex| {
-        simple_path
-            .iter()
-            .any(|simple| simple.label.is_negated(&complex.label))
+        complex.label.is_tag_and(|t| artificial_tags.contains(t))
+            || simple_path
+                .iter()
+                .any(|simple| simple.label.is_negated(&complex.label))
     })
 }
 
 #[expect(clippy::type_complexity)]
 fn split_edges<'a, Id: Ord + Clone>(
     edges: &'a BTreeSet<&Arc<Edge<Id>>>,
+    artificial_tags: &BTreeSet<&Id>,
 ) -> Option<(&'a Arc<Edge<Id>>, Vec<&'a Arc<Edge<Id>>>)> {
-    if edges.len() < 3 || !edges.iter().all(|e| e.is_conditional()) {
+    if edges.len() < 3
+        || !edges
+            .iter()
+            .all(|e| e.is_conditional() || e.label.is_tag_and(|t| artificial_tags.contains(t)))
+    {
         return None;
     }
     let first_rhs = &edges.first()?.rhs;
@@ -253,5 +271,52 @@ mod test {
         begin, end: 1 == 2;
         begin, end: 1 != 3;",
         "begin, end: ;"
+    );
+
+    test_transform!(
+        join_exclusive_edges,
+        complex_aritficial_tags1,
+        "@artificialTag foo bar;
+        begin, end: 1 == 1;
+        begin, end: 1 == 2;
+        begin, end: 1 == 3;
+        begin, b1: 1 != 1;
+        b1, b2: 1 != 2;
+        b2, b3: $ foo;
+        b3, b4: $ bar;
+        b4, end: 1 != 3;",
+        "@artificialTag foo bar;
+        begin, end: ;"
+    );
+
+    test_transform!(
+        join_exclusive_edges,
+        complex_aritficial_tags2,
+        "@artificialTag foo bar;
+        begin, end: 1 == 1;
+        begin, end: 1 == 2;
+        begin, end: 1 == 3;
+        begin, b1: $ foo;
+        b1, b2: 1 != 1;
+        b2, b3: 1 != 2;
+        b3, b4: $ bar;
+        b4, end: 1 != 3;",
+        "@artificialTag foo bar;
+        begin, end: ;"
+    );
+
+    test_transform!(
+        join_exclusive_edges,
+        complex_aritficial_tags3,
+        "@artificialTag foo bar;
+        begin, end: 1 == 1;
+        begin, end: $ foo;
+        begin, end: 1 == 2;
+        begin, end: 1 == 3;
+        begin, b1: 1 != 1;
+        b1, b2: 1 != 2;
+        b2, end: 1 != 3;",
+        "@artificialTag foo bar;
+        begin, end: ;"
     );
 }
