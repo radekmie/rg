@@ -507,6 +507,19 @@ pub fn parse_expression(input: &str) -> Arc<Expression<Identifier>> {
 }
 
 #[cfg(test)]
+impl Game<Arc<str>> {
+    pub fn test_parse_or_fail(input: &str) -> Self {
+        use crate::parsing::parser::parse_with_errors;
+        use map_id::MapId;
+
+        let (mut game, errors) = parse_with_errors(input);
+        assert!(errors.is_empty(), "Parse errors: {errors:?}");
+        game.pragmas.sort_unstable();
+        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
+    }
+}
+
+#[cfg(test)]
 mod test {
     use super::parse_with_errors;
 

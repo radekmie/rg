@@ -29,14 +29,15 @@ impl<Id: Clone + Ord + std::fmt::Display> Game<Id> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::Node;
+    use crate::ast::{ErrorReason, Node};
     use crate::test_linter;
+    use std::sync::Arc;
 
     test_linter!(
         lint_reachabilities,
         loop_1,
         "a, b: ? a -> b;",
-        vec![ErrorReason::ReachabilityLoop {
+        &[ErrorReason::ReachabilityLoop {
             lhs: Node::new(Arc::from("a")),
             rhs: Node::new(Arc::from("b")),
         }]
@@ -46,7 +47,7 @@ mod test {
         lint_reachabilities,
         loop_2,
         "a, b: ? a -> c; b, c: ;",
-        vec![ErrorReason::ReachabilityLoop {
+        &[ErrorReason::ReachabilityLoop {
             lhs: Node::new(Arc::from("a")),
             rhs: Node::new(Arc::from("c")),
         }]
@@ -56,7 +57,7 @@ mod test {
         lint_reachabilities,
         loop_3,
         "a, b: ; b, c: ? a -> c;",
-        vec![ErrorReason::ReachabilityLoop {
+        &[ErrorReason::ReachabilityLoop {
             lhs: Node::new(Arc::from("a")),
             rhs: Node::new(Arc::from("c")),
         }]
@@ -66,7 +67,7 @@ mod test {
         lint_reachabilities,
         unreachable_1,
         "begin, end: ? x -> y;",
-        vec![ErrorReason::Unreachable {
+        &[ErrorReason::Unreachable {
             lhs: Node::new(Arc::from("x")),
             rhs: Node::new(Arc::from("y")),
         }]
@@ -76,7 +77,7 @@ mod test {
         lint_reachabilities,
         unreachable_2,
         "begin, end: ? x -> y; x, z: ;",
-        vec![ErrorReason::Unreachable {
+        &[ErrorReason::Unreachable {
             lhs: Node::new(Arc::from("x")),
             rhs: Node::new(Arc::from("y")),
         }]

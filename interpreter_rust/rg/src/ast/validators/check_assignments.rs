@@ -39,8 +39,9 @@ impl Label<Id> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::{Expression, Label, Span, Type};
+    use crate::ast::{ErrorReason, Expression, Label, Span, Type};
     use crate::test_validator;
+    use std::sync::Arc;
 
     test_validator!(
         check_assignments,

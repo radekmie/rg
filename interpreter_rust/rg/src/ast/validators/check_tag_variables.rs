@@ -27,8 +27,9 @@ impl Game<Arc<str>> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::Type;
+    use crate::ast::{ErrorReason, Type};
     use crate::test_validator;
+    use std::sync::Arc;
     use utils::position::Span;
 
     test_validator!(

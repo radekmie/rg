@@ -32,6 +32,8 @@ mod skip_self_comparisons;
 mod skip_unused_tags;
 
 use super::Node;
+#[cfg(test)]
+use super::{Error, Game};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -49,6 +51,25 @@ pub fn max_node_id(nodes: &BTreeSet<&Node<Arc<str>>>) -> usize {
 }
 
 #[cfg(test)]
+impl Game<Arc<str>> {
+    pub fn test_transform<F: FnOnce(&mut Self) -> Result<(), Error<Arc<str>>>>(
+        actual: &str,
+        expect: &str,
+        fn_: F,
+    ) {
+        let mut actual = Self::test_parse_or_fail(actual);
+        let expect = Self::test_parse_or_fail(expect);
+        fn_(&mut actual).unwrap();
+
+        // `assert_eq` prints the entire structs and it's not helpful.
+        assert!(
+            actual == expect,
+            "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
+        );
+    }
+}
+
+#[cfg(test)]
 mod test {
     #[macro_export]
     macro_rules! test_transform {
@@ -63,27 +84,7 @@ mod test {
         ($fn:ident, $name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                use map_id::MapId;
-                use std::sync::Arc;
-                use $crate::ast::Game;
-                use $crate::parsing::parser::parse_with_errors;
-
-                fn parse(source: &str) -> Game<Arc<str>> {
-                    let (mut game, errors) = parse_with_errors(source);
-                    assert!(errors.is_empty(), "Parse errors: {errors:?}");
-                    game.pragmas.sort_unstable();
-                    game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
-                }
-
-                let mut actual = parse($actual);
-                let expect = parse($expect);
-                actual.$fn().unwrap();
-
-                // `assert_eq` prints the entire structs and it's not helpful.
-                assert!(
-                    actual == expect,
-                    "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
-                );
+                $crate::ast::Game::test_transform($actual, $expect, |x| x.$fn());
             }
         };
     }

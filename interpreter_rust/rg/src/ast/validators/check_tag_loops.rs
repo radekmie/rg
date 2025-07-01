@@ -14,8 +14,9 @@ impl<Id: Clone + PartialEq> Game<Id> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::{Edge, Label, Node};
+    use crate::ast::{Edge, ErrorReason, Label, Node};
     use crate::test_validator;
+    use std::sync::Arc;
 
     test_validator!(check_tag_loops, no_loop, "x, y: $v;", Ok(()));
     test_validator!(check_tag_loops, no_loop_variable, "x, y: $$v;", Ok(()));

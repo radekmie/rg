@@ -9,25 +9,46 @@ mod check_types;
 mod lint_reachabilities;
 
 #[cfg(test)]
+use super::{Error, ErrorReason, Game};
+#[cfg(test)]
+use std::sync::Arc;
+
+#[cfg(test)]
+type Id = Arc<str>;
+
+#[cfg(test)]
+impl Game<Id> {
+    #[allow(clippy::type_complexity)]
+    pub fn test_linter(
+        source: &str,
+        expect: &[ErrorReason<Id>],
+        fn_: Box<dyn FnOnce(&Self) -> Box<dyn Iterator<Item = Error<Id>> + '_>>,
+    ) {
+        let game = Self::test_parse_or_fail(source);
+        let actual = fn_(&game).map(|error| error.reason).collect::<Vec<_>>();
+        assert_eq!(actual, expect);
+    }
+
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn test_validator(
+        source: &str,
+        expect: Result<(), ErrorReason<Id>>,
+        fn_: Box<dyn FnOnce(Self) -> Result<(), Error<Id>>>,
+    ) {
+        let game = Self::test_parse_or_fail(source);
+        let actual = fn_(game).map_err(|error| error.reason);
+        assert_eq!(actual, expect);
+    }
+}
+
+#[cfg(test)]
 mod test {
     #[macro_export]
     macro_rules! test_linter {
         ($fn:ident, $name:ident, $source:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                use map_id::MapId;
-                use std::sync::Arc;
-                use $crate::ast::ErrorReason;
-                use $crate::parsing::parser::parse_with_errors;
-
-                let (game, errors) = parse_with_errors($source);
-                assert!(errors.is_empty(), "Parse errors: {errors:?}");
-                let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
-
-                let actual = game.$fn().map(|error| error.reason).collect::<Vec<_>>();
-                let expect: Vec<ErrorReason<Arc<str>>> = $expect;
-
-                assert_eq!(actual, expect);
+                $crate::ast::Game::test_linter($source, $expect, Box::new(|x| Box::new(x.$fn())));
             }
         };
     }
@@ -37,19 +58,7 @@ mod test {
         ($fn:ident, $name:ident, $source:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                use map_id::MapId;
-                use std::sync::Arc;
-                use $crate::ast::ErrorReason;
-                use $crate::parsing::parser::parse_with_errors;
-
-                let (game, errors) = parse_with_errors($source);
-                assert!(errors.is_empty(), "Parse errors: {errors:?}");
-                let game = game.map_id(&mut |id| Arc::from(id.identifier.as_str()));
-
-                let actual = game.$fn();
-                let expect: Result<(), ErrorReason<Arc<str>>> = $expect;
-
-                assert_eq!(actual.map_err(|error| error.reason), expect);
+                $crate::ast::Game::test_validator($source, $expect, Box::new(|x| x.$fn()));
             }
         };
     }

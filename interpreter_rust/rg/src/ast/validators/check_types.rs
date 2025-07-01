@@ -120,8 +120,9 @@ impl<Id: Clone + PartialEq> Variable<Id> {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::{Span, Type};
+    use crate::ast::{ErrorReason, Span, Type};
     use crate::test_validator;
+    use std::sync::Arc;
 
     test_validator!(
         check_types,
