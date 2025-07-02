@@ -3,7 +3,6 @@
 
 // Move form: pos rotation
 
-// domain statement
 domain Piece = empty | x | o
 domain Player = x | o
 domain Position = P(I, J) where I in 0..5, J in 0..5
@@ -11,245 +10,77 @@ domain Position = P(I, J) where I in 0..5, J in 0..5
 domain Rotation = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
 domain Score = 50 | 0 | 100
 
-// we are playing on 6x6 board
 board : Position -> Piece = { P(I, J) = empty where I in 0..5, J in 0..5 }
 
-// just a variable, comes in handy later
+opp : Player -> Player
+opp(x) = o
+opp(o) = x
+
 helper : Piece = empty
 pos : Position
 
-// player negation
-op : Player -> Player
-op(x) = o
-op(o) = x
-
-// check if there are any empty board tiles
+// Check if there are any empty board tiles
 graph findNonempty() {
   pos = Position(*)
   check(board[pos] == empty)
 }
 
-// check if given player has 5 in a row (hardcoded all possible 5-in-a-rows)
+// Check if given player has 5 in a row
 graph win(piece: Player) {
-  branch { 
-    check(board[P(0, 0)] == piece)
-    check(board[P(0, 1)] == piece)
-    check(board[P(0, 2)] == piece)
-    check(board[P(0, 3)] == piece)
-    check(board[P(0, 4)] == piece)
+  branch {
+    branch I in {0,1,2,3,4,5} {
+      branch J in {0,1} {
+        branch {
+          repeat K in {0,1,2,3,4} {// Vertical
+            check(board[P(I, J+K)] == piece)
+          }
+        } or {
+          repeat K in {0,1,2,3,4} {// Horizontal
+            check(board[P(J+K, I)] == piece)
+          }
+        }
+      }
+    }
   } or {
-    check(board[P(0, 1)] == piece)
-    check(board[P(0, 2)] == piece)
-    check(board[P(0, 3)] == piece)
-    check(board[P(0, 4)] == piece)
-    check(board[P(0, 5)] == piece)
-  } or {
-    check(board[P(1, 0)] == piece)
-    check(board[P(1, 1)] == piece)
-    check(board[P(1, 2)] == piece)
-    check(board[P(1, 3)] == piece)
-    check(board[P(1, 4)] == piece)
-  } or {
-    check(board[P(1, 1)] == piece)
-    check(board[P(1, 2)] == piece)
-    check(board[P(1, 3)] == piece)
-    check(board[P(1, 4)] == piece)
-    check(board[P(1, 5)] == piece)
-  } or {
-    check(board[P(2, 0)] == piece)
-    check(board[P(2, 1)] == piece)
-    check(board[P(2, 2)] == piece)
-    check(board[P(2, 3)] == piece)
-    check(board[P(2, 4)] == piece)
-  } or {
-    check(board[P(2, 1)] == piece)
-    check(board[P(2, 2)] == piece)
-    check(board[P(2, 3)] == piece)
-    check(board[P(2, 4)] == piece)
-    check(board[P(2, 5)] == piece)
-  } or {
-    check(board[P(3, 0)] == piece)
-    check(board[P(3, 1)] == piece)
-    check(board[P(3, 2)] == piece)
-    check(board[P(3, 3)] == piece)
-    check(board[P(3, 4)] == piece)
-  } or {
-    check(board[P(3, 1)] == piece)
-    check(board[P(3, 2)] == piece)
-    check(board[P(3, 3)] == piece)
-    check(board[P(3, 4)] == piece)
-    check(board[P(3, 5)] == piece)
-  } or {
-    check(board[P(4, 0)] == piece)
-    check(board[P(4, 1)] == piece)
-    check(board[P(4, 2)] == piece)
-    check(board[P(4, 3)] == piece)
-    check(board[P(4, 4)] == piece)
-  } or {
-    check(board[P(4, 1)] == piece)
-    check(board[P(4, 2)] == piece)
-    check(board[P(4, 3)] == piece)
-    check(board[P(4, 4)] == piece)
-    check(board[P(4, 5)] == piece)
-  } or {
-    check(board[P(5, 0)] == piece)
-    check(board[P(5, 1)] == piece)
-    check(board[P(5, 2)] == piece)
-    check(board[P(5, 3)] == piece)
-    check(board[P(5, 4)] == piece)
-  } or {
-    check(board[P(5, 1)] == piece)
-    check(board[P(5, 2)] == piece)
-    check(board[P(5, 3)] == piece)
-    check(board[P(5, 4)] == piece)
-    check(board[P(5, 5)] == piece)
-  } or {
-    check(board[P(0, 0)] == piece)
-    check(board[P(1, 0)] == piece)
-    check(board[P(2, 0)] == piece)
-    check(board[P(3, 0)] == piece)
-    check(board[P(4, 0)] == piece)
-  } or {
-    check(board[P(1, 0)] == piece)
-    check(board[P(2, 0)] == piece)
-    check(board[P(3, 0)] == piece)
-    check(board[P(4, 0)] == piece)
-    check(board[P(5, 0)] == piece)
-  } or {
-    check(board[P(0, 1)] == piece)
-    check(board[P(1, 1)] == piece)
-    check(board[P(2, 1)] == piece)
-    check(board[P(3, 1)] == piece)
-    check(board[P(4, 1)] == piece)
-  } or {
-    check(board[P(1, 1)] == piece)
-    check(board[P(2, 1)] == piece)
-    check(board[P(3, 1)] == piece)
-    check(board[P(4, 1)] == piece)
-    check(board[P(5, 1)] == piece)
-  } or {
-    check(board[P(0, 2)] == piece)
-    check(board[P(1, 2)] == piece)
-    check(board[P(2, 2)] == piece)
-    check(board[P(3, 2)] == piece)
-    check(board[P(4, 2)] == piece)
-  } or {
-    check(board[P(1, 2)] == piece)
-    check(board[P(2, 2)] == piece)
-    check(board[P(3, 2)] == piece)
-    check(board[P(4, 2)] == piece)
-    check(board[P(5, 2)] == piece)
-  } or {
-    check(board[P(0, 3)] == piece)
-    check(board[P(1, 3)] == piece)
-    check(board[P(2, 3)] == piece)
-    check(board[P(3, 3)] == piece)
-    check(board[P(4, 3)] == piece)
-  } or {
-    check(board[P(1, 3)] == piece)
-    check(board[P(2, 3)] == piece)
-    check(board[P(3, 3)] == piece)
-    check(board[P(4, 3)] == piece)
-    check(board[P(5, 3)] == piece)
-  } or {
-    check(board[P(0, 4)] == piece)
-    check(board[P(1, 4)] == piece)
-    check(board[P(2, 4)] == piece)
-    check(board[P(3, 4)] == piece)
-    check(board[P(4, 4)] == piece)
-  } or {
-    check(board[P(1, 4)] == piece)
-    check(board[P(2, 4)] == piece)
-    check(board[P(3, 4)] == piece)
-    check(board[P(4, 4)] == piece)
-    check(board[P(5, 4)] == piece)
-  } or {
-    check(board[P(0, 5)] == piece)
-    check(board[P(1, 5)] == piece)
-    check(board[P(2, 5)] == piece)
-    check(board[P(3, 5)] == piece)
-    check(board[P(4, 5)] == piece)
-  } or {
-    check(board[P(1, 5)] == piece)
-    check(board[P(2, 5)] == piece)
-    check(board[P(3, 5)] == piece)
-    check(board[P(4, 5)] == piece)
-    check(board[P(5, 5)] == piece)
-  } or {
-    check(board[P(0, 0)] == piece)
-    check(board[P(1, 1)] == piece)
-    check(board[P(2, 2)] == piece)
-    check(board[P(3, 3)] == piece)
-    check(board[P(4, 4)] == piece)
-  } or {
-    check(board[P(1, 1)] == piece)
-    check(board[P(2, 2)] == piece)
-    check(board[P(3, 3)] == piece)
-    check(board[P(4, 4)] == piece)
-    check(board[P(5, 5)] == piece)
-  } or {
-    check(board[P(0, 1)] == piece)
-    check(board[P(1, 2)] == piece)
-    check(board[P(2, 3)] == piece)
-    check(board[P(3, 4)] == piece)
-    check(board[P(4, 5)] == piece)
-  } or {
-    check(board[P(1, 0)] == piece)
-    check(board[P(2, 1)] == piece)
-    check(board[P(3, 2)] == piece)
-    check(board[P(4, 3)] == piece)
-    check(board[P(5, 4)] == piece)
-  } or {
-    check(board[P(0, 5)] == piece)
-    check(board[P(1, 4)] == piece)
-    check(board[P(2, 3)] == piece)
-    check(board[P(3, 2)] == piece)
-    check(board[P(4, 1)] == piece)
-  } or {
-    check(board[P(1, 4)] == piece)
-    check(board[P(2, 3)] == piece)
-    check(board[P(3, 2)] == piece)
-    check(board[P(4, 1)] == piece)
-    check(board[P(5, 0)] == piece)
-  } or {
-    check(board[P(0, 4)] == piece)
-    check(board[P(1, 3)] == piece)
-    check(board[P(2, 2)] == piece)
-    check(board[P(3, 1)] == piece)
-    check(board[P(4, 0)] == piece)
-  } or {
-    check(board[P(1, 5)] == piece)
-    check(board[P(2, 4)] == piece)
-    check(board[P(3, 3)] == piece)
-    check(board[P(4, 2)] == piece)
-    check(board[P(5, 1)] == piece)
+    branch I in {0,1} {
+      branch J in {0,1} {
+        branch {
+          repeat K in {0,1,2,3,4} {// Right-down diagonal
+            check(board[P(I+K, J+K)] == piece)
+          }
+        } or {
+          repeat K in {0,1,2,3,4} {// Left-down diagonal
+            check(board[P(I+4-K, J+K)] == piece)
+         }
+        }
+      }
+    }
   }
 }
 
-// first part of the turn (adding piece to the board)
+// First part of the turn (adding piece to the board)
 graph primary_turn(me: Player) {
-  // generate all possible places to put a piece
+  // Generate all possible places to put a piece
   player = me
   pos = Position(*)
   check(board[pos] == empty)
   board[pos] = me
   $$ pos
 
-  // player = keeper // uncomment this for faster computations (~8x), but the
-  // keeper breaks turns so every statistic (except winratio) is less desirable
+  // player = keeper // For split variant
 
-  // check for a win (in this case only the player adding a piece can win)
+  // Check for a win (in this case only the player adding a piece can win)
   if reachable(win(me)) {
     player = keeper
     goals[me] = 100
-    goals[op(me)] = 0
+    goals[opp(me)] = 0
     end()
   }
 }
 
-// second part of the turn (performing rotation)
+// Second part of the turn (performing rotation)
 graph secondary_turn(me: Player) {
-  // generate all possible rotations
+  // Generate all possible rotations
   branch {
     helper = board[P(0, 0)]
     board[P(0, 0)] = board[P(0, 2)]
@@ -349,7 +180,8 @@ graph secondary_turn(me: Player) {
   }
 
   player = keeper
-  // check for a win (in this case both players can win)
+  
+  // Check for a win (in this case both players can win)
   if reachable(win(x)) {
     if not(reachable(win(o))){
       goals[x] = 100
@@ -363,14 +195,12 @@ graph secondary_turn(me: Player) {
     end()
   }
 
-  // if there are no empty tiles, last rotation happened and no one won,
-  // then the game ends in a draw
+  // If there are no empty tiles, last rotation happened and no one won, then the game ends in a draw
   if not(reachable(findNonempty())) {
     end()
   }
 }
 
-// game loop
 graph rules() {
   loop {
     primary_turn(x)
