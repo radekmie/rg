@@ -2,8 +2,9 @@ import { Language } from '../../types';
 
 // prettier-ignore
 const games = [
-  ['Alquerque', require('bundle-text:../../../../games/rbg/alquerque.hrg'), Language.rbg],
+  ['Alquerque', require('bundle-text:../../../../games/hrg/alquerque.hrg'), Language.rbg],
   ['Alquerque', require('bundle-text:../../../../games/rbg/alquerque.rbg'), Language.rbg],
+  ['Alquerque (split)', require('bundle-text:../../../../games/rbg/alquerque_split.rbg'), Language.rbg],
   ['Amazons', require('bundle-text:../../../../games/hrg/amazons.hrg'), Language.hrg],
   ['Amazons', require('bundle-text:../../../../games/rbg/amazons.rbg'), Language.rbg],
   ['Amazons (split 2)', require('bundle-text:../../../../games/hrg/amazons_split2.hrg'), Language.hrg],
