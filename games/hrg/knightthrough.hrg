@@ -100,18 +100,9 @@ graph move(me: Player) {
   check(board[pos] == piece[me])
   $$ pos
   board[pos] = empty
-  branch {
-    pos = dirFL[me][pos]
-    $_L
-  } or {
-    pos = dirFLL[me][pos]
-    $_LL
-  } or {
-    pos = dirFR[me][pos]
-    $_R
-  } or {
-    pos = dirFRR[me][pos]
-    $_RR
+  branch dir in {dirFL,dirFLL,dirFR,dirFRR} {
+    pos = dir[me][pos]
+    $_dir
   }
   check(pos != null && board[pos] != piece[me])
   $$ pos
@@ -121,7 +112,7 @@ graph move(me: Player) {
 
 graph turn() {
   move(me)
-  if dirF(me)(pos) == null || not(reachable(existsOppPiece())) {
+  if dirF[me][pos] == null || not(reachable(existsOppPiece())) {
     goals[me] = 100
     end()
   }

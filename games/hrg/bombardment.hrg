@@ -39,10 +39,10 @@ down(null) = null
 down(V(_, 7)) = null
 down(V(X, Y)) = V(X, Y + 1)
 
-// helps to determin in which direction should we head to 
-direction: Player -> PositionOrNull -> PositionOrNull
-direction(white) = up
-direction(_) = down
+// helps to determin in which forward should we head to 
+forward: Player -> PositionOrNull -> PositionOrNull
+forward(white) = up
+forward(_) = down
 
 // diagonal moves
 upLeft: PositionOrNull -> PositionOrNull 
@@ -136,15 +136,9 @@ graph move() {
 
   board[pos] = empty 
   branch {
-    branch {
-      pos = direction[me][pos]
-      $_F
-    } or {
-      pos = forwardLeft[me][pos]
-      $_L
-    } or {
-      pos = forwardRight[me][pos]
-      $_R
+    branch dir in {forward,forwardLeft,forwardRight} {
+      pos = dir[me][pos]
+      $_dir
     }
     check(board[pos] == empty)
     $$ pos
@@ -172,7 +166,7 @@ graph existsOpponentPiece(me: Player) {
 
 graph turn() {
   move()
-  if direction[me][pos] == null || not(reachable(existsOpponentPiece(me))) {
+  if forward[me][pos] == null || not(reachable(existsOpponentPiece(me))) {
     goals[me] = 100
     end()
   }

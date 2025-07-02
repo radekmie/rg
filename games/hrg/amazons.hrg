@@ -32,17 +32,6 @@ downRight : PositionOrNull -> PositionOrNull
 downRight(V(X, Y)) = down(right(V(X, Y)))
 downRight(_) = null
 
-domain DirIndex = D(X) where X in 0..7
-dirs : DirIndex -> PositionOrNull -> PositionOrNull
-dirs(D(0)) = up
-dirs(D(1)) = down
-dirs(D(2)) = left
-dirs(D(3)) = right
-dirs(D(4)) = upLeft
-dirs(D(5)) = upRight
-dirs(D(6)) = downLeft
-dirs(D(7)) = downRight
-
 piece : Player -> Piece
 piece(white) = whiteQueen
 piece(_) = blackQueen
@@ -64,9 +53,9 @@ me : Player = white
 pos : PositionOrNull
 
 graph queenShift() {
-  branch dir in DirIndex {
+  branch dir in {up,down,left,right,upLeft,upRight,downLeft,downRight} {
     repeat 9 {
-      pos = dirs[dir][pos]
+      pos = dir[pos]
       check(board[pos] == empty)
       $_ dir
       branch {return()} or {}
@@ -77,8 +66,8 @@ graph queenShift() {
 graph existsMoveableQueen() {
   pos = Position(*)
   check(board[pos] == piece(me))
-  branch dir in DirIndex {
-    check(board[dirs[dir][pos]] == empty)
+  branch dir in {up,down,left,right,upLeft,upRight,downLeft,downRight} {
+    check(board[dir[pos]] == empty)
   }
 }
 

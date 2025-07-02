@@ -64,9 +64,9 @@ me : Player = white
 pos : PositionOrNull
 
 graph queenShift() {
-  branch dir in DirIndex {
+  branch dir in {up,down,left,right,upLeft,upRight,downLeft,downRight} {
     repeat 9 {
-      pos = dirs[dir][pos]
+      pos = dir[pos]
       check(board[pos] == empty)
       $_ dir
       branch {return()} or {}
@@ -77,8 +77,8 @@ graph queenShift() {
 graph existsMoveableQueen() {
   pos = Position(*)
   check(board[pos] == piece(me))
-  branch dir in DirIndex {
-    check(board[dirs[dir][pos]] == empty)
+  branch dir in {up,down,left,right,upLeft,upRight,downLeft,downRight} {
+    check(board[dir[pos]] == empty)
   }
 }
 
