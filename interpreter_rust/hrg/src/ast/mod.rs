@@ -150,11 +150,15 @@ impl<Id: Clone + PartialEq> Statement<Id> {
             }
             Self::BranchVar {
                 identifier, body, ..
+            }
+            | Self::RepeatVar {
+                identifier, body, ..
             } if identifier != var => {
                 for statement in body {
                     statement.substitute_var(var, value)?;
                 }
             }
+            Self::BranchVar { .. } | Self::RepeatVar { .. } => {}
             Self::Call { identifier, .. } if identifier == var => {
                 return Err(Error::CannotSubstitute {
                     identifier: var.clone(),
@@ -194,19 +198,20 @@ impl<Id: Clone + PartialEq> Statement<Id> {
             Self::Tag { symbol, .. } if symbol == var => {
                 *symbol = value.clone();
             }
+            Self::Tag { .. } => {}
             Self::TagVariable { identifier } if identifier == var => {
                 return Err(Error::CannotSubstitute {
                     identifier: var.clone(),
                     context: "tag variable",
                 })
             }
+            Self::TagVariable { .. } => {}
             Self::While { expression, body } => {
                 Arc::make_mut(expression).substitute_var(var, value)?;
                 for statement in body {
                     statement.substitute_var(var, value)?;
                 }
             }
-            _ => {}
         }
 
         Ok(())
