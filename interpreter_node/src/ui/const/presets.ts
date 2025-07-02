@@ -2,6 +2,7 @@ import { Language } from '../../types';
 
 // prettier-ignore
 const games = [
+  ['Alquerque', require('bundle-text:../../../../games/rbg/alquerque.hrg'), Language.rbg],
   ['Alquerque', require('bundle-text:../../../../games/rbg/alquerque.rbg'), Language.rbg],
   ['Amazons', require('bundle-text:../../../../games/hrg/amazons.hrg'), Language.hrg],
   ['Amazons', require('bundle-text:../../../../games/rbg/amazons.rbg'), Language.rbg],
@@ -27,6 +28,7 @@ const games = [
   ['Connect Four', require('bundle-text:../../../../games/rbg/connect4.rbg'), Language.rbg],
   ['Connect 6', require('bundle-text:../../../../games/rbg/connect6.rbg'), Language.rbg],
   ['Connect 6 (split)', require('bundle-text:../../../../games/rbg/connect6_split.rbg'), Language.rbg],
+  ['Dash Guti', require('bundle-text:../../../../games/rbg/dashGuti.rbg'), Language.rbg],
   ['Dice Throw (compare)', require('bundle-text:../../../../games/hrg/diceThrowCompare.hrg'), Language.hrg],
   ['Dice Throw (guess)', require('bundle-text:../../../../games/hrg/diceThrowGuess.hrg'), Language.hrg],
   ['Dots and Boxes', require('bundle-text:../../../../games/hrg/dotsAndBoxes.hrg'), Language.hrg],
@@ -34,6 +36,7 @@ const games = [
   ['English Draughts', require('bundle-text:../../../../games/rbg/englishDraughts.rbg'), Language.rbg],
   ['Fox and Geese', require('bundle-text:../../../../games/hrg/foxAndGeese.hrg'), Language.hrg],
   ['Fox and Hounds', require('bundle-text:../../../../games/rbg/foxAndHounds.rbg'), Language.rbg],
+  ['Gol Skuish', require('bundle-text:../../../../games/rbg/golSkuish.rbg'), Language.rbg],
   ['Gomoku (standard)', require('bundle-text:../../../../games/hrg/gomoku_standard.hrg'), Language.hrg],
   ['Gomoku (standard)', require('bundle-text:../../../../games/rbg/gomoku_standard.rbg'), Language.rbg],
   ['Hex', require('bundle-text:../../../../games/kif/hex.kif'), Language.gdl],
@@ -43,6 +46,7 @@ const games = [
   ['Knightthrough', require('bundle-text:../../../../games/kif/knightthrough.kif'), Language.gdl],
   ['Knightthrough', require('bundle-text:../../../../games/rbg/knightthrough.rbg'), Language.rbg],
   ['Knightthrough (split)', require('bundle-text:../../../../games/rbg/knightthrough_split.rbg'), Language.rbg],
+  ['Lau Kata Kati', require('bundle-text:../../../../games/rbg/lauKataKati.rbg'), Language.rbg],
   ['Minimal', require('bundle-text:../../../../games/rg/minimal.rg'), Language.rg],
   ['Monty Hall', require('bundle-text:../../../../games/kif/montyHall.kif'), Language.gdl],
   ['Oware', require('bundle-text:../../../../games/hrg/oware.hrg'), Language.hrg],
