@@ -508,6 +508,19 @@ impl<Id> Expression<Id> {
         }
     }
 
+    /// Returns the most left identifier in the access chain and a vector of accessors.
+    pub fn access_identifier_with_accessors(&self) -> (&Id, Vec<&Arc<Self>>) {
+        match self {
+            Self::Access { lhs, rhs, .. } => {
+                let (identifier, mut indexes) = lhs.access_identifier_with_accessors();
+                indexes.push(rhs);
+                (identifier, indexes)
+            }
+            Self::Cast { rhs, .. } => rhs.access_identifier_with_accessors(),
+            Self::Reference { identifier } => (identifier, Vec::new()),
+        }
+    }
+
     pub fn as_reference(&self) -> Option<&Id> {
         match self {
             Self::Reference { identifier } => Some(identifier),
@@ -1696,6 +1709,24 @@ impl<Id: Clone + PartialEq> Type<Id> {
         }
     }
 
+    fn resolve_recursive(&mut self, game: &Game<Id>) {
+        match self {
+            Type::Arrow { lhs, rhs } => {
+                Arc::make_mut(lhs).resolve_recursive(game);
+                Arc::make_mut(rhs).resolve_recursive(game);
+            }
+            Type::Set { .. } => {}
+            Type::TypeReference { identifier } => {
+                if let Some(typedef) = game.resolve_typedef(identifier) {
+                    if !typedef.type_.is_set() {
+                        *self = typedef.type_.as_ref().clone();
+                        self.resolve_recursive(game);
+                    }
+                }
+            }
+        }
+    }
+
     pub fn values(&self, game: &Game<Id>) -> Result<Vec<Id>, Error<Id>> {
         match self {
             Self::Arrow { .. } => todo!(),
@@ -1811,6 +1842,24 @@ impl<Id: Clone> Value<Id> {
         match self {
             Self::Element { identifier } => Some(identifier),
             Self::Map { .. } => None,
+        }
+    }
+}
+
+impl<Id: Ord + Clone> Value<Id> {
+    pub fn resolve_recursive(&mut self, game: &Game<Id>) {
+        match self {
+            Self::Element { identifier } => {
+                if let Some(constant) = game.resolve_constant(identifier) {
+                    *self = constant.value.as_ref().clone();
+                    self.resolve_recursive(game);
+                }
+            }
+            Self::Map { entries, .. } => {
+                for entry in entries {
+                    Arc::make_mut(&mut entry.value).resolve_recursive(game);
+                }
+            }
         }
     }
 }
