@@ -206,7 +206,9 @@ function PlayBlock({
             }
             options={[
               { disabled: true, label: 'Move', value: '(default)' },
-              ...(initialState.value?.moves.sort(localeCompare) ?? []),
+              ...(initialState.value?.moves.sort(localeCompare) ?? []).map(
+                value => (value === '' ? { label: '(empty)', value } : value),
+              ),
             ]}
             value="(default)"
           />
