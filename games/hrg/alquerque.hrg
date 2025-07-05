@@ -9,6 +9,7 @@ domain Bool = 0 | 1
 
 domain Count = I(X) where X in 0..100
 domain CountOrNan = nan | Count
+domain PieceCount = I(X) where X in 0..12
 
 domain Position = V(X,Y) where X in 0..4, Y in 0..4
 domain PositionOrNull = null | Position
@@ -76,7 +77,7 @@ opponent(black) = white
 increment : Count -> CountOrNan
 increment(I(X)) = if X < 100 then I(X+1) else nan
 
-less : Count -> Count -> Bool
+less : PieceCount -> PieceCount -> Bool
 less(I(X), I(Y)) = if X < Y then 1 else 0
 
 board : PositionOrNull -> Piece = {
@@ -91,7 +92,7 @@ board : PositionOrNull -> Piece = {
 me : Player = white
 pos : PositionOrNull
 stagnation : Count = I(0)
-pawnCount: Player -> Count = {:I(0)}
+pawnCount: Player -> PieceCount = {:I(0)}
 
 graph captureFromPosPossible() {
   branch dir in DirIndex {
@@ -154,7 +155,7 @@ graph capturingMove() {
 }
 
 graph checkEnd() {
-  if less(stagnation, I(100)) == 0 {
+  if stagnation == I(100) {
     pos = V(0,0)
     loop {
       if pos == null {break()}
