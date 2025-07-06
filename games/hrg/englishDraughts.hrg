@@ -64,9 +64,6 @@ opponent(black) = white
 increment : Stagnation -> StagnationOrNan
 increment(S(X)) = if X < 20 then S(X + 1) else nan
 
-equal : Stagnation -> Stagnation -> Bool
-equal(S(X), S(Y)) = if X < Y then 0 else 1
-
 board : PositionOrNull -> Piece = {
   V(X, Y) = 
     if (X + Y) % 2 == 0 && Y < 3 then whitePawn
@@ -226,13 +223,11 @@ graph moveKingCapture() {
 
 graph move() {
   if reachable(anyCapturePossible()) {
-    if equal[stagnation][S(20)] == 1 {
+    if stagnation == S(20) {
       end()
     }
     player = me
     pos = Position(*)
-    //check(playerOf[board[pos]] == me)
-    //$$ pos
     branch {
       movePawnCapture()
       player = keeper
@@ -245,13 +240,11 @@ graph move() {
     stagnation = S(0)
   } else {
     if reachable(anyNormalMovePossible()) {
-      if equal[stagnation][S(20)] == 1 {
+      if stagnation == S(20) {
         end()
       }
       player = me
       pos = Position(*)
-      //check(playerOf[board[pos]] == me)
-      //$$ pos
       branch {
         movePawnNormal()
         player = keeper
