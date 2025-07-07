@@ -277,10 +277,8 @@ impl Iterator for StateNextDepth<'_> {
                     }
                 }
             } else {
-                let skip = prev.is_keeper();
+                let switch = if prev.is_keeper() { 0 } else { 1 };
                 for state in state.next_states(game, true) {
-                    let next = &state.player;
-                    let switch = if next != prev && !skip { 1 } else { 0 };
                     queue.push((state, depth - switch));
                 }
             }
