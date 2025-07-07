@@ -13,19 +13,26 @@ impl Game<Id> {
             ..Self::default()
         };
 
-        for x in &mut self.constants {
-            hoist(&mut game, &mut x.value, &x.type_, true)?;
+        for (index, x) in self.constants.iter_mut().enumerate() {
+            hoist(&mut game, &mut x.value, &x.type_, &mut Some(index), true)?;
         }
 
         for x in &mut self.variables {
-            hoist(&mut game, &mut x.default_value, &x.type_, false)?;
+            hoist(&mut game, &mut x.default_value, &x.type_, &mut None, false)?;
         }
 
         // `self.constants` is now mutated and uses the hoisted constants. Here
         // we only need to copy the new ones. And as constants can only use the
-        // previously defined ones, we have to prepend them.
-        self.constants
-            .splice(0..0, game.constants.drain(self.constants.len()..));
+        // previously defined ones, we have to insert them at proper positions.
+        for (index, constant) in game.constants.into_iter().enumerate() {
+            if self
+                .constants
+                .get(index)
+                .is_none_or(|x| x.identifier != constant.identifier)
+            {
+                self.constants.insert(index, constant);
+            }
+        }
 
         Ok(())
     }
@@ -35,12 +42,13 @@ fn hoist(
     game: &mut Game<Id>,
     value: &mut Arc<Value<Id>>,
     type_: &Arc<Type<Id>>,
+    index: &mut Option<usize>,
     is_toplevel_constant: bool,
 ) -> Result<(), Error<Id>> {
     if let Value::Map { entries, .. } = Arc::make_mut(value) {
         if let Type::Arrow { rhs, .. } = type_.resolve(game)?.clone() {
             for ValueEntry { value, .. } in entries {
-                hoist(game, value, &rhs, false)?;
+                hoist(game, value, &rhs, index, false)?;
             }
 
             // If it's not a top-level constant, hoist it.
@@ -59,12 +67,25 @@ fn hoist(
                             .map(|x| Id::from(format!("Hoisted_{x}")))
                             .find(|x| game.constants.iter().all(|y| y.identifier != *x))
                             .unwrap();
-                        game.constants.push(Constant {
-                            span: Span::none(),
-                            identifier: identifier.clone(),
-                            type_: type_.clone(),
-                            value: value.clone(),
-                        });
+
+                        // Insert it at `index` but advance the next ones.
+                        let position = match index {
+                            None => game.constants.len(),
+                            Some(index) => {
+                                *index += 1;
+                                *index - 1
+                            }
+                        };
+
+                        game.constants.insert(
+                            position,
+                            Constant {
+                                span: Span::none(),
+                                identifier: identifier.clone(),
+                                type_: type_.clone(),
+                                value: value.clone(),
+                            },
+                        );
                         identifier
                     });
 
@@ -102,8 +123,8 @@ mod test {
         const X: A -> Bool = { :0 };
         const Y: Bool -> Bool -> Bool = { :{ :0 } };",
         "type A = { a, b, c };
-        const Hoisted_1: Bool -> Bool = { :0 };
         const X: A -> Bool = { :0 };
+        const Hoisted_1: Bool -> Bool = { :0 };
         const Y: Bool -> Bool -> Bool = { :Hoisted_1 };"
     );
 
@@ -112,8 +133,8 @@ mod test {
         name_collision,
         "const Hoisted_1: Bool -> Bool = { :1 };
         const Y: Bool -> Bool -> Bool = { :{ :0 } };",
-        "const Hoisted_2: Bool -> Bool = { :0 };
-        const Hoisted_1: Bool -> Bool = { :1 };
+        "const Hoisted_1: Bool -> Bool = { :1 };
+        const Hoisted_2: Bool -> Bool = { :0 };
         const Y: Bool -> Bool -> Bool = { :Hoisted_2 };"
     );
 
@@ -159,5 +180,14 @@ mod test {
         "const Hoisted_1: Bool -> Bool = { :0 };
         const Hoisted_2: Bool -> Bool -> Bool = { :Hoisted_1 };
         var X: Bool -> Bool -> Bool = Hoisted_2;"
+    );
+
+    test_transform!(
+        normalize_constants,
+        dependent,
+        "const X: Bool = 0; const Y: Bool -> Bool -> Bool = { :{ :X } };",
+        "const X: Bool = 0;
+        const Hoisted_1: Bool -> Bool = { :X };
+        const Y: Bool -> Bool -> Bool = { :Hoisted_1 };"
     );
 }
