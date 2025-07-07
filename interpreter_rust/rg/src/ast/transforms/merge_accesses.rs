@@ -133,7 +133,7 @@ impl Game<Id> {
     fn resolve_new_constant<'a>(
         &'a self,
         id: &Id,
-        new_constants: &'a Vec<NewConstant>,
+        new_constants: &'a [NewConstant],
     ) -> Option<&'a Constant<Id>> {
         self.resolve_constant(id).or_else(|| {
             new_constants
@@ -281,7 +281,7 @@ fn merge_maps_a_x_b_y(outer_map: &Value<Id>, inner_map: &Value<Id>) -> Option<Va
     })
 }
 
-/// Create a new map: keys are from inner_map, values are from outer_map
+/// Create a new map: keys are from `inner_map`, values are from `outer_map`.
 fn merge_values(outer_map: &Value<Id>, inner_map: &Value<Id>) -> Option<Value<Id>> {
     let Value::Map { entries, .. } = inner_map else {
         return None;

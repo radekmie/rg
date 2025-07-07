@@ -1711,12 +1711,12 @@ impl<Id: Clone + PartialEq> Type<Id> {
 
     fn resolve_recursive(&mut self, game: &Game<Id>) {
         match self {
-            Type::Arrow { lhs, rhs } => {
+            Self::Arrow { lhs, rhs } => {
                 Arc::make_mut(lhs).resolve_recursive(game);
                 Arc::make_mut(rhs).resolve_recursive(game);
             }
-            Type::Set { .. } => {}
-            Type::TypeReference { identifier } => {
+            Self::Set { .. } => {}
+            Self::TypeReference { identifier } => {
                 if let Some(typedef) = game.resolve_typedef(identifier) {
                     if !typedef.type_.is_set() {
                         *self = typedef.type_.as_ref().clone();

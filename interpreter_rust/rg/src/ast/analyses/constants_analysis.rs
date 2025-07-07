@@ -170,7 +170,9 @@ mod test {
     use std::collections::BTreeMap;
     use std::sync::Arc;
 
-    fn format_analysis(analysis: BTreeMap<Node<Arc<str>>, <ConstantsAnalysis as Analysis>::Domain>) -> String {
+    fn format_analysis(
+        analysis: BTreeMap<Node<Arc<str>>, <ConstantsAnalysis as Analysis>::Domain>,
+    ) -> String {
         let mut result = String::new();
         result.push('\n');
         for (node, constants) in analysis {
@@ -190,7 +192,7 @@ mod test {
                     $source,
                     $expect,
                     Box::new(|_| ConstantsAnalysis),
-                    Box::new(format_analysis)
+                    Box::new(format_analysis),
                 );
             }
         };
