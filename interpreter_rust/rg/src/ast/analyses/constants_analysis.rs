@@ -165,21 +165,12 @@ fn dereference_constant<'a>(value: &'a Arc<Value<Id>>, ctx: &'a Context) -> &'a 
 
 #[cfg(test)]
 mod test {
-    use crate::ast::{Game, Node, Value};
-    use crate::parsing::parser::parse_with_errors;
-    use map_id::MapId;
+    use super::{Analysis, ConstantsAnalysis};
+    use crate::ast::{Game, Node};
     use std::collections::BTreeMap;
     use std::sync::Arc;
 
-    type Domain = BTreeMap<Arc<str>, Arc<Value<Arc<str>>>>;
-
-    fn parse(input: &str) -> Game<Arc<str>> {
-        let (game, errors) = parse_with_errors(input);
-        assert!(errors.is_empty(), "Parse errors: {errors:?}");
-        game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
-    }
-
-    fn format_analysis(analysis: BTreeMap<Node<Arc<str>>, Domain>) -> String {
+    fn format_analysis(analysis: BTreeMap<Node<Arc<str>>, <ConstantsAnalysis as Analysis>::Domain>) -> String {
         let mut result = String::new();
         result.push('\n');
         for (node, constants) in analysis {
@@ -195,14 +186,11 @@ mod test {
         ($name:ident, $source:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                let game = parse($source);
-                let analysis = game.analyse(super::ConstantsAnalysis);
-                let actual = format_analysis(analysis);
-                let actual = actual.trim();
-                let expect = $expect.trim();
-                assert!(
-                    actual == expect,
-                    "\n\n>>> Actual: <<<\n        {actual}\n>>> Expect: <<<\n        {expect}\n"
+                Game::test_analysis(
+                    $source,
+                    $expect,
+                    Box::new(|_| ConstantsAnalysis),
+                    Box::new(format_analysis)
                 );
             }
         };

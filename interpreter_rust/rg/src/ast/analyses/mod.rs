@@ -181,3 +181,17 @@ impl<'a, A: Analysis> Worker<'a, A> {
         changed
     }
 }
+
+#[cfg(test)]
+impl Game<Id> {
+    pub fn test_analysis<A: Analysis>(source: &str, expect: &str, analysis: Box<dyn FnOnce(&Self) -> A>, formatter: Box<dyn FnOnce(BTreeMap<Node<Id>, A::Domain>) -> String>) {
+        let game = Game::test_parse_or_fail(source);
+        let actual = formatter(game.analyse(analysis(&game)));
+        let actual = actual.trim();
+        let expect = expect.trim();
+        assert!(
+            actual == expect,
+            "\n\n>>> Actual: <<<\n        {actual}\n>>> Expect: <<<\n        {expect}\n"
+        );
+    }
+}
