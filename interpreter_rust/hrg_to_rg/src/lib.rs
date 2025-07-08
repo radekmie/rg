@@ -1148,7 +1148,12 @@ fn translate_automaton_statements(
                 context.connect(current_node, repeat_end.clone(), rg::Label::new_skip());
                 current_node = repeat_end;
             }
-            hrg::Statement::Tag { artificial, symbol } => {
+            hrg::Statement::Tag {
+                artificial,
+                symbols,
+            } => {
+                let symbol = Id::from(symbols.join("__"));
+
                 if *artificial {
                     context.rg.add_pragma(rg::Pragma::ArtificialTag {
                         span: Span::none(),
@@ -1157,13 +1162,7 @@ fn translate_automaton_statements(
                 }
 
                 let local_node = context.random_node(prefix);
-                context.connect(
-                    current_node,
-                    local_node.clone(),
-                    rg::Label::Tag {
-                        symbol: symbol.clone(),
-                    },
-                );
+                context.connect(current_node, local_node.clone(), rg::Label::Tag { symbol });
                 current_node = local_node;
             }
             hrg::Statement::TagVariable { identifier } => {
@@ -2302,15 +2301,23 @@ mod test {
                 $a
                 $_b
                 $$c
+                $(d)
+                $(e f g)
+                $_(h)
+                $_(i j k)
             }
         ",
         "
-            @artificialTag b;
+            @artificialTag b h i__j__k;
             begin, rules_begin: ;
             rules_begin, rules_1: $ a;
             rules_1, rules_2: $ b;
             rules_2, rules_3: $$ c;
-            rules_3, rules_end: ;
+            rules_3, rules_4: $ d;
+            rules_4, rules_5: $ e__f__g;
+            rules_5, rules_6: $ h;
+            rules_6, rules_7: $ i__j__k;
+            rules_7, rules_end: ;
             rules_end, end: ;
         "
     );

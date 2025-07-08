@@ -106,11 +106,13 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
                 add_from_statement(table, statement);
             }
         }
-        Statement::Tag { symbol, .. } => {
-            if !symbol.is_none() && !symbol.is_numeric() {
-                let occ = table.occ_from_id(symbol);
-                if occ.symbol.is_some() {
-                    table.occurrences.push(occ);
+        Statement::Tag { symbols, .. } => {
+            for symbol in symbols {
+                if !symbol.is_none() && !symbol.is_numeric() {
+                    let occ = table.occ_from_id(symbol);
+                    if occ.symbol.is_some() {
+                        table.occurrences.push(occ);
+                    }
                 }
             }
         }

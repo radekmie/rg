@@ -438,10 +438,19 @@ fn write_statement<Id: Display>(
             write_rbrace(f, indent)
         }
         Statement::Tag {
-            artificial: true,
-            symbol,
-        } => write!(f, "$_ {symbol}"),
-        Statement::Tag { symbol, .. } => write!(f, "$ {symbol}"),
+            artificial,
+            symbols,
+        } => {
+            write!(f, "${} ", if *artificial { "_" } else { "" })?;
+            match &symbols[..] {
+                [symbol] => write!(f, "{symbol}"),
+                symbols => {
+                    write!(f, "(")?;
+                    write_with_separator(f, symbols, " ")?;
+                    write!(f, ")")
+                }
+            }
+        }
         Statement::TagVariable { identifier } => write!(f, "$$ {identifier}"),
         Statement::While { expression, body } => {
             writeln!(f, "while {expression} {{")?;

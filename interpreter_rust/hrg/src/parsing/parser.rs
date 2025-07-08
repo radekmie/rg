@@ -148,10 +148,19 @@ fn while_(input: Input) -> Result<Statement<Identifier>> {
 
 fn tag_statement(input: Input) -> Result<Statement<Identifier>> {
     map(
-        preceded(char('$'), pair(opt(char('_')), identifier)),
-        |(artificial, symbol)| Statement::Tag {
+        preceded(
+            char('$'),
+            pair(
+                opt(char('_')),
+                alt((
+                    in_parens(many1(identifier)),
+                    map(identifier, |symbol| vec![symbol]),
+                )),
+            ),
+        ),
+        |(artificial, symbols)| Statement::Tag {
             artificial: artificial.is_some(),
-            symbol,
+            symbols,
         },
     )(input)
 }

@@ -52,7 +52,7 @@ pub enum Statement<Id> {
     },
     Tag {
         artificial: bool,
-        symbol: Id,
+        symbols: Vec<Id>,
     },
     TagVariable {
         identifier: Id,
@@ -195,10 +195,13 @@ impl<Id: Clone + PartialEq> Statement<Id> {
                     statement.substitute_var(var, value)?;
                 }
             }
-            Self::Tag { symbol, .. } if symbol == var => {
-                *symbol = value.clone();
+            Self::Tag { symbols, .. } => {
+                for symbol in symbols {
+                    if symbol == var {
+                        *symbol = value.clone();
+                    }
+                }
             }
-            Self::Tag { .. } => {}
             Self::TagVariable { identifier } if identifier == var => {
                 return Err(Error::CannotSubstitute {
                     identifier: var.clone(),
