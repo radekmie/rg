@@ -372,13 +372,27 @@ impl<Id: Display> Display for Value<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Element { identifier } => write!(f, "{identifier}"),
-            Self::Map { entries, .. } => {
+            // Single-line display of short and flat values.
+            Self::Map { entries, .. }
+                if entries.len() < 100
+                    || entries
+                        .first()
+                        .is_some_and(|entry| entry.value.is_element()) =>
+            {
                 write!(f, "{{ ")?;
                 for (index, entry) in entries.iter().enumerate() {
                     let separator = if index == 0 { "" } else { ", " };
                     write!(f, "{separator}{entry}")?;
                 }
                 write!(f, " }}")
+            }
+            Self::Map { entries, .. } => {
+                write!(f, "{{\n    ")?;
+                for (index, entry) in entries.iter().enumerate() {
+                    let separator = if index == 0 { "" } else { ",\n    " };
+                    write!(f, "{separator}{entry}")?;
+                }
+                write!(f, "\n}}")
             }
         }
     }

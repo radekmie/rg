@@ -1803,6 +1803,10 @@ pub enum Value<Id> {
 }
 
 impl<Id> Value<Id> {
+    pub fn is_element(&self) -> bool {
+        matches!(self, Self::Element { .. })
+    }
+
     pub fn is_map(&self) -> bool {
         matches!(self, Self::Map { .. })
     }
