@@ -292,11 +292,12 @@ fn add_from_variable_declaration(
     }
 }
 
-const BUILDIN_SYMBOLS: [(&str, Flag); 13] = [
+const BUILDIN_SYMBOLS: [(&str, Flag); 15] = [
     ("break", Flag::Function),
     ("check", Flag::Function),
     ("continue", Flag::Function),
     ("end", Flag::Function),
+    ("false", Flag::Function),
     ("goals", Flag::Variable),
     ("keeper", Flag::Variable),
     ("not", Flag::Function),
@@ -304,6 +305,7 @@ const BUILDIN_SYMBOLS: [(&str, Flag); 13] = [
     ("random", Flag::Variable),
     ("reachable", Flag::Function),
     ("return", Flag::Function),
+    ("true", Flag::Function),
     ("visible", Flag::Variable),
     ("PlayerOrSystem", Flag::Type),
 ];
