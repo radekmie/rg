@@ -2,6 +2,7 @@ mod constants_analysis;
 mod reachable_nodes;
 mod reaching_assignments;
 mod reaching_definitions;
+mod value_sets;
 
 use crate::ast::{Edge, Game, Label, Node};
 pub use constants_analysis::ConstantsAnalysis;
