@@ -1478,6 +1478,14 @@ pub enum Pragma<Id> {
         #[serde(rename = "edgeNames")]
         nodes: Vec<Node<Id>>,
     },
+    Iterator {
+        #[serde(skip)]
+        span: Span,
+        node_a: Node<Id>,
+        node_b: Node<Id>,
+        node_c: Node<Id>,
+        variable: Id,
+    },
     Repeat {
         #[serde(skip)]
         span: Span,
@@ -1540,6 +1548,12 @@ impl<Id> Pragma<Id> {
             | Self::TagIndex { nodes, .. }
             | Self::TagMaxIndex { nodes, .. }
             | Self::Unique { nodes, .. } => Box::new(nodes.iter()),
+            Self::Iterator {
+                node_a,
+                node_b,
+                node_c,
+                ..
+            } => Box::new([node_a, node_b, node_c].into_iter()),
             Self::SimpleApply { lhs, rhs, .. } | Self::SimpleApplyExhaustive { lhs, rhs, .. } => {
                 Box::new(Some(lhs).into_iter().chain(Some(rhs)))
             }
@@ -1568,6 +1582,18 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
             | Self::TagMaxIndex { nodes, .. }
             | Self::Unique { nodes, .. } => {
                 for node in nodes {
+                    if node == old_node {
+                        *node = new_node.clone();
+                    }
+                }
+            }
+            Self::Iterator {
+                node_a,
+                node_b,
+                node_c,
+                ..
+            } => {
+                for node in [node_a, node_b, node_c] {
                     if node == old_node {
                         *node = new_node.clone();
                     }

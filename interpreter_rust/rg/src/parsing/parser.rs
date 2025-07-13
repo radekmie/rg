@@ -347,6 +347,24 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
         ),
         map(
             tuple((
+                tag("iterator"),
+                preceded_whitespace(node),
+                preceded_whitespace(node),
+                preceded_whitespace(node),
+                preceded_whitespace(tag(":")),
+                preceded_whitespace(identifier),
+                preceded_whitespace(tag(";")),
+            )),
+            |(tag, node_a, node_b, node_c, _, variable, semicolon)| Pragma::Iterator {
+                span: Span::from((&tag, &semicolon)),
+                node_a,
+                node_b,
+                node_c,
+                variable,
+            },
+        ),
+        map(
+            tuple((
                 tag("repeat"),
                 cut(many1(preceded_whitespace(node))),
                 preceded_whitespace(tag(":")),

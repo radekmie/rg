@@ -268,6 +268,7 @@ fn analyze_rg_inner(
 
         // Pragmas.
         pass!(calculate_disjoints);
+        pass!(calculate_iterators);
         pass!(calculate_repeats_and_uniques);
         pass!(skip_artificial_tags);
         pass!(calculate_simple_apply);

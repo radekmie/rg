@@ -51,6 +51,7 @@ impl<Id> Positioned for Pragma<Id> {
             | Self::Disjoint { span, .. }
             | Self::DisjointExhaustive { span, .. }
             | Self::Integer { span, .. }
+            | Self::Iterator { span, .. }
             | Self::Repeat { span, .. }
             | Self::SimpleApply { span, .. }
             | Self::SimpleApplyExhaustive { span, .. }

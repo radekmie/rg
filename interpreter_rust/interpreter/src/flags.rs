@@ -241,6 +241,15 @@ pub struct Flags {
     )]
     pub calculate_disjoints: bool,
 
+    /// calculate missing @iterator pragmas automatically
+    #[arg(
+        long,
+        help_heading = "Pragmas",
+        conflicts_with = "enable_all_pragmas",
+        default_value_if("enable_all_pragmas", "true", Some("true"))
+    )]
+    pub calculate_iterators: bool,
+
     /// calculate missing @repeat and @unique pragmas automatically
     #[arg(
         long,
@@ -274,11 +283,15 @@ impl Flags {
         Self {
             add_explicit_casts: true,
             calculate_disjoints: true,
+            calculate_iterators: true,
             calculate_repeats_and_uniques: true,
             calculate_simple_apply: true,
             calculate_tag_indexes: true,
             compact_comparisons: true,
+            compact_reachability: true,
             compact_skip_edges: true,
+            enable_all_optimizations: true,
+            enable_all_pragmas: true,
             expand_assignment_any: true,
             expand_tag_variable: true,
             inline_assignment: true,
@@ -291,15 +304,17 @@ impl Flags {
             normalize_constants: true,
             normalize_types: true,
             propagate_constants: true,
+            prune_self_loops: true,
             prune_singleton_types: true,
             prune_unreachable_nodes: true,
             prune_unused_constants: true,
             prune_unused_variables: true,
             reorder_conditions: true,
+            skip_artificial_tags: true,
+            skip_redundant_tags: true,
             skip_self_assignments: true,
             skip_self_comparisons: true,
             skip_unused_tags: true,
-            ..Self::default()
         }
     }
 

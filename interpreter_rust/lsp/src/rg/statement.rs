@@ -66,6 +66,7 @@ impl Statement for Pragma<Identifier> {
             Self::Disjoint { .. } => "@disjoint",
             Self::DisjointExhaustive { .. } => "@disjointExhaustive",
             Self::Integer { .. } => "@integer",
+            Self::Iterator { .. } => "@iterator",
             Self::Repeat { .. } => "@repeat",
             Self::SimpleApply { .. } => "@simpleApply",
             Self::SimpleApplyExhaustive { .. } => "@simpleApplyExhaustive",

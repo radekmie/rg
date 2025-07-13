@@ -12,6 +12,7 @@ export type Settings = {
   flags: {
     addExplicitCasts: boolean;
     calculateDisjoints: boolean;
+    calculateIterators: boolean;
     calculateRepeatsAndUniques: boolean;
     calculateSimpleApply: boolean;
     calculateTagIndexes: boolean;
@@ -47,6 +48,7 @@ export type Settings = {
 export const noFlagsEnabled: Settings['flags'] = {
   addExplicitCasts: false,
   calculateDisjoints: false,
+  calculateIterators: false,
   calculateRepeatsAndUniques: false,
   calculateSimpleApply: false,
   calculateTagIndexes: false,
@@ -112,6 +114,7 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
     label: 'Pragmas',
     flags: [
       'calculateDisjoints',
+      'calculateIterators',
       'calculateRepeatsAndUniques',
       'calculateSimpleApply',
       'calculateTagIndexes',

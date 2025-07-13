@@ -243,6 +243,15 @@ impl<Id: Display> Display for Pragma<Id> {
                 write_with_separator(f, nodes, " ")?;
                 write!(f, ";")
             }
+            Self::Iterator {
+                node_a,
+                node_b,
+                node_c,
+                variable,
+                ..
+            } => {
+                write!(f, "@iterator {node_a} {node_b} {node_c} : {variable};")
+            }
             Self::Repeat {
                 nodes, identifiers, ..
             } => {
