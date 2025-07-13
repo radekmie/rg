@@ -1,4 +1,4 @@
-use crate::ast::analyses::{Analysis, ReachingDefinitions};
+use crate::ast::analyses::{Analysis, Definition, ReachingDefinitions};
 use crate::ast::{Edge, Error, Expression, Game, Label, Node};
 use std::collections::{BTreeMap, BTreeSet};
 use std::iter;
@@ -126,7 +126,7 @@ fn maybe_inline_assignment(
     reaching_definitions: &BTreeMap<Node<Id>, <ReachingDefinitions as Analysis>::Domain>,
     def_edge: &Edge<Id>,
     id: &Id,
-    defs_on_assignment: &BTreeMap<&Id, Option<&Arc<Edge<Id>>>>,
+    defs_on_assignment: &BTreeMap<&Id, Option<&Definition>>,
     vars_in_definition: &BTreeSet<&Id>,
 ) -> Option<BTreeSet<Arc<Edge<Id>>>> {
     let mut queue = vec![&def_edge.rhs];
@@ -174,29 +174,30 @@ fn used_definitions<'a>(
     defs: &'a <ReachingDefinitions as Analysis>::Domain,
     variables: &'a BTreeSet<&Id>,
     identifier: &'a Id,
-) -> BTreeMap<&'a Id, Option<&'a Arc<Edge<Id>>>> {
+) -> BTreeMap<&'a Id, Option<&'a Definition>> {
     variables
         .iter()
         .chain(iter::once(&identifier))
-        .map(|var| (*var, defs.get(*var).and_then(|def| def.as_all())))
+        .map(|var| (*var, defs.get(*var)))
         .collect()
 }
 
 fn can_replace_usage(
     to_replace: &Id,
     def_edge: &Edge<Id>,
-    defs_on_assignment: &BTreeMap<&Id, Option<&Arc<Edge<Id>>>>,
-    defs_on_usage: &BTreeMap<&Id, Option<&Arc<Edge<Id>>>>,
+    defs_on_assignment: &BTreeMap<&Id, Option<&Definition>>,
+    defs_on_usage: &BTreeMap<&Id, Option<&Definition>>,
 ) -> bool {
-    defs_on_usage
-        .get(to_replace)
-        .is_some_and(|def| def.is_some_and(|def| def.as_ref() == def_edge))
-        && defs_on_assignment.iter().all(|(var, on_def)| {
-            *var == to_replace
-                || defs_on_usage
+    defs_on_usage.get(to_replace).is_some_and(|def| {
+        def.is_some_and(|def| def.as_all().is_some_and(|d| d.as_ref() == def_edge))
+    }) && defs_on_assignment.iter().all(|(var, on_def)| {
+        *var == to_replace
+            // TODO: Should we allow Definition::Any here?
+            || (!on_def.is_some_and(|d| d.is_mixed())
+                && defs_on_usage
                     .get(var)
-                    .is_some_and(|on_use| on_def == on_use)
-        })
+                    .is_some_and(|on_use| on_def == on_use))
+    })
 }
 
 fn is_reassigned(label: &Label<Id>, id: &Id) -> bool {
@@ -580,5 +581,23 @@ mod test {
         rules_end, end: ;"
     );
 
-    // TODO: Add tests with forks
+    test_transform!(
+        inline_assignment,
+        mixed_on_def,
+        "type A = {1,2,3};
+        const tbr: A = 1;
+        var board: A -> A = {: 1};
+        var captured: A = 2;
+        begin, a: board[tbr] = 1;
+        begin, a1: board[tbr] = 1;
+        a, a2: ;
+        a1, a2: ;
+        a2, b: captured = board[tbr];
+        b, c: ;
+        b, c1: ;
+        c, d: board[1] = 1;
+        c1, d: board[1] = 1;
+        d, d1end: captured == 2;
+        d1end, end: board[2] == 3;"
+    );
 }

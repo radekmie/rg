@@ -23,6 +23,10 @@ impl Definition {
         }
     }
 
+    pub fn is_mixed(&self) -> bool {
+        matches!(self, Self::Mixed)
+    }
+
     fn merge(&mut self, other: Self) {
         match (&self, other) {
             (_, Self::Mixed) => {
