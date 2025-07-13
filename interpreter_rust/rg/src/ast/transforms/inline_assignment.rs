@@ -142,6 +142,12 @@ fn maybe_inline_assignment(
         };
 
         for edge in edges {
+            if let Label::TagVariable { identifier } = &edge.label {
+                if identifier == id {
+                    return None;
+                }
+            }
+
             let vars_in_label = edge.label.used_variables();
             if vars_in_label.contains(id) {
                 let defs_on_usage = reaching_definitions.get(lhs).unwrap();
@@ -192,7 +198,6 @@ fn can_replace_usage(
         def.is_some_and(|def| def.as_all().is_some_and(|d| d.as_ref() == def_edge))
     }) && defs_on_assignment.iter().all(|(var, on_def)| {
         *var == to_replace
-            // TODO: Should we allow Definition::Any here?
             || (!on_def.is_some_and(|d| d.is_mixed())
                 && defs_on_usage
                     .get(var)
@@ -599,5 +604,16 @@ mod test {
         c1, d: board[1] = 1;
         d, d1end: captured == 2;
         d1end, end: board[2] == 3;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        tag_variable_loop,
+        "type A = {1,2,3};
+        const up: A -> A = {:1};
+        var coord: A = 1;
+        begin, b: $$ coord;
+        b, b: coord = up[coord];
+        b, end: coord == 2;"
     );
 }
