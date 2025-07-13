@@ -176,7 +176,12 @@ pub struct Flags {
 
     /// reorders conditions in the automaton to optimize the execution.
     /// Can change the semantics of the game.
-    #[arg(long, help_heading = "Experimental optimizations")]
+    #[arg(
+        long,
+        help_heading = "Optimizations",
+        conflicts_with = "enable_all_optimizations",
+        default_value_if("enable_all_optimizations", "true", Some("true"))
+    )]
     pub reorder_conditions: bool,
 
     /// skip tag edges marked with `@artificialTag`
