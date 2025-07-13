@@ -129,7 +129,7 @@ export function Settings({
                 <Checkbox
                   checked={settings.flags[flag]}
                   key={flag}
-                  label={`--${flag}`}
+                  label={`--${flag.replace(/[A-Z]/g, x => `-${x.toLowerCase()}`)}`}
                   name={flag}
                   onChange={onFlag}
                 />
