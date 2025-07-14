@@ -294,6 +294,29 @@ mod test {
 
     test_transform!(
         calculate_repeats_and_uniques,
+        breakthrough_rbg_tag_variable,
+        "
+            @disjoint 19 : 17 17;
+            @translatedFromRbg;
+            begin, 4: player = white;
+            4, 7: coord = Coord(*);
+            7, 10: board[coord] == w;
+            10, 12: $$ coord;
+            12, 9: board[coord] = e;
+            9, 16: coord = direction_up[coord];
+            16, 17: board[coord] == e;
+            16, 19: coord = direction_left[coord];
+            16, 19: coord = direction_right[coord];
+            19, 17: board[coord] == b;
+            19, 17: board[coord] == e;
+            17, 27: $$ coord;
+            27, 26: plaer = keeper;
+        ",
+        adds "@repeat 17 19 : coord; @unique 10 12 16 26 27 4 7 9 begin;"
+    );
+
+    test_transform!(
+        calculate_repeats_and_uniques,
         repeat_test,
         include_str!("../../../../../games/rg/repeatTest.rg"),
         adds "@repeat selectDir4 : pos; @unique begin end setScore win;"

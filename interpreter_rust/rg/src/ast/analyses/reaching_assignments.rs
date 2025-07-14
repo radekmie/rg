@@ -155,7 +155,7 @@ impl Analysis for ReachingAssignments {
         edge: &Arc<Edge<Id>>,
         _ctx: &Self::Context,
     ) -> Self::Domain {
-        if edge.label.is_player_assignment() || edge.label.is_tag() {
+        if edge.label.is_player_assignment() || edge.label.is_tag() || edge.label.is_tag_variable() {
             input.clear();
         } else if let Label::Comparison {
             lhs,
@@ -196,7 +196,7 @@ impl Analysis for ReachingAssignments {
                     .and_modify(|a_reached| a_reached.add_source(&edge.lhs))
                     .or_insert_with(|| Assignment::new(&edge.lhs));
             }
-        } else if !edge.label.is_tag() {
+        } else if !edge.label.is_tag() && !edge.label.is_tag_variable() {
             input
                 .entry(None)
                 .or_insert_with(|| Assignment::new(&edge.lhs));
