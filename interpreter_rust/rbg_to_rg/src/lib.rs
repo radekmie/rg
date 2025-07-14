@@ -908,6 +908,122 @@ fn has_math_expression(expression: &rg::Expression<Id>) -> bool {
     }
 }
 
+/// As some games tend to operate on the `coord` in a way that blocks us from
+/// creating shift patterns (e.g., `ReachableMap`) for them, we want them to be
+/// as optimized as possible. Here the idea is to add an additional piece that
+/// will represent an out-of-bound position. This allows us to chain `coord`
+/// assignments as well as remove the `coord != null` checks.
+///
+/// However, some simple games are slower with this transformation applied. This
+/// is often the case of games performing exclusive piece checks, i.e., the ones
+/// that can be simplified using `--compact-comparisons`.
+fn remove_coord_null_check(context: &mut Context) {
+    fn is_ref(expression: &rg::Expression<Id>, id: &str) -> bool {
+        expression.is_reference_and(|identifier| identifier.as_ref() == id)
+    }
+
+    /// `coord = ?" || label == "coord = ?(*)`
+    fn is_coord_assignment(label: &rg::Label<Id>) -> bool {
+        matches!(label, rg::Label::Assignment { lhs, .. } | rg::Label::AssignmentAny { lhs, .. } if is_ref(lhs, "coord"))
+    }
+
+    /// `coord != null`
+    fn is_coord_null_check(label: &rg::Label<Id>) -> bool {
+        matches!(label, rg::Label::Comparison { lhs, rhs, negated: true } if is_ref(lhs, "coord") && is_ref(rhs, "null"))
+    }
+
+    /// `board[coord] == ?`
+    fn is_board_coord_check_or_coord_assignment(label: &rg::Label<Id>) -> bool {
+        matches!(label, rg::Label::Comparison { lhs, negated: false, .. } if
+            matches!(lhs.as_ref(), rg::Expression::Access { lhs, rhs, .. } if
+                is_ref(lhs, "board") && is_ref(rhs, "coord"))
+        )
+    }
+
+    let mut at_least_one_exclusive_check = false;
+    let next_edges = context.rg.next_edges();
+    let to_skip: Vec<_> = context
+        .rg
+        .edges
+        .iter()
+        .enumerate()
+        .filter_map(|(index, edge)| {
+            if is_coord_null_check(&edge.label) {
+                if let Some(edges) = next_edges.get(&edge.rhs) {
+                    let mut assignment = false;
+                    let mut checks = 0;
+                    let mut queue = edges.clone();
+                    while let Some(edge) = queue.pop_first() {
+                        if edge.label.is_skip() {
+                            queue.extend(next_edges.get(&edge.rhs).into_iter().flatten());
+                        } else if is_coord_assignment(&edge.label) {
+                            assignment = true;
+                        } else if is_board_coord_check_or_coord_assignment(&edge.label) {
+                            checks += 1;
+                        } else {
+                            // If it's some other label, we cannot safely remove
+                            // this check.
+                            return None;
+                        }
+                    }
+
+                    // Exclusive checks are the ones that can be simplified
+                    // using `--compact-comparisons`.
+                    at_least_one_exclusive_check |= checks == (context.rbg.pieces.len() - 1);
+
+                    // We cannot remove trailing `coord != null` checks, e.g.,
+                    // the ones in reachabilities.
+                    return (assignment || checks != 0).then_some(index);
+                }
+            }
+
+            None
+        })
+        .collect();
+
+    if at_least_one_exclusive_check {
+        return;
+    }
+
+    // Add `null` to `Piece` type.
+    for typedef in &mut context.rg.typedefs {
+        if typedef.identifier.as_ref() == "Piece" {
+            if let rg::Type::Set { identifiers, .. } = Arc::make_mut(&mut typedef.type_) {
+                identifiers.push(Id::from("null"));
+            }
+        }
+    }
+
+    // Switch from `Coord` to `CoordOrNull` for all `direction_*` consts.
+    for constant in &mut context.rg.constants {
+        if constant.identifier.as_ref().starts_with("direction_") {
+            if let rg::Type::Arrow { lhs, .. } = Arc::make_mut(&mut constant.type_) {
+                if let rg::Type::TypeReference { identifier } = Arc::make_mut(lhs) {
+                    *identifier = Id::from("CoordOrNull");
+                }
+            }
+        }
+    }
+
+    // Add `null: null` to the `board` variable.
+    for variable in &mut context.rg.variables {
+        if variable.identifier.as_ref() == "board" {
+            if let rg::Value::Map { entries, .. } = Arc::make_mut(&mut variable.default_value) {
+                entries.push(rg::ValueEntry {
+                    span: Span::none(),
+                    identifier: Some(Id::from("null")),
+                    value: Arc::from(rg::Value::new(Id::from("null"))),
+                });
+            }
+            break;
+        }
+    }
+
+    for index in to_skip {
+        Arc::make_mut(&mut context.rg.edges[index]).skip();
+    }
+}
+
 fn remove_keeper_move_tags(context: &mut Context) {
     let player = Id::from("player");
     let reaching_definitions = context.rg.analyse(rg::analyses::ReachingDefinitions);
@@ -1469,6 +1585,7 @@ fn translate_game(context: &mut Context) {
 
     remove_power_skip_edges(context);
     remove_keeper_move_tags(context);
+    remove_coord_null_check(context);
     terminate_on_zero_moves(context);
 }
 
@@ -1540,4 +1657,153 @@ fn translate_variable(context: &mut Context, variable: rbg::Variable<Id>) -> rg:
                 .collect(),
         ),
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::rbg_to_rg;
+    use map_id::MapId;
+    use rbg::parsing::parser::parse_with_errors as parse_rbg;
+    use rg::parsing::parser::parse_with_errors as parse_rg;
+    use std::sync::Arc;
+
+    fn test_translation(rbg: &str, rg: &str) {
+        let actual = rbg_to_rg({
+            let (game, errors) = parse_rbg(rbg);
+            assert!(errors.is_empty(), "Parse errors: {errors:?}");
+            game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
+        })
+        .unwrap();
+        let expect = {
+            let (game, errors) = parse_rg(rg);
+            assert!(errors.is_empty(), "Parse errors: {errors:?}");
+            game.map_id(&mut |id| Arc::from(id.identifier.as_str()))
+        };
+
+        // `assert_eq` prints the entire structs and it's not helpful.
+        assert!(
+            actual == expect,
+            "\n\n>>> Actual: <<<\n{actual}\n>>> Expect: <<<\n{expect}\n"
+        );
+    }
+
+    macro_rules! test_translation {
+        ($name:ident, $rbg:expr, $rg:expr) => {
+            #[test]
+            fn $name() {
+                test_translation($rbg, $rg);
+            }
+        };
+    }
+
+    test_translation!(
+        remove_coord_null_check_assignments,
+        "
+            #board = node1[piece1]{dir1:node2} node2[piece2]{dir2:node1}
+            #players = player(1)
+            #pieces = piece1, piece2, piece3
+            #variables =
+            #rules = ({piece1} + dir1 dir2 {piece1, piece2})
+        ",
+        "
+            @translatedFromRbg;
+            type RbgType1 = { 0, 1, 2 };
+            type Player = { player };
+            type Score = { 0, 1 };
+            type Piece = { piece1, piece2, piece3, null };
+            type Coord = { node1, node2 };
+            type CoordOrNull = { null, node1, node2 };
+            type Board = CoordOrNull -> Piece;
+            type Counters = Piece -> RbgType1;
+            type RbgType2 = { node1, node2, null };
+            type RbgType3 = { node1, null };
+            const direction_dir1: CoordOrNull -> CoordOrNull = { :null, node1: node2 };
+            const direction_dir2: CoordOrNull -> CoordOrNull = { :null, node2: node1 };
+            const RbgCoordMap1: RbgType2 -> RbgType3 = { :null, node1: node1 };
+            var board: Board = { :piece2, node1: piece1, null: null };
+            var coord: CoordOrNull = node1;
+            var coord_temp: Coord = node1;
+            var counters: Counters = { :1, piece3: 0 };
+            begin, 2: board[coord] == piece1;
+            begin, 4: coord = RbgCoordMap1[coord];
+            4, 3: ;
+            3, 5: board[coord] == piece1;
+            3, 5: board[coord] == piece2;
+        "
+    );
+
+    test_translation!(
+        remove_coord_null_check_complex_checks,
+        "
+            #board = node1[piece1]{dir1:node2} node2[piece2]{dir2:node1}
+            #players = player(1)
+            #pieces = piece1, piece2, piece3
+            #variables =
+            #rules = ({piece1} + (dir1 + dir2) {piece2})
+        ",
+        "
+            @translatedFromRbg;
+            type RbgType1 = { 0, 1, 2 };
+            type Player = { player };
+            type Score = { 0, 1 };
+            type Piece = { piece1, piece2, piece3, null };
+            type Coord = { node1, node2 };
+            type CoordOrNull = { null, node1, node2 };
+            type Board = CoordOrNull -> Piece;
+            type Counters = Piece -> RbgType1;
+            const direction_dir1: Coord -> CoordOrNull = { :null, node1: node2 };
+            const direction_dir2: Coord -> CoordOrNull = { :null, node2: node1 };
+            var board: Board = { :piece2, node1: piece1 };
+            var coord: CoordOrNull = node1;
+            var coord_temp: Coord = node1;
+            var counters: Counters = { :1, piece3: 0 };
+            begin, 2: board[coord] == piece1;
+            begin, 6: coord = direction_dir1[coord];
+            6, 5: coord != null;
+            5, 4: ;
+            begin, 8: coord = direction_dir2[coord];
+            8, 7: coord != null;
+            7, 4: ;
+            4, 3: ;
+            3, 9: board[coord] == piece2;
+        "
+    );
+
+    test_translation!(
+        remove_coord_null_check_trivial_checks,
+        "
+            #board = node1[piece1]{dir1:node2} node2[piece2]{dir2:node1}
+            #players = player(1)
+            #pieces = piece1, piece2, piece3
+            #variables =
+            #rules = ({piece1} + (dir1 + dir2) {piece1, piece2})
+        ",
+        "
+            @translatedFromRbg;
+            type RbgType1 = { 0, 1, 2 };
+            type Player = { player };
+            type Score = { 0, 1 };
+            type Piece = { piece1, piece2, piece3, null };
+            type Coord = { node1, node2 };
+            type CoordOrNull = { null, node1, node2 };
+            type Board = CoordOrNull -> Piece;
+            type Counters = Piece -> RbgType1;
+            const direction_dir1: CoordOrNull -> CoordOrNull = { :null, node1: node2 };
+            const direction_dir2: CoordOrNull -> CoordOrNull = { :null, node2: node1 };
+            var board: Board = { :piece2, node1: piece1, null: null };
+            var coord: CoordOrNull = node1;
+            var coord_temp: Coord = node1;
+            var counters: Counters = { :1, piece3: 0 };
+            begin, 2: board[coord] == piece1;
+            begin, 6: coord = direction_dir1[coord];
+            6, 5: ;
+            5, 4: ;
+            begin, 8: coord = direction_dir2[coord];
+            8, 7: ;
+            7, 4: ;
+            4, 3: ;
+            3, 9: board[coord] == piece1;
+            3, 9: board[coord] == piece2;
+        "
+    );
 }
