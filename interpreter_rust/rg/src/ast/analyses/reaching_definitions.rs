@@ -23,6 +23,10 @@ impl Definition {
         }
     }
 
+    pub fn is_mixed(&self) -> bool {
+        matches!(self, Self::Mixed)
+    }
+
     fn merge(&mut self, other: Self) {
         match (&self, other) {
             (_, Self::Mixed) => {
@@ -85,9 +89,7 @@ impl Analysis for ReachingDefinitions {
         edge: &Arc<Edge<Id>>,
         _ctx: &Self::Context,
     ) -> Self::Domain {
-        if let Some(identifier) = edge.label.as_tag_variable() {
-            input.remove(identifier);
-        } else if let Some(identifier) = edge.label.as_var_assignment() {
+        if let Some(identifier) = edge.label.as_var_assignment() {
             if !edge.label.is_map_assignment() {
                 input.remove(identifier);
             }

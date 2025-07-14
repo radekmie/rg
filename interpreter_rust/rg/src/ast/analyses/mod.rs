@@ -8,7 +8,7 @@ use crate::ast::{Edge, Game, Label, Node};
 pub use constants_analysis::ConstantsAnalysis;
 pub use reachable_nodes::ReachableNodes;
 pub use reaching_assignments::ReachingAssignments;
-pub use reaching_definitions::ReachingDefinitions;
+pub use reaching_definitions::{Definition, ReachingDefinitions};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
