@@ -1,9 +1,10 @@
 #!/bin/bash
 
-SRC_DIR="sources"
+SRC_DIR="lineGames"
 OUT_DIR="hrg"
 
 rm "$OUT_DIR"/*
+mkdir -p "$OUT_DIR"
 
 for script in "$SRC_DIR"/*.py; do
     fileName=$(basename "$script" .py)
