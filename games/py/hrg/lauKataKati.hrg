@@ -1,0 +1,376 @@
+
+domain Piece = empty | whitePawn | blackPawn | border
+domain Player = black | white
+domain Score = 50 | 0 | 100
+domain Bool = 0 | 1
+
+domain Count = I(X) where X in 0..100
+domain CountOrNan = nan | Count
+domain PieceCount = I(X) where X in 0..19
+
+pawnOf : Player -> Piece
+pawnOf(white) = whitePawn
+pawnOf(black) = blackPawn
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(black) = white
+
+increment : Count -> CountOrNan
+increment(I(X)) = if X < 100 then I(X+1) else nan
+
+less : PieceCount -> PieceCount -> Bool
+less(I(X), I(Y)) = if X < Y then 1 else 0
+
+
+domain Position = cy0x0 | tnorthvy1x0 | tnorthvy1x1 | tnorthvy1x2 | tnorthvy2x0 | tnorthvy2x1 | tnorthvy2x2 | tnorthvy3x0 | tnorthvy3x1 | tnorthvy3x2 | tsouthvy1x0 | tsouthvy1x1 | tsouthvy1x2 | tsouthvy2x0 | tsouthvy2x1 | tsouthvy2x2 | tsouthvy3x0 | tsouthvy3x1 | tsouthvy3x2 
+domain PositionOrNull = null | Position
+
+nextPos : PositionOrNull -> PositionOrNull
+nextPos(null) = cy0x0
+nextPos(cy0x0) = tnorthvy1x0
+nextPos(tnorthvy1x0) = tnorthvy1x1
+nextPos(tnorthvy1x1) = tnorthvy1x2
+nextPos(tnorthvy1x2) = tnorthvy2x0
+nextPos(tnorthvy2x0) = tnorthvy2x1
+nextPos(tnorthvy2x1) = tnorthvy2x2
+nextPos(tnorthvy2x2) = tnorthvy3x0
+nextPos(tnorthvy3x0) = tnorthvy3x1
+nextPos(tnorthvy3x1) = tnorthvy3x2
+nextPos(tnorthvy3x2) = tsouthvy1x0
+nextPos(tsouthvy1x0) = tsouthvy1x1
+nextPos(tsouthvy1x1) = tsouthvy1x2
+nextPos(tsouthvy1x2) = tsouthvy2x0
+nextPos(tsouthvy2x0) = tsouthvy2x1
+nextPos(tsouthvy2x1) = tsouthvy2x2
+nextPos(tsouthvy2x2) = tsouthvy3x0
+nextPos(tsouthvy3x0) = tsouthvy3x1
+nextPos(tsouthvy3x1) = tsouthvy3x2
+nextPos(tsouthvy3x2) = null
+
+north : PositionOrNull -> PositionOrNull
+north(null) = null
+north(cy0x0) = tnorthvy1x1
+north(tnorthvy1x0) = null
+north(tnorthvy1x1) = tnorthvy2x1
+north(tnorthvy1x2) = null
+north(tnorthvy2x0) = null
+north(tnorthvy2x1) = tnorthvy3x1
+north(tnorthvy2x2) = null
+north(tnorthvy3x0) = null
+north(tnorthvy3x1) = null
+north(tnorthvy3x2) = null
+north(tsouthvy1x0) = null
+north(tsouthvy1x1) = cy0x0
+north(tsouthvy1x2) = null
+north(tsouthvy2x0) = null
+north(tsouthvy2x1) = tsouthvy1x1
+north(tsouthvy2x2) = null
+north(tsouthvy3x0) = null
+north(tsouthvy3x1) = tsouthvy2x1
+north(tsouthvy3x2) = null
+
+east : PositionOrNull -> PositionOrNull
+east(null) = null
+east(cy0x0) = null
+east(tnorthvy1x0) = null
+east(tnorthvy1x1) = tnorthvy1x0
+east(tnorthvy1x2) = tnorthvy1x1
+east(tnorthvy2x0) = null
+east(tnorthvy2x1) = tnorthvy2x0
+east(tnorthvy2x2) = tnorthvy2x1
+east(tnorthvy3x0) = null
+east(tnorthvy3x1) = tnorthvy3x0
+east(tnorthvy3x2) = tnorthvy3x1
+east(tsouthvy1x0) = tsouthvy1x1
+east(tsouthvy1x1) = tsouthvy1x2
+east(tsouthvy1x2) = null
+east(tsouthvy2x0) = tsouthvy2x1
+east(tsouthvy2x1) = tsouthvy2x2
+east(tsouthvy2x2) = null
+east(tsouthvy3x0) = tsouthvy3x1
+east(tsouthvy3x1) = tsouthvy3x2
+east(tsouthvy3x2) = null
+
+south : PositionOrNull -> PositionOrNull
+south(null) = null
+south(cy0x0) = tsouthvy1x1
+south(tnorthvy1x0) = null
+south(tnorthvy1x1) = cy0x0
+south(tnorthvy1x2) = null
+south(tnorthvy2x0) = null
+south(tnorthvy2x1) = tnorthvy1x1
+south(tnorthvy2x2) = null
+south(tnorthvy3x0) = null
+south(tnorthvy3x1) = tnorthvy2x1
+south(tnorthvy3x2) = null
+south(tsouthvy1x0) = null
+south(tsouthvy1x1) = tsouthvy2x1
+south(tsouthvy1x2) = null
+south(tsouthvy2x0) = null
+south(tsouthvy2x1) = tsouthvy3x1
+south(tsouthvy2x2) = null
+south(tsouthvy3x0) = null
+south(tsouthvy3x1) = null
+south(tsouthvy3x2) = null
+
+west : PositionOrNull -> PositionOrNull
+west(null) = null
+west(cy0x0) = null
+west(tnorthvy1x0) = tnorthvy1x1
+west(tnorthvy1x1) = tnorthvy1x2
+west(tnorthvy1x2) = null
+west(tnorthvy2x0) = tnorthvy2x1
+west(tnorthvy2x1) = tnorthvy2x2
+west(tnorthvy2x2) = null
+west(tnorthvy3x0) = tnorthvy3x1
+west(tnorthvy3x1) = tnorthvy3x2
+west(tnorthvy3x2) = null
+west(tsouthvy1x0) = null
+west(tsouthvy1x1) = tsouthvy1x0
+west(tsouthvy1x2) = tsouthvy1x1
+west(tsouthvy2x0) = null
+west(tsouthvy2x1) = tsouthvy2x0
+west(tsouthvy2x2) = tsouthvy2x1
+west(tsouthvy3x0) = null
+west(tsouthvy3x1) = tsouthvy3x0
+west(tsouthvy3x2) = tsouthvy3x1
+
+northeast : PositionOrNull -> PositionOrNull
+northeast(null) = null
+northeast(cy0x0) = tnorthvy1x0
+northeast(tnorthvy1x0) = tnorthvy2x0
+northeast(tnorthvy1x1) = null
+northeast(tnorthvy1x2) = null
+northeast(tnorthvy2x0) = tnorthvy3x0
+northeast(tnorthvy2x1) = null
+northeast(tnorthvy2x2) = null
+northeast(tnorthvy3x0) = null
+northeast(tnorthvy3x1) = null
+northeast(tnorthvy3x2) = null
+northeast(tsouthvy1x0) = cy0x0
+northeast(tsouthvy1x1) = null
+northeast(tsouthvy1x2) = null
+northeast(tsouthvy2x0) = tsouthvy1x0
+northeast(tsouthvy2x1) = null
+northeast(tsouthvy2x2) = null
+northeast(tsouthvy3x0) = tsouthvy2x0
+northeast(tsouthvy3x1) = null
+northeast(tsouthvy3x2) = null
+
+northwest : PositionOrNull -> PositionOrNull
+northwest(null) = null
+northwest(cy0x0) = tnorthvy1x2
+northwest(tnorthvy1x0) = null
+northwest(tnorthvy1x1) = null
+northwest(tnorthvy1x2) = tnorthvy2x2
+northwest(tnorthvy2x0) = null
+northwest(tnorthvy2x1) = null
+northwest(tnorthvy2x2) = tnorthvy3x2
+northwest(tnorthvy3x0) = null
+northwest(tnorthvy3x1) = null
+northwest(tnorthvy3x2) = null
+northwest(tsouthvy1x0) = null
+northwest(tsouthvy1x1) = null
+northwest(tsouthvy1x2) = cy0x0
+northwest(tsouthvy2x0) = null
+northwest(tsouthvy2x1) = null
+northwest(tsouthvy2x2) = tsouthvy1x2
+northwest(tsouthvy3x0) = null
+northwest(tsouthvy3x1) = null
+northwest(tsouthvy3x2) = tsouthvy2x2
+
+southeast : PositionOrNull -> PositionOrNull
+southeast(null) = null
+southeast(cy0x0) = tsouthvy1x2
+southeast(tnorthvy1x0) = null
+southeast(tnorthvy1x1) = null
+southeast(tnorthvy1x2) = cy0x0
+southeast(tnorthvy2x0) = null
+southeast(tnorthvy2x1) = null
+southeast(tnorthvy2x2) = tnorthvy1x2
+southeast(tnorthvy3x0) = null
+southeast(tnorthvy3x1) = null
+southeast(tnorthvy3x2) = tnorthvy2x2
+southeast(tsouthvy1x0) = null
+southeast(tsouthvy1x1) = null
+southeast(tsouthvy1x2) = tsouthvy2x2
+southeast(tsouthvy2x0) = null
+southeast(tsouthvy2x1) = null
+southeast(tsouthvy2x2) = tsouthvy3x2
+southeast(tsouthvy3x0) = null
+southeast(tsouthvy3x1) = null
+southeast(tsouthvy3x2) = null
+
+southwest : PositionOrNull -> PositionOrNull
+southwest(null) = null
+southwest(cy0x0) = tsouthvy1x0
+southwest(tnorthvy1x0) = cy0x0
+southwest(tnorthvy1x1) = null
+southwest(tnorthvy1x2) = null
+southwest(tnorthvy2x0) = tnorthvy1x0
+southwest(tnorthvy2x1) = null
+southwest(tnorthvy2x2) = null
+southwest(tnorthvy3x0) = tnorthvy2x0
+southwest(tnorthvy3x1) = null
+southwest(tnorthvy3x2) = null
+southwest(tsouthvy1x0) = tsouthvy2x0
+southwest(tsouthvy1x1) = null
+southwest(tsouthvy1x2) = null
+southwest(tsouthvy2x0) = tsouthvy3x0
+southwest(tsouthvy2x1) = null
+southwest(tsouthvy2x2) = null
+southwest(tsouthvy3x0) = null
+southwest(tsouthvy3x1) = null
+southwest(tsouthvy3x2) = null
+
+domain DirIndex = S(X) where X in 0..7
+dirs : DirIndex -> PositionOrNull -> PositionOrNull
+dirs(S(0)) = north
+dirs(S(1)) = east
+dirs(S(2)) = south
+dirs(S(3)) = west
+dirs(S(4)) = northeast
+dirs(S(5)) = northwest
+dirs(S(6)) = southeast
+dirs(S(7)) = southwest
+
+board : PositionOrNull -> Piece = {
+  :empty;
+  null = border;
+  tnorthvy1x0 = blackPawn;
+  tnorthvy1x1 = blackPawn;
+  tnorthvy1x2 = blackPawn;
+  tnorthvy2x0 = blackPawn;
+  tnorthvy2x1 = blackPawn;
+  tnorthvy2x2 = blackPawn;
+  tnorthvy3x0 = blackPawn;
+  tnorthvy3x1 = blackPawn;
+  tnorthvy3x2 = blackPawn;
+  tsouthvy1x0 = whitePawn;
+  tsouthvy1x1 = whitePawn;
+  tsouthvy1x2 = whitePawn;
+  tsouthvy2x0 = whitePawn;
+  tsouthvy2x1 = whitePawn;
+  tsouthvy2x2 = whitePawn;
+  tsouthvy3x0 = whitePawn;
+  tsouthvy3x1 = whitePawn;
+  tsouthvy3x2 = whitePawn
+}
+
+
+me : Player = white
+pos : PositionOrNull
+stagnation : Count = I(0)
+turn : Count = I(0)
+pawnCount: Player -> PieceCount = {:I(0)}
+
+graph captureFromPosPossible() {
+  branch dir in DirIndex {
+    pos = dirs[dir][pos]
+    check(board[pos] == pawnOf[opponent[me]])
+    check(board[dirs[dir][pos]] == empty)
+  }
+}
+
+
+graph anyCapturePossible() {
+  pos = Position(*)
+  check(board[pos] == pawnOf[me])
+  captureFromPosPossible()
+}
+graph anyNormalMovePossible() {
+  pos = Position(*)
+  check(board[pos] == pawnOf[me])
+  branch dir in DirIndex {
+    check(board[dirs[dir][pos]] == empty)
+  }
+}
+
+graph nonCapturingMove() {
+  pos = Position(*)
+  check(board[pos] == pawnOf[me])
+  $$ pos
+  $ NORMAL
+  board[pos] = empty 
+  branch dir in DirIndex {
+    pos = dirs[dir][pos]
+    check(board[pos] == empty)
+    $ dir
+  }
+  player = keeper
+  board[pos] = pawnOf[me]
+  stagnation = increment[stagnation]
+}
+
+graph capturingMove() {
+  pos = Position(*)
+  check(board[pos] == pawnOf[me])
+  $$ pos
+  $ CAPTURE
+  board[pos] = empty
+  loop {
+    branch dir in DirIndex {
+      pos = dirs[dir][pos]
+      check(board[pos] == pawnOf[opponent[me]])
+      board[pos] = empty
+      pos = dirs[dir][pos]
+      check(board[pos] == empty)
+      $ dir
+    }
+    if not(reachable(captureFromPosPossible())) {
+      break()
+    }
+  }
+  player = keeper
+  board[pos] = pawnOf[me]
+  stagnation = I(0)
+}
+
+
+graph checkEnd() {
+  if stagnation == I(100) {
+    pos = nextPos[null]
+    loop {
+      if pos == null {break()}
+      if board[pos] == whitePawn {
+        pawnCount[white] = increment[pawnCount[white]]
+      } else {
+        if board[pos] == blackPawn {
+          pawnCount[black] = increment[pawnCount[black]]
+        }
+      }
+      pos = nextPos[pos]
+      $_NEXT
+    }
+    
+    if less(pawnCount[black], pawnCount[white]) == 1 {goals[white] = 100 goals[black] = 0} else {
+      if less(pawnCount[white], pawnCount[black]) == 1 {goals[white] = 0 goals[black] = 100}
+    }
+    end()
+  }
+}
+
+
+graph rules() {
+  loop {
+    if reachable(anyCapturePossible()) {
+      checkEnd()
+      player = me
+      capturingMove()
+    } else {
+      if reachable(anyNormalMovePossible()) {
+        checkEnd()
+        player = me
+        nonCapturingMove()
+      } else {
+        goals[me] = 0
+        goals[opponent[me]] = 100
+        end()
+      }
+    }
+    
+    me = opponent[me]
+  }
+}
+

@@ -1,0 +1,10 @@
+from lineGames import *
+game = LineGame()
+game.addBoardPoint()
+game.attachTriangle3(dir=S, height=4)
+game.attachTriangle3(dir=N, height=4)
+game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
+game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
+game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+game.setLimits(stagnation=None, maxTurns=1250)
+game.printHRG()

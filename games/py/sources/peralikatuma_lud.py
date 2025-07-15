@@ -1,0 +1,12 @@
+from lineGames import *
+game = LineGame()
+game.addBoardAlquerque(width=5, height=5) 
+for d in[N, E, S, W]: game.attachTriangle3(dir=d, height=3)
+game.addPiecesAlquerque(InitialPieces.SQUARE_2ROWS)
+for d in[S, W]: game.addPiecesTriangle(d, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
+for d in[N, E]: game.addPiecesTriangle(d, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
+game.addPieces(WHITE_PIECE, 'cy2x0')
+game.addPieces(BLACK_PIECE, 'cy2x4')
+game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+game.setLimits(stagnation=None, maxTurns=1250)
+game.printHRG()
