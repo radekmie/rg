@@ -1,0 +1,274 @@
+// English draughts
+
+domain Piece = empty | whitePawn | whiteKing | blackPawn | blackKing | border
+domain Player = white | black
+domain Score = 50 | 0 | 100
+domain Turn = S(X) where X in 0..1250
+domain TurnOrNan = Turn | nan
+domain Bool = 0 | 1
+
+domain Position =
+  V(X,Y) where X in {0,2,4,6}, Y in {0,2,4,6} |
+  V(X,Y) where X in {1,3,5,7}, Y in {1,3,5,7}
+domain PositionOrNull = null | Position
+
+upLeft : PositionOrNull -> PositionOrNull
+upLeft(null) = null
+upLeft(V(X, Y)) = if X == 0 || Y == 0 then null else V(X - 1, Y - 1)
+upRight : PositionOrNull -> PositionOrNull
+upRight(null) = null
+upRight(V(X, Y)) = if X == 7 || Y == 0 then null else V(X + 1, Y - 1)
+downLeft : PositionOrNull -> PositionOrNull
+downLeft(null) = null
+downLeft(V(X, Y)) = if X == 0 || Y == 7 then null else V(X - 1, Y + 1)
+downRight : PositionOrNull -> PositionOrNull
+downRight(null) = null
+downRight(V(X, Y)) = if X == 7 || Y == 7 then null else V(X + 1, Y + 1)
+
+topLine : PositionOrNull -> Piece
+topLine(V(X,Y)) = if Y == 0 then blackKing else blackPawn
+topLine(null) = blackPawn
+bottomLine : PositionOrNull -> Piece
+bottomLine(V(X,Y)) = if Y == 7 then whiteKing else whitePawn
+bottomLine(null) = whitePawn
+promotedOrNot : Player -> PositionOrNull -> Piece
+promotedOrNot(white) = bottomLine
+promotedOrNot(black) = topLine
+
+fwdLeft : Player -> PositionOrNull -> PositionOrNull
+fwdLeft(white) = downLeft
+fwdLeft(black) = upLeft
+fwdRight : Player -> PositionOrNull -> PositionOrNull
+fwdRight(white) = downRight
+fwdRight(black) = upRight
+
+playerOf : Piece -> PlayerOrSystem
+playerOf(whitePawn) = white
+playerOf(whiteKing) = white
+playerOf(blackPawn) = black
+playerOf(blackKing) = black
+playerOf(_) = keeper
+
+myPawn : Player -> Piece
+myPawn(white) = whitePawn
+myPawn(black) = blackPawn
+
+myKing : Player -> Piece
+myKing(white) = whiteKing
+myKing(black) = blackKing
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(black) = white
+
+increment : Turn -> TurnOrNan
+increment(S(X)) = if X < 1250 then S(X + 1) else nan
+
+board : PositionOrNull -> Piece = {
+  V(X, Y) = 
+    if (X + Y) % 2 == 0 && Y < 3 then whitePawn
+    else if (X + Y) % 2 == 0 && Y > 4 then blackPawn
+    else empty
+    where X in 0..7, Y in 0..7;
+    null = border
+}
+me : Player = white
+pos : PositionOrNull
+turn : Turn = S(0)
+
+graph pawnCapturePossibleFrom() {
+  branch dir in {fwdLeft, fwdRight} {
+    pos = dir[me][pos]
+    check(playerOf(board[pos]) == opponent[me])
+    check(board[dir(me)(pos)] == empty)
+  }
+}
+graph kingCapturePossibleFrom() {
+  branch dir in {upLeft, upRight, downLeft, downRight} {
+    check(playerOf(board[dir[pos]]) == opponent[me])
+    check(board[dir[dir[pos]]] == empty)
+  }
+}
+graph anyCapturePossible() {
+  pos = Position(*)
+  branch {
+    check(board[pos] == myPawn[me])
+    pawnCapturePossibleFrom()
+  } or {
+    check(board[pos] == myKing[me])
+    kingCapturePossibleFrom()
+  }
+}
+
+graph anyNormalMovePossible() {
+  pos = Position(*)
+  branch {
+    check(board[pos] == myPawn[me])
+    branch dir in {fwdLeft, fwdRight} {
+      pos = dir[me][pos]
+    }
+    check(board[pos] == empty)
+  } or {
+    check(board[pos] == myKing(me))
+    branch dir in {upLeft, upRight, downLeft, downRight} {
+      pos = dir[pos]
+    }
+    check(board[pos] == empty)
+  }
+}
+
+graph movePawnNormal() {
+  check(board[pos] == myPawn[me])
+  board[pos] = empty
+  $$ pos
+  $ PN
+  branch {
+    pos = fwdLeft[me][pos]
+    $ FL_NORMAL
+  } or {
+    pos = fwdRight[me][pos]
+    $ FR_NORMAL
+  }
+  check(board[pos] == empty)
+}
+
+graph movePawnCapture() {
+  check(board[pos] == myPawn[me])
+  board[pos] = empty
+  $$ pos
+  $ PC
+  loop {
+    branch {
+      pos = fwdLeft[me][pos]
+      check(playerOf[board[pos]] == opponent[me])
+      board[pos] = empty
+      pos = fwdLeft[me][pos]
+      $ FL_CAPTURE
+    } or {
+      pos = fwdRight[me][pos]
+      check(playerOf[board[pos]] == opponent[me])
+      board[pos] = empty
+      pos = fwdRight[me][pos]
+      $ FR_CAPTURE
+    }
+
+    check(board[pos] == empty)
+
+    if not(reachable(pawnCapturePossibleFrom())) {
+      break()
+    }
+    
+    player = me    
+  }
+}
+
+graph moveKingNormal() {
+  check(board[pos] == myKing[me])
+  board[pos] = empty
+  $$ pos
+  $ KN
+  branch {
+    pos = upLeft[pos]
+    $ UL_NORMAL
+  } or {
+    pos = upRight[pos]
+    $ UR_NORMAL
+  } or {
+    pos = downLeft[pos]
+    $ DL_NORMAL
+  } or {
+    pos = downRight[pos]
+    $ DR_NORMAL
+  }
+  check(board[pos] == empty)
+}
+
+graph moveKingCapture() {
+  check(board[pos] == myKing(me))
+  board[pos] = empty
+  $$ pos
+  $ KC
+  loop {
+    branch {
+      pos = upLeft[pos]
+      check(playerOf[board[pos]] == opponent[me])
+      board[pos] = empty
+      pos = upLeft[pos]
+      $ UL_CAPTURE
+    } or {
+      pos = upRight[pos]
+      check(playerOf[board[pos]] == opponent[me])
+      board[pos] = empty
+      pos = upRight[pos]
+      $ UR_CAPTURE
+    } or {
+      pos = downLeft[pos]
+      check(playerOf[board[pos]] == opponent[me])
+      board[pos] = empty
+      pos = downLeft[pos]
+      $ DL_CAPTURE
+    } or {
+      pos = downRight[pos]
+      check(playerOf[board[pos]] == opponent[me])
+      board[pos] = empty
+      pos = downRight[pos]
+      $ DR_CAPTURE
+    }
+
+    check(board[pos] == empty)
+
+    if not(reachable(kingCapturePossibleFrom())) {
+      break()
+    }
+    
+    player = me
+  }
+}
+
+graph move() {
+  if reachable(anyCapturePossible()) {
+    if turn == S(1250) {
+      end()
+    }
+    player = me
+    pos = Position(*)
+    branch {
+      movePawnCapture()
+      player = keeper
+      board[pos] = promotedOrNot[me][pos]
+    } or {
+      moveKingCapture()
+      player = keeper
+      board[pos] = myKing[me]
+    } 
+  } else {
+    if reachable(anyNormalMovePossible()) {
+      if turn == S(1250) {
+        end()
+      }
+      player = me
+      pos = Position(*)
+      branch {
+        movePawnNormal()
+        player = keeper
+        board[pos] = promotedOrNot[me][pos]
+      } or {
+        moveKingNormal()
+        player = keeper
+        board[pos] = myKing[me]
+      }
+    } else {
+      goals[me] = 0
+      goals[opponent[me]] = 100
+      end()
+    }
+  }
+  turn = increment[turn]  
+}
+
+graph rules() {
+  loop {
+    move()
+    me = opponent[me]
+  }
+}
