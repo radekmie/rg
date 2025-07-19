@@ -40,7 +40,7 @@ impl Game<Id> {
     }
 
     fn collect_to_inline(&self) -> (BTreeSet<ToInline>, BTreeSet<Arc<Edge<Id>>>) {
-        let reaching_definitions = self.analyse(ReachingDefinitions);
+        let reaching_definitions = self.analyse(&ReachingDefinitions);
         let next_edges = self.next_edges();
         let check_reachability = self.make_check_reachability(false);
         let mut to_inline = BTreeSet::new();

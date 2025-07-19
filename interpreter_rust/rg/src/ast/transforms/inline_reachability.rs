@@ -11,7 +11,7 @@ type Subgraph = BTreeSet<Arc<Edge<Id>>>;
 impl Game<Id> {
     pub fn inline_reachability(&mut self) -> Result<(), Error<Id>> {
         let begin = Node::new(Arc::from("begin"));
-        let in_main_automaton = self.analyse(ReachableNodes::new());
+        let in_main_automaton = self.analyse(&ReachableNodes::new());
         for edge in self.edges.clone() {
             if let Label::Reachability {
                 lhs, rhs, negated, ..

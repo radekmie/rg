@@ -19,34 +19,9 @@ impl Context {
     fn is_variable(&self, id: &Id) -> bool {
         self.variables.contains(id)
     }
-}
 
-pub struct ConstantsAnalysis;
-
-impl Analysis for ConstantsAnalysis {
-    type Context = Context;
-    type Domain = BTreeMap<Id, Arc<Value<Id>>>;
-
-    fn bot(&self) -> Self::Domain {
-        Self::Domain::default()
-    }
-
-    fn extreme(&self, program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
-        program
-            .variables
-            .iter()
-            .map(|v| (v.identifier.clone(), v.default_value.clone()))
-            .collect()
-    }
-
-    fn join(&self, mut a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
-        // Keep only keys present in both maps with the same value.
-        a.retain(|key, value| b.get(key) == Some(value));
-        a
-    }
-
-    fn get_context(&self, program: &Game<Id>) -> Self::Context {
-        let mut ctx = Self::Context::default();
+    fn new(program: &Game<Id>) -> Self {
+        let mut ctx = Self::default();
         for constant in &program.constants {
             let value = constant.value.clone();
             ctx.constants.insert(constant.identifier.clone(), value);
@@ -59,18 +34,39 @@ impl Analysis for ConstantsAnalysis {
             .collect();
         ctx
     }
+}
+
+pub struct ConstantsAnalysis {
+    pub ctx: Context,
+}
+
+impl Analysis for ConstantsAnalysis {
+    type Domain = BTreeMap<Id, Arc<Value<Id>>>;
+
+    fn bot(&self) -> Self::Domain {
+        Self::Domain::default()
+    }
+
+    fn extreme(&self, program: &Game<Id>) -> Self::Domain {
+        program
+            .variables
+            .iter()
+            .map(|v| (v.identifier.clone(), v.default_value.clone()))
+            .collect()
+    }
+
+    fn join(&self, mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
+        // Keep only keys present in both maps with the same value.
+        a.retain(|key, value| b.get(key) == Some(value));
+        a
+    }
 
     // We can't use the default implementation, because it doesn't work for cases like:
     // x = 1;
     // x = y[x]; <- here `kill` removes `x` from `input` before `gen`, so `x` in lhs is not recognised as a constant
-    fn transfer(
-        &self,
-        mut input: Self::Domain,
-        edge: &Arc<Edge<Id>>,
-        ctx: &Self::Context,
-    ) -> Self::Domain {
-        if let Some((identifier, value)) = as_constant_assignment(edge, &input, ctx)
-            .or_else(|| as_constant_comparison(edge, &input, ctx))
+    fn transfer(&self, mut input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
+        if let Some((identifier, value)) = as_constant_assignment(edge, &input, &self.ctx)
+            .or_else(|| as_constant_comparison(edge, &input, &self.ctx))
         {
             input.insert(identifier, value);
         } else if let Some(identifier) = &edge.label.as_var_assignment() {
@@ -163,6 +159,14 @@ fn dereference_constant<'a>(value: &'a Arc<Value<Id>>, ctx: &'a Context) -> &'a 
     }
 }
 
+impl From<&Game<Id>> for ConstantsAnalysis {
+    fn from(game: &Game<Id>) -> Self {
+        Self {
+            ctx: Context::new(game),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::{Analysis, ConstantsAnalysis};
@@ -191,7 +195,7 @@ mod test {
                 Game::test_analysis(
                     $source,
                     $expect,
-                    Box::new(|_| ConstantsAnalysis),
+                    Box::new(|game| ConstantsAnalysis::from(game)),
                     Box::new(format_analysis),
                 );
             }

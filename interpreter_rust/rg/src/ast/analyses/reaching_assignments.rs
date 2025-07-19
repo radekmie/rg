@@ -111,51 +111,54 @@ impl Context {
 }
 
 pub enum ReachingAssignments {
-    Exclude(BTreeSet<Id>),
-    Include(BTreeSet<Id>),
+    Exclude {
+        variables: BTreeSet<Id>,
+        ctx: Context,
+    },
+    Include {
+        variables: BTreeSet<Id>,
+        ctx: Context,
+    },
 }
 
 impl ReachingAssignments {
     pub fn is_tracked_variable(&self, identifier: &Id) -> bool {
         match self {
-            Self::Exclude(variables) => !variables.contains(identifier),
-            Self::Include(variables) => variables.contains(identifier),
+            Self::Exclude { variables, .. } => !variables.contains(identifier),
+            Self::Include { variables, .. } => variables.contains(identifier),
+        }
+    }
+
+    fn ctx(&self) -> &Context {
+        match self {
+            Self::Exclude { ctx, .. } | Self::Include { ctx, .. } => ctx,
         }
     }
 }
 
 impl Analysis for ReachingAssignments {
-    type Context = Context;
     type Domain = BTreeMap<Option<Id>, Assignment>;
 
     fn bot(&self) -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn extreme(&self, _program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn extreme(&self, _program: &Game<Id>) -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn get_context(&self, program: &Game<Id>) -> Self::Context {
-        Self::Context::new(program)
-    }
-
-    fn join(&self, mut a: Self::Domain, b: Self::Domain, ctx: &Self::Context) -> Self::Domain {
+    fn join(&self, mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
         for (variable, b_reached) in b.into_iter() {
             a.entry(variable)
-                .and_modify(|a_reached| a_reached.join(&b_reached, ctx))
+                .and_modify(|a_reached| a_reached.join(&b_reached, self.ctx()))
                 .or_insert(b_reached);
         }
         a
     }
 
-    fn kill(
-        &self,
-        mut input: Self::Domain,
-        edge: &Arc<Edge<Id>>,
-        _ctx: &Self::Context,
-    ) -> Self::Domain {
-        if edge.label.is_player_assignment() || edge.label.is_tag() || edge.label.is_tag_variable() {
+    fn kill(&self, mut input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
+        if edge.label.is_player_assignment() || edge.label.is_tag() || edge.label.is_tag_variable()
+        {
             input.clear();
         } else if let Label::Comparison {
             lhs,
@@ -182,12 +185,7 @@ impl Analysis for ReachingAssignments {
         input
     }
 
-    fn gen(
-        &self,
-        mut input: Self::Domain,
-        edge: &Arc<Edge<Id>>,
-        ctx: &Self::Context,
-    ) -> Self::Domain {
+    fn gen(&self, mut input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
         if edge.label.is_assignment() {
             let variable = edge.label.as_var_assignment().unwrap();
             if self.is_tracked_variable(variable) {
@@ -202,7 +200,7 @@ impl Analysis for ReachingAssignments {
                 .or_insert_with(|| Assignment::new(&edge.lhs));
             if !edge.label.is_skip() {
                 for assignment in input.values_mut() {
-                    assignment.add_condition(edge, ctx);
+                    assignment.add_condition(edge, self.ctx());
                 }
             }
         }
@@ -217,11 +215,18 @@ impl From<&Game<Id>> for ReachingAssignments {
             .pragmas
             .iter()
             .any(|pragma| matches!(pragma, Pragma::TranslatedFromRbg { .. }));
+        let ctx = Context::new(game);
 
         if is_translated_from_rbg {
-            Self::Include(BTreeSet::from([Id::from("coord")]))
+            Self::Include {
+                variables: BTreeSet::from([Id::from("coord")]),
+                ctx,
+            }
         } else {
-            Self::Exclude(BTreeSet::from(["player", "goals", "visible"].map(Id::from)))
+            Self::Exclude {
+                variables: BTreeSet::from(["player", "goals", "visible"].map(Id::from)),
+                ctx,
+            }
         }
     }
 }

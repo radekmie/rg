@@ -1348,7 +1348,7 @@ impl Game<Arc<str>> {
             .collect::<BTreeSet<_>>()
             .len();
         let main_automaton_nodes = self
-            .analyse(ReachableNodes::new())
+            .analyse(&ReachableNodes::new())
             .values()
             .filter(|reachable| **reachable)
             .count();
