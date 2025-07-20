@@ -89,49 +89,23 @@ impl Context {
                     .get(&x.lhs)
                     .is_some_and(|nodes| nodes.contains(&x.rhs) && nodes.contains(&y.rhs))
     }
-
-    fn new(game: &Game<Id>) -> Self {
-        Self {
-            disjoints: game
-                .pragmas
-                .iter()
-                .fold(BTreeMap::new(), |mut disjoints, pragma| {
-                    if let Pragma::Disjoint { node, nodes, .. }
-                    | Pragma::DisjointExhaustive { node, nodes, .. } = pragma
-                    {
-                        disjoints
-                            .entry(node.clone())
-                            .or_default()
-                            .extend(nodes.iter().cloned());
-                    }
-                    disjoints
-                }),
-        }
-    }
 }
 
-pub enum ReachingAssignments {
-    Exclude {
-        variables: BTreeSet<Id>,
-        ctx: Context,
-    },
-    Include {
-        variables: BTreeSet<Id>,
-        ctx: Context,
-    },
+pub struct ReachingAssignments {
+    variables: Variables,
+    ctx: Context,
+}
+
+pub enum Variables {
+    Exclude(BTreeSet<Id>),
+    Include(BTreeSet<Id>),
 }
 
 impl ReachingAssignments {
     pub fn is_tracked_variable(&self, identifier: &Id) -> bool {
-        match self {
-            Self::Exclude { variables, .. } => !variables.contains(identifier),
-            Self::Include { variables, .. } => variables.contains(identifier),
-        }
-    }
-
-    fn ctx(&self) -> &Context {
-        match self {
-            Self::Exclude { ctx, .. } | Self::Include { ctx, .. } => ctx,
+        match &self.variables {
+            Variables::Exclude(variables) => !variables.contains(identifier),
+            Variables::Include(variables) => variables.contains(identifier),
         }
     }
 }
@@ -150,7 +124,7 @@ impl Analysis for ReachingAssignments {
     fn join(&self, mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
         for (variable, b_reached) in b.into_iter() {
             a.entry(variable)
-                .and_modify(|a_reached| a_reached.join(&b_reached, self.ctx()))
+                .and_modify(|a_reached| a_reached.join(&b_reached, &self.ctx))
                 .or_insert(b_reached);
         }
         a
@@ -200,7 +174,7 @@ impl Analysis for ReachingAssignments {
                 .or_insert_with(|| Assignment::new(&edge.lhs));
             if !edge.label.is_skip() {
                 for assignment in input.values_mut() {
-                    assignment.add_condition(edge, self.ctx());
+                    assignment.add_condition(edge, &self.ctx);
                 }
             }
         }
@@ -215,18 +189,28 @@ impl From<&Game<Id>> for ReachingAssignments {
             .pragmas
             .iter()
             .any(|pragma| matches!(pragma, Pragma::TranslatedFromRbg { .. }));
-        let ctx = Context::new(game);
+        let ctx = Context {
+            disjoints: game
+                .pragmas
+                .iter()
+                .fold(BTreeMap::new(), |mut disjoints, pragma| {
+                    if let Pragma::Disjoint { node, nodes, .. }
+                    | Pragma::DisjointExhaustive { node, nodes, .. } = pragma
+                    {
+                        disjoints
+                            .entry(node.clone())
+                            .or_default()
+                            .extend(nodes.iter().cloned());
+                    }
+                    disjoints
+                }),
+        };
 
-        if is_translated_from_rbg {
-            Self::Include {
-                variables: BTreeSet::from([Id::from("coord")]),
-                ctx,
-            }
+        let variables = if is_translated_from_rbg {
+            Variables::Include(BTreeSet::from([Id::from("coord")]))
         } else {
-            Self::Exclude {
-                variables: BTreeSet::from(["player", "goals", "visible"].map(Id::from)),
-                ctx,
-            }
-        }
+            Variables::Exclude(BTreeSet::from(["player", "goals", "visible"].map(Id::from)))
+        };
+        Self { variables, ctx }
     }
 }

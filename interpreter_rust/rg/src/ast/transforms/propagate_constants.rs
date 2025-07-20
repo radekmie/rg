@@ -60,11 +60,10 @@ impl Context<'_> {
 impl Game<Id> {
     pub fn propagate_constants(&mut self) -> Result<(), Error<Id>> {
         let constant_analysis = ConstantsAnalysis::from(&*self);
-        let context = &constant_analysis.ctx;
         let analysis = self.analyse(&constant_analysis);
         let default_constant_vars = &BTreeMap::new();
-        let constants = &context.constants;
-        let variables = &context.variables;
+        let constants = &constant_analysis.constants;
+        let variables = &constant_analysis.variables;
         let game = Self {
             constants: self.constants.clone(),
             typedefs: self.typedefs.clone(),
