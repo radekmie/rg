@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 type Id = Arc<str>;
+type Disjoints = BTreeMap<Node<Id>, BTreeSet<Node<Id>>>;
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Assignment {
@@ -19,12 +20,12 @@ pub struct Assignment {
 }
 
 impl Assignment {
-    fn add_condition(&mut self, condition: &Arc<Edge<Id>>, context: &Context) {
+    fn add_condition(&mut self, condition: &Arc<Edge<Id>>, analysis: &ReachingAssignments) {
         self.is_conflicting = self.is_conflicting
             || self
                 .conditions
                 .iter()
-                .any(|x| context.is_disjoint(x, condition));
+                .any(|x| analysis.is_disjoint(x, condition));
 
         // Add condition only if it may cause a conflict in the future.
         if !self.is_conflicting {
@@ -41,13 +42,13 @@ impl Assignment {
         }
     }
 
-    fn join(&mut self, other: &Self, context: &Context) {
+    fn join(&mut self, other: &Self, analysis: &ReachingAssignments) {
         self.is_conflicting = self.is_conflicting
             || other.is_conflicting
             || self
                 .conditions
                 .iter()
-                .any(|x| other.conditions.iter().any(|y| context.is_disjoint(x, y)));
+                .any(|x| other.conditions.iter().any(|y| analysis.is_disjoint(x, y)));
 
         // Add conditions only if they may cause a conflict in the future.
         if !self.is_conflicting {
@@ -74,26 +75,9 @@ impl Assignment {
     }
 }
 
-pub struct Context {
-    disjoints: BTreeMap<Node<Id>, BTreeSet<Node<Id>>>,
-}
-
-impl Context {
-    fn is_disjoint(&self, x: &Edge<Id>, y: &Edge<Id>) -> bool {
-        // Either their labels are negated or they are marked with a `@disjoint`
-        // or `@disjointExhaustive` pragma already.
-        x.label.is_negated(&y.label)
-            || x.lhs == y.lhs
-                && self
-                    .disjoints
-                    .get(&x.lhs)
-                    .is_some_and(|nodes| nodes.contains(&x.rhs) && nodes.contains(&y.rhs))
-    }
-}
-
 pub struct ReachingAssignments {
     variables: Variables,
-    ctx: Context,
+    disjoints: Disjoints,
 }
 
 pub enum Variables {
@@ -107,6 +91,17 @@ impl ReachingAssignments {
             Variables::Exclude(variables) => !variables.contains(identifier),
             Variables::Include(variables) => variables.contains(identifier),
         }
+    }
+
+    fn is_disjoint(&self, x: &Edge<Id>, y: &Edge<Id>) -> bool {
+        // Either their labels are negated or they are marked with a `@disjoint`
+        // or `@disjointExhaustive` pragma already.
+        x.label.is_negated(&y.label)
+            || x.lhs == y.lhs
+                && self
+                    .disjoints
+                    .get(&x.lhs)
+                    .is_some_and(|nodes| nodes.contains(&x.rhs) && nodes.contains(&y.rhs))
     }
 }
 
@@ -124,7 +119,7 @@ impl Analysis for ReachingAssignments {
     fn join(&self, mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
         for (variable, b_reached) in b.into_iter() {
             a.entry(variable)
-                .and_modify(|a_reached| a_reached.join(&b_reached, &self.ctx))
+                .and_modify(|a_reached| a_reached.join(&b_reached, &self))
                 .or_insert(b_reached);
         }
         a
@@ -174,7 +169,7 @@ impl Analysis for ReachingAssignments {
                 .or_insert_with(|| Assignment::new(&edge.lhs));
             if !edge.label.is_skip() {
                 for assignment in input.values_mut() {
-                    assignment.add_condition(edge, &self.ctx);
+                    assignment.add_condition(edge, &self);
                 }
             }
         }
@@ -189,11 +184,10 @@ impl From<&Game<Id>> for ReachingAssignments {
             .pragmas
             .iter()
             .any(|pragma| matches!(pragma, Pragma::TranslatedFromRbg { .. }));
-        let ctx = Context {
-            disjoints: game
-                .pragmas
+        let disjoints =
+            game.pragmas
                 .iter()
-                .fold(BTreeMap::new(), |mut disjoints, pragma| {
+                .fold(BTreeMap::new(), |mut disjoints: Disjoints, pragma| {
                     if let Pragma::Disjoint { node, nodes, .. }
                     | Pragma::DisjointExhaustive { node, nodes, .. } = pragma
                     {
@@ -203,14 +197,16 @@ impl From<&Game<Id>> for ReachingAssignments {
                             .extend(nodes.iter().cloned());
                     }
                     disjoints
-                }),
-        };
+                });
 
         let variables = if is_translated_from_rbg {
             Variables::Include(BTreeSet::from([Id::from("coord")]))
         } else {
             Variables::Exclude(BTreeSet::from(["player", "goals", "visible"].map(Id::from)))
         };
-        Self { variables, ctx }
+        Self {
+            variables,
+            disjoints,
+        }
     }
 }

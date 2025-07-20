@@ -62,8 +62,10 @@ impl Game<Id> {
         let constant_analysis = ConstantsAnalysis::from(&*self);
         let analysis = self.analyse(&constant_analysis);
         let default_constant_vars = &BTreeMap::new();
-        let constants = &constant_analysis.constants;
-        let variables = &constant_analysis.variables;
+        let ConstantsAnalysis {
+            constants,
+            variables,
+        } = &constant_analysis;
         let game = Self {
             constants: self.constants.clone(),
             typedefs: self.typedefs.clone(),
