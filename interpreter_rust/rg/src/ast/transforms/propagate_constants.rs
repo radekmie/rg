@@ -6,7 +6,7 @@ use std::sync::Arc;
 type Id = Arc<str>;
 
 struct Context<'a> {
-    constant_vars: &'a BTreeMap<Id, Arc<Value<Id>>>,
+    constant_exprs: &'a BTreeMap<Expression<Id>, Arc<Value<Id>>>,
     constants: &'a BTreeMap<Id, Arc<Value<Id>>>,
     variables: &'a BTreeSet<Id>,
 }
@@ -30,29 +30,31 @@ impl Context<'_> {
         }
     }
 
-    fn get_identifier(&self, identifier: &Id) -> Option<Id> {
-        if self.variables.contains(identifier) {
-            self.dereference_constant(self.constant_vars.get(identifier)?, false)
-                .to_identifier()
-                .cloned()
-        } else {
-            self.dereference_constant(&Value::new(identifier.clone()), false)
-                .to_identifier()
-                .cloned()
-        }
+    fn get_identifier(&self, expr: &Expression<Id>) -> Option<Id> {
+        let value = match expr.uncast() {
+            Expression::Reference { identifier } if !self.variables.contains(identifier) => {
+                &Value::new(identifier.clone())
+            }
+            _ => self.constant_exprs.get(expr)?,
+        };
+
+        self.dereference_constant(value, false)
+            .to_identifier()
+            .cloned()
     }
 
-    fn get_value(&self, identifier: &Id) -> Option<Value<Id>> {
-        if self.variables.contains(identifier) {
-            Some(
-                self.dereference_constant(self.constant_vars.get(identifier)?, true)
+    fn get_value(&self, expr: &Expression<Id>) -> Option<Value<Id>> {
+        match expr.uncast() {
+            Expression::Reference { identifier } if !self.variables.contains(identifier) => {
+                self.constants.get(identifier).map_or_else(
+                    || Some(Value::new(identifier.clone())),
+                    |value| Some(self.dereference_constant(value, true).clone()),
+                )
+            }
+            _ => Some(
+                self.dereference_constant(self.constant_exprs.get(expr)?, true)
                     .clone(),
-            )
-        } else {
-            self.constants.get(identifier).map_or_else(
-                || Some(Value::new(identifier.clone())),
-                |value| Some(self.dereference_constant(value, true).clone()),
-            )
+            ),
         }
     }
 }
@@ -81,7 +83,7 @@ impl Game<Id> {
                     let context = Context {
                         constants,
                         variables,
-                        constant_vars: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
+                        constant_exprs: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
                     };
 
                     let new_lhs = eval_expression(lhs, &context, &game, false);
@@ -95,7 +97,7 @@ impl Game<Id> {
                 }
                 Label::Comparison { lhs, rhs, negated } => {
                     let context = Context {
-                        constant_vars: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
+                        constant_exprs: analysis.get(&edge.lhs).unwrap_or(default_constant_vars),
                         constants,
                         variables,
                     };
@@ -103,14 +105,8 @@ impl Game<Id> {
                     *lhs = Arc::new(eval_expression(lhs, &context, &game, false));
                     *rhs = Arc::new(eval_expression(rhs, &context, &game, false));
 
-                    let lhs_value = lhs
-                        .uncast()
-                        .as_reference()
-                        .and_then(|id| context.get_value(id));
-                    let rhs_value = rhs
-                        .uncast()
-                        .as_reference()
-                        .and_then(|id| context.get_value(id));
+                    let lhs_value = context.get_value(&lhs);
+                    let rhs_value = context.get_value(&rhs);
 
                     // Skip comparisons between constants
                     if let (Some(lhs_value), Some(rhs_value)) = (lhs_value, rhs_value) {
@@ -151,33 +147,33 @@ fn eval_expression(
     game: &Game<Id>,
     in_cast: bool,
 ) -> Expression<Id> {
-    match expression {
-        Expression::Access { lhs, rhs, span } => {
-            // First, try to evaluate lhs as Value::Map and rhs as Value::Identifier
-            eval_access(lhs, rhs, context, false).map_or_else(
-                || Expression::Access {
-                    span: *span,
-                    lhs: Arc::new(eval_expression(lhs, context, game, false)),
-                    rhs: Arc::new(eval_expression(rhs, context, game, false)),
-                },
-                |value| {
-                    value
-                        .as_identifier()
-                        .and_then(|id| game.new_casted_expression(id, expression, in_cast))
-                        .unwrap_or_else(|| expression.clone())
-                },
-            )
-        }
-        Expression::Cast { span, lhs, rhs } => Expression::Cast {
-            span: *span,
-            lhs: lhs.clone(),
-            rhs: Arc::new(eval_expression(rhs, context, game, true)),
-        },
-        Expression::Reference { identifier } => context
-            .get_identifier(identifier)
-            .and_then(|id| game.new_casted_expression(id, expression, in_cast))
-            .unwrap_or_else(|| expression.clone()),
-    }
+    context
+        .get_identifier(expression)
+        .and_then(|id| game.new_casted_expression(id, expression, in_cast))
+        .unwrap_or_else(|| match expression {
+            Expression::Access { lhs, rhs, span } => {
+                // First, try to evaluate lhs as Value::Map and rhs as Value::Identifier
+                eval_access(lhs, rhs, context, false).map_or_else(
+                    || Expression::Access {
+                        span: *span,
+                        lhs: Arc::new(eval_expression(lhs, context, game, false)),
+                        rhs: Arc::new(eval_expression(rhs, context, game, false)),
+                    },
+                    |value| {
+                        value
+                            .as_identifier()
+                            .and_then(|id| game.new_casted_expression(id, expression, in_cast))
+                            .unwrap_or_else(|| expression.clone())
+                    },
+                )
+            }
+            Expression::Cast { span, lhs, rhs } => Expression::Cast {
+                span: *span,
+                lhs: lhs.clone(),
+                rhs: Arc::new(eval_expression(rhs, context, game, true)),
+            },
+            Expression::Reference { .. } => expression.clone(),
+        })
 }
 
 fn eval_access(
@@ -192,21 +188,23 @@ fn eval_access(
 }
 
 fn eval_as_map(expression: &Expression<Id>, context: &Context) -> Option<Value<Id>> {
-    match expression {
+    context.get_value(expression).or_else(|| match expression {
         Expression::Access { lhs, rhs, .. } => eval_access(lhs, rhs, context, true),
         Expression::Cast { rhs, .. } => eval_as_map(rhs, context),
-        Expression::Reference { identifier } => context.get_value(identifier),
-    }
+        Expression::Reference { .. } => None,
+    })
 }
 
 fn eval_as_identifier(expression: &Expression<Id>, context: &Context) -> Option<Id> {
-    match expression {
-        Expression::Access { lhs, rhs, .. } => {
-            eval_access(lhs, rhs, context, false).and_then(Value::as_identifier)
-        }
-        Expression::Cast { rhs, .. } => eval_as_identifier(rhs, context),
-        Expression::Reference { identifier } => context.get_identifier(identifier),
-    }
+    context
+        .get_identifier(expression)
+        .or_else(|| match expression {
+            Expression::Access { lhs, rhs, .. } => {
+                eval_access(lhs, rhs, context, false).and_then(Value::as_identifier)
+            }
+            Expression::Cast { rhs, .. } => eval_as_identifier(rhs, context),
+            Expression::Reference { .. } => None,
+        })
 }
 
 #[cfg(test)]
@@ -578,5 +576,30 @@ mod test {
         begin, a: board = AA(*);
         a, b: x = A(*);
         b, c: c == board[up[x]];"
+    );
+
+    test_transform!(
+        propagate_constants,
+        expr1,
+        "type A = {1,2,3,4};
+        type AA = A -> A;
+        const down: AA = {4:3, 3:2, :1};
+        var x: A = 3;
+        var y: A = 1;
+        var board: A -> A = {4:3, :2};
+        begin, a: y = A(*);
+        a, b: board[y] == 2;
+        b, c: x = A(*);
+        c, d: x == board[y];",
+        "type A = {1,2,3,4};
+        type AA = A -> A;
+        const down: AA = {4:3, 3:2, :1};
+        var x: A = 3;
+        var y: A = 1;
+        var board: A -> A = {4:3, :2};
+        begin, a: y = A(*);
+        a, b: board[y] == 2;
+        b, c: x = A(*);
+        c, d: x == A(2);"
     );
 }

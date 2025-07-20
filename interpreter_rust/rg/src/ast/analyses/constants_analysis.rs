@@ -25,7 +25,7 @@ pub struct ConstantsAnalysis;
 
 impl Analysis for ConstantsAnalysis {
     type Context = Context;
-    type Domain = BTreeMap<Id, Arc<Value<Id>>>;
+    type Domain = BTreeMap<Expression<Id>, Arc<Value<Id>>>;
 
     fn bot(&self) -> Self::Domain {
         Self::Domain::default()
@@ -35,7 +35,12 @@ impl Analysis for ConstantsAnalysis {
         program
             .variables
             .iter()
-            .map(|v| (v.identifier.clone(), v.default_value.clone()))
+            .map(|v| {
+                (
+                    Expression::new(v.identifier.clone()),
+                    v.default_value.clone(),
+                )
+            })
             .collect()
     }
 
@@ -69,12 +74,12 @@ impl Analysis for ConstantsAnalysis {
         edge: &Arc<Edge<Id>>,
         ctx: &Self::Context,
     ) -> Self::Domain {
-        if let Some((identifier, value)) = as_constant_assignment(edge, &input, ctx)
+        if let Some((expr, value)) = as_constant_assignment(edge, &input, ctx)
             .or_else(|| as_constant_comparison(edge, &input, ctx))
         {
-            input.insert(identifier, value);
+            input.insert(expr.clone(), value);
         } else if let Some(identifier) = &edge.label.as_var_assignment() {
-            input.remove(*identifier);
+            input.retain(|expr, _| !expr.has_variable(identifier));
         }
 
         input
@@ -85,23 +90,22 @@ impl Analysis for ConstantsAnalysis {
     }
 }
 
-fn as_constant_assignment(
-    edge: &Edge<Id>,
-    knowledge: &BTreeMap<Id, Arc<Value<Id>>>,
+fn as_constant_assignment<'a>(
+    edge: &'a Edge<Id>,
+    knowledge: &<ConstantsAnalysis as Analysis>::Domain,
     ctx: &Context,
-) -> Option<(Id, Arc<Value<Id>>)> {
-    if edge.label.is_map_assignment() {
-        return None;
+) -> Option<(&'a Expression<Id>, Arc<Value<Id>>)> {
+    match &edge.label {
+        Label::Assignment { lhs, rhs } => Some((lhs, evaluate_constant(rhs, knowledge, ctx)?)),
+        _ => None,
     }
-    let (id, expr) = edge.label.as_assignment()?;
-    Some((id.clone(), evaluate_constant(expr.ok()?, knowledge, ctx)?))
 }
 
-fn as_constant_comparison(
-    edge: &Edge<Id>,
-    knowledge: &BTreeMap<Id, Arc<Value<Id>>>,
+fn as_constant_comparison<'a>(
+    edge: &'a Edge<Id>,
+    knowledge: &<ConstantsAnalysis as Analysis>::Domain,
     ctx: &Context,
-) -> Option<(Id, Arc<Value<Id>>)> {
+) -> Option<(&'a Expression<Id>, Arc<Value<Id>>)> {
     if let Label::Comparison {
         lhs,
         rhs,
@@ -111,16 +115,14 @@ fn as_constant_comparison(
         let lhs = lhs.uncast();
         let rhs = rhs.uncast();
 
-        let can_be_replaced = |id: &Id| ctx.is_variable(id) && !knowledge.contains_key(id);
-        if lhs.is_reference_and(can_be_replaced) {
-            let value = evaluate_constant(rhs, knowledge, ctx)?;
-            return lhs.as_reference().map(|id| (id.clone(), value));
-        }
+        let lhs_value = evaluate_constant(lhs, knowledge, ctx);
+        let rhs_value = evaluate_constant(rhs, knowledge, ctx);
 
-        if rhs.is_reference_and(can_be_replaced) {
-            let value = evaluate_constant(lhs, knowledge, ctx)?;
-            return rhs.as_reference().map(|id| (id.clone(), value));
-        }
+        return match (lhs_value, rhs_value) {
+            (None, Some(rhs_value)) => Some((lhs, rhs_value)),
+            (Some(lhs_value), None) => Some((rhs, lhs_value)),
+            _ => None,
+        };
     }
 
     None
@@ -128,10 +130,11 @@ fn as_constant_comparison(
 
 fn evaluate_constant(
     expr: &Expression<Id>,
-    knowledge: &BTreeMap<Id, Arc<Value<Id>>>,
+    knowledge: &<ConstantsAnalysis as Analysis>::Domain,
     ctx: &Context,
 ) -> Option<Arc<Value<Id>>> {
     match expr {
+        _ if knowledge.contains_key(expr) => knowledge.get(expr).cloned(),
         Expression::Access { lhs, rhs, .. } => {
             let lhs = evaluate_constant(lhs, knowledge, ctx)?;
             let rhs = evaluate_constant(rhs, knowledge, ctx)?;
@@ -144,9 +147,7 @@ fn evaluate_constant(
                 })
         }
         Expression::Cast { rhs, .. } => evaluate_constant(rhs, knowledge, ctx),
-        Expression::Reference { identifier } if ctx.is_variable(identifier) => {
-            knowledge.get(identifier).cloned()
-        }
+        Expression::Reference { identifier } if ctx.is_variable(identifier) => None,
         Expression::Reference { identifier } => ctx
             .get_constant(identifier)
             .cloned()
