@@ -11,23 +11,22 @@ pub struct ConstantsAnalysis {
 }
 
 impl ConstantsAnalysis {
-    fn as_constant_assignment(
+    fn as_constant_assignment<'a>(
         &self,
-        edge: &Edge<Id>,
-        knowledge: &BTreeMap<Id, Arc<Value<Id>>>,
-    ) -> Option<(Id, Arc<Value<Id>>)> {
-        if edge.label.is_map_assignment() {
-            return None;
+        edge: &'a Edge<Id>,
+        knowledge: &<Self as Analysis>::Domain,
+    ) -> Option<(&'a Expression<Id>, Arc<Value<Id>>)> {
+        match &edge.label {
+            Label::Assignment { lhs, rhs } => Some((lhs, self.evaluate_constant(rhs, knowledge)?)),
+            _ => None,
         }
-        let (id, expr) = edge.label.as_assignment()?;
-        Some((id.clone(), self.evaluate_constant(expr.ok()?, knowledge)?))
     }
 
-    fn as_constant_comparison(
+    fn as_constant_comparison<'a>(
         &self,
-        edge: &Edge<Id>,
-        knowledge: &BTreeMap<Id, Arc<Value<Id>>>,
-    ) -> Option<(Id, Arc<Value<Id>>)> {
+        edge: &'a Edge<Id>,
+        knowledge: &<Self as Analysis>::Domain,
+    ) -> Option<(&'a Expression<Id>, Arc<Value<Id>>)> {
         if let Label::Comparison {
             lhs,
             rhs,
@@ -37,16 +36,14 @@ impl ConstantsAnalysis {
             let lhs = lhs.uncast();
             let rhs = rhs.uncast();
 
-            let can_be_replaced = |id: &Id| self.is_variable(id) && !knowledge.contains_key(id);
-            if lhs.is_reference_and(can_be_replaced) {
-                let value = self.evaluate_constant(rhs, knowledge)?;
-                return lhs.as_reference().map(|id| (id.clone(), value));
-            }
+            let lhs_value = self.evaluate_constant(lhs, knowledge);
+            let rhs_value = self.evaluate_constant(rhs, knowledge);
 
-            if rhs.is_reference_and(can_be_replaced) {
-                let value = self.evaluate_constant(lhs, knowledge)?;
-                return rhs.as_reference().map(|id| (id.clone(), value));
-            }
+            return match (lhs_value, rhs_value) {
+                (None, Some(rhs_value)) => Some((lhs, rhs_value)),
+                (Some(lhs_value), None) => Some((rhs, lhs_value)),
+                _ => None,
+            };
         }
 
         None
@@ -64,9 +61,10 @@ impl ConstantsAnalysis {
     fn evaluate_constant(
         &self,
         expr: &Expression<Id>,
-        knowledge: &BTreeMap<Id, Arc<Value<Id>>>,
+        knowledge: &<Self as Analysis>::Domain,
     ) -> Option<Arc<Value<Id>>> {
         match expr {
+            _ if knowledge.contains_key(expr) => knowledge.get(expr).cloned(),
             Expression::Access { lhs, rhs, .. } => {
                 let lhs = self.evaluate_constant(lhs, knowledge)?;
                 let rhs = self.evaluate_constant(rhs, knowledge)?;
@@ -79,9 +77,7 @@ impl ConstantsAnalysis {
                     })
             }
             Expression::Cast { rhs, .. } => self.evaluate_constant(rhs, knowledge),
-            Expression::Reference { identifier } if self.is_variable(identifier) => {
-                knowledge.get(identifier).cloned()
-            }
+            Expression::Reference { identifier } if self.is_variable(identifier) => None,
             Expression::Reference { identifier } => self
                 .get_constant(identifier)
                 .cloned()
@@ -99,7 +95,7 @@ impl ConstantsAnalysis {
 }
 
 impl Analysis for ConstantsAnalysis {
-    type Domain = BTreeMap<Id, Arc<Value<Id>>>;
+    type Domain = BTreeMap<Expression<Id>, Arc<Value<Id>>>;
 
     fn bot(&self) -> Self::Domain {
         Self::Domain::default()
@@ -109,7 +105,12 @@ impl Analysis for ConstantsAnalysis {
         program
             .variables
             .iter()
-            .map(|v| (v.identifier.clone(), v.default_value.clone()))
+            .map(|v| {
+                (
+                    Expression::new(v.identifier.clone()),
+                    v.default_value.clone(),
+                )
+            })
             .collect()
     }
 
@@ -123,13 +124,17 @@ impl Analysis for ConstantsAnalysis {
     // x = 1;
     // x = y[x]; <- here `kill` removes `x` from `input` before `gen`, so `x` in lhs is not recognised as a constant
     fn transfer(&self, mut input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
-        if let Some((identifier, value)) = self
+        if let Some((expr, value)) = self
             .as_constant_assignment(edge, &input)
             .or_else(|| self.as_constant_comparison(edge, &input))
         {
-            input.insert(identifier, value);
+            // We need to remove all entries that use this variable, because its value has changed
+            if let Some(identifier) = &edge.label.as_var_assignment() {
+                input.retain(|e, _| !e.has_variable(identifier));
+            }
+            input.insert(expr.clone(), value);
         } else if let Some(identifier) = &edge.label.as_var_assignment() {
-            input.remove(*identifier);
+            input.retain(|expr, _| !expr.has_variable(identifier));
         }
 
         input
@@ -147,7 +152,6 @@ impl From<&Game<Id>> for ConstantsAnalysis {
             .iter()
             .map(|constant| (constant.identifier.clone(), constant.value.clone()))
             .collect();
-
         let variables = game
             .variables
             .iter()
