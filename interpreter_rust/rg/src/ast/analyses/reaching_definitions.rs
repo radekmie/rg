@@ -53,14 +53,13 @@ impl Definition {
 pub struct ReachingDefinitions;
 
 impl Analysis for ReachingDefinitions {
-    type Context = ();
     type Domain = BTreeMap<Id, Definition>;
 
     fn bot(&self) -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn extreme(&self, game: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn extreme(&self, game: &Game<Id>) -> Self::Domain {
         // Fake initial value assignments.
         let fake_definition = Definition::All(Arc::from(Edge::new_skip(
             Node::new(Id::from("")),
@@ -72,9 +71,7 @@ impl Analysis for ReachingDefinitions {
             .collect()
     }
 
-    fn get_context(&self, _program: &Game<Id>) -> Self::Context {}
-
-    fn join(&self, mut a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
+    fn join(&self, mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
         for (key, value_b) in b {
             a.entry(key)
                 .and_modify(|value_a| value_a.merge(value_b.clone()))
@@ -83,12 +80,7 @@ impl Analysis for ReachingDefinitions {
         a
     }
 
-    fn kill(
-        &self,
-        mut input: Self::Domain,
-        edge: &Arc<Edge<Id>>,
-        _ctx: &Self::Context,
-    ) -> Self::Domain {
+    fn kill(&self, mut input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
         if let Some(identifier) = edge.label.as_var_assignment() {
             if !edge.label.is_map_assignment() {
                 input.remove(identifier);
@@ -98,12 +90,7 @@ impl Analysis for ReachingDefinitions {
         input
     }
 
-    fn gen(
-        &self,
-        mut input: Self::Domain,
-        edge: &Arc<Edge<Id>>,
-        _ctx: &Self::Context,
-    ) -> Self::Domain {
+    fn gen(&self, mut input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
         if let Some(identifier) = edge.label.as_var_assignment() {
             input.insert(identifier.clone(), Definition::All(edge.clone()));
         }

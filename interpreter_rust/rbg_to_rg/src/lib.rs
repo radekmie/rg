@@ -1026,7 +1026,7 @@ fn remove_coord_null_check(context: &mut Context) {
 
 fn remove_keeper_move_tags(context: &mut Context) {
     let player = Id::from("player");
-    let reaching_definitions = context.rg.analyse(rg::analyses::ReachingDefinitions);
+    let reaching_definitions = context.rg.analyse(&rg::analyses::ReachingDefinitions);
     for edge in &mut context.rg.edges {
         if (edge.label.is_tag() || edge.label.is_tag_variable())
             && reaching_definitions

@@ -10,8 +10,8 @@ type Id = Arc<str>;
 impl Game<Id> {
     pub fn calculate_repeats_and_uniques(&mut self) -> Result<(), Error<Id>> {
         let has_next_edges: BTreeSet<_> = self.edges.iter().map(|edge| edge.lhs.clone()).collect();
-        let reachable_nodes = self.analyse(ReachableNodes::new());
-        let reaching_assignments = self.analyse(ReachingAssignments::from(&*self));
+        let reachable_nodes = self.analyse(&ReachableNodes::new());
+        let reaching_assignments = self.analyse(&ReachingAssignments::from(&*self));
 
         // Temporary clone for `check_reachability`.
         let mut clone = Self::default();
