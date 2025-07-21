@@ -14,7 +14,7 @@ impl ConstantsAnalysis {
     fn as_constant_assignment<'a>(
         &self,
         edge: &'a Edge<Id>,
-        knowledge: &<ConstantsAnalysis as Analysis>::Domain,
+        knowledge: &<Self as Analysis>::Domain,
     ) -> Option<(&'a Expression<Id>, Arc<Value<Id>>)> {
         match &edge.label {
             Label::Assignment { lhs, rhs } => Some((lhs, self.evaluate_constant(rhs, knowledge)?)),
@@ -25,7 +25,7 @@ impl ConstantsAnalysis {
     fn as_constant_comparison<'a>(
         &self,
         edge: &'a Edge<Id>,
-        knowledge: &<ConstantsAnalysis as Analysis>::Domain,
+        knowledge: &<Self as Analysis>::Domain,
     ) -> Option<(&'a Expression<Id>, Arc<Value<Id>>)> {
         if let Label::Comparison {
             lhs,
@@ -61,7 +61,7 @@ impl ConstantsAnalysis {
     fn evaluate_constant(
         &self,
         expr: &Expression<Id>,
-        knowledge: &<ConstantsAnalysis as Analysis>::Domain,
+        knowledge: &<Self as Analysis>::Domain,
     ) -> Option<Arc<Value<Id>>> {
         match expr {
             _ if knowledge.contains_key(expr) => knowledge.get(expr).cloned(),
