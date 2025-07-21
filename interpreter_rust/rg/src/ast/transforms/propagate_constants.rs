@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 type Id = Arc<str>;
 
+#[derive(Debug, Clone)]
 struct Context<'a> {
     constant_exprs: &'a BTreeMap<Expression<Id>, Arc<Value<Id>>>,
     constants: &'a BTreeMap<Id, Arc<Value<Id>>>,
@@ -604,5 +605,59 @@ mod test {
         a, b: board[y] == 2;
         b, c: x = A(*);
         c, d: x == A(2);"
+    );
+
+    test_transform!(
+        propagate_constants,
+        expr2,
+        "type A = {1,2,3,4};
+        type AA = A -> A;
+        const down: AA = {4:3, 3:2, :1};
+        var x: A = 3;
+        var y: A = 1;
+        var board: A -> A = {4:3, :2};
+        begin, a: y = A(*);
+        a, b: board[y] == 2;
+        b, c1: board[1] = 3;
+        b, c2: x = A(*);
+        c1, c: ;
+        c2, c: ;
+        c, end: x == board[y];"
+    );
+
+    test_transform!(
+        propagate_constants,
+        expr3,
+        "type A = {1,2,3,4};
+        type AA = A -> A;
+        const down: AA = {4:3, 3:2, :1};
+        var x: A = 3;
+        var y: A = 1;
+        var board: A -> A = {4:3, :2};
+        begin, a: y = A(*);
+        a, b: board[y] == 2;
+        b, c1: y = A(*);
+        b, c2: x = A(*);
+        c1, c: ;
+        c2, c: ;
+        c, end: x == board[y];"
+    );
+
+    test_transform!(
+        propagate_constants,
+        expr4,
+        "type A = {1,2,3,4};
+        type AA = A -> A;
+        const down: AA = {4:3, 3:2, :1};
+        var x: A = 3;
+        var y: A = 1;
+        var board: A -> A = {4:3, :2};
+        begin, a: y = A(*);
+        a, b: board[y] == 2;
+        b, c1: y = 4;
+        b, c2: x = A(*);
+        c1, c: ;
+        c2, c: ;
+        c, end: x == board[y];"
     );
 }

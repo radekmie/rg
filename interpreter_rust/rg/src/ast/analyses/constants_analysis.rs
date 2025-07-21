@@ -128,6 +128,10 @@ impl Analysis for ConstantsAnalysis {
             .as_constant_assignment(edge, &input)
             .or_else(|| self.as_constant_comparison(edge, &input))
         {
+            // We need to remove all entries that use this variable, because its value has changed
+            if let Some(identifier) = &edge.label.as_var_assignment() {
+                input.retain(|e, _| !e.has_variable(identifier));
+            }
             input.insert(expr.clone(), value);
         } else if let Some(identifier) = &edge.label.as_var_assignment() {
             input.retain(|expr, _| !expr.has_variable(identifier));
