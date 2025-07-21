@@ -30,7 +30,7 @@ impl Game<Id> {
         let next_edges = self.next_edges();
         let prev_edges = self.prev_edges();
         let artificial_tags = self.artificial_tags();
-        let reachable_nodes = self.analyse(ReachableNodes::new());
+        let reachable_nodes = self.analyse(&ReachableNodes::new());
         let tag_lookup = |edge: &Arc<Edge<Id>>| {
             let (tag, is_variable) = match &edge.label {
                 Label::Tag { symbol } => (symbol, false),

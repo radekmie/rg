@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 type Id = Arc<str>;
+type Disjoints = BTreeMap<Node<Id>, BTreeSet<Node<Id>>>;
 
 #[derive(Clone, Eq, PartialEq)]
 pub struct Assignment {
@@ -19,12 +20,12 @@ pub struct Assignment {
 }
 
 impl Assignment {
-    fn add_condition(&mut self, condition: &Arc<Edge<Id>>, context: &Context) {
+    fn add_condition(&mut self, condition: &Arc<Edge<Id>>, analysis: &ReachingAssignments) {
         self.is_conflicting = self.is_conflicting
             || self
                 .conditions
                 .iter()
-                .any(|x| context.is_disjoint(x, condition));
+                .any(|x| analysis.is_disjoint(x, condition));
 
         // Add condition only if it may cause a conflict in the future.
         if !self.is_conflicting {
@@ -41,13 +42,13 @@ impl Assignment {
         }
     }
 
-    fn join(&mut self, other: &Self, context: &Context) {
+    fn join(&mut self, other: &Self, analysis: &ReachingAssignments) {
         self.is_conflicting = self.is_conflicting
             || other.is_conflicting
             || self
                 .conditions
                 .iter()
-                .any(|x| other.conditions.iter().any(|y| context.is_disjoint(x, y)));
+                .any(|x| other.conditions.iter().any(|y| analysis.is_disjoint(x, y)));
 
         // Add conditions only if they may cause a conflict in the future.
         if !self.is_conflicting {
@@ -74,11 +75,24 @@ impl Assignment {
     }
 }
 
-pub struct Context {
-    disjoints: BTreeMap<Node<Id>, BTreeSet<Node<Id>>>,
+pub enum Variables {
+    Exclude(BTreeSet<Id>),
+    Include(BTreeSet<Id>),
 }
 
-impl Context {
+pub struct ReachingAssignments {
+    disjoints: Disjoints,
+    variables: Variables,
+}
+
+impl ReachingAssignments {
+    pub fn is_tracked_variable(&self, identifier: &Id) -> bool {
+        match &self.variables {
+            Variables::Exclude(variables) => !variables.contains(identifier),
+            Variables::Include(variables) => variables.contains(identifier),
+        }
+    }
+
     fn is_disjoint(&self, x: &Edge<Id>, y: &Edge<Id>) -> bool {
         // Either their labels are negated or they are marked with a `@disjoint`
         // or `@disjointExhaustive` pragma already.
@@ -89,73 +103,31 @@ impl Context {
                     .get(&x.lhs)
                     .is_some_and(|nodes| nodes.contains(&x.rhs) && nodes.contains(&y.rhs))
     }
-
-    fn new(game: &Game<Id>) -> Self {
-        Self {
-            disjoints: game
-                .pragmas
-                .iter()
-                .fold(BTreeMap::new(), |mut disjoints, pragma| {
-                    if let Pragma::Disjoint { node, nodes, .. }
-                    | Pragma::DisjointExhaustive { node, nodes, .. } = pragma
-                    {
-                        disjoints
-                            .entry(node.clone())
-                            .or_default()
-                            .extend(nodes.iter().cloned());
-                    }
-                    disjoints
-                }),
-        }
-    }
-}
-
-pub enum ReachingAssignments {
-    Exclude(BTreeSet<Id>),
-    Include(BTreeSet<Id>),
-}
-
-impl ReachingAssignments {
-    pub fn is_tracked_variable(&self, identifier: &Id) -> bool {
-        match self {
-            Self::Exclude(variables) => !variables.contains(identifier),
-            Self::Include(variables) => variables.contains(identifier),
-        }
-    }
 }
 
 impl Analysis for ReachingAssignments {
-    type Context = Context;
     type Domain = BTreeMap<Option<Id>, Assignment>;
 
     fn bot(&self) -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn extreme(&self, _program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn extreme(&self, _program: &Game<Id>) -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn get_context(&self, program: &Game<Id>) -> Self::Context {
-        Self::Context::new(program)
-    }
-
-    fn join(&self, mut a: Self::Domain, b: Self::Domain, ctx: &Self::Context) -> Self::Domain {
+    fn join(&self, mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
         for (variable, b_reached) in b.into_iter() {
             a.entry(variable)
-                .and_modify(|a_reached| a_reached.join(&b_reached, ctx))
+                .and_modify(|a_reached| a_reached.join(&b_reached, self))
                 .or_insert(b_reached);
         }
         a
     }
 
-    fn kill(
-        &self,
-        mut input: Self::Domain,
-        edge: &Arc<Edge<Id>>,
-        _ctx: &Self::Context,
-    ) -> Self::Domain {
-        if edge.label.is_player_assignment() || edge.label.is_tag() || edge.label.is_tag_variable() {
+    fn kill(&self, mut input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
+        if edge.label.is_player_assignment() || edge.label.is_tag() || edge.label.is_tag_variable()
+        {
             input.clear();
         } else if let Label::Comparison {
             lhs,
@@ -182,12 +154,7 @@ impl Analysis for ReachingAssignments {
         input
     }
 
-    fn gen(
-        &self,
-        mut input: Self::Domain,
-        edge: &Arc<Edge<Id>>,
-        ctx: &Self::Context,
-    ) -> Self::Domain {
+    fn gen(&self, mut input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
         if edge.label.is_assignment() {
             let variable = edge.label.as_var_assignment().unwrap();
             if self.is_tracked_variable(variable) {
@@ -202,7 +169,7 @@ impl Analysis for ReachingAssignments {
                 .or_insert_with(|| Assignment::new(&edge.lhs));
             if !edge.label.is_skip() {
                 for assignment in input.values_mut() {
-                    assignment.add_condition(edge, ctx);
+                    assignment.add_condition(edge, self);
                 }
             }
         }
@@ -213,15 +180,34 @@ impl Analysis for ReachingAssignments {
 
 impl From<&Game<Id>> for ReachingAssignments {
     fn from(game: &Game<Id>) -> Self {
+        let disjoints =
+            game.pragmas
+                .iter()
+                .fold(BTreeMap::new(), |mut disjoints: Disjoints, pragma| {
+                    if let Pragma::Disjoint { node, nodes, .. }
+                    | Pragma::DisjointExhaustive { node, nodes, .. } = pragma
+                    {
+                        disjoints
+                            .entry(node.clone())
+                            .or_default()
+                            .extend(nodes.iter().cloned());
+                    }
+                    disjoints
+                });
+
         let is_translated_from_rbg = game
             .pragmas
             .iter()
             .any(|pragma| matches!(pragma, Pragma::TranslatedFromRbg { .. }));
-
-        if is_translated_from_rbg {
-            Self::Include(BTreeSet::from([Id::from("coord")]))
+        let variables = if is_translated_from_rbg {
+            Variables::Include(BTreeSet::from([Id::from("coord")]))
         } else {
-            Self::Exclude(BTreeSet::from(["player", "goals", "visible"].map(Id::from)))
+            Variables::Exclude(BTreeSet::from(["player", "goals", "visible"].map(Id::from)))
+        };
+
+        Self {
+            disjoints,
+            variables,
         }
     }
 }

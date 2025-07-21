@@ -24,20 +24,17 @@ impl ReachableNodes {
 }
 
 impl Analysis for ReachableNodes {
-    type Context = ();
     type Domain = bool;
 
     fn bot(&self) -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn extreme(&self, _program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn extreme(&self, _program: &Game<Id>) -> Self::Domain {
         true
     }
 
-    fn get_context(&self, _program: &Game<Id>) -> Self::Context {}
-
-    fn join(&self, a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
+    fn join(&self, a: Self::Domain, b: Self::Domain) -> Self::Domain {
         a || b
     }
 

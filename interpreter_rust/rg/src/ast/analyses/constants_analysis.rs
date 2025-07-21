@@ -5,13 +5,86 @@ use std::sync::Arc;
 
 type Id = Arc<str>;
 
-#[derive(Default, PartialEq, Eq)]
-pub struct Context {
+pub struct ConstantsAnalysis {
     pub constants: BTreeMap<Id, Arc<Value<Id>>>,
     pub variables: BTreeSet<Id>,
 }
 
-impl Context {
+impl ConstantsAnalysis {
+    fn as_constant_assignment<'a>(
+        &self,
+        edge: &'a Edge<Id>,
+        knowledge: &<ConstantsAnalysis as Analysis>::Domain,
+    ) -> Option<(&'a Expression<Id>, Arc<Value<Id>>)> {
+        match &edge.label {
+            Label::Assignment { lhs, rhs } => Some((lhs, self.evaluate_constant(rhs, knowledge)?)),
+            _ => None,
+        }
+    }
+
+    fn as_constant_comparison<'a>(
+        &self,
+        edge: &'a Edge<Id>,
+        knowledge: &<ConstantsAnalysis as Analysis>::Domain,
+    ) -> Option<(&'a Expression<Id>, Arc<Value<Id>>)> {
+        if let Label::Comparison {
+            lhs,
+            rhs,
+            negated: false,
+        } = &edge.label
+        {
+            let lhs = lhs.uncast();
+            let rhs = rhs.uncast();
+
+            let lhs_value = self.evaluate_constant(lhs, knowledge);
+            let rhs_value = self.evaluate_constant(rhs, knowledge);
+
+            return match (lhs_value, rhs_value) {
+                (None, Some(rhs_value)) => Some((lhs, rhs_value)),
+                (Some(lhs_value), None) => Some((rhs, lhs_value)),
+                _ => None,
+            };
+        }
+
+        None
+    }
+
+    fn dereference_constant<'a>(&'a self, value: &'a Arc<Value<Id>>) -> &'a Arc<Value<Id>> {
+        match value.as_ref() {
+            Value::Element { identifier } if self.constants.contains_key(identifier) => {
+                self.dereference_constant(&self.constants[identifier])
+            }
+            _ => value,
+        }
+    }
+
+    fn evaluate_constant(
+        &self,
+        expr: &Expression<Id>,
+        knowledge: &<ConstantsAnalysis as Analysis>::Domain,
+    ) -> Option<Arc<Value<Id>>> {
+        match expr {
+            _ if knowledge.contains_key(expr) => knowledge.get(expr).cloned(),
+            Expression::Access { lhs, rhs, .. } => {
+                let lhs = self.evaluate_constant(lhs, knowledge)?;
+                let rhs = self.evaluate_constant(rhs, knowledge)?;
+                self.dereference_constant(&rhs)
+                    .to_identifier()
+                    .and_then(|identifier| {
+                        self.dereference_constant(&lhs)
+                            .get_entry(identifier)
+                            .map(|entry| Arc::new(entry.clone()))
+                    })
+            }
+            Expression::Cast { rhs, .. } => self.evaluate_constant(rhs, knowledge),
+            Expression::Reference { identifier } if self.is_variable(identifier) => None,
+            Expression::Reference { identifier } => self
+                .get_constant(identifier)
+                .cloned()
+                .or_else(|| Some(Arc::new(Value::new(identifier.clone())))),
+        }
+    }
+
     fn get_constant(&self, id: &Id) -> Option<&Arc<Value<Id>>> {
         self.constants.get(id)
     }
@@ -21,17 +94,14 @@ impl Context {
     }
 }
 
-pub struct ConstantsAnalysis;
-
 impl Analysis for ConstantsAnalysis {
-    type Context = Context;
     type Domain = BTreeMap<Expression<Id>, Arc<Value<Id>>>;
 
     fn bot(&self) -> Self::Domain {
         Self::Domain::default()
     }
 
-    fn extreme(&self, program: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn extreme(&self, program: &Game<Id>) -> Self::Domain {
         program
             .variables
             .iter()
@@ -44,38 +114,19 @@ impl Analysis for ConstantsAnalysis {
             .collect()
     }
 
-    fn join(&self, mut a: Self::Domain, b: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
+    fn join(&self, mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
         // Keep only keys present in both maps with the same value.
         a.retain(|key, value| b.get(key) == Some(value));
         a
     }
 
-    fn get_context(&self, program: &Game<Id>) -> Self::Context {
-        let mut ctx = Self::Context::default();
-        for constant in &program.constants {
-            let value = constant.value.clone();
-            ctx.constants.insert(constant.identifier.clone(), value);
-        }
-
-        ctx.variables = program
-            .variables
-            .iter()
-            .map(|v| v.identifier.clone())
-            .collect();
-        ctx
-    }
-
     // We can't use the default implementation, because it doesn't work for cases like:
     // x = 1;
     // x = y[x]; <- here `kill` removes `x` from `input` before `gen`, so `x` in lhs is not recognised as a constant
-    fn transfer(
-        &self,
-        mut input: Self::Domain,
-        edge: &Arc<Edge<Id>>,
-        ctx: &Self::Context,
-    ) -> Self::Domain {
-        if let Some((expr, value)) = as_constant_assignment(edge, &input, ctx)
-            .or_else(|| as_constant_comparison(edge, &input, ctx))
+    fn transfer(&self, mut input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
+        if let Some((expr, value)) = self
+            .as_constant_assignment(edge, &input)
+            .or_else(|| self.as_constant_comparison(edge, &input))
         {
             input.insert(expr.clone(), value);
         } else if let Some(identifier) = &edge.label.as_var_assignment() {
@@ -90,77 +141,22 @@ impl Analysis for ConstantsAnalysis {
     }
 }
 
-fn as_constant_assignment<'a>(
-    edge: &'a Edge<Id>,
-    knowledge: &<ConstantsAnalysis as Analysis>::Domain,
-    ctx: &Context,
-) -> Option<(&'a Expression<Id>, Arc<Value<Id>>)> {
-    match &edge.label {
-        Label::Assignment { lhs, rhs } => Some((lhs, evaluate_constant(rhs, knowledge, ctx)?)),
-        _ => None,
-    }
-}
-
-fn as_constant_comparison<'a>(
-    edge: &'a Edge<Id>,
-    knowledge: &<ConstantsAnalysis as Analysis>::Domain,
-    ctx: &Context,
-) -> Option<(&'a Expression<Id>, Arc<Value<Id>>)> {
-    if let Label::Comparison {
-        lhs,
-        rhs,
-        negated: false,
-    } = &edge.label
-    {
-        let lhs = lhs.uncast();
-        let rhs = rhs.uncast();
-
-        let lhs_value = evaluate_constant(lhs, knowledge, ctx);
-        let rhs_value = evaluate_constant(rhs, knowledge, ctx);
-
-        return match (lhs_value, rhs_value) {
-            (None, Some(rhs_value)) => Some((lhs, rhs_value)),
-            (Some(lhs_value), None) => Some((rhs, lhs_value)),
-            _ => None,
-        };
-    }
-
-    None
-}
-
-fn evaluate_constant(
-    expr: &Expression<Id>,
-    knowledge: &<ConstantsAnalysis as Analysis>::Domain,
-    ctx: &Context,
-) -> Option<Arc<Value<Id>>> {
-    match expr {
-        _ if knowledge.contains_key(expr) => knowledge.get(expr).cloned(),
-        Expression::Access { lhs, rhs, .. } => {
-            let lhs = evaluate_constant(lhs, knowledge, ctx)?;
-            let rhs = evaluate_constant(rhs, knowledge, ctx)?;
-            dereference_constant(&rhs, ctx)
-                .to_identifier()
-                .and_then(|identifier| {
-                    dereference_constant(&lhs, ctx)
-                        .get_entry(identifier)
-                        .map(|entry| Arc::new(entry.clone()))
-                })
+impl From<&Game<Id>> for ConstantsAnalysis {
+    fn from(game: &Game<Id>) -> Self {
+        let constants = game
+            .constants
+            .iter()
+            .map(|constant| (constant.identifier.clone(), constant.value.clone()))
+            .collect();
+        let variables = game
+            .variables
+            .iter()
+            .map(|v| v.identifier.clone())
+            .collect();
+        Self {
+            constants,
+            variables,
         }
-        Expression::Cast { rhs, .. } => evaluate_constant(rhs, knowledge, ctx),
-        Expression::Reference { identifier } if ctx.is_variable(identifier) => None,
-        Expression::Reference { identifier } => ctx
-            .get_constant(identifier)
-            .cloned()
-            .or_else(|| Some(Arc::new(Value::new(identifier.clone())))),
-    }
-}
-
-fn dereference_constant<'a>(value: &'a Arc<Value<Id>>, ctx: &'a Context) -> &'a Arc<Value<Id>> {
-    match value.as_ref() {
-        Value::Element { identifier } if ctx.constants.contains_key(identifier) => {
-            dereference_constant(&ctx.constants[identifier], ctx)
-        }
-        _ => value,
     }
 }
 
@@ -192,7 +188,7 @@ mod test {
                 Game::test_analysis(
                     $source,
                     $expect,
-                    Box::new(|_| ConstantsAnalysis),
+                    Box::new(|game| ConstantsAnalysis::from(game)),
                     Box::new(format_analysis),
                 );
             }

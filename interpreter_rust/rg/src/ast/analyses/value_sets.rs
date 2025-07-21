@@ -86,32 +86,24 @@ impl ValueSets {
 }
 
 impl Analysis for ValueSets {
-    type Context = ();
     type Domain = ValueSetMap;
 
     fn bot(&self) -> Self::Domain {
         self.maximum_by_variable.clone()
     }
 
-    fn extreme(&self, _game: &Game<Id>, _ctx: &Self::Context) -> Self::Domain {
+    fn extreme(&self, _game: &Game<Id>) -> Self::Domain {
         self.initial_by_variable.clone()
     }
 
-    fn get_context(&self, _program: &Game<Id>) -> Self::Context {}
-
-    fn join(&self, mut xs: Self::Domain, ys: Self::Domain, _ctx: &Self::Context) -> Self::Domain {
+    fn join(&self, mut xs: Self::Domain, ys: Self::Domain) -> Self::Domain {
         for (key, y) in ys {
             ValueSet::merge_with_at(&mut xs, key, y, &merge_sets);
         }
         xs
     }
 
-    fn transfer(
-        &self,
-        mut input: Self::Domain,
-        edge: &Arc<Edge<Id>>,
-        _ctx: &Self::Context,
-    ) -> Self::Domain {
+    fn transfer(&self, mut input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
         match &edge.label {
             Label::Assignment { lhs, rhs } => 'block: {
                 let variable = match lhs.uncast() {

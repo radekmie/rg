@@ -40,7 +40,7 @@ impl Game<Id> {
     }
 
     fn collect_to_inline(&self) -> (BTreeSet<ToInline>, BTreeSet<Arc<Edge<Id>>>) {
-        let reaching_definitions = self.analyse(ReachingDefinitions);
+        let reaching_definitions = self.analyse(&ReachingDefinitions);
         let next_edges = self.next_edges();
         let check_reachability = self.make_check_reachability(false);
         let mut to_inline = BTreeSet::new();
@@ -198,7 +198,7 @@ fn can_replace_usage(
         def.is_some_and(|def| def.as_all().is_some_and(|d| d.as_ref() == def_edge))
     }) && defs_on_assignment.iter().all(|(var, on_def)| {
         *var == to_replace
-            || (!on_def.is_some_and(|d| d.is_mixed())
+            || (!on_def.is_some_and(Definition::is_mixed)
                 && defs_on_usage
                     .get(var)
                     .is_some_and(|on_use| on_def == on_use))
