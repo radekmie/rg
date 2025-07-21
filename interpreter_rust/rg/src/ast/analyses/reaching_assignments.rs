@@ -75,14 +75,14 @@ impl Assignment {
     }
 }
 
-pub struct ReachingAssignments {
-    variables: Variables,
-    disjoints: Disjoints,
-}
-
 pub enum Variables {
     Exclude(BTreeSet<Id>),
     Include(BTreeSet<Id>),
+}
+
+pub struct ReachingAssignments {
+    disjoints: Disjoints,
+    variables: Variables,
 }
 
 impl ReachingAssignments {
@@ -119,7 +119,7 @@ impl Analysis for ReachingAssignments {
     fn join(&self, mut a: Self::Domain, b: Self::Domain) -> Self::Domain {
         for (variable, b_reached) in b.into_iter() {
             a.entry(variable)
-                .and_modify(|a_reached| a_reached.join(&b_reached, &self))
+                .and_modify(|a_reached| a_reached.join(&b_reached, self))
                 .or_insert(b_reached);
         }
         a
@@ -169,7 +169,7 @@ impl Analysis for ReachingAssignments {
                 .or_insert_with(|| Assignment::new(&edge.lhs));
             if !edge.label.is_skip() {
                 for assignment in input.values_mut() {
-                    assignment.add_condition(edge, &self);
+                    assignment.add_condition(edge, self);
                 }
             }
         }
@@ -180,10 +180,6 @@ impl Analysis for ReachingAssignments {
 
 impl From<&Game<Id>> for ReachingAssignments {
     fn from(game: &Game<Id>) -> Self {
-        let is_translated_from_rbg = game
-            .pragmas
-            .iter()
-            .any(|pragma| matches!(pragma, Pragma::TranslatedFromRbg { .. }));
         let disjoints =
             game.pragmas
                 .iter()
@@ -199,14 +195,19 @@ impl From<&Game<Id>> for ReachingAssignments {
                     disjoints
                 });
 
+        let is_translated_from_rbg = game
+            .pragmas
+            .iter()
+            .any(|pragma| matches!(pragma, Pragma::TranslatedFromRbg { .. }));
         let variables = if is_translated_from_rbg {
             Variables::Include(BTreeSet::from([Id::from("coord")]))
         } else {
             Variables::Exclude(BTreeSet::from(["player", "goals", "visible"].map(Id::from)))
         };
+
         Self {
-            variables,
             disjoints,
+            variables,
         }
     }
 }
