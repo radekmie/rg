@@ -97,6 +97,9 @@ impl Game<Id> {
                         edge.skip();
                     } else {
                         *rhs = Arc::new(new_rhs);
+                        if new_lhs != **lhs && new_lhs.is_access() {
+                            *lhs = Arc::new(new_lhs)
+                        }
                     }
                 }
                 Label::Comparison { lhs, rhs, negated } => {
@@ -659,5 +662,49 @@ mod test {
         c1, c: ;
         c2, c: ;
         c, end: x == board[y];"
+    );
+
+    test_transform!(
+        propagate_constants,
+        expr5,
+        "type A = {1,2,3,4};
+        type AA = A -> A;
+        var y: A = 1;
+        var board: A -> A = {4:3, :2};
+        begin, a: y = A(*);
+        a, b: board[y] == 1;
+        b, c: board[board[y]] = board[y];",
+        "type A = { 1, 2, 3, 4 };
+        type AA = A -> A;
+        var y: A = 1;
+        var board: A -> A = { 4: 3, :2 };
+        begin, a: y = A(*);
+        a, b: board[y] == 1;
+        b, c: board[board[y]] = A(1);"
+    );
+
+    test_transform!(
+        propagate_constants,
+        expr6,
+        "type A = { 1, 2, 3, 4 };
+        type AA = A -> A;
+        var x: A = 3;
+        var y: A = 1;
+        var board: A -> A = { 4: 3, :2 };
+        begin, a: y = A(*);
+        a, b: board[y] == 1;
+        b, c: x = A(*);
+        c, d: board2[x] = A(3);
+        b, c: board2[board[y]] = board[y];",
+        "type A = { 1, 2, 3, 4 };
+        type AA = A -> A;
+        var x: A = 3;
+        var y: A = 1;
+        var board: A -> A = { 4: 3, :2 };
+        begin, a: y = A(*);
+        a, b: board[y] == 1;
+        b, c: x = A(*);
+        c, d: board2[x] = A(3);
+        b, c: board2[A(1)] = A(1);"
     );
 }
