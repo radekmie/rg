@@ -1,7 +1,7 @@
 use clap::Args;
 use serde::Deserialize;
 
-#[derive(Args, Default, Deserialize)]
+#[derive(Args, Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Flags {
     //

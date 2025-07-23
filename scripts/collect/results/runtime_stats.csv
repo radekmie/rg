@@ -1,0 +1,9 @@
+plays,game,language,flags
+2417,breakthrough,rg,--enable-all-optimizations
+2413,breakthrough,rg,none
+1171,breakthrough-simple,rg,--enable-all-optimizations
+1169,breakthrough-simple,rg,none
+92157,ticTacToe,rg,--enable-all-optimizations
+95473,ticTacToe,rg,none
+21603074,minimal,rg,--enable-all-optimizations
+21720248,minimal,rg,none

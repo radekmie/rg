@@ -171,7 +171,7 @@ impl Game<RuntimeId> {
             increase(&mut turns, turn);
 
             if let Some(callback) = callback {
-                if play % step != 0 {
+                if play != plays {
                     continue;
                 }
 
@@ -251,6 +251,73 @@ impl Game<RuntimeId> {
                 callback(lines);
             }
         }
+
+        Ok(())
+    }
+
+    pub fn plays<Id: Clone + Display + Ord, R: Rng>(
+        &self,
+        rng: &mut R,
+        interner: &Interner<Id, RuntimeId>,
+        initial_state: &State,
+        time_in_seconds: usize,
+    ) -> Result<(), String> {
+        let mut plays: usize = 0;
+        let start = Instant::now();
+        let time_in_micros = time_in_seconds as u128 * 1_000_000;
+
+        while (start.elapsed().as_micros() as u128) < time_in_micros {
+            let mut state = initial_state.clone();
+            plays += 1;
+            loop {
+                let mut states = state.next_states(self, true).collect::<Vec<_>>();
+                if states.is_empty() {
+                    if !state.is_final() {
+                        return Err(format!(
+                            "Game unexpectedly ended in {}.",
+                            interner.recall(&state.position).unwrap()
+                        ));
+                    }
+
+                    break;
+                }
+
+                if state.player.is_keeper() {
+                    if states.len() != 1 {
+                        return Err(format!(
+                            "keeper had {} moves in {}.",
+                            states.len(),
+                            interner.recall(&state.position).unwrap()
+                        ));
+                    }
+                }
+
+                // Check if `(position, tags)` implies `values`, i.e., if all
+                // states are derivable from their position and tags.
+                states.sort_unstable_by(|x, y| {
+                    x.position
+                        .cmp(&y.position)
+                        .then_with(|| x.tags.cmp(&y.tags))
+                });
+
+                for states in states.windows(2) {
+                    if let [x, y] = states {
+                        if x.position == y.position && x.tags == y.tags && x.values != y.values {
+                            return Err(format!(
+                                "Encountered two moves with different variables from {} to {}.",
+                                interner.recall(&state.position).unwrap(),
+                                interner.recall(&x.position).unwrap()
+                            ));
+                        }
+                    }
+                }
+
+                state = states.into_iter().choose(rng).unwrap();
+                state.tags = Rc::default();
+            }
+        }
+
+        println!("Played {plays}");
 
         Ok(())
     }

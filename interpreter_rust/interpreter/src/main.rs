@@ -36,6 +36,13 @@ enum CliArgs {
         #[arg(long, default_value_t = String::from("/"))]
         initial_state_path: String,
     },
+    Plays {
+        #[command(flatten)]
+        game_with_flags: GameWithFlags,
+        time_in_seconds: usize,
+        #[arg(long, default_value_t = String::from("/"))]
+        initial_state_path: String,
+    },
     /// Print RG source
     Source {
         #[command(flatten)]
@@ -144,6 +151,18 @@ fn main() -> Result<(), String> {
                 &Some(|lines: Vec<_>| {
                     println!("{esc}c{}", lines.join("\n"), esc = 27 as char);
                 }),
+            )?;
+        }
+        CliArgs::Plays { game_with_flags, time_in_seconds, initial_state_path } => {
+            eprintln!("Playing {:?} for {} seconds", game_with_flags.path.to_str(), time_in_seconds);
+            eprint!("Flags: {:?}", game_with_flags.flags);
+            let (game, interner, _) = Game::try_from(game_with_flags.load()?)?;
+            let initial_state = game.initial_state_after(&interner, &initial_state_path)?;
+            game.plays(
+                &mut thread_rng(),
+                &interner,
+                &initial_state,
+                time_in_seconds,
             )?;
         }
         CliArgs::Source { game_with_flags } => {
