@@ -1,5 +1,5 @@
 use super::Analysis;
-use crate::ast::Game;
+use crate::ast::{Edge, Game};
 use std::sync::Arc;
 
 type Id = Arc<str>;
@@ -32,6 +32,10 @@ impl Analysis for ReachableNodes {
 
     fn extreme(&self, _program: &Game<Id>) -> Self::Domain {
         true
+    }
+
+    fn gen(&self, input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
+        input || edge.rhs.is_begin()
     }
 
     fn join(&self, a: Self::Domain, b: Self::Domain) -> Self::Domain {

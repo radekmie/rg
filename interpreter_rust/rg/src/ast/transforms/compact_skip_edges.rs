@@ -62,6 +62,8 @@ impl Game<Id> {
     ///   5. If all edges incoming to y satisfy 6. then remove y -> z
     fn skip_edge_backward(&self) -> RemovedAndMoved<(Vec<usize>, Node<Id>)> {
         let reachability_targets = self.reachability_targets();
+        let do_not_remove =
+            |n: &Node<Id>| reachability_targets.contains(n) || n.is_end() || n.is_begin();
         let next_edges = self.next_edges_with_idx();
         let prev_edges = self.prev_edges_with_idx();
         let mut to_remove = vec![];
@@ -75,7 +77,7 @@ impl Game<Id> {
                 let y = &y_z.lhs;
                 if !y_z.label.is_skip() // (1)
                     || used_nodes.contains(y) // For safety, this node could have been modified
-                    || reachability_targets.contains(y) // (3)
+                    || do_not_remove(y) // (3)
                     || next_edges.get(y).is_none_or(|n| n.len() != 1)
                 // (2)
                 {
@@ -121,6 +123,8 @@ impl Game<Id> {
     ///   5. If all edges outgoing from y satisfy 6. then remove x -> y
     fn skip_edge_forward(&self) -> RemovedAndMoved<(Node<Id>, Vec<usize>)> {
         let reachability_targets = self.reachability_targets();
+        let do_not_remove =
+            |n: &Node<Id>| reachability_targets.contains(n) || n.is_end() || n.is_begin();
         let next_edges = self.next_edges_with_idx();
         let prev_edges = self.prev_edges_with_idx();
         let mut to_remove = vec![];
@@ -134,7 +138,7 @@ impl Game<Id> {
                 let y = &x_y.rhs;
                 if !x_y.label.is_skip() // (1)
                     || used_nodes.contains(y) // For safety, this node could have been modified
-                    || reachability_targets.contains(y) // (3)
+                    || do_not_remove(y) // (3)
                     || prev_edges.get(y).is_none_or(|n| n.len() != 1)
                 // (2)
                 {
