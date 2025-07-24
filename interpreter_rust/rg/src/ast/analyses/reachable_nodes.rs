@@ -35,11 +35,7 @@ impl Analysis for ReachableNodes {
     }
 
     fn gen(&self, input: Self::Domain, edge: &Arc<Edge<Id>>) -> Self::Domain {
-        if edge.rhs.is_begin() {
-            true
-        } else {
-            input
-        }
+        input || edge.rhs.is_begin()
     }
 
     fn join(&self, a: Self::Domain, b: Self::Domain) -> Self::Domain {
