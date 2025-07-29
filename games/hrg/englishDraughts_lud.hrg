@@ -1,4 +1,4 @@
-// English draughts
+// English draughts (Ludii variant with turn limit 1250)
 
 domain Piece = empty | whitePawn | whiteKing | blackPawn | blackKing | border
 domain Player = white | black
