@@ -1,0 +1,384 @@
+#board =
+    rx3y0[blackMan]{downLeft:rx3y1}
+    rx2y1[blackMan]{downLeft:rx2y2,downRight:rx3y1}
+    rx3y1[blackMan]{downLeft:rx3y2,downRight:rx4y1,upLeft:rx2y1,upRight:rx3y0}
+    rx4y1[blackMan]{downLeft:rx4y2,upLeft:rx3y1}
+    rx1y2[blackMan]{downLeft:rx1y3,downRight:rx2y2}
+    rx2y2[blackMan]{downLeft:rx2y3,downRight:rx3y2,upLeft:rx1y2,upRight:rx2y1}
+    rx3y2[blackMan]{downLeft:rx3y3,downRight:rx4y2,upLeft:rx2y2,upRight:rx3y1}
+    rx4y2[empty]{downLeft:rx4y3,downRight:rx5y2,upLeft:rx3y2,upRight:rx4y1}
+    rx5y2[empty]{downLeft:rx5y3,upLeft:rx4y2}
+    rx0y3[blackMan]{downLeft:rx0y4,downRight:rx1y3}
+    rx1y3[blackMan]{downLeft:rx1y4,downRight:rx2y3,upLeft:rx0y3,upRight:rx1y2}
+    rx2y3[blackMan]{downLeft:rx2y4,downRight:rx3y3,upLeft:rx1y3,upRight:rx2y2}
+    rx3y3[empty]{downLeft:rx3y4,downRight:rx4y3,upLeft:rx2y3,upRight:rx3y2}
+    rx4y3[empty]{downLeft:rx4y4,downRight:rx5y3,upLeft:rx3y3,upRight:rx4y2}
+    rx5y3[whiteMan]{downLeft:rx5y4,downRight:rx6y3,upLeft:rx4y3,upRight:rx5y2}
+    rx6y3[whiteMan]{downLeft:rx6y4,upLeft:rx5y3}
+    rx0y4[blackMan]{downRight:rx1y4,upRight:rx0y3}
+    rx1y4[blackMan]{downLeft:rx1y5,downRight:rx2y4,upLeft:rx0y4,upRight:rx1y3}
+    rx2y4[empty]{downLeft:rx2y5,downRight:rx3y4,upLeft:rx1y4,upRight:rx2y3}
+    rx3y4[empty]{downLeft:rx3y5,downRight:rx4y4,upLeft:rx2y4,upRight:rx3y3}
+    rx4y4[whiteMan]{downLeft:rx4y5,downRight:rx5y4,upLeft:rx3y4,upRight:rx4y3}
+    rx5y4[whiteMan]{downLeft:rx5y5,downRight:rx6y4,upLeft:rx4y4,upRight:rx5y3}
+    rx6y4[whiteMan]{upLeft:rx5y4,upRight:rx6y3}
+    rx1y5[empty]{downRight:rx2y5,upRight:rx1y4}
+    rx2y5[empty]{downLeft:rx2y6,downRight:rx3y5,upLeft:rx1y5,upRight:rx2y4}
+    rx3y5[whiteMan]{downLeft:rx3y6,downRight:rx4y5,upLeft:rx2y5,upRight:rx3y4}
+    rx4y5[whiteMan]{downLeft:rx4y6,downRight:rx5y5,upLeft:rx3y5,upRight:rx4y4}
+    rx5y5[whiteMan]{upLeft:rx4y5,upRight:rx5y4}
+    rx2y6[whiteMan]{downRight:rx3y6,upRight:rx2y5}
+    rx3y6[whiteMan]{downLeft:rx3y7,downRight:rx4y6,upLeft:rx2y6,upRight:rx3y5}
+    rx4y6[whiteMan]{upLeft:rx3y6,upRight:rx4y5}
+    rx3y7[whiteMan]{upRight:rx3y6}
+#players = black(100),white(100)
+#pieces = blackKing,blackMan,empty,whiteKing,whiteMan
+#variables = turn(1250)
+#rules = 
+([$ turn=turn+1](
+{!(
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)upRight upRight upRight upRight downLeft downLeft downLeft downLeft downLeft downLeft downLeft upRight upRight upRight (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)(
+{blackKing}(
+upLeft {whiteKing,whiteMan}upLeft {empty}
++ upRight {whiteKing,whiteMan}upRight {empty}
++ downLeft {whiteKing,whiteMan}downLeft {empty}
++ downRight {whiteKing,whiteMan}downRight {empty}
+)
++ {blackMan}(
+downLeft {whiteKing,whiteMan}downLeft {empty}
++ downRight {whiteKing,whiteMan}downRight {empty}
+)
+)}->black (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)upRight upRight upRight upRight downLeft downLeft downLeft downLeft downLeft downLeft downLeft upRight upRight upRight (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)(
+{blackMan}[empty](
+downLeft 
++ downRight 
+){empty}->>(
+{?
+downLeft 
++ downRight 
+}[blackMan]
++ {!
+downLeft 
++ downRight 
+}[blackKing]
+)
++ {blackKing}[empty](
+upRight 
++ downLeft 
++ upLeft 
++ downRight 
+){empty}->>[blackKing]
+)
++ {?(
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)upRight upRight upRight upRight downLeft downLeft downLeft downLeft downLeft downLeft downLeft upRight upRight upRight (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)(
+{blackKing}(
+upLeft {whiteKing,whiteMan}upLeft {empty}
++ upRight {whiteKing,whiteMan}upRight {empty}
++ downLeft {whiteKing,whiteMan}downLeft {empty}
++ downRight {whiteKing,whiteMan}downRight {empty}
+)
++ {blackMan}(
+downLeft {whiteKing,whiteMan}downLeft {empty}
++ downRight {whiteKing,whiteMan}downRight {empty}
+)
+)}->black (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)upRight upRight upRight upRight downLeft downLeft downLeft downLeft downLeft downLeft downLeft upRight upRight upRight (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)(
+{blackMan}[empty](
+downLeft {whiteKing,whiteMan}[empty]downLeft {empty}
++ downRight {whiteKing,whiteMan}[empty]downRight {empty}
+)->>({?
+downLeft {whiteKing,whiteMan}downLeft {empty}
++ downRight {whiteKing,whiteMan}downRight {empty}
+}->black (
+downLeft {whiteKing,whiteMan}[empty]downLeft {empty}
++ downRight {whiteKing,whiteMan}[empty]downRight {empty}
+)->>)*{!
+downLeft {whiteKing,whiteMan}downLeft {empty}
++ downRight {whiteKing,whiteMan}downRight {empty}
+}(
+{?
+downLeft 
++ downRight 
+}[blackMan]
++ {!
+downLeft 
++ downRight 
+}[blackKing]
+)
++ {blackKing}[empty](
+upLeft {whiteKing,whiteMan}[empty]upLeft {empty}
++ upRight {whiteKing,whiteMan}[empty]upRight {empty}
++ downLeft {whiteKing,whiteMan}[empty]downLeft {empty}
++ downRight {whiteKing,whiteMan}[empty]downRight {empty}
+)->>({?
+upLeft {whiteKing,whiteMan}upLeft {empty}
++ upRight {whiteKing,whiteMan}upRight {empty}
++ downLeft {whiteKing,whiteMan}downLeft {empty}
++ downRight {whiteKing,whiteMan}downRight {empty}
+}->black (
+upLeft {whiteKing,whiteMan}[empty]upLeft {empty}
++ upRight {whiteKing,whiteMan}[empty]upRight {empty}
++ downLeft {whiteKing,whiteMan}[empty]downLeft {empty}
++ downRight {whiteKing,whiteMan}[empty]downRight {empty}
+)->>)*{!
+upLeft {whiteKing,whiteMan}upLeft {empty}
++ upRight {whiteKing,whiteMan}upRight {empty}
++ downLeft {whiteKing,whiteMan}downLeft {empty}
++ downRight {whiteKing,whiteMan}downRight {empty}
+}[blackKing]
+)
+)->>(
+{$ turn<1250}[$ black=100][$ white=0]
++ {$ turn==1250}[$ black=50][$ white=50]->>{!(
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)upRight upRight upRight upRight downLeft downLeft downLeft downLeft downLeft downLeft downLeft upRight upRight upRight (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)(
+{whiteKing}(
+(
+upRight 
++ downLeft 
++ upLeft 
++ downRight 
+){empty}
++ upLeft {blackKing,blackMan}upLeft {empty}
++ upRight {blackKing,blackMan}upRight {empty}
++ downLeft {blackKing,blackMan}downLeft {empty}
++ downRight {blackKing,blackMan}downRight {empty}
+)
++ {whiteMan}(
+(
+upLeft 
++ upRight 
+){empty}
++ upLeft {blackKing,blackMan}upLeft {empty}
++ upRight {blackKing,blackMan}upRight {empty}
+)
+)}[$ black=100][$ white=0]->>{}
+)[$ turn=turn+1](
+{!(
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)upRight upRight upRight upRight downLeft downLeft downLeft downLeft downLeft downLeft downLeft upRight upRight upRight (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)(
+{whiteKing}(
+upLeft {blackKing,blackMan}upLeft {empty}
++ upRight {blackKing,blackMan}upRight {empty}
++ downLeft {blackKing,blackMan}downLeft {empty}
++ downRight {blackKing,blackMan}downRight {empty}
+)
++ {whiteMan}(
+upLeft {blackKing,blackMan}upLeft {empty}
++ upRight {blackKing,blackMan}upRight {empty}
+)
+)}->white (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)upRight upRight upRight upRight downLeft downLeft downLeft downLeft downLeft downLeft downLeft upRight upRight upRight (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)(
+{whiteMan}[empty](
+upLeft 
++ upRight 
+){empty}->>(
+{?
+upLeft 
++ upRight 
+}[whiteMan]
++ {!
+upLeft 
++ upRight 
+}[whiteKing]
+)
++ {whiteKing}[empty](
+upRight 
++ downLeft 
++ upLeft 
++ downRight 
+){empty}->>[whiteKing]
+)
++ {?(
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)upRight upRight upRight upRight downLeft downLeft downLeft downLeft downLeft downLeft downLeft upRight upRight upRight (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)(
+{whiteKing}(
+upLeft {blackKing,blackMan}upLeft {empty}
++ upRight {blackKing,blackMan}upRight {empty}
++ downLeft {blackKing,blackMan}downLeft {empty}
++ downRight {blackKing,blackMan}downRight {empty}
+)
++ {whiteMan}(
+upLeft {blackKing,blackMan}upLeft {empty}
++ upRight {blackKing,blackMan}upRight {empty}
+)
+)}->white (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)upRight upRight upRight upRight downLeft downLeft downLeft downLeft downLeft downLeft downLeft upRight upRight upRight (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)(
+{whiteMan}[empty](
+upLeft {blackKing,blackMan}[empty]upLeft {empty}
++ upRight {blackKing,blackMan}[empty]upRight {empty}
+)->>({?
+upLeft {blackKing,blackMan}upLeft {empty}
++ upRight {blackKing,blackMan}upRight {empty}
+}->white (
+upLeft {blackKing,blackMan}[empty]upLeft {empty}
++ upRight {blackKing,blackMan}[empty]upRight {empty}
+)->>)*{!
+upLeft {blackKing,blackMan}upLeft {empty}
++ upRight {blackKing,blackMan}upRight {empty}
+}(
+{?
+upLeft 
++ upRight 
+}[whiteMan]
++ {!
+upLeft 
++ upRight 
+}[whiteKing]
+)
++ {whiteKing}[empty](
+upLeft {blackKing,blackMan}[empty]upLeft {empty}
++ upRight {blackKing,blackMan}[empty]upRight {empty}
++ downLeft {blackKing,blackMan}[empty]downLeft {empty}
++ downRight {blackKing,blackMan}[empty]downRight {empty}
+)->>({?
+upLeft {blackKing,blackMan}upLeft {empty}
++ upRight {blackKing,blackMan}upRight {empty}
++ downLeft {blackKing,blackMan}downLeft {empty}
++ downRight {blackKing,blackMan}downRight {empty}
+}->white (
+upLeft {blackKing,blackMan}[empty]upLeft {empty}
++ upRight {blackKing,blackMan}[empty]upRight {empty}
++ downLeft {blackKing,blackMan}[empty]downLeft {empty}
++ downRight {blackKing,blackMan}[empty]downRight {empty}
+)->>)*{!
+upLeft {blackKing,blackMan}upLeft {empty}
++ upRight {blackKing,blackMan}upRight {empty}
++ downLeft {blackKing,blackMan}downLeft {empty}
++ downRight {blackKing,blackMan}downRight {empty}
+}[whiteKing]
+)
+)->>(
+{$ turn<1250}[$ white=100][$ black=0]
++ {$ turn==1250}[$ white=50][$ black=50]->>{!(
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)upRight upRight upRight upRight downLeft downLeft downLeft downLeft downLeft downLeft downLeft upRight upRight upRight (
+upRight *
++ downLeft *
+)(
+upLeft *
++ downRight *
+)(
+{blackKing}(
+(
+upRight 
++ downLeft 
++ upLeft 
++ downRight 
+){empty}
++ upLeft {whiteKing,whiteMan}upLeft {empty}
++ upRight {whiteKing,whiteMan}upRight {empty}
++ downLeft {whiteKing,whiteMan}downLeft {empty}
++ downRight {whiteKing,whiteMan}downRight {empty}
+)
++ {blackMan}(
+(
+downLeft 
++ downRight 
+){empty}
++ downLeft {whiteKing,whiteMan}downLeft {empty}
++ downRight {whiteKing,whiteMan}downRight {empty}
+)
+)}[$ white=100][$ black=0]->>{}
+))*
