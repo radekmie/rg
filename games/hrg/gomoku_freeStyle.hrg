@@ -92,14 +92,14 @@ graph existsNonempty() {
   check(board[pos] == empty)
 }
 
-graph turn(me: Player, op: Player, piece: Piece) {
+graph turn(me: Player, op: Player) {
   player = me
   pos = Position(*)
   check(board[pos] == empty)
   $$ pos
   player = keeper
-  board[pos] = piece
-  if reachable(win(piece)) {
+  board[pos] = me
+  if reachable(win(me)) {
     goals[me] = 100
     goals[op] = 0
     end()
@@ -111,7 +111,7 @@ graph turn(me: Player, op: Player, piece: Piece) {
 
 graph rules() {
   loop {
-    turn(white, black, white)
-    turn(black, white, black)
+    turn(white, black)
+    turn(black, white)
   }
 }

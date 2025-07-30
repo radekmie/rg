@@ -99,7 +99,7 @@ graph turn(me: Player, op: Player) {
   check(board[pos] == empty)
   $$ pos
   player = keeper
-  board[pos] = piece
+  board[pos] = me
   if reachable(win(me)) {
     goals[me] = 100
     goals[op] = 0
