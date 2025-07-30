@@ -86,15 +86,14 @@ board : PositionOrNull -> Piece = {
   where X in 0..7, Y in 0..7;
   null = border
 }
-me : Player = white
 pos : PositionOrNull
 
-graph existsOppPiece() {
+graph existsOppPiece(me:Player) {
   pos = Position(*)
-  check(board[pos] == piece(opponent(me)))
+  check(board[pos] == piece[opponent[me]])
 }
 
-graph move(me: Player) {
+graph turn(me:Player) {
   player = me
   pos = Position(*)
   check(board[pos] == piece[me])
@@ -107,20 +106,16 @@ graph move(me: Player) {
   check(pos != null && board[pos] != piece[me])
   $$ pos
   player = keeper
-  board[pos] = piece(me)
-}
-
-graph turn() {
-  move(me)
-  if dirF[me][pos] == null || not(reachable(existsOppPiece())) {
+  board[pos] = piece[me]
+  if dirF[me][pos] == null || not(reachable(existsOppPiece(me))) {
     goals[me] = 100
     end()
   }
-  me = opponent[me]
 }
 
 graph rules() {
   loop {
-    turn()
+    turn(white)
+    turn(black)
   }
 }
