@@ -59,7 +59,7 @@ up {blackPawn}[empty]up {empty}
 + downRight {blackPawn}[empty]downRight {empty}
 )->>
 )[whitePawn](
-{$ turn==1250}[$ white=100][$ black=0]->>(
+{$ turn==1250}[$ white=100][$ black=0]->>{?(
 up 
 + down 
 + left 
@@ -87,7 +87,7 @@ up
 + upRight {whitePawn}[empty]upRight {empty}
 + downLeft {whitePawn}[empty]downLeft {empty}
 + downRight {whitePawn}[empty]downRight {empty}
-)(
+)}(
 {$ whitePawn>blackPawn}->>{}
 + {$ whitePawn<blackPawn}[$ white=0][$ black=100]->>{}
 + {$ whitePawn==blackPawn}[$ white=50][$ black=50]->>{}
@@ -124,7 +124,7 @@ up {whitePawn}[empty]up {empty}
 + downRight {whitePawn}[empty]downRight {empty}
 )->>
 )[blackPawn](
-{$ turn==1250}[$ black=100][$ white=0]->>(
+{$ turn==1250}[$ black=100][$ white=0]->>{?(
 up 
 + down 
 + left 
@@ -152,7 +152,7 @@ up
 + upRight {blackPawn}[empty]upRight {empty}
 + downLeft {blackPawn}[empty]downLeft {empty}
 + downRight {blackPawn}[empty]downRight {empty}
-)(
+)}(
 {$ blackPawn>whitePawn}->>{}
 + {$ blackPawn<whitePawn}[$ black=0][$ white=100]->>{}
 + {$ blackPawn==whitePawn}[$ black=50][$ white=50]->>{}
