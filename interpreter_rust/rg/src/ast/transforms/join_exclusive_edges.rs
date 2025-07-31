@@ -6,6 +6,7 @@ impl<Id: Clone + Ord> Game<Id> {
     pub fn join_exclusive_edges(&mut self) -> Result<(), Error<Id>> {
         let next_edges = self.next_edges();
         let prev_edges = self.prev_edges();
+        let mut changed_nodes = BTreeSet::new();
         let mut to_add = BTreeSet::new();
         let mut to_remove = BTreeSet::new();
         let artificial_tags = self.pragmas.iter().filter_map(|p| match p {
@@ -18,6 +19,9 @@ impl<Id: Clone + Ord> Game<Id> {
 
         for edges in next_edges.values() {
             let edge = edges.iter().next().unwrap();
+            if changed_nodes.contains(&edge.lhs) {
+                continue;
+            }
             if edge.is_conditional() {
                 if let Some(e2) = edges.iter().find(|e| e.label.is_negated(&edge.label)) {
                     let Some(path1) = build_path(&next_edges, &prev_edges, edge, None) else {
@@ -30,6 +34,7 @@ impl<Id: Clone + Ord> Game<Id> {
                     let path2_slice: Vec<_> = path2.iter().collect();
                     if paths_match(&path1, &path2_slice, &is_artificial_tag) {
                         to_add.insert(Arc::from(Edge::new_skip(edge.lhs.clone(), target.clone())));
+                        changed_nodes.insert(edge.lhs.clone());
                         to_remove.extend(path1);
                         to_remove.extend(path2);
                     }
@@ -39,6 +44,9 @@ impl<Id: Clone + Ord> Game<Id> {
 
         let empty_set: BTreeSet<_> = BTreeSet::new();
         for node in self.nodes() {
+            if changed_nodes.contains(node) {
+                continue;
+            }
             let Some((complex_start, simple_path)) = split_edges(
                 next_edges.get(&node).unwrap_or(&empty_set),
                 &artificial_tags,
