@@ -71,13 +71,11 @@ impl Game<Id> {
                 continue;
             };
 
-            let prevs_nexts: Vec<_> =
-                find_nexts(&tag_lookup, is_variable, edge, &prev_edges, &|x| &x.lhs)
-                    .into_iter()
-                    .flat_map(|(prev, _)| {
-                        find_nexts(&tag_lookup, is_variable, &prev, &next_edges, &|x| &x.rhs)
-                    })
-                    .collect();
+            let Ok(prevs_nexts) =
+                find_prevs_nexts(&tag_lookup, is_variable, edge, &prev_edges, &next_edges)
+            else {
+                continue;
+            };
 
             // If all successors of all predecessors match this tag...
             if prevs_nexts.iter().all(|x| is_tag_matching(edge, x)) {
@@ -145,10 +143,18 @@ fn find_nexts(
     edge: &Arc<Edge<Id>>,
     next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     next_node: &impl Fn(&Arc<Edge<Id>>) -> &Node<Id>,
-) -> Vec<EdgeAndPath<Id>> {
+) -> Result<Vec<EdgeAndPath<Id>>, ()> {
     let mut queue: Vec<(_, Vec<Arc<Edge<_>>>)> = vec![(next_node(edge), vec![])];
     let mut nexts = vec![];
+    let mut loops = 0;
     while let Some((node, path)) = queue.pop() {
+        // FIXME: Some automatons have an exponential number of paths. We can't
+        // process them effectively, so instead we bail out at some point.
+        loops += 1;
+        if loops == 10_000 {
+            return Err(());
+        }
+
         if let Some(edges) = next_edges.get(&node) {
             for edge in edges {
                 if is_break(tag_lookup, is_variable_tag, edge) {
@@ -167,7 +173,23 @@ fn find_nexts(
         }
     }
 
-    nexts
+    Ok(nexts)
+}
+
+fn find_prevs_nexts(
+    tag_lookup: &impl Fn(&Arc<Edge<Id>>) -> Option<bool>,
+    is_variable_tag: bool,
+    edge: &Arc<Edge<Id>>,
+    prev_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
+    next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
+) -> Result<Vec<EdgeAndPath<Id>>, ()> {
+    find_nexts(&tag_lookup, is_variable_tag, edge, prev_edges, &|x| &x.lhs)?
+        .into_iter()
+        .map(|(prev, _)| find_nexts(&tag_lookup, is_variable_tag, &prev, next_edges, &|x| &x.rhs))
+        .try_fold(vec![], |mut xs, ys| {
+            xs.extend(ys?);
+            Ok(xs)
+        })
 }
 
 fn is_break(

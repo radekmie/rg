@@ -40,7 +40,15 @@ impl Game<Id> {
             let mut paths_to_edges: BTreeMap<_, BTreeSet<_>> = BTreeMap::new();
             let mut paths_to_tags: BTreeMap<_, BTreeSet<(_, _, _)>> = BTreeMap::new();
             let mut queue: Vec<(_, Vec<Arc<Edge<_>>>, _)> = vec![(node.clone(), vec![], vec![])];
+            let mut loops = 0;
             while let Some((lhs, path, assignments)) = queue.pop() {
+                // FIXME: Some automatons have an exponential number of paths. We can't
+                // process them effectively, so instead we bail out at some point.
+                loops += 1;
+                if loops == 10_000 {
+                    continue 'outer;
+                }
+
                 let path_to_edge = paths_to_edges.entry(lhs.clone()).or_default();
 
                 // Add only if it's not saturated yet.
