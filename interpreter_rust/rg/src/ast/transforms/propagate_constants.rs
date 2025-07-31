@@ -98,7 +98,7 @@ impl Game<Id> {
                     } else {
                         *rhs = Arc::new(new_rhs);
                         if new_lhs != **lhs && new_lhs.is_access() {
-                            *lhs = Arc::new(new_lhs)
+                            *lhs = Arc::new(new_lhs);
                         }
                     }
                 }
@@ -112,8 +112,8 @@ impl Game<Id> {
                     *lhs = Arc::new(eval_expression(lhs, &context, &game, false));
                     *rhs = Arc::new(eval_expression(rhs, &context, &game, false));
 
-                    let lhs_value = context.get_value(&lhs);
-                    let rhs_value = context.get_value(&rhs);
+                    let lhs_value = context.get_value(lhs);
+                    let rhs_value = context.get_value(rhs);
 
                     // Skip comparisons between constants
                     if let (Some(lhs_value), Some(rhs_value)) = (lhs_value, rhs_value) {
