@@ -60,7 +60,7 @@ impl<Id: Clone + Ord> Game<Id> {
             };
             let target = &simple_path.first().unwrap().rhs;
             let Some(complex_path) =
-                build_complex_path(&next_edges, &prev_edges, complex_start, target)
+                build_complex_path(&next_edges, &prev_edges, complex_start, Some(target))
             else {
                 continue;
             };
@@ -81,22 +81,26 @@ fn build_complex_path<Id: Clone + Ord>(
     next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     prev_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     start_edge: &Arc<Edge<Id>>,
-    target: &Node<Id>,
+    target: Option<&Node<Id>>,
 ) -> Option<Vec<Arc<Edge<Id>>>> {
     let mut complex_path = vec![start_edge.clone()];
     let mut current_edge = start_edge;
 
     while let Some(next_edge) = next_edges.get(&current_edge.rhs).and_then(singleton) {
+        let prev_edges = prev_edges.get(&next_edge.lhs)?;
+
+        // Check if there is exactly one incoming edge for every node other than the first and last
+        if singleton(prev_edges).is_none() {
+            match target {
+                Some(target) if target != &next_edge.lhs => return None,
+                _ => return Some(complex_path),
+            }
+        }
         complex_path.push((*next_edge).clone());
         current_edge = *next_edge;
-        // Check if there is exactly one incoming edge for every node other than the first and last
-        singleton(prev_edges.get(&current_edge.lhs)?)?;
-        if &current_edge.rhs == target || current_edge.rhs == current_edge.lhs {
-            break;
-        }
     }
 
-    if complex_path.last().map(|edge| &edge.rhs) == Some(target) {
+    if target.is_none() || complex_path.last().map(|edge| &edge.rhs) == target {
         Some(complex_path)
     } else {
         None
