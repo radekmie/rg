@@ -12,14 +12,14 @@ impl<Id: Clone + Ord> Game<Id> {
             let edge_idx = edges.iter().next().unwrap();
             let edge = &self.edges[*edge_idx];
             if edge.is_conditional() {
-                let Some(other_edge_idx) = edges.iter().find(|idx| {
+                // Simple case, we have: a, b: cond1; a, b: !cond1;
+                if let Some(other_edge_idx) = edges.iter().find(|idx| {
                     let other_edge = &self.edges[**idx];
                     other_edge.rhs == edge.rhs && other_edge.label.is_negated(&edge.label)
-                }) else {
-                    continue;
-                };
-                to_ignore.insert(*edge_idx);
-                to_remove.insert(*other_edge_idx);
+                }) {
+                    to_ignore.insert(*edge_idx);
+                    to_remove.insert(*other_edge_idx);
+                }
             }
         }
 
@@ -91,6 +91,9 @@ fn build_complex_path<Id: Clone + Ord>(
         current_edge = *next_edge;
         // Check if there is exactly one incoming edge for every node other than the first and last
         singleton(prev_edges.get(&current_edge.lhs)?)?;
+        if &current_edge.rhs == target || current_edge.rhs == current_edge.lhs {
+            break;
+        }
     }
 
     if complex_path.last().map(|edge| &edge.rhs) == Some(target) {
@@ -284,8 +287,10 @@ mod test {
         b1, b2: 1 != 2;
         b2, b3: $ foo;
         b3, b4: $ bar;
-        b4, end: 1 != 3;",
+        b4, end: 1 != 3;
+        end, end1: 1 != 3;",
         "@artificialTag foo bar;
+        end, end1: 1 != 3;
         begin, end: ;"
     );
 
