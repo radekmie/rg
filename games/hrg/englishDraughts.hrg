@@ -72,52 +72,50 @@ board : PositionOrNull -> Piece = {
     where X in 0..7, Y in 0..7;
     null = border
 }
-me : Player = white
 pos : PositionOrNull
 stagnation : Stagnation = S(0)
 
-graph pawnCapturePossibleFrom() {
+graph pawnCapturePossibleFrom(me:Player) {
   branch dir in {fwdLeft, fwdRight} {
     pos = dir[me][pos]
     check(playerOf(board[pos]) == opponent[me])
     check(board[dir(me)(pos)] == empty)
   }
 }
-graph kingCapturePossibleFrom() {
+graph kingCapturePossibleFrom(me:Player) {
   branch dir in {upLeft, upRight, downLeft, downRight} {
     check(playerOf(board[dir[pos]]) == opponent[me])
     check(board[dir[dir[pos]]] == empty)
   }
 }
-graph anyCapturePossible() {
+graph anyCapturePossible(me:Player) {
   pos = Position(*)
   branch {
     check(board[pos] == myPawn[me])
-    pawnCapturePossibleFrom()
+    pawnCapturePossibleFrom(me)
   } or {
     check(board[pos] == myKing[me])
-    kingCapturePossibleFrom()
+    kingCapturePossibleFrom(me)
   }
 }
 
-graph anyNormalMovePossible() {
+graph anyNormalMovePossible(me:Player) {
   pos = Position(*)
   branch {
     check(board[pos] == myPawn[me])
     branch dir in {fwdLeft, fwdRight} {
       pos = dir[me][pos]
     }
-    check(board[pos] == empty)
   } or {
-    check(board[pos] == myKing(me))
+    check(board[pos] == myKing[me])
     branch dir in {upLeft, upRight, downLeft, downRight} {
       pos = dir[pos]
     }
-    check(board[pos] == empty)
   }
+  check(board[pos] == empty)
 }
 
-graph movePawnNormal() {
+graph movePawnNormal(me:Player) {
   check(board[pos] == myPawn[me])
   board[pos] = empty
   $$ pos
@@ -132,7 +130,7 @@ graph movePawnNormal() {
   check(board[pos] == empty)
 }
 
-graph movePawnCapture() {
+graph movePawnCapture(me:Player) {
   check(board[pos] == myPawn[me])
   board[pos] = empty
   $$ pos
@@ -154,13 +152,13 @@ graph movePawnCapture() {
 
     check(board[pos] == empty)
 
-    if not(reachable(pawnCapturePossibleFrom())) {
+    if not(reachable(pawnCapturePossibleFrom(me))) {
       break()
     }
   }
 }
 
-graph moveKingNormal() {
+graph moveKingNormal(me:Player) {
   check(board[pos] == myKing[me])
   board[pos] = empty
   $$ pos
@@ -181,7 +179,7 @@ graph moveKingNormal() {
   check(board[pos] == empty)
 }
 
-graph moveKingCapture() {
+graph moveKingCapture(me:Player) {
   check(board[pos] == myKing(me))
   board[pos] = empty
   $$ pos
@@ -215,43 +213,43 @@ graph moveKingCapture() {
 
     check(board[pos] == empty)
 
-    if not(reachable(kingCapturePossibleFrom())) {
+    if not(reachable(kingCapturePossibleFrom(me))) {
       break()
     }
   }
 }
 
-graph move() {
-  if reachable(anyCapturePossible()) {
+graph move(me:Player) {
+  if reachable(anyCapturePossible(me)) {
     if stagnation == S(20) {
       end()
     }
     player = me
     pos = Position(*)
     branch {
-      movePawnCapture()
+      movePawnCapture(me)
       player = keeper
       board[pos] = promotedOrNot[me][pos]
     } or {
-      moveKingCapture()
+      moveKingCapture(me)
       player = keeper
       board[pos] = myKing[me]
     } 
     stagnation = S(0)
   } else {
-    if reachable(anyNormalMovePossible()) {
+    if reachable(anyNormalMovePossible(me)) {
       if stagnation == S(20) {
         end()
       }
       player = me
       pos = Position(*)
       branch {
-        movePawnNormal()
+        movePawnNormal(me)
         player = keeper
         board[pos] = promotedOrNot[me][pos]
         stagnation = S(0)
       } or {
-        moveKingNormal()
+        moveKingNormal(me)
         player = keeper
         board[pos] = myKing[me]
         stagnation = increment[stagnation]
@@ -266,7 +264,7 @@ graph move() {
 
 graph rules() {
   loop {
-    move()
-    me = opponent[me]
+    move(white)
+    move(black)
   }
 }
