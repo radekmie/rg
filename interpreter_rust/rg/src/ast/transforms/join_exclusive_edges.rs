@@ -1,57 +1,52 @@
-use crate::ast::{Edge, Error, Game, Node, Pragma};
+use crate::ast::{Edge, Error, Game, Label, Node, Pragma};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 impl<Id: Clone + Ord> Game<Id> {
     pub fn join_exclusive_edges(&mut self) -> Result<(), Error<Id>> {
-        let next_edges = self.next_edges_idx();
-        let mut to_ignore = BTreeSet::new();
+        let next_edges = self.next_edges();
+        let prev_edges = self.prev_edges();
+        let mut changed_nodes = BTreeSet::new();
+        let mut to_add = BTreeSet::new();
         let mut to_remove = BTreeSet::new();
+        let artificial_tags = self.pragmas.iter().filter_map(|p| match p {
+            Pragma::ArtificialTag { tags, .. } => Some(tags),
+            _ => None,
+        });
+        let artificial_tags: BTreeSet<&Id> = artificial_tags.flatten().collect();
+        let is_artificial_tag =
+            |label: &Label<Id>| label.is_tag_and(|t| artificial_tags.contains(t));
 
         for edges in next_edges.values() {
-            let edge_idx = edges.iter().next().unwrap();
-            let edge = &self.edges[*edge_idx];
+            let edge = edges.iter().next().unwrap();
+            if changed_nodes.contains(&edge.lhs) {
+                continue;
+            }
             if edge.is_conditional() {
-                let Some(other_edge_idx) = edges.iter().find(|idx| {
-                    let other_edge = &self.edges[**idx];
-                    other_edge.rhs == edge.rhs && other_edge.label.is_negated(&edge.label)
-                }) else {
-                    continue;
-                };
-                to_ignore.insert(*edge_idx);
-                to_remove.insert(*other_edge_idx);
+                if let Some(e2) = edges.iter().find(|e| e.label.is_negated(&edge.label)) {
+                    let Some(path1) = build_path(&next_edges, &prev_edges, edge, None) else {
+                        continue;
+                    };
+                    let target = &path1.last().unwrap().rhs;
+                    let Some(path2) = build_path(&next_edges, &prev_edges, e2, Some(target)) else {
+                        continue;
+                    };
+                    let path2_slice: Vec<_> = path2.iter().collect();
+                    if paths_match(&path1, &path2_slice, &is_artificial_tag) {
+                        to_add.insert(Arc::from(Edge::new_skip(edge.lhs.clone(), target.clone())));
+                        changed_nodes.insert(edge.lhs.clone());
+                        to_remove.extend(path1);
+                        to_remove.extend(path2);
+                    }
+                }
             }
         }
 
-        for index in to_ignore {
-            Arc::make_mut(&mut self.edges[index]).skip();
-        }
-
-        for index in to_remove.into_iter().rev() {
-            self.edges.remove(index);
-        }
-
-        self.join_complex();
-
-        Ok(())
-    }
-
-    fn join_complex(&mut self) {
-        let next_edges = self.next_edges();
-        let prev_edges = self.prev_edges();
-        let artificial_tags: BTreeSet<&Id> = self
-            .pragmas
-            .iter()
-            .filter_map(|p| match p {
-                Pragma::ArtificialTag { tags, .. } => Some(tags),
-                _ => None,
-            })
-            .flatten()
-            .collect();
         let empty_set: BTreeSet<_> = BTreeSet::new();
-        let mut to_remove = vec![];
-        let mut to_add = vec![];
         for node in self.nodes() {
+            if changed_nodes.contains(node) {
+                continue;
+            }
             let Some((complex_start, simple_path)) = split_edges(
                 next_edges.get(&node).unwrap_or(&empty_set),
                 &artificial_tags,
@@ -60,40 +55,48 @@ impl<Id: Clone + Ord> Game<Id> {
             };
             let target = &simple_path.first().unwrap().rhs;
             let Some(complex_path) =
-                build_complex_path(&next_edges, &prev_edges, complex_start, target)
+                build_path(&next_edges, &prev_edges, complex_start, Some(target))
             else {
                 continue;
             };
-
-            if paths_match(&complex_path, &simple_path, &artificial_tags) {
+            if paths_match(&complex_path, &simple_path, &is_artificial_tag) {
                 to_remove.extend(complex_path);
                 to_remove.extend(simple_path.into_iter().cloned());
-                to_add.push(Arc::from(Edge::new_skip(node.clone(), target.clone())));
+                to_add.insert(Arc::from(Edge::new_skip(node.clone(), target.clone())));
             }
         }
 
-        self.edges.retain(|edge| !to_remove.contains(edge));
         self.edges.extend(to_add);
+        self.edges.retain(|edge| !to_remove.contains(edge));
+
+        Ok(())
     }
 }
 
-fn build_complex_path<Id: Clone + Ord>(
+fn build_path<Id: Clone + Ord>(
     next_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     prev_edges: &BTreeMap<&Node<Id>, BTreeSet<&Arc<Edge<Id>>>>,
     start_edge: &Arc<Edge<Id>>,
-    target: &Node<Id>,
+    target: Option<&Node<Id>>,
 ) -> Option<Vec<Arc<Edge<Id>>>> {
     let mut complex_path = vec![start_edge.clone()];
     let mut current_edge = start_edge;
 
     while let Some(next_edge) = next_edges.get(&current_edge.rhs).and_then(singleton) {
+        let prev_edges = prev_edges.get(&next_edge.lhs)?;
+
+        // Check if there is exactly one incoming edge for every node other than the first and last
+        if singleton(prev_edges).is_none() {
+            match target {
+                Some(target) if target != &next_edge.lhs => return None,
+                _ => return Some(complex_path),
+            }
+        }
         complex_path.push((*next_edge).clone());
         current_edge = *next_edge;
-        // Check if there is exactly one incoming edge for every node other than the first and last
-        singleton(prev_edges.get(&current_edge.lhs)?)?;
     }
 
-    if complex_path.last().map(|edge| &edge.rhs) == Some(target) {
+    if target.is_none() || complex_path.last().map(|edge| &edge.rhs) == target {
         Some(complex_path)
     } else {
         None
@@ -111,17 +114,19 @@ fn singleton<T>(set: &BTreeSet<T>) -> Option<&T> {
 fn paths_match<Id: Ord>(
     complex_path: &[Arc<Edge<Id>>],
     simple_path: &[&Arc<Edge<Id>>],
-    artificial_tags: &BTreeSet<&Id>,
+    is_artificial_tag: &dyn Fn(&Label<Id>) -> bool,
 ) -> bool {
     // For each condition on simple path "p" complex path contains "!p"
     // For each condition on complex path "p" simple path contains "!p"
     simple_path.iter().all(|simple| {
-        simple.label.is_tag_and(|t| artificial_tags.contains(t))
+        is_artificial_tag(&simple.label)
+            || simple.label.is_skip()
             || complex_path
                 .iter()
                 .any(|complex| complex.label.is_negated(&simple.label))
     }) && complex_path.iter().all(|complex| {
-        complex.label.is_tag_and(|t| artificial_tags.contains(t))
+        is_artificial_tag(&complex.label)
+            || complex.label.is_skip()
             || simple_path
                 .iter()
                 .any(|simple| simple.label.is_negated(&complex.label))
@@ -176,8 +181,8 @@ mod test {
         "begin, end: ? a -> b;
         begin, end: ! a -> b;
         begin, end: ? a -> c;",
-        "begin, end: ;
-        begin, end: ? a -> c;"
+        "begin, end: ? a -> c;
+        begin, end: ;"
     );
 
     test_transform!(
@@ -284,8 +289,10 @@ mod test {
         b1, b2: 1 != 2;
         b2, b3: $ foo;
         b3, b4: $ bar;
-        b4, end: 1 != 3;",
+        b4, end: 1 != 3;
+        end, end1: 1 != 3;",
         "@artificialTag foo bar;
+        end, end1: 1 != 3;
         begin, end: ;"
     );
 
@@ -318,5 +325,17 @@ mod test {
         b2, end: 1 != 3;",
         "@artificialTag foo bar;
         begin, end: ;"
+    );
+
+    test_transform!(
+        join_exclusive_edges,
+        pentago,
+        "@artificialTag t1 t2;
+        2481, 2482: ? 999 -> 1000;
+        2482, 2483: $t1 ;
+        2483, 2187: $t2 ;
+        2481, 2187: ! 999 -> 1000;",
+        "@artificialTag t1 t2;
+        2481, 2187: ;"
     );
 }
