@@ -1326,6 +1326,31 @@ impl<Id: Ord> Game<Id> {
 impl Game<Arc<str>> {
     pub fn to_stats(&self) -> Stats {
         let edges = self.edges.len();
+        let skip_edges = self
+            .edges
+            .iter()
+            .filter(|edge| edge.label.is_skip())
+            .count();
+        let assign_edges = self
+            .edges
+            .iter()
+            .filter(|edge| edge.label.is_assignment())
+            .count();
+        let comparison_edges = self
+            .edges
+            .iter()
+            .filter(|edge| edge.label.is_comparison())
+            .count();
+        let reachability_edges = self
+            .edges
+            .iter()
+            .filter(|edge| edge.label.is_reachability())
+            .count();
+        let tag_edges = self
+            .edges
+            .iter()
+            .filter(|edge| edge.label.is_tag() || edge.label.is_tag_variable())
+            .count();
         let nodes = self.nodes().len();
         let constants = self.constants.len();
         let variables = self.variables.len();
@@ -1395,6 +1420,11 @@ impl Game<Arc<str>> {
             repeat_nodes: repeat_nodes.len(),
             unique_nodes: unique_nodes.len(),
             repeat_or_unique_nodes: repeat_or_unique_nodes.len(),
+            skip_edges,
+            assign_edges,
+            comparison_edges,
+            reachability_edges,
+            tag_edges,
         }
     }
 }
@@ -1650,6 +1680,11 @@ pub struct Stats {
     repeat_or_unique_nodes: usize,
     repeat_nodes: usize,
     unique_nodes: usize,
+    skip_edges: usize,
+    assign_edges: usize,
+    comparison_edges: usize,
+    reachability_edges: usize,
+    tag_edges: usize,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

@@ -154,17 +154,17 @@ fn analyze_rg_inner(
     }
 
     macro_rules! game_call {
-        ($game:expr, $fn:ident) => {
+        ($game:expr, $copy:expr, $fn:ident) => {
             let result = if cfg!(target_arch = "wasm32") || !verbose {
                 $game.$fn()
             } else {
                 let now = std::time::Instant::now();
-                eprint!("{}", stringify!($fn));
                 let result = $game.$fn();
-                eprintln!(" {:?}", now.elapsed());
+                let elapsed = now.elapsed().as_micros();
+                let changed = $game != $copy;
+                eprintln!("{} {} {}", stringify!($fn), elapsed, changed);
                 result
             };
-
             check!(result, add_game_stats!($game))
         };
     }
@@ -194,28 +194,28 @@ fn analyze_rg_inner(
 
     // Builtins may not be required.
     let copy = game.clone();
-    game_call!(game, add_builtins);
+    game_call!(game, copy, add_builtins);
     if copy != game {
         game_step!(game, "add_builtins");
     }
 
     loop {
-        game_call!(game, check_assignments);
-        game_call!(game, check_duplicated_names);
-        game_call!(game, check_maps);
-        // game_call!(game, check_multiple_edges);
-        game_call!(game, check_reachabilities);
-        game_call!(game, check_tag_loops);
-        game_call!(game, check_tag_variables);
-        game_call!(game, check_types);
-
         let copy = game.clone();
         let mut restart = true;
+
+        game_call!(game, copy, check_assignments);
+        game_call!(game, copy, check_duplicated_names);
+        game_call!(game, copy, check_maps);
+        // game_call!(game, copy, check_multiple_edges);
+        game_call!(game, copy, check_reachabilities);
+        game_call!(game, copy, check_tag_loops);
+        game_call!(game, copy, check_tag_variables);
+        game_call!(game, copy, check_types);
 
         macro_rules! pass {
             ($fn:ident) => {
                 if flags.$fn {
-                    game_call!(game, $fn);
+                    game_call!(game, copy, $fn);
                     if game != copy {
                         game_step!(game, stringify!($fn));
                         if restart {
