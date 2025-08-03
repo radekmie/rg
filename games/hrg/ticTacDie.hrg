@@ -1,5 +1,4 @@
 // Tic-tac-die
-// Borys Adamiak
 
 
 domain Piece = empty | x | o

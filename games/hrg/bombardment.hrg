@@ -1,7 +1,6 @@
 // Bombardment
 // Move form: Position (Position + E)
 
-//  Bombardment Jakub Iliński
 //  MOVE: On each turn, each player must do one of the following actions:
 //       - Move one friendly stone (the missiles) one cell forward (orthogonally or diagonally)
 //       - Explode one friendly stone, i.e., capture all stones of either color orthogonally and diagonally adjacent including itself.

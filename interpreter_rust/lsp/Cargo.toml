@@ -1,7 +1,6 @@
 [package]
 name = "lsp"
 version = "0.1.0"
-authors = ["Jakub Cieśluk <323892@uwr.edu.pl>"]
 edition = "2021"
 
 [dependencies]

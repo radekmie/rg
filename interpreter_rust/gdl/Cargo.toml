@@ -1,7 +1,6 @@
 [package]
 name = "gdl"
 version = "0.1.0"
-authors = ["Radosław Miernik <radekmie@gmail.com>"]
 edition = "2021"
 
 [dependencies]
