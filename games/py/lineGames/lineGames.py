@@ -1,17 +1,4 @@
 
-# v0.10b
-
-# - fixed issue with too large 'less' domain
-# - 13(2) games implemented (aplikowalne kwadraty z trójkątami) (SmasandyutakankarikridaAllahabad_lud out)
-# - 13(3) games implemented (wszystkie kółka i proste kwadraty)
-# - setLimits: stagnation, maxTurns
-# - wszystkie triangle direction działają
-# - DashGuti perf śmiga
-# - Lau Kata Kati perf śmiga
-# - dopisany niby SPLIT
-# - Alquerque perf śmiga
-# - gry kółkowe powinny działać - Pretwa perf śmiga
-
 from enum import Enum
 
 
@@ -1082,7 +1069,7 @@ def Tuknanavuhpi_lud():
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
-def AhtarahGuti_lud(): # same as LamPusri
+def AhtarahGuti_lud(): 
     game = LineGame()
     game.addBoardAlquerque(width=5, height=5) 
     for d in[N, S]: game.attachTriangle3(dir=d, height=3)
@@ -1104,7 +1091,7 @@ def DamSingapore_lud():
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
     
-def DamHariman_lud(): # same as HewakamKeliya_lud
+def DamHariman_lud(): 
     game = LineGame()
     game.addBoardAlquerque(width=5, height=5) 
     for d in[N, S]: game.attachTriangle3(dir=d, height=3)
@@ -1166,7 +1153,7 @@ def KauaDorki_lud():
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
-def KotuEllima_lud(): # rotated 90*
+def KotuEllima_lud(): 
     game = LineGame()
     game.addBoardAlquerque(width=5, height=5) 
     for d in[N, E, S, W]: game.attachTriangle3(dir=d, height=3)
@@ -1221,7 +1208,7 @@ def MogulPutthan_lud():
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
-def Peralikatuma_lud(): # rotated 90*
+def Peralikatuma_lud(): 
     game = LineGame()
     game.addBoardAlquerque(width=5, height=5) 
     for d in[N, E, S, W]: game.attachTriangle3(dir=d, height=3)
@@ -1243,18 +1230,6 @@ def Satoel_lud():
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
-'''
-def SmasandyutakankarikridaAllahabad_lud(): # TODO can make nocapture move after making capture move!! (also with other piece)
-    game = LineGame()
-    game.addBoardAlquerque(width=5, height=5) 
-    for d in[N, E, S, W, NE, NW, SE, SW]: game.attachTriangle3(dir=d, height=3)
-    game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
-    game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
-    game.setLimits(stagnation=None, maxTurns=1250)
-    return game    
-'''
-
 def Smasandyutakankarikrida_lud():
     game = LineGame()
     game.addBoardAlquerque(width=5, height=5) 
@@ -1265,20 +1240,6 @@ def Smasandyutakankarikrida_lud():
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
-'''
-def Terhuchu_todo_lud(): # not working: Within the triangular extensions, pieces may move two places at a time, in a straight line.
-    game = LineGame()
-    game.addBoardAlquerque(width=5, height=5) 
-    for d in[N, E, S, W, NE, NW, SE, SW]: game.attachTriangle3(dir=d, height=3)
-    game.addPiecesAlquerque(InitialPieces.SQUARE_1ROWS)
-    game.addPieces(WHITE_PIECE, 'cy3x1', 'cy3x2', 'cy3x3', 'tsouthvy1x0')
-    game.addPieces(BLACK_PIECE, 'cy1x1', 'cy1x3', 'cy1x3', 'tnorthvy1x0')
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
-    game.setLimits(stagnation=None, maxTurns=1250)
-    return game
-'''
-
-    
 
 
 
@@ -1342,6 +1303,3 @@ if __name__ == "__main__":
     #Satoel_lud().printHRG()
 
     #Smasandyutakankarikrida_lud().printHRG()
-
-
-
