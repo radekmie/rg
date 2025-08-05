@@ -2480,4 +2480,34 @@ mod test {
             rules_end, end: ;
         "
     );
+
+    test_translation!(
+        reusable_repeated,
+        "
+            graph a() {}
+            graph rules() {
+                repeat _ in {0, 0, 0} {
+                    a()
+                }
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_3_a_begin: ;
+            rules_3_a_begin, rules_3_a_end: ;
+            rules_3_a_end, rules_4: ;
+            rules_4, rules_2: ;
+            rules_2, rules_6_a_begin: ;
+            rules_6_a_begin, rules_6_a_end: ;
+            rules_6_a_end, rules_7: ;
+            rules_7, rules_5: ;
+            rules_5, rules_9_a_begin: ;
+            rules_9_a_begin, rules_9_a_end: ;
+            rules_9_a_end, rules_10: ;
+            rules_10, rules_8: ;
+            rules_8, rules_1: ;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
 }

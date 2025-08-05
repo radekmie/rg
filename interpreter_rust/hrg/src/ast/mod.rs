@@ -75,6 +75,17 @@ impl<Id: Clone + Ord> Statement<Id> {
                     statement.count_calls(call_counts, caller);
                 }
             }
+            Self::BranchVar { body, .. }
+            | Self::Repeat { body, .. }
+            | Self::RepeatVar { body, .. } => {
+                // These constructs will translate `body` multiple times, so to
+                // be safe about reusing them, we count them twice.
+                for _ in 0..2 {
+                    for statement in body {
+                        statement.count_calls(call_counts, caller);
+                    }
+                }
+            }
             Self::Call { identifier, args } => {
                 *call_counts
                     .entry((caller.clone(), identifier.clone()))
@@ -93,10 +104,7 @@ impl<Id: Clone + Ord> Statement<Id> {
                     statement.count_calls(call_counts, caller);
                 }
             }
-            Self::BranchVar { body, .. }
-            | Self::Loop { body }
-            | Self::Repeat { body, .. }
-            | Self::RepeatVar { body, .. } => {
+            Self::Loop { body } => {
                 for statement in body {
                     statement.count_calls(call_counts, caller);
                 }
