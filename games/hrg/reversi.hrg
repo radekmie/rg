@@ -1,0 +1,163 @@
+// Reversi
+
+// Domains
+domain Score = 50 | 0 | 100
+domain Piece = empty | border | white | black
+domain Player = white | black
+domain Position = V(X,Y) where X in 0..7, Y in 0..7
+domain PositionOrNull = null | Position
+domain Bool = 0 | 1
+domain Count = I(X) where X in 0..64
+domain CountOrNan = Count | nan
+
+left : PositionOrNull -> PositionOrNull
+left(V(X,Y)) = if X == 0 then null else V(X - 1, Y)
+left(_) = null
+right : PositionOrNull -> PositionOrNull
+right(V(X,Y)) = if X == 7 then null else V(X + 1, Y)
+right(_) = null
+up : PositionOrNull -> PositionOrNull
+up(V(X,Y)) = if Y == 0 then null else V(X, Y - 1)
+up(_) = null
+down : PositionOrNull -> PositionOrNull
+down(V(X,Y)) = if Y == 7 then null else V(X, Y + 1)
+down(_) = null
+upLeft : PositionOrNull -> PositionOrNull
+upLeft(V(X,Y)) = left(up(V(X,Y)))
+upLeft(_) = null
+upRight : PositionOrNull -> PositionOrNull
+upRight(V(X,Y)) = right(up(V(X,Y)))
+upRight(_) = null
+downLeft : PositionOrNull -> PositionOrNull
+downLeft(V(X,Y)) = left(down(V(X,Y)))
+downLeft(_) = null
+downRight: PositionOrNull -> PositionOrNull
+downRight(V(X,Y)) = right(down(V(X,Y)))
+downRight(_) = null
+
+nextPos : PositionOrNull -> PositionOrNull
+nextPos(V(X,Y)) = if X < 7 then V(X+1,Y) else
+                  if Y < 7 then V(0,Y+1) else null
+nextPos(null) = V(0,0)
+
+increment : Count -> CountOrNan
+increment(I(X)) = if X < 64 then I(X+1) else nan
+less : Count -> Count -> Bool
+less(I(X),I(Y)) = if X < Y then 1 else 0
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(black) = white
+
+
+board : PositionOrNull -> Piece = {
+  :empty;
+  null = border;
+  V(3,3) = black;
+  V(4,4) = black;
+  V(4,3) = white;
+  V(3,4) = white
+}
+
+me : Player = black
+pos : PositionOrNull
+tmp : PositionOrNull
+count : Player -> Count = {:I(0)}
+
+
+
+graph isCapture(dir:PositionOrNull->PositionOrNull) {
+  check(board[tmp] == opponent[me])
+  repeat 6 {
+    tmp = dir[tmp]
+    branch {
+      check(board[tmp] == opponent[me])
+    } or {
+      check(board[tmp] == me)
+      return()
+    }
+  }
+}
+
+graph isCorrectMove() {
+  check(board[pos] == empty)
+  branch dir in {up,down,left,right,upLeft,upRight,downLeft,downRight} {
+    tmp = dir[pos]
+    isCapture(dir)
+  }
+}
+
+graph existsMove() {
+  pos = Position(*)
+  isCorrectMove()
+}
+graph swapInLine(dir:PositionOrNull->PositionOrNull) {
+  tmp = dir[pos]
+  if reachable(isCapture(dir)) {
+    repeat 7 {
+      branch {
+        check(board[tmp] == opponent[me])
+        board[tmp] = me
+        tmp = dir[tmp]
+      } or {
+        check(board[tmp] == me)
+        return()
+      }
+    }
+  }
+}
+
+graph turn() {
+  if reachable(existsMove()) {
+    player = me
+    
+    pos = Position(*)
+    check(reachable(isCorrectMove()))
+    $$ pos
+    
+    player = keeper
+    
+    board[pos] = me
+    // repeat dir in {up,down,left,right,upLeft,upRight,downLeft,downRight} {
+    //   swapInLine(dir)
+    // }
+    swapInLine(up)
+    swapInLine(down)
+    swapInLine(left)
+    swapInLine(right)
+    swapInLine(upLeft)
+    swapInLine(upRight)
+    swapInLine(downLeft)
+    swapInLine(downRight)
+
+    me = opponent[me]
+  } else {
+    me = opponent[me]
+    player = keeper
+    if not(reachable(existsMove())) {
+      tmp = V(0,0)
+      loop {
+        if board[tmp] == white {
+          count[white] = increment[count[white]]
+        } else {
+          if board[tmp] == black {
+            count[black] = increment[count[black]]
+          }
+        }
+        tmp = nextPos[tmp]
+        if tmp == null {break()}
+        $_NEXT
+      }
+      if less(count[black], count[white]) == 1 {goals[white] = 100 goals[black] = 0} else {
+        if less(count[white], count[black]) == 1 {goals[white] = 0 goals[black] = 100}
+      }
+      end()
+    }
+  }
+}
+
+graph rules() {
+  loop {
+    turn()
+  }
+}
