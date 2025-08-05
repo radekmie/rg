@@ -65,7 +65,6 @@ tmp : PositionOrNull
 count : Player -> Count = {:I(0)}
 
 
-
 graph isCapture(dir:PositionOrNull->PositionOrNull) {
   check(board[tmp] == opponent[me])
   repeat 6 {
@@ -77,6 +76,7 @@ graph isCapture(dir:PositionOrNull->PositionOrNull) {
       return()
     }
   }
+  check(false())
 }
 
 graph isCorrectMove() {
@@ -86,7 +86,6 @@ graph isCorrectMove() {
     isCapture(dir)
   }
 }
-
 graph existsMove() {
   pos = Position(*)
   isCorrectMove()
@@ -110,7 +109,6 @@ graph swapInLine(dir:PositionOrNull->PositionOrNull) {
 graph turn() {
   if reachable(existsMove()) {
     player = me
-    
     pos = Position(*)
     check(reachable(isCorrectMove()))
     $$ pos
@@ -118,23 +116,17 @@ graph turn() {
     player = keeper
     
     board[pos] = me
-    // repeat dir in {up,down,left,right,upLeft,upRight,downLeft,downRight} {
-    //   swapInLine(dir)
-    // }
-    swapInLine(up)
-    swapInLine(down)
-    swapInLine(left)
-    swapInLine(right)
-    swapInLine(upLeft)
-    swapInLine(upRight)
-    swapInLine(downLeft)
-    swapInLine(downRight)
-
+    repeat dir in {up,down,left,right,upLeft,upRight,downLeft,downRight} {
+      swapInLine(dir)
+    }
     me = opponent[me]
   } else {
     me = opponent[me]
-    player = keeper
-    if not(reachable(existsMove())) {
+    if reachable(existsMove()) {
+      player = opponent[me]
+      player = keeper
+    } else {
+      player = keeper
       tmp = V(0,0)
       loop {
         if board[tmp] == white {
