@@ -1,0 +1,92 @@
+// Hex (11x11)
+// Move form: pos
+
+domain Piece = empty | white | black | border
+domain Player = white | black
+domain Position = V(X,Y) where X in 1..11, Y in 1..11
+domain PositionOrNull = null | Position
+domain Score = 0 | 100
+domain Bool = 0 | 1
+
+upLeft: PositionOrNull -> PositionOrNull
+upLeft(V(X,Y)) = if Y == 1 then null else V(X,Y-1)
+upLeft(_) = null
+upRight: PositionOrNull -> PositionOrNull
+upRight(V(X,Y)) = if Y == 1 || X == 11 then null else V(X+1,Y-1)
+upRight(_) = null
+
+left: PositionOrNull -> PositionOrNull
+left(V(X,Y)) = if X == 1 then null else V(X-1,Y)
+left(_) = null
+right: PositionOrNull -> PositionOrNull
+right(V(X,Y)) = if X == 11 then null else V(X+1,Y)
+right(_) = null
+
+downLeft: PositionOrNull -> PositionOrNull
+downLeft(V(X,Y)) = if Y == 11 || X == 1 then null else V(X-1,Y+1)
+downLeft(_) = null
+downRight: PositionOrNull -> PositionOrNull
+downRight(V(X,Y)) = if Y == 11 then null else V(X,Y+1)
+downRight(_) = null
+
+firstEdge: Player -> PositionOrNull -> Bool
+firstEdge(white,V(X,Y)) = if X == 1 then 1 else 0
+firstEdge(white,null) = 0
+firstEdge(black,V(X,Y)) = if Y == 1 then 1 else 0
+firstEdge(black,null) = 0
+secondEdge: Player -> PositionOrNull -> Bool
+secondEdge(white,V(X,Y)) = if X == 11 then 1 else 0
+secondEdge(white,null) = 0
+secondEdge(black,V(X,Y)) = if Y == 11 then 1 else 0
+secondEdge(black,null) = 0
+
+board: PositionOrNull -> Piece = {V(X, Y) = empty where X in 1..11, Y in 1..11; null = border}
+pos: PositionOrNull
+
+
+graph reachableEdge(p: Player, edge: Player->PositionOrNull->Bool) {
+  loop {
+    if edge(p,pos) == 1 {
+      return()
+    }
+    branch dir in {upLeft,upRight,left,right,downLeft,downRight} {
+      pos = dir[pos]
+      check(board[pos] == p)
+    }
+  }
+}
+
+graph win(p: Player) {
+  check(reachable(reachableEdge(p,firstEdge)))
+  check(reachable(reachableEdge(p,secondEdge)))
+//  pos = Position(*)
+//  check(firstEdge(p,pos) == 1)
+//  check(board[pos] == p)
+//  check(reachable(reachableEdge(p,secondEdge)))
+}
+
+graph existsNonempty() {
+  pos = Position(*)
+  check(board[pos] == empty)
+}
+
+graph turn(me: Player, op: Player) {
+  player = me
+  pos = Position(*)
+  check(board[pos] == empty)
+  $$ pos
+  player = keeper
+  board[pos] = me
+  if reachable(win(me)) {
+    goals[me] = 100
+    end()
+  }
+  // Draw impossible
+}
+
+graph rules() {
+  loop {
+    turn(white, black)
+    turn(black, white)
+  }
+}
