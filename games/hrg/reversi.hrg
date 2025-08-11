@@ -93,7 +93,7 @@ graph existsMove() {
 graph swapInLine(dir:PositionOrNull->PositionOrNull) {
   tmp = dir[pos]
   if reachable(isCapture(dir)) {
-    repeat 7 {
+    repeat 6 {
       branch {
         check(board[tmp] == opponent[me])
         board[tmp] = me
@@ -123,7 +123,7 @@ graph turn() {
   } else {
     me = opponent[me]
     if reachable(existsMove()) {
-      player = opponent[me]
+      player = opponent[me] // Pass move
       player = keeper
     } else {
       player = keeper
