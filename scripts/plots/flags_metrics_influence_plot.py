@@ -12,8 +12,6 @@ def signed_log(x, eps=1e-6):
     return np.sign(x) * np.log10(np.abs(x) + eps)
 
 
-
-
 def create_plot(df, language=None):
     if language:
         df = df[df['language'] == language]

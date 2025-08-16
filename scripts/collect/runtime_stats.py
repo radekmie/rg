@@ -26,7 +26,7 @@ def process_output(output):
 def collect_stats(base_directory, flag_sets):
     """Collect stats for all files in each catalog of the specified base directory."""
     stats_data = []
-    catalogs = ["rbg", "rg", "hrg", "kif"]
+    catalogs = ["rbg", "hrg", "kif"]
     for catalog in catalogs:
         catalog_path = os.path.join(base_directory, catalog)
         if not os.path.isdir(catalog_path):
