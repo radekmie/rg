@@ -2,27 +2,20 @@ import pandas as pd
 
 def load_data():
     """Load the data from the CSV file."""
-    return pd.read_csv("../collect/results/runtime_stats1.csv")
+    return pd.read_csv("../collect/results/transforms.csv")
 
 
-def transform_data(df):
-    # For each game and language, create column plays_none and plays_optimized
-    df = df.pivot_table(index=['game', 'language'],
-                        columns='flags',
-                        values='plays',
-                        aggfunc='sum').reset_index()
-    df = df.rename(columns={'none': 'plays_none', '--enable-all-optimizations': 'plays_optimized'})
-    return df
 
 def with_stats(df):
-    df = transform_data(df) 
+    df = df[df['flags'] == '--enable-all-optimizations']
     stats_df = pd.read_csv("../collect/results/stats.csv")
     stats_df = stats_df[stats_df['flags'] == 'none']
     stats_df = stats_df[['game', 'language', 'edges']]
+    print(stats_df.sort_values(by=['language', 'edges'], ascending=False).head(50))
+    df['total_time'] = df['total_time'] / 1000
+    df = df.drop(columns=['flags', 'changed', 'transform', 'count', 'changed_time'])
+    df = df.groupby(['game', 'language']).sum().reset_index()
     df = df.merge(stats_df, on=['game', 'language'], how='left')
-    df['change'] = (df['plays_optimized'] - df['plays_none']) / df['plays_none'] * 100
-    df = df.drop(columns=['plays_none', 'plays_optimized'])
-    df = df.round(2)
     return df
 
 def avg_per_edges(df):
@@ -46,22 +39,20 @@ def avg_per_edges(df):
 def avg_per_edges_total(df):
     df = avg_per_edges(df)
     # Pivot to have row per lang, with edge_category as columns
-    df = df.pivot(index='language', columns='edge_category', values='change')
+    df = df.pivot(index='language', columns='edge_category', values='total_time')
     # Sort rows by language
     df = df.sort_index(ascending=False)
     labels=['<50', '>50', '>100', '>500', '>1000', '>2000', '>4000', 'Total']
     # Sort columns based on labels
     df = df.round(1)
     df = df.reindex(columns=labels)
+    print(df)
     return df
 
 def main():
     df = load_data()
     df = df[df['language'] != 'rg']
-    transform_data(df).to_csv("results/plays.csv", index=False)
-    with_stats(df).to_csv("results/plays_with_edges.csv", index=False)
-    avg_per_edges(df).to_csv("results/plays_grouped.csv", index=False)
-    avg_per_edges_total(df).to_csv("results/plays_grouped_total.csv")
+    avg_per_edges_total(df).to_csv("results/transforms_grouped_total.csv")
 
 if __name__ == "__main__":
     main()
