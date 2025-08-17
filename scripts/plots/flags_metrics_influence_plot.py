@@ -43,7 +43,7 @@ def create_plot(df, language=None):
 
 def main():
     df = load_data()
-    for language in ["hrg", "kif", "rbg", "rg", None]:
+    for language in [None]:
         ax = create_plot(df, language)
         ax.figure.savefig(f"results/flags_metrics_influence_plot_{language}.png")
 

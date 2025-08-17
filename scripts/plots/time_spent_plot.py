@@ -8,36 +8,6 @@ def load_data():
     """Columns: game, language, plays_optimized, plays_none"""
     return pd.read_csv("../data/results/tws_with_total_time_perc.csv")
 
-def create_plot(df, language=None):
-    if language:
-        df = df[df['language'] == language]
-        df = df.drop(columns=['language'])
-    else:
-        df = df.drop(columns=['language'])
-        df = df.groupby(['transform']).mean().reset_index()
-    
-
-    # Sort by total_time_perc for better visualization
-    df = df.sort_values('total_time_perc', ascending=False)
-    x = df['transform']
-    changed = df['changed_time_perc']
-    total = df['total_time_perc']
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    # Plot changed_time_perc as the bottom part
-    ax.bar(x, changed, label='Changed Time %', color='tab:blue')
-    # Plot the remaining (total - changed) as the top part
-    ax.bar(x, total - changed, bottom=changed, label='Unchanged Time %', color='tab:orange')
-
-    ax.set_ylabel('% Time Spent')
-    ax.set_xlabel('Transform')
-    ax.set_title('Time Spent per Transform' + (f' ({language})' if language else ' (Average)'))
-    ax.legend()
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    return ax
-
-
 def create_plot_big(df):
     df = df[df['language'] != 'rg']
     # df = df[df['language'] != 'kif']
@@ -86,9 +56,6 @@ def create_plot_big(df):
 
 def main():
     df = load_data()
-    for language in ["hrg", "kif", "rbg", "rg", None]:
-        ax = create_plot(df, language)
-        ax.figure.savefig(f"results/tws_plot_{language}.png")
     ax = create_plot_big(df)
     ax.figure.savefig(f"results/tws_plot_big.png")
 

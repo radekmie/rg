@@ -1,5 +1,0 @@
-language,assign_edges,assign_edges_diff,average_branching,average_branching_diff,comparison_edges,comparison_edges_diff,constants,constants_diff,edges,edges_diff,main_automaton_nodes,main_automaton_nodes_diff,max_branching,max_branching_diff,nodes,nodes_diff,reachability_edges,reachability_edges_diff,reachability_subautomatons,reachability_subautomatons_diff,skip_edges,skip_edges_diff,state_size,state_size_diff,tag_edges,tag_edges_diff,variables,variables_diff
-hrg,161.0,-17.56,1.16,12.76,216.94,-4.07,10.42,43.12,737.77,-39.02,308.0,-36.19,7.42,-0.34,645.55,-43.89,6.71,-0.29,3.55,-3.49,284.97,-86.05,7180.84,-7.29,68.16,-30.49,9.03,-10.98
-kif,219.33,-20.72,1.31,3.68,501.0,-32.72,0.0,0.0,941.67,-32.81,298.67,-14.2,37.0,-62.04,818.33,-37.69,195.0,-39.57,94.0,-52.21,10.33,-87.27,218.33,-0.89,16.0,0.0,99.67,-1.08
-rbg,380.04,-48.71,1.15,25.63,215.96,-9.2,11.75,33.87,1431.89,-64.15,447.68,-57.05,8.61,5.49,1251.46,-70.84,61.0,-57.06,30.03,-62.77,645.03,-88.07,1876.75,-24.38,129.86,-63.39,7.97,-18.03
-rg,10.75,-3.84,1.13,0.57,6.5,0.0,7.25,0.0,23.0,-3.05,17.25,-2.4,2.75,0.0,21.5,-3.25,2.0,0.0,1.0,0.0,1.25,-25.0,149.75,0.0,2.5,0.0,5.5,0.0
