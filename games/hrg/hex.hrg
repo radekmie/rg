@@ -57,12 +57,14 @@ graph reachableEdge(p: Player, edge: Player->PositionOrNull->Bool) {
 }
 
 graph win(p: Player) {
-  check(reachable(reachableEdge(p,firstEdge)))
+  // First way: two paths from the current position
+  //check(reachable(reachableEdge(p,firstEdge)))
+  //check(reachable(reachableEdge(p,secondEdge)))
+  // Second way: one path from any edge position
+  pos = Position(*)
+  check(firstEdge(p,pos) == 1)
+  check(board[pos] == p)
   check(reachable(reachableEdge(p,secondEdge)))
-//  pos = Position(*)
-//  check(firstEdge(p,pos) == 1)
-//  check(board[pos] == p)
-//  check(reachable(reachableEdge(p,secondEdge)))
 }
 
 graph existsNonempty() {
