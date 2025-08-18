@@ -382,6 +382,7 @@ pub enum Binop {
     Eq,
     Gt,
     Gte,
+    In,
     Lt,
     Lte,
     Mod,
@@ -396,7 +397,8 @@ impl Binop {
             Self::Or => 0,
             Self::And => 1,
             Self::Eq | Self::Gt | Self::Gte | Self::Lt | Self::Lte | Self::Ne => 2,
-            Self::Add | Self::Mod | Self::Sub => 3,
+            // TODO: Should `In` and `Mod` have a higher precedence?
+            Self::Add | Self::In | Self::Mod | Self::Sub => 3,
         }
     }
 }

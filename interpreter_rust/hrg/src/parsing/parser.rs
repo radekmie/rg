@@ -293,6 +293,7 @@ fn expression3(input: Input) -> Result<Arc<Expression<Identifier>>> {
 fn addsub_binop(input: Input) -> Result<Binop> {
     ww(alt((
         value(Binop::Add, tag("+")),
+        value(Binop::In, tag("in")),
         value(Binop::Mod, tag("%")),
         value(Binop::Sub, tag("-")),
     )))(input)
