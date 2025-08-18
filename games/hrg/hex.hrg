@@ -9,24 +9,22 @@ domain Score = 0 | 100
 domain Bool = 0 | 1
 
 upLeft: PositionOrNull -> PositionOrNull
-upLeft(V(X,Y)) = if Y == 1 then null else V(X,Y-1)
+upLeft(V(X,Y)) = if V(X,Y-1) in PositionOrNull then V(X,Y-1) else null
 upLeft(_) = null
 upRight: PositionOrNull -> PositionOrNull
-upRight(V(X,Y)) = if Y == 1 || X == 11 then null else V(X+1,Y-1)
+upRight(V(X,Y)) = if V(X+1,Y-1) in PositionOrNull then V(X+1,Y-1) else null
 upRight(_) = null
-
 left: PositionOrNull -> PositionOrNull
-left(V(X,Y)) = if X == 1 then null else V(X-1,Y)
+left(V(X,Y)) = if V(X-1,Y) in PositionOrNull then V(X-1,Y) else null
 left(_) = null
 right: PositionOrNull -> PositionOrNull
-right(V(X,Y)) = if X == 11 then null else V(X+1,Y)
+right(V(X,Y)) = if V(X+1,Y) in PositionOrNull then V(X+1,Y) else null
 right(_) = null
-
 downLeft: PositionOrNull -> PositionOrNull
-downLeft(V(X,Y)) = if Y == 11 || X == 1 then null else V(X-1,Y+1)
+downLeft(V(X,Y)) = if V(X-1,Y+1) in PositionOrNull then V(X-1,Y+1) else null
 downLeft(_) = null
 downRight: PositionOrNull -> PositionOrNull
-downRight(V(X,Y)) = if Y == 11 then null else V(X,Y+1)
+downRight(V(X,Y)) = if V(X,Y+1) in PositionOrNull then V(X,Y+1) else null
 downRight(_) = null
 
 firstEdge: Player -> PositionOrNull -> Bool
