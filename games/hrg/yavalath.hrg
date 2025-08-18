@@ -1,0 +1,124 @@
+// Yavalath
+// Move form: pos
+
+domain Piece = empty | white | black | border
+domain Player = white | black
+domain Position = V(X,1) where X in 1..5 | V(X,2) where X in 1..6 | V(X,3) where X in 1..7 | V(X,4) where X in 1..8 | V(X,5) where X in 1..9 | V(X,6) where X in 2..9 | V(X,7) where X in 3..9 | V(X,8) where X in 4..9 | V(X,9) where X in 5..9
+domain PositionOrNull = null | Position
+domain Score = 50 | 0 | 100
+domain Bool = 0 | 1
+
+//              [ e , e , e , e , e ]
+//            [ e , e , e , e , e , e ]
+//          [ e , e , e , e , e , e , e ]
+//        [ e , e , e , e , e , e , e , e ]
+//      [ e , e , e , e , e , e , e , e , e ]
+//        [ e , e , e , e , e , e , e , e ]
+//          [ e , e , e , e , e , e , e ]
+//            [ e , e , e , e , e , e ]
+//              [ e , e , e , e , e ]
+
+upLeft: PositionOrNull -> PositionOrNull
+upLeft(V(X,Y)) = if V(X,Y-1) in PositionOrNull then V(X,Y-1) else null
+upLeft(_) = null
+upRight: PositionOrNull -> PositionOrNull
+upRight(V(X,Y)) = if V(X+1,Y-1) in PositionOrNull then V(X+1,Y-1) else null
+upRight(_) = null
+left: PositionOrNull -> PositionOrNull
+left(V(X,Y)) = if V(X-1,Y) in PositionOrNull then V(X-1,Y) else null
+left(_) = null
+right: PositionOrNull -> PositionOrNull
+right(V(X,Y)) = if V(X+1,Y) in PositionOrNull then V(X+1,Y) else null
+right(_) = null
+downLeft: PositionOrNull -> PositionOrNull
+downLeft(V(X,Y)) = if V(X-1,Y+1) in PositionOrNull then V(X-1,Y+1) else null
+downLeft(_) = null
+downRight: PositionOrNull -> PositionOrNull
+downRight(V(X,Y)) = if V(X,Y+1) in PositionOrNull then V(X,Y+1) else null
+downRight(_) = null
+
+board: PositionOrNull -> Piece = {:empty; null = border}
+pos: PositionOrNull
+
+graph line3InDir(p: Player, dir1: PositionOrNull->PositionOrNull, dir2: PositionOrNull->PositionOrNull) {
+  branch {
+    check(board[dir1[pos]] == p)
+    check(board[dir1[dir1[pos]]] == p)
+  } or {
+    check(board[dir1[pos]] == p)
+    check(board[dir2[pos]] == p)
+  } or {
+    check(board[dir2[pos]] == p)
+    check(board[dir2[dir2[pos]]] == p)  
+  }
+}
+graph line4InDir(p: Player, dir1: PositionOrNull->PositionOrNull, dir2: PositionOrNull->PositionOrNull) {
+  branch {
+    check(board[dir1[pos]] == p)
+    check(board[dir1[dir1[pos]]] == p)
+    check(board[dir1[dir1[dir1[pos]]]] == p)
+  } or {
+    check(board[dir2[pos]] == p)
+    check(board[dir1[pos]] == p)
+    check(board[dir1[dir1[pos]]] == p)
+  } or {
+    check(board[dir2[pos]] == p)
+    check(board[dir2[dir2[pos]]] == p)
+    check(board[dir1[pos]] == p)
+  } or {
+    check(board[dir2[pos]] == p)
+    check(board[dir2[dir2[pos]]] == p)
+    check(board[dir2[dir2[dir2[pos]]]] == p)
+  }
+}
+graph line3(p: Player) {
+  branch {
+    check(reachable(line3InDir(p, upLeft, downRight)))
+  } or {
+    check(reachable(line3InDir(p, upRight, downLeft)))
+  } or {
+    check(reachable(line3InDir(p, left, right)))
+  }
+}
+graph line4(p: Player) {
+  branch {
+    check(reachable(line4InDir(p, upLeft, downRight)))
+  } or {
+    check(reachable(line4InDir(p, upRight, downLeft)))
+  } or {
+    check(reachable(line4InDir(p, left, right)))
+  }
+}
+
+graph existsNonempty() {
+  pos = Position(*)
+  check(board[pos] == empty)
+}
+
+graph turn(me: Player, op: Player) {
+  player = me
+  pos = Position(*)
+  check(board[pos] == empty)
+  $$ pos
+  player = keeper
+  board[pos] = me
+  if reachable(line3(me)) {
+    if reachable(line4(me)) {
+      // Win
+      goals[me] = 100
+      goals[op] = 0
+    } else {
+      // Loss
+      goals[me] = 0
+      goals[op] = 100
+    }
+    end()
+  }
+}
+
+graph rules() {
+  loop {
+    turn(white, black)
+    turn(black, white)
+  }
+}
