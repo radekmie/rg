@@ -12,7 +12,7 @@ use nom::sequence::{pair, preceded, separated_pair, terminated, tuple};
 use std::cell::RefCell;
 use std::sync::Arc;
 use utils::parser::{
-    comments_and_whitespaces, expect, expect_preceded_tag, identifier_, in_brackets, in_parens,
+    comments_and_whitespaces0, expect, expect_preceded_tag, identifier_, in_brackets, in_parens,
     integer, into_arc, parse_error_line, preceded_tag, preceded_whitespace, with_semicolon,
     ww_char, Input, Result, State,
 };
@@ -482,7 +482,7 @@ pub fn game(input: Input) -> Result<Game<Identifier>> {
         terminated(
             fold_many0(
                 preceded(
-                    comments_and_whitespaces,
+                    comments_and_whitespaces0,
                     alt((
                         map(constant, |x| (x, None, None, None, None)),
                         map(typedef, |x| (None, x, None, None, None)),
@@ -505,7 +505,7 @@ pub fn game(input: Input) -> Result<Game<Identifier>> {
                     game
                 },
             ),
-            comments_and_whitespaces,
+            comments_and_whitespaces0,
         ),
     )(input)
 }

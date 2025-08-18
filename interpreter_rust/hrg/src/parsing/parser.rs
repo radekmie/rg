@@ -13,9 +13,9 @@ use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple
 use std::cell::RefCell;
 use std::sync::Arc;
 use utils::parser::{
-    comma_separated0, comma_separated1, comments_and_whitespaces, identifier_, in_braces,
-    in_brackets, in_parens, integer, into_arc, parse_error_line, ww, ww_char, ww_tag, Input,
-    Result, State,
+    comma_separated0, comma_separated1, comments_and_whitespaces0, comments_and_whitespaces1,
+    identifier_, in_braces, in_brackets, in_parens, integer, into_arc, parse_error_line, ww,
+    ww_char, ww_tag, Input, Result, State,
 };
 use utils::position::Span;
 use utils::Error;
@@ -221,6 +221,10 @@ fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {
     )))(input)
 }
 
+fn expression_binop(input: Input) -> Result<Binop> {
+    value(Binop::Or, ww_tag("||"))(input)
+}
+
 fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
     alt((
         into_arc(tuple((
@@ -241,35 +245,23 @@ fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
                 separated_list1(char(';'), expression_map_part),
             ),
         )))),
-        map(
-            pair(expression2, opt(preceded(ww_tag("||"), expression))),
-            |(lhs, rhs)| match rhs {
-                Some(rhs) => Arc::new(Expression::BinExpr {
-                    lhs,
-                    op: Binop::Or,
-                    rhs,
-                }),
-                None => lhs,
-            },
-        ),
+        into_arc(tuple((expression2, expression_binop, expression))),
+        expression2,
     ))(input)
 }
 
-fn expression2(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    map(
-        pair(expression3, opt(preceded(ww_tag("&&"), expression2))),
-        |(lhs, rhs)| match rhs {
-            Some(rhs) => Arc::new(Expression::BinExpr {
-                lhs,
-                op: Binop::And,
-                rhs,
-            }),
-            None => lhs,
-        },
-    )(input)
+fn expression2_binop(input: Input) -> Result<Binop> {
+    value(Binop::And, ww_tag("&&"))(input)
 }
 
-fn comp_binop(input: Input) -> Result<Binop> {
+fn expression2(input: Input) -> Result<Arc<Expression<Identifier>>> {
+    alt((
+        into_arc(tuple((expression3, expression2_binop, expression2))),
+        expression3,
+    ))(input)
+}
+
+fn expression3_binop(input: Input) -> Result<Binop> {
     ww(alt((
         value(Binop::Eq, tag("==")),
         value(Binop::Ne, tag("!=")),
@@ -281,32 +273,26 @@ fn comp_binop(input: Input) -> Result<Binop> {
 }
 
 fn expression3(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    map(
-        pair(expression4, opt(pair(comp_binop, expression3))),
-        |(lhs, rhs)| match rhs {
-            Some((op, rhs)) => Arc::new(Expression::BinExpr { lhs, op, rhs }),
-            None => lhs,
-        },
-    )(input)
+    alt((
+        into_arc(tuple((expression4, expression3_binop, expression3))),
+        expression4,
+    ))(input)
 }
 
-fn addsub_binop(input: Input) -> Result<Binop> {
+fn expression4_binop(input: Input) -> Result<Binop> {
     ww(alt((
         value(Binop::Add, tag("+")),
-        value(Binop::In, tag("in")),
+        value(Binop::In, terminated(tag("in"), comments_and_whitespaces1)),
         value(Binop::Mod, tag("%")),
         value(Binop::Sub, tag("-")),
     )))(input)
 }
 
 fn expression4(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    map(
-        pair(expression5, opt(pair(addsub_binop, expression4))),
-        |(lhs, rhs)| match rhs {
-            Some((op, rhs)) => Arc::new(Expression::BinExpr { lhs, op, rhs }),
-            None => lhs,
-        },
-    )(input)
+    alt((
+        into_arc(tuple((expression5, expression4_binop, expression4))),
+        expression5,
+    ))(input)
 }
 
 fn expression5(input: Input) -> Result<Arc<Expression<Identifier>>> {
@@ -448,7 +434,7 @@ fn game(input: Input) -> Result<Game<Identifier>> {
         terminated(
             fold_many0(
                 preceded(
-                    comments_and_whitespaces,
+                    comments_and_whitespaces0,
                     alt((
                         map(domain_declaration, |x| (Some(x), None, None, None)),
                         map(function_declaration, |x| (None, Some(x), None, None)),
@@ -469,7 +455,7 @@ fn game(input: Input) -> Result<Game<Identifier>> {
                     game
                 },
             ),
-            comments_and_whitespaces,
+            comments_and_whitespaces0,
         ),
     )(input)
 }

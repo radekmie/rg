@@ -2526,14 +2526,17 @@ mod test {
         in_operator,
         "
             domain Position = V(X) where X in 0..3
-            up : Position -> Position
-            up(V(X)) = if V(X + 1) in Position then V(X + 1) else V(3)
+            decrement : Position -> Position
+            decrement(V(X)) = if V(X - 1) in Position then V(X - 1) else V(0)
+            increment : Position -> Position
+            increment(V(X)) = if V(X + 1) in Position then V(X + 1) else V(3)
             graph rules() {}
         ",
         "
             @integer 0 : V__0 V__1 V__2 V__3;
             type Position = { V__0, V__1, V__2, V__3 };
-            const up: Position -> Position = { :V__3, V__0: V__1, V__1: V__2 };
+            const decrement: Position -> Position = { :V__0, V__2: V__1, V__3: V__2 };
+            const increment: Position -> Position = { :V__3, V__0: V__1, V__1: V__2 };
             begin, rules_begin: ;
             rules_begin, rules_end: ;
             rules_end, end: ;

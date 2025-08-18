@@ -1,5 +1,5 @@
 use crate::ast::{
-    DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression,
+    Binop, DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression,
     ExpressionMapPart, Function, FunctionArg, FunctionCase, FunctionDeclaration, Pattern,
     Statement, Type, VariableDeclaration,
 };
@@ -86,6 +86,12 @@ impl<Id> From<Id> for Expression<Id> {
 impl<Id> From<(Arc<Self>, Arc<Self>, Arc<Self>)> for Expression<Id> {
     fn from((cond, then, else_): (Arc<Self>, Arc<Self>, Arc<Self>)) -> Self {
         Self::If { cond, then, else_ }
+    }
+}
+
+impl<Id> From<(Arc<Self>, Binop, Arc<Self>)> for Expression<Id> {
+    fn from((lhs, op, rhs): (Arc<Self>, Binop, Arc<Self>)) -> Self {
+        Self::BinExpr { lhs, op, rhs }
     }
 }
 
