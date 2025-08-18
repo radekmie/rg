@@ -11,7 +11,6 @@ def with_stats(df):
     stats_df = pd.read_csv("../collect/results/stats.csv")
     stats_df = stats_df[stats_df['flags'] == 'none']
     stats_df = stats_df[['game', 'language', 'edges']]
-    print(stats_df.sort_values(by=['language', 'edges'], ascending=False).head(50))
     df['total_time'] = df['total_time'] / 1000
     df = df.drop(columns=['flags', 'changed', 'transform', 'count', 'changed_time'])
     df = df.groupby(['game', 'language']).sum().reset_index()
@@ -20,16 +19,16 @@ def with_stats(df):
 
 def avg_per_edges(df):
     df = with_stats(df)
-    # Categorize edge: <50, >50, >100, >500, >1000, >2000
-    df['edge_category'] = pd.cut(df['edges'], bins=[-1, 50, 100, 500, 1000, 2000, 4000, float('inf')], labels=['<50', '>50', '>100', '>500', '>1000', '>2000', '>4000'])
-    # Add edge_category Total with everything
-    # Add 'Total' edge_category for each row (all edges for that language)
+    # Categorize edge: <50, <100, <500, <1000, <2000
+    df['edge_category'] = pd.cut(df['edges'], bins=[-1, 50, 100, 500, 1000, 2000, 4000, float('inf')], labels=['<50', '<100', '<500', '<1000', '<2000', '<4000', '>4000'])
+    # Add edge_category Average with everything
+    # Add 'Average' edge_category for each row (all edges for that language)
     df_total = df.copy()
-    df_total['edge_category'] = 'Total'
+    df_total['edge_category'] = 'Average'
     df = pd.concat([df, df_total], ignore_index=True)
-    # Add 'Total' language for each row (all languages for that edge_category)
+    # Add 'Average' language for each row (all languages for that edge_category)
     df_lang_total = df.copy()
-    df_lang_total['language'] = 'Total'
+    df_lang_total['language'] = 'Average'
     df = pd.concat([df, df_lang_total], ignore_index=True)
     df = df.drop(columns=['game', 'edges'])
     df = df.groupby(['language', 'edge_category']).mean().reset_index()
@@ -42,7 +41,7 @@ def avg_per_edges_total(df):
     df = df.pivot(index='language', columns='edge_category', values='total_time')
     # Sort rows by language
     df = df.sort_index(ascending=False)
-    labels=['<50', '>50', '>100', '>500', '>1000', '>2000', '>4000', 'Total']
+    labels=['<50', '<100', '<500', '<1000', '<2000', '<4000', '>4000', 'Average']
     # Sort columns based on labels
     df = df.round(1)
     df = df.reindex(columns=labels)

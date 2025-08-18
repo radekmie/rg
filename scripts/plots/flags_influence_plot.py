@@ -37,11 +37,14 @@ def create_plot(df, language=None):
         fill_value=None
     )
     plt.figure(figsize=(12, 8))
-    ax = sns.heatmap(pivot_table, robust=True, annot=False, cmap="coolwarm", cbar_kws={'label': 'Average runs difference (%)'}, center=0)
+    ax = sns.heatmap(pivot_table, robust=True, annot=False, cmap="seismic", cbar_kws={'label': 'Average runs difference (%)'}, center=0)
     ax.set_title(f"Enabled Optimization Influence on Other Transformations")
-    ax.set_xlabel("Enabled Optimization")
-    ax.set_ylabel("Transformation") 
-    plt.xticks(rotation=90, ha='right')
+    # ax.set_xlabel("Enabled Optimization")
+    # ax.set_ylabel("Transformation")
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+    plt.yticks(rotation=0, fontsize=12)
+    plt.xticks(rotation=90, ha='right', fontsize=12)
     plt.tight_layout()
     plt.show()    
 

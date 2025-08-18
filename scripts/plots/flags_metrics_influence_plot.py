@@ -31,11 +31,14 @@ def create_plot(df, language=None):
     sns.set_theme(style="whitegrid")
     
     plt.figure(figsize=(12, 8))
-    ax = sns.heatmap(df,robust=True, annot=False, fmt=".2f", cmap="coolwarm", cbar_kws={'label': 'Average Change (%)'}, center=0)
+    ax = sns.heatmap(df,robust=True, annot=False, fmt=".2f", cmap="seismic", cbar_kws={'label': 'Average Change (%)'}, center=0)
     ax.set_title(f"Optimization Influence on Metrics")
-    ax.set_xlabel("Optimization")
-    ax.set_ylabel("Metric") 
-    plt.xticks(rotation=90, ha='right')
+    # ax.set_xlabel("Optimization")
+    # ax.set_ylabel("Metric") 
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+    plt.xticks(rotation=90, ha='right', fontsize=12)
+    plt.yticks(rotation=0, fontsize=12)
     plt.tight_layout()
     plt.show()
 

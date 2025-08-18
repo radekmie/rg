@@ -18,6 +18,8 @@ def create_plot_big(df):
 
     plot_df['transform'] = pd.Categorical(plot_df['transform'], categories=order, ordered=True)
     plot_df = plot_df.sort_values(['transform', 'language'])
+    lang_map = {'hrg': 'HRG', 'rbg': 'RBG', 'kif': 'GDL'}
+    plot_df['language'] = plot_df['language'].map(lang_map)
 
     languages = plot_df['language'].unique()
     transforms = order
@@ -25,7 +27,7 @@ def create_plot_big(df):
     x = np.arange(len(transforms))
     width = 0.18
     # Use this palette
-    palette = {'hrg': 'cornflowerblue', 'rbg': 'orange', 'kif': 'green'}
+    palette = {'HRG': 'cornflowerblue', 'RBG': 'orange', 'GDL': 'green'}
     fig, ax = plt.subplots(figsize=(max(12, len(transforms)*0.8), 7))
 
     for i, lang in enumerate(languages):
@@ -46,9 +48,9 @@ def create_plot_big(df):
     from matplotlib.patches import Patch
     legend_patches = []
     for i, lang in enumerate(languages):
-        legend_patches.append(Patch(facecolor=f'C{i}', alpha=0.8, label=f'{lang} Changed'))
+        legend_patches.append(Patch(facecolor=palette[lang], alpha=0.8, label=f'{lang} Changed'))
     for i, lang in enumerate(languages):
-        legend_patches.append(Patch(facecolor=f'C{i}', alpha=0.3, label=f'{lang} Unchanged'))
+        legend_patches.append(Patch(facecolor=palette[lang], alpha=0.3, label=f'{lang} Unchanged'))
     ax.legend(handles=legend_patches, ncol=2)
     plt.tight_layout()
     return ax

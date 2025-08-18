@@ -12,9 +12,13 @@ def create_plot_big(df):
     # I have 4 columsn: transform, rbg, hrg, kif (3 values)
     # Give me a bar plot, 3 bars for each transform
     df_melted = df.melt(id_vars=['transform'], value_vars=['rbg', 'hrg', 'kif'], var_name='language', value_name='changed_time_perc')
+    df_melted = df_melted[df_melted['changed_time_perc'] > 1.0]
     plt.figure(figsize=(12, 6))
     # Let hrg be light blue, rbg orange and kif green
-    palette = {'hrg': 'cornflowerblue', 'rbg': 'orange', 'kif': 'green'}
+    # Change hrg to HRG, rbg to RBG, and kif to GDL
+    lang_map = {'hrg': 'HRG', 'rbg': 'RBG', 'kif': 'GDL'}
+    palette = {'HRG': 'cornflowerblue', 'RBG': 'orange', 'GDL': 'green'}
+    df_melted['language'] = df_melted['language'].map(lang_map)
     sns.barplot(data=df_melted, x='transform', y='changed_time_perc', hue='language', palette=palette, errorbar=None)
     plt.title('Time Well Spent on Each Transformation')
     plt.ylabel('% Time Spent on Changing Passes')
