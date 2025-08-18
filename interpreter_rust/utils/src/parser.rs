@@ -5,7 +5,7 @@ use nom::bytes::complete::{tag, take_till, take_while, take_while1};
 use nom::character::complete::char;
 use nom::character::complete::{anychar, digit1, multispace1};
 use nom::combinator::{cut, into, map, map_res, opt, verify};
-use nom::multi::{fold_many0, separated_list0, separated_list1};
+use nom::multi::{fold_many0, fold_many1, separated_list0, separated_list1};
 use nom::sequence::{delimited, preceded};
 use nom::IResult;
 use nom_locate::LocatedSpan;
@@ -80,14 +80,18 @@ pub fn comment(input: Input) -> Result<Input> {
     preceded(tag("//"), cut(take_till(|c| c == '\n')))(input)
 }
 
-pub fn comments_and_whitespaces(input: Input) -> Result<()> {
+pub fn comments_and_whitespaces0(input: Input) -> Result<()> {
     fold_many0(alt((comment, multispace1)), || (), |(), _| ())(input)
+}
+
+pub fn comments_and_whitespaces1(input: Input) -> Result<()> {
+    fold_many1(alt((comment, multispace1)), || (), |(), _| ())(input)
 }
 
 pub fn preceded_whitespace<'a, O>(
     inner: impl FnMut(Input<'a>) -> Result<'a, O>,
 ) -> impl FnMut(Input<'a>) -> Result<'a, O> {
-    preceded(comments_and_whitespaces, inner)
+    preceded(comments_and_whitespaces0, inner)
 }
 
 pub fn preceded_tag<'a>(str: &'a str) -> impl FnMut(Input<'a>) -> Result<'a, Input<'a>> {
@@ -121,7 +125,7 @@ pub fn integer<T: FromStr>(input: Input) -> Result<T> {
 pub fn ww<'a, O>(
     inner: impl FnMut(Input<'a>) -> Result<'a, O>,
 ) -> impl FnMut(Input<'a>) -> Result<'a, O> {
-    delimited(comments_and_whitespaces, inner, comments_and_whitespaces)
+    delimited(comments_and_whitespaces0, inner, comments_and_whitespaces0)
 }
 
 pub fn ww_tag<'a>(str: &'a str) -> impl FnMut(Input<'a>) -> Result<'a, Input<'a>> {

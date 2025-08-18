@@ -52,6 +52,7 @@ graph winInDir(piece: Piece, dir1: PositionOrNull->PositionOrNull, dir2: Positio
       if board[dir1[dir1[dir1[pos]]]] == piece {
         if board[dir1[dir1[dir1[dir1[pos]]]]] == piece {
           check(board[dir1[dir1[dir1[dir1[dir1[pos]]]]]] != piece)
+          check(board[dir2[pos]] != piece)
         } else {
           check(board[dir2[pos]] == piece)
           check(board[dir2[dir2[pos]]] != piece)

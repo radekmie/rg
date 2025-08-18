@@ -121,16 +121,17 @@ impl Display for Binop {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Add => write!(f, "+"),
-            Self::Sub => write!(f, "-"),
             Self::And => write!(f, "&&"),
-            Self::Or => write!(f, "||"),
             Self::Eq => write!(f, "=="),
+            Self::Gt => write!(f, ">"),
+            Self::Gte => write!(f, ">="),
+            Self::In => write!(f, "in"),
+            Self::Lt => write!(f, "<"),
+            Self::Lte => write!(f, "<="),
             Self::Mod => write!(f, "%"),
             Self::Ne => write!(f, "!="),
-            Self::Lt => write!(f, "<"),
-            Self::Gt => write!(f, ">"),
-            Self::Lte => write!(f, "<="),
-            Self::Gte => write!(f, ">="),
+            Self::Or => write!(f, "||"),
+            Self::Sub => write!(f, "-"),
         }
     }
 }

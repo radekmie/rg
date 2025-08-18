@@ -118,7 +118,7 @@ slideCW
 ))*out {blackPawn}
 )->>[$ stagnation=0]
 )[whitePawn](
-{$ stagnation==100}[$ white=100][$ black=0]->>(
+{$ stagnation==100}[$ white=100][$ black=0]->>{?(
 left *
 + right *
 )(
@@ -148,7 +148,7 @@ slideCW
 + loopCW 
 ))*out {whitePawn}
 )
-)(
+)}(
 {$ whitePawn>blackPawn}->>{}
 + {$ whitePawn<blackPawn}[$ white=0][$ black=100]->>{}
 + {$ whitePawn==blackPawn}[$ white=50][$ black=50]->>{}
@@ -185,7 +185,7 @@ slideCW
 ))*out {whitePawn}
 )->>[$ stagnation=0]
 )[blackPawn](
-{$ stagnation==100}[$ black=100][$ white=0]->>(
+{$ stagnation==100}[$ black=100][$ white=0]->>{?(
 left *
 + right *
 )(
@@ -215,7 +215,7 @@ slideCW
 + loopCW 
 ))*out {blackPawn}
 )
-)(
+)}(
 {$ blackPawn>whitePawn}->>{}
 + {$ blackPawn<whitePawn}[$ black=0][$ white=100]->>{}
 + {$ blackPawn==whitePawn}[$ black=50][$ white=50]->>{}

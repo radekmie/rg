@@ -237,6 +237,17 @@ fn evaluate_condition(
                 }
             }
         }
+        hrg::Binop::In => {
+            let lhs = evaluate_expression(context, lhs, binding)?;
+            if let hrg::Expression::Literal { identifier } = rhs.as_ref() {
+                if let Some(values) = context.type_values.get(identifier) {
+                    return Ok(values.contains(&lhs));
+                }
+            }
+
+            // TODO: Should it return an error here?
+            false
+        }
         _ => {
             return Err(hrg::Error::InvalidCondition {
                 expression: expression.clone(),
@@ -370,7 +381,7 @@ fn evaluate_expression(
                 .iter()
                 .find(|function| function.identifier == *identifier)
                 .ok_or_else(|| hrg::Error::UnknownFunction {
-                    identifier: Arc::from("rules"),
+                    identifier: identifier.clone(),
                 })?;
 
             let args = args
@@ -2477,6 +2488,57 @@ mod test {
             rules_3_b_2, rules_3_b_end: ;
             rules_3_b_end, rules_4: ;
             rules_4, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        reusable_repeated,
+        "
+            graph a() {}
+            graph rules() {
+                repeat _ in {0, 0, 0} {
+                    a()
+                }
+            }
+        ",
+        "
+            begin, rules_begin: ;
+            rules_begin, rules_3_a_begin: ;
+            rules_3_a_begin, rules_3_a_end: ;
+            rules_3_a_end, rules_4: ;
+            rules_4, rules_2: ;
+            rules_2, rules_6_a_begin: ;
+            rules_6_a_begin, rules_6_a_end: ;
+            rules_6_a_end, rules_7: ;
+            rules_7, rules_5: ;
+            rules_5, rules_9_a_begin: ;
+            rules_9_a_begin, rules_9_a_end: ;
+            rules_9_a_end, rules_10: ;
+            rules_10, rules_8: ;
+            rules_8, rules_1: ;
+            rules_1, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        in_operator,
+        "
+            domain Position = V(X) where X in 0..3
+            decrement : Position -> Position
+            decrement(V(X)) = if V(X - 1) in Position then V(X - 1) else V(0)
+            increment : Position -> Position
+            increment(V(X)) = if V(X + 1) in Position then V(X + 1) else V(3)
+            graph rules() {}
+        ",
+        "
+            @integer 0 : V__0 V__1 V__2 V__3;
+            type Position = { V__0, V__1, V__2, V__3 };
+            const decrement: Position -> Position = { :V__0, V__2: V__1, V__3: V__2 };
+            const increment: Position -> Position = { :V__3, V__0: V__1, V__1: V__2 };
+            begin, rules_begin: ;
+            rules_begin, rules_end: ;
             rules_end, end: ;
         "
     );

@@ -13,9 +13,9 @@ use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple
 use std::cell::RefCell;
 use std::sync::Arc;
 use utils::parser::{
-    comma_separated0, comma_separated1, comments_and_whitespaces, identifier_, in_braces,
-    in_brackets, in_parens, integer, into_arc, parse_error_line, ww, ww_char, ww_tag, Input,
-    Result, State,
+    comma_separated0, comma_separated1, comments_and_whitespaces0, comments_and_whitespaces1,
+    identifier_, in_braces, in_brackets, in_parens, integer, into_arc, parse_error_line, ww,
+    ww_char, ww_tag, Input, Result, State,
 };
 use utils::position::Span;
 use utils::Error;
@@ -221,6 +221,20 @@ fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {
     )))(input)
 }
 
+fn expression_binary<'a>(
+    lhs: impl FnMut(Input<'a>) -> Result<'a, Arc<Expression<Identifier>>>,
+    operator: impl FnMut(Input<'a>) -> Result<'a, Binop>,
+    rhs: impl FnMut(Input<'a>) -> Result<'a, Arc<Expression<Identifier>>>,
+) -> impl FnMut(Input<'a>) -> Result<'a, Arc<Expression<Identifier>>> {
+    map(
+        pair(lhs, opt(pair(operator, rhs))),
+        |(lhs, rhs)| match rhs {
+            Some((op, rhs)) => Arc::from(Expression::BinExpr { lhs, op, rhs }),
+            None => lhs,
+        },
+    )
+}
+
 fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
     alt((
         into_arc(tuple((
@@ -241,70 +255,40 @@ fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
                 separated_list1(char(';'), expression_map_part),
             ),
         )))),
-        map(
-            pair(expression2, opt(preceded(ww_tag("||"), expression))),
-            |(lhs, rhs)| match rhs {
-                Some(rhs) => Arc::new(Expression::BinExpr {
-                    lhs,
-                    op: Binop::Or,
-                    rhs,
-                }),
-                None => lhs,
-            },
-        ),
+        expression_binary(expression2, ww(value(Binop::Or, tag("||"))), expression),
     ))(input)
 }
 
 fn expression2(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    map(
-        pair(expression3, opt(preceded(ww_tag("&&"), expression2))),
-        |(lhs, rhs)| match rhs {
-            Some(rhs) => Arc::new(Expression::BinExpr {
-                lhs,
-                op: Binop::And,
-                rhs,
-            }),
-            None => lhs,
-        },
-    )(input)
-}
-
-fn comp_binop(input: Input) -> Result<Binop> {
-    ww(alt((
-        value(Binop::Eq, tag("==")),
-        value(Binop::Ne, tag("!=")),
-        value(Binop::Lte, tag("<=")),
-        value(Binop::Lt, tag("<")),
-        value(Binop::Gte, tag(">=")),
-        value(Binop::Gt, tag(">")),
-    )))(input)
+    expression_binary(expression3, ww(value(Binop::And, tag("&&"))), expression2)(input)
 }
 
 fn expression3(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    map(
-        pair(expression4, opt(pair(comp_binop, expression3))),
-        |(lhs, rhs)| match rhs {
-            Some((op, rhs)) => Arc::new(Expression::BinExpr { lhs, op, rhs }),
-            None => lhs,
-        },
+    expression_binary(
+        expression4,
+        ww(alt((
+            value(Binop::Eq, tag("==")),
+            value(Binop::Ne, tag("!=")),
+            value(Binop::Lte, tag("<=")),
+            value(Binop::Lt, tag("<")),
+            value(Binop::Gte, tag(">=")),
+            value(Binop::Gt, tag(">")),
+        ))),
+        expression3,
     )(input)
 }
 
-fn addsub_binop(input: Input) -> Result<Binop> {
-    ww(alt((
-        value(Binop::Add, tag("+")),
-        value(Binop::Mod, tag("%")),
-        value(Binop::Sub, tag("-")),
-    )))(input)
-}
-
 fn expression4(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    map(
-        pair(expression5, opt(pair(addsub_binop, expression4))),
-        |(lhs, rhs)| match rhs {
-            Some((op, rhs)) => Arc::new(Expression::BinExpr { lhs, op, rhs }),
-            None => lhs,
-        },
+    expression_binary(
+        expression5,
+        ww(alt((
+            value(Binop::Add, tag("+")),
+            // Force a comment or some whitespace to prevent consuming the next identifier.
+            value(Binop::In, terminated(tag("in"), comments_and_whitespaces1)),
+            value(Binop::Mod, tag("%")),
+            value(Binop::Sub, tag("-")),
+        ))),
+        expression4,
     )(input)
 }
 
@@ -447,7 +431,7 @@ fn game(input: Input) -> Result<Game<Identifier>> {
         terminated(
             fold_many0(
                 preceded(
-                    comments_and_whitespaces,
+                    comments_and_whitespaces0,
                     alt((
                         map(domain_declaration, |x| (Some(x), None, None, None)),
                         map(function_declaration, |x| (None, Some(x), None, None)),
@@ -468,7 +452,7 @@ fn game(input: Input) -> Result<Game<Identifier>> {
                     game
                 },
             ),
-            comments_and_whitespaces,
+            comments_and_whitespaces0,
         ),
     )(input)
 }

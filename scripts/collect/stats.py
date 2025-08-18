@@ -78,7 +78,7 @@ def collect_stats(base_directory, flag_sets):
     """Collect stats for all files in each catalog of the specified base directory."""
     stats_data = []
     transforms_data = pd.DataFrame()
-    catalogs = ["rbg", "hrg", "kif", "rg"]
+    catalogs = ["rbg", "hrg", "kif"]
     for catalog in catalogs:
         catalog_path = os.path.join(base_directory, catalog)
         if not os.path.isdir(catalog_path):
@@ -90,7 +90,6 @@ def collect_stats(base_directory, flag_sets):
             if os.path.isfile(file_path):
                 file_name_stripped = strip_extension(filename)
                 file_extension = get_file_extension(filename)
-
                 # file_name_stripped cant contain word Test or test
                 if "test" in file_name_stripped.lower():
                     continue
