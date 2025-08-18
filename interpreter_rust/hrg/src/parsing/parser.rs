@@ -221,8 +221,18 @@ fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {
     )))(input)
 }
 
-fn expression_binop(input: Input) -> Result<Binop> {
-    value(Binop::Or, ww_tag("||"))(input)
+fn expression_binary<'a>(
+    lhs: impl FnMut(Input<'a>) -> Result<'a, Arc<Expression<Identifier>>>,
+    operator: impl FnMut(Input<'a>) -> Result<'a, Binop>,
+    rhs: impl FnMut(Input<'a>) -> Result<'a, Arc<Expression<Identifier>>>,
+) -> impl FnMut(Input<'a>) -> Result<'a, Arc<Expression<Identifier>>> {
+    map(
+        pair(lhs, opt(pair(operator, rhs))),
+        |(lhs, rhs)| match rhs {
+            Some((op, rhs)) => Arc::from(Expression::BinExpr { lhs, op, rhs }),
+            None => lhs,
+        },
+    )
 }
 
 fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
@@ -245,54 +255,41 @@ fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
                 separated_list1(char(';'), expression_map_part),
             ),
         )))),
-        into_arc(tuple((expression2, expression_binop, expression))),
-        expression2,
+        expression_binary(expression2, ww(value(Binop::Or, tag("||"))), expression),
     ))(input)
-}
-
-fn expression2_binop(input: Input) -> Result<Binop> {
-    value(Binop::And, ww_tag("&&"))(input)
 }
 
 fn expression2(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    alt((
-        into_arc(tuple((expression3, expression2_binop, expression2))),
-        expression3,
-    ))(input)
-}
-
-fn expression3_binop(input: Input) -> Result<Binop> {
-    ww(alt((
-        value(Binop::Eq, tag("==")),
-        value(Binop::Ne, tag("!=")),
-        value(Binop::Lte, tag("<=")),
-        value(Binop::Lt, tag("<")),
-        value(Binop::Gte, tag(">=")),
-        value(Binop::Gt, tag(">")),
-    )))(input)
+    expression_binary(expression3, ww(value(Binop::And, tag("&&"))), expression2)(input)
 }
 
 fn expression3(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    alt((
-        into_arc(tuple((expression4, expression3_binop, expression3))),
+    expression_binary(
         expression4,
-    ))(input)
-}
-
-fn expression4_binop(input: Input) -> Result<Binop> {
-    ww(alt((
-        value(Binop::Add, tag("+")),
-        value(Binop::In, terminated(tag("in"), comments_and_whitespaces1)),
-        value(Binop::Mod, tag("%")),
-        value(Binop::Sub, tag("-")),
-    )))(input)
+        ww(alt((
+            value(Binop::Eq, tag("==")),
+            value(Binop::Ne, tag("!=")),
+            value(Binop::Lte, tag("<=")),
+            value(Binop::Lt, tag("<")),
+            value(Binop::Gte, tag(">=")),
+            value(Binop::Gt, tag(">")),
+        ))),
+        expression3,
+    )(input)
 }
 
 fn expression4(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    alt((
-        into_arc(tuple((expression5, expression4_binop, expression4))),
+    expression_binary(
         expression5,
-    ))(input)
+        ww(alt((
+            value(Binop::Add, tag("+")),
+            // Force a comment or some whitespace to prevent consuming the next identifier.
+            value(Binop::In, terminated(tag("in"), comments_and_whitespaces1)),
+            value(Binop::Mod, tag("%")),
+            value(Binop::Sub, tag("-")),
+        ))),
+        expression4,
+    )(input)
 }
 
 fn expression5(input: Input) -> Result<Arc<Expression<Identifier>>> {
