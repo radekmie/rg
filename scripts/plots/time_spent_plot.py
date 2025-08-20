@@ -9,8 +9,6 @@ def load_data():
     return pd.read_csv("../data/results/tws_with_total_time_perc.csv")
 
 def create_plot_big(df):
-    df = df[df['language'] != 'rg']
-    # df = df[df['language'] != 'kif']
     # Only keep relevant columns
     plot_df = df[['transform', 'language', 'total_time_perc', 'changed_time_perc']].copy()
     # Sort transforms by mean total_time_perc for consistent order

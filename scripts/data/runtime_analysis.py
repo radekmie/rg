@@ -2,7 +2,7 @@ import pandas as pd
 
 def load_data():
     """Load the data from the CSV file."""
-    return pd.read_csv("../collect/results/runtime_stats1.csv")
+    return pd.read_csv("../collect/results/runtime_stats.csv")
 
 
 def transform_data(df):

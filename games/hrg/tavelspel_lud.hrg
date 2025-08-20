@@ -1,0 +1,1061 @@
+
+domain Piece = empty | whitePawn | blackPawn | border
+domain Player = black | white
+domain Score = 50 | 0 | 100
+domain Bool = 0 | 1
+
+domain Count = I(X) where X in 0..1250
+domain CountOrNan = nan | Count
+domain PieceCount = I(X) where X in 0..53
+
+pawnOf : Player -> Piece
+pawnOf(white) = whitePawn
+pawnOf(black) = blackPawn
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(black) = white
+
+increment : Count -> CountOrNan
+increment(I(X)) = if X < 1250 then I(X+1) else nan
+
+less : PieceCount -> PieceCount -> Bool
+less(I(X), I(Y)) = if X < Y then 1 else 0
+
+
+domain Position = cy0x0 | cy0x1 | cy0x10 | cy0x11 | cy0x12 | cy0x2 | cy0x3 | cy0x4 | cy0x5 | cy0x6 | cy0x7 | cy0x8 | cy0x9 | cy10x0 | cy10x1 | cy10x10 | cy10x11 | cy10x12 | cy10x2 | cy10x3 | cy10x4 | cy10x5 | cy10x6 | cy10x7 | cy10x8 | cy10x9 | cy11x0 | cy11x1 | cy11x10 | cy11x11 | cy11x12 | cy11x2 | cy11x3 | cy11x4 | cy11x5 | cy11x6 | cy11x7 | cy11x8 | cy11x9 | cy12x0 | cy12x1 | cy12x10 | cy12x11 | cy12x12 | cy12x2 | cy12x3 | cy12x4 | cy12x5 | cy12x6 | cy12x7 | cy12x8 | cy12x9 | cy1x0 | cy1x1 | cy1x10 | cy1x11 | cy1x12 | cy1x2 | cy1x3 | cy1x4 | cy1x5 | cy1x6 | cy1x7 | cy1x8 | cy1x9 | cy2x0 | cy2x1 | cy2x10 | cy2x11 | cy2x12 | cy2x2 | cy2x3 | cy2x4 | cy2x5 | cy2x6 | cy2x7 | cy2x8 | cy2x9 | cy3x0 | cy3x1 | cy3x10 | cy3x11 | cy3x12 | cy3x2 | cy3x3 | cy3x4 | cy3x5 | cy3x6 | cy3x7 | cy3x8 | cy3x9 | cy4x0 | cy4x1 | cy4x10 | cy4x11 | cy4x12 | cy4x2 | cy4x3 | cy4x4 | cy4x5 | cy4x6 | cy4x7 | cy4x8 | cy4x9 | cy5x0 | cy5x1 | cy5x10 | cy5x11 | cy5x12 | cy5x2 | cy5x3 | cy5x4 | cy5x5 | cy5x6 | cy5x7 | cy5x8 | cy5x9 | cy6x0 | cy6x1 | cy6x10 | cy6x11 | cy6x12 | cy6x2 | cy6x3 | cy6x4 | cy6x5 | cy6x6 | cy6x7 | cy6x8 | cy6x9 | cy7x0 | cy7x1 | cy7x10 | cy7x11 | cy7x12 | cy7x2 | cy7x3 | cy7x4 | cy7x5 | cy7x6 | cy7x7 | cy7x8 | cy7x9 | cy8x0 | cy8x1 | cy8x10 | cy8x11 | cy8x12 | cy8x2 | cy8x3 | cy8x4 | cy8x5 | cy8x6 | cy8x7 | cy8x8 | cy8x9 | cy9x0 | cy9x1 | cy9x10 | cy9x11 | cy9x12 | cy9x2 | cy9x3 | cy9x4 | cy9x5 | cy9x6 | cy9x7 | cy9x8 | cy9x9 
+domain PositionOrNull = null | Position
+
+nextPos : PositionOrNull -> PositionOrNull
+nextPos(null) = cy0x0
+nextPos(cy0x0) = cy0x1
+nextPos(cy0x1) = cy0x10
+nextPos(cy0x10) = cy0x11
+nextPos(cy0x11) = cy0x12
+nextPos(cy0x12) = cy0x2
+nextPos(cy0x2) = cy0x3
+nextPos(cy0x3) = cy0x4
+nextPos(cy0x4) = cy0x5
+nextPos(cy0x5) = cy0x6
+nextPos(cy0x6) = cy0x7
+nextPos(cy0x7) = cy0x8
+nextPos(cy0x8) = cy0x9
+nextPos(cy0x9) = cy10x0
+nextPos(cy10x0) = cy10x1
+nextPos(cy10x1) = cy10x10
+nextPos(cy10x10) = cy10x11
+nextPos(cy10x11) = cy10x12
+nextPos(cy10x12) = cy10x2
+nextPos(cy10x2) = cy10x3
+nextPos(cy10x3) = cy10x4
+nextPos(cy10x4) = cy10x5
+nextPos(cy10x5) = cy10x6
+nextPos(cy10x6) = cy10x7
+nextPos(cy10x7) = cy10x8
+nextPos(cy10x8) = cy10x9
+nextPos(cy10x9) = cy11x0
+nextPos(cy11x0) = cy11x1
+nextPos(cy11x1) = cy11x10
+nextPos(cy11x10) = cy11x11
+nextPos(cy11x11) = cy11x12
+nextPos(cy11x12) = cy11x2
+nextPos(cy11x2) = cy11x3
+nextPos(cy11x3) = cy11x4
+nextPos(cy11x4) = cy11x5
+nextPos(cy11x5) = cy11x6
+nextPos(cy11x6) = cy11x7
+nextPos(cy11x7) = cy11x8
+nextPos(cy11x8) = cy11x9
+nextPos(cy11x9) = cy12x0
+nextPos(cy12x0) = cy12x1
+nextPos(cy12x1) = cy12x10
+nextPos(cy12x10) = cy12x11
+nextPos(cy12x11) = cy12x12
+nextPos(cy12x12) = cy12x2
+nextPos(cy12x2) = cy12x3
+nextPos(cy12x3) = cy12x4
+nextPos(cy12x4) = cy12x5
+nextPos(cy12x5) = cy12x6
+nextPos(cy12x6) = cy12x7
+nextPos(cy12x7) = cy12x8
+nextPos(cy12x8) = cy12x9
+nextPos(cy12x9) = cy1x0
+nextPos(cy1x0) = cy1x1
+nextPos(cy1x1) = cy1x10
+nextPos(cy1x10) = cy1x11
+nextPos(cy1x11) = cy1x12
+nextPos(cy1x12) = cy1x2
+nextPos(cy1x2) = cy1x3
+nextPos(cy1x3) = cy1x4
+nextPos(cy1x4) = cy1x5
+nextPos(cy1x5) = cy1x6
+nextPos(cy1x6) = cy1x7
+nextPos(cy1x7) = cy1x8
+nextPos(cy1x8) = cy1x9
+nextPos(cy1x9) = cy2x0
+nextPos(cy2x0) = cy2x1
+nextPos(cy2x1) = cy2x10
+nextPos(cy2x10) = cy2x11
+nextPos(cy2x11) = cy2x12
+nextPos(cy2x12) = cy2x2
+nextPos(cy2x2) = cy2x3
+nextPos(cy2x3) = cy2x4
+nextPos(cy2x4) = cy2x5
+nextPos(cy2x5) = cy2x6
+nextPos(cy2x6) = cy2x7
+nextPos(cy2x7) = cy2x8
+nextPos(cy2x8) = cy2x9
+nextPos(cy2x9) = cy3x0
+nextPos(cy3x0) = cy3x1
+nextPos(cy3x1) = cy3x10
+nextPos(cy3x10) = cy3x11
+nextPos(cy3x11) = cy3x12
+nextPos(cy3x12) = cy3x2
+nextPos(cy3x2) = cy3x3
+nextPos(cy3x3) = cy3x4
+nextPos(cy3x4) = cy3x5
+nextPos(cy3x5) = cy3x6
+nextPos(cy3x6) = cy3x7
+nextPos(cy3x7) = cy3x8
+nextPos(cy3x8) = cy3x9
+nextPos(cy3x9) = cy4x0
+nextPos(cy4x0) = cy4x1
+nextPos(cy4x1) = cy4x10
+nextPos(cy4x10) = cy4x11
+nextPos(cy4x11) = cy4x12
+nextPos(cy4x12) = cy4x2
+nextPos(cy4x2) = cy4x3
+nextPos(cy4x3) = cy4x4
+nextPos(cy4x4) = cy4x5
+nextPos(cy4x5) = cy4x6
+nextPos(cy4x6) = cy4x7
+nextPos(cy4x7) = cy4x8
+nextPos(cy4x8) = cy4x9
+nextPos(cy4x9) = cy5x0
+nextPos(cy5x0) = cy5x1
+nextPos(cy5x1) = cy5x10
+nextPos(cy5x10) = cy5x11
+nextPos(cy5x11) = cy5x12
+nextPos(cy5x12) = cy5x2
+nextPos(cy5x2) = cy5x3
+nextPos(cy5x3) = cy5x4
+nextPos(cy5x4) = cy5x5
+nextPos(cy5x5) = cy5x6
+nextPos(cy5x6) = cy5x7
+nextPos(cy5x7) = cy5x8
+nextPos(cy5x8) = cy5x9
+nextPos(cy5x9) = cy6x0
+nextPos(cy6x0) = cy6x1
+nextPos(cy6x1) = cy6x10
+nextPos(cy6x10) = cy6x11
+nextPos(cy6x11) = cy6x12
+nextPos(cy6x12) = cy6x2
+nextPos(cy6x2) = cy6x3
+nextPos(cy6x3) = cy6x4
+nextPos(cy6x4) = cy6x5
+nextPos(cy6x5) = cy6x6
+nextPos(cy6x6) = cy6x7
+nextPos(cy6x7) = cy6x8
+nextPos(cy6x8) = cy6x9
+nextPos(cy6x9) = cy7x0
+nextPos(cy7x0) = cy7x1
+nextPos(cy7x1) = cy7x10
+nextPos(cy7x10) = cy7x11
+nextPos(cy7x11) = cy7x12
+nextPos(cy7x12) = cy7x2
+nextPos(cy7x2) = cy7x3
+nextPos(cy7x3) = cy7x4
+nextPos(cy7x4) = cy7x5
+nextPos(cy7x5) = cy7x6
+nextPos(cy7x6) = cy7x7
+nextPos(cy7x7) = cy7x8
+nextPos(cy7x8) = cy7x9
+nextPos(cy7x9) = cy8x0
+nextPos(cy8x0) = cy8x1
+nextPos(cy8x1) = cy8x10
+nextPos(cy8x10) = cy8x11
+nextPos(cy8x11) = cy8x12
+nextPos(cy8x12) = cy8x2
+nextPos(cy8x2) = cy8x3
+nextPos(cy8x3) = cy8x4
+nextPos(cy8x4) = cy8x5
+nextPos(cy8x5) = cy8x6
+nextPos(cy8x6) = cy8x7
+nextPos(cy8x7) = cy8x8
+nextPos(cy8x8) = cy8x9
+nextPos(cy8x9) = cy9x0
+nextPos(cy9x0) = cy9x1
+nextPos(cy9x1) = cy9x10
+nextPos(cy9x10) = cy9x11
+nextPos(cy9x11) = cy9x12
+nextPos(cy9x12) = cy9x2
+nextPos(cy9x2) = cy9x3
+nextPos(cy9x3) = cy9x4
+nextPos(cy9x4) = cy9x5
+nextPos(cy9x5) = cy9x6
+nextPos(cy9x6) = cy9x7
+nextPos(cy9x7) = cy9x8
+nextPos(cy9x8) = cy9x9
+nextPos(cy9x9) = null
+
+north : PositionOrNull -> PositionOrNull
+north(null) = null
+north(cy0x0) = null
+north(cy0x1) = null
+north(cy0x10) = null
+north(cy0x11) = null
+north(cy0x12) = null
+north(cy0x2) = null
+north(cy0x3) = null
+north(cy0x4) = null
+north(cy0x5) = null
+north(cy0x6) = null
+north(cy0x7) = null
+north(cy0x8) = null
+north(cy0x9) = null
+north(cy10x0) = cy9x0
+north(cy10x1) = cy9x1
+north(cy10x10) = cy9x10
+north(cy10x11) = cy9x11
+north(cy10x12) = cy9x12
+north(cy10x2) = cy9x2
+north(cy10x3) = cy9x3
+north(cy10x4) = cy9x4
+north(cy10x5) = cy9x5
+north(cy10x6) = cy9x6
+north(cy10x7) = cy9x7
+north(cy10x8) = cy9x8
+north(cy10x9) = cy9x9
+north(cy11x0) = cy10x0
+north(cy11x1) = cy10x1
+north(cy11x10) = cy10x10
+north(cy11x11) = cy10x11
+north(cy11x12) = cy10x12
+north(cy11x2) = cy10x2
+north(cy11x3) = cy10x3
+north(cy11x4) = cy10x4
+north(cy11x5) = cy10x5
+north(cy11x6) = cy10x6
+north(cy11x7) = cy10x7
+north(cy11x8) = cy10x8
+north(cy11x9) = cy10x9
+north(cy12x0) = cy11x0
+north(cy12x1) = cy11x1
+north(cy12x10) = cy11x10
+north(cy12x11) = cy11x11
+north(cy12x12) = cy11x12
+north(cy12x2) = cy11x2
+north(cy12x3) = cy11x3
+north(cy12x4) = cy11x4
+north(cy12x5) = cy11x5
+north(cy12x6) = cy11x6
+north(cy12x7) = cy11x7
+north(cy12x8) = cy11x8
+north(cy12x9) = cy11x9
+north(cy1x0) = cy0x0
+north(cy1x1) = cy0x1
+north(cy1x10) = cy0x10
+north(cy1x11) = cy0x11
+north(cy1x12) = cy0x12
+north(cy1x2) = cy0x2
+north(cy1x3) = cy0x3
+north(cy1x4) = cy0x4
+north(cy1x5) = cy0x5
+north(cy1x6) = cy0x6
+north(cy1x7) = cy0x7
+north(cy1x8) = cy0x8
+north(cy1x9) = cy0x9
+north(cy2x0) = cy1x0
+north(cy2x1) = cy1x1
+north(cy2x10) = cy1x10
+north(cy2x11) = cy1x11
+north(cy2x12) = cy1x12
+north(cy2x2) = cy1x2
+north(cy2x3) = cy1x3
+north(cy2x4) = cy1x4
+north(cy2x5) = cy1x5
+north(cy2x6) = cy1x6
+north(cy2x7) = cy1x7
+north(cy2x8) = cy1x8
+north(cy2x9) = cy1x9
+north(cy3x0) = cy2x0
+north(cy3x1) = cy2x1
+north(cy3x10) = cy2x10
+north(cy3x11) = cy2x11
+north(cy3x12) = cy2x12
+north(cy3x2) = cy2x2
+north(cy3x3) = cy2x3
+north(cy3x4) = cy2x4
+north(cy3x5) = cy2x5
+north(cy3x6) = cy2x6
+north(cy3x7) = cy2x7
+north(cy3x8) = cy2x8
+north(cy3x9) = cy2x9
+north(cy4x0) = cy3x0
+north(cy4x1) = cy3x1
+north(cy4x10) = cy3x10
+north(cy4x11) = cy3x11
+north(cy4x12) = cy3x12
+north(cy4x2) = cy3x2
+north(cy4x3) = cy3x3
+north(cy4x4) = cy3x4
+north(cy4x5) = cy3x5
+north(cy4x6) = cy3x6
+north(cy4x7) = cy3x7
+north(cy4x8) = cy3x8
+north(cy4x9) = cy3x9
+north(cy5x0) = cy4x0
+north(cy5x1) = cy4x1
+north(cy5x10) = cy4x10
+north(cy5x11) = cy4x11
+north(cy5x12) = cy4x12
+north(cy5x2) = cy4x2
+north(cy5x3) = cy4x3
+north(cy5x4) = cy4x4
+north(cy5x5) = cy4x5
+north(cy5x6) = cy4x6
+north(cy5x7) = cy4x7
+north(cy5x8) = cy4x8
+north(cy5x9) = cy4x9
+north(cy6x0) = cy5x0
+north(cy6x1) = cy5x1
+north(cy6x10) = cy5x10
+north(cy6x11) = cy5x11
+north(cy6x12) = cy5x12
+north(cy6x2) = cy5x2
+north(cy6x3) = cy5x3
+north(cy6x4) = cy5x4
+north(cy6x5) = cy5x5
+north(cy6x6) = cy5x6
+north(cy6x7) = cy5x7
+north(cy6x8) = cy5x8
+north(cy6x9) = cy5x9
+north(cy7x0) = cy6x0
+north(cy7x1) = cy6x1
+north(cy7x10) = cy6x10
+north(cy7x11) = cy6x11
+north(cy7x12) = cy6x12
+north(cy7x2) = cy6x2
+north(cy7x3) = cy6x3
+north(cy7x4) = cy6x4
+north(cy7x5) = cy6x5
+north(cy7x6) = cy6x6
+north(cy7x7) = cy6x7
+north(cy7x8) = cy6x8
+north(cy7x9) = cy6x9
+north(cy8x0) = cy7x0
+north(cy8x1) = cy7x1
+north(cy8x10) = cy7x10
+north(cy8x11) = cy7x11
+north(cy8x12) = cy7x12
+north(cy8x2) = cy7x2
+north(cy8x3) = cy7x3
+north(cy8x4) = cy7x4
+north(cy8x5) = cy7x5
+north(cy8x6) = cy7x6
+north(cy8x7) = cy7x7
+north(cy8x8) = cy7x8
+north(cy8x9) = cy7x9
+north(cy9x0) = cy8x0
+north(cy9x1) = cy8x1
+north(cy9x10) = cy8x10
+north(cy9x11) = cy8x11
+north(cy9x12) = cy8x12
+north(cy9x2) = cy8x2
+north(cy9x3) = cy8x3
+north(cy9x4) = cy8x4
+north(cy9x5) = cy8x5
+north(cy9x6) = cy8x6
+north(cy9x7) = cy8x7
+north(cy9x8) = cy8x8
+north(cy9x9) = cy8x9
+
+east : PositionOrNull -> PositionOrNull
+east(null) = null
+east(cy0x0) = cy0x1
+east(cy0x1) = cy0x2
+east(cy0x10) = cy0x11
+east(cy0x11) = cy0x12
+east(cy0x12) = null
+east(cy0x2) = cy0x3
+east(cy0x3) = cy0x4
+east(cy0x4) = cy0x5
+east(cy0x5) = cy0x6
+east(cy0x6) = cy0x7
+east(cy0x7) = cy0x8
+east(cy0x8) = cy0x9
+east(cy0x9) = cy0x10
+east(cy10x0) = cy10x1
+east(cy10x1) = cy10x2
+east(cy10x10) = cy10x11
+east(cy10x11) = cy10x12
+east(cy10x12) = null
+east(cy10x2) = cy10x3
+east(cy10x3) = cy10x4
+east(cy10x4) = cy10x5
+east(cy10x5) = cy10x6
+east(cy10x6) = cy10x7
+east(cy10x7) = cy10x8
+east(cy10x8) = cy10x9
+east(cy10x9) = cy10x10
+east(cy11x0) = cy11x1
+east(cy11x1) = cy11x2
+east(cy11x10) = cy11x11
+east(cy11x11) = cy11x12
+east(cy11x12) = null
+east(cy11x2) = cy11x3
+east(cy11x3) = cy11x4
+east(cy11x4) = cy11x5
+east(cy11x5) = cy11x6
+east(cy11x6) = cy11x7
+east(cy11x7) = cy11x8
+east(cy11x8) = cy11x9
+east(cy11x9) = cy11x10
+east(cy12x0) = cy12x1
+east(cy12x1) = cy12x2
+east(cy12x10) = cy12x11
+east(cy12x11) = cy12x12
+east(cy12x12) = null
+east(cy12x2) = cy12x3
+east(cy12x3) = cy12x4
+east(cy12x4) = cy12x5
+east(cy12x5) = cy12x6
+east(cy12x6) = cy12x7
+east(cy12x7) = cy12x8
+east(cy12x8) = cy12x9
+east(cy12x9) = cy12x10
+east(cy1x0) = cy1x1
+east(cy1x1) = cy1x2
+east(cy1x10) = cy1x11
+east(cy1x11) = cy1x12
+east(cy1x12) = null
+east(cy1x2) = cy1x3
+east(cy1x3) = cy1x4
+east(cy1x4) = cy1x5
+east(cy1x5) = cy1x6
+east(cy1x6) = cy1x7
+east(cy1x7) = cy1x8
+east(cy1x8) = cy1x9
+east(cy1x9) = cy1x10
+east(cy2x0) = cy2x1
+east(cy2x1) = cy2x2
+east(cy2x10) = cy2x11
+east(cy2x11) = cy2x12
+east(cy2x12) = null
+east(cy2x2) = cy2x3
+east(cy2x3) = cy2x4
+east(cy2x4) = cy2x5
+east(cy2x5) = cy2x6
+east(cy2x6) = cy2x7
+east(cy2x7) = cy2x8
+east(cy2x8) = cy2x9
+east(cy2x9) = cy2x10
+east(cy3x0) = cy3x1
+east(cy3x1) = cy3x2
+east(cy3x10) = cy3x11
+east(cy3x11) = cy3x12
+east(cy3x12) = null
+east(cy3x2) = cy3x3
+east(cy3x3) = cy3x4
+east(cy3x4) = cy3x5
+east(cy3x5) = cy3x6
+east(cy3x6) = cy3x7
+east(cy3x7) = cy3x8
+east(cy3x8) = cy3x9
+east(cy3x9) = cy3x10
+east(cy4x0) = cy4x1
+east(cy4x1) = cy4x2
+east(cy4x10) = cy4x11
+east(cy4x11) = cy4x12
+east(cy4x12) = null
+east(cy4x2) = cy4x3
+east(cy4x3) = cy4x4
+east(cy4x4) = cy4x5
+east(cy4x5) = cy4x6
+east(cy4x6) = cy4x7
+east(cy4x7) = cy4x8
+east(cy4x8) = cy4x9
+east(cy4x9) = cy4x10
+east(cy5x0) = cy5x1
+east(cy5x1) = cy5x2
+east(cy5x10) = cy5x11
+east(cy5x11) = cy5x12
+east(cy5x12) = null
+east(cy5x2) = cy5x3
+east(cy5x3) = cy5x4
+east(cy5x4) = cy5x5
+east(cy5x5) = cy5x6
+east(cy5x6) = cy5x7
+east(cy5x7) = cy5x8
+east(cy5x8) = cy5x9
+east(cy5x9) = cy5x10
+east(cy6x0) = cy6x1
+east(cy6x1) = cy6x2
+east(cy6x10) = cy6x11
+east(cy6x11) = cy6x12
+east(cy6x12) = null
+east(cy6x2) = cy6x3
+east(cy6x3) = cy6x4
+east(cy6x4) = cy6x5
+east(cy6x5) = cy6x6
+east(cy6x6) = cy6x7
+east(cy6x7) = cy6x8
+east(cy6x8) = cy6x9
+east(cy6x9) = cy6x10
+east(cy7x0) = cy7x1
+east(cy7x1) = cy7x2
+east(cy7x10) = cy7x11
+east(cy7x11) = cy7x12
+east(cy7x12) = null
+east(cy7x2) = cy7x3
+east(cy7x3) = cy7x4
+east(cy7x4) = cy7x5
+east(cy7x5) = cy7x6
+east(cy7x6) = cy7x7
+east(cy7x7) = cy7x8
+east(cy7x8) = cy7x9
+east(cy7x9) = cy7x10
+east(cy8x0) = cy8x1
+east(cy8x1) = cy8x2
+east(cy8x10) = cy8x11
+east(cy8x11) = cy8x12
+east(cy8x12) = null
+east(cy8x2) = cy8x3
+east(cy8x3) = cy8x4
+east(cy8x4) = cy8x5
+east(cy8x5) = cy8x6
+east(cy8x6) = cy8x7
+east(cy8x7) = cy8x8
+east(cy8x8) = cy8x9
+east(cy8x9) = cy8x10
+east(cy9x0) = cy9x1
+east(cy9x1) = cy9x2
+east(cy9x10) = cy9x11
+east(cy9x11) = cy9x12
+east(cy9x12) = null
+east(cy9x2) = cy9x3
+east(cy9x3) = cy9x4
+east(cy9x4) = cy9x5
+east(cy9x5) = cy9x6
+east(cy9x6) = cy9x7
+east(cy9x7) = cy9x8
+east(cy9x8) = cy9x9
+east(cy9x9) = cy9x10
+
+south : PositionOrNull -> PositionOrNull
+south(null) = null
+south(cy0x0) = cy1x0
+south(cy0x1) = cy1x1
+south(cy0x10) = cy1x10
+south(cy0x11) = cy1x11
+south(cy0x12) = cy1x12
+south(cy0x2) = cy1x2
+south(cy0x3) = cy1x3
+south(cy0x4) = cy1x4
+south(cy0x5) = cy1x5
+south(cy0x6) = cy1x6
+south(cy0x7) = cy1x7
+south(cy0x8) = cy1x8
+south(cy0x9) = cy1x9
+south(cy10x0) = cy11x0
+south(cy10x1) = cy11x1
+south(cy10x10) = cy11x10
+south(cy10x11) = cy11x11
+south(cy10x12) = cy11x12
+south(cy10x2) = cy11x2
+south(cy10x3) = cy11x3
+south(cy10x4) = cy11x4
+south(cy10x5) = cy11x5
+south(cy10x6) = cy11x6
+south(cy10x7) = cy11x7
+south(cy10x8) = cy11x8
+south(cy10x9) = cy11x9
+south(cy11x0) = cy12x0
+south(cy11x1) = cy12x1
+south(cy11x10) = cy12x10
+south(cy11x11) = cy12x11
+south(cy11x12) = cy12x12
+south(cy11x2) = cy12x2
+south(cy11x3) = cy12x3
+south(cy11x4) = cy12x4
+south(cy11x5) = cy12x5
+south(cy11x6) = cy12x6
+south(cy11x7) = cy12x7
+south(cy11x8) = cy12x8
+south(cy11x9) = cy12x9
+south(cy12x0) = null
+south(cy12x1) = null
+south(cy12x10) = null
+south(cy12x11) = null
+south(cy12x12) = null
+south(cy12x2) = null
+south(cy12x3) = null
+south(cy12x4) = null
+south(cy12x5) = null
+south(cy12x6) = null
+south(cy12x7) = null
+south(cy12x8) = null
+south(cy12x9) = null
+south(cy1x0) = cy2x0
+south(cy1x1) = cy2x1
+south(cy1x10) = cy2x10
+south(cy1x11) = cy2x11
+south(cy1x12) = cy2x12
+south(cy1x2) = cy2x2
+south(cy1x3) = cy2x3
+south(cy1x4) = cy2x4
+south(cy1x5) = cy2x5
+south(cy1x6) = cy2x6
+south(cy1x7) = cy2x7
+south(cy1x8) = cy2x8
+south(cy1x9) = cy2x9
+south(cy2x0) = cy3x0
+south(cy2x1) = cy3x1
+south(cy2x10) = cy3x10
+south(cy2x11) = cy3x11
+south(cy2x12) = cy3x12
+south(cy2x2) = cy3x2
+south(cy2x3) = cy3x3
+south(cy2x4) = cy3x4
+south(cy2x5) = cy3x5
+south(cy2x6) = cy3x6
+south(cy2x7) = cy3x7
+south(cy2x8) = cy3x8
+south(cy2x9) = cy3x9
+south(cy3x0) = cy4x0
+south(cy3x1) = cy4x1
+south(cy3x10) = cy4x10
+south(cy3x11) = cy4x11
+south(cy3x12) = cy4x12
+south(cy3x2) = cy4x2
+south(cy3x3) = cy4x3
+south(cy3x4) = cy4x4
+south(cy3x5) = cy4x5
+south(cy3x6) = cy4x6
+south(cy3x7) = cy4x7
+south(cy3x8) = cy4x8
+south(cy3x9) = cy4x9
+south(cy4x0) = cy5x0
+south(cy4x1) = cy5x1
+south(cy4x10) = cy5x10
+south(cy4x11) = cy5x11
+south(cy4x12) = cy5x12
+south(cy4x2) = cy5x2
+south(cy4x3) = cy5x3
+south(cy4x4) = cy5x4
+south(cy4x5) = cy5x5
+south(cy4x6) = cy5x6
+south(cy4x7) = cy5x7
+south(cy4x8) = cy5x8
+south(cy4x9) = cy5x9
+south(cy5x0) = cy6x0
+south(cy5x1) = cy6x1
+south(cy5x10) = cy6x10
+south(cy5x11) = cy6x11
+south(cy5x12) = cy6x12
+south(cy5x2) = cy6x2
+south(cy5x3) = cy6x3
+south(cy5x4) = cy6x4
+south(cy5x5) = cy6x5
+south(cy5x6) = cy6x6
+south(cy5x7) = cy6x7
+south(cy5x8) = cy6x8
+south(cy5x9) = cy6x9
+south(cy6x0) = cy7x0
+south(cy6x1) = cy7x1
+south(cy6x10) = cy7x10
+south(cy6x11) = cy7x11
+south(cy6x12) = cy7x12
+south(cy6x2) = cy7x2
+south(cy6x3) = cy7x3
+south(cy6x4) = cy7x4
+south(cy6x5) = cy7x5
+south(cy6x6) = cy7x6
+south(cy6x7) = cy7x7
+south(cy6x8) = cy7x8
+south(cy6x9) = cy7x9
+south(cy7x0) = cy8x0
+south(cy7x1) = cy8x1
+south(cy7x10) = cy8x10
+south(cy7x11) = cy8x11
+south(cy7x12) = cy8x12
+south(cy7x2) = cy8x2
+south(cy7x3) = cy8x3
+south(cy7x4) = cy8x4
+south(cy7x5) = cy8x5
+south(cy7x6) = cy8x6
+south(cy7x7) = cy8x7
+south(cy7x8) = cy8x8
+south(cy7x9) = cy8x9
+south(cy8x0) = cy9x0
+south(cy8x1) = cy9x1
+south(cy8x10) = cy9x10
+south(cy8x11) = cy9x11
+south(cy8x12) = cy9x12
+south(cy8x2) = cy9x2
+south(cy8x3) = cy9x3
+south(cy8x4) = cy9x4
+south(cy8x5) = cy9x5
+south(cy8x6) = cy9x6
+south(cy8x7) = cy9x7
+south(cy8x8) = cy9x8
+south(cy8x9) = cy9x9
+south(cy9x0) = cy10x0
+south(cy9x1) = cy10x1
+south(cy9x10) = cy10x10
+south(cy9x11) = cy10x11
+south(cy9x12) = cy10x12
+south(cy9x2) = cy10x2
+south(cy9x3) = cy10x3
+south(cy9x4) = cy10x4
+south(cy9x5) = cy10x5
+south(cy9x6) = cy10x6
+south(cy9x7) = cy10x7
+south(cy9x8) = cy10x8
+south(cy9x9) = cy10x9
+
+west : PositionOrNull -> PositionOrNull
+west(null) = null
+west(cy0x0) = null
+west(cy0x1) = cy0x0
+west(cy0x10) = cy0x9
+west(cy0x11) = cy0x10
+west(cy0x12) = cy0x11
+west(cy0x2) = cy0x1
+west(cy0x3) = cy0x2
+west(cy0x4) = cy0x3
+west(cy0x5) = cy0x4
+west(cy0x6) = cy0x5
+west(cy0x7) = cy0x6
+west(cy0x8) = cy0x7
+west(cy0x9) = cy0x8
+west(cy10x0) = null
+west(cy10x1) = cy10x0
+west(cy10x10) = cy10x9
+west(cy10x11) = cy10x10
+west(cy10x12) = cy10x11
+west(cy10x2) = cy10x1
+west(cy10x3) = cy10x2
+west(cy10x4) = cy10x3
+west(cy10x5) = cy10x4
+west(cy10x6) = cy10x5
+west(cy10x7) = cy10x6
+west(cy10x8) = cy10x7
+west(cy10x9) = cy10x8
+west(cy11x0) = null
+west(cy11x1) = cy11x0
+west(cy11x10) = cy11x9
+west(cy11x11) = cy11x10
+west(cy11x12) = cy11x11
+west(cy11x2) = cy11x1
+west(cy11x3) = cy11x2
+west(cy11x4) = cy11x3
+west(cy11x5) = cy11x4
+west(cy11x6) = cy11x5
+west(cy11x7) = cy11x6
+west(cy11x8) = cy11x7
+west(cy11x9) = cy11x8
+west(cy12x0) = null
+west(cy12x1) = cy12x0
+west(cy12x10) = cy12x9
+west(cy12x11) = cy12x10
+west(cy12x12) = cy12x11
+west(cy12x2) = cy12x1
+west(cy12x3) = cy12x2
+west(cy12x4) = cy12x3
+west(cy12x5) = cy12x4
+west(cy12x6) = cy12x5
+west(cy12x7) = cy12x6
+west(cy12x8) = cy12x7
+west(cy12x9) = cy12x8
+west(cy1x0) = null
+west(cy1x1) = cy1x0
+west(cy1x10) = cy1x9
+west(cy1x11) = cy1x10
+west(cy1x12) = cy1x11
+west(cy1x2) = cy1x1
+west(cy1x3) = cy1x2
+west(cy1x4) = cy1x3
+west(cy1x5) = cy1x4
+west(cy1x6) = cy1x5
+west(cy1x7) = cy1x6
+west(cy1x8) = cy1x7
+west(cy1x9) = cy1x8
+west(cy2x0) = null
+west(cy2x1) = cy2x0
+west(cy2x10) = cy2x9
+west(cy2x11) = cy2x10
+west(cy2x12) = cy2x11
+west(cy2x2) = cy2x1
+west(cy2x3) = cy2x2
+west(cy2x4) = cy2x3
+west(cy2x5) = cy2x4
+west(cy2x6) = cy2x5
+west(cy2x7) = cy2x6
+west(cy2x8) = cy2x7
+west(cy2x9) = cy2x8
+west(cy3x0) = null
+west(cy3x1) = cy3x0
+west(cy3x10) = cy3x9
+west(cy3x11) = cy3x10
+west(cy3x12) = cy3x11
+west(cy3x2) = cy3x1
+west(cy3x3) = cy3x2
+west(cy3x4) = cy3x3
+west(cy3x5) = cy3x4
+west(cy3x6) = cy3x5
+west(cy3x7) = cy3x6
+west(cy3x8) = cy3x7
+west(cy3x9) = cy3x8
+west(cy4x0) = null
+west(cy4x1) = cy4x0
+west(cy4x10) = cy4x9
+west(cy4x11) = cy4x10
+west(cy4x12) = cy4x11
+west(cy4x2) = cy4x1
+west(cy4x3) = cy4x2
+west(cy4x4) = cy4x3
+west(cy4x5) = cy4x4
+west(cy4x6) = cy4x5
+west(cy4x7) = cy4x6
+west(cy4x8) = cy4x7
+west(cy4x9) = cy4x8
+west(cy5x0) = null
+west(cy5x1) = cy5x0
+west(cy5x10) = cy5x9
+west(cy5x11) = cy5x10
+west(cy5x12) = cy5x11
+west(cy5x2) = cy5x1
+west(cy5x3) = cy5x2
+west(cy5x4) = cy5x3
+west(cy5x5) = cy5x4
+west(cy5x6) = cy5x5
+west(cy5x7) = cy5x6
+west(cy5x8) = cy5x7
+west(cy5x9) = cy5x8
+west(cy6x0) = null
+west(cy6x1) = cy6x0
+west(cy6x10) = cy6x9
+west(cy6x11) = cy6x10
+west(cy6x12) = cy6x11
+west(cy6x2) = cy6x1
+west(cy6x3) = cy6x2
+west(cy6x4) = cy6x3
+west(cy6x5) = cy6x4
+west(cy6x6) = cy6x5
+west(cy6x7) = cy6x6
+west(cy6x8) = cy6x7
+west(cy6x9) = cy6x8
+west(cy7x0) = null
+west(cy7x1) = cy7x0
+west(cy7x10) = cy7x9
+west(cy7x11) = cy7x10
+west(cy7x12) = cy7x11
+west(cy7x2) = cy7x1
+west(cy7x3) = cy7x2
+west(cy7x4) = cy7x3
+west(cy7x5) = cy7x4
+west(cy7x6) = cy7x5
+west(cy7x7) = cy7x6
+west(cy7x8) = cy7x7
+west(cy7x9) = cy7x8
+west(cy8x0) = null
+west(cy8x1) = cy8x0
+west(cy8x10) = cy8x9
+west(cy8x11) = cy8x10
+west(cy8x12) = cy8x11
+west(cy8x2) = cy8x1
+west(cy8x3) = cy8x2
+west(cy8x4) = cy8x3
+west(cy8x5) = cy8x4
+west(cy8x6) = cy8x5
+west(cy8x7) = cy8x6
+west(cy8x8) = cy8x7
+west(cy8x9) = cy8x8
+west(cy9x0) = null
+west(cy9x1) = cy9x0
+west(cy9x10) = cy9x9
+west(cy9x11) = cy9x10
+west(cy9x12) = cy9x11
+west(cy9x2) = cy9x1
+west(cy9x3) = cy9x2
+west(cy9x4) = cy9x3
+west(cy9x5) = cy9x4
+west(cy9x6) = cy9x5
+west(cy9x7) = cy9x6
+west(cy9x8) = cy9x7
+west(cy9x9) = cy9x8
+
+domain DirIndex = S(X) where X in 0..3
+dirs : DirIndex -> PositionOrNull -> PositionOrNull
+dirs(S(0)) = north
+dirs(S(1)) = east
+dirs(S(2)) = south
+dirs(S(3)) = west
+
+board : PositionOrNull -> Piece = {
+  :empty;
+  null = border;
+  cy0x0 = blackPawn;
+  cy0x1 = blackPawn;
+  cy0x10 = blackPawn;
+  cy0x11 = blackPawn;
+  cy0x12 = blackPawn;
+  cy0x2 = blackPawn;
+  cy0x3 = blackPawn;
+  cy0x4 = blackPawn;
+  cy0x5 = blackPawn;
+  cy0x6 = blackPawn;
+  cy0x7 = blackPawn;
+  cy0x8 = blackPawn;
+  cy0x9 = blackPawn;
+  cy11x0 = whitePawn;
+  cy11x1 = whitePawn;
+  cy11x10 = whitePawn;
+  cy11x11 = whitePawn;
+  cy11x12 = whitePawn;
+  cy11x2 = whitePawn;
+  cy11x3 = whitePawn;
+  cy11x4 = whitePawn;
+  cy11x5 = whitePawn;
+  cy11x6 = whitePawn;
+  cy11x7 = whitePawn;
+  cy11x8 = whitePawn;
+  cy11x9 = whitePawn;
+  cy12x0 = whitePawn;
+  cy12x1 = whitePawn;
+  cy12x10 = whitePawn;
+  cy12x11 = whitePawn;
+  cy12x12 = whitePawn;
+  cy12x2 = whitePawn;
+  cy12x3 = whitePawn;
+  cy12x4 = whitePawn;
+  cy12x5 = whitePawn;
+  cy12x6 = whitePawn;
+  cy12x7 = whitePawn;
+  cy12x8 = whitePawn;
+  cy12x9 = whitePawn;
+  cy1x0 = blackPawn;
+  cy1x1 = blackPawn;
+  cy1x10 = blackPawn;
+  cy1x11 = blackPawn;
+  cy1x12 = blackPawn;
+  cy1x2 = blackPawn;
+  cy1x3 = blackPawn;
+  cy1x4 = blackPawn;
+  cy1x5 = blackPawn;
+  cy1x6 = blackPawn;
+  cy1x7 = blackPawn;
+  cy1x8 = blackPawn;
+  cy1x9 = blackPawn
+}
+
+
+me : Player = white
+pos : PositionOrNull
+stagnation : Count = I(0)
+turn : Count = I(0)
+pawnCount: Player -> PieceCount = {:I(0)}
+
+graph captureFromPosPossible() {
+  branch dir in DirIndex {
+    pos = dirs[dir][pos]
+    check(board[pos] == pawnOf[opponent[me]])
+    check(board[dirs[dir][pos]] == empty)
+  }
+}
+
+
+graph anyMovePossible() {
+  pos = Position(*)
+  check(board[pos] == pawnOf[me])
+  branch {
+    branch dir in DirIndex {
+     check(board[dirs[dir][pos]] == empty)
+    }
+  } or {
+    captureFromPosPossible()
+  }
+}
+
+graph move() {
+  pos = Position(*)
+  check(board[pos] == pawnOf[me])
+  branch {
+    $$ pos
+    $ NORMAL
+    board[pos] = empty 
+    branch dir in DirIndex {
+      pos = dirs[dir][pos]
+      check(board[pos] == empty)
+      $ dir
+    }
+    player = keeper
+    board[pos] = pawnOf[me]
+    
+  } or {
+    $$ pos
+    $ CAPTURE
+    board[pos] = empty
+    loop {
+      branch dir in DirIndex {
+        pos = dirs[dir][pos]
+        check(board[pos] == pawnOf[opponent[me]])
+        board[pos] = empty
+        pos = dirs[dir][pos]
+        check(board[pos] == empty)
+        $ dir
+      }
+      if not(reachable(captureFromPosPossible())) {
+        break()
+      }
+      branch {} or {break()}
+      player = me
+    }
+    player = keeper
+    board[pos] = pawnOf[me]
+    stagnation = I(0)
+  }
+}
+
+
+graph checkEnd() {
+  if turn == I(1250) {
+    pos = nextPos[null]
+    loop {
+      if pos == null {break()}
+      if board[pos] == whitePawn {
+        pawnCount[white] = increment[pawnCount[white]]
+      } else {
+        if board[pos] == blackPawn {
+          pawnCount[black] = increment[pawnCount[black]]
+        }
+      }
+      pos = nextPos[pos]
+      $_NEXT
+    }
+    
+    if less(pawnCount[black], pawnCount[white]) == 1 {goals[white] = 100 goals[black] = 0} else {
+      if less(pawnCount[white], pawnCount[black]) == 1 {goals[white] = 0 goals[black] = 100}
+    }
+    end()
+  }
+}
+
+
+graph rules() {
+  loop {
+    if reachable(anyMovePossible()) {
+      checkEnd()
+      player = me
+      move()
+    } else {
+      goals[me] = 0
+      goals[opponent[me]] = 100
+      end()
+    }
+    turn = increment[turn]
+    me = opponent[me]
+  }
+}
+

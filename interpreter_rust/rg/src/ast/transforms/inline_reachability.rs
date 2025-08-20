@@ -100,23 +100,21 @@ impl Game<Id> {
         while let Some(lhs) = queue.pop() {
             previous.insert(lhs);
             if let Some(edges) = next_edges.get(&lhs) {
-                if edges.len() != 1 {
-                    return None;
-                }
-                let edge = edges.iter().next().unwrap();
-                if is_main_automaton
-                    && (edge.label.is_assignment_any()
-                        || edge.label.is_tag()
-                        || edge.label.is_tag_variable())
-                {
-                    return None;
-                }
-                if let Some(id) = edge.label.as_var_assignment() {
-                    defined_vars.insert(id.clone());
-                }
-                result.insert((*edge).clone());
-                if edge.rhs != *target && !previous.contains(&edge.rhs) {
-                    queue.push(&edge.rhs);
+                for edge in edges {
+                    if is_main_automaton
+                        && (edge.label.is_assignment_any()
+                            || edge.label.is_tag()
+                            || edge.label.is_tag_variable())
+                    {
+                        return None;
+                    }
+                    if let Some(id) = edge.label.as_var_assignment() {
+                        defined_vars.insert(id.clone());
+                    }
+                    result.insert((*edge).clone());
+                    if edge.rhs != *target && !previous.contains(&edge.rhs) {
+                        queue.push(&edge.rhs);
+                    }
                 }
             }
         }
@@ -276,7 +274,14 @@ mod test {
         "a, b: ? x -> z;
         x, y: 1 == 1;
         y, x: 2 == 2;
-        y, z: 3 == 3;"
+        y, z: 3 == 3;",
+        "x, y: 1 == 1;
+        y, x: 2 == 2;
+        y, z: 3 == 3;
+        a, 1: ;
+        1, 2: 1 == 1;
+        2, 1: 2 == 2;
+        2, b: 3 == 3;"
     );
 
     test_transform!(
@@ -286,7 +291,16 @@ mod test {
         a, b: 1 == 1;
         a, c: 1 != 1;
         b, d: ;
-        c, d: ;"
+        c, d: ;",
+        "a, b: 1 == 1;
+        a, c: 1 != 1;
+        b, d: ;
+        c, d: ;
+        x, 1: ;
+        1, 2: 1 == 1;
+        1, 3: 1 != 1;
+        2, y: ;
+        3, y: ;"
     );
 
     test_transform!(
@@ -298,7 +312,18 @@ mod test {
         a, b: v == 1;
         a, c: v != 2;
         b, d: ;
-        c, d: ;"
+        c, d: ;",
+        "type T = { 1, 2 };
+        var v: T = 1;
+        a, b: v == 1;
+        a, c: v != 2;
+        b, d: ;
+        c, d: ;
+        x, 1: ;
+        1, 2: v == 1;
+        1, 3: v != 2;
+        2, y: ;
+        3, y: ;"
     );
 
     test_transform!(
@@ -310,12 +335,16 @@ mod test {
         b, d: ;
         c, d: ;
         e, f: ;",
-        "x, y: ? a -> d;
-        b, d: ;
+        "b, d: ;
         c, d: ;
         e, f: ;
-        a, 1: ;
-        1, b: ;"
+        x, 1: ;
+        1, 2: ? e -> f;
+        1, 3: ! e -> f;
+        2, y: ;
+        3, y: ;
+        a, 4: ;
+        4, b: ;"
     );
 
     test_transform!(
@@ -352,7 +381,20 @@ mod test {
         b, d: ;
         c, d: ;
         e, f: ;
-        e, g: ;"
+        e, g: ;",
+        "a, c: ! e -> g;
+        b, d: ;
+        c, d: ;
+        e, f: ;
+        e, g: ;
+        x, 1: ;
+        1, 2: ? e -> f;
+        1, 3: ! e -> g;
+        2, y: ;
+        3, y: ;
+        a, 4: ;
+        4, b: ;
+        4, 5: ;"
     );
 
     test_transform!(

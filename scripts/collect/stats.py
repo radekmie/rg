@@ -107,7 +107,7 @@ def collect_stats(base_directory, flag_sets):
                             capture_output=True,
                             text=True,
                             check=True,
-                            timeout=600
+                            timeout=180
                         )
                         # Parse the command output
                         stats_output = result.stdout
@@ -182,11 +182,11 @@ def main():
     (stats_data, transform_data) = collect_stats(base_directory, flag_sets)
 
     # Save to CSV or display
-    stats_output_csv = "results/stats1.csv"
+    stats_output_csv = "results/stats.csv"
     stats_data.to_csv(stats_output_csv, index=False)
     print(f"Stats saved to {stats_output_csv}")
 
-    transforms_output_csv = "results/transforms1.csv"
+    transforms_output_csv = "results/transforms.csv"
     transform_data.to_csv(transforms_output_csv, index=False)
     print(f"Transforms saved to {transforms_output_csv}")
 

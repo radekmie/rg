@@ -52,7 +52,7 @@ def collect_stats(base_directory, flag_sets):
                             capture_output=True,
                             text=True,
                             check=True,
-                            timeout=330
+                            timeout=180
                         )
                         print(result.stdout)
                         # Parse the command output
@@ -91,7 +91,7 @@ def main():
     stats_data = collect_stats(base_directory, flag_sets)
 
     # Save to CSV or display
-    stats_output_csv = "results/runtime_stats1.csv"
+    stats_output_csv = "results/runtime_stats.csv"
     stats_data.to_csv(stats_output_csv, index=False)
     print(f"Stats saved to {stats_output_csv}")
 

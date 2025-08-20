@@ -50,7 +50,6 @@ def avg_per_edges_total(df):
 
 def main():
     df = load_data()
-    df = df[df['language'] != 'rg']
     avg_per_edges_total(df).to_csv("results/transforms_grouped_total.csv")
 
 if __name__ == "__main__":

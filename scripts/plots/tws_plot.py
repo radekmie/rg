@@ -30,7 +30,6 @@ def create_plot_big(df):
 
 def main():
     df = load_data()
-    df = df.drop(columns=['rg'])
     ax = create_plot_big(df)
     ax.figure.savefig(f"results/tws_plot.png")
 
