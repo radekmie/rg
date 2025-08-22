@@ -88,8 +88,8 @@ impl SymbolTableBuilder {
                 && (symbol.span().start <= id.span().start
                     || symbol.flag == Flag::Function
                     || symbol.flag == Flag::Type)
-                && flag.as_ref().map_or(true, |f| symbol.flag == *f)
-                && owner.as_ref().map_or(true, |o| symbol.is_owned_by(*o))
+                && flag.as_ref().is_none_or(|f| symbol.flag == *f)
+                && owner.as_ref().is_none_or(|o| symbol.is_owned_by(*o))
         })
     }
 

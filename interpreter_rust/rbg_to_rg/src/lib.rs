@@ -676,7 +676,7 @@ fn copy_path(
     ) {
         // If the edge cannot reach the end _yet_, we check whether it is on a cycle
         // and if so, then add it anyway. It will copy too many edges, though.
-        if distance == usize::MAX && distances.get(&edge.rhs).map_or(true, Option::is_some) {
+        if distance == usize::MAX && distances.get(&edge.rhs).is_none_or(Option::is_some) {
             return;
         }
 

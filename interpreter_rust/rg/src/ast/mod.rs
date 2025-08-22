@@ -141,7 +141,7 @@ impl<Id> Label<Id> {
         None
     }
 
-    pub fn as_assignment(&self) -> Option<(&Id, ExprOrType<Id>)> {
+    pub fn as_assignment(&self) -> Option<(&Id, ExprOrType<'_, Id>)> {
         if let Self::Assignment { lhs, rhs } = self {
             return Some((lhs.access_identifier(), Ok(rhs)));
         } else if let Self::AssignmentAny { lhs, rhs } = self {
@@ -390,7 +390,7 @@ impl Node<Arc<str>> {
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Error<Id> {
-    pub game: Option<Game<Id>>,
+    pub game: Option<Arc<Game<Id>>>,
     pub reason: ErrorReason<Id>,
 }
 
@@ -814,7 +814,7 @@ pub struct Game<Id> {
 impl<Id: Clone> Game<Id> {
     pub fn make_error<T>(&self, reason: ErrorReason<Id>) -> Result<T, Error<Id>> {
         Err(Error {
-            game: Some(self.clone()),
+            game: Some(Arc::from(self.clone())),
             reason,
         })
     }
@@ -1235,7 +1235,7 @@ impl<Id: Ord> Game<Id> {
             })
     }
 
-    pub fn next_edges_with_idx(&self) -> BTreeMap<&Node<Id>, SetWithIdx<Arc<Edge<Id>>>> {
+    pub fn next_edges_with_idx(&self) -> BTreeMap<&Node<Id>, SetWithIdx<'_, Arc<Edge<Id>>>> {
         self.edges
             .iter()
             .enumerate()
@@ -1264,7 +1264,7 @@ impl<Id: Ord> Game<Id> {
             })
     }
 
-    pub fn prev_edges_with_idx(&self) -> BTreeMap<&Node<Id>, SetWithIdx<Arc<Edge<Id>>>> {
+    pub fn prev_edges_with_idx(&self) -> BTreeMap<&Node<Id>, SetWithIdx<'_, Arc<Edge<Id>>>> {
         self.edges
             .iter()
             .enumerate()

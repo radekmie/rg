@@ -7,6 +7,6 @@ use nom::branch::alt;
 use nom::combinator::all_consuming;
 use utils::Result;
 
-pub fn game(input: &str) -> Result<Game<&str>> {
+pub fn game(input: &str) -> Result<'_, Game<&str>> {
     alt((all_consuming(infix::game), all_consuming(prefix::game)))(input)
 }

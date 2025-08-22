@@ -118,7 +118,7 @@ impl<Id: Display> DomainGraphNode<Id> {
             Self::Order(Term::<()>::ORDER_ROLE, _) => graphviz.push_str("role"),
             Self::Order(Term::<()>::ORDER_TERMINAL, _) => graphviz.push_str("terminal"),
             Self::Order(Term::<()>::ORDER_TRUE, _) => graphviz.push_str("true"),
-            _ => unreachable!(),
+            Self::Order(_, _) => unreachable!(),
         }
 
         if let Self::Custom(_, index) | Self::Order(_, index) = &self {

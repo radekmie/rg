@@ -18,19 +18,20 @@ impl Symbols {
                 expression,
                 ..
             } => {
-                accessors
-                    .iter()
-                    .for_each(|accessor| self.add_from_expression(accessor));
+                for accessor in accessors {
+                    self.add_from_expression(accessor);
+                }
                 self.add_from_expression(expression);
             }
             Statement::AssignmentAny { accessors, .. } => {
-                accessors
-                    .iter()
-                    .for_each(|accessor| self.add_from_expression(accessor));
+                for accessor in accessors {
+                    self.add_from_expression(accessor);
+                }
             }
             Statement::Branch { arms } => arms.iter().for_each(|arm| {
-                arm.iter()
-                    .for_each(|statement| self.add_from_statement(statement));
+                for statement in arm {
+                    self.add_from_statement(statement);
+                }
             }),
             Statement::BranchVar {
                 identifier,
@@ -45,19 +46,23 @@ impl Symbols {
                 if let Some(symbol) = typed(identifier, Flag::Param, type_.clone()) {
                     self.symbols.push(symbol);
                 }
-                body.iter()
-                    .for_each(|statement| self.add_from_statement(statement));
+                for statement in body {
+                    self.add_from_statement(statement);
+                }
             }
             Statement::Call { args, .. } => {
-                args.iter().for_each(|arg| self.add_from_expression(arg));
+                for arg in args {
+                    self.add_from_expression(arg);
+                }
             }
             Statement::If {
                 expression,
                 then,
                 else_,
             } => {
-                then.iter()
-                    .for_each(|statement| self.add_from_statement(statement));
+                for statement in then {
+                    self.add_from_statement(statement);
+                }
                 self.add_from_expression(expression);
                 else_
                     .iter()
@@ -70,8 +75,9 @@ impl Symbols {
             Statement::Tag { .. } => {}
             Statement::TagVariable { .. } => {}
             Statement::While { body, expression } => {
-                body.iter()
-                    .for_each(|statement| self.add_from_statement(statement));
+                for statement in body {
+                    self.add_from_statement(statement);
+                }
                 self.add_from_expression(expression);
             }
         }
@@ -85,10 +91,14 @@ impl Symbols {
             }
             Expression::Call { expression, args } => {
                 self.add_from_expression(expression);
-                args.iter().for_each(|arg| self.add_from_expression(arg));
+                for arg in args {
+                    self.add_from_expression(arg);
+                }
             }
             Expression::Constructor { args, .. } => {
-                args.iter().for_each(|arg| self.add_from_expression(arg));
+                for arg in args {
+                    self.add_from_expression(arg);
+                }
             }
             Expression::If { cond, then, else_ } => {
                 self.add_from_expression(cond);
@@ -133,16 +143,18 @@ impl Symbols {
                         }
                     }
                 }
-                values.iter().for_each(|value| match value {
-                    DomainValue::Range { .. } => {}
-                    DomainValue::Set { elements, .. } => {
-                        for id in elements {
-                            if let Some(symbol) = untyped(id, Flag::Member) {
-                                self.symbols.push(symbol);
+                for value in values {
+                    match value {
+                        DomainValue::Range { .. } => {}
+                        DomainValue::Set { elements, .. } => {
+                            for id in elements {
+                                if let Some(symbol) = untyped(id, Flag::Member) {
+                                    self.symbols.push(symbol);
+                                }
                             }
                         }
-                    }
-                });
+                    };
+                }
             }
             DomainElement::Literal { identifier } => {
                 if let Some(symbol) = typed(identifier, Flag::Member, type_.clone()) {
@@ -190,7 +202,9 @@ impl Symbols {
     fn add_from_pattern(&mut self, pattern: &Pattern<Identifier>) {
         match pattern {
             Pattern::Constructor { args, .. } => {
-                args.iter().for_each(|arg| self.add_from_pattern(arg));
+                for arg in args {
+                    self.add_from_pattern(arg);
+                }
             }
             Pattern::Variable { identifier } => {
                 if let Some(symbol) = untyped(identifier, Flag::Param) {

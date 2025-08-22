@@ -7,7 +7,7 @@ use nom::multi::{many0, separated_list1};
 use nom::sequence::{pair, preceded, separated_pair};
 use std::sync::Arc;
 
-pub fn atom_or_variable(input: &str) -> Result<AtomOrVariable<&str>> {
+pub fn atom_or_variable(input: &str) -> Result<'_, AtomOrVariable<&str>> {
     map(symbol, |symbol: &str| {
         if symbol.chars().next().unwrap().is_uppercase() {
             AtomOrVariable::Variable(symbol)
@@ -17,18 +17,18 @@ pub fn atom_or_variable(input: &str) -> Result<AtomOrVariable<&str>> {
     })(input)
 }
 
-pub fn game(input: &str) -> Result<Game<&str>> {
+pub fn game(input: &str) -> Result<'_, Game<&str>> {
     map(many0(separated(rule)), Game)(input)
 }
 
-pub fn predicate(input: &str) -> Result<Predicate<&str>> {
+pub fn predicate(input: &str) -> Result<'_, Predicate<&str>> {
     map(pair(opt(tag("~")), term_rc), |(negation, term)| Predicate {
         term,
         is_negated: negation.is_some(),
     })(input)
 }
 
-pub fn rule(input: &str) -> Result<Rule<&str>> {
+pub fn rule(input: &str) -> Result<'_, Rule<&str>> {
     let rule = pair(
         term_rc,
         opt(preceded(
@@ -42,7 +42,7 @@ pub fn rule(input: &str) -> Result<Rule<&str>> {
     })(input)
 }
 
-pub fn term(input: &str) -> Result<Term<&str>> {
+pub fn term(input: &str) -> Result<'_, Term<&str>> {
     alt((
         term_template("base", term_rc, Term::Base),
         term_template(
@@ -80,7 +80,7 @@ pub fn term(input: &str) -> Result<Term<&str>> {
     ))(input)
 }
 
-fn term_rc(input: &str) -> Result<Arc<Term<&str>>> {
+fn term_rc(input: &str) -> Result<'_, Arc<Term<&str>>> {
     map(separated(term), Arc::from)(input)
 }
 

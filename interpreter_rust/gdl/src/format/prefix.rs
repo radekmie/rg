@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter, Result};
 use std::sync::Arc;
 
 impl<Id: Display> Game<Id> {
-    pub fn as_prefix(&self) -> GamePrefix<Id> {
+    pub fn as_prefix(&self) -> GamePrefix<'_, Id> {
         GamePrefix(self)
     }
 }

@@ -9,11 +9,11 @@ use nom::IResult;
 
 pub type Result<'a, T> = IResult<&'a str, T>;
 
-pub fn comment(input: &str) -> Result<&str> {
+pub fn comment(input: &str) -> Result<'_, &str> {
     delimited(tag(";"), cut(take_until("\n")), alt((eof, tag("\n"))))(input)
 }
 
-pub fn comments_and_whitespaces(input: &str) -> Result<()> {
+pub fn comments_and_whitespaces(input: &str) -> Result<'_, ()> {
     fold_many0(alt((comment, multispace1)), || (), |(), _| ())(input)
 }
 
@@ -29,6 +29,6 @@ pub fn separated<'a, T>(
     delimited(comments_and_whitespaces, parser, comments_and_whitespaces)
 }
 
-pub fn symbol(input: &str) -> Result<&str> {
+pub fn symbol(input: &str) -> Result<'_, &str> {
     take_while1(|c: char| c.is_alphanumeric() || c == '_' || c == '+')(input)
 }

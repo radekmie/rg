@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter, Result};
 use std::sync::Arc;
 
 impl<Id: Display> Game<Id> {
-    pub fn as_infix(&self) -> GameInfix<Id> {
+    pub fn as_infix(&self) -> GameInfix<'_, Id> {
         GameInfix(self)
     }
 }

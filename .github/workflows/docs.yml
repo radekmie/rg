@@ -10,21 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.4.0
+        uses: actions/checkout@v5.0.0
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           cache-workspaces: interpreter_rust
           target: wasm32-unknown-unknown
-          toolchain: 1.83.0
+          toolchain: 1.89.0
       - name: Install Node.js
-        uses: actions/setup-node@v3.6.0
+        uses: actions/setup-node@v4.4.0
         with:
           cache: npm
           cache-dependency-path: interpreter_node/package-lock.json
-          node-version: 20.12.2
+          node-version: 24.6.0
       - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        run: npm install --global wasm-pack@0.13.1
       - name: Install
         run: npm --prefix interpreter_node ci
       - name: Build `interpreter` WASM module
@@ -34,7 +34,7 @@ jobs:
       - name: Build docs
         run: npm --prefix interpreter_node run build
       - name: Deploy docs
-        uses: peaceiris/actions-gh-pages@v3.9.2
+        uses: peaceiris/actions-gh-pages@v4.0.0
         with:
           allow_empty_commit: true
           force_orphan: true

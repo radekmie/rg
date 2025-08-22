@@ -47,7 +47,7 @@ impl<Id> AtomOrVariable<Id> {
 pub struct Game<Id>(pub Vec<Rule<Id>>);
 
 impl<Id: Ord> Game<Id> {
-    pub fn subterms(&self) -> TermIterator<Id> {
+    pub fn subterms(&self) -> TermIterator<'_, Id> {
         let mut iterator = TermIterator::new();
         iterator.add_game(self);
         iterator
@@ -79,7 +79,7 @@ impl<Id> Rule<Id> {
 }
 
 impl<Id: Ord> Rule<Id> {
-    pub fn subterms(&self) -> TermIterator<Id> {
+    pub fn subterms(&self) -> TermIterator<'_, Id> {
         let mut iterator = TermIterator::new();
         iterator.add_rule(self);
         iterator
@@ -199,7 +199,7 @@ impl<Id> Term<Id> {
 }
 
 impl<Id: Ord> Term<Id> {
-    pub fn subterms(&self) -> TermIterator<Id> {
+    pub fn subterms(&self) -> TermIterator<'_, Id> {
         let mut iterator = TermIterator::new();
         iterator.add_term(self);
         iterator

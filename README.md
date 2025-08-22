@@ -42,8 +42,8 @@ npm run start
 
 ## Dependencies
 
-- [Node.js](https://nodejs.org/en/) 20.12.2
-- [Rust](https://www.rust-lang.org) 1.83.0
+- [Node.js](https://nodejs.org/en/) 24.6.0
+- [Rust](https://www.rust-lang.org) 1.89.0
 - [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) 0.13.1
 
 ### Manual installation
@@ -54,30 +54,18 @@ apt update
 apt install curl gcc libssl-dev pkg-config
 
 # Node.js via nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 source ~/.bashrc
-nvm install 20.12.2
+nvm install 24.6.0
 
 # Rust via rustup
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.bashrc
-rustup install 1.83.0
+rustup install 1.89.0
 
 # wasm-pack
-curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+npm install --global wasm-pack@0.13.1
 ```
-
-### Nix
-
-Open a shell with all required dependencies:
-
-```sh
-nix develop
-```
-
-These dependencies are accessible only from the current shell\*, they are not installed for any user. They will be removed during the next garbage collection (`nix-collect-garbage`) (unless the shell is still open or they are referenced in any other way). See [NixOS website](https://nixos.org/) for more information (you can also install it as a secondary package manager).
-
-\*: Obviously you can access them by file paths as long as they are in the filesystem.
 
 ## Development
 

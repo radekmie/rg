@@ -8,18 +8,18 @@ use nom::sequence::{pair, preceded};
 use std::convert::identity;
 use std::sync::Arc;
 
-pub fn atom_or_variable(input: &str) -> Result<AtomOrVariable<&str>> {
+pub fn atom_or_variable(input: &str) -> Result<'_, AtomOrVariable<&str>> {
     alt((
         map(preceded(tag("?"), symbol), AtomOrVariable::Variable),
         map(symbol, AtomOrVariable::Atom),
     ))(input)
 }
 
-pub fn game(input: &str) -> Result<Game<&str>> {
+pub fn game(input: &str) -> Result<'_, Game<&str>> {
     map(many0(separated(rule)), Game)(input)
 }
 
-pub fn term(input: &str) -> Result<Term<&str>> {
+pub fn term(input: &str) -> Result<'_, Term<&str>> {
     alt((
         term_template("base", term_rc, Term::Base),
         term_template("does", pair(atom_or_variable, term_rc), |(role, action)| {
@@ -56,7 +56,7 @@ pub fn term(input: &str) -> Result<Term<&str>> {
     ))(input)
 }
 
-pub fn predicate(input: &str) -> Result<Predicate<&str>> {
+pub fn predicate(input: &str) -> Result<'_, Predicate<&str>> {
     alt((
         term_template("not", term_rc, |term| Predicate {
             term,
@@ -69,7 +69,7 @@ pub fn predicate(input: &str) -> Result<Predicate<&str>> {
     ))(input)
 }
 
-pub fn rule(input: &str) -> Result<Rule<&str>> {
+pub fn rule(input: &str) -> Result<'_, Rule<&str>> {
     let rule = alt((
         term_template("<=", pair(term_rc, many1(separated(predicate))), identity),
         pair(term_rc, success(vec![])),
@@ -77,7 +77,7 @@ pub fn rule(input: &str) -> Result<Rule<&str>> {
     map(rule, |(term, predicates)| Rule { term, predicates })(input)
 }
 
-fn term_rc(input: &str) -> Result<Arc<Term<&str>>> {
+fn term_rc(input: &str) -> Result<'_, Arc<Term<&str>>> {
     map(separated(term), Arc::from)(input)
 }
 
