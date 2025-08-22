@@ -16,6 +16,7 @@ pub enum ValueSet {
 }
 
 impl ValueSet {
+    #[allow(dead_code)]
     fn merge_with<F: Fn(&mut Ids, &Ids)>(&mut self, other: &Self, fn_: &F) {
         match self {
             Self::Set(xs) => match other {
@@ -26,12 +27,14 @@ impl ValueSet {
         }
     }
 
+    #[allow(dead_code)]
     fn merge_with_at<F: Fn(&mut Ids, &Ids)>(xs: &mut ValueSetMap, key: Id, y: Self, fn_: &F) {
         xs.entry(key)
             .and_modify(|x| x.merge_with(&y, &fn_))
             .or_insert(y);
     }
 
+    #[allow(dead_code)]
     fn new() -> Self {
         Self::from(BTreeSet::new())
     }
@@ -58,10 +61,12 @@ impl From<&Value<Id>> for ValueSet {
     }
 }
 
+#[allow(dead_code)]
 fn merge_sets(xs: &mut Ids, ys: &Ids) {
     xs.extend(ys.iter().cloned());
 }
 
+#[allow(dead_code)]
 pub struct ValueSets {
     constants: BTreeMap<Id, Arc<Value<Id>>>,
     initial_by_variable: ValueSetMap,
@@ -70,6 +75,7 @@ pub struct ValueSets {
 }
 
 impl ValueSets {
+    #[allow(dead_code)]
     fn resolve(&self, state: &ValueSetMap, identifier: &Id) -> ValueSet {
         self.constants.get(identifier).map_or_else(
             || {
