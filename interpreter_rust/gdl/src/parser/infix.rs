@@ -3,8 +3,10 @@ use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::combinator::{map, opt, value};
+use nom::error::Error;
 use nom::multi::{many0, separated_list1};
 use nom::sequence::{pair, preceded, separated_pair};
+use nom::Parser;
 use std::sync::Arc;
 
 pub fn atom_or_variable(input: &str) -> Result<'_, AtomOrVariable<&str>> {
@@ -14,18 +16,20 @@ pub fn atom_or_variable(input: &str) -> Result<'_, AtomOrVariable<&str>> {
         } else {
             AtomOrVariable::Atom(symbol)
         }
-    })(input)
+    })
+    .parse(input)
 }
 
 pub fn game(input: &str) -> Result<'_, Game<&str>> {
-    map(many0(separated(rule)), Game)(input)
+    map(many0(separated(rule)), Game).parse(input)
 }
 
 pub fn predicate(input: &str) -> Result<'_, Predicate<&str>> {
     map(pair(opt(tag("~")), term_rc), |(negation, term)| Predicate {
         term,
         is_negated: negation.is_some(),
-    })(input)
+    })
+    .parse(input)
 }
 
 pub fn rule(input: &str) -> Result<'_, Rule<&str>> {
@@ -39,7 +43,8 @@ pub fn rule(input: &str) -> Result<'_, Rule<&str>> {
     map(rule, |(term, predicates)| Rule {
         term,
         predicates: predicates.unwrap_or_default(),
-    })(input)
+    })
+    .parse(input)
 }
 
 pub fn term(input: &str) -> Result<'_, Term<&str>> {
@@ -77,18 +82,19 @@ pub fn term(input: &str) -> Result<'_, Term<&str>> {
             ),
             |(name, arguments)| Term::new_custom(name, arguments.unwrap_or_default()),
         ),
-    ))(input)
+    ))
+    .parse(input)
 }
 
 fn term_rc(input: &str) -> Result<'_, Arc<Term<&str>>> {
-    map(separated(term), Arc::from)(input)
+    map(separated(term), Arc::from).parse(input)
 }
 
 fn term_template<'a, T, U>(
     string: &'a str,
-    parser: impl FnMut(&'a str) -> Result<'a, T>,
+    parser: impl Parser<&'a str, Output = T, Error = Error<&'a str>>,
     mapper: impl Fn(T) -> U,
-) -> impl FnMut(&'a str) -> Result<'a, U> {
+) -> impl Parser<&'a str, Output = U, Error = Error<&'a str>> {
     map(preceded(tag(string), in_parens(parser)), mapper)
 }
 
@@ -99,7 +105,7 @@ fn verify() {
     use nom::Finish;
 
     fn verify(source: &str) {
-        match all_consuming(game)(source).finish() {
+        match all_consuming(game).parse(source).finish() {
             Ok((rest, game)) => {
                 assert_eq!(rest, "");
                 assert_eq!(source, game.as_infix().to_string());

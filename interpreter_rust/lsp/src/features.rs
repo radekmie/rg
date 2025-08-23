@@ -10,7 +10,7 @@ use tower_lsp::lsp_types::{
 };
 use tower_lsp::lsp_types::{DocumentSymbolResponse, SymbolInformation, Url};
 use utils::position::Positioned;
-use utils::Error;
+use utils::ParserError;
 
 #[expect(deprecated)]
 pub fn document_symbol(uri: &Url, symbol_table: &SymbolTable) -> Option<DocumentSymbolResponse> {
@@ -116,10 +116,10 @@ pub fn rename(
     })
 }
 
-pub fn diagnostics(errors: &[Error]) -> Vec<Diagnostic> {
+pub fn diagnostics(errors: &[ParserError]) -> Vec<Diagnostic> {
     errors
         .iter()
-        .map(|Error { span, message, .. }| Diagnostic {
+        .map(|ParserError { span, message, .. }| Diagnostic {
             range: span.to_lsp(),
             severity: Some(DiagnosticSeverity::ERROR),
             source: Some("rg-lsp".into()),

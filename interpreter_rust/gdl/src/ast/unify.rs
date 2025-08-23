@@ -141,12 +141,6 @@ impl<Id: Ord> Unification<'_, Id> {
 mod test {
     use super::Unification::*;
     use crate::ast::Term;
-    use crate::parser::infix::term;
-    use nom::combinator::all_consuming;
-
-    fn parse(input: &str) -> Term<&str> {
-        all_consuming(term)(input).unwrap().1
-    }
 
     macro_rules! map {
         ($($k:expr => $v:expr),* $(,)?) => {
@@ -161,7 +155,7 @@ mod test {
         ($name:ident, $x:expr, $y:expr, $expected:expr) => {
             #[test]
             fn $name() {
-                assert_eq!(parse($x).unify(&parse($y)), $expected);
+                assert_eq!(Term::from($x).unify(&Term::from($y)), $expected);
             }
         };
     }

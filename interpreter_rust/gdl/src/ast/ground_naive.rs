@@ -123,19 +123,13 @@ fn any_unification<'a, Id: Clone + Ord>(
 #[cfg(test)]
 mod test {
     use crate::ast::Game;
-    use crate::parser::game;
-    use nom::combinator::all_consuming;
-
-    fn parse(input: &str) -> Game<&str> {
-        all_consuming(game)(input).unwrap().1
-    }
 
     macro_rules! test {
         ($name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                let mut actual = parse($actual).ground_naive(&"distinct", &"or");
-                let mut expect = parse($expect);
+                let mut actual = Game::from($actual).ground_naive(&"distinct", &"or");
+                let mut expect = Game::from($expect);
 
                 actual.0.sort_unstable();
                 expect.0.sort_unstable();

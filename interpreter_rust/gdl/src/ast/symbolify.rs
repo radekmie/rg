@@ -81,24 +81,17 @@ impl Term<Arc<str>> {
 #[cfg(test)]
 mod test {
     use crate::ast::Game;
-    use crate::parser::game;
     use map_id::MapId;
-    use nom::combinator::all_consuming;
     use std::sync::Arc;
-
-    fn parse(input: &str) -> Game<Arc<str>> {
-        all_consuming(game)(input)
-            .unwrap()
-            .1
-            .map_id(&mut |id| Arc::from(*id))
-    }
 
     macro_rules! test {
         ($name:ident, $actual:expr, $expect:expr) => {
             #[test]
             fn $name() {
-                let mut actual = parse($actual).symbolify();
-                let mut expect = parse($expect);
+                let mut actual = Game::from($actual)
+                    .map_id(&mut |id| Arc::from(*id))
+                    .symbolify();
+                let mut expect = Game::from($expect);
 
                 // TODO: `&str` is not `Ord`.
                 actual.0.sort_unstable_by_key(|x| format!("{x:?}"));

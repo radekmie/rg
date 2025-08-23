@@ -8,7 +8,7 @@ use parser::Input;
 use position::{Positioned, Span};
 use std::fmt::{Display, Formatter, Result};
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Default)]
+#[derive(Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Identifier {
     pub span: Span,
     pub identifier: String,
@@ -54,37 +54,25 @@ impl Positioned for Identifier {
 }
 
 #[derive(Debug, Clone)]
-pub struct Error {
+pub struct ParserError {
     pub span: Span,
     pub message: String,
-    pub kind: ErrorKind,
 }
 
-#[derive(Debug, Clone)]
-pub enum ErrorKind {
-    ParseError,
-    UnknownIdentifier,
-}
-
-impl Error {
-    pub fn parser_error(span: Span, message: String) -> Self {
-        Self {
-            span,
-            message,
-            kind: ErrorKind::ParseError,
-        }
+impl ParserError {
+    pub fn new(span: Span, message: String) -> Self {
+        Self { span, message }
     }
 
-    pub fn symbol_table_error(identifier: &str, span: &Span) -> Self {
-        Self {
-            span: *span,
-            message: format!("Unknown identifier: {identifier}"),
-            kind: ErrorKind::UnknownIdentifier,
-        }
+    pub fn new_unknown_identifier(identifier: &Identifier) -> Self {
+        Self::new(
+            identifier.span,
+            format!("Unknown identifier: {}", identifier.identifier),
+        )
     }
 }
 
-impl Display for Error {
+impl Display for ParserError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}: {}", self.span, self.message)
     }

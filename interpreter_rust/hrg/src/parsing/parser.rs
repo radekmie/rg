@@ -8,32 +8,30 @@ use nom::bytes::complete::tag;
 use nom::character::complete::char;
 use nom::combinator::{all_consuming, cut, into, map, opt, success, value, verify};
 use nom::error::context;
+use nom::error::Error;
 use nom::multi::{fold_many0, many0, many1, separated_list0, separated_list1};
-use nom::sequence::{delimited, pair, preceded, separated_pair, terminated, tuple};
+use nom::sequence::{delimited, pair, preceded, separated_pair, terminated};
+use nom::Parser;
 use std::cell::RefCell;
 use std::sync::Arc;
 use utils::parser::{
     comma_separated0, comma_separated1, comments_and_whitespaces0, comments_and_whitespaces1,
     identifier_, in_braces, in_brackets, in_parens, integer, into_arc, parse_error_line, ww,
-    ww_char, ww_tag, Input, Result, State,
+    ww_char, ww_tag, Input, ParserState, Result,
 };
 use utils::position::Span;
-use utils::Error;
-use utils::Identifier;
-
-pub fn arc_expression(expression: Expression<Identifier>) -> Arc<Expression<Identifier>> {
-    Arc::new(expression)
-}
+use utils::{Identifier, ParserError};
 
 fn identifier(input: Input) -> Result<Identifier> {
     ww(map(identifier_, |identifier| {
         let span: Span = Span::from(&identifier);
         Identifier::new(span, (*identifier.fragment()).to_string())
-    }))(input)
+    }))
+    .parse(input)
 }
 
 fn assignment(input: Input) -> Result<Statement<Identifier>> {
-    into(tuple((
+    into((
         identifier,
         many0(in_brackets(expression)),
         preceded(
@@ -43,7 +41,8 @@ fn assignment(input: Input) -> Result<Statement<Identifier>> {
                 map(expression, Ok),
             )),
         ),
-    )))(input)
+    ))
+    .parse(input)
 }
 
 fn branch(input: Input) -> Result<Statement<Identifier>> {
@@ -56,35 +55,38 @@ fn branch(input: Input) -> Result<Statement<Identifier>> {
             )),
             |arms| Statement::Branch { arms },
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn branch_var(input: Input) -> Result<Statement<Identifier>> {
     preceded(
         ww_tag("branch"),
         map(
-            tuple((
+            (
                 ww(identifier),
                 preceded(ww_tag("in"), type_),
                 in_braces(many0(statement)),
-            )),
+            ),
             |(identifier, type_, body)| Statement::BranchVar {
                 identifier,
                 type_,
                 body,
             },
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn call(input: Input) -> Result<Statement<Identifier>> {
-    into(pair(identifier, in_parens(comma_separated0(expression))))(input)
+    into(pair(identifier, in_parens(comma_separated0(expression)))).parse(input)
 }
 
 fn loop_(input: Input) -> Result<Statement<Identifier>> {
     map(preceded(tag("loop"), in_braces(many0(statement))), |body| {
         Statement::Loop { body }
-    })(input)
+    })
+    .parse(input)
 }
 
 fn repeat(input: Input) -> Result<Statement<Identifier>> {
@@ -94,30 +96,32 @@ fn repeat(input: Input) -> Result<Statement<Identifier>> {
             in_braces(many0(statement)),
         ),
         |(count, body)| Statement::Repeat { count, body },
-    )(input)
+    )
+    .parse(input)
 }
 
 fn repeat_var(input: Input) -> Result<Statement<Identifier>> {
     preceded(
         ww_tag("repeat"),
         map(
-            tuple((
+            (
                 ww(identifier),
                 preceded(ww_tag("in"), type_),
                 in_braces(many0(statement)),
-            )),
+            ),
             |(identifier, type_, body)| Statement::RepeatVar {
                 identifier,
                 type_,
                 body,
             },
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
 fn if_(input: Input) -> Result<Statement<Identifier>> {
     map(
-        tuple((
+        (
             preceded(tag("if"), expression),
             in_braces(many0(statement)),
             opt(preceded(
@@ -127,13 +131,14 @@ fn if_(input: Input) -> Result<Statement<Identifier>> {
                     map(if_, |statement| vec![statement]),
                 )),
             )),
-        )),
+        ),
         |(expression, then, else_)| Statement::If {
             expression,
             then,
             else_,
         },
-    )(input)
+    )
+    .parse(input)
 }
 
 fn while_(input: Input) -> Result<Statement<Identifier>> {
@@ -143,7 +148,8 @@ fn while_(input: Input) -> Result<Statement<Identifier>> {
             in_braces(many0(statement)),
         ),
         |(expression, body)| Statement::While { expression, body },
-    )(input)
+    )
+    .parse(input)
 }
 
 fn tag_statement(input: Input) -> Result<Statement<Identifier>> {
@@ -162,13 +168,15 @@ fn tag_statement(input: Input) -> Result<Statement<Identifier>> {
             artificial: artificial.is_some(),
             symbols,
         },
-    )(input)
+    )
+    .parse(input)
 }
 
 fn tag_variable_statement(input: Input) -> Result<Statement<Identifier>> {
     map(preceded(tag("$$"), identifier), |identifier| {
         Statement::TagVariable { identifier }
-    })(input)
+    })
+    .parse(input)
 }
 
 fn statement(input: Input) -> Result<Statement<Identifier>> {
@@ -184,18 +192,20 @@ fn statement(input: Input) -> Result<Statement<Identifier>> {
         while_,
         tag_variable_statement,
         tag_statement,
-    )))(input)
+    )))
+    .parse(input)
 }
 
 fn domain_element(input: Input) -> Result<DomainElement<Identifier>> {
     ww(alt((
-        into(tuple((
+        into((
             identifier,
             in_parens(comma_separated0(domain_element_pattern)),
             preceded(ww_tag("where"), comma_separated0(domain_value)),
-        ))),
+        )),
         into(identifier),
-    )))(input)
+    )))
+    .parse(input)
 }
 
 fn domain_element_pattern(input: Input) -> Result<DomainElementPattern<Identifier>> {
@@ -205,7 +215,8 @@ fn domain_element_pattern(input: Input) -> Result<DomainElementPattern<Identifie
         } else {
             DomainElementPattern::Variable { identifier }
         }
-    })(input)
+    })
+    .parse(input)
 }
 
 fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {
@@ -218,14 +229,15 @@ fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {
             terminated(identifier, ww_tag("in")),
             in_braces(comma_separated0(identifier)),
         )),
-    )))(input)
+    )))
+    .parse(input)
 }
 
 fn expression_binary<'a>(
-    lhs: impl FnMut(Input<'a>) -> Result<'a, Arc<Expression<Identifier>>>,
-    operator: impl FnMut(Input<'a>) -> Result<'a, Binop>,
-    rhs: impl FnMut(Input<'a>) -> Result<'a, Arc<Expression<Identifier>>>,
-) -> impl FnMut(Input<'a>) -> Result<'a, Arc<Expression<Identifier>>> {
+    lhs: impl Parser<Input<'a>, Output = Arc<Expression<Identifier>>, Error = Error<Input<'a>>>,
+    operator: impl Parser<Input<'a>, Output = Binop, Error = Error<Input<'a>>>,
+    rhs: impl Parser<Input<'a>, Output = Arc<Expression<Identifier>>, Error = Error<Input<'a>>>,
+) -> impl Parser<Input<'a>, Output = Arc<Expression<Identifier>>, Error = Error<Input<'a>>> {
     map(
         pair(lhs, opt(pair(operator, rhs))),
         |(lhs, rhs)| match rhs {
@@ -237,11 +249,11 @@ fn expression_binary<'a>(
 
 fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
     alt((
-        into_arc(tuple((
+        into_arc((
             preceded(ww_tag("if"), expression),
             preceded(tag("then"), expression),
             preceded(tag("else"), expression),
-        ))),
+        )),
         into_arc(in_braces(alt((
             pair(
                 preceded(char(':'), cut(map(expression, Some))),
@@ -256,11 +268,12 @@ fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
             ),
         )))),
         expression_binary(expression2, ww(value(Binop::Or, tag("||"))), expression),
-    ))(input)
+    ))
+    .parse(input)
 }
 
 fn expression2(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    expression_binary(expression3, ww(value(Binop::And, tag("&&"))), expression2)(input)
+    expression_binary(expression3, ww(value(Binop::And, tag("&&"))), expression2).parse(input)
 }
 
 fn expression3(input: Input) -> Result<Arc<Expression<Identifier>>> {
@@ -275,7 +288,8 @@ fn expression3(input: Input) -> Result<Arc<Expression<Identifier>>> {
             value(Binop::Gt, tag(">")),
         ))),
         expression3,
-    )(input)
+    )
+    .parse(input)
 }
 
 fn expression4(input: Input) -> Result<Arc<Expression<Identifier>>> {
@@ -289,18 +303,19 @@ fn expression4(input: Input) -> Result<Arc<Expression<Identifier>>> {
             value(Binop::Sub, tag("-")),
         ))),
         expression4,
-    )(input)
+    )
+    .parse(input)
 }
 
 fn expression5(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    let (input, identifier) = opt(identifier)(input)?;
+    let (input, identifier) = opt(identifier).parse(input)?;
     match identifier {
         Some(identifier) => {
             if Pattern::is_literal(&identifier.identifier) {
                 let expression = Arc::new(identifier.into());
                 expression_suffix(input, expression)
             } else {
-                let (input, args) = opt(in_parens(comma_separated0(expression)))(input)?;
+                let (input, args) = opt(in_parens(comma_separated0(expression))).parse(input)?;
                 if let Some(args) = args {
                     let expr = Arc::new(Expression::Constructor { identifier, args });
                     Ok((input, expr))
@@ -310,24 +325,25 @@ fn expression5(input: Input) -> Result<Arc<Expression<Identifier>>> {
                 }
             }
         }
-        None => in_parens(expression)(input),
+        None => in_parens(expression).parse(input),
     }
 }
 
 fn expression_map_part(input: Input) -> Result<ExpressionMapPart<Identifier>> {
-    into(tuple((
+    into((
         pattern,
         preceded(char('='), expression),
         opt(preceded(tag("where"), comma_separated0(domain_value))),
-    )))(input)
+    ))
+    .parse(input)
 }
 
 fn expression_suffix(
     input: Input,
     lhs: Arc<Expression<Identifier>>,
 ) -> Result<Arc<Expression<Identifier>>> {
-    let (input, access) = opt(in_brackets(expression))(input)?;
-    let (input, args) = opt(in_parens(comma_separated0(expression)))(input)?;
+    let (input, access) = opt(in_brackets(expression)).parse(input)?;
+    let (input, args) = opt(in_parens(comma_separated0(expression))).parse(input)?;
 
     match access {
         Some(rhs) => {
@@ -367,44 +383,48 @@ fn pattern(input: Input) -> Result<Arc<Pattern<Identifier>>> {
                 Arc::new(Pattern::Variable { identifier })
             }
         }),
-    )))(input)
+    )))
+    .parse(input)
 }
 
 fn type_(input: Input) -> Result<Arc<Type<Identifier>>> {
     alt((
         into_arc(in_braces(cut(comma_separated1(identifier)))),
         |input| {
-            let (input, lhs) = into_arc(identifier)(input)?;
-            match opt(preceded(tag("->"), type_))(input)? {
+            let (input, lhs) = into_arc(identifier).parse(input)?;
+            match opt(preceded(tag("->"), type_)).parse(input)? {
                 (input, Some(rhs)) => Ok((input, Arc::from(Type::Function { lhs, rhs }))),
                 (input, None) => Ok((input, lhs)),
             }
         },
-    ))(input)
+    ))
+    .parse(input)
 }
 
 fn function(input: Input) -> Result<Function<Identifier>> {
-    into(tuple((
+    into((
         alt((value(true, ww_tag("reusable")), success(false))),
         preceded(ww_tag("graph"), identifier),
         in_parens(comma_separated0(function_arg)),
         in_braces(many0(statement)),
-    )))(input)
+    ))
+    .parse(input)
 }
 
 fn function_arg(input: Input) -> Result<FunctionArg<Identifier>> {
-    into(separated_pair(identifier, char(':'), type_))(input)
+    into(separated_pair(identifier, char(':'), type_)).parse(input)
 }
 
 fn domain_declaration(input: Input) -> Result<DomainDeclaration<Identifier>> {
     into(pair(
         delimited(ww_tag("domain"), identifier, ww_char('=')),
         separated_list0(ww_char('|'), domain_element),
-    ))(input)
+    ))
+    .parse(input)
 }
 
 fn function_declaration(input: Input) -> Result<FunctionDeclaration<Identifier>> {
-    let (input, (id, type_)) = separated_pair(identifier, char(':'), type_)(input)?;
+    let (input, (id, type_)) = separated_pair(identifier, char(':'), type_).parse(input)?;
     let (input, cases) = many1(pair(
         ww(pair(
             verify(identifier, |identifier| {
@@ -413,16 +433,18 @@ fn function_declaration(input: Input) -> Result<FunctionDeclaration<Identifier>>
             in_parens(comma_separated0(pattern)),
         )),
         preceded(ww_char('='), expression),
-    ))(input)?;
+    ))
+    .parse(input)?;
     Ok((input, (id, type_, cases).into()))
 }
 
 fn variable_declaration(input: Input) -> Result<VariableDeclaration<Identifier>> {
-    into(tuple((
+    into((
         identifier,
         preceded(char(':'), type_),
         opt(preceded(ww_char('='), expression)),
-    )))(input)
+    ))
+    .parse(input)
 }
 
 fn game(input: Input) -> Result<Game<Identifier>> {
@@ -454,20 +476,25 @@ fn game(input: Input) -> Result<Game<Identifier>> {
             ),
             comments_and_whitespaces0,
         ),
-    )(input)
+    )
+    .parse(input)
 }
 
-pub fn parse_with_errors(input: &str) -> (Game<Identifier>, Vec<Error>) {
+pub fn parse_with_errors(input: &str) -> (Game<Identifier>, Vec<ParserError>) {
     let errors = RefCell::new(Vec::new());
-    let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
-    let (_, game) = all_consuming(game)(input).expect("Parser cannot fail");
+    let input = nom_locate::LocatedSpan::new_extra(input, ParserState(&errors));
+    let (_, game) = all_consuming(game)
+        .parse(input)
+        .expect("Parser cannot fail");
     (game, errors.into_inner())
 }
 
 pub fn parse_expression(input: &str) -> Arc<Expression<Identifier>> {
     let errors = RefCell::new(Vec::new());
-    let input = nom_locate::LocatedSpan::new_extra(input, State(&errors));
-    let (_, expression) = all_consuming(expression)(input).expect("Parser cannot fail");
+    let input = nom_locate::LocatedSpan::new_extra(input, ParserState(&errors));
+    let (_, expression) = all_consuming(expression)
+        .parse(input)
+        .expect("Parser cannot fail");
     expression
 }
 

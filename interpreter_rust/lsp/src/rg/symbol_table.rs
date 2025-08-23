@@ -3,7 +3,7 @@ use crate::common::symbol::{make_builtin, Flag};
 use crate::common::symbol_table::{Occurrence, SymbolTable, SymbolTableBuilder};
 use rg::ast::{Edge, Expression, Game, Label, Node, Type, Value, ValueEntry};
 use utils::position::Positioned;
-use utils::{Error, Identifier};
+use utils::{Identifier, ParserError};
 
 fn add_from_type(table: &mut SymbolTableBuilder, type_: &Type<Identifier>) {
     match type_ {
@@ -35,10 +35,9 @@ fn add(table: &mut SymbolTableBuilder, identifier: &Identifier, create_error: bo
         if sym_idx.is_some() {
             table.occurrences.push(Occurrence::new(span, sym_idx));
         } else if create_error {
-            table.errors.push(Error::symbol_table_error(
-                &identifier.identifier,
-                &identifier.span,
-            ));
+            table
+                .errors
+                .push(ParserError::new_unknown_identifier(identifier));
         }
     }
 }
@@ -174,7 +173,7 @@ fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
     }
 }
 
-pub fn from_game(game: &Game<Identifier>) -> (SymbolTable, Vec<Error>) {
+pub fn from_game(game: &Game<Identifier>) -> (SymbolTable, Vec<ParserError>) {
     let table = table_builder_from_game(game);
     (
         SymbolTable {

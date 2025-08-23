@@ -1,7 +1,7 @@
 use super::symbol::{Flag, Symbol};
 use std::fmt::{Display, Formatter, Result};
 use utils::position::{Position, Positioned, Span};
-use utils::{Error, Identifier};
+use utils::{Identifier, ParserError};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Occurrence {
@@ -70,7 +70,7 @@ impl Display for SymbolTable {
 }
 
 pub struct SymbolTableBuilder {
-    pub errors: Vec<Error>,
+    pub errors: Vec<ParserError>,
     pub occurrences: Vec<Occurrence>,
     pub symbols: Vec<Symbol>,
 }
@@ -109,10 +109,8 @@ impl SymbolTableBuilder {
         if !identifier.is_none() && !identifier.is_numeric() {
             let occ = self.occ_from_id(identifier);
             if occ.symbol.is_none() {
-                self.errors.push(Error::symbol_table_error(
-                    &identifier.identifier,
-                    &identifier.span,
-                ));
+                self.errors
+                    .push(ParserError::new_unknown_identifier(identifier));
             } else {
                 self.occurrences.push(occ);
             }
@@ -123,10 +121,8 @@ impl SymbolTableBuilder {
         if !(identifier.is_none() || identifier.is_numeric() && flag != Flag::Function) {
             let occ = self.occ_with_flag(identifier, flag);
             if occ.symbol.is_none() {
-                self.errors.push(Error::symbol_table_error(
-                    &identifier.identifier,
-                    &identifier.span,
-                ));
+                self.errors
+                    .push(ParserError::new_unknown_identifier(identifier));
             } else {
                 self.occurrences.push(occ);
             }
@@ -143,10 +139,8 @@ impl SymbolTableBuilder {
             let span = identifier.span();
             let symbol_idx = self.find_symbol(identifier, &Some(flag), owner);
             if symbol_idx.is_none() {
-                self.errors.push(Error::symbol_table_error(
-                    &identifier.identifier,
-                    &identifier.span,
-                ));
+                self.errors
+                    .push(ParserError::new_unknown_identifier(identifier));
             } else {
                 self.occurrences.push(Occurrence::new(span, symbol_idx));
             }

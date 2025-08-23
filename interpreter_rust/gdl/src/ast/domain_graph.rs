@@ -299,18 +299,12 @@ impl<Id: Clone> Term<Id> {
 mod test {
     use super::{DomainGraph, DomainGraphNode};
     use crate::ast::{Game, Term};
-    use crate::parser::game;
-    use nom::combinator::all_consuming;
     use std::collections::BTreeSet;
-
-    fn parse(input: &str) -> Game<&str> {
-        all_consuming(game)(input).unwrap().1
-    }
 
     #[test]
     fn example_1() {
         use DomainGraphNode::{Constant, Custom, Order};
-        let game = parse("base(cell(M, N, x)) :- index(M) & index(N)");
+        let game = Game::from("base(cell(M, N, x)) :- index(M) & index(N)");
         let actual = game.domain_graph();
 
         let mut expect = DomainGraph::default();
@@ -324,7 +318,7 @@ mod test {
     #[test]
     fn example_2() {
         use DomainGraphNode::{Constant, Custom, Order};
-        let game = parse(
+        let game = Game::from(
             "
             line(X) :- row(M, X)
             line(X) :- column(N, X)
@@ -404,7 +398,7 @@ mod test {
     #[test]
     fn example_4() {
         use DomainGraphNode::{Custom, Order};
-        let game = parse(include_str!("../../../../games/kif/ticTacToe.kif"));
+        let game = Game::from(include_str!("../../../../games/kif/ticTacToe.kif"));
         let graph = game.domain_graph();
         println!("{}", graph.to_graphviz());
 

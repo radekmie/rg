@@ -6,7 +6,7 @@ use hrg::ast::{
     VariableDeclaration,
 };
 use utils::position::Positioned;
-use utils::{Error, Identifier};
+use utils::{Identifier, ParserError};
 
 use super::symbol::Symbols;
 
@@ -318,7 +318,7 @@ fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
     }
 }
 
-pub fn from_game(game: &Game<Identifier>) -> (SymbolTable, Vec<Error>) {
+pub fn from_game(game: &Game<Identifier>) -> (SymbolTable, Vec<ParserError>) {
     let table = table_builder_from_game(game);
     (
         SymbolTable {

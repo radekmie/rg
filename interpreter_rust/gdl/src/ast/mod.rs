@@ -54,6 +54,17 @@ impl<Id: Ord> Game<Id> {
     }
 }
 
+#[cfg(test)]
+impl<'a> From<&'a str> for Game<&'a str> {
+    fn from(value: &'a str) -> Self {
+        use crate::parser::game;
+        use nom::combinator::all_consuming;
+        use nom::Parser;
+
+        all_consuming(game).parse(value).unwrap().1
+    }
+}
+
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub struct Predicate<Id> {
     pub term: Arc<Term<Id>>,
@@ -203,6 +214,17 @@ impl<Id: Ord> Term<Id> {
         let mut iterator = TermIterator::new();
         iterator.add_term(self);
         iterator
+    }
+}
+
+#[cfg(test)]
+impl<'a> From<&'a str> for Term<&'a str> {
+    fn from(value: &'a str) -> Self {
+        use crate::parser::infix::term;
+        use nom::combinator::all_consuming;
+        use nom::Parser;
+
+        all_consuming(term).parse(value).unwrap().1
     }
 }
 
