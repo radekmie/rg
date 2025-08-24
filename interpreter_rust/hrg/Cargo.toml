@@ -8,6 +8,7 @@ edition = "2021"
 map_id = { path = "../map_id" }
 map_id_macro = { path = "../map_id_macro" }
 nom = "8.0.0"
+nom-language = "0.1.0"
 nom_locate = "5.0.0"
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 utils = { path = "../utils" }

@@ -3,10 +3,10 @@ use crate::ast::{
 };
 use nom::branch::{alt, permutation};
 use nom::bytes::complete::tag;
-use nom::combinator::{all_consuming, map, opt, value};
+use nom::combinator::{all_consuming, opt, value};
 use nom::error::Error;
 use nom::multi::{many1, separated_list1};
-use nom::sequence::{delimited, pair, preceded, separated_pair};
+use nom::sequence::{delimited, preceded, separated_pair};
 use nom::Parser;
 use std::cell::RefCell;
 use std::sync::Arc;
@@ -26,7 +26,7 @@ const RULES: &str = "rules";
 type Id = Identifier;
 
 fn identifier(input: Input) -> Result<Id> {
-    ww(map(identifier_, |identifier| {
+    ww(identifier_.map(|identifier| {
         let span: Span = Span::from(&identifier);
         Identifier::new(span, (*identifier.fragment()).to_string())
     }))
@@ -37,10 +37,7 @@ fn section<'a, O>(
     name: &'static str,
     parser: impl Parser<Input<'a>, Output = O, Error = Error<Input<'a>>>,
 ) -> impl Parser<Input<'a>, Output = O, Error = Error<Input<'a>>> {
-    preceded(
-        pair(ww_char('#'), tag(name)),
-        preceded(ww_char('='), parser),
-    )
+    preceded((ww_char('#'), tag(name)), preceded(ww_char('='), parser))
 }
 
 fn pieces(input: Input) -> Result<Vec<Id>> {
@@ -48,10 +45,9 @@ fn pieces(input: Input) -> Result<Vec<Id>> {
 }
 
 fn bounded_variable(input: Input) -> Result<Variable<Id>> {
-    map(pair(identifier, in_parens(integer)), |(name, bound)| {
-        Variable::new(name, bound)
-    })
-    .parse(input)
+    (identifier, in_parens(integer))
+        .map(|(name, bound)| Variable::new(name, bound))
+        .parse(input)
 }
 
 fn variables(input: Input) -> Result<Vec<Variable<Id>>> {
@@ -63,23 +59,19 @@ fn players(input: Input) -> Result<Vec<Variable<Id>>> {
 }
 
 fn edge(input: Input) -> Result<Edge<Id>> {
-    map(
-        separated_pair(identifier, ww_char(':'), identifier),
-        |(node, edge)| Edge::new(node, edge),
-    )
-    .parse(input)
+    separated_pair(identifier, ww_char(':'), identifier)
+        .map(|(node, edge)| Edge::new(node, edge))
+        .parse(input)
 }
 
 fn node(input: Input) -> Result<Node<Id>> {
-    map(
-        (
-            identifier,
-            in_brackets(identifier),
-            in_braces(comma_separated1(edge)),
-        ),
-        |(name, piece, edges)| Node::new(name, piece, edges),
+    (
+        identifier,
+        in_brackets(identifier),
+        in_braces(comma_separated1(edge)),
     )
-    .parse(input)
+        .map(|(name, piece, edges)| Node::new(name, piece, edges))
+        .parse(input)
 }
 
 fn board(input: Input) -> Result<Vec<Node<Id>>> {
@@ -87,7 +79,7 @@ fn board(input: Input) -> Result<Vec<Node<Id>>> {
 }
 
 fn potential_power(input: Input) -> Result<bool> {
-    map(opt(ww_char('*')), |c| c.is_some()).parse(input)
+    opt(ww_char('*')).map(|c| c.is_some()).parse(input)
 }
 
 fn addsub_binop(input: Input) -> Result<ExpressionOperator> {
@@ -107,31 +99,27 @@ fn muldiv_binop(input: Input) -> Result<ExpressionOperator> {
 }
 
 fn expression(input: Input) -> Result<RValue<Id>> {
-    map(
-        pair(expression1, opt(pair(muldiv_binop, expression))),
-        |(lhs, rhs)| match rhs {
+    (expression1, opt((muldiv_binop, expression)))
+        .map(|(lhs, rhs)| match rhs {
             Some((op, rhs)) => RValue::new_expression(Arc::new(lhs), Arc::new(rhs), op),
             None => lhs,
-        },
-    )
-    .parse(input)
+        })
+        .parse(input)
 }
 
 fn expression1(input: Input) -> Result<RValue<Id>> {
-    map(
-        pair(expression2, opt(pair(addsub_binop, expression1))),
-        |(lhs, rhs)| match rhs {
+    (expression2, opt((addsub_binop, expression1)))
+        .map(|(lhs, rhs)| match rhs {
             Some((op, rhs)) => RValue::new_expression(Arc::new(lhs), Arc::new(rhs), op),
             None => lhs,
-        },
-    )
-    .parse(input)
+        })
+        .parse(input)
 }
 
 fn expression2(input: Input) -> Result<RValue<Id>> {
     alt((
-        map(ww(integer), RValue::new_number),
-        map(identifier, RValue::new_string),
+        ww(integer).map(RValue::new_number),
+        identifier.map(RValue::new_string),
         in_parens(expression),
     ))
     .parse(input)
@@ -151,59 +139,41 @@ fn comparison_operator(input: Input) -> Result<ComparisonOperator> {
 
 fn action(input: Input) -> Result<Action<Id>> {
     alt((
-        map(identifier, Action::new_shift),
-        map(in_braces(comma_separated0(identifier)), Action::new_on),
-        map(in_brackets(identifier), Action::new_off),
-        map(
-            delimited(
-                ww_tag("[$"),
-                separated_pair(identifier, ww_char('='), expression),
-                ww_char(']'),
-            ),
-            |(variable, rvalue)| Action::new_assignment(variable, rvalue),
-        ),
-        map(
-            delimited(
-                ww_tag("{$"),
-                (expression, comparison_operator, expression),
-                ww_char('}'),
-            ),
-            |(lhs, op, rhs)| Action::new_comparison(lhs, rhs, op),
-        ),
-        map(
-            preceded(ww_tag("->"), map(identifier, Some)),
-            Action::new_switch,
-        ),
+        identifier.map(Action::new_shift),
+        in_braces(comma_separated0(identifier)).map(Action::new_on),
+        in_brackets(identifier).map(Action::new_off),
+        delimited(
+            ww_tag("[$"),
+            separated_pair(identifier, ww_char('='), expression),
+            ww_char(']'),
+        )
+        .map(|(variable, rvalue)| Action::new_assignment(variable, rvalue)),
+        delimited(
+            ww_tag("{$"),
+            (expression, comparison_operator, expression),
+            ww_char('}'),
+        )
+        .map(|(lhs, op, rhs)| Action::new_comparison(lhs, rhs, op)),
+        preceded(ww_tag("->"), identifier.map(Some)).map(Action::new_switch),
         value(Action::new_switch(None), ww_tag("->>")),
-        map(delimited(ww_tag("{?"), rule_sum, ww_char('}')), |rule| {
-            Action::new_check(false, rule)
-        }),
-        map(delimited(ww_tag("{!"), rule_sum, ww_char('}')), |rule| {
-            Action::new_check(true, rule)
-        }),
+        delimited(ww_tag("{?"), rule_sum, ww_char('}')).map(|rule| Action::new_check(false, rule)),
+        delimited(ww_tag("{!"), rule_sum, ww_char('}')).map(|rule| Action::new_check(true, rule)),
     ))
     .parse(input)
 }
 
 fn rule_sum_element(input: Input) -> Result<Vec<Atom<Id>>> {
     many1(alt((
-        map(pair(action, potential_power), |(action, power)| {
-            Atom::new_action(action, power)
-        }),
-        map(
-            pair(in_parens(rule_sum), potential_power),
-            |(sum, power)| Atom::new_rule(sum, power),
-        ),
+        (action, potential_power).map(|(action, power)| Atom::new_action(action, power)),
+        (in_parens(rule_sum), potential_power).map(|(sum, power)| Atom::new_rule(sum, power)),
     )))
     .parse(input)
 }
 
 fn rule_sum(input: Input) -> Result<Rule<Id>> {
-    map(
-        separated_list1(ww_char('+'), rule_sum_element),
-        |elements| Rule { elements },
-    )
-    .parse(input)
+    separated_list1(ww_char('+'), rule_sum_element)
+        .map(|elements| Rule { elements })
+        .parse(input)
 }
 
 fn rules(input: Input) -> Result<Rule<Id>> {
@@ -211,17 +181,15 @@ fn rules(input: Input) -> Result<Rule<Id>> {
 }
 
 fn game(input: Input) -> Result<Game<Id>> {
-    map(
-        permutation((pieces, variables, players, board, rules)),
-        |(pieces, variables, players, board, rules)| Game {
+    permutation((pieces, variables, players, board, rules))
+        .map(|(pieces, variables, players, board, rules)| Game {
             pieces,
             variables,
             players,
             board,
             rules,
-        },
-    )
-    .parse(input)
+        })
+        .parse(input)
 }
 
 pub fn parse_with_errors(input: &str) -> (Game<Identifier>, Vec<ParserError>) {

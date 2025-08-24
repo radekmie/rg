@@ -2,49 +2,51 @@ use super::utils::{in_parens, separated, symbol, Result};
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::combinator::{map, opt, value};
+use nom::combinator::{opt, value};
 use nom::error::Error;
 use nom::multi::{many0, separated_list1};
-use nom::sequence::{pair, preceded, separated_pair};
+use nom::sequence::{preceded, separated_pair};
 use nom::Parser;
 use std::sync::Arc;
 
 pub fn atom_or_variable(input: &str) -> Result<'_, AtomOrVariable<&str>> {
-    map(symbol, |symbol: &str| {
-        if symbol.chars().next().unwrap().is_uppercase() {
-            AtomOrVariable::Variable(symbol)
-        } else {
-            AtomOrVariable::Atom(symbol)
-        }
-    })
-    .parse(input)
+    symbol
+        .map(|symbol: &str| {
+            if symbol.chars().next().unwrap().is_uppercase() {
+                AtomOrVariable::Variable(symbol)
+            } else {
+                AtomOrVariable::Atom(symbol)
+            }
+        })
+        .parse(input)
 }
 
 pub fn game(input: &str) -> Result<'_, Game<&str>> {
-    map(many0(separated(rule)), Game).parse(input)
+    many0(separated(rule)).map(Game).parse(input)
 }
 
 pub fn predicate(input: &str) -> Result<'_, Predicate<&str>> {
-    map(pair(opt(tag("~")), term_rc), |(negation, term)| Predicate {
-        term,
-        is_negated: negation.is_some(),
-    })
-    .parse(input)
+    (opt(tag("~")), term_rc)
+        .map(|(negation, term)| Predicate {
+            term,
+            is_negated: negation.is_some(),
+        })
+        .parse(input)
 }
 
 pub fn rule(input: &str) -> Result<'_, Rule<&str>> {
-    let rule = pair(
+    (
         term_rc,
         opt(preceded(
             separated(tag(":-")),
             separated_list1(separated(tag("&")), predicate),
         )),
-    );
-    map(rule, |(term, predicates)| Rule {
-        term,
-        predicates: predicates.unwrap_or_default(),
-    })
-    .parse(input)
+    )
+        .map(|(term, predicates)| Rule {
+            term,
+            predicates: predicates.unwrap_or_default(),
+        })
+        .parse(input)
 }
 
 pub fn term(input: &str) -> Result<'_, Term<&str>> {
@@ -75,19 +77,17 @@ pub fn term(input: &str) -> Result<'_, Term<&str>> {
         term_template("role", atom_or_variable, Term::Role),
         value(Term::Terminal, tag("terminal")),
         term_template("true", term_rc, Term::True),
-        map(
-            pair(
-                atom_or_variable,
-                opt(in_parens(separated_list1(tag(","), term_rc))),
-            ),
-            |(name, arguments)| Term::new_custom(name, arguments.unwrap_or_default()),
-        ),
+        (
+            atom_or_variable,
+            opt(in_parens(separated_list1(tag(","), term_rc))),
+        )
+            .map(|(name, arguments)| Term::new_custom(name, arguments.unwrap_or_default())),
     ))
     .parse(input)
 }
 
 fn term_rc(input: &str) -> Result<'_, Arc<Term<&str>>> {
-    map(separated(term), Arc::from).parse(input)
+    separated(term).map(Arc::from).parse(input)
 }
 
 fn term_template<'a, T, U>(
@@ -95,7 +95,7 @@ fn term_template<'a, T, U>(
     parser: impl Parser<&'a str, Output = T, Error = Error<&'a str>>,
     mapper: impl Fn(T) -> U,
 ) -> impl Parser<&'a str, Output = U, Error = Error<&'a str>> {
-    map(preceded(tag(string), in_parens(parser)), mapper)
+    preceded(tag(string), in_parens(parser)).map(mapper)
 }
 
 #[cfg(test)]

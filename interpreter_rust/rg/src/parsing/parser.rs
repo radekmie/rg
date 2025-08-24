@@ -5,10 +5,10 @@ use crate::ast::{
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
-use nom::combinator::{all_consuming, cut, into, map, opt, success};
+use nom::combinator::{all_consuming, cut, into, opt, success};
 use nom::error::context;
 use nom::multi::{fold_many0, many0, many1, separated_list0};
-use nom::sequence::{pair, preceded, separated_pair, terminated};
+use nom::sequence::{preceded, separated_pair, terminated};
 use nom::Parser;
 use std::cell::RefCell;
 use std::sync::Arc;
@@ -21,11 +21,12 @@ use utils::position::{Position, Positioned, Span};
 use utils::{Identifier, ParserError};
 
 fn identifier(input: Input) -> Result<Identifier> {
-    map(identifier_, |identifier| {
-        let span: Span = Span::from(&identifier);
-        Identifier::new(span, (*identifier.fragment()).to_string())
-    })
-    .parse(input)
+    identifier_
+        .map(|identifier| {
+            let span: Span = Span::from(&identifier);
+            Identifier::new(span, (*identifier.fragment()).to_string())
+        })
+        .parse(input)
 }
 
 fn preceded_opt_id<'a>(context: &'a str) -> impl FnMut(Input<'a>) -> Result<'a, Identifier> {
@@ -95,24 +96,20 @@ fn label(input: Input) -> Result<Label<Identifier>> {
 }
 
 fn tag_label(input: Input) -> Result<Label<Identifier>> {
-    map(
-        preceded(
-            preceded_whitespace(char('$')),
-            cut(preceded_opt_id("label")),
-        ),
-        |symbol| Label::Tag { symbol },
+    preceded(
+        preceded_whitespace(char('$')),
+        cut(preceded_opt_id("label")),
     )
+    .map(|symbol| Label::Tag { symbol })
     .parse(input)
 }
 
 fn tag_variable_label(input: Input) -> Result<Label<Identifier>> {
-    map(
-        preceded(
-            preceded_whitespace(tag("$$")),
-            cut(preceded_opt_id("label")),
-        ),
-        |identifier| Label::TagVariable { identifier },
+    preceded(
+        preceded_whitespace(tag("$$")),
+        cut(preceded_opt_id("label")),
     )
+    .map(|identifier| Label::TagVariable { identifier })
     .parse(input)
 }
 
@@ -130,11 +127,11 @@ fn reachability_label(input: Input) -> Result<Label<Identifier>> {
 
 fn compare_or_assign_label(input: Input) -> Result<Label<Identifier>> {
     let error_pos = Span::at(&input);
-    let (input, (lhs, sep)) = pair(
+    let (input, (lhs, sep)) = (
         opt(expression),
         preceded_whitespace(alt((tag("=="), tag("!="), tag("=")))),
     )
-    .parse(input)?;
+        .parse(input)?;
     let separator = *sep.fragment();
     let lhs = lhs.unwrap_or_else(|| {
         let err = ParserError::new(error_pos, "expected: expression".to_string());
@@ -167,11 +164,11 @@ fn expr_label(input: Input) -> Result<Label<Identifier>> {
 }
 
 fn node(input: Input) -> Result<Node<Identifier>> {
-    map(identifier, Node::new).parse(input)
+    identifier.map(Node::new).parse(input)
 }
 
 fn expect_node(input: Input) -> Result<Node<Identifier>> {
-    map(preceded_opt_id("node"), Node::new).parse(input)
+    preceded_opt_id("node").map(Node::new).parse(input)
 }
 
 fn expect_expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
@@ -192,11 +189,11 @@ fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
     let (input, identifier) = preceded_whitespace(identifier).parse(input)?;
     let (input, maybe_cast) = opt(preceded_whitespace(preceded(
         tag("("),
-        pair(cut(expect_expression), preceded_tag(")")),
+        (cut(expect_expression), preceded_tag(")")),
     )))
     .parse(input)?;
     let (input, expression) = fold_many0(
-        preceded(tag("["), pair(cut(expect_expression), preceded_tag("]"))),
+        preceded(tag("["), (cut(expect_expression), preceded_tag("]"))),
         || match maybe_cast.clone() {
             Some((rhs, end)) => {
                 let span = identifier.span().with_end((&end).into());
@@ -306,167 +303,153 @@ fn variable(input: Input) -> Result<Option<Variable<Identifier>>> {
 
 fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
     let pragma = alt((
-        map(
-            (
-                tag("artificialTag"),
-                cut(many1(preceded_whitespace(identifier))),
-                preceded_whitespace(tag(";")),
-            ),
-            |(tag, tags, semicolon)| Pragma::ArtificialTag {
+        (
+            tag("artificialTag"),
+            cut(many1(preceded_whitespace(identifier))),
+            preceded_whitespace(tag(";")),
+        )
+            .map(|(tag, tags, semicolon)| Pragma::ArtificialTag {
                 span: Span::from((&tag, &semicolon)),
                 tags,
-            },
-        ),
-        map(
-            (
-                tag("disjointExhaustive"),
-                cut(preceded_whitespace(node)),
-                preceded_whitespace(tag(":")),
-                cut(many1(preceded_whitespace(node))),
-                preceded_whitespace(tag(";")),
+            }),
+        (
+            tag("disjointExhaustive"),
+            cut(preceded_whitespace(node)),
+            preceded_whitespace(tag(":")),
+            cut(many1(preceded_whitespace(node))),
+            preceded_whitespace(tag(";")),
+        )
+            .map(
+                |(tag, node, _, nodes, semicolon)| Pragma::DisjointExhaustive {
+                    span: Span::from((&tag, &semicolon)),
+                    node,
+                    nodes,
+                },
             ),
-            |(tag, node, _, nodes, semicolon)| Pragma::DisjointExhaustive {
+        (
+            tag("disjoint"),
+            cut(preceded_whitespace(node)),
+            preceded_whitespace(tag(":")),
+            cut(many1(preceded_whitespace(node))),
+            preceded_whitespace(tag(";")),
+        )
+            .map(|(tag, node, _, nodes, semicolon)| Pragma::Disjoint {
                 span: Span::from((&tag, &semicolon)),
                 node,
                 nodes,
-            },
-        ),
-        map(
-            (
-                tag("disjoint"),
-                cut(preceded_whitespace(node)),
-                preceded_whitespace(tag(":")),
-                cut(many1(preceded_whitespace(node))),
-                preceded_whitespace(tag(";")),
-            ),
-            |(tag, node, _, nodes, semicolon)| Pragma::Disjoint {
-                span: Span::from((&tag, &semicolon)),
-                node,
-                nodes,
-            },
-        ),
-        map(
-            (
-                tag("integer"),
-                preceded_whitespace(integer),
-                preceded_whitespace(tag(":")),
-                cut(many1(preceded_whitespace(node))),
-                preceded_whitespace(tag(";")),
-            ),
-            |(tag, offset, _, nodes, semicolon)| Pragma::Integer {
+            }),
+        (
+            tag("integer"),
+            preceded_whitespace(integer),
+            preceded_whitespace(tag(":")),
+            cut(many1(preceded_whitespace(node))),
+            preceded_whitespace(tag(";")),
+        )
+            .map(|(tag, offset, _, nodes, semicolon)| Pragma::Integer {
                 span: Span::from((&tag, &semicolon)),
                 offset,
                 nodes,
-            },
-        ),
-        map(
-            (
-                tag("iterator"),
-                preceded_whitespace(node),
-                preceded_whitespace(node),
-                preceded_whitespace(node),
-                preceded_whitespace(tag(":")),
-                preceded_whitespace(identifier),
-                preceded_whitespace(tag(";")),
-            ),
-            |(tag, node_a, node_b, node_c, _, variable, semicolon)| Pragma::Iterator {
-                span: Span::from((&tag, &semicolon)),
-                node_a,
-                node_b,
-                node_c,
-                variable,
-            },
-        ),
-        map(
-            (
-                tag("repeat"),
-                cut(many1(preceded_whitespace(node))),
-                preceded_whitespace(tag(":")),
-                cut(many0(preceded_whitespace(identifier))),
-                preceded_whitespace(tag(";")),
-            ),
-            |(tag, nodes, _, identifiers, semicolon)| Pragma::Repeat {
+            }),
+        (
+            tag("iterator"),
+            preceded_whitespace(node),
+            preceded_whitespace(node),
+            preceded_whitespace(node),
+            preceded_whitespace(tag(":")),
+            preceded_whitespace(identifier),
+            preceded_whitespace(tag(";")),
+        )
+            .map(|(tag, node_a, node_b, node_c, _, variable, semicolon)| {
+                Pragma::Iterator {
+                    span: Span::from((&tag, &semicolon)),
+                    node_a,
+                    node_b,
+                    node_c,
+                    variable,
+                }
+            }),
+        (
+            tag("repeat"),
+            cut(many1(preceded_whitespace(node))),
+            preceded_whitespace(tag(":")),
+            cut(many0(preceded_whitespace(identifier))),
+            preceded_whitespace(tag(";")),
+        )
+            .map(|(tag, nodes, _, identifiers, semicolon)| Pragma::Repeat {
                 span: Span::from((&tag, &semicolon)),
                 nodes,
                 identifiers,
-            },
-        ),
-        map(
-            (
-                tag("simpleApplyExhaustive"),
-                cut(preceded_whitespace(node)),
-                preceded_whitespace(node),
-                in_brackets(separated_list0(ww_char(','), pragma_tag)),
-                separated_list0(ww_char(','), pragma_assignment),
-                preceded_whitespace(tag(";")),
+            }),
+        (
+            tag("simpleApplyExhaustive"),
+            cut(preceded_whitespace(node)),
+            preceded_whitespace(node),
+            in_brackets(separated_list0(ww_char(','), pragma_tag)),
+            separated_list0(ww_char(','), pragma_assignment),
+            preceded_whitespace(tag(";")),
+        )
+            .map(|(tag, lhs, rhs, tags, assignments, semicolon)| {
+                Pragma::SimpleApplyExhaustive {
+                    span: Span::from((&tag, &semicolon)),
+                    lhs,
+                    rhs,
+                    tags,
+                    assignments,
+                }
+            }),
+        (
+            tag("simpleApply"),
+            cut(preceded_whitespace(node)),
+            preceded_whitespace(node),
+            in_brackets(separated_list0(ww_char(','), pragma_tag)),
+            separated_list0(ww_char(','), pragma_assignment),
+            preceded_whitespace(tag(";")),
+        )
+            .map(
+                |(tag, lhs, rhs, tags, assignments, semicolon)| Pragma::SimpleApply {
+                    span: Span::from((&tag, &semicolon)),
+                    lhs,
+                    rhs,
+                    tags,
+                    assignments,
+                },
             ),
-            |(tag, lhs, rhs, tags, assignments, semicolon)| Pragma::SimpleApplyExhaustive {
-                span: Span::from((&tag, &semicolon)),
-                lhs,
-                rhs,
-                tags,
-                assignments,
-            },
-        ),
-        map(
-            (
-                tag("simpleApply"),
-                cut(preceded_whitespace(node)),
-                preceded_whitespace(node),
-                in_brackets(separated_list0(ww_char(','), pragma_tag)),
-                separated_list0(ww_char(','), pragma_assignment),
-                preceded_whitespace(tag(";")),
-            ),
-            |(tag, lhs, rhs, tags, assignments, semicolon)| Pragma::SimpleApply {
-                span: Span::from((&tag, &semicolon)),
-                lhs,
-                rhs,
-                tags,
-                assignments,
-            },
-        ),
-        map(
-            (
-                tag("tagIndex"),
-                cut(many1(preceded_whitespace(node))),
-                preceded_whitespace(tag(":")),
-                preceded_whitespace(integer),
-                preceded_whitespace(tag(";")),
-            ),
-            |(tag, nodes, _, index, semicolon)| Pragma::TagIndex {
+        (
+            tag("tagIndex"),
+            cut(many1(preceded_whitespace(node))),
+            preceded_whitespace(tag(":")),
+            preceded_whitespace(integer),
+            preceded_whitespace(tag(";")),
+        )
+            .map(|(tag, nodes, _, index, semicolon)| Pragma::TagIndex {
                 span: Span::from((&tag, &semicolon)),
                 nodes,
                 index,
-            },
-        ),
-        map(
-            (
-                tag("tagMaxIndex"),
-                cut(many1(preceded_whitespace(node))),
-                preceded_whitespace(tag(":")),
-                preceded_whitespace(integer),
-                preceded_whitespace(tag(";")),
-            ),
-            |(tag, nodes, _, index, semicolon)| Pragma::TagMaxIndex {
+            }),
+        (
+            tag("tagMaxIndex"),
+            cut(many1(preceded_whitespace(node))),
+            preceded_whitespace(tag(":")),
+            preceded_whitespace(integer),
+            preceded_whitespace(tag(";")),
+        )
+            .map(|(tag, nodes, _, index, semicolon)| Pragma::TagMaxIndex {
                 span: Span::from((&tag, &semicolon)),
                 nodes,
                 index,
-            },
-        ),
-        map(tag("translatedFromRbg;"), |tag| Pragma::TranslatedFromRbg {
+            }),
+        tag("translatedFromRbg;").map(|tag| Pragma::TranslatedFromRbg {
             span: Span::from((&tag, &tag)),
         }),
-        map(
-            (
-                tag("unique"),
-                cut(many1(preceded_whitespace(node))),
-                preceded_whitespace(tag(";")),
-            ),
-            |(tag, nodes, semicolon)| Pragma::Unique {
+        (
+            tag("unique"),
+            cut(many1(preceded_whitespace(node))),
+            preceded_whitespace(tag(";")),
+        )
+            .map(|(tag, nodes, semicolon)| Pragma::Unique {
                 span: Span::from((&tag, &semicolon)),
                 nodes,
-            },
-        ),
+            }),
     ));
 
     context("pragma", preceded(tag("@"), expect(pragma, "pragma"))).parse(input)
@@ -483,11 +466,9 @@ fn pragma_assignment(input: Input) -> Result<PragmaAssignment<Identifier>> {
 
 fn pragma_tag(input: Input) -> Result<PragmaTag<Identifier>> {
     alt((
-        map(
-            separated_pair(identifier, char(':'), cut(type_)),
-            |(identifier, type_)| PragmaTag::Variable { identifier, type_ },
-        ),
-        map(identifier, |symbol| PragmaTag::Symbol { symbol }),
+        separated_pair(identifier, char(':'), cut(type_))
+            .map(|(identifier, type_)| PragmaTag::Variable { identifier, type_ }),
+        identifier.map(|symbol| PragmaTag::Symbol { symbol }),
     ))
     .parse(input)
 }
@@ -500,12 +481,12 @@ pub fn game(input: Input) -> Result<Game<Identifier>> {
                 preceded(
                     comments_and_whitespaces0,
                     alt((
-                        map(constant, |x| (x, None, None, None, None)),
-                        map(typedef, |x| (None, x, None, None, None)),
-                        map(variable, |x| (None, None, x, None, None)),
-                        map(edge, |x| (None, None, None, x, None)),
-                        map(pragma, |x| (None, None, None, None, x)),
-                        map(parse_error_line, |()| (None, None, None, None, None)),
+                        constant.map(|x| (x, None, None, None, None)),
+                        typedef.map(|x| (None, x, None, None, None)),
+                        variable.map(|x| (None, None, x, None, None)),
+                        edge.map(|x| (None, None, None, x, None)),
+                        pragma.map(|x| (None, None, None, None, x)),
+                        parse_error_line.map(|()| (None, None, None, None, None)),
                     )),
                 ),
                 Game::default,

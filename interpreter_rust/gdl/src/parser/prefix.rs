@@ -2,60 +2,54 @@ use super::utils::{in_parens, separated, symbol, Result};
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::combinator::{map, opt, success};
+use nom::combinator::{opt, success, value};
 use nom::error::Error;
 use nom::multi::{many0, many1};
-use nom::sequence::{pair, preceded};
+use nom::sequence::preceded;
 use nom::Parser;
 use std::convert::identity;
 use std::sync::Arc;
 
 pub fn atom_or_variable(input: &str) -> Result<'_, AtomOrVariable<&str>> {
     alt((
-        map(preceded(tag("?"), symbol), AtomOrVariable::Variable),
-        map(symbol, AtomOrVariable::Atom),
+        preceded(tag("?"), symbol).map(AtomOrVariable::Variable),
+        symbol.map(AtomOrVariable::Atom),
     ))
     .parse(input)
 }
 
 pub fn game(input: &str) -> Result<'_, Game<&str>> {
-    map(many0(separated(rule)), Game).parse(input)
+    many0(separated(rule)).map(Game).parse(input)
 }
 
 pub fn term(input: &str) -> Result<'_, Term<&str>> {
     alt((
         term_template("base", term_rc, Term::Base),
-        term_template("does", pair(atom_or_variable, term_rc), |(role, action)| {
+        term_template("does", (atom_or_variable, term_rc), |(role, action)| {
             Term::Does(role, action)
         }),
         term_template(
             "goal",
-            pair(atom_or_variable, separated(atom_or_variable)),
+            (atom_or_variable, separated(atom_or_variable)),
             |(role, utility)| Term::Goal(role, utility),
         ),
         term_template("init", term_rc, Term::Init),
-        term_template(
-            "input",
-            pair(atom_or_variable, term_rc),
-            |(role, action)| Term::Input(role, action),
-        ),
-        term_template(
-            "legal",
-            pair(atom_or_variable, term_rc),
-            |(role, action)| Term::Legal(role, action),
-        ),
+        term_template("input", (atom_or_variable, term_rc), |(role, action)| {
+            Term::Input(role, action)
+        }),
+        term_template("legal", (atom_or_variable, term_rc), |(role, action)| {
+            Term::Legal(role, action)
+        }),
         term_template("next", term_rc, Term::Next),
         term_template("role", atom_or_variable, Term::Role),
         term_template("terminal", success(()), |()| Term::Terminal),
-        map(tag("terminal"), |_| Term::Terminal),
+        value(Term::Terminal, tag("terminal")),
         term_template("true", term_rc, Term::True),
-        map(
-            alt((
-                pair(atom_or_variable, success(None)),
-                in_parens(pair(atom_or_variable, opt(many1(term_rc)))),
-            )),
-            |(name, arguments)| Term::new_custom(name, arguments.unwrap_or_default()),
-        ),
+        alt((
+            (atom_or_variable, success(None)),
+            in_parens((atom_or_variable, opt(many1(term_rc)))),
+        ))
+        .map(|(name, arguments)| Term::new_custom(name, arguments.unwrap_or_default())),
     ))
     .parse(input)
 }
@@ -66,7 +60,7 @@ pub fn predicate(input: &str) -> Result<'_, Predicate<&str>> {
             term,
             is_negated: true,
         }),
-        map(term_rc, |term| Predicate {
+        term_rc.map(|term| Predicate {
             term,
             is_negated: false,
         }),
@@ -75,15 +69,16 @@ pub fn predicate(input: &str) -> Result<'_, Predicate<&str>> {
 }
 
 pub fn rule(input: &str) -> Result<'_, Rule<&str>> {
-    let rule = alt((
-        term_template("<=", pair(term_rc, many1(separated(predicate))), identity),
-        pair(term_rc, success(vec![])),
-    ));
-    map(rule, |(term, predicates)| Rule { term, predicates }).parse(input)
+    alt((
+        term_template("<=", (term_rc, many1(separated(predicate))), identity),
+        (term_rc, success(vec![])),
+    ))
+    .map(|(term, predicates)| Rule { term, predicates })
+    .parse(input)
 }
 
 fn term_rc(input: &str) -> Result<'_, Arc<Term<&str>>> {
-    map(separated(term), Arc::from).parse(input)
+    separated(term).map(Arc::from).parse(input)
 }
 
 fn term_template<'a, T, U>(
@@ -91,7 +86,7 @@ fn term_template<'a, T, U>(
     parser: impl Parser<&'a str, Output = T, Error = Error<&'a str>>,
     mapper: impl Fn(T) -> U,
 ) -> impl Parser<&'a str, Output = U, Error = Error<&'a str>> {
-    map(in_parens(preceded(separated(tag(string)), parser)), mapper)
+    in_parens(preceded(separated(tag(string)), parser)).map(mapper)
 }
 
 #[cfg(test)]

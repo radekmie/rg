@@ -6,12 +6,13 @@ use crate::ast::{
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
-use nom::combinator::{all_consuming, cut, into, map, opt, success, value, verify};
+use nom::combinator::{all_consuming, cut, fail, into, opt, success, value, verify};
 use nom::error::context;
 use nom::error::Error;
 use nom::multi::{fold_many0, many0, many1, separated_list0, separated_list1};
-use nom::sequence::{delimited, pair, preceded, separated_pair, terminated};
+use nom::sequence::{delimited, preceded, separated_pair, terminated};
 use nom::Parser;
+use nom_language::precedence::{binary_op, precedence, unary_op, Assoc, Operation};
 use std::cell::RefCell;
 use std::sync::Arc;
 use utils::parser::{
@@ -23,7 +24,7 @@ use utils::position::Span;
 use utils::{Identifier, ParserError};
 
 fn identifier(input: Input) -> Result<Identifier> {
-    ww(map(identifier_, |identifier| {
+    ww(identifier_.map(|identifier| {
         let span: Span = Span::from(&identifier);
         Identifier::new(span, (*identifier.fragment()).to_string())
     }))
@@ -37,8 +38,8 @@ fn assignment(input: Input) -> Result<Statement<Identifier>> {
         preceded(
             ww_char('='),
             alt((
-                map(terminated(type_, in_parens(char('*'))), Err),
-                map(expression, Ok),
+                terminated(type_, in_parens(char('*'))).map(Err),
+                expression.map(Ok),
             )),
         ),
     ))
@@ -48,13 +49,11 @@ fn assignment(input: Input) -> Result<Statement<Identifier>> {
 fn branch(input: Input) -> Result<Statement<Identifier>> {
     preceded(
         ww_tag("branch"),
-        map(
-            in_braces(separated_list0(
-                delimited(ww_char('}'), tag("or"), ww_char('{')),
-                many0(statement),
-            )),
-            |arms| Statement::Branch { arms },
-        ),
+        in_braces(separated_list0(
+            delimited(ww_char('}'), tag("or"), ww_char('{')),
+            many0(statement),
+        ))
+        .map(|arms| Statement::Branch { arms }),
     )
     .parse(input)
 }
@@ -62,121 +61,107 @@ fn branch(input: Input) -> Result<Statement<Identifier>> {
 fn branch_var(input: Input) -> Result<Statement<Identifier>> {
     preceded(
         ww_tag("branch"),
-        map(
-            (
-                ww(identifier),
-                preceded(ww_tag("in"), type_),
-                in_braces(many0(statement)),
-            ),
-            |(identifier, type_, body)| Statement::BranchVar {
+        (
+            ww(identifier),
+            preceded(ww_tag("in"), type_),
+            in_braces(many0(statement)),
+        )
+            .map(|(identifier, type_, body)| Statement::BranchVar {
                 identifier,
                 type_,
                 body,
-            },
-        ),
+            }),
     )
     .parse(input)
 }
 
 fn call(input: Input) -> Result<Statement<Identifier>> {
-    into(pair(identifier, in_parens(comma_separated0(expression)))).parse(input)
+    into((identifier, in_parens(comma_separated0(expression)))).parse(input)
 }
 
 fn loop_(input: Input) -> Result<Statement<Identifier>> {
-    map(preceded(tag("loop"), in_braces(many0(statement))), |body| {
-        Statement::Loop { body }
-    })
-    .parse(input)
+    preceded(tag("loop"), in_braces(many0(statement)))
+        .map(|body| Statement::Loop { body })
+        .parse(input)
 }
 
 fn repeat(input: Input) -> Result<Statement<Identifier>> {
-    map(
-        pair(
-            preceded(ww_tag("repeat"), integer),
-            in_braces(many0(statement)),
-        ),
-        |(count, body)| Statement::Repeat { count, body },
+    (
+        preceded(ww_tag("repeat"), integer),
+        in_braces(many0(statement)),
     )
-    .parse(input)
+        .map(|(count, body)| Statement::Repeat { count, body })
+        .parse(input)
 }
 
 fn repeat_var(input: Input) -> Result<Statement<Identifier>> {
     preceded(
         ww_tag("repeat"),
-        map(
-            (
-                ww(identifier),
-                preceded(ww_tag("in"), type_),
-                in_braces(many0(statement)),
-            ),
-            |(identifier, type_, body)| Statement::RepeatVar {
+        (
+            ww(identifier),
+            preceded(ww_tag("in"), type_),
+            in_braces(many0(statement)),
+        )
+            .map(|(identifier, type_, body)| Statement::RepeatVar {
                 identifier,
                 type_,
                 body,
-            },
-        ),
+            }),
     )
     .parse(input)
 }
 
 fn if_(input: Input) -> Result<Statement<Identifier>> {
-    map(
-        (
-            preceded(tag("if"), expression),
-            in_braces(many0(statement)),
-            opt(preceded(
-                ww_tag("else"),
-                alt((
-                    in_braces(many0(statement)),
-                    map(if_, |statement| vec![statement]),
-                )),
+    (
+        preceded(tag("if"), expression),
+        in_braces(many0(statement)),
+        opt(preceded(
+            ww_tag("else"),
+            alt((
+                in_braces(many0(statement)),
+                if_.map(|statement| vec![statement]),
             )),
-        ),
-        |(expression, then, else_)| Statement::If {
+        )),
+    )
+        .map(|(expression, then, else_)| Statement::If {
             expression,
             then,
             else_,
-        },
-    )
-    .parse(input)
+        })
+        .parse(input)
 }
 
 fn while_(input: Input) -> Result<Statement<Identifier>> {
-    map(
-        pair(
-            preceded(tag("while"), expression),
-            in_braces(many0(statement)),
-        ),
-        |(expression, body)| Statement::While { expression, body },
+    (
+        preceded(tag("while"), expression),
+        in_braces(many0(statement)),
     )
-    .parse(input)
+        .map(|(expression, body)| Statement::While { expression, body })
+        .parse(input)
 }
 
 fn tag_statement(input: Input) -> Result<Statement<Identifier>> {
-    map(
-        preceded(
-            char('$'),
-            pair(
-                opt(char('_')),
-                alt((
-                    in_parens(many1(identifier)),
-                    map(identifier, |symbol| vec![symbol]),
-                )),
-            ),
+    preceded(
+        char('$'),
+        (
+            opt(char('_')),
+            alt((
+                in_parens(many1(identifier)),
+                identifier.map(|symbol| vec![symbol]),
+            )),
         ),
-        |(artificial, symbols)| Statement::Tag {
-            artificial: artificial.is_some(),
-            symbols,
-        },
     )
+    .map(|(artificial, symbols)| Statement::Tag {
+        artificial: artificial.is_some(),
+        symbols,
+    })
     .parse(input)
 }
 
 fn tag_variable_statement(input: Input) -> Result<Statement<Identifier>> {
-    map(preceded(tag("$$"), identifier), |identifier| {
-        Statement::TagVariable { identifier }
-    })
-    .parse(input)
+    preceded(tag("$$"), identifier)
+        .map(|identifier| Statement::TagVariable { identifier })
+        .parse(input)
 }
 
 fn statement(input: Input) -> Result<Statement<Identifier>> {
@@ -209,23 +194,24 @@ fn domain_element(input: Input) -> Result<DomainElement<Identifier>> {
 }
 
 fn domain_element_pattern(input: Input) -> Result<DomainElementPattern<Identifier>> {
-    map(identifier, |identifier| {
-        if Pattern::is_literal(&identifier.identifier) {
-            DomainElementPattern::Literal { identifier }
-        } else {
-            DomainElementPattern::Variable { identifier }
-        }
-    })
-    .parse(input)
+    identifier
+        .map(|identifier| {
+            if Pattern::is_literal(&identifier.identifier) {
+                DomainElementPattern::Literal { identifier }
+            } else {
+                DomainElementPattern::Variable { identifier }
+            }
+        })
+        .parse(input)
 }
 
 fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {
     ww(alt((
-        into(pair(
+        into((
             terminated(identifier, ww_tag("in")),
             ww(separated_pair(integer, ww_tag(".."), integer)),
         )),
-        into(pair(
+        into((
             terminated(identifier, ww_tag("in")),
             in_braces(comma_separated0(identifier)),
         )),
@@ -233,100 +219,82 @@ fn domain_value(input: Input) -> Result<DomainValue<Identifier>> {
     .parse(input)
 }
 
-fn expression_binary<'a>(
-    lhs: impl Parser<Input<'a>, Output = Arc<Expression<Identifier>>, Error = Error<Input<'a>>>,
-    operator: impl Parser<Input<'a>, Output = Binop, Error = Error<Input<'a>>>,
-    rhs: impl Parser<Input<'a>, Output = Arc<Expression<Identifier>>, Error = Error<Input<'a>>>,
-) -> impl Parser<Input<'a>, Output = Arc<Expression<Identifier>>, Error = Error<Input<'a>>> {
-    map(
-        pair(lhs, opt(pair(operator, rhs))),
-        |(lhs, rhs)| match rhs {
-            Some((op, rhs)) => Arc::from(Expression::BinExpr { lhs, op, rhs }),
-            None => lhs,
-        },
-    )
-}
-
 fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    alt((
-        into_arc((
-            preceded(ww_tag("if"), expression),
-            preceded(tag("then"), expression),
-            preceded(tag("else"), expression),
-        )),
-        into_arc(in_braces(alt((
-            pair(
-                preceded(char(':'), cut(map(expression, Some))),
+    precedence(
+        fail(),
+        unary_op(
+            0,
+            alt((
+                in_brackets(expression).map(|x| (Some(x), None)),
+                in_parens(comma_separated0(expression)).map(|x| (None, Some(x))),
+            )),
+        ),
+        ww(alt((
+            binary_op(
+                1,
+                Assoc::Left,
                 alt((
-                    preceded(char(';'), separated_list1(char(';'), expression_map_part)),
-                    success(vec![]),
+                    value(Binop::Add, tag("+")),
+                    // Force a comment or some whitespace to prevent consuming the next identifier.
+                    value(Binop::In, terminated(tag("in"), comments_and_whitespaces1)),
+                    value(Binop::Mod, tag("%")),
+                    value(Binop::Sub, tag("-")),
                 )),
             ),
-            pair(
-                success(None),
-                separated_list1(char(';'), expression_map_part),
+            binary_op(
+                2,
+                Assoc::Left,
+                alt((
+                    value(Binop::Eq, tag("==")),
+                    value(Binop::Ne, tag("!=")),
+                    value(Binop::Lte, tag("<=")),
+                    value(Binop::Lt, tag("<")),
+                    value(Binop::Gte, tag(">=")),
+                    value(Binop::Gt, tag(">")),
+                )),
             ),
-        )))),
-        expression_binary(expression2, ww(value(Binop::Or, tag("||"))), expression),
-    ))
-    .parse(input)
-}
-
-fn expression2(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    expression_binary(expression3, ww(value(Binop::And, tag("&&"))), expression2).parse(input)
-}
-
-fn expression3(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    expression_binary(
-        expression4,
-        ww(alt((
-            value(Binop::Eq, tag("==")),
-            value(Binop::Ne, tag("!=")),
-            value(Binop::Lte, tag("<=")),
-            value(Binop::Lt, tag("<")),
-            value(Binop::Gte, tag(">=")),
-            value(Binop::Gt, tag(">")),
+            binary_op(3, Assoc::Right, value(Binop::And, tag("&&"))),
+            binary_op(4, Assoc::Right, value(Binop::Or, tag("||"))),
         ))),
-        expression3,
-    )
-    .parse(input)
-}
-
-fn expression4(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    expression_binary(
-        expression5,
-        ww(alt((
-            value(Binop::Add, tag("+")),
-            // Force a comment or some whitespace to prevent consuming the next identifier.
-            value(Binop::In, terminated(tag("in"), comments_and_whitespaces1)),
-            value(Binop::Mod, tag("%")),
-            value(Binop::Sub, tag("-")),
-        ))),
-        expression4,
-    )
-    .parse(input)
-}
-
-fn expression5(input: Input) -> Result<Arc<Expression<Identifier>>> {
-    let (input, identifier) = opt(identifier).parse(input)?;
-    match identifier {
-        Some(identifier) => {
-            if Pattern::is_literal(&identifier.identifier) {
-                let expression = Arc::new(identifier.into());
-                expression_suffix(input, expression)
-            } else {
-                let (input, args) = opt(in_parens(comma_separated0(expression))).parse(input)?;
-                if let Some(args) = args {
-                    let expr = Arc::new(Expression::Constructor { identifier, args });
-                    Ok((input, expr))
-                } else {
-                    let expression = Arc::new(identifier.into());
-                    expression_suffix(input, expression)
+        alt((
+            into_arc((
+                preceded(ww_tag("if"), expression),
+                preceded(tag("then"), expression),
+                preceded(tag("else"), expression),
+            )),
+            into_arc(in_braces(alt((
+                (
+                    preceded(char(':'), cut(expression.map(Some))),
+                    alt((
+                        preceded(char(';'), separated_list1(char(';'), expression_map_part)),
+                        success(vec![]),
+                    )),
+                ),
+                (
+                    success(None),
+                    separated_list1(char(';'), expression_map_part),
+                ),
+            )))),
+            into_arc(verify(identifier, |x| Pattern::is_literal(&x.identifier))),
+            (
+                verify(identifier, |x| !Pattern::is_literal(&x.identifier)),
+                in_parens(comma_separated0(expression)),
+            )
+                .map(|(identifier, args)| Arc::new(Expression::Constructor { identifier, args })),
+            into_arc(identifier),
+            in_parens(expression),
+        )),
+        |operation: Operation<(), _, _, _>| {
+            Ok::<_, Error<Input<'_>>>(Arc::from(match operation {
+                Operation::Binary(lhs, op, rhs) => Expression::BinExpr { lhs, op, rhs },
+                Operation::Postfix(lhs, (Some(rhs), None)) => Expression::Access { lhs, rhs },
+                Operation::Postfix(expression, (None, Some(args))) => {
+                    Expression::Call { expression, args }
                 }
-            }
-        }
-        None => in_parens(expression).parse(input),
-    }
+                _ => unreachable!(),
+            }))
+        },
+    )(input)
 }
 
 fn expression_map_part(input: Input) -> Result<ExpressionMapPart<Identifier>> {
@@ -338,45 +306,11 @@ fn expression_map_part(input: Input) -> Result<ExpressionMapPart<Identifier>> {
     .parse(input)
 }
 
-fn expression_suffix(
-    input: Input,
-    lhs: Arc<Expression<Identifier>>,
-) -> Result<Arc<Expression<Identifier>>> {
-    let (input, access) = opt(in_brackets(expression)).parse(input)?;
-    let (input, args) = opt(in_parens(comma_separated0(expression))).parse(input)?;
-
-    match access {
-        Some(rhs) => {
-            let lhs = Arc::new(Expression::Access { lhs, rhs });
-            match args {
-                Some(args) => expression_suffix(
-                    input,
-                    Arc::new(Expression::Call {
-                        expression: lhs,
-                        args,
-                    }),
-                ),
-                None => expression_suffix(input, lhs),
-            }
-        }
-        None => match args {
-            Some(args) => expression_suffix(
-                input,
-                Arc::new(Expression::Call {
-                    expression: lhs,
-                    args,
-                }),
-            ),
-            None => Ok((input, lhs)),
-        },
-    }
-}
-
 fn pattern(input: Input) -> Result<Arc<Pattern<Identifier>>> {
     ww(alt((
-        map(char('_'), |_| Arc::new(Pattern::Wildcard)),
-        into_arc(pair(identifier, in_parens(comma_separated0(pattern)))),
-        map(identifier, |identifier| {
+        char('_').map(|_| Arc::new(Pattern::Wildcard)),
+        into_arc((identifier, in_parens(comma_separated0(pattern)))),
+        identifier.map(|identifier| {
             if Pattern::is_literal(&identifier.identifier) {
                 Arc::new(Pattern::Literal { identifier })
             } else {
@@ -416,7 +350,7 @@ fn function_arg(input: Input) -> Result<FunctionArg<Identifier>> {
 }
 
 fn domain_declaration(input: Input) -> Result<DomainDeclaration<Identifier>> {
-    into(pair(
+    into((
         delimited(ww_tag("domain"), identifier, ww_char('=')),
         separated_list0(ww_char('|'), domain_element),
     ))
@@ -425,8 +359,8 @@ fn domain_declaration(input: Input) -> Result<DomainDeclaration<Identifier>> {
 
 fn function_declaration(input: Input) -> Result<FunctionDeclaration<Identifier>> {
     let (input, (id, type_)) = separated_pair(identifier, char(':'), type_).parse(input)?;
-    let (input, cases) = many1(pair(
-        ww(pair(
+    let (input, cases) = many1((
+        ww((
             verify(identifier, |identifier| {
                 identifier.identifier == id.identifier
             }),
@@ -455,11 +389,11 @@ fn game(input: Input) -> Result<Game<Identifier>> {
                 preceded(
                     comments_and_whitespaces0,
                     alt((
-                        map(domain_declaration, |x| (Some(x), None, None, None)),
-                        map(function_declaration, |x| (None, Some(x), None, None)),
-                        map(variable_declaration, |x| (None, None, Some(x), None)),
-                        map(function, |x| (None, None, None, Some(x))),
-                        map(parse_error_line, |()| (None, None, None, None)),
+                        domain_declaration.map(|x| (Some(x), None, None, None)),
+                        function_declaration.map(|x| (None, Some(x), None, None)),
+                        variable_declaration.map(|x| (None, None, Some(x), None)),
+                        function.map(|x| (None, None, None, Some(x))),
+                        parse_error_line.map(|()| (None, None, None, None)),
                     )),
                 ),
                 Game::default,
@@ -530,7 +464,7 @@ mod test {
         );
         check_parse(
             "graph foo() {\n  \
-              if direction(me)(position) == null || not(reachable(move(opponent(me)))) {\n    \
+              if me == first || (direction(me)(position) == null || not(reachable(move(opponent(me))))) {\n    \
                 end()\n  \
               }\n\
             }",
