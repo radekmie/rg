@@ -12,17 +12,18 @@ debug = true
 [workspace]
 resolver = "2"
 members = [
+  "cli",
   "gdl",
   "gdl_to_rg",
   "hrg",
   "hrg_to_rg",
-  "interpreter",
   "lsp",
   "lsp_browser",
   "map_id",
   "map_id_macro",
   "rbg",
   "rg",
+  "rg_interpreter",
   "utils",
 ]
 

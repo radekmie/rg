@@ -32,7 +32,7 @@ Options:
 
 ```sh
 # In interpreter_rust
-wasm-pack build --out-dir ../../interpreter_node/src/wasm/interpreter --out-name index --target web interpreter
+wasm-pack build --out-dir ../../interpreter_node/src/wasm/cli --out-name index --target web cli
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp --out-name index --target web lsp_browser
 
 # In interpreter_node
@@ -82,7 +82,7 @@ cargo clippy
 cargo test
 
 # Build the `interpreter` WASM module.
-wasm-pack build --out-dir ../../interpreter_node/src/wasm/interpreter --out-name index --target web interpreter
+wasm-pack build --out-dir ../../interpreter_node/src/wasm/cli --out-name index --target web cli
 
 # Build the `interpreter` LSP module.
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp --out-name index --target web lsp_browser

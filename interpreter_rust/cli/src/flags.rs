@@ -284,9 +284,9 @@ pub struct Flags {
 }
 
 impl Flags {
-    pub fn all() -> Self {
+    pub fn optimized() -> Self {
         Self {
-            add_explicit_casts: true,
+            add_explicit_casts: false,
             calculate_disjoints: true,
             calculate_iterators: true,
             calculate_repeats_and_uniques: true,
@@ -297,14 +297,14 @@ impl Flags {
             compact_skip_edges: true,
             enable_all_optimizations: true,
             enable_all_pragmas: true,
-            expand_assignment_any: true,
-            expand_tag_variable: true,
+            expand_assignment_any: false,
+            expand_tag_variable: false,
             inline_assignment: true,
             inline_reachability: true,
             join_exclusive_edges: true,
             join_fork_prefixes: true,
             join_fork_suffixes: true,
-            mangle_symbols: true,
+            mangle_symbols: false,
             merge_accesses: true,
             normalize_constants: true,
             normalize_types: true,
@@ -321,9 +321,5 @@ impl Flags {
             skip_self_comparisons: true,
             skip_unused_tags: true,
         }
-    }
-
-    pub fn none() -> Self {
-        Self::default()
     }
 }

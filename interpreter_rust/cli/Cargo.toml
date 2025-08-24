@@ -1,5 +1,5 @@
 [package]
-name = "interpreter"
+name = "cli"
 version = "0.1.0"
 authors = ["Radosław Miernik <radekmie@gmail.com>"]
 edition = "2021"
@@ -19,6 +19,7 @@ rand = { version = "0.8.5", features = ["small_rng"] }
 rbg = { path = "../rbg" }
 rbg_to_rg = { path = "../rbg_to_rg" }
 rg = { path = "../rg" }
+rg_interpreter = { path = "../rg_interpreter" }
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 serde_json = "1.0.91"
 utils = { path = "../utils" }
@@ -31,6 +32,10 @@ criterion = "0.5.1"
 [[bench]]
 harness = false
 name = "runtime"
+
+[[bench]]
+harness = false
+name = "transforms"
 
 [lib]
 bench = false

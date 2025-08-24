@@ -1,4 +1,4 @@
-use super::{EdgeLabel, Expression, Game, RuntimeId, Type, Value, LABEL_END};
+use crate::ist::{EdgeLabel, Expression, Game, RuntimeId, Type, Value, LABEL_END};
 use std::collections::BTreeSet;
 use std::rc::Rc;
 

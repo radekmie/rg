@@ -1,16 +1,17 @@
 [package]
-name = "rg"
+name = "rg_interpreter"
 version = "0.1.0"
 authors = ["Radosław Miernik <radekmie@gmail.com>"]
 edition = "2021"
 
 [dependencies]
+getrandom = { version = "0.2.8", features = ["js"] }
 map_id = { path = "../map_id" }
 map_id_macro = { path = "../map_id_macro" }
-nom = "8.0.0"
-nom_locate = "5.0.0"
-serde = { version = "1.0.152", features = ["derive", "rc"] }
+rand = { version = "0.8.5", features = ["small_rng"] }
+rg = { path = "../rg" }
 utils = { path = "../utils" }
+web-time = "1.1.0"
 
 [lints]
 workspace = true

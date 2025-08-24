@@ -7,7 +7,7 @@ timeout=${1:-10s}
 
 cd ../interpreter_rust
 cargo build --release
-./target/release/interpreter &> /dev/null || true # Preload.
+./target/release/cli &> /dev/null || true # Preload.
 
 function translate {
   local game="$1"
@@ -16,7 +16,7 @@ function translate {
   time=$(date +%s%N)
 
   set +e
-  timeout --foreground $timeout ./target/release/interpreter source "${game}" > "${game}.rg"
+  timeout --foreground $timeout ./target/release/cli source "${game}" > "${game}.rg"
   timeout_code=$?
   set -e
 

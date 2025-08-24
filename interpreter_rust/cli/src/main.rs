@@ -1,7 +1,8 @@
 use clap::{Args, Parser};
-use interpreter::{analyze_inner, Flags, Game};
+use cli::{analyze, Flags};
 use rand::thread_rng;
 use rg::ast::Game as GameAst;
+use rg_interpreter::Game;
 use serde_json::{from_str, json, Value};
 use std::ffi::OsStr;
 use std::fs::read_to_string;
@@ -79,13 +80,12 @@ impl GameWithFlags {
         };
 
         let source = read_to_string(&path).map_err(|error| error.to_string())?;
-        analyze_inner(source, extension, &flags, verbose, callback)
+        analyze(source, extension, &flags, verbose, callback)
     }
 
     fn new(path: PathBuf) -> Self {
-        let flags = Flags::none();
         Self {
-            flags,
+            flags: Flags::default(),
             path,
             verbose: false,
         }

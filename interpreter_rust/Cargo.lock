@@ -226,6 +226,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4b82cf0babdbd58558212896d1a4272303a57bdb245c2bf1147185fb45640e70"
 
 [[package]]
+name = "cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "console_error_panic_hook",
+ "criterion",
+ "gdl",
+ "gdl_to_rg",
+ "getrandom",
+ "hrg",
+ "hrg_to_rg",
+ "js-sys",
+ "map_id",
+ "map_id_macro",
+ "rand",
+ "rbg",
+ "rbg_to_rg",
+ "rg",
+ "rg_interpreter",
+ "serde",
+ "serde_json",
+ "utils",
+ "wasm-bindgen",
+ "web-time",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -524,32 +551,6 @@ checksum = "634d9b1461af396cad843f47fdba5597a4f9e6ddd4bfb6ff5d85028c25cb12f6"
 dependencies = [
  "unicode-bidi",
  "unicode-normalization",
-]
-
-[[package]]
-name = "interpreter"
-version = "0.1.0"
-dependencies = [
- "clap",
- "console_error_panic_hook",
- "criterion",
- "gdl",
- "gdl_to_rg",
- "getrandom",
- "hrg",
- "hrg_to_rg",
- "js-sys",
- "map_id",
- "map_id_macro",
- "rand",
- "rbg",
- "rbg_to_rg",
- "rg",
- "serde",
- "serde_json",
- "utils",
- "wasm-bindgen",
- "web-time",
 ]
 
 [[package]]
@@ -944,13 +945,25 @@ checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
 name = "rg"
 version = "0.1.0"
 dependencies = [
- "criterion",
  "map_id",
  "map_id_macro",
  "nom",
  "nom_locate",
  "serde",
  "utils",
+]
+
+[[package]]
+name = "rg_interpreter"
+version = "0.1.0"
+dependencies = [
+ "getrandom",
+ "map_id",
+ "map_id_macro",
+ "rand",
+ "rg",
+ "utils",
+ "web-time",
 ]
 
 [[package]]

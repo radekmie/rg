@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises';
 
-import init, { analyze, apply, perf, run } from './interpreter';
+import init, { analyze, apply, perf, run } from './cli';
 
 // Node.js requires a crypto polyfill. Importing it directly inlines it in the
 // browser too, but we don't need it there. Yep, this is a nasty `eval` trick.
@@ -8,7 +8,7 @@ if (typeof crypto === 'undefined') {
   eval("globalThis.crypto = require('crypto').webcrypto;");
 }
 
-const url = new URL('./interpreter/index_bg.wasm', import.meta.url);
+const url = new URL('./cli/index_bg.wasm', import.meta.url);
 const response = url.protocol === 'file:' ? readFile(url.pathname) : fetch(url);
 const initPromise = init(response);
 initPromise.catch(console.error);
