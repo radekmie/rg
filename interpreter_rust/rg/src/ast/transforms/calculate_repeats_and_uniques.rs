@@ -177,6 +177,25 @@ mod test {
 
     test_transform!(
         calculate_repeats_and_uniques,
+        hex_simple,
+        "@disjointExhaustive a : b c;
+        type Position = { 0, 1, 2 };
+        const check: Position -> Bool = { :1 };
+        const left: Position -> Position = { :0, 2: 1 };
+        const right: Position -> Position = { :2, 0: 1 };
+        var board: Position -> Bool = { :0 };
+        var position: Position = 0;
+        begin, end: ? a -> b;
+        a, b: board[position] == 1;
+        a, c: board[position] != 1;
+        c, d: position = left[position];
+        c, d: position = right[position];
+        d, a: check[position] == 1;",
+        adds "@repeat d : position; @unique a b begin c end;"
+    );
+
+    test_transform!(
+        calculate_repeats_and_uniques,
         hex_loop,
         "begin, end: ? 24 -> 25;
         24, 27: ;

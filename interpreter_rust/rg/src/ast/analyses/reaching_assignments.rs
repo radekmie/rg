@@ -98,6 +98,7 @@ impl ReachingAssignments {
         // or `@disjointExhaustive` pragma already.
         x.label.is_negated(&y.label)
             || x.lhs == y.lhs
+                && x.rhs != y.rhs
                 && self
                     .disjoints
                     .get(&x.lhs)
@@ -210,4 +211,137 @@ impl From<&Game<Id>> for ReachingAssignments {
             variables,
         }
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{Analysis, ReachingAssignments};
+    use crate::ast::{Game, Node};
+    use std::collections::BTreeMap;
+    use std::sync::Arc;
+
+    fn format_analysis(
+        analysis: BTreeMap<Node<Arc<str>>, <ReachingAssignments as Analysis>::Domain>,
+    ) -> String {
+        let mut result = String::new();
+        result.push('\n');
+        for (node, variables) in analysis {
+            result.push_str(&format!("        {node}:\n"));
+            for (variable, assignment) in variables {
+                // assignment.
+                result.push_str(&format!(
+                    "            {}{}{}:\n                conditions:\n",
+                    variable.unwrap_or_else(|| Arc::from("(none)")),
+                    if assignment.is_conflicting {
+                        " [conflicting]"
+                    } else {
+                        ""
+                    },
+                    if assignment.is_repeated {
+                        " [repeated]"
+                    } else {
+                        ""
+                    }
+                ));
+                for condition in &assignment.conditions {
+                    result.push_str(&format!("                    {condition}\n"));
+                }
+                result.push_str("                sources:\n");
+                for source in &assignment.sources {
+                    result.push_str(&format!("                    {source}\n"));
+                }
+            }
+        }
+        result
+    }
+
+    macro_rules! test {
+        ($name:ident, $source:expr, $expect:expr) => {
+            #[test]
+            fn $name() {
+                Game::test_analysis(
+                    $source,
+                    $expect,
+                    Box::new(|game| ReachingAssignments::from(game)),
+                    Box::new(format_analysis),
+                );
+            }
+        };
+    }
+
+    test!(
+        hex_simple,
+        "@disjointExhaustive a : b c;
+        type Position = { 0, 1, 2 };
+        const check: Position -> Bool = { :1 };
+        const left: Position -> Position = { :0, 2: 1 };
+        const right: Position -> Position = { :2, 0: 1 };
+        var board: Position -> Bool = { :0 };
+        var position: Position = 0;
+        begin, end: ? a -> b;
+        a, b: board[position] == 1;
+        a, c: board[position] != 1;
+        c, d: position = left[position];
+        c, d: position = right[position];
+        d, a: check[position] == 1;",
+        "a:
+            (none):
+                conditions:
+                    a, c: board[position] != 1;
+                    d, a: check[position] == 1;
+                sources:
+                    d
+            position:
+                conditions:
+                    a, c: board[position] != 1;
+                    d, a: check[position] == 1;
+                sources:
+                    c
+        b:
+            (none) [conflicting]:
+                conditions:
+                    a, c: board[position] != 1;
+                    d, a: check[position] == 1;
+                sources:
+                    d
+            position [conflicting]:
+                conditions:
+                    a, c: board[position] != 1;
+                    d, a: check[position] == 1;
+                sources:
+                    c
+        begin:
+        c:
+            (none):
+                conditions:
+                    a, c: board[position] != 1;
+                    d, a: check[position] == 1;
+                sources:
+                    d
+            position:
+                conditions:
+                    a, c: board[position] != 1;
+                    d, a: check[position] == 1;
+                sources:
+                    c
+        d:
+            (none) [repeated]:
+                conditions:
+                    a, c: board[position] != 1;
+                    d, a: check[position] == 1;
+                sources:
+                    d
+            position [repeated]:
+                conditions:
+                    a, c: board[position] != 1;
+                    d, a: check[position] == 1;
+                sources:
+                    c
+        end:
+            (none):
+                conditions:
+                    begin, end: ? a -> b;
+                sources:
+                    begin"
+    );
 }
