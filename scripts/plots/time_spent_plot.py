@@ -39,9 +39,9 @@ def create_plot_big(df):
 
     ax.set_ylabel('% Time Spent')
     ax.set_xlabel('Transform')
-    ax.set_title('Time Spent per Transform (by Language)')
+    # ax.set_title('Time Spent per Transform (by Language)')
     ax.set_xticks(x)
-    ax.set_xticklabels(transforms, rotation=45, ha='right')
+    ax.set_xticklabels(transforms, rotation=45, ha='right', fontsize=12)
     # Custom legend: one for changed, one for unchanged, color per language
     from matplotlib.patches import Patch
     legend_patches = []
@@ -56,8 +56,9 @@ def create_plot_big(df):
 
 def main():
     df = load_data()
+    df['transform'] = df['transform'].str.replace('_', ' ')
     ax = create_plot_big(df)
-    ax.figure.savefig(f"results/tws_plot_big.png")
+    ax.figure.savefig(f"results/tws_plot_big.png", bbox_inches="tight")
 
 if __name__ == "__main__":
     main()

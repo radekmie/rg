@@ -21,6 +21,7 @@ def create_plot(df, language=None):
         df = df.groupby(['flags']).mean().reset_index()
 
     df['flags'] = df['flags'].str.replace(r'--', '', regex=True)
+    df['flags'] = df['flags'].str.replace(r'-', ' ', regex=True)
 
     # for col in df.columns:
     #     if col != 'flags' and col != 'language':
@@ -31,8 +32,8 @@ def create_plot(df, language=None):
     sns.set_theme(style="whitegrid")
     
     plt.figure(figsize=(12, 8))
-    ax = sns.heatmap(df,robust=True, annot=False, fmt=".2f", cmap="seismic", cbar_kws={'label': 'Average Change (%)'}, center=0)
-    ax.set_title(f"Optimization Influence on Metrics")
+    ax = sns.heatmap(df,robust=True, annot=False, fmt=".2f", cmap="seismic", center=0, square=True)
+    ax.set_title(f"Average Change (%)")
     # ax.set_xlabel("Optimization")
     # ax.set_ylabel("Metric") 
     ax.set_xlabel("")
@@ -48,7 +49,7 @@ def main():
     df = load_data()
     for language in [None]:
         ax = create_plot(df, language)
-        ax.figure.savefig(f"results/flags_metrics_influence_plot_{language}.png")
+        ax.figure.savefig(f"results/flags_metrics_influence_plot_{language}.png", bbox_inches="tight")
 
 if __name__ == "__main__":
     main()

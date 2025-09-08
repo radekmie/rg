@@ -23,7 +23,8 @@ def create_plot(df, language=None):
     
 
     df['flags'] = df['flags'].str.replace(r'--', '', regex=True)
-    df['flags'] = df['flags'].str.replace(r'-', '_', regex=True)
+    df['flags'] = df['flags'].str.replace(r'-', ' ', regex=True)
+    df['transform'] = df['transform'].str.replace(r'_', ' ', regex=True)
 
     # df['changed_diff'] = signed_log(df['changed_diff'])
 
@@ -37,8 +38,8 @@ def create_plot(df, language=None):
         fill_value=None
     )
     plt.figure(figsize=(12, 8))
-    ax = sns.heatmap(pivot_table, robust=True, annot=False, cmap="seismic", cbar_kws={'label': 'Average runs difference (%)'}, center=0)
-    ax.set_title(f"Enabled Optimization Influence on Other Transformations")
+    ax = sns.heatmap(pivot_table, robust=True, annot=False, fmt=".2f", cmap="seismic", center=0, square=True)
+    ax.set_title(f"Average runs difference (%)")
     # ax.set_xlabel("Enabled Optimization")
     # ax.set_ylabel("Transformation")
     ax.set_xlabel("")
@@ -54,7 +55,7 @@ def main():
     df = load_data()
     for language in [None]:
         ax = create_plot(df, language)
-        ax.figure.savefig(f"results/flags_influence_plot_{language}.png")
+        ax.figure.savefig(f"results/flags_influence_plot_{language}.png", bbox_inches="tight")
 
 if __name__ == "__main__":
     main()

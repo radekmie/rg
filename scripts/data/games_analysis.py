@@ -4,7 +4,6 @@ import pandas as pd
 def with_stats():
     df = pd.read_csv("../collect/results/stats.csv")
     df = df[df['flags'] == 'none']
-    df = df[df['language'] != 'rg']
     df = df[['game', 'language', 'edges']]
     # Categorize edge: <50, <50, <100, <500, <1000, <2000
     df['edge_category'] = pd.cut(df['edges'], bins=[-1, 50, 100, 500, 1000, 2000, 4000, float('inf')], labels=['<50', '<100', '<500', '<1000', '<2000', '<4000', '>4000'])
@@ -31,8 +30,16 @@ def with_stats():
     print(df)
     return df
 
+def print_stats():
+    df = pd.read_csv("../collect/results/stats.csv")
+    df = df[df['flags'] == 'none']
+    df = df[['game', 'language', 'edges']]
+    df = df.sort_values(by=['edges'])
+    df.to_csv("results/sorted.csv", index=False)
+
 def main():
     with_stats().to_csv("results/stats_grouped.csv")
+    print_stats()
 
 if __name__ == "__main__":
     main()

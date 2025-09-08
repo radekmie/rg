@@ -20,18 +20,19 @@ def create_plot_big(df):
     palette = {'HRG': 'cornflowerblue', 'RBG': 'orange', 'GDL': 'green'}
     df_melted['language'] = df_melted['language'].map(lang_map)
     sns.barplot(data=df_melted, x='transform', y='changed_time_perc', hue='language', palette=palette, errorbar=None)
-    plt.title('Time Well Spent on Each Transformation')
+    # plt.title('Time Well Spent on Each Transformation')
     plt.ylabel('% Time Spent on Changing Passes')
     plt.xlabel('Transformation')
-    plt.xticks(rotation=90)
+    plt.xticks(rotation=90, fontsize=12)
     plt.legend(title='Language')
     plt.tight_layout()
     return plt.gca()
 
 def main():
     df = load_data()
+    df['transform'] = df['transform'].str.replace('_', ' ')
     ax = create_plot_big(df)
-    ax.figure.savefig(f"results/tws_plot.png")
+    ax.figure.savefig(f"results/tws_plot.png", bbox_inches="tight")
 
 if __name__ == "__main__":
     main()
