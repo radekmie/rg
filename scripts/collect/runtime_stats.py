@@ -83,9 +83,6 @@ def main():
         [[], "none"]
     ]
 
-    # All flags but one combinations
-    # flag_sets.extend(make_flags_combinations(flags)) <---------- Tu uncomment
-
 
     # Collect stats and save to a DataFrame
     stats_data = collect_stats(base_directory, flag_sets)
