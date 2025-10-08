@@ -1,0 +1,119 @@
+// Fox and hounds
+// Fox begins the game by placing the fox on the top line, then fox and hounds move alternatingly.
+// The play ends when fox reaches the bottom line (fox wins), fox has no move (hounds win), hounds have no move (fox wins).
+// Fox initial move: pos; fox move: pos; hounds move: pos pos.
+
+domain Piece = empty | fox | hound | border
+domain Player = foxPlayer | houndPlayer
+domain Score = 0 | 100
+domain Bool = 0 | 1
+
+domain Position =
+  V(X,Y) where X in {0,2,4,6}, Y in {0,2,4,6} |
+  V(X,Y) where X in {1,3,5,7}, Y in {1,3,5,7}
+domain PositionOrNull = null | Position
+
+upLeft : PositionOrNull -> PositionOrNull
+upLeft(null) = null
+upLeft(V(X, Y)) = if X == 0 || Y == 0 then null else V(X - 1, Y - 1)
+upRight : PositionOrNull -> PositionOrNull
+upRight(null) = null
+upRight(V(X, Y)) = if X == 7 || Y == 0 then null else V(X + 1, Y - 1)
+downLeft : PositionOrNull -> PositionOrNull
+downLeft(null) = null
+downLeft(V(X, Y)) = if X == 0 || Y == 7 then null else V(X - 1, Y + 1)
+downRight : PositionOrNull -> PositionOrNull
+downRight(null) = null
+downRight(V(X, Y)) = if X == 7 || Y == 7 then null else V(X + 1, Y + 1)
+
+topLine : PositionOrNull -> Bool
+topLine(V(X,Y)) = if Y == 0 then 1 else 0
+topLine(null) = 0
+bottomLine : PositionOrNull -> Bool
+bottomLine(V(X,Y)) = if Y == 7 then 1 else 0
+bottomLine(null) = 0
+
+
+board : PositionOrNull -> Piece = {
+  :empty;
+  V(X,7) = hound where X in {1,3,5,7};
+  null = border
+}
+pos : PositionOrNull
+foxPos : Position
+
+graph foxHasMove() {
+  pos = Position(*)
+  check(board[pos] == fox)
+  branch dir in {upLeft, upRight, downLeft, downRight} {
+    pos = dir[pos]
+  }
+  check(board[pos] == empty)
+}
+
+graph foxTurn() {
+  if not(reachable(foxHasMove())) {
+    goals[houndPlayer] = 100
+    end()
+  }
+  pos = foxPos
+  board[pos] = empty
+  player = foxPlayer
+  branch dir in {upLeft, upRight, downLeft, downRight} {
+    $_dir
+    pos = dir[pos]
+  }
+  check(board[pos] == empty)
+  $$ pos
+  player = keeper
+  if bottomLine[pos] == 1 {
+    goals[foxPlayer] = 100
+    end()
+  }
+  foxPos = pos
+  board[pos] = fox
+}
+
+graph houndsHaveMove() {
+  pos = Position(*)
+  check(board[pos] == hound)
+  branch dir in {upLeft, upRight} {
+    pos = dir[pos]
+  }
+  check(board[pos] == empty)
+}
+
+graph houndTurn() {
+  if not(reachable(houndsHaveMove())) {
+    goals[foxPlayer] = 100
+    end()
+  }
+  player = houndPlayer
+  pos = Position(*)
+  check(board[pos] == hound)
+  $$ pos
+  board[pos] = empty
+  branch dir in {upLeft, upRight} {
+    $_dir
+    pos = dir[pos]
+  }
+  check(board[pos] == empty)
+  $$ pos
+  player = keeper
+  board[pos] = hound
+}
+
+graph rules() {
+  player = foxPlayer
+  pos = Position(*)
+  check(topLine[pos] == 1)
+  $$ pos
+  player = keeper
+  foxPos = pos
+  board[pos] = fox
+  
+  loop {
+    foxTurn()
+    houndTurn()
+  }
+}
