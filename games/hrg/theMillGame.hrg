@@ -1,0 +1,238 @@
+// Breakthrough 8x8
+// Moves form: pos pos
+
+domain Piece = black | empty | white | border
+domain Player = black | white
+domain Score = 50 | 0 | 100
+domain Position = a1 | a4 | a7 | b2 | b4 | b6 | c3 | c4 | c5 | d1 | d2 | d3 | d5 | d6 | d7 | e3 | e4 | e5 | f2 | f4 | f6 | g1 | g4 | g7
+domain PositionOrNull = null | Position
+domain Count = I(X) where X in 0..20
+domain CountOrNan = Count | nan
+domain Bool = 0 | 1
+
+left : PositionOrNull -> PositionOrNull
+left(b4) = a4
+left(c4) = b4
+left(d1) = a1
+left(d2) = b2
+left(d3) = c3
+left(d5) = c5
+left(d6) = b6
+left(d7) = a7
+left(e3) = d3
+left(e5) = d5
+left(f2) = d2
+left(f4) = e4
+left(f6) = d6
+left(g1) = d1
+left(g4) = f4
+left(g7) = d7
+left(_) = null
+right : PositionOrNull -> PositionOrNull
+right(null) = null
+right(a4) = b4
+right(b4) = c4
+right(a1) = d1
+right(b2) = d2
+right(c3) = d3
+right(c5) = d5
+right(b6) = d6
+right(a7) = d7
+right(d3) = e3
+right(d5) = e5
+right(d2) = f2
+right(e4) = f4
+right(d6) = f6
+right(d1) = g1
+right(f4) = g4
+right(d7) = g7
+right(_) = null
+up : PositionOrNull -> PositionOrNull
+up(null) = null
+up(a1) = a4
+up(a4) = a7
+up(b2) = b4
+up(b4) = b6
+up(c3) = c4
+up(c4) = c5
+up(d1) = d2
+up(d2) = d3
+up(d5) = d6
+up(d6) = d7
+up(e3) = e4
+up(e4) = e5
+up(f2) = f4
+up(f4) = f6
+up(g1) = g4
+up(g4) = g7
+up(_) = null
+down : PositionOrNull -> PositionOrNull
+down(null) = null
+down(a4) = a1
+down(a7) = a4
+down(b4) = b2
+down(b6) = b4
+down(c4) = c3
+down(c5) = c4
+down(d2) = d1
+down(d3) = d2
+down(d6) = d5
+down(d7) = d6
+down(e4) = e3
+down(e5) = e4
+down(f4) = f2
+down(f6) = f4
+down(g4) = g1
+down(g7) = g4
+down(_) = null
+
+piece : Player -> Piece
+piece(white) = white
+piece(_) = black
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(_) = white
+
+dec : Count -> CountOrNan
+dec(I(X)) = if I(X-1) in Count then I(X-1) else nan
+inc : Count -> CountOrNan
+inc(I(X)) = if I(X+1) in Count then I(X+1) else nan
+less : Count -> Count -> Bool
+less(I(X),I(Y)) = if X < Y then 1 else 0
+
+
+board : PositionOrNull -> Piece = {
+  :empty;
+  null = border
+}
+
+pos : PositionOrNull
+pawnCount : Player -> Count
+stagnation : Count
+
+
+graph isInMillInDir(me:Player,dir1:PositionOrNull->PositionOrNull,dir2:PositionOrNull->PositionOrNull) {
+  branch {
+    check(board[dir1[pos]] == me)
+    check(board[dir1[dir1[pos]]] == me)
+  } or {
+    check(board[dir1[pos]] == me)
+    check(board[dir2[pos]] == me)
+  } or {
+    check(board[dir2[pos]] == me)
+    check(board[dir2[dir2[pos]]] == me)
+  }
+}
+graph isInMill(me:Player) {
+  branch {
+    isInMillInDir(me,left,right)
+  } or {
+    isInMillInDir(me,up,down)
+  }
+}
+graph hasPawnOutsideMill(me:Player) {
+  pos = Position(*)
+  check(not(reachable(isInMill(me))))
+}
+graph hasMoveablePawn(me:Player) {
+  pos = Position(*)
+  check(board[pos] == me)
+  branch dir in {left,up,right,down} {
+    pos = dir[pos]
+  }
+  check(board[pos] == empty)
+}
+
+graph capture(me:Player) {
+  if reachable(hasPawnOutsideMill(opponent[me])) {
+    pos = Position(*)
+    check(board[pos] == opponent[me])
+    check(not(reachable(isInMill(opponent[me]))))
+    $$ pos
+  } else {
+    pos = Position(*)
+    check(board[pos] == opponent[me])
+    $$ pos
+  }
+  player = keeper
+  board[pos] = empty
+  pawnCount[opponent[me]] = dec[pawnCount[opponent[me]]]
+}
+
+reusable graph firstPhaseTurn(me:Player) {
+  player = me
+  pos = Position(*)
+  check(board[pos] == empty)
+  $$ pos
+  board[pos] = me
+  if reachable(isInMill(me)) {
+    capture(me)
+  } else {
+    player = keeper
+  }
+  pawnCount[me] = inc[pawnCount[me]]
+}
+
+graph loss(me:Player) {
+  goals[me] = 0
+  goals[opponent[me]] = 100
+  end()
+}
+
+graph secondPhaseTurn(me:Player) {
+  if less[pawnCount[me]][I(3)] == 1 {
+    loss(me)
+  }
+  if less[pawnCount[me]][I(4)] == 1 {// Flying
+    
+    if stagnation == I(20) {
+      end()
+    }
+    player = me
+    pos = Position(*)
+    check(board[pos] == me)
+    board[pos] = empty
+    $$ pos
+    pos = Position(*)
+    
+  } else {// Not flying
+    
+    if not(reachable(hasMoveablePawn(me))) {
+      loss(me)
+    }
+    if stagnation == I(20) {
+      end()
+    }
+    player = me
+    pos = Position(*)
+    check(board[pos] == me)
+    board[pos] = empty
+    $$ pos
+    branch dir in {left,up,right,down} {
+      pos = dir[pos]
+    }
+    
+  }
+  check(board[pos] == empty)
+  $$ pos
+  board[pos] = me
+  if reachable(isInMill(me)) {
+    capture(me)
+    stagnation = I(0)
+  } else {
+    player = keeper
+    stagnation = inc[stagnation]
+  }
+}
+
+graph rules() {
+  repeat 9 {
+    firstPhaseTurn(white)
+    firstPhaseTurn(black)
+  }
+  loop {
+    secondPhaseTurn(white)
+    secondPhaseTurn(black)
+  }
+}
