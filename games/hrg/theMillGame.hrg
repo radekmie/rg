@@ -211,6 +211,7 @@ graph secondPhaseTurn(me:Player) {
     board[pos] = empty
     $$ pos
     branch dir in {left,up,right,down} {
+      $_dir
       pos = dir[pos]
     }
     
