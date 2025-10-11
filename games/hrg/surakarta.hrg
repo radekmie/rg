@@ -1,0 +1,333 @@
+// Surakarta
+// The play ends when there is no move (loss) or after 100 turns without a capture (draw).
+// Moves form: pos pos
+
+domain Piece = empty | black | white | border
+domain Player = black | white
+domain Score = 50 | 0 | 100
+domain Bool = 0 | 1
+domain Position = V(X,Y) where X in 0..5, Y in 0..5
+domain PositionOrNull = null | Position
+domain Stagnation = S(X) where X in 0..100
+domain StagnationOrNan = Stagnation | nan
+domain Count = I(X) where X in 0..12
+domain CountOrNan = Count | nan
+
+domain SlidePos =   RH(X,Y) where X in 0..5, Y in {2,3} | RV(X,Y) where X in {2,3}, Y in 0..5
+                  | GH(X,Y) where X in 0..5, Y in {1,4} | GV(X,Y) where X in {1,4}, Y in 0..5
+domain SlidePosOrNull = null | SlidePos
+
+cw : SlidePos -> SlidePosOrNull
+cw(RV(2,0)) = RV(2,1)
+cw(RV(2,1)) = RV(2,2)
+cw(RV(2,2)) = RV(2,3)
+cw(RV(2,3)) = RV(2,4)
+cw(RV(2,4)) = RV(2,5)
+cw(RV(2,5)) = RH(0,3)
+cw(RH(0,3)) = RH(1,3)
+cw(RH(1,3)) = RH(2,3)
+cw(RH(2,3)) = RH(3,3)
+cw(RH(3,3)) = RH(4,3)
+cw(RH(4,3)) = RH(5,3)
+cw(RH(5,3)) = RV(3,5)
+cw(RV(3,5)) = RV(3,4)
+cw(RV(3,4)) = RV(3,3)
+cw(RV(3,3)) = RV(3,2)
+cw(RV(3,2)) = RV(3,1)
+cw(RV(3,1)) = RV(3,0)
+cw(RV(3,0)) = RH(5,2)
+cw(RH(5,2)) = RH(4,2)
+cw(RH(4,2)) = RH(3,2)
+cw(RH(3,2)) = RH(2,2)
+cw(RH(2,2)) = RH(1,2)
+cw(RH(1,2)) = RH(0,2)
+cw(RH(0,2)) = RV(2,0)
+cw(GV(1,0)) = GV(1,1)
+cw(GV(1,1)) = GV(1,2)
+cw(GV(1,2)) = GV(1,3)
+cw(GV(1,3)) = GV(1,4)
+cw(GV(1,4)) = GV(1,5)
+cw(GV(1,5)) = GH(0,4)
+cw(GH(0,4)) = GH(1,4)
+cw(GH(1,4)) = GH(2,4)
+cw(GH(2,4)) = GH(3,4)
+cw(GH(3,4)) = GH(4,4)
+cw(GH(4,4)) = GH(5,4)
+cw(GH(5,4)) = GV(4,5)
+cw(GV(4,5)) = GV(4,4)
+cw(GV(4,4)) = GV(4,3)
+cw(GV(4,3)) = GV(4,2)
+cw(GV(4,2)) = GV(4,1)
+cw(GV(4,1)) = GV(4,0)
+cw(GV(4,0)) = GH(5,1)
+cw(GH(5,1)) = GH(4,1)
+cw(GH(4,1)) = GH(3,1)
+cw(GH(3,1)) = GH(2,1)
+cw(GH(2,1)) = GH(1,1)
+cw(GH(1,1)) = GH(0,1)
+cw(GH(0,1)) = GV(1,0)
+
+slidecw : SlidePos -> Bool
+slidecw(RV(2,5)) = 1
+slidecw(RH(5,3)) = 1
+slidecw(RV(3,0)) = 1
+slidecw(RH(0,2)) = 1
+slidecw(GV(1,5)) = 1
+slidecw(GH(5,4)) = 1
+slidecw(GV(4,0)) = 1
+slidecw(GH(0,1)) = 1
+slidecw(_) = 0
+
+ccw : SlidePos -> SlidePos
+ccw(RV(2,1)) = RV(2,0)
+ccw(RV(2,2)) = RV(2,1)
+ccw(RV(2,3)) = RV(2,2)
+ccw(RV(2,4)) = RV(2,3)
+ccw(RV(2,5)) = RV(2,4)
+ccw(RH(0,3)) = RV(2,5)
+ccw(RH(1,3)) = RH(0,3)
+ccw(RH(2,3)) = RH(1,3)
+ccw(RH(3,3)) = RH(2,3)
+ccw(RH(4,3)) = RH(3,3)
+ccw(RH(5,3)) = RH(4,3)
+ccw(RV(3,5)) = RH(5,3)
+ccw(RV(3,4)) = RV(3,5)
+ccw(RV(3,3)) = RV(3,4)
+ccw(RV(3,2)) = RV(3,3)
+ccw(RV(3,1)) = RV(3,2)
+ccw(RV(3,0)) = RV(3,1)
+ccw(RH(5,2)) = RV(3,0)
+ccw(RH(4,2)) = RH(5,2)
+ccw(RH(3,2)) = RH(4,2)
+ccw(RH(2,2)) = RH(3,2)
+ccw(RH(1,2)) = RH(2,2)
+ccw(RH(0,2)) = RH(1,2)
+ccw(RV(2,0)) = RH(0,2)
+ccw(GV(1,1)) = GV(1,0)
+ccw(GV(1,2)) = GV(1,1)
+ccw(GV(1,3)) = GV(1,2)
+ccw(GV(1,4)) = GV(1,3)
+ccw(GV(1,5)) = GV(1,4)
+ccw(GH(0,4)) = GV(1,5)
+ccw(GH(1,4)) = GH(0,4)
+ccw(GH(2,4)) = GH(1,4)
+ccw(GH(3,4)) = GH(2,4)
+ccw(GH(4,4)) = GH(3,4)
+ccw(GH(5,4)) = GH(4,4)
+ccw(GV(4,5)) = GH(5,4)
+ccw(GV(4,4)) = GV(4,5)
+ccw(GV(4,3)) = GV(4,4)
+ccw(GV(4,2)) = GV(4,3)
+ccw(GV(4,1)) = GV(4,2)
+ccw(GV(4,0)) = GV(4,1)
+ccw(GH(5,1)) = GV(4,0)
+ccw(GH(4,1)) = GH(5,1)
+ccw(GH(3,1)) = GH(4,1)
+ccw(GH(2,1)) = GH(3,1)
+ccw(GH(1,1)) = GH(2,1)
+ccw(GH(0,1)) = GH(1,1)
+ccw(GV(1,0)) = GH(0,1)
+
+slideccw : SlidePos -> Bool
+slideccw(RH(0,3)) = 1
+slideccw(RV(3,5)) = 1
+slideccw(RH(5,2)) = 1
+slideccw(RV(2,0)) = 1
+slideccw(GH(0,4)) = 1
+slideccw(GV(4,5)) = 1
+slideccw(GH(5,1)) = 1
+slideccw(GV(1,0)) = 1
+slideccw(_) = 0
+
+slideToPos : SlidePos -> Position
+slideToPos(RV(X,Y)) = V(X,Y)
+slideToPos(RH(X,Y)) = V(X,Y)
+slideToPos(GV(X,Y)) = V(X,Y)
+slideToPos(GH(X,Y)) = V(X,Y)
+
+posToSlideH : Position -> SlidePosOrNull
+posToSlideH(V(X,Y)) =
+    if RH(X,Y) in SlidePos then RH(X,Y) else
+    if GH(X,Y) in SlidePos then GH(X,Y) else null
+posToSlideV : Position -> SlidePosOrNull
+posToSlideV(V(X,Y)) =
+    if RV(X,Y) in SlidePos then RV(X,Y) else
+    if GV(X,Y) in SlidePos then GV(X,Y) else null
+
+left : PositionOrNull -> PositionOrNull
+left(null) = null
+left(V(X, Y)) = if V(X-1,Y) in Position then V(X-1,Y) else null
+right : PositionOrNull -> PositionOrNull
+right(null) = null
+right(V(X,Y)) = if V(X+1,Y) in Position then V(X+1,Y) else null
+up : PositionOrNull -> PositionOrNull
+up(null) = null
+up(V(X,Y)) = if V(X,Y-1) in Position then V(X,Y-1) else null
+down : PositionOrNull -> PositionOrNull
+down(null) = null
+down(V(X,Y)) = if V(X,Y+1) in Position then V(X,Y+1) else null
+upLeft : PositionOrNull -> PositionOrNull
+upLeft(null) = null
+upLeft(V(X,Y)) = up(left(V(X,Y)))
+upRight : PositionOrNull -> PositionOrNull
+upRight(null) = null
+upRight(V(X,Y)) = up(right(V(X,Y)))
+downLeft : PositionOrNull -> PositionOrNull
+downLeft(null) = null
+downLeft(V(X,Y)) = down(left(V(X,Y)))
+downRight : PositionOrNull -> PositionOrNull
+downRight(null) = null
+downRight(V(X,Y)) = down(right(V(X,Y)))
+
+nextPos : PositionOrNull -> PositionOrNull
+nextPos(V(X,Y)) = if V(X+1,Y) in Position then V(X+1,Y) else
+                  if Y(0,Y+1) in Position then V(0,Y+1) else null
+nextPos(null) = null
+
+opponent : Player -> Player
+opponent(white) = black
+opponent(_) = white
+
+inc : Stagnation -> StagnationOrNan
+inc(S(X)) = if S(X+1) in Stagnation then S(X+1) else nan
+
+incCount : Count -> CountOrNan
+incCount(I(X)) = if I(X+1) in Stagnation then I(X+1) else nan
+
+less : Count -> Count -> Bool
+less(I(X),I(Y)) = if X < Y then 1 else 0
+
+board : PositionOrNull -> Piece = {
+  V(X, Y) =
+      if Y <= 1 then black else
+      if Y >= 4 then white else empty
+    where X in 0..5, Y in 0..5;
+  null = border
+}
+
+pos : PositionOrNull
+slidePos : SlidePos
+stagnation : Stagnation
+pawnCount: Player -> Count = {:I(0)}
+
+
+
+graph normalMove(me:Player) {
+  branch dir in {up,right,down,left,upRight,upLeft,downRight,downLeft} {
+    pos = dir[pos]
+    $_dir
+  }
+  check(board[pos] == empty)
+}
+
+graph slideMove(me:Player) {
+  branch toSlide in {posToSlideH,posToSlideV} {
+    check(toSlide[pos] != null)
+    $_toSlide
+    slidePos = toSlide[pos]
+  }
+  branch {
+    $_CW
+    loop {
+      branch {
+        check(slidecw[slidePos] == 0)
+        $_CW
+        slidePos = cw[slidePos]
+        check(board[slideToPos[slidePos]] == empty)
+      } or {
+        check(slidecw[slidePos] == 1)
+        break()
+      }
+    }
+    loop {
+      slidePos = cw[slidePos]
+      branch {
+        check(board[slideToPos[slidePos]] == empty)
+      } or {
+        check(board[slideToPos[slidePos]] == opponent[me])
+        break()
+      }
+    }
+  } or {
+    $_CCW
+    loop {
+      branch {
+        check(slideccw[slidePos] == 0)
+        $_CCW
+        slidePos = ccw[slidePos]
+        check(board[slideToPos[slidePos]] == empty)
+      } or {
+        check(slideccw[slidePos] == 1)
+        break()
+      }
+    }
+    loop {
+      slidePos = ccw[slidePos]
+      branch {
+        check(board[slideToPos[slidePos]] == empty)
+      } or {
+        check(board[slideToPos[slidePos]] == opponent[me])
+        break()
+      }
+    }
+  }
+  pos = slideToPos[slidePos]
+}
+
+graph existsMove(me:Player) {
+  pos = Position(*)
+  check(board[pos] == me)
+  check(reachable(normalMove(me)) || reachable(slideMove(me)))
+}
+
+graph turn(me:Player) {
+  if not(reachable(existsMove(me))) {
+     goals[me] = 0
+     goals[opponent[me]] = 100
+     end()
+  }
+  if stagnation == S(100) {
+    pos = V(0,0)
+    loop {
+      if pos == null {break()}
+      if board[pos] == white {
+        pawnCount[white] = incCount[pawnCount[white]]
+      } else {
+        if board[pos] == black {
+          pawnCount[black] = incCount[pawnCount[black]]
+        }
+      }
+      pos = nextPos[pos]
+      $_NEXT
+    }
+    
+    if less(pawnCount[black], pawnCount[white]) == 1 {goals[white] = 100 goals[black] = 0} else {
+      if less(pawnCount[white], pawnCount[black]) == 1 {goals[white] = 0 goals[black] = 100}
+    }
+    end()
+  }
+  player = me
+  pos = Position(*)
+  check(board[pos] == me)
+  $$ pos
+  board[pos] = empty
+  branch {
+    normalMove(me)
+    $$ pos
+    player = keeper
+    stagnation = inc[stagnation]
+  } or {
+    slideMove(me)
+    $$ pos
+    player = keeper
+    stagnation = S(0)
+  }
+  board[pos] = me
+}
+
+graph rules() {
+  loop {
+    turn(white)
+    turn(black)
+  }
+}
