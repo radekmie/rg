@@ -133,6 +133,7 @@ graph isInMill(me:Player) {
 }
 graph hasPawnOutsideMill(me:Player) {
   pos = Position(*)
+  check(board[pos] == me)
   check(not(reachable(isInMill(me))))
 }
 graph hasMoveablePawn(me:Player) {
