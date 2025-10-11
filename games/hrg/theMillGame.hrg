@@ -1,5 +1,5 @@
-// Breakthrough 8x8
-// Moves form: pos pos
+// The Mill Game (Nine Man's Morris)
+// Moves form: pos (initial noncapturing), pos pos (initial capturing), pos pos (noncapturing), pos pos pos (capturing)
 
 domain Piece = black | empty | white | border
 domain Player = black | white
