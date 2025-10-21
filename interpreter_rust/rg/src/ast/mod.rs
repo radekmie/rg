@@ -364,6 +364,10 @@ impl Label<Arc<str>> {
     pub fn is_player_assignment_to_keeper(&self) -> bool {
         matches!(self, Self::Assignment { lhs, rhs } if lhs.uncast().is_player_reference() && rhs.uncast().is_keeper_reference())
     }
+
+    pub fn is_visible_assignment(&self) -> bool {
+        matches!(self, Self::Assignment { lhs, .. } if lhs.access_identifier().as_ref() == "visible")
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]

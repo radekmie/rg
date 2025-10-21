@@ -51,6 +51,7 @@ impl Game<Id> {
             // Don't inline AssignmentAny
             if let Some((identifier, rhs)) = edge.label.as_assignment() {
                 if edge.label.is_player_assignment()
+                    || edge.label.is_visible_assignment()
                     || modified_edges.contains(edge)
                     || (edge.label.is_goals_assignment()
                         && check_reachability(&edge.rhs, &Node::new(Id::from("end")))
@@ -371,6 +372,13 @@ mod test {
         dont_inline_map_assignment,
         "begin, t1: x[y] = z;
         t1, end: x[z] == 2;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        dont_inline_visible_assignment,
+        "begin, t1: visible = 1;
+        t1, end: visible == 1;"
     );
 
     test_transform!(
