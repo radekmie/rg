@@ -14,7 +14,7 @@ export type State = {
   view: number;
 };
 
-const initialPreset = presets.find(x => x.name.startsWith('Breakthrough'))!;
+const initialPreset = presets.find(x => x.name === 'Breakthrough.hrg')!;
 const initialState: State = {
   preset: initialPreset.name,
   settings: {
