@@ -4,7 +4,6 @@ import { Language } from '../../types';
 const games = [
   ['Ahtarah Guti (lud) #LG', require('bundle-text:../../../../games/py/hrg/ahtarahGuti_lud.hrg'), Language.hrg],
   ['Aiyawatstani (lud) #LG', require('bundle-text:../../../../games/py/hrg/aiyawatstani_lud.hrg'), Language.hrg],
-  ['Alquerque', require('bundle-text:../../../../games/hrg/alquerque.hrg'), Language.hrg],
   ['Alquerque', require('bundle-text:../../../../games/rbg/alquerque.rbg'), Language.rbg],
   ['Alquerque #LG', require('bundle-text:../../../../games/py/hrg/alquerque.hrg'), Language.hrg],
   ['Alquerque (lud)', require('bundle-text:../../../../games/rbg/alquerque_lud.rbg'), Language.rbg],
