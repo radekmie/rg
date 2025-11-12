@@ -97,8 +97,8 @@ impl ReachingAssignments {
         // Either their labels are negated or they are marked with a `@disjoint`
         // or `@disjointExhaustive` pragma already.
         x.label.is_negated(&y.label)
-            || x.lhs == y.lhs
-                && x.rhs != y.rhs
+            || x != y
+                && x.lhs == y.lhs
                 && self
                     .disjoints
                     .get(&x.lhs)

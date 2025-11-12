@@ -382,4 +382,59 @@ mod test {
         include_str!("../../../../../games/rg/breakthrough.rg"),
         adds "@unique begin checkOwn continue done end findPawn findPawnPos forwardDirCheck forwardDirSet forwardDirSetP forwardMove leftDirCheck leftDirSet leftDirSetP leftMove lose move moved pawnExists rightDirCheck rightDirSet rightDirSetP rightMove score selectDir selectPos setPos turn win wincheck;"
     );
+
+    test_transform!(
+        calculate_repeats_and_uniques,
+        breakthrough_hrg_half,
+        "
+            @artificialTag F L R;
+            @disjoint turn_10 : turn_6 turn_6;
+            @disjointExhaustive turn_18 : turn_19 turn_21;
+            @disjointExhaustive turn_21 : turn_19 turn_begin;
+            type Piece = { blackPawn, empty, whitePawn, border };
+            type Player = { black, white };
+            type Score = { 0, 100 };
+            type Position = { V__0_0, V__0_1, V__0_2, V__0_3, V__0_4, V__0_5, V__0_6, V__0_7, V__1_0, V__1_1, V__1_2, V__1_3, V__1_4, V__1_5, V__1_6, V__1_7, V__2_0, V__2_1, V__2_2, V__2_3, V__2_4, V__2_5, V__2_6, V__2_7, V__3_0, V__3_1, V__3_2, V__3_3, V__3_4, V__3_5, V__3_6, V__3_7, V__4_0, V__4_1, V__4_2, V__4_3, V__4_4, V__4_5, V__4_6, V__4_7, V__5_0, V__5_1, V__5_2, V__5_3, V__5_4, V__5_5, V__5_6, V__5_7, V__6_0, V__6_1, V__6_2, V__6_3, V__6_4, V__6_5, V__6_6, V__6_7, V__7_0, V__7_1, V__7_2, V__7_3, V__7_4, V__7_5, V__7_6, V__7_7 };
+            type PositionOrNull = { null, V__0_0, V__0_1, V__0_2, V__0_3, V__0_4, V__0_5, V__0_6, V__0_7, V__1_0, V__1_1, V__1_2, V__1_3, V__1_4, V__1_5, V__1_6, V__1_7, V__2_0, V__2_1, V__2_2, V__2_3, V__2_4, V__2_5, V__2_6, V__2_7, V__3_0, V__3_1, V__3_2, V__3_3, V__3_4, V__3_5, V__3_6, V__3_7, V__4_0, V__4_1, V__4_2, V__4_3, V__4_4, V__4_5, V__4_6, V__4_7, V__5_0, V__5_1, V__5_2, V__5_3, V__5_4, V__5_5, V__5_6, V__5_7, V__6_0, V__6_1, V__6_2, V__6_3, V__6_4, V__6_5, V__6_6, V__6_7, V__7_0, V__7_1, V__7_2, V__7_3, V__7_4, V__7_5, V__7_6, V__7_7 };
+            type Bool = { 0, 1 };
+            type Goals = Player -> Score;
+            type Visibility = Player -> Bool;
+            type PlayerOrSystem = { black, white, keeper, random };
+            const up: PositionOrNull -> PositionOrNull = { :V__7_0, null: null, V__0_0: V__0_0, V__0_1: V__0_0, V__0_2: V__0_1, V__0_3: V__0_2, V__0_4: V__0_3, V__0_5: V__0_4, V__0_6: V__0_5, V__0_7: V__0_6, V__1_0: V__1_0, V__1_1: V__1_0, V__1_2: V__1_1, V__1_3: V__1_2, V__1_4: V__1_3, V__1_5: V__1_4, V__1_6: V__1_5, V__1_7: V__1_6, V__2_0: V__2_0, V__2_1: V__2_0, V__2_2: V__2_1, V__2_3: V__2_2, V__2_4: V__2_3, V__2_5: V__2_4, V__2_6: V__2_5, V__2_7: V__2_6, V__3_0: V__3_0, V__3_1: V__3_0, V__3_2: V__3_1, V__3_3: V__3_2, V__3_4: V__3_3, V__3_5: V__3_4, V__3_6: V__3_5, V__3_7: V__3_6, V__4_0: V__4_0, V__4_1: V__4_0, V__4_2: V__4_1, V__4_3: V__4_2, V__4_4: V__4_3, V__4_5: V__4_4, V__4_6: V__4_5, V__4_7: V__4_6, V__5_0: V__5_0, V__5_1: V__5_0, V__5_2: V__5_1, V__5_3: V__5_2, V__5_4: V__5_3, V__5_5: V__5_4, V__5_6: V__5_5, V__5_7: V__5_6, V__6_0: V__6_0, V__6_1: V__6_0, V__6_2: V__6_1, V__6_3: V__6_2, V__6_4: V__6_3, V__6_5: V__6_4, V__6_6: V__6_5, V__6_7: V__6_6, V__7_2: V__7_1, V__7_3: V__7_2, V__7_4: V__7_3, V__7_5: V__7_4, V__7_6: V__7_5, V__7_7: V__7_6 };
+            const upLeft: PositionOrNull -> PositionOrNull = { :null, V__1_0: V__0_0, V__1_1: V__0_0, V__1_2: V__0_1, V__1_3: V__0_2, V__1_4: V__0_3, V__1_5: V__0_4, V__1_6: V__0_5, V__1_7: V__0_6, V__2_0: V__1_0, V__2_1: V__1_0, V__2_2: V__1_1, V__2_3: V__1_2, V__2_4: V__1_3, V__2_5: V__1_4, V__2_6: V__1_5, V__2_7: V__1_6, V__3_0: V__2_0, V__3_1: V__2_0, V__3_2: V__2_1, V__3_3: V__2_2, V__3_4: V__2_3, V__3_5: V__2_4, V__3_6: V__2_5, V__3_7: V__2_6, V__4_0: V__3_0, V__4_1: V__3_0, V__4_2: V__3_1, V__4_3: V__3_2, V__4_4: V__3_3, V__4_5: V__3_4, V__4_6: V__3_5, V__4_7: V__3_6, V__5_0: V__4_0, V__5_1: V__4_0, V__5_2: V__4_1, V__5_3: V__4_2, V__5_4: V__4_3, V__5_5: V__4_4, V__5_6: V__4_5, V__5_7: V__4_6, V__6_0: V__5_0, V__6_1: V__5_0, V__6_2: V__5_1, V__6_3: V__5_2, V__6_4: V__5_3, V__6_5: V__5_4, V__6_6: V__5_5, V__6_7: V__5_6, V__7_0: V__6_0, V__7_1: V__6_0, V__7_2: V__6_1, V__7_3: V__6_2, V__7_4: V__6_3, V__7_5: V__6_4, V__7_6: V__6_5, V__7_7: V__6_6 };
+            const upRight: PositionOrNull -> PositionOrNull = { :null, V__0_0: V__1_0, V__0_1: V__1_0, V__0_2: V__1_1, V__0_3: V__1_2, V__0_4: V__1_3, V__0_5: V__1_4, V__0_6: V__1_5, V__0_7: V__1_6, V__1_0: V__2_0, V__1_1: V__2_0, V__1_2: V__2_1, V__1_3: V__2_2, V__1_4: V__2_3, V__1_5: V__2_4, V__1_6: V__2_5, V__1_7: V__2_6, V__2_0: V__3_0, V__2_1: V__3_0, V__2_2: V__3_1, V__2_3: V__3_2, V__2_4: V__3_3, V__2_5: V__3_4, V__2_6: V__3_5, V__2_7: V__3_6, V__3_0: V__4_0, V__3_1: V__4_0, V__3_2: V__4_1, V__3_3: V__4_2, V__3_4: V__4_3, V__3_5: V__4_4, V__3_6: V__4_5, V__3_7: V__4_6, V__4_0: V__5_0, V__4_1: V__5_0, V__4_2: V__5_1, V__4_3: V__5_2, V__4_4: V__5_3, V__4_5: V__5_4, V__4_6: V__5_5, V__4_7: V__5_6, V__5_0: V__6_0, V__5_1: V__6_0, V__5_2: V__6_1, V__5_3: V__6_2, V__5_4: V__6_3, V__5_5: V__6_4, V__5_6: V__6_5, V__5_7: V__6_6, V__6_0: V__7_0, V__6_1: V__7_0, V__6_2: V__7_1, V__6_3: V__7_2, V__6_4: V__7_3, V__6_5: V__7_4, V__6_6: V__7_5, V__6_7: V__7_6 };
+            var board: PositionOrNull -> Piece = { :empty, V__0_0: blackPawn, V__0_1: blackPawn, V__0_6: whitePawn, V__0_7: whitePawn, V__1_0: blackPawn, V__1_1: blackPawn, V__1_6: whitePawn, V__1_7: whitePawn, V__2_0: blackPawn, V__2_1: blackPawn, V__2_6: whitePawn, V__2_7: whitePawn, V__3_0: blackPawn, V__3_1: blackPawn, V__3_6: whitePawn, V__3_7: whitePawn, V__4_0: blackPawn, V__4_1: blackPawn, V__4_6: whitePawn, V__4_7: whitePawn, V__5_0: blackPawn, V__5_1: blackPawn, V__5_6: whitePawn, V__5_7: whitePawn, V__6_0: blackPawn, V__6_1: blackPawn, V__6_6: whitePawn, V__6_7: whitePawn, V__7_0: blackPawn, V__7_1: blackPawn, V__7_6: whitePawn, V__7_7: whitePawn, null: border };
+            var pos: PositionOrNull = null;
+            var goals: Goals = { :0 };
+            var player: PlayerOrSystem = keeper;
+            var visible: Visibility = { :1 };
+            begin, turn_begin: ;
+            turn_begin, turn_1: player = Player(white);
+            turn_1, turn_2: pos = Position(*);
+            turn_2, turn_3: board[pos] == Piece(whitePawn);
+            turn_3, turn_4: board[pos] = empty;
+            turn_4, turn_5: $$ pos;
+            turn_5, turn_7: pos = up[pos];
+            turn_7, turn_8: $ F;
+            turn_8, turn_6: board[pos] == empty;
+            turn_5, turn_11: pos = upLeft[pos];
+            turn_11, turn_10: $ L;
+            turn_5, turn_13: pos = upRight[pos];
+            turn_13, turn_10: $ R;
+            turn_10, turn_6: board[pos] == empty;
+            turn_10, turn_6: board[pos] == Piece(blackPawn);
+            turn_6, turn_16: $$ pos;
+            turn_16, turn_17: player = keeper;
+            turn_17, turn_18: board[pos] = Piece(whitePawn);
+            turn_18, turn_19: up[pos] == pos;
+            turn_18, turn_21: up[pos] != pos;
+            existsOppPawn_call_1, turn_22_existsOppPawn_1: pos = Position(*);
+            turn_22_existsOppPawn_1, existsOppPawn_end: board[pos] == Piece(blackPawn);
+            turn_21, turn_begin: ? existsOppPawn_call_1 -> existsOppPawn_end;
+            turn_21, turn_19: ! existsOppPawn_call_1 -> existsOppPawn_end;
+            turn_19, turn_23: goals[Player(white)] = 100;
+            turn_23, end: player = keeper;
+        ",
+        adds "@unique begin end existsOppPawn_call_1 existsOppPawn_end turn_1 turn_10 turn_11 turn_13 turn_16 turn_17 turn_18 turn_19 turn_2 turn_21 turn_22_existsOppPawn_1 turn_23 turn_3 turn_4 turn_5 turn_6 turn_7 turn_8 turn_begin;"
+    );
 }
