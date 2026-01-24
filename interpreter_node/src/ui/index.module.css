@@ -27,7 +27,6 @@ body {
   margin-left: 1rem;
 }
 
-.grid,
 .main {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -108,8 +107,12 @@ body {
   margin-top: 1rem;
 }
 
+.title {
+  margin-right: 1ch;
+}
+
 .view {
-  height: calc(100vh - 7rem - 30px);
+  height: calc(100vh - 7rem - 62px);
 }
 
 .wrapHidden,

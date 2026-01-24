@@ -88,20 +88,18 @@ export function Settings({
 
   return (
     <>
-      <div className={styles.grid}>
-        <HTMLSelect
-          className={styles.select}
-          onChange={onPreset}
-          options={availablePresets}
-          value={preset}
-        />
-        <HTMLSelect
-          className={styles.select}
-          onChange={onView}
-          options={availableViews}
-          value={view}
-        />
-      </div>
+      <HTMLSelect
+        className={styles.select}
+        onChange={onPreset}
+        options={availablePresets}
+        value={preset}
+      />
+      <HTMLSelect
+        className={styles.select}
+        onChange={onView}
+        options={availableViews}
+        value={view}
+      />
       <Callout
         className={styles.settings}
         compact

@@ -5,6 +5,8 @@ import {
   Elevation,
   FormGroup,
   HTMLSelect,
+  Icon,
+  IconName,
   InputGroup,
   Intent,
   Label,
@@ -12,6 +14,7 @@ import {
 } from '@blueprintjs/core';
 import {
   Dispatch,
+  ReactNode,
   SetStateAction,
   useCallback,
   useEffect,
@@ -26,8 +29,16 @@ import * as wasm from '../../wasm';
 import { useNumericState } from '../hooks/useNumericState';
 import * as styles from '../index.module.css';
 
-type InitialState = AsyncState<Awaited<ReturnType<typeof wasm.apply>>, unknown>;
+type BlockProps = { children: ReactNode };
+function Block({ children }: BlockProps) {
+  return (
+    <Card className={styles.block} compact elevation={Elevation.TWO}>
+      {children}
+    </Card>
+  );
+}
 
+type InitialState = AsyncState<Awaited<ReturnType<typeof wasm.apply>>, unknown>;
 type BenchBlockProps = {
   action: (
     gameDeclaration: RgGameDeclaration,
@@ -41,7 +52,7 @@ type BenchBlockProps = {
   initialState: InitialState;
   initialStatePath: string;
   initialValue: number;
-  label: string;
+  label: ReactNode;
   labelInfo?: string;
   logsLimit: number;
   max?: number;
@@ -115,7 +126,7 @@ function BenchBlock({
   ]);
 
   return (
-    <Card className={styles.block} compact elevation={Elevation.TWO}>
+    <Block>
       <FormGroup label={label} labelFor={id} labelInfo={labelInfo}>
         <ControlGroup>
           <Button disabled={disabled} intent={result} onClick={onAction}>
@@ -134,7 +145,17 @@ function BenchBlock({
       </FormGroup>
 
       <pre>{logs.join('\n')}</pre>
-    </Card>
+    </Block>
+  );
+}
+
+type TitleProps = { icon: IconName; text: string };
+function Title({ icon, text }: TitleProps) {
+  return (
+    <>
+      <Icon className={styles.title} icon={icon} />
+      {text}
+    </>
   );
 }
 
@@ -165,9 +186,9 @@ function PlayBlock({
   }, [isAuto, initialState.value, setInitialStatePath]);
 
   return (
-    <Card className={styles.block} compact elevation={Elevation.TWO}>
+    <Block>
       <FormGroup
-        label="Path"
+        label={<Title icon="fork" text="Path" />}
         labelFor="path"
         labelInfo="(slash separates moves; space separates tags)"
       >
@@ -260,7 +281,7 @@ function PlayBlock({
           ? prettyError(initialState.error)
           : initialState.value?.state}
       </pre>
-    </Card>
+    </Block>
   );
 }
 
@@ -276,10 +297,33 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
 
   return (
     <section className={styles.wrapScroll}>
-      <Card className={styles.block} compact elevation={Elevation.TWO}>
-        <Label>Statistics</Label>
+      <Block>
+        <Label>
+          <Title icon="git-repo" text="Resources" />
+        </Label>
+        <pre>
+          <a href="https://arxiv.org/abs/2511.10593">
+            arxiv.org/abs/2511.10593
+          </a>{' '}
+          (paper)
+          <br />
+          <a href="https://github.com/radekmie/rg">
+            github.com/radekmie/rg
+          </a>{' '}
+          (interpreter and tools)
+          <br />
+          <a href="https://github.com/WoojtekP/RGcompiler">
+            github.com/WoojtekP/RGcompiler
+          </a>{' '}
+          (compiler)
+        </pre>
+      </Block>
+      <Block>
+        <Label>
+          <Title icon="info-sign" text="Statistics" />
+        </Label>
         <pre>{stats}</pre>
-      </Card>
+      </Block>
       <PlayBlock
         initialState={initialState}
         initialStatePath={path}
@@ -293,7 +337,7 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
         initialState={initialState}
         initialStatePath={path}
         initialValue={100}
-        label="Iterations"
+        label={<Title icon="generate" text="Iterations" />}
         labelInfo="(number of random games to play)"
         logsLimit={18}
         max={1000}
@@ -307,7 +351,7 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
         initialState={initialState}
         initialStatePath={path}
         initialValue={3}
-        label="Maximum depth"
+        label={<Title icon="diagram-tree" text="Maximum depth" />}
         labelInfo="(game tree depth to calculate)"
         logsLimit={100}
         max={10}
