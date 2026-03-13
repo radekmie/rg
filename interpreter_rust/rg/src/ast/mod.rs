@@ -371,7 +371,7 @@ impl Label<Arc<str>> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
-#[serde(rename = "EdgeName", tag = "kind")]
+#[serde(tag = "kind")]
 pub struct Node<Id> {
     pub identifier: Id,
 }
@@ -1492,24 +1492,19 @@ pub enum Pragma<Id> {
     Disjoint {
         #[serde(skip)]
         span: Span,
-        #[serde(rename = "edgeName")]
         node: Node<Id>,
-        #[serde(rename = "edgeNames")]
         nodes: Vec<Node<Id>>,
     },
     DisjointExhaustive {
         #[serde(skip)]
         span: Span,
-        #[serde(rename = "edgeName")]
         node: Node<Id>,
-        #[serde(rename = "edgeNames")]
         nodes: Vec<Node<Id>>,
     },
     Integer {
         #[serde(skip)]
         span: Span,
         offset: usize,
-        #[serde(rename = "edgeNames")]
         nodes: Vec<Node<Id>>,
     },
     Iterator {
@@ -1523,9 +1518,7 @@ pub enum Pragma<Id> {
     Repeat {
         #[serde(skip)]
         span: Span,
-        #[serde(rename = "edgeNames")]
         nodes: Vec<Node<Id>>,
-        #[serde(rename = "identifiers")]
         identifiers: Vec<Id>,
     },
     SimpleApply {
@@ -1548,14 +1541,12 @@ pub enum Pragma<Id> {
         #[serde(skip)]
         span: Span,
         index: usize,
-        #[serde(rename = "edgeNames")]
         nodes: Vec<Node<Id>>,
     },
     TagMaxIndex {
         #[serde(skip)]
         span: Span,
         index: usize,
-        #[serde(rename = "edgeNames")]
         nodes: Vec<Node<Id>>,
     },
     TranslatedFromRbg {
@@ -1565,7 +1556,6 @@ pub enum Pragma<Id> {
     Unique {
         #[serde(skip)]
         span: Span,
-        #[serde(rename = "edgeNames")]
         nodes: Vec<Node<Id>>,
     },
 }
