@@ -101,31 +101,31 @@ impl<Id: Ord> Rule<Id> {
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub enum Term<Id> {
     /// `base(p)` means that `p` is a base proposition in the game.
-    Base(Arc<Term<Id>>),
+    Base(Arc<Self>),
 
     /// `name` is a custom, game-specific term.
     Custom0(AtomOrVariable<Id>),
 
     /// `name(...arguments)` is a custom, game-specific term.
-    CustomN(AtomOrVariable<Id>, Vec<Arc<Term<Id>>>),
+    CustomN(AtomOrVariable<Id>, Vec<Arc<Self>>),
 
     /// `does(r, a)` means that player `r` performs action `a` in the current state.
-    Does(AtomOrVariable<Id>, Arc<Term<Id>>),
+    Does(AtomOrVariable<Id>, Arc<Self>),
 
     /// `goal(r, u)` means that player the current state has utility `u` for player `r`.
     Goal(AtomOrVariable<Id>, AtomOrVariable<Id>),
 
     /// `init(p)` means that the proposition `p` is true in the initial state.
-    Init(Arc<Term<Id>>),
+    Init(Arc<Self>),
 
     /// `input(r, a)` means that `a` is an action for role `r`.
-    Input(AtomOrVariable<Id>, Arc<Term<Id>>),
+    Input(AtomOrVariable<Id>, Arc<Self>),
 
     /// `legal(r, a)` means it is legal for role `r` to play action `a` in the current state.
-    Legal(AtomOrVariable<Id>, Arc<Term<Id>>),
+    Legal(AtomOrVariable<Id>, Arc<Self>),
 
     /// `next(p)` means that the proposition `p` is true in the next state.
-    Next(Arc<Term<Id>>),
+    Next(Arc<Self>),
 
     /// `role(a)` means that `a` is a role in the game.
     Role(AtomOrVariable<Id>),
@@ -134,7 +134,7 @@ pub enum Term<Id> {
     Terminal,
 
     /// `true(p)` means that the proposition `p` is true in the current state.
-    True(Arc<Term<Id>>),
+    True(Arc<Self>),
 }
 
 impl<Id> Term<Id> {

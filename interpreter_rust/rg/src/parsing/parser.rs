@@ -277,9 +277,10 @@ fn value_entry(input: Input) -> Result<ValueEntry<Identifier>> {
             (span, Arc::new(Value::new(Identifier::none(Span::none()))))
         },
         |value| {
-            let span = identifier.as_ref().map_or(value.as_ref().span(), |id| {
-                id.span().with_end(value.as_ref().span().end)
-            });
+            let span = identifier.as_ref().map_or_else(
+                || value.as_ref().span(),
+                |id| id.span().with_end(value.as_ref().span().end),
+            );
             (span, value)
         },
     );

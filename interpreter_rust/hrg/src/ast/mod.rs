@@ -579,13 +579,13 @@ impl<Id> Type<Id> {
 pub enum Value<Id> {
     Constructor {
         identifier: Id,
-        args: Vec<Arc<Value<Id>>>,
+        args: Vec<Arc<Self>>,
     },
     Element {
         identifier: Id,
     },
     Map {
-        default_value: Option<Arc<Value<Id>>>,
+        default_value: Option<Arc<Self>>,
         entries: Vec<ValueMapEntry<Id>>,
     },
 }
