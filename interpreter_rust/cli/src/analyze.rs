@@ -100,7 +100,7 @@ fn analyze_rbg(
 fn analyze_rg(
     game_or_source: Result<Game<Id>, String>,
     flags: &Flags,
-    #[cfg(not(target_arch = "wasm32"))] verbose: bool,
+    verbose: bool,
     callback: &mut Option<impl FnMut(String)>,
 ) -> Result<Game<Id>, String> {
     macro_rules! step {
@@ -149,15 +149,15 @@ fn analyze_rg(
 
     macro_rules! game_call {
         ($game:expr, $copy:expr, $fn:ident) => {
-            let result = if cfg!(target_arch = "wasm32") || !verbose {
-                $game.$fn()
-            } else {
+            let result = if verbose && !cfg!(target_arch = "wasm32") {
                 let now = std::time::Instant::now();
                 let result = $game.$fn();
                 let elapsed = now.elapsed().as_micros();
                 let changed = $game != $copy;
                 eprintln!("{} {} {}", stringify!($fn), elapsed, changed);
                 result
+            } else {
+                $game.$fn()
             };
             check!(result, add_game_stats!($game))
         };
