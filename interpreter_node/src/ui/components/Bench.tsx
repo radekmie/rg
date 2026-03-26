@@ -302,8 +302,8 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
           <Title icon="git-repo" text="Resources" />
         </Label>
         <pre>
-          <a href="https://arxiv.org/abs/2511.10593">
-            arxiv.org/abs/2511.10593
+          <a href="https://ojs.aaai.org/index.php/AAAI/article/view/40203">
+            ojs.aaai.org/index.php/AAAI/article/view/40203
           </a>{' '}
           (paper)
           <br />
