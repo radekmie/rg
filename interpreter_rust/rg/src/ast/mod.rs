@@ -1662,6 +1662,7 @@ pub enum PragmaTag<Id> {
     },
     Variable {
         identifier: Id,
+        #[serde(rename = "type")]
         type_: Arc<Type<Id>>,
     },
 }
