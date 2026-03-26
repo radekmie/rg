@@ -9,6 +9,7 @@ map_id = { path = "../map_id" }
 map_id_macro = { path = "../map_id_macro" }
 nom = "8.0.0"
 nom_locate = "5.0.0"
+schemars = "1.2.1"
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 utils = { path = "../utils" }
 

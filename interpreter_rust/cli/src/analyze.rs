@@ -100,8 +100,7 @@ fn analyze_rbg(
 fn analyze_rg(
     game_or_source: Result<Game<Id>, String>,
     flags: &Flags,
-    #[allow(unused_variables)] // It's used only in non-WASM builds.
-    verbose: bool,
+    #[cfg(not(target_arch = "wasm32"))] verbose: bool,
     callback: &mut Option<impl FnMut(String)>,
 ) -> Result<Game<Id>, String> {
     macro_rules! step {

@@ -20,6 +20,7 @@ Commands:
   format  Print formatted source
   perf    Benchmark game tree
   run     Benchmark random playouts
+  schema  Print JSON schema of RG AST
   source  Print RG source
   help    Print this message or the help of the given subcommand(s)
 

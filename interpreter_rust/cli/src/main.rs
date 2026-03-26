@@ -3,6 +3,10 @@ use cli::{analyze, Flags};
 use rand::thread_rng;
 use rg::ast::Game as GameAst;
 use rg_interpreter::Game;
+#[cfg(not(target_arch = "wasm32"))]
+use schemars::schema_for;
+#[cfg(not(target_arch = "wasm32"))]
+use serde_json::to_string;
 use serde_json::{from_str, json, Value};
 use std::ffi::OsStr;
 use std::fs::read_to_string;
@@ -37,6 +41,9 @@ enum CliArgs {
         #[arg(long, default_value_t = String::from("/"))]
         initial_state_path: String,
     },
+    /// Print JSON schema of RG AST
+    #[cfg(not(target_arch = "wasm32"))]
+    Schema,
     /// Print RG source
     Source {
         #[command(flatten)]
@@ -145,6 +152,10 @@ fn main() -> Result<(), String> {
                     println!("{esc}c{}", lines.join("\n"), esc = 27 as char);
                 }),
             )?;
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        CliArgs::Schema => {
+            println!("{}", to_string(&schema_for!(GameAst<&str>)).unwrap());
         }
         CliArgs::Source { game_with_flags } => {
             let game = game_with_flags.load()?;

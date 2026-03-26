@@ -20,6 +20,7 @@ rbg = { path = "../rbg" }
 rbg_to_rg = { path = "../rbg_to_rg" }
 rg = { path = "../rg" }
 rg_interpreter = { path = "../rg_interpreter" }
+schemars = "1.2.1"
 serde = { version = "1.0.152", features = ["derive", "rc"] }
 serde_json = "1.0.91"
 utils = { path = "../utils" }

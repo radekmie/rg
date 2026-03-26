@@ -6,6 +6,8 @@ mod validators;
 use analyses::ReachableNodes;
 use map_id::MapId;
 use map_id_macro::MapId;
+#[cfg(not(target_arch = "wasm32"))]
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
@@ -19,6 +21,7 @@ pub type Mapping<Id> = BTreeMap<Id, (Id, Arc<Type<Id>>)>;
 pub type SetWithIdx<'a, T> = BTreeSet<(usize, &'a T)>;
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(rename = "ConstantDeclaration", tag = "kind")]
 pub struct Constant<Id> {
     #[serde(skip)]
@@ -41,6 +44,7 @@ impl<Id> Constant<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(rename = "EdgeDeclaration", tag = "kind")]
 pub struct Edge<Id> {
     #[serde(skip)]
@@ -92,6 +96,7 @@ impl<Id: Ord> Edge<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(rename = "EdgeLabel", tag = "kind")]
 pub enum Label<Id> {
     Assignment {
@@ -371,6 +376,7 @@ impl Label<Arc<str>> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(tag = "kind")]
 pub struct Node<Id> {
     pub identifier: Id,
@@ -484,6 +490,7 @@ pub enum ErrorReason<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(tag = "kind")]
 pub enum Expression<Id> {
     Access {
@@ -805,6 +812,7 @@ mod expression {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(rename = "GameDeclaration", tag = "kind")]
 pub struct Game<Id> {
     pub constants: Vec<Constant<Id>>,
@@ -969,6 +977,8 @@ impl<Id: Clone + PartialEq> Game<Id> {
         }
     }
 
+    // TODO: `is_strict` is an implementation detail, so it'd be best to either
+    //       rename this function or create two copies.
     pub fn is_assignable_type(
         &self,
         lhs: &Type<Id>,
@@ -1482,6 +1492,7 @@ impl<Id: PartialEq> Game<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(tag = "kind")]
 pub enum Pragma<Id> {
     ArtificialTag {
@@ -1637,12 +1648,14 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 pub struct PragmaAssignment<Id> {
     pub lhs: Arc<Expression<Id>>,
     pub rhs: Arc<Expression<Id>>,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 pub enum PragmaTag<Id> {
     Symbol {
         symbol: Id,
@@ -1682,6 +1695,7 @@ pub struct Stats {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(tag = "kind")]
 pub enum Type<Id> {
     Arrow {
@@ -1825,6 +1839,7 @@ impl<Id: PartialEq> Type<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(rename = "TypeDeclaration", tag = "kind")]
 pub struct Typedef<Id> {
     #[serde(skip)]
@@ -1845,6 +1860,7 @@ impl<Id> Typedef<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(tag = "kind")]
 pub enum Value<Id> {
     Element {
@@ -2004,6 +2020,7 @@ impl<Id: Ord> Value<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(tag = "kind")]
 pub struct ValueEntry<Id> {
     #[serde(skip)]
@@ -2031,6 +2048,7 @@ impl<Id> ValueEntry<Id> {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, MapId, Ord, PartialEq, PartialOrd, Serialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(JsonSchema))]
 #[serde(rename = "VariableDeclaration", tag = "kind")]
 pub struct Variable<Id> {
     #[serde(skip)]
