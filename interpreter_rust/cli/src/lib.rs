@@ -42,12 +42,14 @@ pub fn wasm_apply(ast: &str, path: &str) -> Result<String, String> {
     let moves = state
         .next_states(&game, true)
         .map(|state| {
-            state
+            let mut move_ = state
                 .tags
                 .iter()
                 .map(|tag| interner.recall(tag).unwrap().as_ref())
                 .collect::<Vec<_>>()
-                .join(" ")
+                .join(" ");
+            move_.push('/');
+            move_
         })
         .collect::<Vec<_>>();
 

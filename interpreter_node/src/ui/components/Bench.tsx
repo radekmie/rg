@@ -19,6 +19,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useState,
 } from 'react';
 import { AsyncState, usePromise } from 'ui/hooks/usePromise';
@@ -162,28 +163,26 @@ function Title({ icon, text }: TitleProps) {
 export type PlayBlockProps = {
   initialState: InitialState;
   initialStatePath: string;
-  setInitialStatePath: Dispatch<SetStateAction<string>>;
+  initialStatePathActionDispatch: Dispatch<PathAction>;
 };
 
 function PlayBlock({
   initialState,
   initialStatePath,
-  setInitialStatePath,
+  initialStatePathActionDispatch: dispatch,
 }: PlayBlockProps) {
   const [isAuto, setIsAuto] = useState(false);
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (isAuto && initialState.value?.moves.length) {
-        setInitialStatePath(
-          path => `${path}${random(initialState.value.moves)}/`,
-        );
+        dispatch({ kind: 'add', path: random(initialState.value.moves) });
       } else {
         setIsAuto(false);
       }
     });
 
     return () => clearTimeout(timeout);
-  }, [isAuto, initialState.value, setInitialStatePath]);
+  }, [isAuto, initialState.value, dispatch]);
 
   return (
     <Block>
@@ -196,22 +195,18 @@ function PlayBlock({
           <Button
             icon="double-chevron-left"
             disabled={isAuto || initialStatePath === '/'}
-            onClick={() => setInitialStatePath('/')}
+            onClick={() => dispatch({ kind: 'reset' })}
           />
           <Button
             icon="chevron-left"
             disabled={isAuto || initialStatePath === '/'}
-            onClick={() =>
-              setInitialStatePath(
-                path => `${path.split('/').slice(0, -2).join('/')}/`,
-              )
-            }
+            onClick={() => dispatch({ kind: 'pop' })}
           />
           <InputGroup
             disabled={isAuto}
             fill
             id="path"
-            onValueChange={setInitialStatePath}
+            onValueChange={path => dispatch({ kind: 'replace', path })}
             value={initialStatePath}
           />
           <HTMLSelect
@@ -223,13 +218,11 @@ function PlayBlock({
             iconName="caret-down"
             id="move"
             onChange={({ currentTarget: { value } }) =>
-              setInitialStatePath(path => `${path}${value}/`)
+              dispatch({ kind: 'add', path: value })
             }
             options={[
               { disabled: true, label: 'Move', value: '(default)' },
-              ...(initialState.value?.moves.sort(localeCompare) ?? []).map(
-                value => (value === '' ? { label: '(empty)', value } : value),
-              ),
+              ...(initialState.value?.moves.sort(localeCompare) ?? []),
             ]}
             value="(default)"
           />
@@ -251,9 +244,7 @@ function PlayBlock({
             }
             onClick={() =>
               initialState.value?.moves.length &&
-              setInitialStatePath(
-                path => `${path}${random(initialState.value.moves)}/`,
-              )
+              dispatch({ kind: 'add', path: random(initialState.value.moves) })
             }
           />
           <Button
@@ -285,15 +276,32 @@ function PlayBlock({
   );
 }
 
+type PathAction =
+  | { kind: 'add' | 'replace'; path: string }
+  | { kind: 'pop' | 'reset' };
+
+function pathReducer(path: string, action: PathAction) {
+  switch (action.kind) {
+    case 'add':
+      return path + action.path;
+    case 'pop':
+      return path.replace(/\/[^/]*\/$/, '/');
+    case 'replace':
+      return action.path;
+    case 'reset':
+      return '/';
+  }
+}
+
 export type BenchProps = { gameDeclaration: RgGameDeclaration; stats: string };
 export function Bench({ gameDeclaration, stats }: BenchProps) {
-  const [path, setPath] = useState('/');
+  const [path, pathActionDispatch] = useReducer(pathReducer, '/');
   const initialState = usePromise(
     () => wasm.apply(gameDeclaration, path),
     [gameDeclaration, path],
   );
 
-  useEffect(() => setPath('/'), [gameDeclaration]);
+  useEffect(() => pathActionDispatch({ kind: 'reset' }), [gameDeclaration]);
 
   return (
     <section className={styles.wrapScroll}>
@@ -327,7 +335,7 @@ export function Bench({ gameDeclaration, stats }: BenchProps) {
       <PlayBlock
         initialState={initialState}
         initialStatePath={path}
-        setInitialStatePath={setPath}
+        initialStatePathActionDispatch={pathActionDispatch}
       />
       <BenchBlock
         action={wasm.run}

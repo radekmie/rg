@@ -25,6 +25,13 @@ enum CliArgs {
     },
     /// Print formatted source
     Format { path: PathBuf },
+    /// Print available moves
+    Moves {
+        #[command(flatten)]
+        game_with_flags: GameWithFlags,
+        #[arg(long, default_value_t = String::from("/"))]
+        initial_state_path: String,
+    },
     /// Benchmark game tree
     Perf {
         #[command(flatten)]
@@ -123,6 +130,22 @@ fn main() -> Result<(), String> {
             }))?;
 
             panic!("No formatted source found");
+        }
+        CliArgs::Moves {
+            game_with_flags,
+            initial_state_path,
+        } => {
+            let (game, interner, _) = Game::try_from(game_with_flags.load()?)?;
+            let initial_state = game.initial_state_after(&interner, &initial_state_path)?;
+            for state in initial_state.next_states(&game, true) {
+                let move_ = state
+                    .tags
+                    .iter()
+                    .map(|tag| interner.recall(tag).unwrap().as_ref())
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                println!("{move_}/");
+            }
         }
         CliArgs::Perf {
             depth,

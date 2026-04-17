@@ -18,6 +18,7 @@ Usage: interpreter <COMMAND>
 Commands:
   ast     Print RG AST
   format  Print formatted source
+  moves   Print available moves
   perf    Benchmark game tree
   run     Benchmark random playouts
   schema  Print JSON schema of RG AST
