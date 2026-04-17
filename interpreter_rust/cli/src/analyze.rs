@@ -65,7 +65,7 @@ fn analyze_hrg(
     }
 
     let hrg = parse(parse_hrg, source)?.map_id(&mut as_id);
-    step!({ "kind": "ast", "language": "hrg", "value": hrg });
+    step!({ "kind": "ast", "language": "hrg", "value": hrg, "title": "original" });
 
     let serialized = hrg.to_string();
     assert_eq!(parse(parse_hrg, &serialized)?.map_id(&mut as_id), hrg);
@@ -88,7 +88,7 @@ fn analyze_rbg(
     }
 
     let rbg = parse(parse_rbg, source)?.map_id(&mut as_id);
-    step!({ "kind": "ast", "language": "rbg", "value": rbg });
+    step!({ "kind": "ast", "language": "rbg", "value": rbg, "title": "original" });
 
     let serialized = rbg.to_string();
     assert_eq!(parse(parse_rbg, &serialized)?.map_id(&mut as_id), rbg);
