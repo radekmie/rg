@@ -1697,6 +1697,239 @@ mod test {
     }
 
     test_translation!(
+        shift_pattern_all_reachable,
+        "
+            #board =
+              rx0y0[e]{down:rx0y1,right:rx1y0}
+              rx1y0[e]{down:rx1y1,left:rx0y0,right:rx2y0}
+              rx2y0[e]{down:rx2y1,left:rx1y0}
+              rx0y1[e]{down:rx0y2,right:rx1y1,up:rx0y0}
+              rx1y1[e]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+              rx2y1[e]{down:rx2y2,left:rx1y1,up:rx2y0}
+              rx0y2[e]{right:rx1y2,up:rx0y1}
+              rx1y2[e]{left:rx0y2,right:rx2y2,up:rx1y1}
+              rx2y2[e]{left:rx1y2,up:rx2y1}
+            #players = xplayer(100), oplayer(100)
+            #pieces = e, o, x
+            #variables =
+            #rules = ->xplayer (up* + down*) (left* + right*) {e} ->>
+        ",
+        "
+            @translatedFromRbg;
+            @artificialTag index_2_copy;
+            type RbgType1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            type Player = { xplayer, oplayer };
+            type Score = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100 };
+            type Piece = { e, o, x, null };
+            type Coord = { rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
+            type CoordOrNull = { null, rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
+            type Board = CoordOrNull -> Piece;
+            type Counters = Piece -> RbgType1;
+            const direction_down: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx0y1, rx1y0: rx1y1, rx2y0: rx2y1, rx0y1: rx0y2, rx1y1: rx1y2, rx2y1: rx2y2 };
+            const direction_right: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx1y0, rx1y0: rx2y0, rx0y1: rx1y1, rx1y1: rx2y1, rx0y2: rx1y2, rx1y2: rx2y2 };
+            const direction_left: CoordOrNull -> CoordOrNull = { :null, rx1y0: rx0y0, rx2y0: rx1y0, rx1y1: rx0y1, rx2y1: rx1y1, rx1y2: rx0y2, rx2y2: rx1y2 };
+            const direction_up: CoordOrNull -> CoordOrNull = { :null, rx0y1: rx0y0, rx1y1: rx1y0, rx2y1: rx2y0, rx0y2: rx0y1, rx1y2: rx1y1, rx2y2: rx2y1 };
+            var board: Board = { :e, null: null };
+            var coord: CoordOrNull = rx0y0;
+            var coord_temp: Coord = rx0y0;
+            var counters: Counters = { :0, e: 9 };
+            1, 4: coord = Coord(*);
+            1_7_1, 1_7_4: coord = Coord(*);
+            1_7_4, 1_7_5: board[coord] == e;
+            1_7_5, 1_7_8: ;
+            1_7_8, 1_7_7: ;
+            3, 2: $ index_1;
+            4, 5: board[coord] == e;
+            5, 8: $$ coord;
+            7, end: player = keeper;
+            8, 7: $ index_2;
+            begin, 3: $$ coord;
+            2, 9: ? 1_7_1 -> 1_7_7;
+            9, 1: player = xplayer;
+            2, 10: ! 1_7_1 -> 1_7_7;
+            10, end: player = keeper;
+        "
+    );
+
+    test_translation!(
+        shift_pattern_same_reachable,
+        "
+            #board =
+              rx0y0[e]{down:rx0y1,right:rx1y0}
+              rx1y0[e]{down:rx1y1,left:rx0y0,right:rx2y0}
+              rx2y0[e]{down:rx2y1,left:rx1y0}
+              rx0y1[e]{down:rx0y2,right:rx1y1,up:rx0y0}
+              rx1y1[e]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+              rx2y1[e]{down:rx2y2,left:rx1y1,up:rx2y0}
+              rx0y2[e]{right:rx1y2,up:rx0y1}
+              rx1y2[e]{left:rx0y2,right:rx2y2,up:rx1y1}
+              rx2y2[e]{left:rx1y2,up:rx2y1}
+            #players = xplayer(100), oplayer(100)
+            #pieces = e, o, x
+            #variables =
+            #rules = ->xplayer up* {! up} left* {! left} (down + right) {e} ->>
+        ",
+        "
+            @translatedFromRbg;
+            @artificialTag index_2_copy;
+            type RbgType1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            type Player = { xplayer, oplayer };
+            type Score = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100 };
+            type Piece = { e, o, x, null };
+            type Coord = { rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
+            type CoordOrNull = { null, rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
+            type Board = CoordOrNull -> Piece;
+            type Counters = Piece -> RbgType1;
+            type RbgType2 = { rx0y1, rx1y0 };
+            const direction_down: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx0y1, rx1y0: rx1y1, rx2y0: rx2y1, rx0y1: rx0y2, rx1y1: rx1y2, rx2y1: rx2y2 };
+            const direction_right: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx1y0, rx1y0: rx2y0, rx0y1: rx1y1, rx1y1: rx2y1, rx0y2: rx1y2, rx1y2: rx2y2 };
+            const direction_left: CoordOrNull -> CoordOrNull = { :null, rx1y0: rx0y0, rx2y0: rx1y0, rx1y1: rx0y1, rx2y1: rx1y1, rx1y2: rx0y2, rx2y2: rx1y2 };
+            const direction_up: CoordOrNull -> CoordOrNull = { :null, rx0y1: rx0y0, rx1y1: rx1y0, rx2y1: rx2y0, rx0y2: rx0y1, rx1y2: rx1y1, rx2y2: rx2y1 };
+            var board: Board = { :e, null: null };
+            var coord: CoordOrNull = rx0y0;
+            var coord_temp: Coord = rx0y0;
+            var counters: Counters = { :0, e: 9 };
+            1, 5: ;
+            1_8_1, 1_8_5: ;
+            1_8_4, 1_8_6: board[coord] == e;
+            1_8_5, 1_8_4: coord = RbgType2(*);
+            1_8_6, 1_8_9: ;
+            1_8_9, 1_8_8: ;
+            3, 2: $ index_1;
+            4, 6: board[coord] == e;
+            5, 4: coord = RbgType2(*);
+            6, 9: $$ coord;
+            8, end: player = keeper;
+            9, 8: $ index_2;
+            begin, 3: $$ coord;
+            2, 10: ? 1_8_1 -> 1_8_8;
+            10, 1: player = xplayer;
+            2, 11: ! 1_8_1 -> 1_8_8;
+            11, end: player = keeper;
+        "
+    );
+
+    test_translation!(
+        shift_pattern_at_most_one_reachable,
+        "
+            #board =
+              rx0y0[e]{down:rx0y1,right:rx1y0}
+              rx1y0[e]{down:rx1y1,left:rx0y0,right:rx2y0}
+              rx2y0[e]{down:rx2y1,left:rx1y0}
+              rx0y1[e]{down:rx0y2,right:rx1y1,up:rx0y0}
+              rx1y1[e]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+              rx2y1[e]{down:rx2y2,left:rx1y1,up:rx2y0}
+              rx0y2[e]{right:rx1y2,up:rx0y1}
+              rx1y2[e]{left:rx0y2,right:rx2y2,up:rx1y1}
+              rx2y2[e]{left:rx1y2,up:rx2y1}
+            #players = xplayer(100), oplayer(100)
+            #pieces = e, o, x
+            #variables =
+            #rules = ->xplayer up up {e} ->>
+        ",
+        "
+            @translatedFromRbg;
+            @artificialTag index_2_copy;
+            type RbgType1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            type Player = { xplayer, oplayer };
+            type Score = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100 };
+            type Piece = { e, o, x, null };
+            type Coord = { rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
+            type CoordOrNull = { null, rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
+            type Board = CoordOrNull -> Piece;
+            type Counters = Piece -> RbgType1;
+            type RbgType2 = { null, rx0y0, rx0y1, rx0y2, rx1y0, rx1y1, rx1y2, rx2y0, rx2y1, rx2y2 };
+            type RbgType3 = { null, rx0y0, rx1y0, rx2y0 };
+            const direction_down: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx0y1, rx1y0: rx1y1, rx2y0: rx2y1, rx0y1: rx0y2, rx1y1: rx1y2, rx2y1: rx2y2 };
+            const direction_right: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx1y0, rx1y0: rx2y0, rx0y1: rx1y1, rx1y1: rx2y1, rx0y2: rx1y2, rx1y2: rx2y2 };
+            const direction_left: CoordOrNull -> CoordOrNull = { :null, rx1y0: rx0y0, rx2y0: rx1y0, rx1y1: rx0y1, rx2y1: rx1y1, rx1y2: rx0y2, rx2y2: rx1y2 };
+            const direction_up: CoordOrNull -> CoordOrNull = { :null, rx0y1: rx0y0, rx1y1: rx1y0, rx2y1: rx2y0, rx0y2: rx0y1, rx1y2: rx1y1, rx2y2: rx2y1 };
+            const RbgCoordMap1: RbgType2 -> RbgType3 = { :null, rx0y2: rx0y0, rx1y2: rx1y0, rx2y2: rx2y0 };
+            var board: Board = { :e, null: null };
+            var coord: CoordOrNull = rx0y0;
+            var coord_temp: Coord = rx0y0;
+            var counters: Counters = { :0, e: 9 };
+            1, 5: coord = RbgCoordMap1[coord];
+            1_8_1, 1_8_5: coord = RbgCoordMap1[coord];
+            1_8_4, 1_8_6: board[coord] == e;
+            1_8_5, 1_8_4: ;
+            1_8_6, 1_8_9: ;
+            1_8_9, 1_8_8: ;
+            3, 2: $ index_1;
+            4, 6: board[coord] == e;
+            5, 4: ;
+            6, 9: $$ coord;
+            8, end: player = keeper;
+            9, 8: $ index_2;
+            begin, 3: $$ coord;
+            2, 10: ? 1_8_1 -> 1_8_8;
+            10, 1: player = xplayer;
+            2, 11: ! 1_8_1 -> 1_8_8;
+            11, end: player = keeper;
+        "
+    );
+
+    test_translation!(
+        shift_pattern_lookup,
+        "
+            #board =
+              rx0y0[e]{down:rx0y1,right:rx1y0}
+              rx1y0[e]{down:rx1y1,left:rx0y0,right:rx2y0}
+              rx2y0[e]{down:rx2y1,left:rx1y0}
+              rx0y1[e]{down:rx0y2,right:rx1y1,up:rx0y0}
+              rx1y1[e]{down:rx1y2,left:rx0y1,right:rx2y1,up:rx1y0}
+              rx2y1[e]{down:rx2y2,left:rx1y1,up:rx2y0}
+              rx0y2[e]{right:rx1y2,up:rx0y1}
+              rx1y2[e]{left:rx0y2,right:rx2y2,up:rx1y1}
+              rx2y2[e]{left:rx1y2,up:rx2y1}
+            #players = xplayer(100), oplayer(100)
+            #pieces = e, o, x
+            #variables =
+            #rules = ->xplayer (up + down) (left + right) {e} ->>
+        ",
+        "
+            @translatedFromRbg;
+            @artificialTag index_2_copy;
+            type RbgType1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            type Player = { xplayer, oplayer };
+            type Score = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100 };
+            type Piece = { e, o, x, null };
+            type Coord = { rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
+            type CoordOrNull = { null, rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
+            type Board = CoordOrNull -> Piece;
+            type Counters = Piece -> RbgType1;
+            const direction_down: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx0y1, rx1y0: rx1y1, rx2y0: rx2y1, rx0y1: rx0y2, rx1y1: rx1y2, rx2y1: rx2y2 };
+            const direction_right: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx1y0, rx1y0: rx2y0, rx0y1: rx1y1, rx1y1: rx2y1, rx0y2: rx1y2, rx1y2: rx2y2 };
+            const direction_left: CoordOrNull -> CoordOrNull = { :null, rx1y0: rx0y0, rx2y0: rx1y0, rx1y1: rx0y1, rx2y1: rx1y1, rx1y2: rx0y2, rx2y2: rx1y2 };
+            const direction_up: CoordOrNull -> CoordOrNull = { :null, rx0y1: rx0y0, rx1y1: rx1y0, rx2y1: rx2y0, rx0y2: rx0y1, rx1y2: rx1y1, rx2y2: rx2y1 };
+            const ReachableMap1: Coord -> Coord -> Bool = { :{ :0, rx1y1: 1 }, rx1y0: { :0, rx0y1: 1, rx2y1: 1 }, rx0y1: { :0, rx1y0: 1, rx1y2: 1 }, rx1y1: { :0, rx0y0: 1, rx2y0: 1, rx0y2: 1, rx2y2: 1 }, rx2y1: { :0, rx1y0: 1, rx1y2: 1 }, rx1y2: { :0, rx0y1: 1, rx2y1: 1 } };
+            var board: Board = { :e, null: null };
+            var coord: CoordOrNull = rx0y0;
+            var coord_temp: Coord = rx0y0;
+            var counters: Counters = { :0, e: 9 };
+            1, 5: coord_temp = Coord(*);
+            10, 9: $ index_2;
+            1_9_1, 1_9_5: coord_temp = Coord(*);
+            1_9_10, 1_9_9: ;
+            1_9_4, 1_9_7: board[coord] == e;
+            1_9_5, 1_9_6: ReachableMap1[coord][coord_temp] == 1;
+            1_9_6, 1_9_4: coord = coord_temp;
+            1_9_7, 1_9_10: ;
+            3, 2: $ index_1;
+            4, 7: board[coord] == e;
+            5, 6: ReachableMap1[coord][coord_temp] == 1;
+            6, 4: coord = coord_temp;
+            7, 10: $$ coord;
+            9, end: player = keeper;
+            begin, 3: $$ coord;
+            2, 11: ? 1_9_1 -> 1_9_9;
+            11, 1: player = xplayer;
+            2, 12: ! 1_9_1 -> 1_9_9;
+            12, end: player = keeper;
+        "
+    );
+
+    test_translation!(
         remove_coord_null_check_assignments,
         "
             #board = node1[piece1]{dir1:node2} node2[piece2]{dir2:node1}
