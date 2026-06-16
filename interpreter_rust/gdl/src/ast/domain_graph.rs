@@ -280,7 +280,7 @@ impl<Id: Clone> Term<Id> {
             Self::Goal(role, utility) => {
                 merge(role.as_indexed_variable(0), utility.as_indexed_variable(1))
             }
-            Self::Init(_) => todo!("Init"),
+            Self::Init(proposition) => merge(proposition.as_indexed_variable(0), None),
             Self::Input(role, action) => {
                 merge(role.as_indexed_variable(0), action.as_indexed_variable(1))
             }
@@ -428,5 +428,19 @@ mod test {
         assert_eq!(graph.domain(&Order(Term::<()>::ORDER_NEXT, 0)), domain_4);
         assert_eq!(graph.domain(&Order(Term::<()>::ORDER_ROLE, 0)), domain_3);
         assert_eq!(graph.domain(&Order(Term::<()>::ORDER_TRUE, 0)), domain_4);
+    }
+
+    #[test]
+    fn example_5() {
+        use DomainGraphNode::{Constant, Custom, Order};
+        let game = Game::from("init(cell(M, N, b)) :- index(M) & index(N)");
+        let actual = game.domain_graph();
+
+        let mut expect = DomainGraph::default();
+        expect.insert(Constant("cell"), Order(Term::<()>::ORDER_INIT, 0));
+        expect.insert(Constant("b"), Custom("cell", 2));
+        expect.insert(Custom("index", 0), Custom("cell", 0));
+        expect.insert(Custom("index", 0), Custom("cell", 1));
+        assert_eq!(actual.to_graphviz(), expect.to_graphviz());
     }
 }
