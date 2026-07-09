@@ -58,7 +58,8 @@ impl<Id> Positioned for Pragma<Id> {
             | Self::TagIndex { span, .. }
             | Self::TagMaxIndex { span, .. }
             | Self::TranslatedFromRbg { span }
-            | Self::Unique { span, .. } => *span,
+            | Self::Unique { span, .. }
+            | Self::Unknown { span, .. } => *span,
         }
     }
 }

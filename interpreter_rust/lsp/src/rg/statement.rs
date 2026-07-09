@@ -7,7 +7,7 @@ use utils::{
 
 pub trait Statement: Positioned {
     fn completion_kind(&self, pos: &Position) -> CompletionKind;
-    fn keyword(&self) -> &'static str;
+    fn keyword_length(&self) -> usize;
     fn token_type(&self) -> &'static str {
         "keyword"
     }
@@ -26,8 +26,8 @@ impl Statement for Constant<Identifier> {
         }
     }
 
-    fn keyword(&self) -> &'static str {
-        "const"
+    fn keyword_length(&self) -> usize {
+        "const".len()
     }
 }
 
@@ -50,8 +50,8 @@ impl Statement for Edge<Identifier> {
         }
     }
 
-    fn keyword(&self) -> &'static str {
-        ""
+    fn keyword_length(&self) -> usize {
+        "".len()
     }
 }
 
@@ -60,20 +60,23 @@ impl Statement for Pragma<Identifier> {
         CompletionKind::None
     }
 
-    fn keyword(&self) -> &'static str {
+    fn keyword_length(&self) -> usize {
         match self {
-            Self::ArtificialTag { .. } => "@artificialTag",
-            Self::Disjoint { .. } => "@disjoint",
-            Self::DisjointExhaustive { .. } => "@disjointExhaustive",
-            Self::Integer { .. } => "@integer",
-            Self::Iterator { .. } => "@iterator",
-            Self::Repeat { .. } => "@repeat",
-            Self::SimpleApply { .. } => "@simpleApply",
-            Self::SimpleApplyExhaustive { .. } => "@simpleApplyExhaustive",
-            Self::TagIndex { .. } => "@tagIndex",
-            Self::TagMaxIndex { .. } => "@tagMaxIndex",
-            Self::TranslatedFromRbg { .. } => "@translatedFromRbg",
-            Self::Unique { .. } => "@unique",
+            Self::ArtificialTag { .. } => "artificialTag".len(),
+            Self::Disjoint { .. } => "disjoint".len(),
+            Self::DisjointExhaustive { .. } => "disjointExhaustive".len(),
+            Self::Integer { .. } => "integer".len(),
+            Self::Iterator { .. } => "iterator".len(),
+            Self::Repeat { .. } => "repeat".len(),
+            Self::SimpleApply { .. } => "simpleApply".len(),
+            Self::SimpleApplyExhaustive { .. } => "simpleApplyExhaustive".len(),
+            Self::TagIndex { .. } => "tagIndex".len(),
+            Self::TagMaxIndex { .. } => "tagMaxIndex".len(),
+            Self::TranslatedFromRbg { .. } => "translatedFromRbg".len(),
+            Self::Unique { .. } => "unique".len(),
+            Self::Unknown { content, .. } => content
+                .split_once(char::is_whitespace)
+                .map_or(content.len(), |(tag, _)| tag.len()),
         }
     }
 
@@ -96,8 +99,8 @@ impl Statement for Typedef<Identifier> {
         }
     }
 
-    fn keyword(&self) -> &'static str {
-        "type"
+    fn keyword_length(&self) -> usize {
+        "type".len()
     }
 }
 
@@ -116,7 +119,7 @@ impl Statement for Variable<Identifier> {
         }
     }
 
-    fn keyword(&self) -> &'static str {
-        "var"
+    fn keyword_length(&self) -> usize {
+        "var".len()
     }
 }

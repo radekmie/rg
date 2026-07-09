@@ -1,7 +1,7 @@
 use crate::position::Span;
 use crate::ParserError;
 use nom::branch::alt;
-use nom::bytes::complete::{tag, take_till, take_while, take_while1};
+use nom::bytes::complete::{tag, take_until, take_while, take_while1};
 use nom::character::complete::{anychar, char, digit1, multispace1};
 use nom::combinator::{cut, into, map, map_res, opt, verify};
 use nom::error::Error;
@@ -72,7 +72,7 @@ pub fn expect<'a, T, E: Display>(
 }
 
 pub fn comment(input: Input) -> Result<Input> {
-    preceded(tag("//"), cut(take_till(|c| c == '\n'))).parse(input)
+    preceded(tag("//"), cut(take_until("\n"))).parse(input)
 }
 
 pub fn comments_and_whitespaces0(input: Input) -> Result<()> {

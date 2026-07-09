@@ -24,6 +24,12 @@ impl<OldId, NewId> MapId<Self, OldId, NewId> for usize {
     }
 }
 
+impl<OldId, NewId> MapId<Self, OldId, NewId> for String {
+    fn map_id(&self, _map: &mut impl FnMut(&OldId) -> NewId) -> Self {
+        self.clone()
+    }
+}
+
 impl<FromType: MapId<ToType, OldId, NewId>, ToType, OldId, NewId> MapId<Arc<ToType>, OldId, NewId>
     for Arc<FromType>
 {

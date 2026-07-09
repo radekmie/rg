@@ -305,6 +305,7 @@ impl<Id: Display> Display for Pragma<Id> {
                 nodes.iter().try_for_each(|node| write!(f, " {node}"))?;
                 write!(f, ";")
             }
+            Self::Unknown { content, .. } => write!(f, "@{content};"),
         }
     }
 }

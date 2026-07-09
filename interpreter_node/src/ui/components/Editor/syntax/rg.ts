@@ -26,7 +26,7 @@ export const language: monaco.languages.IMonarchLanguage = {
       [/[:;,.]/, 'delimiter'],
       [/@symbols/, { cases: { '@operators': 'operator', '@default': '' } }],
       [/[ \t\r\n]+/, 'white'],
-      [/@[\w]+/, 'macro'],
+      [/@[^\s;]*/, 'macro'],
     ],
   },
 };

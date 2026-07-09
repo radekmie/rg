@@ -1569,12 +1569,19 @@ pub enum Pragma<Id> {
         span: Span,
         nodes: Vec<Node<Id>>,
     },
+    Unknown {
+        #[serde(skip)]
+        span: Span,
+        content: String,
+    },
 }
 
 impl<Id> Pragma<Id> {
     pub fn nodes(&self) -> Box<dyn Iterator<Item = &Node<Id>> + '_> {
         match self {
-            Self::ArtificialTag { .. } => Box::new(None.into_iter()),
+            Self::ArtificialTag { .. } | Self::TranslatedFromRbg { .. } | Self::Unknown { .. } => {
+                Box::new(None.into_iter())
+            }
             Self::Disjoint { node, nodes, .. } | Self::DisjointExhaustive { node, nodes, .. } => {
                 Box::new(Some(node).into_iter().chain(nodes))
             }
@@ -1592,7 +1599,6 @@ impl<Id> Pragma<Id> {
             Self::SimpleApply { lhs, rhs, .. } | Self::SimpleApplyExhaustive { lhs, rhs, .. } => {
                 Box::new(Some(lhs).into_iter().chain(Some(rhs)))
             }
-            Self::TranslatedFromRbg { .. } => Box::new([].into_iter()),
         }
     }
 }
@@ -1643,6 +1649,7 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
                 }
             }
             Self::TranslatedFromRbg { .. } => {}
+            Self::Unknown { .. } => {}
         }
     }
 }

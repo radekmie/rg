@@ -3,7 +3,7 @@ use crate::ast::{
     Typedef, Value, ValueEntry, Variable,
 };
 use nom::branch::alt;
-use nom::bytes::complete::tag;
+use nom::bytes::complete::{tag, take_until};
 use nom::character::complete::char;
 use nom::combinator::{all_consuming, cut, into, opt, success};
 use nom::error::context;
@@ -303,154 +303,142 @@ fn variable(input: Input) -> Result<Option<Variable<Identifier>>> {
 }
 
 fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
+    macro_rules! pragma {
+        ($tag:expr, $inner:expr, $map:expr) => {
+            (tag($tag), cut($inner), cut(preceded_whitespace(tag(";"))))
+                .map(|(tag, inner, semicolon)| $map(Span::from((&tag, &semicolon)), inner))
+        };
+    }
+
     let pragma = alt((
-        (
-            tag("artificialTag"),
-            cut(many1(preceded_whitespace(identifier))),
-            preceded_whitespace(tag(";")),
-        )
-            .map(|(tag, tags, semicolon)| Pragma::ArtificialTag {
-                span: Span::from((&tag, &semicolon)),
-                tags,
-            }),
-        (
-            tag("disjointExhaustive"),
-            cut(preceded_whitespace(node)),
-            preceded_whitespace(tag(":")),
-            cut(many1(preceded_whitespace(node))),
-            preceded_whitespace(tag(";")),
-        )
-            .map(
-                |(tag, node, _, nodes, semicolon)| Pragma::DisjointExhaustive {
-                    span: Span::from((&tag, &semicolon)),
-                    node,
-                    nodes,
-                },
+        pragma!(
+            "artificialTag",
+            many1(preceded_whitespace(identifier)),
+            |span, tags| Pragma::ArtificialTag { span, tags }
+        ),
+        pragma!(
+            "disjointExhaustive",
+            (
+                preceded_whitespace(node),
+                preceded_whitespace(tag(":")),
+                many1(preceded_whitespace(node)),
             ),
-        (
-            tag("disjoint"),
-            cut(preceded_whitespace(node)),
-            preceded_whitespace(tag(":")),
-            cut(many1(preceded_whitespace(node))),
-            preceded_whitespace(tag(";")),
-        )
-            .map(|(tag, node, _, nodes, semicolon)| Pragma::Disjoint {
-                span: Span::from((&tag, &semicolon)),
-                node,
-                nodes,
-            }),
-        (
-            tag("integer"),
-            preceded_whitespace(integer),
-            preceded_whitespace(tag(":")),
-            cut(many1(preceded_whitespace(node))),
-            preceded_whitespace(tag(";")),
-        )
-            .map(|(tag, offset, _, nodes, semicolon)| Pragma::Integer {
-                span: Span::from((&tag, &semicolon)),
+            |span, (node, _, nodes)| Pragma::DisjointExhaustive { span, node, nodes }
+        ),
+        pragma!(
+            "disjoint",
+            (
+                preceded_whitespace(node),
+                preceded_whitespace(tag(":")),
+                many1(preceded_whitespace(node)),
+            ),
+            |span, (node, _, nodes)| Pragma::Disjoint { span, node, nodes }
+        ),
+        pragma!(
+            "integer",
+            (
+                preceded_whitespace(integer),
+                preceded_whitespace(tag(":")),
+                many1(preceded_whitespace(node)),
+            ),
+            |span, (offset, _, nodes)| Pragma::Integer {
+                span,
                 offset,
                 nodes,
-            }),
-        (
-            tag("iterator"),
-            preceded_whitespace(node),
-            preceded_whitespace(node),
-            preceded_whitespace(node),
-            preceded_whitespace(tag(":")),
-            preceded_whitespace(identifier),
-            preceded_whitespace(tag(";")),
-        )
-            .map(|(tag, node_a, node_b, node_c, _, variable, semicolon)| {
-                Pragma::Iterator {
-                    span: Span::from((&tag, &semicolon)),
-                    node_a,
-                    node_b,
-                    node_c,
-                    variable,
-                }
-            }),
-        (
-            tag("repeat"),
-            cut(many1(preceded_whitespace(node))),
-            preceded_whitespace(tag(":")),
-            cut(many0(preceded_whitespace(identifier))),
-            preceded_whitespace(tag(";")),
-        )
-            .map(|(tag, nodes, _, identifiers, semicolon)| Pragma::Repeat {
-                span: Span::from((&tag, &semicolon)),
+            }
+        ),
+        pragma!(
+            "iterator",
+            (
+                preceded_whitespace(node),
+                preceded_whitespace(node),
+                preceded_whitespace(node),
+                preceded_whitespace(tag(":")),
+                preceded_whitespace(identifier),
+            ),
+            |span, (node_a, node_b, node_c, _, variable)| Pragma::Iterator {
+                span,
+                node_a,
+                node_b,
+                node_c,
+                variable,
+            }
+        ),
+        pragma!(
+            "repeat",
+            (
+                many1(preceded_whitespace(node)),
+                preceded_whitespace(tag(":")),
+                many0(preceded_whitespace(identifier)),
+            ),
+            |span, (nodes, _, identifiers)| Pragma::Repeat {
+                span,
                 nodes,
                 identifiers,
-            }),
-        (
-            tag("simpleApplyExhaustive"),
-            cut(preceded_whitespace(node)),
-            preceded_whitespace(node),
-            in_brackets(separated_list0(ww_char(','), pragma_tag)),
-            separated_list0(ww_char(','), pragma_assignment),
-            preceded_whitespace(tag(";")),
-        )
-            .map(|(tag, lhs, rhs, tags, assignments, semicolon)| {
-                Pragma::SimpleApplyExhaustive {
-                    span: Span::from((&tag, &semicolon)),
-                    lhs,
-                    rhs,
-                    tags,
-                    assignments,
-                }
-            }),
-        (
-            tag("simpleApply"),
-            cut(preceded_whitespace(node)),
-            preceded_whitespace(node),
-            in_brackets(separated_list0(ww_char(','), pragma_tag)),
-            separated_list0(ww_char(','), pragma_assignment),
-            preceded_whitespace(tag(";")),
-        )
-            .map(
-                |(tag, lhs, rhs, tags, assignments, semicolon)| Pragma::SimpleApply {
-                    span: Span::from((&tag, &semicolon)),
-                    lhs,
-                    rhs,
-                    tags,
-                    assignments,
-                },
+            }
+        ),
+        pragma!(
+            "simpleApplyExhaustive",
+            (
+                preceded_whitespace(node),
+                preceded_whitespace(node),
+                in_brackets(separated_list0(ww_char(','), pragma_tag)),
+                separated_list0(ww_char(','), pragma_assignment),
             ),
-        (
-            tag("tagIndex"),
-            cut(many1(preceded_whitespace(node))),
-            preceded_whitespace(tag(":")),
-            preceded_whitespace(integer),
-            preceded_whitespace(tag(";")),
-        )
-            .map(|(tag, nodes, _, index, semicolon)| Pragma::TagIndex {
-                span: Span::from((&tag, &semicolon)),
-                nodes,
-                index,
-            }),
-        (
-            tag("tagMaxIndex"),
-            cut(many1(preceded_whitespace(node))),
-            preceded_whitespace(tag(":")),
-            preceded_whitespace(integer),
-            preceded_whitespace(tag(";")),
-        )
-            .map(|(tag, nodes, _, index, semicolon)| Pragma::TagMaxIndex {
-                span: Span::from((&tag, &semicolon)),
-                nodes,
-                index,
-            }),
-        tag("translatedFromRbg;").map(|tag| Pragma::TranslatedFromRbg {
-            span: Span::from((&tag, &tag)),
+            |span, (lhs, rhs, tags, assignments)| Pragma::SimpleApplyExhaustive {
+                span,
+                lhs,
+                rhs,
+                tags,
+                assignments,
+            }
+        ),
+        pragma!(
+            "simpleApply",
+            (
+                preceded_whitespace(node),
+                preceded_whitespace(node),
+                in_brackets(separated_list0(ww_char(','), pragma_tag)),
+                separated_list0(ww_char(','), pragma_assignment),
+            ),
+            |span, (lhs, rhs, tags, assignments)| Pragma::SimpleApply {
+                span,
+                lhs,
+                rhs,
+                tags,
+                assignments,
+            }
+        ),
+        pragma!(
+            "tagIndex",
+            (
+                many1(preceded_whitespace(node)),
+                preceded_whitespace(tag(":")),
+                preceded_whitespace(integer),
+            ),
+            |span, (nodes, _, index)| Pragma::TagIndex { span, nodes, index }
+        ),
+        pragma!(
+            "tagMaxIndex",
+            (
+                many1(preceded_whitespace(node)),
+                preceded_whitespace(tag(":")),
+                preceded_whitespace(integer),
+            ),
+            |span, (nodes, _, index)| Pragma::TagMaxIndex { span, nodes, index }
+        ),
+        pragma!("translatedFromRbg", tag(""), |span, _| {
+            Pragma::TranslatedFromRbg { span }
         }),
-        (
-            tag("unique"),
-            cut(many1(preceded_whitespace(node))),
-            preceded_whitespace(tag(";")),
-        )
-            .map(|(tag, nodes, semicolon)| Pragma::Unique {
-                span: Span::from((&tag, &semicolon)),
-                nodes,
-            }),
+        pragma!("unique", many1(preceded_whitespace(node)), |span, nodes| {
+            Pragma::Unique { span, nodes }
+        }),
+        pragma!("", take_until(";"), |span, content: Input| {
+            Pragma::Unknown {
+                span,
+                content: content.fragment().to_string(),
+            }
+        }),
     ));
 
     context("pragma", preceded(tag("@"), expect(pragma, "pragma"))).parse(input)
@@ -601,7 +589,7 @@ mod test {
     }
 
     #[test]
-    fn incorrect_edge() {
+    fn edge_incorrect() {
         check_error("foo bar, goo: ;");
         check_error("foo, goo bar: ;");
         check_error("foo (x: Y), goo: ;");
@@ -609,5 +597,81 @@ mod test {
         check_error("foo(x: Y) bar, goo: ;");
         check_error("(x: Y)foo, goo: ;");
         check_error("foo,(x: Y)goo: ;");
+    }
+
+    #[test]
+    fn pragma_known() {
+        check_parse("@artificialTag a;");
+        check_parse("@disjointExhaustive a : b;");
+        check_parse("@disjointExhaustive a : b c;");
+        check_parse("@disjoint a : b;");
+        check_parse("@disjoint a : b c;");
+        check_parse("@integer 1 : a;");
+        check_parse("@integer 1 : a b;");
+        check_parse("@iterator a b c : d;");
+        check_parse("@repeat a :;");
+        check_parse("@repeat a b :;");
+        check_parse("@repeat a : b;");
+        check_parse("@repeat a : b c;");
+        check_parse("@repeat a b : c d;");
+        check_parse("@simpleApplyExhaustive a b [];");
+        check_parse("@simpleApplyExhaustive a b [c];");
+        check_parse("@simpleApplyExhaustive a b [c: T];");
+        check_parse("@simpleApplyExhaustive a b [c, d];");
+        check_parse("@simpleApplyExhaustive a b [c: T, d];");
+        check_parse("@simpleApplyExhaustive a b [c, d: T];");
+        check_parse("@simpleApplyExhaustive a b [c: T, d: U];");
+        check_parse("@simpleApplyExhaustive a b [] c = 1;");
+        check_parse("@simpleApplyExhaustive a b [c] d = 1;");
+        check_parse("@simpleApplyExhaustive a b [c, d] e = 1;");
+        check_parse("@simpleApplyExhaustive a b [] c = 1, d = 1;");
+        check_parse("@simpleApplyExhaustive a b [c] d = 1, e = 1;");
+        check_parse("@simpleApplyExhaustive a b [c, d] e = 1, f = 1;");
+        check_parse("@simpleApply a b [];");
+        check_parse("@simpleApply a b [c];");
+        check_parse("@simpleApply a b [c: T];");
+        check_parse("@simpleApply a b [c, d];");
+        check_parse("@simpleApply a b [c: T, d];");
+        check_parse("@simpleApply a b [c, d: T];");
+        check_parse("@simpleApply a b [c: T, d: U];");
+        check_parse("@simpleApply a b [] c = 1;");
+        check_parse("@simpleApply a b [c] d = 1;");
+        check_parse("@simpleApply a b [c, d] e = 1;");
+        check_parse("@simpleApply a b [] c = 1, d = 1;");
+        check_parse("@simpleApply a b [c] d = 1, e = 1;");
+        check_parse("@simpleApply a b [c, d] e = 1, f = 1;");
+        check_parse("@tagIndex a : 1;");
+        check_parse("@tagIndex a b : 1;");
+        check_parse("@tagMaxIndex a : 1;");
+        check_parse("@tagMaxIndex a b : 1;");
+        check_parse("@translatedFromRbg;");
+        check_parse("@unique a;");
+        check_parse("@unique a b;");
+    }
+
+    #[test]
+    fn pragma_known_incorrect() {
+        check_error("@integer a;");
+        check_error("@integer 1;");
+        check_error("@integer 1 :;");
+        check_error("@integer : a;");
+        check_error("@tagIndex;");
+        check_error("@tagIndex a;");
+        check_error("@tagIndex a :;");
+        check_error("@tagIndex : 1;");
+    }
+
+    #[test]
+    fn pragma_unknown() {
+        check_parse("@;");
+        check_parse("@@;");
+        check_parse("@@@;");
+        check_parse("@ ;");
+        check_parse("@custom;");
+        check_parse("@camelCase;");
+        check_parse("@foo with args 1 2 3;");
+        check_parse("@json {\"foo\": [\"bar\", 1, null, \"baz\"]};");
+        check_parse("@white space \t is \n significant \r ;");
+        check_parse("@multiple pragmas @because who @will stop @us;");
     }
 }
