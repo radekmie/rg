@@ -23,8 +23,8 @@ fn add_from_type(table: &mut SymbolTableBuilder, type_: &Type<Identifier>) {
 }
 
 fn add_from_edge(table: &mut SymbolTableBuilder, edge: &Edge<Identifier>) {
-    add_from_edge_name(table, &edge.lhs);
-    add_from_edge_name(table, &edge.rhs);
+    add_from_node(table, &edge.lhs);
+    add_from_node(table, &edge.rhs);
     add_from_edge_label(table, &edge.label);
 }
 
@@ -60,8 +60,8 @@ fn add_from_edge_label(table: &mut SymbolTableBuilder, label: &Label<Identifier>
         Label::Tag { symbol } => add(table, symbol, false),
         Label::TagVariable { identifier } => add(table, identifier, false),
         Label::Reachability { lhs, rhs, .. } => {
-            add_from_edge_name(table, lhs);
-            add_from_edge_name(table, rhs);
+            add_from_node(table, lhs);
+            add_from_node(table, rhs);
         }
     }
 }
@@ -82,7 +82,7 @@ fn add_from_expression(table: &mut SymbolTableBuilder, expr: &Expression<Identif
     }
 }
 
-fn add_from_edge_name(table: &mut SymbolTableBuilder, node: &Node<Identifier>) {
+fn add_from_node(table: &mut SymbolTableBuilder, node: &Node<Identifier>) {
     table.add_occ_with_flag(&node.identifier, Flag::Function);
 }
 
@@ -132,8 +132,17 @@ pub fn table_builder_from_game(game: &Game<Identifier>) -> SymbolTableBuilder {
         add_from_edge(&mut table, edge);
     });
     game.pragmas.iter().for_each(|pragma| {
-        for edge_name in pragma.nodes() {
-            add_from_edge_name(&mut table, edge_name);
+        for expression in pragma.expressions().into_iter().flatten() {
+            add_from_expression(&mut table, expression);
+        }
+        for identifier in pragma.identifiers().into_iter().flatten() {
+            add(&mut table, identifier, true);
+        }
+        for node in pragma.nodes().into_iter().flatten() {
+            add_from_node(&mut table, node);
+        }
+        for type_ in pragma.types().into_iter().flatten() {
+            add_from_type(&mut table, type_);
         }
     });
     table

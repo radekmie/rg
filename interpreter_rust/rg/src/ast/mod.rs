@@ -1577,27 +1577,93 @@ pub enum Pragma<Id> {
 }
 
 impl<Id> Pragma<Id> {
-    pub fn nodes(&self) -> Box<dyn Iterator<Item = &Node<Id>> + '_> {
+    pub fn expressions(&self) -> Option<Box<dyn Iterator<Item = &Arc<Expression<Id>>> + '_>> {
+        match self {
+            Self::ArtificialTag { .. }
+            | Self::Disjoint { .. }
+            | Self::DisjointExhaustive { .. }
+            | Self::Integer { .. }
+            | Self::Iterator { .. }
+            | Self::Repeat { .. }
+            | Self::TagIndex { .. }
+            | Self::TagMaxIndex { .. }
+            | Self::TranslatedFromRbg { .. }
+            | Self::Unique { .. }
+            | Self::Unknown { .. } => None,
+            Self::SimpleApply { assignments, .. }
+            | Self::SimpleApplyExhaustive { assignments, .. } => Some(Box::new(
+                assignments
+                    .iter()
+                    .flat_map(|assignment| [&assignment.lhs, &assignment.rhs]),
+            )),
+        }
+    }
+
+    pub fn identifiers(&self) -> Option<Box<dyn Iterator<Item = &Id> + '_>> {
+        match self {
+            Self::ArtificialTag { .. }
+            | Self::Disjoint { .. }
+            | Self::DisjointExhaustive { .. }
+            | Self::Integer { .. }
+            | Self::Iterator { .. }
+            | Self::Repeat { .. }
+            | Self::TagIndex { .. }
+            | Self::TagMaxIndex { .. }
+            | Self::TranslatedFromRbg { .. }
+            | Self::Unique { .. }
+            | Self::Unknown { .. } => None,
+            Self::SimpleApply { tags, .. } | Self::SimpleApplyExhaustive { tags, .. } => {
+                Some(Box::new(tags.iter().filter_map(|tag| match tag {
+                    PragmaTag::Symbol { .. } => None,
+                    PragmaTag::Variable { identifier, .. } => Some(identifier),
+                })))
+            }
+        }
+    }
+
+    pub fn nodes(&self) -> Option<Box<dyn Iterator<Item = &Node<Id>> + '_>> {
         match self {
             Self::ArtificialTag { .. } | Self::TranslatedFromRbg { .. } | Self::Unknown { .. } => {
-                Box::new(None.into_iter())
+                None
             }
             Self::Disjoint { node, nodes, .. } | Self::DisjointExhaustive { node, nodes, .. } => {
-                Box::new(Some(node).into_iter().chain(nodes))
+                Some(Box::new([node].into_iter().chain(nodes)))
             }
             Self::Integer { nodes, .. }
             | Self::Repeat { nodes, .. }
             | Self::TagIndex { nodes, .. }
             | Self::TagMaxIndex { nodes, .. }
-            | Self::Unique { nodes, .. } => Box::new(nodes.iter()),
+            | Self::Unique { nodes, .. } => Some(Box::new(nodes.iter())),
             Self::Iterator {
                 node_a,
                 node_b,
                 node_c,
                 ..
-            } => Box::new([node_a, node_b, node_c].into_iter()),
+            } => Some(Box::new([node_a, node_b, node_c].into_iter())),
             Self::SimpleApply { lhs, rhs, .. } | Self::SimpleApplyExhaustive { lhs, rhs, .. } => {
-                Box::new(Some(lhs).into_iter().chain(Some(rhs)))
+                Some(Box::new([lhs, rhs].into_iter()))
+            }
+        }
+    }
+
+    pub fn types(&self) -> Option<Box<dyn Iterator<Item = &Arc<Type<Id>>> + '_>> {
+        match self {
+            Self::ArtificialTag { .. }
+            | Self::Disjoint { .. }
+            | Self::DisjointExhaustive { .. }
+            | Self::Integer { .. }
+            | Self::Iterator { .. }
+            | Self::Repeat { .. }
+            | Self::TagIndex { .. }
+            | Self::TagMaxIndex { .. }
+            | Self::TranslatedFromRbg { .. }
+            | Self::Unique { .. }
+            | Self::Unknown { .. } => None,
+            Self::SimpleApply { tags, .. } | Self::SimpleApplyExhaustive { tags, .. } => {
+                Some(Box::new(tags.iter().filter_map(|tag| match tag {
+                    PragmaTag::Symbol { .. } => None,
+                    PragmaTag::Variable { type_, .. } => Some(type_),
+                })))
             }
         }
     }
