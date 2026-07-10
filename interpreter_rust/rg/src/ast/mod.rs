@@ -1599,28 +1599,6 @@ impl<Id> Pragma<Id> {
         }
     }
 
-    pub fn identifiers(&self) -> Option<Box<dyn Iterator<Item = &Id> + '_>> {
-        match self {
-            Self::ArtificialTag { .. }
-            | Self::Disjoint { .. }
-            | Self::DisjointExhaustive { .. }
-            | Self::Integer { .. }
-            | Self::Iterator { .. }
-            | Self::Repeat { .. }
-            | Self::TagIndex { .. }
-            | Self::TagMaxIndex { .. }
-            | Self::TranslatedFromRbg { .. }
-            | Self::Unique { .. }
-            | Self::Unknown { .. } => None,
-            Self::SimpleApply { tags, .. } | Self::SimpleApplyExhaustive { tags, .. } => {
-                Some(Box::new(tags.iter().filter_map(|tag| match tag {
-                    PragmaTag::Symbol { .. } => None,
-                    PragmaTag::Variable { identifier, .. } => Some(identifier),
-                })))
-            }
-        }
-    }
-
     pub fn nodes(&self) -> Option<Box<dyn Iterator<Item = &Node<Id>> + '_>> {
         match self {
             Self::ArtificialTag { .. } | Self::TranslatedFromRbg { .. } | Self::Unknown { .. } => {
@@ -1646,7 +1624,8 @@ impl<Id> Pragma<Id> {
         }
     }
 
-    pub fn types(&self) -> Option<Box<dyn Iterator<Item = &Arc<Type<Id>>> + '_>> {
+    #[allow(clippy::type_complexity)]
+    pub fn variables(&self) -> Option<Box<dyn Iterator<Item = (&Id, &Arc<Type<Id>>)> + '_>> {
         match self {
             Self::ArtificialTag { .. }
             | Self::Disjoint { .. }
@@ -1662,7 +1641,9 @@ impl<Id> Pragma<Id> {
             Self::SimpleApply { tags, .. } | Self::SimpleApplyExhaustive { tags, .. } => {
                 Some(Box::new(tags.iter().filter_map(|tag| match tag {
                     PragmaTag::Symbol { .. } => None,
-                    PragmaTag::Variable { type_, .. } => Some(type_),
+                    PragmaTag::Variable {
+                        identifier, type_, ..
+                    } => Some((identifier, type_)),
                 })))
             }
         }

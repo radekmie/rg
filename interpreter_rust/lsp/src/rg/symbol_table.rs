@@ -118,7 +118,6 @@ pub fn table_builder_from_game(game: &Game<Identifier>) -> SymbolTableBuilder {
         add_from_type(&mut table, &constant.type_);
         add_from_value(&mut table, &constant.value);
     });
-
     game.variables.iter().for_each(|variable| {
         table.add_occ_with_flag(&variable.identifier, Flag::Variable);
         add_from_type(&mut table, &variable.type_);
@@ -135,13 +134,11 @@ pub fn table_builder_from_game(game: &Game<Identifier>) -> SymbolTableBuilder {
         for expression in pragma.expressions().into_iter().flatten() {
             add_from_expression(&mut table, expression);
         }
-        for identifier in pragma.identifiers().into_iter().flatten() {
-            add(&mut table, identifier, true);
-        }
         for node in pragma.nodes().into_iter().flatten() {
             add_from_node(&mut table, node);
         }
-        for type_ in pragma.types().into_iter().flatten() {
+        for (identifier, type_) in pragma.variables().into_iter().flatten() {
+            add(&mut table, identifier, true);
             add_from_type(&mut table, type_);
         }
     });

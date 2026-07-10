@@ -42,7 +42,6 @@ impl Symbols {
                 symbols.symbols.push(symbol);
             }
         });
-
         game.variables.iter().for_each(|variable| {
             let id = &variable.identifier;
             if let Some(symbol) = typed(id, Flag::Variable, variable.type_.clone()) {
@@ -60,6 +59,13 @@ impl Symbols {
         game.edges.iter().for_each(|edge| {
             symbols.add_if_not_defined(untyped(&edge.lhs.identifier, Flag::Function));
             symbols.add_if_not_defined(untyped(&edge.rhs.identifier, Flag::Function));
+        });
+        game.pragmas.iter().for_each(|pragma| {
+            for (identifier, type_) in pragma.variables().into_iter().flatten() {
+                if let Some(symbol) = typed(identifier, Flag::Variable, type_.clone()) {
+                    symbols.symbols.push(symbol);
+                }
+            }
         });
         symbols.symbols
     }
