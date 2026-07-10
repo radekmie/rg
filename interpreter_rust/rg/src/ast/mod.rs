@@ -1516,7 +1516,7 @@ pub enum Pragma<Id> {
         #[serde(skip)]
         span: Span,
         offset: usize,
-        nodes: Vec<Node<Id>>,
+        identifiers: Vec<Id>,
     },
     Iterator {
         #[serde(skip)]
@@ -1601,14 +1601,14 @@ impl<Id> Pragma<Id> {
 
     pub fn nodes(&self) -> Option<Box<dyn Iterator<Item = &Node<Id>> + '_>> {
         match self {
-            Self::ArtificialTag { .. } | Self::TranslatedFromRbg { .. } | Self::Unknown { .. } => {
-                None
-            }
+            Self::ArtificialTag { .. }
+            | Self::Integer { .. }
+            | Self::TranslatedFromRbg { .. }
+            | Self::Unknown { .. } => None,
             Self::Disjoint { node, nodes, .. } | Self::DisjointExhaustive { node, nodes, .. } => {
                 Some(Box::new([node].into_iter().chain(nodes)))
             }
-            Self::Integer { nodes, .. }
-            | Self::Repeat { nodes, .. }
+            Self::Repeat { nodes, .. }
             | Self::TagIndex { nodes, .. }
             | Self::TagMaxIndex { nodes, .. }
             | Self::Unique { nodes, .. } => Some(Box::new(nodes.iter())),
@@ -1653,7 +1653,10 @@ impl<Id> Pragma<Id> {
 impl<Id: Clone + PartialEq> Pragma<Id> {
     pub fn rename_node(&mut self, old_node: &Node<Id>, new_node: &Node<Id>) {
         match self {
-            Self::ArtificialTag { .. } => {}
+            Self::ArtificialTag { .. }
+            | Self::Integer { .. }
+            | Self::TranslatedFromRbg { .. }
+            | Self::Unknown { .. } => {}
             Self::Disjoint { node, nodes, .. } | Self::DisjointExhaustive { node, nodes, .. } => {
                 if node == old_node {
                     *node = new_node.clone();
@@ -1664,8 +1667,7 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
                     }
                 }
             }
-            Self::Integer { nodes, .. }
-            | Self::Repeat { nodes, .. }
+            Self::Repeat { nodes, .. }
             | Self::TagIndex { nodes, .. }
             | Self::TagMaxIndex { nodes, .. }
             | Self::Unique { nodes, .. } => {
@@ -1695,8 +1697,6 @@ impl<Id: Clone + PartialEq> Pragma<Id> {
                     *rhs = new_node.clone();
                 }
             }
-            Self::TranslatedFromRbg { .. } => {}
-            Self::Unknown { .. } => {}
         }
     }
 }

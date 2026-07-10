@@ -247,20 +247,20 @@ impl Context {
         limit: usize,
         with_nan: bool,
     ) -> Arc<rg::Type<Id>> {
-        let numbers = (0..limit).map(|index| Id::from(index.to_string()));
+        let mut numbers: Vec<_> = (0..limit)
+            .map(|index| Id::from(index.to_string()))
+            .collect();
         self.rg.add_pragma(rg::Pragma::Integer {
             span: Span::none(),
             offset: 0,
-            nodes: numbers.clone().map(rg::Node::new).collect(),
+            identifiers: numbers.clone(),
         });
 
-        let identifiers = if with_nan {
-            [Id::from("nan")].into_iter().chain(numbers).collect()
-        } else {
-            numbers.into_iter().collect()
-        };
+        if with_nan {
+            numbers.insert(0, Id::from("nan"));
+        }
 
-        self.create_type_from_set(identifier, identifiers)
+        self.create_type_from_set(identifier, numbers)
     }
 
     fn create_type_from_set(

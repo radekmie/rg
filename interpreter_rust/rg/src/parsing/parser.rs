@@ -339,12 +339,12 @@ fn pragma(input: Input) -> Result<Option<Pragma<Identifier>>> {
             (
                 preceded_whitespace(integer),
                 preceded_whitespace(tag(":")),
-                many1(preceded_whitespace(node)),
+                many1(preceded_whitespace(identifier)),
             ),
-            |span, (offset, _, nodes)| Pragma::Integer {
+            |span, (offset, _, identifiers)| Pragma::Integer {
                 span,
                 offset,
-                nodes,
+                identifiers,
             }
         ),
         pragma!(

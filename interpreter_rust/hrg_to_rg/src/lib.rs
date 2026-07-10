@@ -1538,12 +1538,12 @@ fn translate_domains(context: &mut Context) {
         }
 
         let domain_elements = translate_domain_elements(context, &domain.elements);
-        let identifiers = domain_elements.iter().map(serialize_value);
+        let identifiers: Vec<_> = domain_elements.iter().map(serialize_value).collect();
         if let Some(offset) = as_integer_domain(&domain.elements) {
             context.rg.add_pragma(rg::Pragma::Integer {
                 span: Span::none(),
                 offset,
-                nodes: identifiers.clone().map(rg::Node::new).collect(),
+                identifiers: identifiers.clone(),
             });
         }
 
@@ -1552,7 +1552,7 @@ fn translate_domains(context: &mut Context) {
             identifier: domain.identifier.clone(),
             type_: Arc::from(rg::Type::Set {
                 span: Span::none(),
-                identifiers: identifiers.collect(),
+                identifiers,
             }),
         });
         context
