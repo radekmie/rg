@@ -55,8 +55,8 @@ impl Context {
         rhss.dedup();
 
         let type_ = rg::Type::Arrow {
-            lhs: self.create_type_from_set(lhss),
-            rhs: self.create_type_from_set(rhss),
+            lhs: self.create_type_from_set(None, lhss),
+            rhs: self.create_type_from_set(None, rhss),
         };
 
         if let Some(constant) = self
@@ -135,18 +135,18 @@ impl Context {
             .iter()
             .any(|constant| constant.identifier == math_operator)
         {
-            let type_lhs = self.create_math_type(limit, false);
+            let type_lhs = self.create_math_type(None, limit, false);
             let type_ = match operator {
                 InternalOperator::Add | InternalOperator::Sub => Arc::from(rg::Type::Arrow {
                     lhs: type_lhs.clone(),
                     rhs: Arc::from(rg::Type::Arrow {
                         lhs: type_lhs,
-                        rhs: self.create_math_type(limit, true),
+                        rhs: self.create_math_type(None, limit, true),
                     }),
                 }),
                 InternalOperator::Decr | InternalOperator::Incr => Arc::from(rg::Type::Arrow {
                     lhs: type_lhs,
-                    rhs: self.create_math_type(limit, true),
+                    rhs: self.create_math_type(None, limit, true),
                 }),
                 InternalOperator::Gt
                 | InternalOperator::Gte
@@ -241,7 +241,12 @@ impl Context {
         })))
     }
 
-    fn create_math_type(&mut self, limit: usize, with_nan: bool) -> Arc<rg::Type<Id>> {
+    fn create_math_type(
+        &mut self,
+        identifier: Option<Id>,
+        limit: usize,
+        with_nan: bool,
+    ) -> Arc<rg::Type<Id>> {
         let numbers = (0..limit).map(|index| Id::from(index.to_string()));
         self.rg.add_pragma(rg::Pragma::Integer {
             span: Span::none(),
@@ -249,24 +254,33 @@ impl Context {
             nodes: numbers.clone().map(rg::Node::new).collect(),
         });
 
-        if with_nan {
-            self.create_type_from_set([Id::from("nan")].into_iter().chain(numbers).collect())
+        let identifiers = if with_nan {
+            [Id::from("nan")].into_iter().chain(numbers).collect()
         } else {
-            self.create_type_from_set(numbers.into_iter().collect())
-        }
+            numbers.into_iter().collect()
+        };
+
+        self.create_type_from_set(identifier, identifiers)
     }
 
-    fn create_type_from_set(&mut self, identifiers: Vec<Id>) -> Arc<rg::Type<Id>> {
+    fn create_type_from_set(
+        &mut self,
+        identifier: Option<Id>,
+        identifiers: Vec<Id>,
+    ) -> Arc<rg::Type<Id>> {
         #[allow(clippy::map_unwrap_or)]
         let identifier = self.rg.typedefs.iter()
             .find(|typedef| matches!(typedef.type_.as_ref(), rg::Type::Set { identifiers: ids, .. } if *ids == identifiers))
             .map(|typedef| typedef.identifier.clone())
             .unwrap_or_else(|| {
-                let identifier = (1..).find_map(|index| {
-                    let identifier = Id::from(format!("RbgType{index}"));
-                    let exists = self.rg.typedefs.iter().any(|typedef| typedef.identifier == identifier);
-                    (!exists).then_some(identifier)
-                }).unwrap();
+                let identifier = identifier
+                    .into_iter()
+                    .chain((1..).map(|index| Id::from(format!("RbgType{index}"))))
+                    .find_map(|identifier| {
+                        let exists = self.rg.typedefs.iter().any(|typedef| typedef.identifier == identifier);
+                        (!exists).then_some(identifier)
+                    })
+                    .unwrap();
 
                 self.rg.typedefs.push(rg::Typedef {
                     span: Span::none(),
@@ -501,12 +515,6 @@ fn add_builtin_constants(context: &mut Context) {
 }
 
 fn add_builtin_types(context: &mut Context) {
-    let pieces_type = context.create_type_from_set(
-        (0..=context.rbg.board.len())
-            .map(|index| Id::from(index.to_string()))
-            .collect(),
-    );
-
     context.rg.typedefs.push(rg::Typedef {
         span: Span::none(),
         identifier: Id::from("Player"),
@@ -521,22 +529,17 @@ fn add_builtin_types(context: &mut Context) {
         }),
     });
 
-    context.rg.typedefs.push(rg::Typedef {
-        span: Span::none(),
-        identifier: Id::from("Score"),
-        type_: Arc::from(rg::Type::Set {
-            span: Span::none(),
-            identifiers: (0..=context
-                .rbg
-                .players
-                .iter()
-                .map(|player| player.bound)
-                .max()
-                .unwrap_or(0))
-                .map(|index| Id::from(index.to_string()))
-                .collect(),
-        }),
-    });
+    context.create_math_type(
+        Some(Id::from("Score")),
+        1 + context
+            .rbg
+            .players
+            .iter()
+            .map(|player| player.bound)
+            .max()
+            .unwrap_or(0),
+        false,
+    );
 
     context.rg.typedefs.push(rg::Typedef {
         span: Span::none(),
@@ -574,12 +577,18 @@ fn add_builtin_types(context: &mut Context) {
         }),
     });
 
+    let counter_type = context.create_math_type(
+        Some(Id::from("Counter")),
+        1 + context.rbg.board.len(),
+        false,
+    );
+
     context.rg.typedefs.push(rg::Typedef {
         span: Span::none(),
         identifier: Id::from("Counters"),
         type_: Arc::from(rg::Type::Arrow {
             lhs: Arc::from(rg::Type::new(Id::from("Piece"))),
-            rhs: pieces_type,
+            rhs: counter_type,
         }),
     });
 }
@@ -1467,7 +1476,7 @@ fn translate_atom_content(
             let first_coords = pairs.first_key_value().unwrap().1;
             if pairs.iter().all(|(_, coords)| *coords == *first_coords) {
                 let coords = pairs.pop_first().unwrap().1;
-                let type_ = context.create_type_from_set(coords.into_iter().collect());
+                let type_ = context.create_type_from_set(None, coords.into_iter().collect());
                 let local = context.random_node();
 
                 context.connect(
@@ -1652,6 +1661,7 @@ fn translate_variable(context: &mut Context, variable: rbg::Variable<Id>) -> rg:
         default_value: Arc::from(rg::Value::new(Id::from("0"))),
         identifier: variable.name,
         type_: context.create_type_from_set(
+            None,
             (0..=variable.bound)
                 .map(|index| Id::from(index.to_string()))
                 .collect(),
@@ -1715,16 +1725,18 @@ mod test {
             #rules = ->xplayer (up* + down*) (left* + right*) {e} ->>
         ",
         "
+            @integer 0 : 0 1 2 3 4 5 6 7 8 9;
+            @integer 0 : 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100;
             @translatedFromRbg;
             @artificialTag index_2_copy;
-            type RbgType1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             type Player = { xplayer, oplayer };
             type Score = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100 };
             type Piece = { e, o, x, null };
             type Coord = { rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
             type CoordOrNull = { null, rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
             type Board = CoordOrNull -> Piece;
-            type Counters = Piece -> RbgType1;
+            type Counter = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            type Counters = Piece -> Counter;
             const direction_down: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx0y1, rx1y0: rx1y1, rx2y0: rx2y1, rx0y1: rx0y2, rx1y1: rx1y2, rx2y1: rx2y2 };
             const direction_right: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx1y0, rx1y0: rx2y0, rx0y1: rx1y1, rx1y1: rx2y1, rx0y2: rx1y2, rx1y2: rx2y2 };
             const direction_left: CoordOrNull -> CoordOrNull = { :null, rx1y0: rx0y0, rx2y0: rx1y0, rx1y1: rx0y1, rx2y1: rx1y1, rx1y2: rx0y2, rx2y2: rx1y2 };
@@ -1770,17 +1782,19 @@ mod test {
             #rules = ->xplayer up* {! up} left* {! left} (down + right) {e} ->>
         ",
         "
+            @integer 0 : 0 1 2 3 4 5 6 7 8 9;
+            @integer 0 : 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100;
             @translatedFromRbg;
             @artificialTag index_2_copy;
-            type RbgType1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             type Player = { xplayer, oplayer };
             type Score = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100 };
             type Piece = { e, o, x, null };
             type Coord = { rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
             type CoordOrNull = { null, rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
             type Board = CoordOrNull -> Piece;
-            type Counters = Piece -> RbgType1;
-            type RbgType2 = { rx0y1, rx1y0 };
+            type Counter = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            type Counters = Piece -> Counter;
+            type RbgType1 = { rx0y1, rx1y0 };
             const direction_down: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx0y1, rx1y0: rx1y1, rx2y0: rx2y1, rx0y1: rx0y2, rx1y1: rx1y2, rx2y1: rx2y2 };
             const direction_right: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx1y0, rx1y0: rx2y0, rx0y1: rx1y1, rx1y1: rx2y1, rx0y2: rx1y2, rx1y2: rx2y2 };
             const direction_left: CoordOrNull -> CoordOrNull = { :null, rx1y0: rx0y0, rx2y0: rx1y0, rx1y1: rx0y1, rx2y1: rx1y1, rx1y2: rx0y2, rx2y2: rx1y2 };
@@ -1792,12 +1806,12 @@ mod test {
             1, 5: ;
             1_8_1, 1_8_5: ;
             1_8_4, 1_8_6: board[coord] == e;
-            1_8_5, 1_8_4: coord = RbgType2(*);
+            1_8_5, 1_8_4: coord = RbgType1(*);
             1_8_6, 1_8_9: ;
             1_8_9, 1_8_8: ;
             3, 2: $ index_1;
             4, 6: board[coord] == e;
-            5, 4: coord = RbgType2(*);
+            5, 4: coord = RbgType1(*);
             6, 9: $$ coord;
             8, end: player = keeper;
             9, 8: $ index_2;
@@ -1828,23 +1842,25 @@ mod test {
             #rules = ->xplayer up up {e} ->>
         ",
         "
+            @integer 0 : 0 1 2 3 4 5 6 7 8 9;
+            @integer 0 : 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100;
             @translatedFromRbg;
             @artificialTag index_2_copy;
-            type RbgType1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             type Player = { xplayer, oplayer };
             type Score = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100 };
             type Piece = { e, o, x, null };
             type Coord = { rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
             type CoordOrNull = { null, rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
             type Board = CoordOrNull -> Piece;
-            type Counters = Piece -> RbgType1;
-            type RbgType2 = { null, rx0y0, rx0y1, rx0y2, rx1y0, rx1y1, rx1y2, rx2y0, rx2y1, rx2y2 };
-            type RbgType3 = { null, rx0y0, rx1y0, rx2y0 };
+            type Counter = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            type Counters = Piece -> Counter;
+            type RbgType1 = { null, rx0y0, rx0y1, rx0y2, rx1y0, rx1y1, rx1y2, rx2y0, rx2y1, rx2y2 };
+            type RbgType2 = { null, rx0y0, rx1y0, rx2y0 };
             const direction_down: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx0y1, rx1y0: rx1y1, rx2y0: rx2y1, rx0y1: rx0y2, rx1y1: rx1y2, rx2y1: rx2y2 };
             const direction_right: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx1y0, rx1y0: rx2y0, rx0y1: rx1y1, rx1y1: rx2y1, rx0y2: rx1y2, rx1y2: rx2y2 };
             const direction_left: CoordOrNull -> CoordOrNull = { :null, rx1y0: rx0y0, rx2y0: rx1y0, rx1y1: rx0y1, rx2y1: rx1y1, rx1y2: rx0y2, rx2y2: rx1y2 };
             const direction_up: CoordOrNull -> CoordOrNull = { :null, rx0y1: rx0y0, rx1y1: rx1y0, rx2y1: rx2y0, rx0y2: rx0y1, rx1y2: rx1y1, rx2y2: rx2y1 };
-            const RbgCoordMap1: RbgType2 -> RbgType3 = { :null, rx0y2: rx0y0, rx1y2: rx1y0, rx2y2: rx2y0 };
+            const RbgCoordMap1: RbgType1 -> RbgType2 = { :null, rx0y2: rx0y0, rx1y2: rx1y0, rx2y2: rx2y0 };
             var board: Board = { :e, null: null };
             var coord: CoordOrNull = rx0y0;
             var coord_temp: Coord = rx0y0;
@@ -1882,22 +1898,22 @@ mod test {
               rx0y2[e]{right:rx1y2,up:rx0y1}
               rx1y2[e]{left:rx0y2,right:rx2y2,up:rx1y1}
               rx2y2[e]{left:rx1y2,up:rx2y1}
-            #players = xplayer(100), oplayer(100)
+            #players = xplayer(9), oplayer(9)
             #pieces = e, o, x
             #variables =
             #rules = ->xplayer (up + down) (left + right) {e} ->>
         ",
         "
+            @integer 0 : 0 1 2 3 4 5 6 7 8 9;
             @translatedFromRbg;
             @artificialTag index_2_copy;
-            type RbgType1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             type Player = { xplayer, oplayer };
-            type Score = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100 };
+            type Score = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             type Piece = { e, o, x, null };
             type Coord = { rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
             type CoordOrNull = { null, rx0y0, rx1y0, rx2y0, rx0y1, rx1y1, rx2y1, rx0y2, rx1y2, rx2y2 };
             type Board = CoordOrNull -> Piece;
-            type Counters = Piece -> RbgType1;
+            type Counters = Piece -> Score;
             const direction_down: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx0y1, rx1y0: rx1y1, rx2y0: rx2y1, rx0y1: rx0y2, rx1y1: rx1y2, rx2y1: rx2y2 };
             const direction_right: CoordOrNull -> CoordOrNull = { :null, rx0y0: rx1y0, rx1y0: rx2y0, rx0y1: rx1y1, rx1y1: rx2y1, rx0y2: rx1y2, rx1y2: rx2y2 };
             const direction_left: CoordOrNull -> CoordOrNull = { :null, rx1y0: rx0y0, rx2y0: rx1y0, rx1y1: rx0y1, rx2y1: rx1y1, rx1y2: rx0y2, rx2y2: rx1y2 };
@@ -1939,20 +1955,22 @@ mod test {
             #rules = ({piece1} + dir1 dir2 {piece1, piece2})
         ",
         "
+            @integer 0 : 0 1;
+            @integer 0 : 0 1 2;
             @translatedFromRbg;
-            type RbgType1 = { 0, 1, 2 };
             type Player = { player };
             type Score = { 0, 1 };
             type Piece = { piece1, piece2, piece3 };
             type Coord = { node1, node2 };
             type CoordOrNull = { null, node1, node2 };
             type Board = CoordOrNull -> Piece;
-            type Counters = Piece -> RbgType1;
-            type RbgType2 = { node1, node2, null };
-            type RbgType3 = { node1, null };
+            type Counter = { 0, 1, 2 };
+            type Counters = Piece -> Counter;
+            type RbgType1 = { node1, node2, null };
+            type RbgType2 = { node1, null };
             const direction_dir1: Coord -> CoordOrNull = { :null, node1: node2 };
             const direction_dir2: Coord -> CoordOrNull = { :null, node2: node1 };
-            const RbgCoordMap1: RbgType2 -> RbgType3 = { :null, node1: node1 };
+            const RbgCoordMap1: RbgType1 -> RbgType2 = { :null, node1: node1 };
             var board: Board = { :piece2, node1: piece1 };
             var coord: CoordOrNull = node1;
             var coord_temp: Coord = node1;
@@ -1975,15 +1993,17 @@ mod test {
             #rules = ({piece1} + (dir1 + dir2) {piece2})
         ",
         "
+            @integer 0 : 0 1;
+            @integer 0 : 0 1 2;
             @translatedFromRbg;
-            type RbgType1 = { 0, 1, 2 };
             type Player = { player };
             type Score = { 0, 1 };
             type Piece = { piece1, piece2, piece3, null };
             type Coord = { node1, node2 };
             type CoordOrNull = { null, node1, node2 };
             type Board = CoordOrNull -> Piece;
-            type Counters = Piece -> RbgType1;
+            type Counter = { 0, 1, 2 };
+            type Counters = Piece -> Counter;
             const direction_dir1: CoordOrNull -> CoordOrNull = { :null, node1: node2 };
             const direction_dir2: CoordOrNull -> CoordOrNull = { :null, node2: node1 };
             var board: Board = { :piece2, node1: piece1, null: null };
@@ -2012,15 +2032,17 @@ mod test {
             #rules = ({piece1} + (dir1 + dir2) {piece1, piece2})
         ",
         "
+            @integer 0 : 0 1;
+            @integer 0 : 0 1 2;
             @translatedFromRbg;
-            type RbgType1 = { 0, 1, 2 };
             type Player = { player };
             type Score = { 0, 1 };
             type Piece = { piece1, piece2, piece3 };
             type Coord = { node1, node2 };
             type CoordOrNull = { null, node1, node2 };
             type Board = CoordOrNull -> Piece;
-            type Counters = Piece -> RbgType1;
+            type Counter = { 0, 1, 2 };
+            type Counters = Piece -> Counter;
             const direction_dir1: Coord -> CoordOrNull = { :null, node1: node2 };
             const direction_dir2: Coord -> CoordOrNull = { :null, node2: node1 };
             var board: Board = { :piece2, node1: piece1 };
