@@ -1,64 +1,78 @@
 use crate::ast::{Game, Predicate, Rule, Term};
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
-impl<Id: Clone + Ord> Game<Id> {
-    pub fn simplify(self) -> Self {
-        let mut rules = self.0;
-        rules.sort_unstable();
-        rules.dedup();
+impl<Id: Clone + Ord + std::fmt::Display> Game<Id> {
+    pub fn simplify(mut self) -> Self {
+        self.remove_constant_predicates();
+        self.remove_impossible_rules();
+        self
+    }
 
-        // Simplify predicates.
-        let mut consts_map = vec![false; rules.len()];
-        let mut consts_set = BTreeSet::new();
+    fn remove_constant_predicates(&mut self) {
+        self.0.sort_unstable();
+        let mut rules: Vec<_> = self.0.extract_if(.., |rule| !rule.is_const()).collect();
+        let mut const_rules = vec![];
+        let mut const_terms: BTreeSet<_> = self.0.iter().map(|rule| rule.term.clone()).collect();
 
         loop {
             let mut any_rule_simplified = false;
-            for (index, rule) in rules.iter_mut().enumerate() {
-                if consts_map[index] {
-                    continue;
-                }
+            rules
+                .extract_if(.., |rule| {
+                    let removed = rule
+                        .predicates
+                        .extract_if(.., |predicate| {
+                            predicate.can_be_const() && const_terms.contains(&predicate.term)
+                        })
+                        .count();
 
-                let mut rule_simplified = false;
-                rule.predicates.retain(|predicate| {
-                    let is_const = predicate.can_be_const() && consts_set.contains(&predicate.term);
-                    rule_simplified |= is_const;
-                    !is_const
-                });
+                    if removed != 0 {
+                        any_rule_simplified = true;
+                        if rule.is_const() {
+                            const_terms.insert(rule.term.clone());
+                            return true;
+                        }
+                    }
 
-                any_rule_simplified |= rule_simplified;
-                if rule.is_const() {
-                    any_rule_simplified = true;
-                    consts_map[index] = true;
-                    consts_set.insert(rule.term.clone());
-                }
-            }
+                    false
+                })
+                .for_each(|rule| const_rules.push(rule));
 
             if !any_rule_simplified {
                 break;
             }
+
+            // This helps with chained predicates, as having a fixed order may
+            // result in a lot of additional iterations needed.
+            rules.reverse();
         }
 
-        // Remove impossible rules.
-        loop {
-            let rules_before = rules.len();
-            let possible_goals: BTreeSet<_> = rules.iter().map(|rule| rule.term.clone()).collect();
-            rules.retain(|rule| {
-                rule.predicates
-                    .iter()
-                    .all(|predicate| match predicate.term.as_ref() {
-                        Term::Custom0(_) | Term::CustomN(_, _) => {
-                            possible_goals.contains(&predicate.term)
-                        }
-                        _ => true,
-                    })
-            });
+        self.0.extend(const_rules);
+        self.0.extend(rules);
+    }
 
-            if rules_before == rules.len() {
+    fn remove_impossible_rules(&mut self) {
+        let mut rules: Vec<_> = self.0.extract_if(.., |rule| rule.can_be_pruned()).collect();
+        let possible_goals: BTreeSet<_> = self.0.iter().filter_map(Rule::as_prunable).collect();
+
+        loop {
+            let mut possible_goals = possible_goals.clone();
+            possible_goals.extend(rules.iter().filter_map(Rule::as_prunable));
+
+            let removed = rules
+                .extract_if(.., |rule| {
+                    rule.predicates.iter().any(|predicate| {
+                        predicate.can_be_pruned() && !possible_goals.contains(&predicate.term)
+                    })
+                })
+                .count();
+
+            if removed == 0 {
                 break;
             }
         }
 
-        Self(rules)
+        self.0.extend(rules);
     }
 }
 
@@ -66,9 +80,21 @@ impl<Id> Predicate<Id> {
     fn can_be_const(&self) -> bool {
         self.term.can_be_const()
     }
+
+    fn can_be_pruned(&self) -> bool {
+        self.term.can_be_pruned()
+    }
 }
 
 impl<Id> Rule<Id> {
+    fn as_prunable(&self) -> Option<Arc<Term<Id>>> {
+        self.term.can_be_pruned().then(|| self.term.clone())
+    }
+
+    fn can_be_pruned(&self) -> bool {
+        self.predicates.iter().any(Predicate::can_be_pruned)
+    }
+
     fn is_const(&self) -> bool {
         self.term.can_be_const() && self.predicates.is_empty()
     }
@@ -77,6 +103,10 @@ impl<Id> Rule<Id> {
 impl<Id> Term<Id> {
     fn can_be_const(&self) -> bool {
         matches!(self, Self::Custom0(_) | Self::CustomN(_, _) | Self::Role(_))
+    }
+
+    fn can_be_pruned(&self) -> bool {
+        matches!(self, Self::Custom0(_) | Self::CustomN(_, _))
     }
 }
 
