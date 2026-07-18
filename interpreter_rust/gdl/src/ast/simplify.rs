@@ -2,7 +2,7 @@ use crate::ast::{Game, Predicate, Rule, Term};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-impl<Id: Clone + Ord + std::fmt::Display> Game<Id> {
+impl<Id: Clone + Ord> Game<Id> {
     pub fn simplify(mut self) -> Self {
         self.remove_constant_predicates();
         self.remove_impossible_rules();
