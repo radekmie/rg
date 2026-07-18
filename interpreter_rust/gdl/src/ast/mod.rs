@@ -77,6 +77,12 @@ impl<Id> Predicate<Id> {
     }
 }
 
+impl<Id: PartialEq> Predicate<Id> {
+    pub fn has_custom_term(&self, id: &Id) -> bool {
+        self.term.has_custom_term(id)
+    }
+}
+
 #[derive(Clone, Debug, Eq, MapId, Ord, PartialEq, PartialOrd)]
 pub struct Rule<Id> {
     pub term: Arc<Term<Id>>,
@@ -86,6 +92,16 @@ pub struct Rule<Id> {
 impl<Id> Rule<Id> {
     pub fn has_variable(&self) -> bool {
         self.term.has_variable() || self.predicates.iter().any(Predicate::has_variable)
+    }
+}
+
+impl<Id: PartialEq> Rule<Id> {
+    pub fn has_custom_term(&self, id: &Id) -> bool {
+        self.term.has_custom_term(id)
+            || self
+                .predicates
+                .iter()
+                .any(|predicate| predicate.has_custom_term(id))
     }
 }
 
@@ -205,6 +221,32 @@ impl<Id> Term<Id> {
             Self::Role(_) => Self::ORDER_ROLE,
             Self::Terminal => Self::ORDER_TERMINAL,
             Self::True(_) => Self::ORDER_TRUE,
+        }
+    }
+}
+
+impl<Id: PartialEq> Term<Id> {
+    pub fn has_custom_term(&self, id: &Id) -> bool {
+        use Term::{
+            Base, Custom0, CustomN, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True,
+        };
+        match self {
+            Base(proposition) => proposition.has_custom_term(id),
+            Custom0(AtomOrVariable::Atom(name)) if name == id => true,
+            Custom0(_) => false,
+            CustomN(AtomOrVariable::Atom(name), _) if name == id => true,
+            CustomN(_, arguments) => arguments
+                .iter()
+                .any(|argument| argument.has_custom_term(id)),
+            Does(_, action) => action.has_custom_term(id),
+            Goal(_, _) => false,
+            Init(proposition) => proposition.has_custom_term(id),
+            Input(_, action) => action.has_custom_term(id),
+            Legal(_, action) => action.has_custom_term(id),
+            Next(proposition) => proposition.has_custom_term(id),
+            Role(_) => false,
+            Terminal => false,
+            True(proposition) => proposition.has_custom_term(id),
         }
     }
 }

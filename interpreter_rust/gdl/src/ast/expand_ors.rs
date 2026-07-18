@@ -1,124 +1,110 @@
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
+use std::iter::repeat_n;
 use std::sync::Arc;
+use utils::cartesian::cartesian;
 
 impl<Id: Clone + PartialEq> Game<Id> {
     pub fn expand_ors(self, or: &Id) -> Self {
-        Self(
-            self.0
-                .into_iter()
-                .flat_map(|rule| rule.expand_ors(or))
-                .collect(),
-        )
+        let rules = Vec::with_capacity(self.0.len());
+        Self(self.0.into_iter().fold(rules, |mut rules, rule| {
+            match rule.expand_ors(or) {
+                Err(rule) => rules.push(rule),
+                Ok(expanded) => rules.extend(expanded),
+            }
+
+            rules
+        }))
     }
 }
 
 impl<Id: Clone + PartialEq> Predicate<Id> {
-    pub fn expand_ors(&self, or: &Id) -> Vec<Self> {
-        self.term
-            .expand_ors(or)
-            .into_iter()
-            .map(|term| Self {
-                is_negated: self.is_negated,
-                term: Arc::new(term),
-            })
-            .collect()
+    pub fn expand_ors(self, or: &Id) -> Result<Vec<Self>, Self> {
+        let Self { term, is_negated } = self;
+        match term.expand_ors(or) {
+            Err(term) => Err(Self { term, is_negated }),
+            Ok(terms) => Ok(terms
+                .into_iter()
+                .map(|term| Self { term, is_negated })
+                .collect()),
+        }
     }
 }
 
 impl<Id: Clone + PartialEq> Rule<Id> {
-    pub fn expand_ors(self, or: &Id) -> Vec<Self> {
-        self.predicates
+    pub fn expand_ors(self, or: &Id) -> Result<Vec<Self>, Self> {
+        if !self.has_custom_term(or) {
+            return Err(self);
+        }
+
+        let terms = self.term.expand_ors(or).unwrap_or_else(|x| vec![x]);
+        let predicatess = self
+            .predicates
             .into_iter()
-            .map(|predicate| predicate.expand_ors(or))
-            .fold(vec![vec![]], |xs, ys| {
-                let mut zs = vec![];
-                for x in xs {
-                    for y in &ys {
-                        let mut x = x.clone();
-                        x.push(y.clone());
-                        zs.push(x);
-                    }
-                }
-                zs
-            })
-            .into_iter()
-            .flat_map(move |predicates| {
-                self.term.expand_ors(or).into_iter().map(move |term| Self {
-                    term: Arc::new(term),
-                    predicates: predicates.clone(),
-                })
-            })
-            .collect()
+            .map(|predicate| predicate.expand_ors(or).unwrap_or_else(|x| vec![x]))
+            .fold(vec![vec![]], cartesian);
+
+        let mut rules = Vec::with_capacity(terms.len() * predicatess.len());
+        for (terms, predicates) in repeat_n(terms, predicatess.len()).zip(predicatess) {
+            for (predicates, term) in repeat_n(predicates, terms.len()).zip(terms) {
+                rules.push(Self { term, predicates });
+            }
+        }
+
+        Ok(rules)
     }
 }
 
 impl<Id: Clone + PartialEq> Term<Id> {
-    pub fn expand_ors(&self, or: &Id) -> Vec<Self> {
+    pub fn expand_ors(self: &Arc<Self>, or: &Id) -> Result<Vec<Arc<Self>>, Arc<Self>> {
         use Term::{
             Base, Custom0, CustomN, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True,
         };
-        match self {
-            Base(proposition) => proposition
-                .expand_ors(or)
-                .into_iter()
-                .map(|proposition| Base(Arc::new(proposition)))
-                .collect(),
-            Custom0(role) => vec![Custom0(role.clone())],
-            CustomN(AtomOrVariable::Atom(id), arguments) if id == or => arguments
-                .iter()
-                .flat_map(|argument| argument.expand_ors(or))
-                .collect(),
-            CustomN(name, arguments) => arguments
-                .iter()
-                .map(|argument| argument.expand_ors(or))
-                .fold(vec![vec![]], |xs, ys| {
-                    let mut zs = vec![];
-                    for x in xs {
-                        for y in &ys {
-                            let mut x = x.clone();
-                            x.push(Arc::new(y.clone()));
-                            zs.push(x);
-                        }
-                    }
-                    zs
-                })
-                .into_iter()
-                .map(move |terms| CustomN(name.clone(), terms))
-                .collect(),
-            Does(role, action) => action
-                .expand_ors(or)
-                .into_iter()
-                .map(|action| Does(role.clone(), Arc::new(action)))
-                .collect(),
-            Goal(role, utility) => vec![Goal(role.clone(), utility.clone())],
-            Init(proposition) => proposition
-                .expand_ors(or)
-                .into_iter()
-                .map(|proposition| Init(Arc::new(proposition)))
-                .collect(),
-            Input(role, action) => action
-                .expand_ors(or)
-                .into_iter()
-                .map(|action| Input(role.clone(), Arc::new(action)))
-                .collect(),
-            Legal(role, action) => action
-                .expand_ors(or)
-                .into_iter()
-                .map(|action| Legal(role.clone(), Arc::new(action)))
-                .collect(),
-            Next(proposition) => proposition
-                .expand_ors(or)
-                .into_iter()
-                .map(|proposition| Next(Arc::new(proposition)))
-                .collect(),
-            Role(role) => vec![Role(role.clone())],
-            Terminal => vec![Terminal],
-            True(proposition) => proposition
-                .expand_ors(or)
-                .into_iter()
-                .map(|proposition| True(Arc::new(proposition)))
-                .collect(),
+
+        match self.as_ref() {
+            Base(proposition) => proposition.expand_ors_with(or, Base),
+            Custom0(_) => Err(self.clone()),
+            CustomN(AtomOrVariable::Atom(id), arguments) if id == or => match &arguments[..] {
+                [argument] => argument.expand_ors(or),
+                arguments => Ok(arguments
+                    .iter()
+                    .flat_map(|argument| argument.expand_ors(or).unwrap_or_else(|x| vec![x]))
+                    .collect()),
+            },
+            CustomN(name, arguments) => {
+                if !self.has_custom_term(or) {
+                    return Err(self.clone());
+                }
+
+                Ok(arguments
+                    .iter()
+                    .map(|argument| argument.expand_ors(or).unwrap_or_else(|x| vec![x]))
+                    .fold(vec![vec![]], cartesian)
+                    .into_iter()
+                    .map(|arguments| CustomN(name.clone(), arguments))
+                    .map(Arc::new)
+                    .collect())
+            }
+            Does(role, action) => action.expand_ors_with(or, |action| Does(role.clone(), action)),
+            Goal(_, _) => Err(self.clone()),
+            Init(proposition) => proposition.expand_ors_with(or, Init),
+            Input(role, action) => action.expand_ors_with(or, |action| Input(role.clone(), action)),
+            Legal(role, action) => action.expand_ors_with(or, |action| Legal(role.clone(), action)),
+            Next(proposition) => proposition.expand_ors_with(or, Next),
+            Role(_) => Err(self.clone()),
+            Terminal => Err(self.clone()),
+            True(proposition) => proposition.expand_ors_with(or, True),
         }
+    }
+
+    fn expand_ors_with<With: Fn(Arc<Self>) -> Self>(
+        self: &Arc<Self>,
+        or: &Id,
+        with: With,
+    ) -> Result<Vec<Arc<Self>>, Arc<Self>> {
+        self.expand_ors(or)
+            .map(|terms| terms.into_iter().map(&with).map(Arc::new).collect())
+            .map_err(&with)
+            .map_err(Arc::new)
     }
 }
 
