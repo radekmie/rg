@@ -16,7 +16,10 @@ impl<Id: Clone + Ord> Game<Id> {
                 for value in domain {
                     let unification = Unification::NotEmpty(vec![(variable, value)]);
                     for rule in &grounded {
-                        let mut rule = rule.substitute(&unification);
+                        let Some(mut rule) = rule.substitute(&unification) else {
+                            continue;
+                        };
+
                         if rule.prune_static_terms(&static_terms) {
                             continue;
                         }

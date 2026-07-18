@@ -47,7 +47,10 @@ impl<Id: Clone + Ord> Game<Id> {
                 }
 
                 for unification in unifications {
-                    let mut rule = rules[i].substitute(&unification);
+                    let Some(mut rule) = rules[i].substitute(&unification) else {
+                        continue;
+                    };
+
                     rule.predicates.sort_unstable();
                     rule.predicates.dedup();
 

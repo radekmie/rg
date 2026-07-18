@@ -2,64 +2,88 @@ use super::unify::Unification;
 use crate::ast::{AtomOrVariable, Predicate, Rule, Term};
 use std::sync::Arc;
 
+macro_rules! substitute_one {
+    ($x:expr, $u:expr, $fn:expr) => {
+        $x.substitute($u).map($fn)
+    };
+}
+
+macro_rules! substitute_pair {
+    ($x:expr, $y:expr, $u:expr, $fn:expr) => {
+        match ($x.substitute($u), $y.substitute($u)) {
+            (None, None) => None,
+            (None, Some(term)) => Some($fn($x.clone(), term)),
+            (Some(role), None) => Some($fn(role, $y.clone())),
+            (Some(role), Some(term)) => Some($fn(role, term)),
+        }
+    };
+}
+
+macro_rules! substitute_many {
+    ($x:expr, $ys:expr, $u:expr) => {{
+        let substituted_x = $x.substitute($u);
+        let substituted_ys: Vec<_> = $ys.iter().map(|y| y.substitute($u)).collect();
+        if substituted_x.is_none() && substituted_ys.iter().all(Option::is_none) {
+            return None;
+        }
+
+        Some((
+            substituted_x.unwrap_or_else(|| $x.clone()),
+            substituted_ys
+                .into_iter()
+                .zip($ys)
+                .map(|(substituted_y, y)| substituted_y.unwrap_or_else(|| y.clone()))
+                .collect(),
+        ))
+    }};
+}
+
 impl<Id: Clone + Ord> AtomOrVariable<Id> {
-    pub fn substitute(&self, u: &Unification<Id>) -> Self {
+    pub fn substitute(&self, u: &Unification<Id>) -> Option<Self> {
         use AtomOrVariable::{Atom, Variable};
         match self {
-            Atom(id) => Atom(id.clone()),
-            Variable(id) => u
-                .get(id)
-                .map_or_else(|| Variable(id.clone()), |id| Atom(id.clone())),
+            Atom(_) => None,
+            Variable(id) => u.get(id).cloned().map(Atom),
         }
     }
 }
 
 impl<Id: Clone + Ord> Predicate<Id> {
-    pub fn substitute(&self, u: &Unification<Id>) -> Self {
-        Self {
+    pub fn substitute(&self, u: &Unification<Id>) -> Option<Self> {
+        substitute_one!(self.term, u, |term| Self {
             is_negated: self.is_negated,
-            term: Arc::new(self.term.substitute(u)),
-        }
+            term,
+        })
     }
 }
 
 impl<Id: Clone + Ord> Rule<Id> {
-    pub fn substitute(&self, u: &Unification<Id>) -> Self {
-        Self {
-            term: Arc::new(self.term.substitute(u)),
-            predicates: self
-                .predicates
-                .iter()
-                .map(|predicate| predicate.substitute(u))
-                .collect(),
-        }
+    pub fn substitute(&self, u: &Unification<Id>) -> Option<Self> {
+        substitute_many!(self.term, &self.predicates, u)
+            .map(|(term, predicates)| Self { term, predicates })
     }
 }
 
 impl<Id: Clone + Ord> Term<Id> {
-    pub fn substitute(&self, u: &Unification<Id>) -> Self {
+    pub fn substitute(&self, u: &Unification<Id>) -> Option<Arc<Self>> {
         use Term::{
             Base, Custom0, CustomN, Does, Goal, Init, Input, Legal, Next, Role, Terminal, True,
         };
         match self {
-            Base(proposition) => Base(Arc::new(proposition.substitute(u))),
-            Custom0(name) => Custom0(name.substitute(u)),
-            CustomN(name, arguments) => CustomN(
-                name.substitute(u),
-                arguments
-                    .iter()
-                    .map(|argument| Arc::new(argument.substitute(u)))
-                    .collect(),
-            ),
-            Does(role, action) => Does(role.substitute(u), Arc::new(action.substitute(u))),
-            Goal(role, utility) => Goal(role.substitute(u), utility.substitute(u)),
-            Init(proposition) => Init(Arc::new(proposition.substitute(u))),
-            Input(role, action) => Input(role.substitute(u), Arc::new(action.substitute(u))),
-            Legal(role, action) => Legal(role.substitute(u), Arc::new(action.substitute(u))),
-            Next(proposition) => Next(Arc::new(proposition.substitute(u))),
-            Role(role) => Role(role.substitute(u)),
-            Terminal => Terminal,
-            True(proposition) => True(Arc::new(proposition.substitute(u))),
+            Base(proposition) => substitute_one!(proposition, u, Base),
+            Custom0(name) => substitute_one!(name, u, Custom0),
+            CustomN(name, arguments) => substitute_many!(name, arguments, u)
+                .map(|(name, arguments)| CustomN(name, arguments)),
+            Does(role, action) => substitute_pair!(role, action, u, Does),
+            Goal(role, utility) => substitute_pair!(role, utility, u, Goal),
+            Init(proposition) => substitute_one!(proposition, u, Init),
+            Input(role, action) => substitute_pair!(role, action, u, Input),
+            Legal(role, action) => substitute_pair!(role, action, u, Legal),
+            Next(proposition) => substitute_one!(proposition, u, Next),
+            Role(role) => substitute_one!(role, u, Role),
+            Terminal => None,
+            True(proposition) => substitute_one!(proposition, u, True),
         }
+        .map(Arc::new)
     }
 }
