@@ -1,9 +1,9 @@
 use crate::position::Span;
 use crate::ParserError;
 use nom::branch::alt;
-use nom::bytes::complete::{tag, take_until, take_while, take_while1};
-use nom::character::complete::{anychar, char, digit1, multispace1};
-use nom::combinator::{cut, into, map, map_res, opt, verify};
+use nom::bytes::complete::{is_not, tag, take_while, take_while1};
+use nom::character::complete::{anychar, char, digit1, multispace0, multispace1};
+use nom::combinator::{into, map, map_res, opt, verify};
 use nom::error::Error;
 use nom::multi::{fold_many0, fold_many1, separated_list0, separated_list1};
 use nom::sequence::{delimited, preceded};
@@ -72,7 +72,7 @@ pub fn expect<'a, T, E: Display>(
 }
 
 pub fn comment(input: Input) -> Result<Input> {
-    preceded(tag("//"), cut(take_until("\n"))).parse(input)
+    delimited(tag("//"), alt((is_not("\n\r"), tag(""))), multispace0).parse(input)
 }
 
 pub fn comments_and_whitespaces0(input: Input) -> Result<()> {
