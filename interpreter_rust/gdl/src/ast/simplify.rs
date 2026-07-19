@@ -1,4 +1,4 @@
-use crate::ast::{Game, Predicate, Rule, Term};
+use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -6,6 +6,7 @@ impl<Id: Clone + Ord> Game<Id> {
     pub fn simplify(mut self) -> Self {
         self.remove_constant_predicates();
         self.remove_impossible_rules();
+        self.remove_illegal_rules();
         self
     }
 
@@ -49,6 +50,33 @@ impl<Id: Clone + Ord> Game<Id> {
 
         self.0.extend(const_rules);
         self.0.extend(rules);
+    }
+
+    // Calculates all `legal` and removes rules that use unknown ones in `does`.
+    fn remove_illegal_rules(&mut self) {
+        let role_actions: Vec<_> = self
+            .0
+            .iter()
+            .filter_map(|rule| match rule.term.as_ref() {
+                Term::Legal(AtomOrVariable::Atom(role), action) if !action.has_variable() => {
+                    Some((role.clone(), action.clone()))
+                }
+                _ => None,
+            })
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect();
+
+        self.0.retain(|rule| {
+            rule.predicates
+                .iter()
+                .all(|predicate| match predicate.term.as_ref() {
+                    Term::Does(AtomOrVariable::Atom(r1), a1) if !a1.has_variable() => role_actions
+                        .binary_search_by(|(r2, a2)| r1.cmp(r2).then_with(|| a1.cmp(a2)).reverse())
+                        .is_ok(),
+                    _ => true,
+                })
+        });
     }
 
     fn remove_impossible_rules(&mut self) {
