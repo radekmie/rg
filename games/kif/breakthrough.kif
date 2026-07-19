@@ -205,15 +205,15 @@
 
 ; MG's bugfix    
 (<= whiteWin
-  (not blackCell))
+	(not blackCell))
 (<= blackWin
-  (not whiteCell))
+	(not whiteCell))
 (<= whiteCell
-  (cell ?x ?y)
-  (true (cellHolds ?x ?y white)))
+	(cell ?x ?y)
+	(true (cellHolds ?x ?y white)))
 (<= blackCell
-  (cell ?x ?y)
-  (true (cellHolds ?x ?y black)))    
+	(cell ?x ?y)
+	(true (cellHolds ?x ?y black)))    
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Static Relations

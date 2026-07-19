@@ -1,0 +1,1 @@
+All games come from [github.com/marekesz/rbgGames](https://github.com/marekesz/rbgGames/tree/3ae4fb75c2cc94085f742587815d345405da9d7a/games) and were lowered to low-level RBG using the [github.com/uicus/rbgParser](https://github.com/uicus/rbgParser).

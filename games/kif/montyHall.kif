@@ -1,3 +1,7 @@
+; Monty Hall game
+; As defined in "The General Game Playing Description Language Is Universal"
+; Michael Thielscher, 2011
+
 role(candidate)
 role(random)
 
