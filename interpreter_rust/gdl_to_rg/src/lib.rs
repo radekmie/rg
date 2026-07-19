@@ -8,7 +8,7 @@ use utils::interner::Interner;
 type Id = Arc<str>;
 
 pub fn gdl_to_rg(gdl: &gdl::Game<&str>) -> rg::Game<Id> {
-    let mut interner: Interner<&str, u8> = Interner::default();
+    let mut interner: Interner<&str, u16> = Interner::default();
     let gdl = gdl
         .map_id(&mut |id| interner.intern(id))
         .ground_smart(&interner.intern(&"distinct"), &interner.intern(&"or"))
