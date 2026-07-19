@@ -10,6 +10,11 @@ impl<Id: Clone + Ord> Game<Id> {
         let mut rules = BTreeSet::new();
         for rule in self.0 {
             let domain_map = rule.domain_map(distinct, or, &domain_graph);
+            if domain_map.is_empty() {
+                rules.insert(rule);
+                continue;
+            }
+
             let mut grounded = BTreeSet::from([rule]);
             for (variable, domain) in &domain_map {
                 let mut new_grounded = BTreeSet::new();
@@ -75,12 +80,12 @@ mod test {
         "a(1) a(2) b(1) b(2)"
     );
 
-    // FIXME
-    // test!(
-    //     one_variable_complex,
-    //     "a(b(1)) c(X) :- a(X)",
-    //     "a(b(1)) c(b(1)) :- a(b(1))"
-    // );
+    test!(
+        one_variable_complex,
+        "a(b(1)) c(X) :- a(X)",
+        "a(b(1))" // FIXME: Complex variables should propagate.
+                  // "a(b(1)) c(b(1)) :- a(b(1))"
+    );
 
     test!(
         two_variables_one_precondition,

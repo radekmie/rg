@@ -23,23 +23,38 @@ pub struct DomainGraph<Id> {
     edges: BTreeSet<(DomainGraphNode<Id>, DomainGraphNode<Id>)>,
 }
 
-impl<Id: Ord> Default for DomainGraph<Id> {
+impl<Id: Clone + Ord> Default for DomainGraph<Id> {
     fn default() -> Self {
         use DomainGraphNode::Order;
-        let edges = BTreeSet::from([
+        let edges = [
             (
                 Order(Term::<()>::ORDER_BASE, 0),
                 Order(Term::<()>::ORDER_TRUE, 0),
             ),
             (
-                Order(Term::<()>::ORDER_INPUT, 0),
                 Order(Term::<()>::ORDER_DOES, 0),
+                Order(Term::<()>::ORDER_INPUT, 0),
             ),
             (
-                Order(Term::<()>::ORDER_INPUT, 1),
-                Order(Term::<()>::ORDER_DOES, 1),
+                Order(Term::<()>::ORDER_DOES, 0),
+                Order(Term::<()>::ORDER_LEGAL, 0),
             ),
-        ]);
+            (
+                Order(Term::<()>::ORDER_DOES, 0),
+                Order(Term::<()>::ORDER_ROLE, 0),
+            ),
+            (
+                Order(Term::<()>::ORDER_DOES, 1),
+                Order(Term::<()>::ORDER_INPUT, 1),
+            ),
+            (
+                Order(Term::<()>::ORDER_DOES, 1),
+                Order(Term::<()>::ORDER_LEGAL, 1),
+            ),
+        ]
+        .into_iter()
+        .flat_map(|(x, y)| [(x.clone(), y.clone()), (y, x)])
+        .collect();
 
         Self { edges }
     }
@@ -89,11 +104,13 @@ impl<Id: Clone + Ord> DomainGraph<Id> {
 
 impl<Id: Ord> DomainGraph<Id> {
     fn insert(&mut self, lhs: DomainGraphNode<Id>, rhs: DomainGraphNode<Id>) {
-        self.edges.insert((lhs, rhs));
+        if lhs != rhs {
+            self.edges.insert((lhs, rhs));
+        }
     }
 }
 
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum DomainGraphNode<Id> {
     Constant(Id),
     Custom(Id, usize),
@@ -441,6 +458,19 @@ mod test {
         expect.insert(Constant("b"), Custom("cell", 2));
         expect.insert(Custom("index", 0), Custom("cell", 0));
         expect.insert(Custom("index", 0), Custom("cell", 1));
+        assert_eq!(actual.to_graphviz(), expect.to_graphviz());
+    }
+
+    #[test]
+    fn example_6() {
+        use DomainGraphNode::{Constant, Custom};
+        let game = Game::from("a(b(1)) c(X) :- a(X)");
+        let actual = game.domain_graph();
+
+        let mut expect = DomainGraph::default();
+        expect.insert(Constant("1"), Custom("b", 0));
+        expect.insert(Constant("b"), Custom("a", 0)); // FIXME
+        expect.insert(Custom("a", 0), Custom("c", 0));
         assert_eq!(actual.to_graphviz(), expect.to_graphviz());
     }
 }

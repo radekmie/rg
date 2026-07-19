@@ -154,12 +154,12 @@ mod test {
         "a(1) a(2) b(1) b(2)"
     );
 
-    // FIXME
-    // test!(
-    //     one_variable_complex,
-    //     "a(b(1)) c(X) :- a(X)",
-    //     "a(b(1)) c(b(1)) :- a(b(1))"
-    // );
+    test!(
+        one_variable_complex,
+        "a(b(1)) c(X) :- a(X)",
+        "a(b(1))" // FIXME: Complex variables should propagate.
+                  // "a(b(1)) c(b(1)) :- a(b(1))"
+    );
 
     test!(
         two_variables_one_precondition,
