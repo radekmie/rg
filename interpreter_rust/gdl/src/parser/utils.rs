@@ -1,8 +1,6 @@
-use crate::parser::alt;
-use nom::bytes::complete::{tag, take_until, take_while1};
-use nom::character::complete::multispace1;
-use nom::combinator::cut;
-use nom::combinator::eof;
+use nom::branch::alt;
+use nom::bytes::complete::{is_not, tag, take_while1};
+use nom::character::complete::{multispace0, multispace1};
 use nom::error::Error;
 use nom::multi::fold_many0;
 use nom::sequence::delimited;
@@ -11,7 +9,7 @@ use nom::{IResult, Parser};
 pub type Result<'a, T> = IResult<&'a str, T, Error<&'a str>>;
 
 pub fn comment(input: &str) -> Result<'_, &str> {
-    delimited(tag(";"), cut(take_until("\n")), alt((eof, tag("\n")))).parse(input)
+    delimited(tag(";"), alt((is_not("\n\r"), tag(""))), multispace0).parse(input)
 }
 
 pub fn comments_and_whitespaces(input: &str) -> Result<'_, ()> {
@@ -31,5 +29,6 @@ pub fn separated<'a, O>(
 }
 
 pub fn symbol(input: &str) -> Result<'_, &str> {
-    take_while1(|c: char| c.is_alphanumeric() || c == '_' || c == '+').parse(input)
+    const EXTRAS: &str = "+-<>_";
+    take_while1(|c: char| c.is_alphanumeric() || EXTRAS.contains(c)).parse(input)
 }

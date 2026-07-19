@@ -17,7 +17,8 @@ pub fn gdl_to_rg(gdl: &gdl::Game<&str>) -> rg::Game<Id> {
         .simplify()
         .map_id(&mut |id| Arc::from(*interner.recall(id).unwrap()))
         .canonicalize()
-        .symbolify();
+        .symbolify()
+        .map_id(&mut to_rg_safe_id);
 
     let mut rg = rg::Game::default();
     let mut translated_goals = BTreeSet::new();
@@ -661,4 +662,18 @@ fn connect_label(
         },
         _ => unreachable!(),
     })
+}
+
+fn to_rg_safe_id(id: &Id) -> Id {
+    const MAPPING: [(char, &str); 4] = [('+', "add_"), ('-', "sub_"), ('<', "lt_"), ('>', "gt_")];
+
+    #[allow(clippy::manual_try_fold)]
+    MAPPING
+        .iter()
+        .fold(Ok(id.clone()), |id, (from, to)| match id {
+            Ok(id) if !id.contains(*from) => Ok(id),
+            Ok(id) => Err(id.replace(*from, to)),
+            Err(id) => Err(id.replace(*from, to)),
+        })
+        .unwrap_or_else(Arc::from)
 }

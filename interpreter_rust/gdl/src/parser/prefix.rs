@@ -2,6 +2,7 @@ use super::utils::{in_parens, separated, symbol, Result};
 use crate::ast::{AtomOrVariable, Game, Predicate, Rule, Term};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
+use nom::character::complete::alphanumeric1;
 use nom::combinator::{opt, success, value};
 use nom::error::Error;
 use nom::multi::{many0, many1};
@@ -11,10 +12,10 @@ use std::convert::identity;
 use std::sync::Arc;
 
 pub fn atom_or_variable(input: &str) -> Result<'_, AtomOrVariable<&str>> {
-    alt((
-        preceded(tag("?"), symbol).map(AtomOrVariable::Variable),
+    separated(alt((
+        preceded(tag("?"), alphanumeric1).map(AtomOrVariable::Variable),
         symbol.map(AtomOrVariable::Atom),
-    ))
+    )))
     .parse(input)
 }
 
@@ -30,7 +31,7 @@ pub fn term(input: &str) -> Result<'_, Term<&str>> {
         }),
         term_template(
             "goal",
-            (atom_or_variable, separated(atom_or_variable)),
+            (atom_or_variable, atom_or_variable),
             |(role, utility)| Term::Goal(role, utility),
         ),
         term_template("init", term_rc, Term::Init),
@@ -70,7 +71,7 @@ pub fn predicate(input: &str) -> Result<'_, Predicate<&str>> {
 
 pub fn rule(input: &str) -> Result<'_, Rule<&str>> {
     alt((
-        term_template("<=", (term_rc, many1(separated(predicate))), identity),
+        term_template("<=", (term_rc, many0(separated(predicate))), identity),
         (term_rc, success(vec![])),
     ))
     .map(|(term, predicates)| Rule { term, predicates })
