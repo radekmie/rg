@@ -10,22 +10,34 @@ type Subgraph = BTreeSet<Arc<Edge<Id>>>;
 
 impl Game<Id> {
     pub fn inline_reachability(&mut self) -> Result<(), Error<Id>> {
-        let begin = Node::new(Arc::from("begin"));
+        let mut rechability_paths_cache = BTreeMap::new();
         let in_main_automaton = self.analyse(&ReachableNodes::new());
-        for edge in self.edges.clone() {
-            if let Label::Reachability {
+        let edges: Vec<_> = self
+            .edges
+            .iter()
+            .filter(|edge| edge.label.is_reachability())
+            .cloned()
+            .collect();
+
+        for edge in edges {
+            let Label::Reachability {
                 lhs, rhs, negated, ..
             } = &edge.label
-            {
-                let is_main_automaton = lhs == &begin
-                    || in_main_automaton
-                        .get(&edge.lhs)
-                        .is_some_and(|reachable| *reachable);
-                if let Some((subgraph, defined_vars)) =
+            else {
+                unreachable!()
+            };
+
+            let is_main_automaton = in_main_automaton
+                .get(&edge.lhs)
+                .is_some_and(|reachable| *reachable);
+            if let Some((subgraph, defined_vars)) = rechability_paths_cache
+                .entry((lhs.clone(), rhs.clone(), *negated, is_main_automaton))
+                .or_insert_with(|| {
                     self.find_rechability_paths(lhs, rhs, *negated, is_main_automaton)
-                {
-                    self.substitute_reachability(edge.clone(), subgraph, defined_vars);
-                }
+                })
+                .clone()
+            {
+                self.substitute_reachability(edge, subgraph, defined_vars);
             }
         }
         Ok(())
