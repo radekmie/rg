@@ -86,6 +86,7 @@ const games = [
   ['Pretwa (lud) #LG', require('bundle-text:../../../../games/py/hrg/pretwa_lud.hrg'), Language.hrg],
   ['Ratti Chitti Bakri (lud) #LG', require('bundle-text:../../../../games/py/hrg/rattiChittiBakri_lud.hrg'), Language.hrg],
   ['Reversi', require('bundle-text:../../../../games/hrg/reversi.hrg'), Language.hrg],
+  ['Reversi', require('bundle-text:../../../../games/kif/reversi.kif'), Language.gdl],
   ['Reversi', require('bundle-text:../../../../games/rbg/reversi.rbg'), Language.rbg],
   ['SAT Solver', require('bundle-text:../../../../games/hrg/satSolver.hrg'), Language.hrg],
   ['Satoel (lud) #LG', require('bundle-text:../../../../games/py/hrg/satoel_lud.hrg'), Language.hrg],
