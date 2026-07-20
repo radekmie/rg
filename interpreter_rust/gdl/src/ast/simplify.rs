@@ -90,7 +90,7 @@ impl<Id: Clone + Ord> Game<Id> {
             let removed = rules
                 .extract_if(.., |rule| {
                     rule.predicates.iter().any(|predicate| {
-                        predicate.can_be_pruned() && !possible_goals.contains(&predicate.term)
+                        predicate.can_be_const() && !possible_goals.contains(&predicate.term)
                     })
                 })
                 .count();
@@ -108,19 +108,15 @@ impl<Id> Predicate<Id> {
     fn can_be_const(&self) -> bool {
         self.term.can_be_const()
     }
-
-    fn can_be_pruned(&self) -> bool {
-        self.term.can_be_pruned()
-    }
 }
 
 impl<Id> Rule<Id> {
     fn as_prunable(&self) -> Option<Arc<Term<Id>>> {
-        self.term.can_be_pruned().then(|| self.term.clone())
+        self.term.can_be_const().then(|| self.term.clone())
     }
 
     fn can_be_pruned(&self) -> bool {
-        self.predicates.iter().any(Predicate::can_be_pruned)
+        self.predicates.iter().any(Predicate::can_be_const)
     }
 
     fn is_const(&self) -> bool {
@@ -131,10 +127,6 @@ impl<Id> Rule<Id> {
 impl<Id> Term<Id> {
     fn can_be_const(&self) -> bool {
         matches!(self, Self::Custom0(_) | Self::CustomN(_, _) | Self::Role(_))
-    }
-
-    fn can_be_pruned(&self) -> bool {
-        matches!(self, Self::Custom0(_) | Self::CustomN(_, _))
     }
 }
 

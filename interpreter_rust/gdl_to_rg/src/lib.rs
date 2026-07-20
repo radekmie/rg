@@ -601,12 +601,17 @@ fn connect_inner(
                     step => Node::new(Id::from(format!("{hash}_{index}_{step}"))),
                 })
                 .collect();
-            for (step, predicate) in rule.predicates.iter().enumerate() {
+
+            // According to `Term`s ordering, both `Custom0` and `CustomN` are
+            // come first in the list of predicates. But as they result in a
+            // `Reachability` edges in RG and the others are simply comparisons,
+            // we reverse the order to improve performance.
+            for (predicate, [lhs, rhs]) in rule.predicates.iter().rev().zip(nodes.array_windows()) {
                 if let Some(label) = connect_label(rg, rules_by_term, translated_goals, predicate) {
                     rg.add_edge_sorted(Arc::from(Edge {
                         span: Span::none(),
-                        lhs: nodes[step].clone(),
-                        rhs: nodes[step + 1].clone(),
+                        lhs: lhs.clone(),
+                        rhs: rhs.clone(),
                         label,
                     }));
                 }
@@ -646,11 +651,6 @@ fn connect_label(
                 negated: predicate.is_negated,
             },
             _ => unreachable!(),
-        },
-        Term::Role(AtomOrVariable::Atom(role)) => Label::Comparison {
-            lhs: Arc::from(Expression::new(Id::from("player"))),
-            rhs: Arc::from(Expression::new(role.clone())),
-            negated: predicate.is_negated,
         },
         Term::True(proposition) => match proposition.as_ref() {
             Term::Custom0(AtomOrVariable::Atom(id)) => Label::Comparison {
