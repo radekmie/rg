@@ -4,6 +4,7 @@
 set -e
 
 timeout=${1:-10s}
+arguments=(${@:2})
 
 cd ../interpreter_rust
 cargo build --release
@@ -13,17 +14,17 @@ function translate {
   local game="$1"
 
   echo "${game}\c"
-  time=$(date +%s%N)
+  local time=$(date +%s%N)
 
   set +e
-  timeout --foreground $timeout ./target/release/cli source "${game}" > "${game}.rg"
-  timeout_code=$?
+  timeout --foreground $timeout ./target/release/cli source ${arguments[@]} "${game}" > "${game}.rg"
+  local status=$?
+  local time=$((($(date +%s%N) - $time) / 1000000))
   set -e
 
-  if [ $timeout_code -eq 124 ] ; then
+  if [ $status -eq 124 ] ; then
     echo " \033[01;31mtimeout\033[00m"
   else
-    time=$((($(date +%s%N) - $time) / 1000000))
     echo " \033[01;32m${time}ms\033[00m"
   fi
 }
