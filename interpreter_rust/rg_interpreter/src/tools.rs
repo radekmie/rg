@@ -78,7 +78,7 @@ impl Game<RuntimeId> {
         interner: &Interner<Id, RuntimeId>,
         initial_state: &State,
         plays: usize,
-        callback: &Option<impl Fn(Vec<String>)>,
+        callback: &Option<(bool, impl Fn(Vec<String>))>,
     ) -> Result<(), String> {
         fn stats(counter: &BTreeMap<usize, usize>) -> (usize, usize, f32, f32) {
             if counter.is_empty() {
@@ -103,8 +103,11 @@ impl Game<RuntimeId> {
             counter.entry(x).and_modify(|n| *n += 1).or_insert(1);
         }
 
-        // Display stats every ~1% of plays.
-        let step = 1f32.max(10f32.powf((plays as f32 / 100f32).log10().floor())) as usize;
+        // By default, display stats roughly 100 times.
+        let step = match callback {
+            Some((true, _)) => 1,
+            _ => 1f32.max(10f32.powf((plays as f32 / 100f32).log10().floor())) as usize,
+        };
 
         // Initialize counters.
         let mut goals: BTreeMap<Rc<Value<RuntimeId>>, usize> = BTreeMap::default();
@@ -170,7 +173,7 @@ impl Game<RuntimeId> {
             increase(&mut times, now.elapsed().as_micros() as usize);
             increase(&mut turns, turn);
 
-            if let Some(callback) = callback {
+            if let Some((_, callback)) = callback {
                 if play % step != 0 {
                     continue;
                 }

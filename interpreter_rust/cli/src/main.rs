@@ -47,6 +47,8 @@ enum CliArgs {
         plays: usize,
         #[arg(long, default_value_t = String::from("/"))]
         initial_state_path: String,
+        #[arg(long, default_value_t = false)]
+        log_every_play: bool,
     },
     /// Print JSON schema of RG AST
     #[cfg(not(target_arch = "wasm32"))]
@@ -163,6 +165,7 @@ fn main() -> Result<(), String> {
             game_with_flags,
             plays,
             initial_state_path,
+            log_every_play,
         } => {
             let (game, interner, _) = Game::try_from(game_with_flags.load()?)?;
             let initial_state = game.initial_state_after(&interner, &initial_state_path)?;
@@ -171,9 +174,9 @@ fn main() -> Result<(), String> {
                 &interner,
                 &initial_state,
                 plays,
-                &Some(|lines: Vec<_>| {
+                &Some((log_every_play, |lines: Vec<_>| {
                     println!("{esc}c{}", lines.join("\n"), esc = 27 as char);
-                }),
+                })),
             )?;
         }
         #[cfg(not(target_arch = "wasm32"))]

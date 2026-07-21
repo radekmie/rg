@@ -115,9 +115,9 @@ pub fn wasm_run(
         &interner,
         &initial_state,
         plays,
-        &Some(|lines: Vec<_>| {
+        &Some((false, |lines: Vec<_>| {
             let lines = Array::from_iter(lines.into_iter().map(JsValue::from));
             callback.call1(&this, &lines).unwrap();
-        }),
+        })),
     )
 }

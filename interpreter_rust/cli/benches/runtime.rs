@@ -31,7 +31,7 @@ fn scenario(criterion: &mut Criterion, game: &str, paths: &[&str]) {
                 });
 
                 bencher.iter(|| {
-                    ist.run(rng, interner, initial_state, 1, &None::<fn(_)>)
+                    ist.run(rng, interner, initial_state, 1, &None::<(_, fn(_))>)
                         .unwrap()
                 });
             });
