@@ -102,6 +102,7 @@ const games = [
   ['Tic Tac Die', require('bundle-text:../../../../games/hrg/ticTacDie.hrg'), Language.hrg],
   ['Tic Tac Toe', require('bundle-text:../../../../games/kif/ticTacToe.kif'), Language.gdl],
   ['Tic Tac Toe', require('bundle-text:../../../../games/hrg/ticTacToe.hrg'), Language.hrg],
+  ['Tic Tac Toe', require('bundle-text:../../../../games/kif/ticTacToe.kif'), Language.gdl],
   ['Tic Tac Toe', require('bundle-text:../../../../games/rbg/ticTacToe.rbg'), Language.rbg],
   ['Tic Tac Toe', require('bundle-text:../../../../games/rg/ticTacToe.rg'), Language.rg],
   ['Tron', require('bundle-text:../../../../games/kif/tron_10x10.kif'), Language.gdl],
