@@ -100,7 +100,6 @@ const games = [
   ['The Mill Game', require('bundle-text:../../../../games/hrg/theMillGame.hrg'), Language.hrg],
   ['The Mill Game', require('bundle-text:../../../../games/rbg/theMillGame.rbg'), Language.rbg],
   ['Tic Tac Die', require('bundle-text:../../../../games/hrg/ticTacDie.hrg'), Language.hrg],
-  ['Tic Tac Toe', require('bundle-text:../../../../games/kif/ticTacToe.kif'), Language.gdl],
   ['Tic Tac Toe', require('bundle-text:../../../../games/hrg/ticTacToe.hrg'), Language.hrg],
   ['Tic Tac Toe', require('bundle-text:../../../../games/kif/ticTacToe.kif'), Language.gdl],
   ['Tic Tac Toe', require('bundle-text:../../../../games/rbg/ticTacToe.rbg'), Language.rbg],
