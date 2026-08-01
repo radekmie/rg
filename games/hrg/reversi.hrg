@@ -86,7 +86,7 @@ graph isCorrectMove() {
     isCapture(dir)
   }
 }
-graph existsMove() {
+reusable graph existsMove() {
   pos = Position(*)
   isCorrectMove()
 }

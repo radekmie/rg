@@ -89,7 +89,7 @@ graph win(piece: Piece) {
   }
 }
 
-graph existsNonempty() {
+reusable graph existsNonempty() {
   pos = Position(*)
   check(board[pos] == empty)
 }
