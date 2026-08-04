@@ -41,3 +41,26 @@ impl Game<Arc<str>> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::test_transform;
+
+    test_transform!(
+        prune_unused_variables,
+        assignment_any,
+        "type T = { 0 };
+        var x: T = 0;
+        begin, end: x = A(*);",
+        "type T = { 0 };
+        begin, end: ;"
+    );
+
+    test_transform!(
+        prune_unused_variables,
+        tag_variable,
+        "type T = { 0 };
+        var x: T = 0;
+        begin, end: $$ x;"
+    );
+}

@@ -299,9 +299,15 @@ impl<Id: Ord> Label<Id> {
                 lhs.collect_variables(&mut vars);
                 rhs.collect_variables(&mut vars);
             }
+            Self::AssignmentAny { lhs, .. } => {
+                lhs.collect_variables(&mut vars);
+            }
             Self::Comparison { lhs, rhs, .. } => {
                 lhs.collect_variables(&mut vars);
                 rhs.collect_variables(&mut vars);
+            }
+            Self::TagVariable { identifier, .. } => {
+                vars.insert(identifier);
             }
             _ => {}
         }
