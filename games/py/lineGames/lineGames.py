@@ -577,9 +577,9 @@ class CaptureSequences(Enum):
     NONE = 11
     SPLIT = 12
     FULL = 33
-class captureMandatory(Enum):
+class CaptureMandatory(Enum):
     MANDATORY = 21
-    NOMANDATORY = 22
+    NO_MANDATORY = 22
 
 class LineGame:
     def __init__(self):
@@ -848,7 +848,7 @@ class LineGame:
         
     def setRules(self, capturesSequences, capturesMandatory):
         assert capturesSequences in [CaptureSequences.NONE, CaptureSequences.SPLIT, CaptureSequences.FULL], "Unsupported capture sequences type."
-        assert capturesMandatory in [captureMandatory.MANDATORY, captureMandatory.NOMANDATORY], "Unsupported capture mandatory type."
+        assert capturesMandatory in [CaptureMandatory.MANDATORY, CaptureMandatory.NO_MANDATORY], "Unsupported capture mandatory type."
         self.captSeq = capturesSequences
         self.captMand = capturesMandatory
 
@@ -921,13 +921,13 @@ class LineGame:
         print(_rules_begin)
 
         if self.captSeq == CaptureSequences.FULL:
-            if self.captMand==captureMandatory.MANDATORY: inner=_rules_inner_mandatory_sequence
+            if self.captMand==CaptureMandatory.MANDATORY: inner=_rules_inner_mandatory_sequence
             else:                                         inner=_rules_inner_nomandatory_sequence
         elif self.captSeq == CaptureSequences.SPLIT:
-            if self.captMand==captureMandatory.MANDATORY: inner=_rules_inner_mandatory_split
+            if self.captMand==CaptureMandatory.MANDATORY: inner=_rules_inner_mandatory_split
             else:                                         inner=_rules_inner_nomandatory_split
         elif self.captSeq == CaptureSequences.NONE:
-            if self.captMand==captureMandatory.MANDATORY: inner=_rules_inner_mandatory_nosequence
+            if self.captMand==CaptureMandatory.MANDATORY: inner=_rules_inner_mandatory_nosequence
             else:                                         inner=_rules_inner_nomandatory_nosequence
         inner=inner.replace('#STAGNATION_INC#', "" if self.stagnation is None else "stagnation = increment[stagnation]")
         print(inner)
@@ -935,7 +935,7 @@ class LineGame:
         elif self.maxTurns is None: checkEnd = _rules_checkEnd.replace('#CHECK_END#', f'stagnation == I({self.stagnation})')
         else:                       checkEnd = _rules_checkEnd.replace('#CHECK_END#', f'stagnation == I({self.stagnation}) || turn == I({self.maxTurns})')
         print(checkEnd)
-        if self.captMand==captureMandatory.MANDATORY: print(_rules_turn_mandatory.replace('#TURN_INC#','' if self.maxTurns is None else "turn = increment[turn]"))
+        if self.captMand==CaptureMandatory.MANDATORY: print(_rules_turn_mandatory.replace('#TURN_INC#','' if self.maxTurns is None else "turn = increment[turn]"))
         else:                                         print(_rules_turn_nomandatory.replace('#TURN_INC#','' if self.maxTurns is None else "turn = increment[turn]"))
 
     def printDebug(self):
@@ -954,7 +954,7 @@ def Alquerque_rbg():
     game = LineGame()
     game.addBoardAlquerque(width=5, height=5) 
     game.addPiecesAlquerque(InitialPieces.SQUARE_E_TO_W_NOCENTRAL)
-    game.setRules(CaptureSequences.FULL, captureMandatory.MANDATORY)
+    game.setRules(CaptureSequences.FULL, CaptureMandatory.MANDATORY)
     game.setLimits(stagnation=100, maxTurns=None)
     return game
 
@@ -962,7 +962,7 @@ def Alquerque_lud():
     game = LineGame()
     game.addBoardAlquerque(width=5, height=5) 
     game.addPiecesAlquerque(InitialPieces.SQUARE_E_TO_W_NOCENTRAL)
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -970,7 +970,7 @@ def Pretwa_rbg():
     game = LineGame()
     game.addBoardCircle(lines=6, length=4) 
     game.addPiecesCircle(InitialPieces.CIRCLE_CLUSTERED_NOCENTRAL)
-    game.setRules(CaptureSequences.FULL, captureMandatory.MANDATORY)
+    game.setRules(CaptureSequences.FULL, CaptureMandatory.MANDATORY)
     game.setLimits(stagnation=100, maxTurns=None)
     return game
 
@@ -978,7 +978,7 @@ def Pretwa_lud():
     game = LineGame()
     game.addBoardCircle(lines=6, length=4) 
     game.addPiecesCircle(InitialPieces.CIRCLE_CLUSTERED_NOCENTRAL)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -986,7 +986,7 @@ def GolSkuish_rbg():
     game = LineGame()
     game.addBoardCircle(lines=6, length=8) 
     game.addPiecesCircle(InitialPieces.CIRCLE_CLUSTERED_NOCENTRAL)
-    game.setRules(CaptureSequences.FULL, captureMandatory.MANDATORY)
+    game.setRules(CaptureSequences.FULL, CaptureMandatory.MANDATORY)
     game.setLimits(stagnation=100, maxTurns=None)
     return game
 
@@ -994,7 +994,7 @@ def GolEkuish_lud():
     game = LineGame()
     game.addBoardCircle(lines=6, length=8) 
     game.addPiecesCircle(InitialPieces.CIRCLE_CLUSTERED_NOCENTRAL)
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1002,7 +1002,7 @@ def BaraGutiBihar_lud():
     game = LineGame()
     game.addBoardCircle(lines=8, length=4) 
     game.addPiecesCircle(InitialPieces.CIRCLE_CLUSTERED_NOCENTRAL)
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1012,7 +1012,7 @@ def Aiyawatstani_lud():
     game.addPiecesSquareWithDiagonals(InitialPieces.SQUARE_4ROWS)
     game.addPieces(WHITE_PIECE, 'cy6x2', 'cy6x6')
     game.addPieces(BLACK_PIECE, 'cy6x0', 'cy6x8')
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1020,7 +1020,7 @@ def BaraGuti_lud():
     game = LineGame()
     game.addBoardAlquerque(width=5, height=5) 
     game.addPiecesAlquerque(InitialPieces.SQUARE_W_TO_E_NOCENTRAL)
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1028,7 +1028,7 @@ def BisGutiya_lud():
     game = LineGame()
     game.addBoardSquareWithDiagonals(width=9, height=9) 
     game.addPiecesSquareWithDiagonals(InitialPieces.SQUARE_W_TO_E_NOCENTRAL)
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1038,7 +1038,7 @@ def ChalisGutiaTitagarh_lud():
     game.addPiecesAlquerque(InitialPieces.SQUARE_2ROWS)
     game.addPieces(WHITE_PIECE, 'cy6x3', 'cy6x4', 'cy6x5', 'cy6x6', 'cy6x7', 'cy6x8')
     game.addPieces(BLACK_PIECE, 'cy2x0', 'cy2x1', 'cy2x2', 'cy2x3', 'cy2x4', 'cy2x5')
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1046,7 +1046,7 @@ def MeurimuengRimuengPeuetPloh_lud():
     game = LineGame()
     game.addBoardAlquerque(width=9, height=9) 
     game.addPiecesAlquerque(InitialPieces.SQUARE_W_TO_E_NOCENTRAL)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1054,7 +1054,7 @@ def RattiChittiBakri_lud():
     game = LineGame()
     game.addBoardAlquerque(width=9, height=9) 
     game.addPiecesAlquerque(InitialPieces.SQUARE_W_TO_E_NOCENTRAL)
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1062,7 +1062,7 @@ def Tavelspel_lud():
     game = LineGame()
     game.addBoardGrid(width=13, height=13)
     game.addPiecesGrid(InitialPieces.SQUARE_2ROWS)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1070,7 +1070,7 @@ def TerhuchuSmall_lud():
     game = LineGame()
     game.addBoardAlquerque(width=5, height=5) 
     game.addPiecesAlquerque(InitialPieces.SQUARE_2ROWS)
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1078,7 +1078,7 @@ def Tuknanavuhpi_lud():
     game = LineGame()
     game.addBoardSquareWithDiagonals(width=9, height=9) 
     game.addPiecesSquareWithDiagonals(InitialPieces.SQUARE_W_TO_E_NOCENTRAL)
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1089,7 +1089,7 @@ def AhtarahGuti_lud(): # same as LamPusri
     game.addPiecesAlquerque(InitialPieces.SQUARE_E_TO_W_NOCENTRAL)
     game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1100,7 +1100,7 @@ def DamSingapore_lud():
     game.addPiecesAlquerque(InitialPieces.SQUARE_2ROWS)
     game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
     
@@ -1111,7 +1111,7 @@ def DamHariman_lud(): # same as HewakamKeliya_lud
     game.addPiecesAlquerque(InitialPieces.SQUARE_2ROWS)
     game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1124,7 +1124,7 @@ def DashGuti_rbg():
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
     game.addNode("nodeL", piece=WHITE_PIECE, edges={E: v(0, 0, 'c')})
     game.addNode("nodeR", piece=BLACK_PIECE, edges={W: v(0, 0, 'c')})
-    game.setRules(CaptureSequences.FULL, captureMandatory.MANDATORY)
+    game.setRules(CaptureSequences.FULL, CaptureMandatory.MANDATORY)
     game.setLimits(stagnation=100, maxTurns=None)
     return game   
 
@@ -1137,7 +1137,7 @@ def DashGuti_lud():
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
     game.addNode("nodeL", piece=WHITE_PIECE, edges={E: v(0, 0, 'c'), S: 'tsouthvy3x0', N: 'tnorthvy3x2'})
     game.addNode("nodeR", piece=BLACK_PIECE, edges={W: v(0, 0, 'c'), S: 'tsouthvy3x2', N: 'tnorthvy3x0'})
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game   
 
@@ -1148,7 +1148,7 @@ def HewakamKeliya_lud():
     game.addPiecesAlquerque(InitialPieces.SQUARE_2ROWS)
     game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1162,7 +1162,7 @@ def KauaDorki_lud():
     game.addNode("nodeE2", piece=BLACK_PIECE, edges={W: 'nodeE1'})
     game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1173,7 +1173,7 @@ def KotuEllima_lud(): # rotated 90*
     game.addPiecesAlquerque(InitialPieces.SQUARE_W_TO_E_NOCENTRAL)
     for d in[S, W]: game.addPiecesTriangle(d, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
     for d in[N, E]: game.addPiecesTriangle(d, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1184,7 +1184,7 @@ def LamPusri_lud():
     game.addPiecesAlquerque(InitialPieces.SQUARE_E_TO_W_NOCENTRAL)
     game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1195,7 +1195,7 @@ def LauKataKati_rbg():
     game.attachTriangle3(dir=N, height=4)
     game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.FULL, captureMandatory.MANDATORY)
+    game.setRules(CaptureSequences.FULL, CaptureMandatory.MANDATORY)
     game.setLimits(stagnation=100, maxTurns=None)
     return game
 
@@ -1206,7 +1206,7 @@ def LauKataKati_lud():
     game.attachTriangle3(dir=N, height=4)
     game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1217,7 +1217,7 @@ def MogulPutthan_lud():
     game.addPiecesAlquerque(InitialPieces.SQUARE_2ROWS)
     game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1230,7 +1230,7 @@ def Peralikatuma_lud(): # rotated 90*
     for d in[N, E]: game.addPiecesTriangle(d, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
     game.addPieces(WHITE_PIECE, 'cy2x0')
     game.addPieces(BLACK_PIECE, 'cy2x4')
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1239,7 +1239,7 @@ def Satoel_lud():
     game.addBoardAlquerque(width=9, height=9) 
     for d in[N, S]: game.attachTriangle3(dir=d, height=3)
     game.addPiecesAlquerque(InitialPieces.SQUARE_W_TO_E_NOCENTRAL)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1250,7 +1250,7 @@ def SmasandyutakankarikridaAllahabad_lud(): # TODO can make nocapture move after
     for d in[N, E, S, W, NE, NW, SE, SW]: game.attachTriangle3(dir=d, height=3)
     game.addPiecesTriangle(S, InitialPieces.TRIANGLE_FULL_NOROOT, WHITE_PIECE)
     game.addPiecesTriangle(N, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
-    game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game    
 '''
@@ -1261,7 +1261,7 @@ def Smasandyutakankarikrida_lud():
     for d in[N, S,]: game.attachTriangle3(dir=d, height=5)
     game.addPieces(WHITE_PIECE, 'tsouthvy3x0', 'tsouthvy3x1', 'tsouthvy3x2', 'tsouthvy4x0', 'tsouthvy4x1', 'tsouthvy4x2')
     game.addPieces(BLACK_PIECE, 'tnorthvy3x0', 'tnorthvy3x1', 'tnorthvy3x2', 'tnorthvy4x0', 'tnorthvy4x1', 'tnorthvy4x2')
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 
@@ -1273,7 +1273,7 @@ def Terhuchu_todo_lud(): # not working: Within the triangular extensions, pieces
     game.addPiecesAlquerque(InitialPieces.SQUARE_1ROWS)
     game.addPieces(WHITE_PIECE, 'cy3x1', 'cy3x2', 'cy3x3', 'tsouthvy1x0')
     game.addPieces(BLACK_PIECE, 'cy1x1', 'cy1x3', 'cy1x3', 'tnorthvy1x0')
-    game.setRules(CaptureSequences.NONE, captureMandatory.NOMANDATORY)
+    game.setRules(CaptureSequences.NONE, CaptureMandatory.NO_MANDATORY)
     game.setLimits(stagnation=None, maxTurns=1250)
     return game
 '''

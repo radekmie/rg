@@ -7,6 +7,6 @@ for d in[S, W]: game.addPiecesTriangle(d, InitialPieces.TRIANGLE_FULL_NOROOT, WH
 for d in[N, E]: game.addPiecesTriangle(d, InitialPieces.TRIANGLE_FULL_NOROOT, BLACK_PIECE)
 game.addPieces(WHITE_PIECE, 'cy2x0')
 game.addPieces(BLACK_PIECE, 'cy2x4')
-game.setRules(CaptureSequences.SPLIT, captureMandatory.NOMANDATORY)
+game.setRules(CaptureSequences.SPLIT, CaptureMandatory.NO_MANDATORY)
 game.setLimits(stagnation=None, maxTurns=1250)
 game.printHRG()
