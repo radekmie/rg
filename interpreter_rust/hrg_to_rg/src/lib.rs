@@ -1471,8 +1471,8 @@ fn translate_condition(
                             translate_automaton_function(
                                 context,
                                 &called_automaton_function,
-                                Some(&automaton_end_node),
                                 None,
+                                Some(&automaton_end_node),
                                 &Id::from(""),
                             )?;
                         }
@@ -1480,8 +1480,8 @@ fn translate_condition(
                         translate_automaton_function(
                             context,
                             &called_automaton_function,
-                            Some(&automaton_end_node),
                             None,
+                            Some(&automaton_end_node),
                             &Id::from(format!("{prefix}_")),
                         )?;
                     }
@@ -1906,6 +1906,13 @@ mod test {
             #[test]
             fn $name() {
                 test_translation($hrg, $rg);
+            }
+        };
+        ($name:ident, $hrg:expr, error $error:expr) => {
+            #[test]
+            #[should_panic(expected = $error)]
+            fn $name() {
+                test_translation($hrg, "");
             }
         };
     }
@@ -2541,5 +2548,31 @@ mod test {
             rules_begin, rules_end: ;
             rules_end, end: ;
         "
+    );
+
+    test_translation!(
+        reachable_end,
+        "
+            graph a() {
+                end()
+            }
+            graph rules() {
+                check(reachable(a()))
+            }
+        ",
+        error "end() requires end_node."
+    );
+
+    test_translation!(
+        reachable_end_rusable,
+        "
+            graph a() {
+                end()
+            }
+            graph rules() {
+                check(reachable(a()))
+            }
+        ",
+        error "end() requires end_node."
     );
 }
