@@ -6,7 +6,7 @@ export const configuration = getLanguageConfiguration('//');
 export const language: monaco.languages.IMonarchLanguage = {
   defaultToken: 'source',
   declarationKeywords: ['const', 'type', 'var'],
-  operators: ['=', '==', '!=', '!', '?', '->', '$'],
+  operators: ['=', '==', '!=', '!', '?', '->', '*', '$'],
   symbols: /[=!?\->]+/,
   tokenizer: {
     root: [
