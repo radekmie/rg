@@ -375,6 +375,7 @@ pub enum Error<Id> {
 }
 
 // TODO: Implement MapId for trivial enums
+// TODO: Implement `Mul`.
 #[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Binop {
     Add,

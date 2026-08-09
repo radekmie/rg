@@ -1537,6 +1537,7 @@ fn translate_domains(context: &mut Context) {
             panic!("Duplicated domain \"{}\".", domain.identifier);
         }
 
+        // TODO: Fail on self-referential domains.
         let domain_elements = translate_domain_elements(context, &domain.elements);
         let identifiers: Vec<_> = domain_elements.iter().map(serialize_value).collect();
         if let Some(offset) = as_integer_domain(&domain.elements) {
@@ -1743,9 +1744,8 @@ fn translate_function_layer(
     }
 
     let value = evaluate_expression_call(context, function_declaration, values)?;
-    Ok(rg::Value::Element {
-        identifier: serialize_value(&value),
-    })
+    // TODO: Type check `value` against `function_declaration.type_`.
+    Ok(rg::Value::from(serialize_value(&value)))
 }
 
 fn translate_functions(context: &mut Context) -> Result<(), hrg::Error<Id>> {
