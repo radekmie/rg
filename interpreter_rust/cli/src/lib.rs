@@ -18,6 +18,7 @@ pub fn wasm_analyze(
     flags: &str,
     callback: &Function,
 ) -> Result<(), String> {
+    #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
     analyze(
         source,
@@ -35,6 +36,7 @@ pub fn wasm_analyze(
 
 #[wasm_bindgen(js_name = apply)]
 pub fn wasm_apply(ast: &str, path: &str) -> Result<String, String> {
+    #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
     let (game, interner, variables_indexes) =
         Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?;
@@ -88,6 +90,7 @@ pub fn wasm_perf(
     depth: usize,
     callback: &Function,
 ) -> Result<(), String> {
+    #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
     let (game, interner, _) = Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?;
     let initial_state = game.initial_state_after(&interner, initial_state_path)?;
@@ -105,6 +108,7 @@ pub fn wasm_run(
     plays: usize,
     callback: &Function,
 ) -> Result<(), String> {
+    #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
     let (game, interner, _) = Game::try_from(from_str(ast).map_err(|error| error.to_string())?)?;
     let initial_state = game.initial_state_after(&interner, initial_state_path)?;

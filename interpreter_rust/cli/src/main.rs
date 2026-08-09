@@ -1,5 +1,7 @@
 use clap::{Args, Parser};
 use cli::{analyze, Flags};
+#[cfg(not(target_arch = "wasm32"))]
+use lsp::backend::Backend;
 use rand::thread_rng;
 use rg::ast::Game as GameAst;
 use rg_interpreter::Game;
@@ -8,11 +10,15 @@ use schemars::schema_for;
 #[cfg(not(target_arch = "wasm32"))]
 use serde_json::to_string;
 use serde_json::{from_str, json, Value};
+#[cfg(not(target_arch = "wasm32"))]
+use smol::{block_on, Unblock};
 use std::ffi::OsStr;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::process::exit;
 use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
+use tower_lsp::{LspService, Server};
 
 #[derive(Parser)]
 #[command(about, version)]
@@ -25,6 +31,9 @@ enum CliArgs {
     },
     /// Print formatted source
     Format { path: PathBuf },
+    /// Starts a LSP server
+    #[cfg(not(target_arch = "wasm32"))]
+    Lsp,
     /// Print available moves
     Moves {
         #[command(flatten)]
@@ -133,6 +142,13 @@ fn main() -> Result<(), String> {
 
             panic!("No formatted source found");
         }
+        #[cfg(not(target_arch = "wasm32"))]
+        CliArgs::Lsp => block_on(async {
+            let stdin = Unblock::new(std::io::stdin());
+            let stdout = Unblock::new(std::io::stdout());
+            let (service, socket) = LspService::new(Backend::new);
+            Server::new(stdin, stdout, socket).serve(service).await;
+        }),
         CliArgs::Moves {
             game_with_flags,
             initial_state_path,
