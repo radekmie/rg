@@ -164,9 +164,9 @@ impl Iterator for StateNext<'_> {
                     let is_fully_disjoint = game.disjoints.contains(&state.position);
                     let mut reachables: Option<Vec<(RuntimeId, RuntimeId, bool)>> = None;
                     for edge in edges {
-                        let mut state = state.clone_at(edge.next);
                         match &edge.label {
                             EdgeLabel::Assignment { lhs, rhs } => {
+                                let mut state = state.clone_at(edge.next);
                                 state.eval_set(game, lhs, state.eval(game, rhs).clone());
                                 if *break_on_player && *lhs == Expression::PlayerReference {
                                     return_queue.push(state);
@@ -180,7 +180,7 @@ impl Iterator for StateNext<'_> {
                                 };
 
                                 for value in values {
-                                    let mut state = state.clone();
+                                    let mut state = state.clone_at(edge.next);
                                     state.eval_set(game, lhs, value.clone());
                                     search_queue.push(state);
                                 }
@@ -190,7 +190,7 @@ impl Iterator for StateNext<'_> {
                                 let rhs_value = state.eval(game, rhs);
                                 let is_equal = lhs_value == rhs_value;
                                 if is_equal != *negated {
-                                    search_queue.push(state);
+                                    search_queue.push(state.clone_at(edge.next));
                                 } else {
                                     continue;
                                 }
@@ -214,16 +214,17 @@ impl Iterator for StateNext<'_> {
                                     });
 
                                 if is_reachable != *negated {
-                                    search_queue.push(state);
+                                    search_queue.push(state.clone_at(edge.next));
                                 } else {
                                     continue;
                                 }
                             }
                             EdgeLabel::Skip => {
-                                search_queue.push(state);
+                                search_queue.push(state.clone_at(edge.next));
                             }
                             EdgeLabel::Tag { symbol } => {
-                                state.tags = Rc::new([&state.tags[..], &[*symbol]].concat());
+                                let mut state = state.clone_at(edge.next);
+                                Rc::make_mut(&mut state.tags).push(*symbol);
                                 search_queue.push(state);
                             }
                             EdgeLabel::TagVariable { index } => {
@@ -231,7 +232,8 @@ impl Iterator for StateNext<'_> {
                                     panic!("Only Element can used as a Tag.")
                                 };
 
-                                state.tags = Rc::new([&state.tags[..], &[*value]].concat());
+                                let mut state = state.clone_at(edge.next);
+                                Rc::make_mut(&mut state.tags).push(*value);
                                 search_queue.push(state);
                             }
                         }
