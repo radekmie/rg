@@ -128,7 +128,7 @@ impl<Id: Ord + std::fmt::Debug> Uniques<Id> {
                     (x, y) if x >= y => *self = Self::PositiveAll,
                     (x, y) if x > y / 2 => {
                         all_nodes.retain(|value| !nodes.contains(value));
-                        *self = Self::Negative(all_nodes)
+                        *self = Self::Negative(all_nodes);
                     }
                     _ => {}
                 };
