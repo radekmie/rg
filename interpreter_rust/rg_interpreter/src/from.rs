@@ -1,4 +1,4 @@
-use crate::ist;
+use crate::ist::{self, Uniques};
 use rg::ast;
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
@@ -30,7 +30,7 @@ impl ist::Game<Id> {
                 initial_values: Rc::default(),
                 initial_visible: placeholder_value.clone(),
                 repeats: BTreeMap::default(),
-                uniques: BTreeSet::default(),
+                uniques: Uniques::default(),
             },
             types: BTreeMap::default(),
             variables_indexes: BTreeMap::default(),
@@ -41,6 +41,9 @@ impl ist::Game<Id> {
         build_variables(&mut context, ast.variables);
         build_edges(&mut context, ast.edges);
         build_pragmas(&mut context, ast.pragmas);
+
+        let nodes = context.game.edges.keys().cloned().collect();
+        context.game.uniques.optimize(nodes);
 
         // Make sure no placeholders are left.
         assert_ne!(context.game.initial_goals, placeholder_value);

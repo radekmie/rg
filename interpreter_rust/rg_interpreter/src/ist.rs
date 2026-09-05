@@ -69,7 +69,7 @@ pub struct Game<Id: Ord> {
     /// Nodes marked as `@repeat` with their variables.
     pub repeats: BTreeMap<Id, Rc<Vec<usize>>>,
     /// Nodes marked as `@unique`.
-    pub uniques: BTreeSet<Id>,
+    pub uniques: Uniques<Id>,
 }
 
 #[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
@@ -83,6 +83,56 @@ impl<Id: Ord> Type<Id> {
         match self {
             Self::Arrow { lhs, rhs } => lhs.size() * rhs.size(),
             Self::Set { values } => values.len(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, MapId, PartialEq, PartialOrd, Ord)]
+pub enum Uniques<Id: Ord> {
+    Negative(BTreeSet<Id>),
+    NegativeAll,
+    Positive(BTreeSet<Id>),
+    PositiveAll,
+}
+
+impl<Id: Ord> Default for Uniques<Id> {
+    fn default() -> Self {
+        Self::Positive(BTreeSet::default())
+    }
+}
+
+impl<Id: Ord + std::fmt::Debug> Uniques<Id> {
+    pub fn contains(&self, value: &Id) -> bool {
+        match self {
+            Self::Negative(nodes) => !nodes.contains(value),
+            Self::NegativeAll => false,
+            Self::Positive(nodes) => nodes.contains(value),
+            Self::PositiveAll => true,
+        }
+    }
+
+    pub fn insert(&mut self, value: Id) {
+        match self {
+            Self::Negative(_) | Self::NegativeAll | Self::PositiveAll => unreachable!(),
+            Self::Positive(nodes) => nodes.insert(value),
+        };
+    }
+
+    /// Given all nodes, choose the optimal (smaller) variant.
+    pub fn optimize(&mut self, mut all_nodes: BTreeSet<Id>) {
+        match self {
+            Self::Negative(_) | Self::NegativeAll | Self::PositiveAll => unreachable!(),
+            Self::Positive(nodes) => {
+                match (nodes.len(), all_nodes.len()) {
+                    (0, _) => *self = Self::NegativeAll,
+                    (x, y) if x >= y => *self = Self::PositiveAll,
+                    (x, y) if x > y / 2 => {
+                        all_nodes.retain(|value| !nodes.contains(value));
+                        *self = Self::Negative(all_nodes)
+                    }
+                    _ => {}
+                };
+            }
         }
     }
 }
