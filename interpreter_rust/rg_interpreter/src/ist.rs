@@ -123,15 +123,14 @@ impl<Id: Ord + std::fmt::Debug> Uniques<Id> {
         match self {
             Self::Negative(_) | Self::NegativeAll | Self::PositiveAll => unreachable!(),
             Self::Positive(nodes) => {
-                match (nodes.len(), all_nodes.len()) {
-                    (0, _) => *self = Self::NegativeAll,
-                    (x, y) if x >= y => *self = Self::PositiveAll,
-                    (x, y) if x > y / 2 => {
-                        all_nodes.retain(|value| !nodes.contains(value));
-                        *self = Self::Negative(all_nodes);
-                    }
-                    _ => {}
-                };
+                if nodes.is_empty() {
+                    *self = Self::NegativeAll;
+                } else if all_nodes.is_subset(nodes) {
+                    *self = Self::PositiveAll;
+                } else if nodes.len() > all_nodes.len() / 2 {
+                    all_nodes.retain(|value| !nodes.contains(value));
+                    *self = Self::Negative(all_nodes);
+                }
             }
         }
     }
