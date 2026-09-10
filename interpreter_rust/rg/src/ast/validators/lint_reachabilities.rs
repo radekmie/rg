@@ -63,6 +63,17 @@ mod test {
         }]
     );
 
+    // This is correct -- we cannot statically verify whether the loop is actually there.
+    test_linter!(
+        lint_reachabilities,
+        loop_4,
+        "type T = { 0, 1 }; var x: T = 0; var y: T = 1; a, b: ? a -> c; b, c: x == y;",
+        &[ErrorReason::ReachabilityLoop {
+            lhs: Node::new(Arc::from("a")),
+            rhs: Node::new(Arc::from("c")),
+        }]
+    );
+
     test_linter!(
         lint_reachabilities,
         unreachable_1,
