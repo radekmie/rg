@@ -62,7 +62,7 @@ impl<Id: Clone + PartialEq> Game<Id> {
             game.constants.push(constant);
         }
 
-        // Cariables can reference only constants.
+        // Variables can reference only constants.
         for variable in variables {
             variable.check_type(&game)?;
         }

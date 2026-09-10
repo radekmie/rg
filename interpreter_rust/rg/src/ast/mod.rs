@@ -482,6 +482,9 @@ pub enum ErrorReason<Id> {
     UnresolvedConstant {
         identifier: Id,
     },
+    UnresolvedNode {
+        node: Node<Id>,
+    },
     UnresolvedType {
         identifier: Id,
     },

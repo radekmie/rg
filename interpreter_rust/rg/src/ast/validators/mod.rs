@@ -6,6 +6,7 @@ mod check_reachabilities;
 mod check_tag_loops;
 mod check_tag_variables;
 mod check_types;
+mod lint_pragma_nodes;
 mod lint_reachabilities;
 
 #[cfg(test)]

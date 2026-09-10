@@ -172,6 +172,7 @@ impl<Id: Display> Display for ErrorReason<Id> {
             Self::UnresolvedConstant { identifier } => {
                 write!(f, "Unresolved constant {identifier}.")
             }
+            Self::UnresolvedNode { node } => write!(f, "Unresolved node {node}."),
             Self::UnresolvedType { identifier } => write!(f, "Unresolved type {identifier}."),
             Self::UnresolvedVariable { identifier } => {
                 write!(f, "Unresolved variable {identifier}.")
