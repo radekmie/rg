@@ -34,6 +34,9 @@ Options:
 ## Quick start (GUI)
 
 ```sh
+# In games/py
+sh lineGames.sh
+
 # In interpreter_rust
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/cli --out-name index --target web cli
 wasm-pack build --out-dir ../../interpreter_node/src/wasm/lsp --out-name index --target web lsp_browser
@@ -46,6 +49,7 @@ npm run start
 ## Dependencies
 
 - [Node.js](https://nodejs.org/en/) 24.6.0
+- [Python](https://www.python.org) 3.14.0
 - [Rust](https://www.rust-lang.org) 1.89.0
 - [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) 0.13.1
 

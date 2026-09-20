@@ -12,7 +12,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5.0.0
       - name: Build LineGames
-        run: sh generateAll.sh
+        run: sh lineGames.sh
         working-directory: games/py
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
