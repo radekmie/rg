@@ -1,5 +1,7 @@
+use super::symbol::Symbols;
 use crate::common::symbol::{make_builtin, Flag};
 use crate::common::symbol_table::{SymbolTable, SymbolTableBuilder};
+use crate::rg::symbol_table::BUILTIN_SYMBOLS as BUILTIN_SYMBOLS_RG;
 use hrg::ast::{
     DomainDeclaration, DomainElement, DomainElementPattern, DomainValue, Expression, Function,
     FunctionArg, FunctionCase, FunctionDeclaration, Game, Pattern, Statement, Type,
@@ -7,8 +9,6 @@ use hrg::ast::{
 };
 use utils::position::Positioned;
 use utils::{Identifier, ParserError};
-
-use super::symbol::Symbols;
 
 fn table_builder_from_game(game: &Game<Identifier>) -> SymbolTableBuilder {
     let mut table = SymbolTableBuilder {
@@ -292,26 +292,21 @@ fn add_from_variable_declaration(
     }
 }
 
-const BUILDIN_SYMBOLS: [(&str, Flag); 15] = [
+const BUILTIN_SYMBOLS: [(&str, Flag); 9] = [
     ("break", Flag::Function),
     ("check", Flag::Function),
     ("continue", Flag::Function),
     ("end", Flag::Function),
     ("false", Flag::Function),
-    ("goals", Flag::Variable),
-    ("keeper", Flag::Variable),
     ("not", Flag::Function),
-    ("player", Flag::Variable),
-    ("random", Flag::Variable),
     ("reachable", Flag::Function),
     ("return", Flag::Function),
     ("true", Flag::Function),
-    ("visible", Flag::Variable),
-    ("PlayerOrSystem", Flag::Type),
 ];
 
 fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
-    for (symbol, flag) in BUILDIN_SYMBOLS {
+    let symbols = BUILTIN_SYMBOLS_RG.into_iter().chain(BUILTIN_SYMBOLS);
+    for (symbol, flag) in symbols {
         if !table.is_defined(symbol) {
             table.symbols.push(make_builtin(symbol, flag));
         }

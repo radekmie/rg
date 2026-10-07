@@ -86,6 +86,7 @@ impl SymbolTableBuilder {
         self.symbols.iter().rposition(|symbol| {
             symbol.id == id.identifier
                 && (symbol.span().start <= id.span().start
+                    || symbol.flag == Flag::Constant
                     || symbol.flag == Flag::Function
                     || symbol.flag == Flag::Type)
                 && flag.as_ref().is_none_or(|f| symbol.flag == *f)

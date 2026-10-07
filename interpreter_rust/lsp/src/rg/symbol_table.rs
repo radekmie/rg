@@ -145,37 +145,25 @@ pub fn table_builder_from_game(game: &Game<Identifier>) -> SymbolTableBuilder {
     table
 }
 
+pub const BUILTIN_SYMBOLS: [(&str, Flag); 11] = [
+    ("0", Flag::Member),
+    ("1", Flag::Member),
+    ("Bool", Flag::Type),
+    ("Goals", Flag::Type),
+    ("PlayerOrSystem", Flag::Type),
+    ("Visibility", Flag::Type),
+    ("goals", Flag::Variable),
+    ("keeper", Flag::Variable),
+    ("player", Flag::Variable),
+    ("random", Flag::Variable),
+    ("visible", Flag::Variable),
+];
+
 fn add_builtin_symbols(table: &mut SymbolTableBuilder) {
-    if !table.is_defined("Bool") {
-        table.symbols.push(make_builtin("Bool", Flag::Type));
-        table.symbols.push(make_builtin("0", Flag::Member));
-        table.symbols.push(make_builtin("1", Flag::Member));
-    }
-    if !table.is_defined("Goals") {
-        table.symbols.push(make_builtin("Goals", Flag::Type));
-    }
-    if !table.is_defined("Visibility") {
-        table.symbols.push(make_builtin("Visibility", Flag::Type));
-    }
-    if !table.is_defined("keeper") {
-        table.symbols.push(make_builtin("keeper", Flag::Variable));
-    }
-    if !table.is_defined("random") {
-        table.symbols.push(make_builtin("random", Flag::Variable));
-    }
-    if !table.is_defined("PlayerOrSystem") {
-        table
-            .symbols
-            .push(make_builtin("PlayerOrSystem", Flag::Type));
-    }
-    if !table.is_defined("goals") {
-        table.symbols.push(make_builtin("goals", Flag::Variable));
-    }
-    if !table.is_defined("player") {
-        table.symbols.push(make_builtin("player", Flag::Variable));
-    }
-    if !table.is_defined("visible") {
-        table.symbols.push(make_builtin("visible", Flag::Variable));
+    for (symbol, flag) in BUILTIN_SYMBOLS {
+        if !table.is_defined(symbol) {
+            table.symbols.push(make_builtin(symbol, flag));
+        }
     }
 }
 
