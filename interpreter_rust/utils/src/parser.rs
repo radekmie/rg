@@ -142,6 +142,12 @@ pub fn in_braces<'a, O>(
     delimited(ww_char('{'), inner, ww_char('}'))
 }
 
+pub fn expect_in_braces<'a, O>(
+    inner: impl Parser<Input<'a>, Output = O, Error = Error<Input<'a>>>,
+) -> impl Parser<Input<'a>, Output = O, Error = Error<Input<'a>>> {
+    delimited(ww_char('{'), inner, expect(ww_char('}'), "`}`"))
+}
+
 pub fn in_parens<'a, O>(
     inner: impl Parser<Input<'a>, Output = O, Error = Error<Input<'a>>>,
 ) -> impl Parser<Input<'a>, Output = O, Error = Error<Input<'a>>> {

@@ -4,8 +4,8 @@ use crate::ast::{
     VariableDeclaration,
 };
 use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::complete::char;
+use nom::bytes::complete::{tag, take_while, take_while1};
+use nom::character::complete::{anychar, char};
 use nom::combinator::{all_consuming, cut, fail, into, opt, success, value, verify};
 use nom::error::context;
 use nom::error::Error;
@@ -17,8 +17,8 @@ use std::cell::RefCell;
 use std::sync::Arc;
 use utils::parser::{
     comma_separated0, comma_separated1, comments_and_whitespaces0, comments_and_whitespaces1,
-    identifier_, in_braces, in_brackets, in_parens, integer, into_arc, parse_error_line, ww,
-    ww_char, ww_tag, Input, ParserState, Result,
+    expect, expect_in_braces, identifier_, in_braces, in_brackets, in_parens, integer, into_arc,
+    parse_error_line, ww, ww_char, ww_tag, Input, ParserState, Result,
 };
 use utils::position::Span;
 use utils::{Identifier, ParserError};
@@ -49,9 +49,9 @@ fn assignment(input: Input) -> Result<Statement<Identifier>> {
 fn branch(input: Input) -> Result<Statement<Identifier>> {
     preceded(
         ww_tag("branch"),
-        in_braces(separated_list0(
-            delimited(ww_char('}'), tag("or"), ww_char('{')),
-            many0(statement),
+        expect_in_braces(separated_list0(
+            delimited(ww_char('}'), tag("or"), expect(ww_char('{'), "`{`")),
+            statements,
         ))
         .map(|arms| Statement::Branch { arms }),
     )
@@ -64,7 +64,7 @@ fn branch_var(input: Input) -> Result<Statement<Identifier>> {
         (
             ww(identifier),
             preceded(ww_tag("in"), type_),
-            in_braces(many0(statement)),
+            expect_in_braces(statements),
         )
             .map(|(identifier, type_, body)| Statement::BranchVar {
                 identifier,
@@ -80,7 +80,7 @@ fn call(input: Input) -> Result<Statement<Identifier>> {
 }
 
 fn loop_(input: Input) -> Result<Statement<Identifier>> {
-    preceded(tag("loop"), in_braces(many0(statement)))
+    preceded(tag("loop"), expect_in_braces(statements))
         .map(|body| Statement::Loop { body })
         .parse(input)
 }
@@ -88,7 +88,7 @@ fn loop_(input: Input) -> Result<Statement<Identifier>> {
 fn repeat(input: Input) -> Result<Statement<Identifier>> {
     (
         preceded(ww_tag("repeat"), integer),
-        in_braces(many0(statement)),
+        expect_in_braces(statements),
     )
         .map(|(count, body)| Statement::Repeat { count, body })
         .parse(input)
@@ -100,7 +100,7 @@ fn repeat_var(input: Input) -> Result<Statement<Identifier>> {
         (
             ww(identifier),
             preceded(ww_tag("in"), type_),
-            in_braces(many0(statement)),
+            expect_in_braces(statements),
         )
             .map(|(identifier, type_, body)| Statement::RepeatVar {
                 identifier,
@@ -114,11 +114,11 @@ fn repeat_var(input: Input) -> Result<Statement<Identifier>> {
 fn if_(input: Input) -> Result<Statement<Identifier>> {
     (
         preceded(tag("if"), expression),
-        in_braces(many0(statement)),
+        expect_in_braces(statements),
         opt(preceded(
             ww_tag("else"),
             alt((
-                in_braces(many0(statement)),
+                expect_in_braces(statements),
                 if_.map(|statement| vec![statement]),
             )),
         )),
@@ -134,7 +134,7 @@ fn if_(input: Input) -> Result<Statement<Identifier>> {
 fn while_(input: Input) -> Result<Statement<Identifier>> {
     (
         preceded(tag("while"), expression),
-        in_braces(many0(statement)),
+        expect_in_braces(statements),
     )
         .map(|(expression, body)| Statement::While { expression, body })
         .parse(input)
@@ -179,6 +179,37 @@ fn statement(input: Input) -> Result<Statement<Identifier>> {
         tag_statement,
     )))
     .parse(input)
+}
+
+fn statements(input: Input) -> Result<Vec<Statement<Identifier>>> {
+    many0(alt((statement.map(Some), statements_skip.map(|_| None))))
+        .map(|statements| statements.into_iter().flatten().collect())
+        .parse(input)
+}
+
+fn statements_skip(input: Input) -> Result<Input> {
+    let (input, ()) = comments_and_whitespaces0(input)?;
+    let head = match input.fragment().chars().next() {
+        None | Some('}') => return fail().parse(input),
+        Some(head) => head,
+    };
+
+    let error = ParserError::new(Span::at(&input), "expected: statement".to_string());
+    input.extra.report_error(error);
+
+    if is_statement_start(head) {
+        preceded(anychar, take_while(|c| c != '\n')).parse(input)
+    } else {
+        take_while1(is_statement_junk).parse(input)
+    }
+}
+
+fn is_statement_junk(c: char) -> bool {
+    !is_statement_start(c) && !c.is_whitespace() && c != '}'
+}
+
+fn is_statement_start(c: char) -> bool {
+    c.is_alphanumeric() || c == '_' || c == '$'
 }
 
 fn domain_element(input: Input) -> Result<DomainElement<Identifier>> {
@@ -340,7 +371,7 @@ fn function(input: Input) -> Result<Function<Identifier>> {
         alt((value(true, ww_tag("reusable")), success(false))),
         preceded(ww_tag("graph"), identifier),
         in_parens(comma_separated0(function_arg)),
-        in_braces(many0(statement)),
+        expect_in_braces(statements),
     ))
     .parse(input)
 }
@@ -434,7 +465,7 @@ pub fn parse_expression(input: &str) -> Arc<Expression<Identifier>> {
 
 #[cfg(test)]
 mod test {
-    use super::parse_with_errors;
+    use super::{parse_with_errors, Game, Identifier};
 
     fn check_parse(input: &str) {
         let (game, errors) = parse_with_errors(input);
@@ -454,6 +485,15 @@ mod test {
         );
     }
 
+    fn check_parse_errors(input: &str) -> Game<Identifier> {
+        let (game, errors) = parse_with_errors(input);
+        assert!(
+            !errors.is_empty(),
+            "Expected parse errors in:\n{input}\nParsed without errors:\n{game}",
+        );
+        game
+    }
+
     #[test]
     fn operator_precedence() {
         check_parse(
@@ -469,5 +509,20 @@ mod test {
               }\n\
             }",
         );
+    }
+
+    #[test]
+    fn function_recovers_from_missing_bracket() {
+        let game = check_parse_errors("graph foo() {\n  if x == y {\n    end()\n");
+        assert_eq!(game.automaton.len(), 1);
+        assert_eq!(game.automaton[0].name.identifier, "foo");
+        assert_eq!(game.automaton[0].body.len(), 1);
+    }
+
+    #[test]
+    fn function_recovers_from_junk_token() {
+        let game = check_parse_errors("graph foo() {\n  x = 1 ; y = 2\n}");
+        assert_eq!(game.automaton.len(), 1);
+        assert_eq!(game.automaton[0].body.len(), 2);
     }
 }
