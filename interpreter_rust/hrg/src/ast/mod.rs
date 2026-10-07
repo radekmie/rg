@@ -345,6 +345,10 @@ pub enum Error<Id> {
         identifier: Id,
         args: Vec<Value<Id>>,
     },
+    FunctionDeclarationError {
+        identifier: Id,
+        error: Box<Self>,
+    },
     IncomparableValues {
         lhs: Value<Id>,
         rhs: Value<Id>,
@@ -356,6 +360,9 @@ pub enum Error<Id> {
     },
     InvalidCondition {
         expression: Expression<Id>,
+    },
+    InvalidValue {
+        value: Value<Id>,
     },
     NotImplemented {
         message: &'static str,

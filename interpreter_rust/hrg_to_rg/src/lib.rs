@@ -1524,7 +1524,11 @@ fn translate_condition(
                 _ => unimplemented!("Unknown condition function \"{identifier}\"."),
             }
         }
-        _ => unimplemented!(),
+        expression => {
+            return Err(hrg::Error::InvalidCondition {
+                expression: expression.clone(),
+            })
+        }
     }
 
     Ok(())
@@ -1693,13 +1697,14 @@ fn translate_function(
     let type_ = translate_type(&function_declaration.type_);
     assert!(type_.is_arrow(), "Function is expected to have Arrow type.");
 
-    let value = Arc::from(translate_function_layer(
-        context,
-        function_declaration,
-        first_case,
-        &type_,
-        &[],
-    )?);
+    let value = Arc::from(
+        translate_function_layer(context, function_declaration, first_case, &type_, &[]).map_err(
+            |error| hrg::Error::FunctionDeclarationError {
+                identifier: function_declaration.identifier.clone(),
+                error: Box::from(error),
+            },
+        )?,
+    );
 
     Ok(rg::Constant {
         span: Span::none(),
@@ -1743,9 +1748,17 @@ fn translate_function_layer(
         }
     }
 
-    let value = evaluate_expression_call(context, function_declaration, values)?;
-    // TODO: Type check `value` against `function_declaration.type_`.
-    Ok(rg::Value::from(serialize_value(&value)))
+    let hrg_value = evaluate_expression_call(context, function_declaration, values)?;
+    let rg_value = rg::Value::from(serialize_value(&hrg_value));
+
+    // TODO: Type check `rg_value` of `rg::Value::Map` kind.
+    if let rg::Value::Element { identifier } = &rg_value {
+        if context.rg.is_assignable_identifier(type_, identifier) != Ok(true) {
+            return Err(hrg::Error::InvalidValue { value: hrg_value });
+        }
+    }
+
+    Ok(rg_value)
 }
 
 fn translate_functions(context: &mut Context) -> Result<(), hrg::Error<Id>> {

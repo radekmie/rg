@@ -80,9 +80,12 @@ impl<Id: Display> Display for Error<Id> {
             }
             Self::EmptyMap => write!(f, "At least one map entry is required to construct a map."),
             Self::FunctionCaseNotCovered { identifier, args } => {
-                write!(f, "No case for {identifier}(")?;
+                write!(f, "No case for \"{identifier}(")?;
                 write_with_separator(f, args, ", ")?;
-                write!(f, ")")
+                write!(f, ")\"")
+            }
+            Self::FunctionDeclarationError { identifier, error } => {
+                write!(f, "While translating \"{identifier}\": {error}")
             }
             Self::IncomparableValues { lhs, rhs } => {
                 write!(f, "Values \"{lhs}\" and \"{rhs}\" are not comparable.")
@@ -99,6 +102,9 @@ impl<Id: Display> Display for Error<Id> {
             }
             Self::InvalidCondition { expression } => {
                 write!(f, "Expression \"{expression}\" is not a valid condition.")
+            }
+            Self::InvalidValue { value } => {
+                write!(f, "Value \"{value}\" is not valid.")
             }
             Self::NotImplemented { message } => write!(f, "Not implemented ({message})."),
             Self::UnknownAutomatonFunction { identifier } => {

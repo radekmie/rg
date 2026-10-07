@@ -293,7 +293,7 @@ fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
                 preceded(tag("then"), expression),
                 preceded(tag("else"), expression),
             )),
-            into_arc(in_braces(alt((
+            into_arc(expect_in_braces(alt((
                 (
                     preceded(char(':'), cut(expression.map(Some))),
                     alt((

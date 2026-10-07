@@ -970,11 +970,7 @@ impl<Id: Clone + PartialEq> Game<Id> {
             .or_else(|| self.resolve_variable(identifier).map(|x| &x.type_))
     }
 
-    pub fn is_assignable_identifier(
-        &self,
-        lhs: &Arc<Type<Id>>,
-        rhs: &Id,
-    ) -> Result<bool, Error<Id>> {
+    pub fn is_assignable_identifier(&self, lhs: &Type<Id>, rhs: &Id) -> Result<bool, Error<Id>> {
         if let Some(rhs) = self.infer_or_none(rhs) {
             // If `rhs` resolves to some type, it has to be assignable.
             self.is_assignable_type(lhs, rhs, false)
