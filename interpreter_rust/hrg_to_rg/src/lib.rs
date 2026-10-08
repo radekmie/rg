@@ -1757,7 +1757,9 @@ fn translate_function_layer(
 
     // TODO: Type check `rg_value` of `rg::Value::Map` kind.
     if let rg::Value::Element { identifier } = &rg_value {
-        if context.rg.is_assignable_identifier(type_, identifier) != Ok(true) {
+        // TODO: Builtin types (e.g., `PlayerOrSystem`) may be unresolved and
+        // result in an `Err(...)`. These should be handled somehow.
+        if context.rg.is_assignable_identifier(type_, identifier) == Ok(false) {
             return Err(hrg::Error::InvalidValue { value: hrg_value });
         }
     }
