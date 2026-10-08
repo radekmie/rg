@@ -350,7 +350,10 @@ fn evaluate_expression(
 ) -> Result<hrg::Value<Id>, hrg::Error<Id>> {
     Ok(match expression {
         hrg::Expression::BinExpr { lhs, op, rhs }
-            if matches!(op, hrg::Binop::Add | hrg::Binop::Mod | hrg::Binop::Sub) =>
+            if matches!(
+                op,
+                hrg::Binop::Add | hrg::Binop::Mod | hrg::Binop::Mul | hrg::Binop::Sub
+            ) =>
         {
             let lhs: i32 = evaluate_expression_identifier(context, lhs, binding)?
                 .parse()
@@ -361,6 +364,7 @@ fn evaluate_expression(
             let value = match op {
                 hrg::Binop::Add => lhs + rhs,
                 hrg::Binop::Mod => (lhs + rhs) % rhs,
+                hrg::Binop::Mul => lhs * rhs,
                 hrg::Binop::Sub => lhs - rhs,
                 _ => unreachable!(),
             };
@@ -2557,6 +2561,24 @@ mod test {
             type Position = { V__0, V__1, V__2, V__3 };
             const decrement: Position -> Position = { :V__0, V__2: V__1, V__3: V__2 };
             const increment: Position -> Position = { :V__3, V__0: V__1, V__1: V__2 };
+            begin, rules_begin: ;
+            rules_begin, rules_end: ;
+            rules_end, end: ;
+        "
+    );
+
+    test_translation!(
+        mul_operator,
+        "
+            domain Position = V(X) where X in 0..3
+            double : Position -> Position
+            double(V(X)) = V((X * 2) % 4)
+            graph rules() {}
+        ",
+        "
+            @integer 0 : V__0 V__1 V__2 V__3;
+            type Position = { V__0, V__1, V__2, V__3 };
+            const double: Position -> Position = { :V__2, V__0: V__0, V__2: V__0 };
             begin, rules_begin: ;
             rules_begin, rules_end: ;
             rules_end, end: ;

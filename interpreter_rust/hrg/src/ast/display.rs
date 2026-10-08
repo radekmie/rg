@@ -135,6 +135,7 @@ impl Display for Binop {
             Self::Lt => write!(f, "<"),
             Self::Lte => write!(f, "<="),
             Self::Mod => write!(f, "%"),
+            Self::Mul => write!(f, "*"),
             Self::Ne => write!(f, "!="),
             Self::Or => write!(f, "||"),
             Self::Sub => write!(f, "-"),
@@ -262,9 +263,9 @@ fn write_expression<Id: Display>(
     match expression {
         Expression::Access { lhs, rhs } => write!(f, "{lhs}[{rhs}]"),
         Expression::BinExpr { lhs, op, rhs } => {
-            write_expr_parens(f, *op, lhs, indent)?;
+            write_expr_parens(f, *op, lhs, indent, false)?;
             write!(f, " {op} ")?;
-            write_expr_parens(f, *op, rhs, indent)
+            write_expr_parens(f, *op, rhs, indent, true)
         }
         Expression::Call { expression, args } => {
             write!(f, "{expression}(")?;
@@ -334,9 +335,16 @@ fn write_expr_parens<Id: Display>(
     op_outer: Binop,
     expr: &Expression<Id>,
     indent: usize,
+    is_rhs: bool,
 ) -> Result {
+    // Binary operators are left-associative, so an operand of the same
+    // precedence needs parentheses only on the right-hand side: `a && b && c`
+    // is `(a && b) && c`, while `a && (b && c)` must keep its parentheses.
     match expr {
-        Expression::BinExpr { op, .. } if op_outer.precedence() >= op.precedence() => {
+        Expression::BinExpr { op, .. }
+            if op_outer.precedence() > op.precedence()
+                || (is_rhs && op_outer.precedence() == op.precedence()) =>
+        {
             write!(f, "(")?;
             write_expression(f, expr, indent)?;
             write!(f, ")")

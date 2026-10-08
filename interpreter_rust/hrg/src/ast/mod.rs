@@ -382,7 +382,6 @@ pub enum Error<Id> {
 }
 
 // TODO: Implement MapId for trivial enums
-// TODO: Implement `Mul`.
 #[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Binop {
     Add,
@@ -394,6 +393,7 @@ pub enum Binop {
     Lt,
     Lte,
     Mod,
+    Mul,
     Ne,
     Or,
     Sub,
@@ -404,9 +404,9 @@ impl Binop {
         match self {
             Self::Or => 0,
             Self::And => 1,
-            Self::Eq | Self::Gt | Self::Gte | Self::Lt | Self::Lte | Self::Ne => 2,
-            // TODO: Should `In` and `Mod` have a higher precedence?
-            Self::Add | Self::In | Self::Mod | Self::Sub => 3,
+            Self::Eq | Self::In | Self::Ne | Self::Gt | Self::Gte | Self::Lt | Self::Lte => 2,
+            Self::Add | Self::Sub => 3,
+            Self::Mod | Self::Mul => 4,
         }
     }
 }

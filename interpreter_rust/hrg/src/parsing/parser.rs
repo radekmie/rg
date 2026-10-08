@@ -76,7 +76,16 @@ fn branch_var(input: Input) -> Result<Statement<Identifier>> {
 }
 
 fn call(input: Input) -> Result<Statement<Identifier>> {
-    into((identifier, in_parens(comma_separated0(expression)))).parse(input)
+    into((
+        verify(identifier, |identifier: &Identifier| {
+            !matches!(
+                identifier.identifier.as_str(),
+                "branch" | "if" | "loop" | "repeat" | "while"
+            )
+        }),
+        in_parens(comma_separated0(expression)),
+    ))
+    .parse(input)
 }
 
 fn loop_(input: Input) -> Result<Statement<Identifier>> {
@@ -264,16 +273,15 @@ fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
             binary_op(
                 1,
                 Assoc::Left,
-                alt((
-                    value(Binop::Add, tag("+")),
-                    // Force a comment or some whitespace to prevent consuming the next identifier.
-                    value(Binop::In, terminated(tag("in"), comments_and_whitespaces1)),
-                    value(Binop::Mod, tag("%")),
-                    value(Binop::Sub, tag("-")),
-                )),
+                alt((value(Binop::Mod, tag("%")), value(Binop::Mul, tag("*")))),
             ),
             binary_op(
                 2,
+                Assoc::Left,
+                alt((value(Binop::Add, tag("+")), value(Binop::Sub, tag("-")))),
+            ),
+            binary_op(
+                3,
                 Assoc::Left,
                 alt((
                     value(Binop::Eq, tag("==")),
@@ -282,10 +290,12 @@ fn expression(input: Input) -> Result<Arc<Expression<Identifier>>> {
                     value(Binop::Lt, tag("<")),
                     value(Binop::Gte, tag(">=")),
                     value(Binop::Gt, tag(">")),
+                    // Force a comment or some whitespace to prevent consuming the next identifier.
+                    value(Binop::In, terminated(tag("in"), comments_and_whitespaces1)),
                 )),
             ),
-            binary_op(3, Assoc::Right, value(Binop::And, tag("&&"))),
-            binary_op(4, Assoc::Right, value(Binop::Or, tag("||"))),
+            binary_op(4, Assoc::Left, value(Binop::And, tag("&&"))),
+            binary_op(5, Assoc::Left, value(Binop::Or, tag("||"))),
         ))),
         alt((
             into_arc((
@@ -465,9 +475,9 @@ pub fn parse_expression(input: &str) -> Arc<Expression<Identifier>> {
 
 #[cfg(test)]
 mod test {
-    use super::{parse_with_errors, Game, Identifier};
+    use super::{parse_expression, parse_with_errors, Game, Identifier};
 
-    fn check_parse(input: &str) {
+    fn check_display(input: &str) {
         let (game, errors) = parse_with_errors(input);
         assert!(
             errors.is_empty(),
@@ -485,7 +495,13 @@ mod test {
         );
     }
 
-    fn check_parse_errors(input: &str) -> Game<Identifier> {
+    #[test]
+    fn condition_with_parens() {
+        check_display("graph foo() {\n  if (a || b) && c {\n    end()\n  }\n}");
+        check_display("graph foo() {\n  while (a || b) && c {\n    end()\n  }\n}");
+    }
+
+    fn check_errors(input: &str) -> Game<Identifier> {
         let (game, errors) = parse_with_errors(input);
         assert!(
             !errors.is_empty(),
@@ -495,25 +511,8 @@ mod test {
     }
 
     #[test]
-    fn operator_precedence() {
-        check_parse(
-            "next_d1 : Position -> Position\n\
-            next_d1(P(I, J)) = if I == J\n  \
-              then P((I + 1) % 3, (J + 1) % 3)\n  \
-              else P(I, J)",
-        );
-        check_parse(
-            "graph foo() {\n  \
-              if me == first || (direction(me)(position) == null || not(reachable(move(opponent(me))))) {\n    \
-                end()\n  \
-              }\n\
-            }",
-        );
-    }
-
-    #[test]
     fn function_recovers_from_missing_bracket() {
-        let game = check_parse_errors("graph foo() {\n  if x == y {\n    end()\n");
+        let game = check_errors("graph foo() {\n  if x == y {\n    end()\n");
         assert_eq!(game.automaton.len(), 1);
         assert_eq!(game.automaton[0].name.identifier, "foo");
         assert_eq!(game.automaton[0].body.len(), 1);
@@ -521,8 +520,65 @@ mod test {
 
     #[test]
     fn function_recovers_from_junk_token() {
-        let game = check_parse_errors("graph foo() {\n  x = 1 ; y = 2\n}");
+        let game = check_errors("graph foo() {\n  x = 1 ; y = 2\n}");
         assert_eq!(game.automaton.len(), 1);
         assert_eq!(game.automaton[0].body.len(), 2);
+    }
+
+    fn check_expression(lhs: &str, rhs: &str) {
+        assert_eq!(
+            parse_expression(lhs),
+            parse_expression(rhs),
+            "`{lhs}` should parse like `{rhs}`",
+        );
+    }
+
+    #[test]
+    fn expression_precedence() {
+        // `%` and `*` bind tighter than `+` and `-`.
+        check_expression("a % b * c", "(a % b) * c");
+        check_expression("a % b + c", "(a % b) + c");
+        check_expression("a % b - c", "(a % b) - c");
+        check_expression("a * b % c", "(a * b) % c");
+        check_expression("a * b + c", "(a * b) + c");
+        check_expression("a * b - c", "(a * b) - c");
+        check_expression("a + b % c", "a + (b % c)");
+        check_expression("a + b * c", "a + (b * c)");
+        check_expression("a - b % c", "a - (b % c)");
+        check_expression("a - b * c", "a - (b * c)");
+
+        // Arithmetic binds tighter than comparisons.
+        check_expression("a + b == c", "(a + b) == c");
+        check_expression("a - b < c", "(a - b) < c");
+
+        // `in` is a comparison: looser than arithmetic, tighter than `&&`.
+        check_expression("a + b in c", "(a + b) in c");
+        check_expression("a == b in c", "(a == b) in c");
+        check_expression("a in b == c", "(a in b) == c");
+
+        // Comparisons bind tighter than `&&`, which binds tighter than `||`.
+        check_expression("a && b || c", "(a && b) || c");
+        check_expression("a == b && c", "(a == b) && c");
+        check_expression("a || b && c", "a || (b && c)");
+
+        // Access and call bind tighter than any binary operator.
+        check_expression("a(b) == c", "(a(b)) == c");
+        check_expression("a[b] + c", "(a[b]) + c");
+        check_expression("a[b] in c", "(a[b]) in c");
+
+        // `if..then..else` is the loosest operator.
+        check_expression("a && if a then b else c", "a && (if a then b else c)");
+        check_expression("a || if a then b else c", "a || (if a then b else c)");
+        check_expression("if a then b else c || d", "if a then b else (c || d)");
+    }
+
+    #[test]
+    fn expression_associativity() {
+        check_expression("a + b - c", "(a + b) - c");
+        check_expression("a - b + c", "(a - b) + c");
+        check_expression("a % b % c", "(a % b) % c");
+        check_expression("a * b * c", "(a * b) * c");
+        check_expression("a && b && c", "(a && b) && c");
+        check_expression("a || b || c", "(a || b) || c");
     }
 }
