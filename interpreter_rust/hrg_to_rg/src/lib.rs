@@ -1674,7 +1674,11 @@ fn translate_expression(
             }
             Arc::from(rg::Expression::new(identifier.clone()))
         }
-        _ => unimplemented!(),
+        expression => {
+            return Err(hrg::Error::InvalidExpression {
+                expression: expression.clone(),
+            })
+        }
     })
 }
 

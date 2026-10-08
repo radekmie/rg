@@ -361,6 +361,9 @@ pub enum Error<Id> {
     InvalidCondition {
         expression: Expression<Id>,
     },
+    InvalidExpression {
+        expression: Expression<Id>,
+    },
     InvalidValue {
         value: Value<Id>,
     },

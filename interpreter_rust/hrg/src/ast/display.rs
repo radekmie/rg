@@ -103,6 +103,9 @@ impl<Id: Display> Display for Error<Id> {
             Self::InvalidCondition { expression } => {
                 write!(f, "Expression \"{expression}\" is not a valid condition.")
             }
+            Self::InvalidExpression { expression } => {
+                write!(f, "Expression \"{expression}\" is not valid.")
+            }
             Self::InvalidValue { value } => {
                 write!(f, "Value \"{value}\" is not valid.")
             }
