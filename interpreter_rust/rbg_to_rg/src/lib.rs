@@ -933,7 +933,7 @@ fn remove_coord_null_check(context: &mut Context) {
 
     /// `coord = ?" || label == "coord = ?(*)`
     fn is_coord_assignment(label: &rg::Label<Id>) -> bool {
-        matches!(label, rg::Label::Assignment { lhs, .. } | rg::Label::AssignmentAny { lhs, .. } if is_ref(lhs, "coord"))
+        matches!(label, rg::Label::Assignment { lhs, .. } | rg::Label::NondeterministicAssignment { lhs, .. } if is_ref(lhs, "coord"))
     }
 
     /// `coord != null`
@@ -1423,7 +1423,7 @@ fn translate_atom_content(
                 context.connect(
                     from,
                     to,
-                    rg::Label::AssignmentAny {
+                    rg::Label::NondeterministicAssignment {
                         lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
                         rhs: Arc::from(rg::Type::new(Id::from("Coord"))),
                     },
@@ -1492,7 +1492,7 @@ fn translate_atom_content(
                 context.connect(
                     local,
                     to.clone(),
-                    rg::Label::AssignmentAny {
+                    rg::Label::NondeterministicAssignment {
                         lhs: Arc::from(rg::Expression::new(Id::from("coord"))),
                         rhs: type_,
                     },
@@ -1508,7 +1508,7 @@ fn translate_atom_content(
             context.connect(
                 from,
                 local_temp.clone(),
-                rg::Label::AssignmentAny {
+                rg::Label::NondeterministicAssignment {
                     lhs: Arc::from(rg::Expression::new(Id::from("coord_temp"))),
                     rhs: Arc::from(rg::Type::new(Id::from("Coord"))),
                 },

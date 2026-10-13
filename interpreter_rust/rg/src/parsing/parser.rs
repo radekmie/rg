@@ -140,7 +140,7 @@ fn compare_or_assign_label(input: Input) -> Result<Label<Identifier>> {
     });
     let (input, rhs_type) = opt(terminated(type_, in_parens(char('*')))).parse(input)?;
     if let Some(rhs) = rhs_type {
-        // For AssignmentAny we need "="
+        // For nondeterministic assignment we need `=`.
         if separator != "=" {
             let err = ParserError::new(Span::at(&input), "expected: expression".to_string());
             input.extra.report_error(err);

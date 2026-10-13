@@ -8,7 +8,7 @@ mod calculate_tag_indexes;
 mod compact_comparisons;
 mod compact_reachability;
 mod compact_skip_edges;
-mod expand_assignment_any;
+mod expand_nondeterministic_assignment;
 mod expand_tag_variable;
 mod inline_assignment;
 mod inline_reachability;

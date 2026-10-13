@@ -21,7 +21,7 @@ impl<Id: Positioned> Positioned for Label<Id> {
             Self::Assignment { lhs, rhs } | Self::Comparison { lhs, rhs, .. } => {
                 lhs.span().with_end(rhs.span().end)
             }
-            Self::AssignmentAny { lhs, rhs } => lhs.span().with_end(rhs.span().end),
+            Self::NondeterministicAssignment { lhs, rhs } => lhs.span().with_end(rhs.span().end),
             Self::Reachability { span, .. } | Self::Skip { span } => *span,
             Self::Tag { symbol } => symbol.span(),
             Self::TagVariable { identifier } => identifier.span(),

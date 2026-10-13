@@ -13,7 +13,7 @@ pub struct Flags {
 
     /// expand assignments with `*` to all possible values
     #[arg(long)]
-    pub expand_assignment_any: bool,
+    pub expand_nondeterministic_assignment: bool,
 
     /// expand tag variable
     #[arg(long)]
@@ -297,7 +297,7 @@ impl Flags {
             compact_skip_edges: true,
             enable_all_optimizations: true,
             enable_all_pragmas: true,
-            expand_assignment_any: false,
+            expand_nondeterministic_assignment: false,
             expand_tag_variable: false,
             inline_assignment: true,
             inline_reachability: true,

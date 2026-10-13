@@ -255,7 +255,7 @@ fn analyze_rg(
         pass!(add_explicit_casts);
 
         // Expand generator nodes before calculating pragmas.
-        pass!(expand_assignment_any);
+        pass!(expand_nondeterministic_assignment);
         pass!(expand_tag_variable);
 
         // Point of no return -- these passes are forward-only.

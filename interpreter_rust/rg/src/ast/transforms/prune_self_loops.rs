@@ -19,8 +19,12 @@ mod test {
     use crate::test_transform;
 
     test_transform!(prune_self_loops, edge_assignment, "x, x: v = 0;");
-    test_transform!(prune_self_loops, edge_assignment_any, "x, x: v = V(*);");
     test_transform!(prune_self_loops, edge_comparison, "x, x: v == 0;", "");
+    test_transform!(
+        prune_self_loops,
+        edge_nondeterministic_assignment,
+        "x, x: v = V(*);"
+    );
     test_transform!(prune_self_loops, edge_reachability, "x, x: ? a -> b;", "");
     test_transform!(
         prune_self_loops,

@@ -25,7 +25,7 @@ impl<Id>
                 accessors,
                 expression,
             },
-            Err(type_) => Self::AssignmentAny {
+            Err(type_) => Self::NondeterministicAssignment {
                 identifier,
                 accessors,
                 type_,

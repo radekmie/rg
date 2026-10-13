@@ -4,10 +4,10 @@ use std::sync::Arc;
 type Id = Arc<str>;
 
 impl Game<Id> {
-    pub fn expand_assignment_any(&mut self) -> Result<(), Error<Id>> {
+    pub fn expand_nondeterministic_assignment(&mut self) -> Result<(), Error<Id>> {
         for index in (0..self.edges.len()).rev() {
             let edge = &self.edges[index];
-            if let Label::AssignmentAny { lhs, rhs } = &edge.label {
+            if let Label::NondeterministicAssignment { lhs, rhs } = &edge.label {
                 let new_edges: Vec<_> = rhs
                     .values(self)?
                     .into_iter()
@@ -32,7 +32,7 @@ mod test {
     use crate::test_transform;
 
     test_transform!(
-        expand_assignment_any,
+        expand_nondeterministic_assignment,
         edge,
         "type T = { a, b }; x, y: a = T(*);",
         "type T = { a, b }; x, y: a = a; x, y: a = b;"

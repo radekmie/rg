@@ -35,7 +35,7 @@ pub fn scenario(group: &mut BenchmarkGroup<'_, WallTime>, path: &str) {
     bench!(compact_comparisons);
     bench!(compact_reachability);
     bench!(compact_skip_edges);
-    bench!(expand_assignment_any);
+    bench!(expand_nondeterministic_assignment);
     bench!(expand_tag_variable);
     bench!(inline_assignment);
     bench!(inline_reachability);

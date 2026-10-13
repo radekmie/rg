@@ -685,35 +685,6 @@ fn translate_automaton_statements(
                 );
                 current_node = local_node;
             }
-            hrg::Statement::AssignmentAny {
-                identifier,
-                accessors,
-                type_,
-            } => {
-                let local_node = context.random_node(prefix);
-                context.connect(
-                    current_node,
-                    local_node.clone(),
-                    rg::Label::AssignmentAny {
-                        lhs: Arc::from(accessors.iter().try_fold(
-                            rg::Expression::new(identifier.clone()),
-                            |expression, accessor| {
-                                Ok(rg::Expression::Access {
-                                    span: Span::none(),
-                                    lhs: Arc::from(expression),
-                                    rhs: translate_expression(
-                                        context,
-                                        accessor,
-                                        automaton_function,
-                                    )?,
-                                })
-                            },
-                        )?),
-                        rhs: translate_type(type_),
-                    },
-                );
-                current_node = local_node;
-            }
             hrg::Statement::Branch { arms } => {
                 let local_node = context.random_node(prefix);
                 for arm in arms {
@@ -1111,6 +1082,35 @@ fn translate_automaton_statements(
                     automaton_function,
                 )?;
                 current_node = loop_end;
+            }
+            hrg::Statement::NondeterministicAssignment {
+                identifier,
+                accessors,
+                type_,
+            } => {
+                let local_node = context.random_node(prefix);
+                context.connect(
+                    current_node,
+                    local_node.clone(),
+                    rg::Label::NondeterministicAssignment {
+                        lhs: Arc::from(accessors.iter().try_fold(
+                            rg::Expression::new(identifier.clone()),
+                            |expression, accessor| {
+                                Ok(rg::Expression::Access {
+                                    span: Span::none(),
+                                    lhs: Arc::from(expression),
+                                    rhs: translate_expression(
+                                        context,
+                                        accessor,
+                                        automaton_function,
+                                    )?,
+                                })
+                            },
+                        )?),
+                        rhs: translate_type(type_),
+                    },
+                );
+                current_node = local_node;
             }
             hrg::Statement::Repeat { count, body } => {
                 let repeat_end = context.random_node(prefix);

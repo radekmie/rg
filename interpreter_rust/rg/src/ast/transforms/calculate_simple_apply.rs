@@ -4,7 +4,7 @@ use crate::ast::{
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-macro_rules! assign_any_stub {
+macro_rules! nondeterministic_assignment_stub {
     () => {
         Arc::from(Expression::new(Id::from("")))
     };
@@ -16,7 +16,7 @@ impl Game<Id> {
     pub fn calculate_simple_apply(&mut self) -> Result<(), Error<Id>> {
         let mut simple_paths = self.calculate_simple_paths()?;
         SimplePath::merge_all(&mut simple_paths);
-        SimplePath::remove_any_stubs(&mut simple_paths);
+        SimplePath::remove_stubs(&mut simple_paths);
         SimplePath::remove_ambiguous(&mut simple_paths);
         SimplePath::propagate_exhaustiveness(&mut simple_paths);
 
@@ -81,10 +81,10 @@ impl Game<Id> {
                                 queue.push((edge.rhs.clone(), path, assignments));
                             }
                         }
-                        Label::AssignmentAny { lhs, .. } => {
+                        Label::NondeterministicAssignment { lhs, .. } => {
                             assignments.push(PragmaAssignment {
                                 lhs: lhs.clone(),
-                                rhs: assign_any_stub!(),
+                                rhs: nondeterministic_assignment_stub!(),
                             });
 
                             queue.push((edge.rhs.clone(), path, assignments));
@@ -145,10 +145,11 @@ impl Game<Id> {
                     if let Some((identifier, type_)) = tags.as_variable_mut() {
                         expose_index += 1;
                         *identifier = Id::from(format!("{identifier}_{expose_index}"));
-                        let mut unrelated_assign_any_found = false;
+                        let mut unrelated_nondeterministic_assignment_found = false;
                         for assignment in &mut assignments {
-                            if assignment.rhs == assign_any_stub!() {
-                                unrelated_assign_any_found |= assignment.lhs.infer(self)? != *type_;
+                            if assignment.rhs == nondeterministic_assignment_stub!() {
+                                unrelated_nondeterministic_assignment_found |=
+                                    assignment.lhs.infer(self)? != *type_;
                                 assignment.rhs = Arc::from(Expression::new_cast(
                                     type_.clone(),
                                     Arc::from(Expression::new(identifier.clone())),
@@ -156,7 +157,7 @@ impl Game<Id> {
                             }
                         }
 
-                        if unrelated_assign_any_found {
+                        if unrelated_nondeterministic_assignment_found {
                             continue;
                         }
                     };
@@ -373,7 +374,7 @@ impl SimplePath {
             let (prev, next) = simple_paths.split_at_mut(index_x);
             let (x, next) = next.split_first_mut().unwrap();
 
-            // Merging is allowed only if there's one extension possiblity.
+            // Merging is allowed only if there's one extension possibility.
             if prev.iter().chain(next.iter()).any(|y| y.node == x.node) {
                 continue;
             }
@@ -420,12 +421,12 @@ impl SimplePath {
         }
     }
 
-    fn remove_any_stubs(simple_paths: &mut Vec<Self>) {
+    fn remove_stubs(simple_paths: &mut Vec<Self>) {
         simple_paths.retain(|simple_path| {
             simple_path
                 .assignments
                 .iter()
-                .all(|assignment| assignment.rhs != assign_any_stub!())
+                .all(|assignment| assignment.rhs != nondeterministic_assignment_stub!())
         });
     }
 
@@ -573,7 +574,7 @@ mod test {
 
     test_transform!(
         calculate_simple_apply,
-        assign_any,
+        nondeterministic_assignment,
         "
             type Position = {0, 1, 2};
             var position: Position = 0;
@@ -585,7 +586,7 @@ mod test {
 
     test_transform!(
         calculate_simple_apply,
-        assign_any_assignment_chain,
+        nondeterministic_assignment_chain,
         "
             type Position = {0, 1, 2};
             var position: Position = 0;
@@ -598,7 +599,7 @@ mod test {
 
     test_transform!(
         calculate_simple_apply,
-        assign_any_assignment_expose_chain_1,
+        nondeterministic_assignment_expose_chain_1,
         "
             type Position = {0, 1, 2};
             var position: Position = 0;
@@ -613,7 +614,7 @@ mod test {
 
     test_transform!(
         calculate_simple_apply,
-        assign_any_assignment_expose_chain_2,
+        nondeterministic_assignment_expose_chain_2,
         "
             type Position = {0, 1, 2};
             var position: Position = 0;

@@ -30,7 +30,6 @@ impl<Id: Display> Display for Label<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Assignment { lhs, rhs } => write!(f, "{lhs} = {rhs}"),
-            Self::AssignmentAny { lhs, rhs } => write!(f, "{lhs} = {rhs}(*)"),
             Self::Comparison {
                 lhs,
                 rhs,
@@ -41,6 +40,7 @@ impl<Id: Display> Display for Label<Id> {
                 rhs,
                 negated: true,
             } => write!(f, "{lhs} != {rhs}"),
+            Self::NondeterministicAssignment { lhs, rhs } => write!(f, "{lhs} = {rhs}(*)"),
             Self::Reachability {
                 lhs,
                 rhs,
@@ -149,9 +149,9 @@ impl<Id: Display> Display for ErrorReason<Id> {
                 f,
                 "Multiple edges between two nodes are not allowed ({lhs} -> {rhs})."
             ),
-            Self::PlayerAnyAssignment { label } => write!(
+            Self::NondeterministicPlayerAssignment { label } => write!(
                 f,
-                "AssignAny is not allowed for the player variable in {label}."
+                "NondeterministicAssignment is not allowed for the player variable in {label}."
             ),
             Self::ReachabilityLoop { lhs, rhs } => write!(
                 f,

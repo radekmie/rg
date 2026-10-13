@@ -48,7 +48,7 @@ impl Game<Id> {
         let mut modified_edges = BTreeSet::new();
 
         for edge in &self.edges {
-            // Don't inline AssignmentAny
+            // Don't inline nondeterministic assignments.
             if let Some((identifier, rhs)) = edge.label.as_assignment() {
                 if edge.label.is_player_assignment()
                     || edge.label.is_visible_assignment()
@@ -282,7 +282,21 @@ mod test {
 
     test_transform!(
         inline_assignment,
-        assign_any_no_usages,
+        assignment_map_no_usages,
+        "begin, t1: ;
+        t1, end: y == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        assignment_map_usages,
+        "begin, t1: x[y] = 1;
+        t1, end: x[1] == z;"
+    );
+
+    test_transform!(
+        inline_assignment,
+        nondeterministic_assignment_no_usages,
         "begin, t1: x = Foo(*);
         t1, end: y == z;",
         "begin, t1: ;
@@ -291,35 +305,21 @@ mod test {
 
     test_transform!(
         inline_assignment,
-        assign_any_usages,
+        nondeterministic_assignment_usages,
         "begin, t1: x = Foo(*);
         t1, end: x == z;"
     );
 
     test_transform!(
         inline_assignment,
-        assign_map_no_usages,
+        nondeterministic_assignment_map_no_usages,
         "begin, t1: ;
         t1, end: y == z;"
     );
 
     test_transform!(
         inline_assignment,
-        assign_map_usages,
-        "begin, t1: x[y] = 1;
-        t1, end: x[1] == z;"
-    );
-
-    test_transform!(
-        inline_assignment,
-        assign_any_map_no_usages,
-        "begin, t1: ;
-        t1, end: y == z;"
-    );
-
-    test_transform!(
-        inline_assignment,
-        assign_any_map_usages,
+        nondeterministic_assignment_map_usages,
         "begin, t1: x[y] = Foo(*);
         t1, end: x[1] == z;"
     );
@@ -340,7 +340,7 @@ mod test {
     test_transform!(
         inline_assignment,
         reassigned_var,
-        "begin, t1: y[z] = z; 
+        "begin, t1: y[z] = z;
         t1, t2: x = y[z];
         t2, t3: y[z] = z;
         t3, end: y == x;"
@@ -496,7 +496,7 @@ mod test {
 
     test_transform!(
         inline_assignment,
-        assign_before_loop,
+        assignment_before_loop,
         "begin, a: x = 2;
         a, b: ;
         b, c: ;
@@ -515,7 +515,7 @@ mod test {
 
     test_transform!(
         inline_assignment,
-        assign_in_fork,
+        assignment_in_fork,
         "begin, a: ;
         a, b: x = 2;
         b, c: ;
@@ -525,7 +525,7 @@ mod test {
 
     test_transform!(
         inline_assignment,
-        assign_in_fork_2,
+        assignment_in_fork_2,
         "begin, a: ;
         a, b1: x = 2;
         b1, c: ;

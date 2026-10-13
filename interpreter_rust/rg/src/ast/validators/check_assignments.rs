@@ -15,7 +15,7 @@ impl Game<Id> {
 
 impl Label<Id> {
     pub fn check_assignments(&self, game: &Game<Id>) -> Result<(), Error<Id>> {
-        if let Self::Assignment { lhs, .. } | Self::AssignmentAny { lhs, .. } = self {
+        if let Self::Assignment { lhs, .. } | Self::NondeterministicAssignment { lhs, .. } = self {
             let identifier = lhs.access_identifier();
             if !game.variables.iter().any(|x| x.identifier == *identifier) {
                 return game.make_error(ErrorReason::ConstantAssignment {
@@ -25,9 +25,9 @@ impl Label<Id> {
             }
         }
 
-        if let Self::AssignmentAny { lhs, .. } = self {
+        if let Self::NondeterministicAssignment { lhs, .. } = self {
             if lhs.is_player_reference() {
-                return game.make_error(ErrorReason::PlayerAnyAssignment {
+                return game.make_error(ErrorReason::NondeterministicPlayerAssignment {
                     label: self.clone(),
                 });
             }
@@ -88,10 +88,10 @@ mod test {
 
     test_validator!(
         check_assignments,
-        player_any,
+        player_nondeterministic_assignment,
         "var player: Player = x; begin, end: player = Player(*);",
-        Err(ErrorReason::PlayerAnyAssignment {
-            label: Label::AssignmentAny {
+        Err(ErrorReason::NondeterministicPlayerAssignment {
+            label: Label::NondeterministicAssignment {
                 lhs: Arc::from(Expression::new(Arc::from("player"))),
                 rhs: Arc::from(Type::new(Arc::from("Player")))
             }
@@ -107,7 +107,7 @@ mod test {
 
     test_validator!(
         check_assignments,
-        variable_any,
+        variable_nondeterministic_assignment,
         "var x: Bool -> Bool = { :0 }; begin, end: x = Bool(*);",
         Ok(())
     );

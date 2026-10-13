@@ -23,11 +23,6 @@ impl Symbols {
                 }
                 self.add_from_expression(expression);
             }
-            Statement::AssignmentAny { accessors, .. } => {
-                for accessor in accessors {
-                    self.add_from_expression(accessor);
-                }
-            }
             Statement::Branch { arms } => arms.iter().for_each(|arm| {
                 for statement in arm {
                     self.add_from_statement(statement);
@@ -72,6 +67,11 @@ impl Symbols {
             Statement::Loop { body } | Statement::Repeat { body, .. } => body
                 .iter()
                 .for_each(|statement| self.add_from_statement(statement)),
+            Statement::NondeterministicAssignment { accessors, .. } => {
+                for accessor in accessors {
+                    self.add_from_expression(accessor);
+                }
+            }
             Statement::Tag { .. } => {}
             Statement::TagVariable { .. } => {}
             Statement::While { body, expression } => {

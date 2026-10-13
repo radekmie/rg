@@ -219,27 +219,6 @@ impl Analysis for ValueSets {
 
                 input.insert(variable.clone(), value_set);
             }
-            Label::AssignmentAny { lhs, rhs } => {
-                let Some(variable) = lhs.uncast().as_reference() else {
-                    todo!();
-                };
-
-                let mut value_set = match rhs.as_ref() {
-                    Type::Arrow { .. } => unreachable!("Cannot AssignAny arrow type."),
-                    Type::Set { .. } => todo!(),
-                    Type::TypeReference { identifier } => {
-                        self.maximum_by_type.get(identifier).unwrap().clone()
-                    }
-                };
-
-                // Initial values have to be merged.
-                if edge.rhs.is_begin() {
-                    value_set
-                        .merge_with(self.initial_by_variable.get(variable).unwrap(), &merge_sets);
-                }
-
-                input.insert(variable.clone(), value_set);
-            }
             Label::Comparison { lhs, rhs, negated } => {
                 // Comparisons refine in both directions.
                 for (lhs, rhs) in [(lhs, rhs), (rhs, lhs)] {
@@ -269,6 +248,27 @@ impl Analysis for ValueSets {
                         }
                     }
                 }
+            }
+            Label::NondeterministicAssignment { lhs, rhs } => {
+                let Some(variable) = lhs.uncast().as_reference() else {
+                    todo!();
+                };
+
+                let mut value_set = match rhs.as_ref() {
+                    Type::Arrow { .. } => unreachable!("Arrow type cannot be used in NondeterministicAssignment."),
+                    Type::Set { .. } => todo!(),
+                    Type::TypeReference { identifier } => {
+                        self.maximum_by_type.get(identifier).unwrap().clone()
+                    }
+                };
+
+                // Initial values have to be merged.
+                if edge.rhs.is_begin() {
+                    value_set
+                        .merge_with(self.initial_by_variable.get(variable).unwrap(), &merge_sets);
+                }
+
+                input.insert(variable.clone(), value_set);
             }
             Label::Reachability { .. } => {}
             Label::Skip { .. } => {}
@@ -409,7 +409,7 @@ mod test {
     );
 
     test!(
-        assign,
+        assignment,
         "type T = { a, b, c }; var x: T = a; begin, q1: x = b;",
         "begin:
             x: {a}
@@ -418,7 +418,7 @@ mod test {
     );
 
     test!(
-        assign_any,
+        nondeterministic_assignment,
         "type T = { a, b, c }; var x: T = a; begin, q1: x = T(*);",
         "begin:
             x: {a}

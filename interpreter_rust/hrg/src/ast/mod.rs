@@ -16,11 +16,6 @@ pub enum Statement<Id> {
         accessors: Vec<Arc<Expression<Id>>>,
         expression: Arc<Expression<Id>>,
     },
-    AssignmentAny {
-        identifier: Id,
-        accessors: Vec<Arc<Expression<Id>>>,
-        type_: Arc<Type<Id>>,
-    },
     Branch {
         arms: Vec<Vec<Self>>,
     },
@@ -40,6 +35,11 @@ pub enum Statement<Id> {
     },
     Loop {
         body: Vec<Self>,
+    },
+    NondeterministicAssignment {
+        identifier: Id,
+        accessors: Vec<Arc<Expression<Id>>>,
+        type_: Arc<Type<Id>>,
     },
     Repeat {
         count: usize,
@@ -67,7 +67,7 @@ impl<Id: Clone + Ord> Statement<Id> {
     pub fn count_calls(&self, call_counts: &mut CallsCount<Id>, caller: &Id) {
         match self {
             Self::Assignment { .. }
-            | Self::AssignmentAny { .. }
+            | Self::NondeterministicAssignment { .. }
             | Self::Tag { .. }
             | Self::TagVariable { .. } => {}
             Self::Branch { arms } => {
@@ -138,17 +138,6 @@ impl<Id: Clone + PartialEq> Statement<Id> {
                 }
                 Arc::make_mut(expression).substitute_var(var, value)?;
             }
-            Self::AssignmentAny { identifier, .. } if identifier == var => {
-                return Err(Error::CannotSubstitute {
-                    identifier: var.clone(),
-                    context: "assigned variable",
-                })
-            }
-            Self::AssignmentAny { accessors, .. } => {
-                for accessor in accessors {
-                    Arc::make_mut(accessor).substitute_var(var, value)?;
-                }
-            }
             Self::Branch { arms } => {
                 for arm in arms {
                     for statement in arm {
@@ -196,6 +185,17 @@ impl<Id: Clone + PartialEq> Statement<Id> {
             Self::Loop { body } => {
                 for statement in body {
                     statement.substitute_var(var, value)?;
+                }
+            }
+            Self::NondeterministicAssignment { identifier, .. } if identifier == var => {
+                return Err(Error::CannotSubstitute {
+                    identifier: var.clone(),
+                    context: "assigned variable",
+                })
+            }
+            Self::NondeterministicAssignment { accessors, .. } => {
+                for accessor in accessors {
+                    Arc::make_mut(accessor).substitute_var(var, value)?;
                 }
             }
             Self::Repeat { body, .. } => {

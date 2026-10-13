@@ -48,17 +48,6 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
             }
             add_from_expression(table, expression);
         }
-        Statement::AssignmentAny {
-            identifier,
-            accessors,
-            type_,
-        } => {
-            table.add_occ(identifier);
-            for accessor in accessors {
-                add_from_expression(table, accessor);
-            }
-            add_from_type(table, type_);
-        }
         Statement::Branch { arms } => {
             for arm in arms {
                 for statement in arm {
@@ -105,6 +94,17 @@ fn add_from_statement(table: &mut SymbolTableBuilder, stat: &Statement<Identifie
             for statement in body {
                 add_from_statement(table, statement);
             }
+        }
+        Statement::NondeterministicAssignment {
+            identifier,
+            accessors,
+            type_,
+        } => {
+            table.add_occ(identifier);
+            for accessor in accessors {
+                add_from_expression(table, accessor);
+            }
+            add_from_type(table, type_);
         }
         Statement::Tag { symbols, .. } => {
             for symbol in symbols {

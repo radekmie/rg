@@ -48,7 +48,7 @@ mod test {
 
     test_transform!(
         prune_unused_variables,
-        assignment_any,
+        nondeterministic_assignment,
         "type T = { 0 };
         var x: T = 0;
         begin, end: x = A(*);",

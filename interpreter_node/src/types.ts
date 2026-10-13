@@ -19,7 +19,7 @@ export type Settings = {
     compactComparisons: boolean;
     compactReachability: boolean;
     compactSkipEdges: boolean;
-    expandAssignmentAny: boolean;
+    expandNondeterministicAssignment: boolean;
     expandTagVariable: boolean;
     inlineReachability: boolean;
     inlineAssignment: boolean;
@@ -55,7 +55,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   compactComparisons: false,
   compactReachability: false,
   compactSkipEdges: false,
-  expandAssignmentAny: false,
+  expandNondeterministicAssignment: false,
   expandTagVariable: false,
   inlineAssignment: false,
   inlineReachability: false,
@@ -121,7 +121,7 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
     label: 'Other',
     flags: [
       'addExplicitCasts',
-      'expandAssignmentAny',
+      'expandNondeterministicAssignment',
       'expandTagVariable',
       'mangleSymbols',
       'normalizeConstants',

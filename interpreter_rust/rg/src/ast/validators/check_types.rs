@@ -23,15 +23,6 @@ impl<Id: Clone + PartialEq> Label<Id> {
                     return game.make_error(ErrorReason::AssignmentTypeMismatch { lhs, rhs });
                 }
             }
-            Self::AssignmentAny { lhs, rhs } => {
-                let lhs = lhs.infer(game)?;
-                if !game.is_assignable_type(&lhs, rhs, true)? {
-                    return game.make_error(ErrorReason::AssignmentTypeMismatch {
-                        lhs,
-                        rhs: rhs.clone(),
-                    });
-                }
-            }
             Self::Comparison { lhs, rhs, .. } => {
                 let lhs = lhs.infer(game)?;
                 let rhs = rhs.infer(game)?;
@@ -39,6 +30,15 @@ impl<Id: Clone + PartialEq> Label<Id> {
                     && !game.is_assignable_type(&rhs, &lhs, false)?
                 {
                     return game.make_error(ErrorReason::ComparisonTypeMismatch { lhs, rhs });
+                }
+            }
+            Self::NondeterministicAssignment { lhs, rhs } => {
+                let lhs = lhs.infer(game)?;
+                if !game.is_assignable_type(&lhs, rhs, true)? {
+                    return game.make_error(ErrorReason::AssignmentTypeMismatch {
+                        lhs,
+                        rhs: rhs.clone(),
+                    });
                 }
             }
             _ => {}
@@ -260,21 +260,21 @@ mod test {
 
     test_validator!(
         check_types,
-        assign_any_correct,
+        nondeterministic_assignment_correct,
         "type T = { 0 }; var t: T = 0; a, b: t = T(*);",
         Ok(())
     );
 
     test_validator!(
         check_types,
-        assign_any_smaller,
+        nondeterministic_assignment_smaller,
         "type T0 = { 0 }; type T1 = { 0, 1 }; var t: T1 = 0; a, b: t = T0(*);",
         Ok(())
     );
 
     test_validator!(
         check_types,
-        assign_any_bigger,
+        nondeterministic_assignment_bigger,
         "type T0 = { 0 }; type T1 = { 0, 1 }; var t: T0 = 0; a, b: t = T1(*);",
         Err(ErrorReason::AssignmentTypeMismatch {
             lhs: Arc::from(Type::TypeReference {
@@ -288,7 +288,7 @@ mod test {
 
     test_validator!(
         check_types,
-        assign_any_mismtach,
+        nondeterministic_assignment_mismtach,
         "type T0 = { 0 }; type T1 = { 1 }; var t: T0 = 0; a, b: t = T1(*);",
         Err(ErrorReason::AssignmentTypeMismatch {
             lhs: Arc::from(Type::TypeReference {

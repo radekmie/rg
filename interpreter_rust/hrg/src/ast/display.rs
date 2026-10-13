@@ -384,17 +384,6 @@ fn write_statement<Id: Display>(
             write!(f, " = ")?;
             write_expression(f, expression, indent)
         }
-        Statement::AssignmentAny {
-            identifier,
-            accessors,
-            type_,
-        } => {
-            write!(f, "{identifier}")?;
-            for accessor in accessors {
-                write!(f, "[{accessor}]")?;
-            }
-            write!(f, " = {type_}(*)")
-        }
         Statement::Branch { arms } => {
             writeln!(f, "branch {{")?;
             let mut iter = arms.iter();
@@ -440,6 +429,17 @@ fn write_statement<Id: Display>(
             writeln!(f, "loop {{")?;
             write_statements(f, body, indent + 2)?;
             write_rbrace(f, indent)
+        }
+        Statement::NondeterministicAssignment {
+            identifier,
+            accessors,
+            type_,
+        } => {
+            write!(f, "{identifier}")?;
+            for accessor in accessors {
+                write!(f, "[{accessor}]")?;
+            }
+            write!(f, " = {type_}(*)")
         }
         Statement::Repeat { count, body } => {
             writeln!(f, "repeat {count} {{")?;

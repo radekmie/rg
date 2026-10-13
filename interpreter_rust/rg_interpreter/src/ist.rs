@@ -22,14 +22,14 @@ pub enum EdgeLabel<Id: Ord> {
         lhs: Expression<Id>,
         rhs: Expression<Id>,
     },
-    AssignmentAny {
-        lhs: Expression<Id>,
-        rhs: Rc<Type<Id>>,
-    },
     Comparison {
         lhs: Expression<Id>,
         rhs: Expression<Id>,
         negated: bool,
+    },
+    NondeterministicAssignment {
+        lhs: Expression<Id>,
+        rhs: Rc<Type<Id>>,
     },
     Reachability {
         lhs: Id,

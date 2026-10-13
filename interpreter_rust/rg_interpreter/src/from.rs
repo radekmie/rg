@@ -71,15 +71,17 @@ fn build_label(context: &mut Context, label: ast::Label<Id>) -> ist::EdgeLabel<I
             lhs: build_expression(context, &lhs),
             rhs: build_expression(context, &rhs),
         },
-        ast::Label::AssignmentAny { lhs, rhs } => ist::EdgeLabel::AssignmentAny {
-            lhs: build_expression(context, &lhs),
-            rhs: build_type_or_fail(context, &rhs),
-        },
         ast::Label::Comparison { lhs, rhs, negated } => ist::EdgeLabel::Comparison {
             lhs: build_expression(context, &lhs),
             rhs: build_expression(context, &rhs),
             negated,
         },
+        ast::Label::NondeterministicAssignment { lhs, rhs } => {
+            ist::EdgeLabel::NondeterministicAssignment {
+                lhs: build_expression(context, &lhs),
+                rhs: build_type_or_fail(context, &rhs),
+            }
+        }
         ast::Label::Reachability {
             lhs, rhs, negated, ..
         } => ist::EdgeLabel::Reachability {

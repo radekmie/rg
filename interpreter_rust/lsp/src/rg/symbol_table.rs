@@ -48,13 +48,13 @@ fn add_from_edge_label(table: &mut SymbolTableBuilder, label: &Label<Identifier>
             add_from_expression(table, lhs);
             add_from_expression(table, rhs);
         }
-        Label::AssignmentAny { lhs, rhs } => {
-            add_from_expression(table, lhs);
-            add_from_type(table, rhs);
-        }
         Label::Comparison { lhs, rhs, .. } => {
             add_from_expression(table, lhs);
             add_from_expression(table, rhs);
+        }
+        Label::NondeterministicAssignment { lhs, rhs } => {
+            add_from_expression(table, lhs);
+            add_from_type(table, rhs);
         }
         Label::Skip { .. } => (),
         Label::Tag { symbol } => add(table, symbol, false),

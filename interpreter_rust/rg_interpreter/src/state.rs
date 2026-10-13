@@ -174,17 +174,6 @@ impl Iterator for StateNext<'_> {
                                     search_queue.push(state);
                                 }
                             }
-                            EdgeLabel::AssignmentAny { lhs, rhs } => {
-                                let Type::Set { values } = rhs.as_ref() else {
-                                    panic!("Only Set can used in AssignmentAny.")
-                                };
-
-                                for value in values {
-                                    let mut state = state.clone_at(edge.next);
-                                    state.eval_set(game, lhs, value.clone());
-                                    search_queue.push(state);
-                                }
-                            }
                             EdgeLabel::Comparison { lhs, rhs, negated } => {
                                 let lhs_value = state.eval(game, lhs);
                                 let rhs_value = state.eval(game, rhs);
@@ -193,6 +182,17 @@ impl Iterator for StateNext<'_> {
                                     search_queue.push(state.clone_at(edge.next));
                                 } else {
                                     continue;
+                                }
+                            }
+                            EdgeLabel::NondeterministicAssignment { lhs, rhs } => {
+                                let Type::Set { values } = rhs.as_ref() else {
+                                    panic!("Only Set can used in a NondeterministicAssignment.")
+                                };
+
+                                for value in values {
+                                    let mut state = state.clone_at(edge.next);
+                                    state.eval_set(game, lhs, value.clone());
+                                    search_queue.push(state);
                                 }
                             }
                             EdgeLabel::Reachability { lhs, rhs, negated } => {

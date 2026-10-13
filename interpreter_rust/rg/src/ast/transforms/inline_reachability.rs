@@ -62,7 +62,7 @@ impl Game<Id> {
                 .filter(|edge| edge.rhs == *target)?;
             match &edge.label {
                 // Do not inline negated assignments.
-                Label::Assignment { .. } | Label::AssignmentAny { .. } => None,
+                Label::Assignment { .. } | Label::NondeterministicAssignment { .. } => None,
                 // Copy (and negate) the comparison or reachability.
                 Label::Comparison { .. } | Label::Reachability { .. } => {
                     Some((BTreeSet::from([edge.clone()]), None))
@@ -117,7 +117,7 @@ impl Game<Id> {
                 }
                 let edge = edges.iter().next().unwrap();
                 if is_main_automaton
-                    && (edge.label.is_assignment_any()
+                    && (edge.label.is_nondeterministic_assignment()
                         || edge.label.is_tag()
                         || edge.label.is_tag_variable())
                 {
@@ -384,7 +384,7 @@ mod test {
 
     test_transform!(
         inline_reachability,
-        reachability_with_assign_any_main,
+        reachability_with_nondeterministic_assignment_main,
         "type T = { null };
         begin, end: ? a -> b;
         a, b: t = T(*);"
@@ -392,7 +392,7 @@ mod test {
 
     test_transform!(
         inline_reachability,
-        reachability_with_assign_any_nested,
+        reachability_with_nondeterministic_assignment_nested,
         "type T = { null };
         begin, end: ? x -> y;
         x, y: ? a -> b;

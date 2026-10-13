@@ -103,10 +103,6 @@ pub enum Label<Id> {
         lhs: Arc<Expression<Id>>,
         rhs: Arc<Expression<Id>>,
     },
-    AssignmentAny {
-        lhs: Arc<Expression<Id>>,
-        rhs: Arc<Type<Id>>,
-    },
     Comparison {
         lhs: Arc<Expression<Id>>,
         rhs: Arc<Expression<Id>>,
@@ -118,6 +114,12 @@ pub enum Label<Id> {
         lhs: Node<Id>,
         rhs: Node<Id>,
         negated: bool,
+    },
+    // TODO: Rename it in the compiler.
+    #[serde(rename = "AssignmentAny")]
+    NondeterministicAssignment {
+        lhs: Arc<Expression<Id>>,
+        rhs: Arc<Type<Id>>,
     },
     Skip {
         #[serde(skip)]
@@ -140,7 +142,7 @@ impl<Id> Label<Id> {
     }
 
     pub fn as_var_assignment(&self) -> Option<&Id> {
-        if let Self::Assignment { lhs, .. } | Self::AssignmentAny { lhs, .. } = self {
+        if let Self::Assignment { lhs, .. } | Self::NondeterministicAssignment { lhs, .. } = self {
             return Some(lhs.access_identifier());
         }
         None
@@ -149,18 +151,17 @@ impl<Id> Label<Id> {
     pub fn as_assignment(&self) -> Option<(&Id, ExprOrType<'_, Id>)> {
         if let Self::Assignment { lhs, rhs } = self {
             return Some((lhs.access_identifier(), Ok(rhs)));
-        } else if let Self::AssignmentAny { lhs, rhs } = self {
+        } else if let Self::NondeterministicAssignment { lhs, rhs } = self {
             return Some((lhs.access_identifier(), Err(rhs)));
         }
         None
     }
 
     pub fn is_assignment(&self) -> bool {
-        matches!(self, Self::Assignment { .. } | Self::AssignmentAny { .. })
-    }
-
-    pub fn is_assignment_any(&self) -> bool {
-        matches!(self, Self::AssignmentAny { .. })
+        matches!(
+            self,
+            Self::Assignment { .. } | Self::NondeterministicAssignment { .. }
+        )
     }
 
     pub fn is_comparison(&self) -> bool {
@@ -168,7 +169,11 @@ impl<Id> Label<Id> {
     }
 
     pub fn is_map_assignment(&self) -> bool {
-        matches!(self, Self::Assignment { lhs, .. } | Self::AssignmentAny {lhs, .. } if lhs.uncast().is_access())
+        matches!(self, Self::Assignment { lhs, .. } | Self::NondeterministicAssignment { lhs, .. } if lhs.uncast().is_access())
+    }
+
+    pub fn is_nondeterministic_assignment(&self) -> bool {
+        matches!(self, Self::NondeterministicAssignment { .. })
     }
 
     pub fn is_reachability(&self) -> bool {
@@ -299,12 +304,12 @@ impl<Id: Ord> Label<Id> {
                 lhs.collect_variables(&mut vars);
                 rhs.collect_variables(&mut vars);
             }
-            Self::AssignmentAny { lhs, .. } => {
-                lhs.collect_variables(&mut vars);
-            }
             Self::Comparison { lhs, rhs, .. } => {
                 lhs.collect_variables(&mut vars);
                 rhs.collect_variables(&mut vars);
+            }
+            Self::NondeterministicAssignment { lhs, .. } => {
+                lhs.collect_variables(&mut vars);
             }
             Self::TagVariable { identifier, .. } => {
                 vars.insert(identifier);
@@ -457,7 +462,7 @@ pub enum ErrorReason<Id> {
         lhs: Node<Id>,
         rhs: Node<Id>,
     },
-    PlayerAnyAssignment {
+    NondeterministicPlayerAssignment {
         label: Label<Id>,
     },
     ReachabilityLoop {
