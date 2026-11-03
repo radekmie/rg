@@ -300,7 +300,7 @@ graph turn(me:Player) {
       pos = nextPos[pos]
       $_NEXT
     }
-    
+
     if less(pawnCount[black], pawnCount[white]) == 1 {goals[white] = 100 goals[black] = 0} else {
       if less(pawnCount[white], pawnCount[black]) == 1 {goals[white] = 0 goals[black] = 100}
     }
@@ -319,6 +319,11 @@ graph turn(me:Player) {
   } or {
     slideMove(me)
     $$ pos
+    // Reset `slidePos` so there are no multiple moves with the same tags but
+    // different value in `slidePos`. The tag is needed to prevent it from being
+    // pruned.
+    slidePos = GH(0, 1)
+    $$ slidePos
     player = keeper
     stagnation = S(0)
   }
