@@ -53,6 +53,7 @@ pub fn scenario(group: &mut BenchmarkGroup<'_, WallTime>, path: &str) {
     bench!(prune_unused_constants);
     bench!(prune_unused_variables);
     bench!(reorder_conditions);
+    bench!(serialize_conditions);
     bench!(skip_artificial_tags);
     bench!(skip_redundant_tags);
     bench!(skip_self_assignments);

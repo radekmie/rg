@@ -255,7 +255,9 @@ impl Analysis for ValueSets {
                 };
 
                 let mut value_set = match rhs.as_ref() {
-                    Type::Arrow { .. } => unreachable!("Arrow type cannot be used in NondeterministicAssignment."),
+                    Type::Arrow { .. } => {
+                        unreachable!("Arrow type cannot be used in NondeterministicAssignment.")
+                    }
                     Type::Set { .. } => todo!(),
                     Type::TypeReference { identifier } => {
                         self.maximum_by_type.get(identifier).unwrap().clone()

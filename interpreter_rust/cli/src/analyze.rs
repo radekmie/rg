@@ -234,6 +234,7 @@ fn analyze_rg(
         // Compact the automaton.
         pass!(reorder_conditions);
         pass!(compact_comparisons);
+        pass!(serialize_conditions);
         pass!(join_exclusive_edges);
         pass!(join_fork_prefixes);
         pass!(join_fork_suffixes);

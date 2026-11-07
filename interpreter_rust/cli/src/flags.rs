@@ -184,6 +184,15 @@ pub struct Flags {
     )]
     pub reorder_conditions: bool,
 
+    /// serializes parallel conditions
+    #[arg(
+        long,
+        help_heading = "Optimizations",
+        conflicts_with = "enable_all_optimizations",
+        default_value_if("enable_all_optimizations", "true", Some("true"))
+    )]
+    pub serialize_conditions: bool,
+
     /// skip tag edges marked with `@artificialTag`
     #[arg(
         long,
@@ -320,6 +329,7 @@ impl Flags {
             skip_self_assignments: true,
             skip_self_comparisons: true,
             skip_unused_tags: true,
+            serialize_conditions: true,
         }
     }
 }

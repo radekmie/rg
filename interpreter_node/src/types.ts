@@ -37,6 +37,7 @@ export type Settings = {
     pruneUnusedConstants: boolean;
     pruneUnusedVariables: boolean;
     reorderConditions: boolean;
+    serializeConditions: boolean;
     skipArtificialTags: boolean;
     skipRedundantTags: boolean;
     skipSelfAssignments: boolean;
@@ -73,6 +74,7 @@ export const noFlagsEnabled: Settings['flags'] = {
   pruneUnusedConstants: false,
   pruneUnusedVariables: false,
   reorderConditions: false,
+  serializeConditions: false,
   skipArtificialTags: false,
   skipRedundantTags: false,
   skipSelfAssignments: false,
@@ -100,6 +102,7 @@ export const availableFlags: { label: string; flags: Flag[] }[] = [
       'pruneUnusedConstants',
       'pruneUnusedVariables',
       'reorderConditions',
+      'serializeConditions',
       'skipArtificialTags',
       'skipRedundantTags',
       'skipSelfAssignments',
