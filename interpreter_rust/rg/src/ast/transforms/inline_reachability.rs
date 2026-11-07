@@ -111,11 +111,19 @@ impl Game<Id> {
         let mut result = BTreeSet::new();
         while let Some(lhs) = queue.pop() {
             previous.insert(lhs);
-            if let Some(edges) = next_edges.get(&lhs) {
-                if edges.len() != 1 {
-                    return None;
-                }
-                let edge = edges.iter().next().unwrap();
+            let Some(edges) = next_edges.get(&lhs) else {
+                continue;
+            };
+
+            // Outgoing edges must not fork.
+            if edges
+                .first()
+                .is_none_or(|x| edges.iter().any(|y| x.rhs != y.rhs))
+            {
+                return None;
+            }
+
+            for edge in edges {
                 if is_main_automaton
                     && (edge.label.is_nondeterministic_assignment()
                         || edge.label.is_tag()
@@ -592,5 +600,18 @@ mod test {
         e, f: coord = 0;
         a, end: coord = 1;
         a, end: coord == 0;"
+    );
+
+    test_transform!(
+        inline_reachability,
+        parallel,
+        "x, y: ? a -> b;
+        a, b: coord == 0;
+        a, b: coord == 1;",
+        "a, b: coord == 0;
+        a, b: coord == 1;
+        x, 1: ;
+        1, y: coord == 0;
+        1, y: coord == 1;"
     );
 }
